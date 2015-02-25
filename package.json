@@ -1,0 +1,27 @@
+{
+  "name": "markdown-model",
+  "version": "0.0.1",
+  "description": "Creation and manipulation of Markdown ASTs",
+  "main": "src/index.js",
+  "maintainers": [
+    {
+      "name": "Marijn Haverbeke",
+      "email": "marijnh@gmail.com",
+      "web": "http://marijnhaverbeke.nl"
+    }
+  ],
+  "dependencies": {
+    "markdown-it": "^3.0.0"
+  },
+  "devDependencies": {
+    "xmldom": ">=0.1.0"
+  },
+  "scripts": {
+    "test": "node test/run.js",
+    "build": "browserify --outfile dist/markdown-model.js src/index.js -s MarkdownModel"
+  },
+  "blint": {
+    "allowedGlobals": ["window"],
+    "namedFunctions": true
+  }
+}
