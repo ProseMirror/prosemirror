@@ -1,5 +1,7 @@
 /* @flow */
 
+var nullContent = []
+
 class Node {
   type: NodeType;
   content: Array<Node>;
@@ -9,28 +11,48 @@ class Node {
     if (typeof type == "string") type = nodeTypes[type]
     if (!type) throw new Error("Node without type")
     this.type = type
-    this.content = content || (type.contains ? [] : nullArray)
+    this.content = content || (type.contains ? [] : nullContent)
     this.attrs = attrs
   }
 
   toString(): string {
-    if (this.type == nodeTypes.text) {
-      var text = JSON.stringify(this.attrs.text)
-      for (var i = 0; i < this.attrs.style.length; i++)
-        text = this.attrs.style[i].type + "(" + text + ")"
-      return text
-    } else if (this.type.contains) {
+    if (this.type.contains)
       return this.type.name + "(" + this.content.join(", ") + ")"
-    } else {
+    else
       return this.type.name
+  }
+}
+
+module.exports = Node
+
+var nullStyles = []
+
+class InlineNode extends Node {
+  text: string;
+  styles: Array<InlineStyle>;
+
+  constructor(type: string | NodeType, styles: Array<InlineStyle> = nullStyles,
+              text: ?string, attrs: any = nullAttrs) {
+    super(type, null, attrs)
+    this.text = text || "×"
+    this.styles = styles
+  }
+
+  toString(): string {
+    if (this.type == nodeTypes.text) {
+      var text = JSON.stringify(this.text)
+      for (var i = 0; i < this.styles.length; i++)
+        text = this.styles[i].type + "(" + text + ")"
+      return text
+    } else {
+      return super.toString()
     }
   }
 }
 
-var nullAttrs = Node.nullAttrs = {}
-var nullArray = []
+Node.InlineNode = InlineNode
 
-module.exports = Node
+var nullAttrs = Node.nullAttrs = {}
 
 class NodeType {
   name: string;

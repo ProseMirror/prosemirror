@@ -76,17 +76,26 @@ function closeInline(state, type: string) {
 
 var empty = []
 
-function addText(state, text) {
-  var top = state.top(), last = top.content[top.content.length - 1]
-
-  /*
-  if (last && last.attrs.style == state.styles) // FIXME deep check needed
-    last.attrs.text += text;
-  else
-    addNode(state, "text", {text: text, style: state.styles.length ? state.styles.slice() : empty})
-    */
+function addInline(state, type, text = null, attrs = Node.nullAttrs) {
+  var node = new Node.InlineNode(type, state.styles.length ? state.styles.slice() : empty,
+                                 text, attrs);
+  state.push(node)
+  return node
 }
 
+function sameArray(a, b) {
+  if (a.length != b.length) return false;
+  for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+function addText(state, text) {
+  var top = state.top(), last: Node.Inline = (top.content[top.content.length - 1] : any)
+  if (last && sameArray(last.styles, state.styles))
+    last.text += text
+  else
+    addInline(state, "text", text)
+}
 
 function tokBlock(name, extra = null) {
   tokens[name + "_open"] = (state, tok, offset) => {
@@ -147,11 +156,11 @@ tokens.code = (state, tok) => {
 tokInlineSpan("link", (_state, tok) => Node.InlineStyle.link(tok.href, tok.title || null))
 
 tokens.image = (state, tok) => {
-  addNode(state, "image", {src: tok.src, title: tok.title || null, alt: tok.alt || null})
+  addInline(state, "image", null, {src: tok.src, title: tok.title || null, alt: tok.alt || null})
 }
 
 tokens.hardbreak = (state, tok) => {
-  addNode(state, "hard_break")
+  addInline(state, "hard_break")
 }
 
 tokens.softbreak = (state, tok) => {
@@ -163,7 +172,7 @@ tokens.text = (state, tok) => {
 }
 
 tokens.htmltag = (state, tok) => {
-  addNode(state, "html_tag", {html: tok.content})
+  addInline(state, "html_tag", null, {html: tok.content})
 }
 
 tokens.inline = (state, tok) => {
