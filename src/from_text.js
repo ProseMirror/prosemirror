@@ -1,3 +1,5 @@
+/* @flow */
+
 var markdownit = require("markdown-it")
 
 var Node = require("./node")
@@ -9,7 +11,7 @@ function parseTokens(state, toks) {
   }
 }
 
-module.exports = function fromText(text) {
+module.exports = function fromText(text: string): Node {
   var tokens = markdownit("commonmark").parse(text, {})
   var state = new State(tokens)
   parseTokens(state, tokens)
@@ -17,10 +19,14 @@ module.exports = function fromText(text) {
 }
 
 class State {
-  constructor(tokens) {
+  stack: Array<Node>;
+  tokens: Array<any>;
+  styles: Array<Node.InlineStyle>;
+
+  constructor(tokens: Array<any>) {
     this.stack = [new Node("doc")]
     this.tokens = tokens
-    this.styles = null
+    this.styles = []
   }
 
   top() {
@@ -32,19 +38,19 @@ class State {
   }
 }
 
-var tokens = Object.create(null)
+var tokens: {[key: string]: (state: State, token: any, offset: number) => void} = Object.create(null)
 
 // These declare token types. `tokenWrap` for elements that use _open
 // and _close tokens with more tokens in between them, and `token` for
 // atomic tokens.
 
-function addNode(state, type, attrs) {
+function addNode(state, type, attrs = Node.nullAttrs) {
   var node = new Node(type, null, attrs)
   state.push(node)
   return node
 }
 
-function openNode(state, type, attrs) {
+function openNode(state, type, attrs = Node.nullAttrs) {
   var node = addNode(state, type, attrs)
   state.stack.push(node)
   return node
@@ -52,18 +58,17 @@ function openNode(state, type, attrs) {
 
 function closeNode(state) {
   state.stack.pop()
-  if (state.styles) state.styles = null
+  state.styles.length = 0
 }
 
-function openInline(state, style) {
-  state.styles = state.styles ? state.styles.slice() : []
+function openInline(state, style: Node.InlineStyle) {
   state.styles.push(style)
 }
 
-function closeInline(state, type) {
-  if (state.styles) for (var i = 0; i < state.styles.length; i++) {
+function closeInline(state, type: string) {
+  for (var i = 0; i < state.styles.length; i++) {
     if (state.styles[i].type == type) {
-      state.styles = state.styles.slice(0, i).concat(state.styles.slice(i + 1))
+      state.styles.splice(i, 1)
       return
     }
   }
@@ -73,25 +78,28 @@ var empty = []
 
 function addText(state, text) {
   var top = state.top(), last = top.content[top.content.length - 1]
-  if (last && last.attrsstyle == state.styles)
+
+  /*
+  if (last && last.attrs.style == state.styles) // FIXME deep check needed
     last.attrs.text += text;
   else
-    addNode(state, "text", {text: text, style: state.styles || empty})
+    addNode(state, "text", {text: text, style: state.styles.length ? state.styles.slice() : empty})
+    */
 }
 
-function tokBlock(name, type, extra) {
-  if (typeof type != "string") { extra = type; type = name }
+
+function tokBlock(name, extra = null) {
   tokens[name + "_open"] = (state, tok, offset) => {
-    var node = openNode(state, type)
+    var node = openNode(state, name)
     if (extra) extra(state, tok, node, offset)
   }
   tokens[name + "_close"] = closeNode
 }
 
-function tokInlineSpan(name, val) {
-  var styleName
+function tokInlineSpan(name, getStyle) {
+  var styleName = ""
   tokens[name + "_open"] = (state, tok) => {
-    var style = val instanceof Function ? val(state, tok) : val
+    var style = getStyle(state, tok)
     styleName = style.type
     openInline(state, style)
   }
@@ -132,11 +140,11 @@ tokens.code = (state, tok) => {
   } else {
     openInline(state, Node.styles.code)
     addText(state, tok.content)
-    closeInline("code")
+    closeInline(state, "code")
   }
 }
 
-tokInlineSpan("link", (_state, tok) => Node.styles.link(tok.href, tok.title || null))
+tokInlineSpan("link", (_state, tok) => Node.InlineStyle.link(tok.href, tok.title || null))
 
 tokens.image = (state, tok) => {
   addNode(state, "image", {src: tok.src, title: tok.title || null, alt: tok.alt || null})
@@ -162,6 +170,6 @@ tokens.inline = (state, tok) => {
   parseTokens(state, tok.children)
 }
 
-tokInlineSpan("strong", Node.styles.strong)
+tokInlineSpan("strong", () => Node.styles.strong)
 
-tokInlineSpan("em", Node.styles.em)
+tokInlineSpan("em", () => Node.styles.em)

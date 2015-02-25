@@ -1,15 +1,19 @@
-var nullAttrs = Object.create(null)
+/* @flow */
 
 class Node {
-  constructor(type, content, attrs) {
+  type: NodeType;
+  content: Array<Node>;
+  attrs: any;
+
+  constructor(type: string | NodeType, content: ?Array<Node> = null, attrs: any = nullAttrs) {
     if (typeof type == "string") type = nodeTypes[type]
     if (!type) throw new Error("Node without type")
     this.type = type
-    this.content = content || (type.contains ? [] : null)
-    this.attrs = attrs || nullAttrs
+    this.content = content || (type.contains ? [] : nullArray)
+    this.attrs = attrs
   }
 
-  toString() {
+  toString(): string {
     if (this.type == nodeTypes.text) {
       var text = JSON.stringify(this.attrs.text)
       for (var i = 0; i < this.attrs.style.length; i++)
@@ -23,18 +27,28 @@ class Node {
   }
 }
 
+var nullAttrs = Node.nullAttrs = {}
+var nullArray = []
+
 module.exports = Node
 
 class NodeType {
-  constructor(type, contains, attrs) {
-    this.name = null
+  name: string;
+  type: string;
+  contains: ?string;
+  attrs: any;
+
+  constructor(type: string, contains: ?string, attrs: any = nullAttrs) {
+    this.name = ""
     this.type = type
     this.contains = contains
-    this.attrs = attrs || nullAttrs
+    this.attrs = attrs
   }
 }
 
-var nodeTypes = Node.types = {
+Node.NodeType = NodeType
+
+var nodeTypes: {[key:string]: NodeType} = Node.types = {
   doc: new NodeType("doc", "block"),
   blockquote: new NodeType("block", "block"),
   paragraph: new NodeType("block", "inline"),
@@ -54,15 +68,21 @@ var nodeTypes = Node.types = {
 for (var name in nodeTypes) nodeTypes[name].name = name
 
 class InlineStyle {
-  constructor(type, attrs) {
+  type: string;
+  attrs: any;
+
+  constructor(type: string, attrs: any = nullAttrs) {
     this.type = type
-    this.attrs = attrs || nullAttrs
+    this.attrs = attrs
   }
 }
 
-var styles = Node.styles = {
+Node.InlineStyle = InlineStyle
+
+var styles: {[key:string]: InlineStyle} = Node.styles = {
   code: new InlineStyle("code"),
   em: new InlineStyle("em"),
-  strong: new InlineStyle("strong"),
-  link: (href, title) => new InlineStyle("link", {href: href, title: title})
+  strong: new InlineStyle("strong")
 }
+
+InlineStyle.link = (href, title) => new InlineStyle("link", {href: href, title: title})
