@@ -1,4 +1,4 @@
-const nullAttrs = Object.create(null)
+var nullAttrs = Object.create(null)
 
 class Node {
   constructor(type, content, attrs) {
@@ -34,7 +34,7 @@ class NodeType {
   }
 }
 
-const nodeTypes = Node.types = {
+var nodeTypes = Node.types = {
   doc: new NodeType("doc", "block"),
   blockquote: new NodeType("block", "block"),
   paragraph: new NodeType("block", "inline"),
@@ -60,7 +60,7 @@ class InlineStyle {
   }
 }
 
-const styles = Node.styles = {
+var styles = Node.styles = {
   code: new InlineStyle("code"),
   em: new InlineStyle("em"),
   strong: new InlineStyle("strong"),

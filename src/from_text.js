@@ -1,17 +1,17 @@
-const markdownit = require("markdown-it")
+var markdownit = require("markdown-it")
 
-const Node = require("./node")
+var Node = require("./node")
 
 function parseTokens(state, toks) {
   for (var i = 0; i < toks.length; i++) {
-    const tok = toks[i]
+    var tok = toks[i]
     tokens[tok.type](state, tok, i)
   }
 }
 
 module.exports = function fromText(text) {
-  const tokens = markdownit("commonmark").parse(text, {})
-  const state = new State(tokens)
+  var tokens = markdownit("commonmark").parse(text, {})
+  var state = new State(tokens)
   parseTokens(state, tokens)
   return state.stack[0]
 }
@@ -32,20 +32,20 @@ class State {
   }
 }
 
-const tokens = Object.create(null)
+var tokens = Object.create(null)
 
 // These declare token types. `tokenWrap` for elements that use _open
 // and _close tokens with more tokens in between them, and `token` for
 // atomic tokens.
 
 function addNode(state, type, attrs) {
-  const node = new Node(type, null, attrs)
+  var node = new Node(type, null, attrs)
   state.push(node)
   return node
 }
 
 function openNode(state, type, attrs) {
-  const node = addNode(state, type, attrs)
+  var node = addNode(state, type, attrs)
   state.stack.push(node)
   return node
 }
@@ -69,10 +69,10 @@ function closeInline(state, type) {
   }
 }
 
-const empty = []
+var empty = []
 
 function addText(state, text) {
-  const top = state.top(), last = top.content[top.content.length - 1]
+  var top = state.top(), last = top.content[top.content.length - 1]
   if (last && last.attrsstyle == state.styles)
     last.attrs.text += text;
   else
@@ -82,7 +82,7 @@ function addText(state, text) {
 function tokBlock(name, type, extra) {
   if (typeof type != "string") { extra = type; type = name }
   tokens[name + "_open"] = (state, tok, offset) => {
-    const node = openNode(state, type)
+    var node = openNode(state, type)
     if (extra) extra(state, tok, node, offset)
   }
   tokens[name + "_close"] = closeNode
@@ -91,7 +91,7 @@ function tokBlock(name, type, extra) {
 function tokInlineSpan(name, val) {
   var styleName
   tokens[name + "_open"] = (state, tok) => {
-    const style = val instanceof Function ? val(state, tok) : val
+    var style = val instanceof Function ? val(state, tok) : val
     styleName = style.type
     openInline(state, style)
   }
