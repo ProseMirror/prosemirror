@@ -1,51 +1,36 @@
-// @flow
-
-var nullContent = []
-
 class Node {
-  type: NodeType;
-  content: Array<Node>;
-  attrs: any;
-
-  constructor(type: string | NodeType, content: ?Array<Node> = null, attrs: any = nullAttrs) {
+  constructor(type, content, attrs = nullAttrs) {
     if (typeof type == "string") type = nodeTypes[type]
     if (!type) throw new Error("Node without type")
     this.type = type
-    this.content = content || (type.contains ? [] : nullContent)
+    this.content = content || (type.contains ? [] : null)
     this.attrs = attrs
   }
 
-  toString(): string {
+  toString() {
     if (this.type.contains)
       return this.type.name + "(" + this.content.join(", ") + ")"
     else
       return this.type.name
   }
-
-  inlineContent(): Array<InlineNode> {
-    return (this.content: any)
-  }
 }
 
 module.exports = Node
 
-var nullStyles = []
+const nullAttrs = Node.nullAttrs = {}
+const nullStyles = []
 
 class InlineNode extends Node {
-  text: string;
-  styles: Array<InlineStyle>;
-
-  constructor(type: string | NodeType, styles: Array<InlineStyle> = nullStyles,
-              text: ?string, attrs: any = nullAttrs) {
+  constructor(type, styles, text, attrs = nullAttrs) {
     super(type, null, attrs)
     this.text = text || "×"
-    this.styles = styles
+    this.styles = styles || nullStyles
   }
 
-  toString(): string {
+  toString() {
     if (this.type == nodeTypes.text) {
-      var text = JSON.stringify(this.text)
-      for (var i = 0; i < this.styles.length; i++)
+      let text = JSON.stringify(this.text)
+      for (let i = 0; i < this.styles.length; i++)
         text = this.styles[i].type + "(" + text + ")"
       return text
     } else {
@@ -56,15 +41,8 @@ class InlineNode extends Node {
 
 Node.InlineNode = InlineNode
 
-var nullAttrs = Node.nullAttrs = {}
-
 class NodeType {
-  name: string;
-  type: string;
-  contains: ?string;
-  attrs: any;
-
-  constructor(type: string, contains: ?string, attrs: any = nullAttrs) {
+  constructor(type, contains, attrs = nullAttrs) {
     this.name = ""
     this.type = type
     this.contains = contains
@@ -72,9 +50,7 @@ class NodeType {
   }
 }
 
-Node.NodeType = NodeType
-
-var nodeTypes: {[key:string]: NodeType} = Node.types = {
+const nodeTypes = Node.types = {
   doc: new NodeType("doc", "block"),
   blockquote: new NodeType("block", "block"),
   paragraph: new NodeType("block", "inline"),
@@ -91,24 +67,18 @@ var nodeTypes: {[key:string]: NodeType} = Node.types = {
   html_tag: new NodeType("inline", null, {html: "str"})
 }
 
-for (var name in nodeTypes) nodeTypes[name].name = name
+for (let name in nodeTypes) nodeTypes[name].name = name
 
 class InlineStyle {
-  type: string;
-  attrs: any;
-
-  constructor(type: string, attrs: any = nullAttrs) {
+  constructor(type, attrs = nullAttrs) {
     this.type = type
     this.attrs = attrs
   }
 }
 
-Node.InlineStyle = InlineStyle
-
-var styles: {[key:string]: InlineStyle} = Node.styles = {
+const styles = Node.styles = {
   code: new InlineStyle("code"),
   em: new InlineStyle("em"),
-  strong: new InlineStyle("strong")
+  strong: new InlineStyle("strong"),
+  link: (href, title) => new InlineStyle("link", {href: href, title: title})
 }
-
-InlineStyle.link = (href, title) => new InlineStyle("link", {href: href, title: title})

@@ -1,29 +1,23 @@
-// @flow
+const markdownit = require("markdown-it")
 
-var markdownit = require("markdown-it")
-
-var Node = require("./node")
+const Node = require("./node")
 
 function parseTokens(state, toks) {
-  for (var i = 0; i < toks.length; i++) {
-    var tok = toks[i]
+  for (let i = 0; i < toks.length; i++) {
+    let tok = toks[i]
     tokens[tok.type](state, tok, i)
   }
 }
 
-module.exports = function fromText(text: string): Node {
-  var tokens = markdownit("commonmark").parse(text, {})
-  var state = new State(tokens)
+module.exports = function fromText(text) {
+  let tokens = markdownit("commonmark").parse(text, {})
+  let state = new State(tokens)
   parseTokens(state, tokens)
   return state.stack[0]
 }
 
 class State {
-  stack: Array<Node>;
-  tokens: Array<any>;
-  styles: Array<Node.InlineStyle>;
-
-  constructor(tokens: Array<any>) {
+  constructor(tokens) {
     this.stack = [new Node("doc")]
     this.tokens = tokens
     this.styles = []
@@ -38,20 +32,20 @@ class State {
   }
 }
 
-var tokens: {[key: string]: (state: State, token: any, offset: number) => void} = Object.create(null)
+const tokens = Object.create(null)
 
 // These declare token types. `tokenWrap` for elements that use _open
 // and _close tokens with more tokens in between them, and `token` for
 // atomic tokens.
 
 function addNode(state, type, attrs = Node.nullAttrs) {
-  var node = new Node(type, null, attrs)
+  let node = new Node(type, null, attrs)
   state.push(node)
   return node
 }
 
 function openNode(state, type, attrs = Node.nullAttrs) {
-  var node = addNode(state, type, attrs)
+  let node = addNode(state, type, attrs)
   state.stack.push(node)
   return node
 }
@@ -61,12 +55,12 @@ function closeNode(state) {
   state.styles.length = 0
 }
 
-function openInline(state, style: Node.InlineStyle) {
+function openInline(state, style) {
   state.styles.push(style)
 }
 
-function closeInline(state, type: string) {
-  for (var i = 0; i < state.styles.length; i++) {
+function closeInline(state, type) {
+  for (let i = 0; i < state.styles.length; i++) {
     if (state.styles[i].type == type) {
       state.styles.splice(i, 1)
       return
@@ -74,10 +68,10 @@ function closeInline(state, type: string) {
   }
 }
 
-var empty = []
+const empty = []
 
 function addInline(state, type, text = null, attrs = Node.nullAttrs) {
-  var node = new Node.InlineNode(type, state.styles.length ? state.styles.slice() : empty,
+  let node = new Node.InlineNode(type, state.styles.length ? state.styles.slice() : empty,
                                  text, attrs);
   state.push(node)
   return node
@@ -85,12 +79,12 @@ function addInline(state, type, text = null, attrs = Node.nullAttrs) {
 
 function sameArray(a, b) {
   if (a.length != b.length) return false;
-  for (var i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
   return true;
 }
 
 function addText(state, text) {
-  var nodes = state.top().inlineContent(), last = nodes[nodes.length - 1]
+  let nodes = state.top().content, last = nodes[nodes.length - 1]
   if (last && sameArray(last.styles, state.styles))
     last.text += text
   else
@@ -99,16 +93,16 @@ function addText(state, text) {
 
 function tokBlock(name, extra = null) {
   tokens[name + "_open"] = (state, tok, offset) => {
-    var node = openNode(state, name)
+    let node = openNode(state, name)
     if (extra) extra(state, tok, node, offset)
   }
   tokens[name + "_close"] = closeNode
 }
 
 function tokInlineSpan(name, getStyle) {
-  var styleName = ""
+  let styleName = ""
   tokens[name + "_open"] = (state, tok) => {
-    var style = getStyle(state, tok)
+    let style = getStyle instanceof Function ? getStyle(state, tok) : getStyle
     styleName = style.type
     openInline(state, style)
   }
@@ -153,7 +147,7 @@ tokens.code = (state, tok) => {
   }
 }
 
-tokInlineSpan("link", (_state, tok) => Node.InlineStyle.link(tok.href, tok.title || null))
+tokInlineSpan("link", (_state, tok) => Node.styles.link(tok.href, tok.title || null))
 
 tokens.image = (state, tok) => {
   addInline(state, "image", null, {src: tok.src, title: tok.title || null, alt: tok.alt || null})
@@ -179,6 +173,6 @@ tokens.inline = (state, tok) => {
   parseTokens(state, tok.children)
 }
 
-tokInlineSpan("strong", () => Node.styles.strong)
+tokInlineSpan("strong", Node.styles.strong)
 
-tokInlineSpan("em", () => Node.styles.em)
+tokInlineSpan("em", Node.styles.em)
