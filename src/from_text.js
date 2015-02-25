@@ -1,6 +1,5 @@
-const markdownit = require("markdown-it")
-
-const Node = require("./node")
+import markdownit from "markdown-it"
+import Node from "./node"
 
 function parseTokens(state, toks) {
   for (let i = 0; i < toks.length; i++) {
@@ -9,7 +8,7 @@ function parseTokens(state, toks) {
   }
 }
 
-module.exports = function fromText(text) {
+export default function fromText(text) {
   let tokens = markdownit("commonmark").parse(text, {})
   let state = new State(tokens)
   parseTokens(state, tokens)

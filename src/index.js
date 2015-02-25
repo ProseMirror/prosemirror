@@ -1,3 +1,2 @@
-exports.Node = require("./node")
-
-exports.fromText = require("./from_text")
+export {default as Node} from "./node"
+export {default as fromText} from "./from_text"

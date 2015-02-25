@@ -1,4 +1,4 @@
-class Node {
+export default class Node {
   constructor(type, content, attrs = nullAttrs) {
     if (typeof type == "string") type = nodeTypes[type]
     if (!type) throw new Error("Node without type")
@@ -14,8 +14,6 @@ class Node {
       return this.type.name
   }
 }
-
-module.exports = Node
 
 const nullAttrs = Node.nullAttrs = {}
 const nullStyles = []
