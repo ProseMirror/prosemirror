@@ -1,4 +1,4 @@
-/* @flow */
+// @flow
 
 var markdownit = require("markdown-it")
 
@@ -90,7 +90,7 @@ function sameArray(a, b) {
 }
 
 function addText(state, text) {
-  var top = state.top(), last: Node.Inline = (top.content[top.content.length - 1] : any)
+  var nodes = state.top().inlineContent(), last = nodes[nodes.length - 1]
   if (last && sameArray(last.styles, state.styles))
     last.text += text
   else

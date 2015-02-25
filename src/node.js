@@ -1,4 +1,4 @@
-/* @flow */
+// @flow
 
 var nullContent = []
 
@@ -20,6 +20,10 @@ class Node {
       return this.type.name + "(" + this.content.join(", ") + ")"
     else
       return this.type.name
+  }
+
+  inlineContent(): Array<InlineNode> {
+    return (this.content: any)
   }
 }
 
