@@ -9,9 +9,9 @@ function buildInline(style) {
   }
 }
 
-function build(type) {
+function build(type, attrs) {
   return function() {
-    return {type: "block", style: type, content: arguments}
+    return {type: "block", style: type, content: arguments, attrs: attrs}
   }
 }
 
@@ -43,8 +43,10 @@ function parseDoc(value) {
       result = result.concat(parseDoc(value.content[i]))
     styles = start
     return result
+  } else if (value.type == "insert") {
+    return new Node.Inline(value.style, styles)
   } else {
-    let node = new Node(value.style)
+    let node = new Node(value.style, null, value.attrs)
     styles.length = 0
     for (let i = 0; i < value.content.length; i++)
       pushInto(node, parseDoc(value.content[i]))
@@ -80,8 +82,10 @@ export function doc() {
 }
 
 export let p = build("paragraph")
+export let h1 = build("heading", {level: 1})
 export let li = build("list_item")
 export let ul = build("bullet_list")
 export let ol = build("ordered_list")
 export let em = buildInline(Node.styles.em)
 export let a = buildInline(Node.styles.link("http://foo.com"))
+export let br = {type: "insert", style: "hard_break"}
