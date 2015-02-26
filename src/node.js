@@ -26,6 +26,12 @@ export default class Node {
     this.content.push(child)
   }
 
+  remove(child) {
+    var found = this.content.indexOf(child)
+    if (found == -1) throw new Error("Child not found")
+    this.content.splice(found, 1)
+  }
+
   get size() {
     let sum = 0
     for (var i = 0; i < this.content.length; i++)
@@ -102,5 +108,12 @@ const styles = Node.styles = {
   code: {type: "code"},
   em: {type: "em"},
   strong: {type: "strong"},
-  link: (href, title) => ({type: "link", href: href, title: title || null})
+  link: (href, title) => ({type: "link", href: href, title: title || null}),
+  compare: function(a, b) {
+    if (a.length != b.length) return false
+    // FIXME deal with similar links, compare content
+    // FIXME also come up with a sorting approach
+    for (var i = 0; i < a.length; i++) if (a[i] != b[i]) return false
+    return true
+  }
 }

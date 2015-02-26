@@ -76,15 +76,9 @@ function addInline(state, type, text = null, attrs = Node.nullAttrs) {
   return node
 }
 
-function sameArray(a, b) {
-  if (a.length != b.length) return false;
-  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
-  return true;
-}
-
 function addText(state, text) {
   let nodes = state.top().content, last = nodes[nodes.length - 1]
-  if (last && sameArray(last.styles, state.styles))
+  if (last && Node.styles.compare(last.styles, state.styles))
     last.text += text
   else
     addInline(state, "text", text)

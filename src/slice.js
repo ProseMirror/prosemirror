@@ -73,14 +73,16 @@ export function after(node, pos, depth = 0) {
   return copy
 }
 
-export function between(node, from, to, depth = 0) {
+export function between(node, from, to, collapsed = null, depth = 0) {
   if (depth < from.path.length && depth < to.path.length &&
       from.path[depth] == to.path[depth]) {
-    var inner = between(node.content[from.path[depth]], from, to, depth + 1)
-    if (inner.type.type != "block" || node.type.type == "doc")
+    var inner = between(node.content[from.path[depth]], from, to, collapsed, depth + 1)
+    if (inner.type.type != "block" || node.type.type == "doc") {
       return node.copy([inner])
-    else
+    } else {
+      if (collapsed) collapsed[0]++
       return inner
+    }
   } else {
     var copy = node.copy()
     if (depth == from.path.length && depth == to.path.length && to.inBlock) {

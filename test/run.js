@@ -22,6 +22,8 @@ function run(tests) {
 
 import slice from "./test-slice"
 run(slice)
+import replace from "./test-replace"
+run(replace)
 
 console.log((fail ? "\n" : "") + ran + " test ran. " + (fail ? fail + " failures." : "All passed."))
 process.exit(fail ? 1 : 0)
