@@ -1,9 +1,11 @@
+const nullContent = []
+
 export default class Node {
   constructor(type, content, attrs = nullAttrs) {
     if (typeof type == "string") type = nodeTypes[type]
     if (!type) throw new Error("Node without type")
     this.type = type
-    this.content = content || (type.contains ? [] : null)
+    this.content = content || (type.contains ? [] : nullContent)
     this.attrs = attrs
   }
 
@@ -13,6 +15,23 @@ export default class Node {
     else
       return this.type.name
   }
+
+  copy(content = null) {
+    return new Node(this.type, content, this.attrs)
+  }
+
+  push(child) {
+    if (this.type.contains != child.type.type)
+      throw new Error("Can't insert " + child.type.name + " into " + this.type.name)
+    this.content.push(child)
+  }
+
+  get size() {
+    let sum = 0
+    for (var i = 0; i < this.content.length; i++)
+      sum += this.content[i].size
+    return sum
+  }
 }
 
 const nullAttrs = Node.nullAttrs = {}
@@ -21,7 +40,7 @@ const nullStyles = []
 class InlineNode extends Node {
   constructor(type, styles, text, attrs = nullAttrs) {
     super(type, null, attrs)
-    this.text = text || "×"
+    this.text = text == null ? "×" : text
     this.styles = styles || nullStyles
   }
 
@@ -35,9 +54,21 @@ class InlineNode extends Node {
       return super.toString()
     }
   }
+
+  slice(from, to = this.text.length) {
+    return new InlineNode(this.type, this.styles, this.text.slice(from, to), this.attrs)
+  }
+
+  copy() {
+    throw new Error("Can't copy inline nodes like this!")
+  }
+
+  get size() {
+    return this.text.length
+  }
 }
 
-Node.InlineNode = InlineNode
+Node.Inline = InlineNode
 
 class NodeType {
   constructor(type, contains, attrs = nullAttrs) {
@@ -67,16 +98,9 @@ const nodeTypes = Node.types = {
 
 for (let name in nodeTypes) nodeTypes[name].name = name
 
-class InlineStyle {
-  constructor(type, attrs = nullAttrs) {
-    this.type = type
-    this.attrs = attrs
-  }
-}
-
 const styles = Node.styles = {
-  code: new InlineStyle("code"),
-  em: new InlineStyle("em"),
-  strong: new InlineStyle("strong"),
-  link: (href, title) => new InlineStyle("link", {href: href, title: title})
+  code: {type: "code"},
+  em: {type: "em"},
+  strong: {type: "strong"},
+  link: (href, title) => ({type: "link", href: href, title: title || null})
 }

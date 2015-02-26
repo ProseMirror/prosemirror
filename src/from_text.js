@@ -27,7 +27,7 @@ class State {
   }
 
   push(elt) {
-    this.top().content.push(elt)
+    this.top().push(elt)
   }
 }
 
@@ -70,8 +70,8 @@ function closeInline(state, type) {
 const empty = []
 
 function addInline(state, type, text = null, attrs = Node.nullAttrs) {
-  let node = new Node.InlineNode(type, state.styles.length ? state.styles.slice() : empty,
-                                 text, attrs);
+  let node = new Node.Inline(type, state.styles.length ? state.styles.slice() : empty,
+                             text, attrs);
   state.push(node)
   return node
 }
