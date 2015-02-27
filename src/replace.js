@@ -3,21 +3,25 @@ import Node from "./node"
 import * as slice from "./slice"
 
 export default function replace(doc, from, to, repl = null, start = null, end = null) {
-  from = reduceRight(doc, from)
+  if (from.cmp(to) != 0) {
+    from = reduceRight(doc, from)
+    to = reduceLeft(doc, to)
+  }
   let result = slice.before(doc, from)
-  to = reduceLeft(doc, to)
   let right = slice.after(doc, to)
 
   if (repl) {
-    start = reduceRight(repl, start)
-    end = reduceLeft(repl, end)
+    if (start.cmp(end) != 0) {
+      start = reduceRight(repl, start)
+      end = reduceLeft(repl, end)
+    }
     let collapsed = [0]
     let middle = slice.between(repl, start, end, collapsed)
-
-    let endDepth = join(result, from.path.length, middle, start.path.length - collapsed[0])
-    join(result, end.path.length - collapsed[0] + endDepth, right, to.path.length)
+    
+    let endDepth = join_trackDepth(result, from.path.length, middle, start.path.length - collapsed[0])
+    join_buildPosMap(result, end.path.length - collapsed[0] + endDepth, right, to.path.length)
   } else {
-    join(result, from.path.length, right, to.path.length)
+    join_buildPosMap(result, from.path.length, right, to.path.length)
   }
   return result
 }
@@ -76,10 +80,9 @@ function stitchTextNodes(node, at) {
   }
 }
 
-function join(left, leftDepth, right, rightDepth) {
+function join(left, leftDepth, right, rightDepth, f) {
   let leftNodes = nodesRight(left, leftDepth)
   let rightNodes = nodesLeft(right, rightDepth)
-  let lastInsertedAt = 0
   for (let iLeft = leftNodes.length - 1,
            iRight = rightNodes.length - 1; iRight >= 0; iRight--) {
     let node = rightNodes[iRight];
@@ -90,16 +93,31 @@ function join(left, leftDepth, right, rightDepth) {
     for (let i = iLeft; i >= 0; i--) {
       let other = leftNodes[i]
       if (compatibleTypes(node.type, other.type) && (i > 0 || iRight == 0)) {
+        f(node, iRight, other, i)
         let start = other.content.length
         other.pushFrom(node)
         if (node.type.contains == "inline")
           stitchTextNodes(other, start)
         iLeft = i - 1
         if (iRight) rightNodes[iRight - 1].remove(node)
-        lastInsertedAt = i - iRight
         break
       }
     }
   }
-  return lastInsertedAt
+}
+
+function join_trackDepth(left, leftDepth, right, rightDepth) {
+  let endDepth = 0
+  join(left, leftDepth, right, rightDepth, function(_from, fromDepth, to, toDepth) {
+    endDepth = toDepth - fromDepth
+  })
+  return endDepth
+}
+
+function join_buildPosMap(left, leftDepth, right, rightDepth) {
+  let map = []
+  join(left, leftDepth, right, rightDepth, function(_from, fromDepth, to, toDepth) {
+    
+  })
+  return map
 }
