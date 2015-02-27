@@ -78,7 +78,7 @@ function addInline(state, type, text = null, attrs = Node.nullAttrs) {
 
 function addText(state, text) {
   let nodes = state.top().content, last = nodes[nodes.length - 1]
-  if (last && Node.styles.compare(last.styles, state.styles))
+  if (last && Node.styles.same(last.styles, state.styles))
     last.text += text
   else
     addInline(state, "text", text)

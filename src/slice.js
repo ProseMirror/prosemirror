@@ -40,19 +40,14 @@ function copyInlineBetween(node, from, to, copy) {
   }
 }
 
-function copyInto(target, source, from = 0, to = source.content.length) {
-  for (var i = from; i < to; i++)
-    target.push(source.content[i])
-}
-
 export function before(node, pos, depth = 0) {
   let copy = node.copy()
   if (depth < pos.path.length) {
     let n = pos.path[depth]
-    copyInto(copy, node, 0, n)
+    copy.pushFrom(node, 0, n)
     copy.push(before(node.content[n], pos, depth + 1))
   } else if (!pos.inBlock) {
-    copyInto(copy, node, 0, pos.offset)
+    copy.pushFrom(node, 0, pos.offset)
   } else {
     copyInlineTo(node, pos.offset, copy)
   }
@@ -64,9 +59,9 @@ export function after(node, pos, depth = 0) {
   if (depth < pos.path.length) {
     let n = pos.path[depth]
     copy.push(after(node.content[n], pos, depth + 1))
-    copyInto(copy, node, n + 1)
+    copy.pushFrom(node, n + 1)
   } else if (!pos.inBlock) {
-    copyInto(copy, node, n)
+    copy.pushFrom(node, n)
   } else {
     copyInlineFrom(node, pos.offset, copy)
   }
@@ -96,7 +91,7 @@ export function between(node, from, to, collapsed = null, depth = 0) {
         start = from.offset;
       }
       let end = depth < to.path.length ? to.path[depth] : to.offset
-      copyInto(copy, node, start, end)
+      copy.pushFrom(node, start, end)
       if (depth < to.path.length)
         copy.push(before(node.content[end], to, depth + 1))
     }

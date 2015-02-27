@@ -60,10 +60,20 @@ function nodesRight(doc, depth) {
   }
 }
 
-// FIXME dedup
-function copyInto(target, source, from = 0, to = source.content.length) {
-  for (var i = from; i < to; i++)
-    target.push(source.content[i])
+function compatibleTypes(a, b) {
+  return a.contains == b.contains &&
+    (a.contains == "block" || a.contains == "inline" || a == b)
+}
+
+function stitchTextNodes(node, at) {
+  let before, after
+  if (at && node.content.length > at &&
+      (before = node.content[at - 1]).type == Node.types.text &&
+      (after = node.content[at]).type == Node.types.text &&
+      Node.styles.same(before.styles, after.styles)) {
+    let joined = new Node.Inline(Node.types.text, before.styles, before.text + after.text)
+    node.content.splice(at - 1, 2, joined)
+  }
 }
 
 function join(left, leftDepth, right, rightDepth) {
@@ -77,20 +87,12 @@ function join(left, leftDepth, right, rightDepth) {
       continue
     }
     for (var i = iLeft; i >= 0; i--) {
-      let other = leftNodes[i], before, after
-      var contains = node.type.contains;
-      if (contains == other.type.contains &&
-          (contains == "block" || contains == "inline" || node.type == other.type) &&
-          (i > 0 || iRight == 0)) {
+      let other = leftNodes[i]
+      if (compatibleTypes(node.type, other.type) && (i > 0 || iRight == 0)) {
         let start = other.content.length
-        copyInto(other, node)
-        // Stitch together adjacent text nodes
-        if (node.type.contains == "inline" && start && other.content.length > start &&
-            (before = other.content[start - 1]).type == Node.types.text &&
-            (after = other.content[start]).type == Node.types.text &&
-            Node.styles.compare(before.styles, after.styles))
-          other.content.splice(start - 1, 2,
-                               new Node.Inline(Node.types.text, before.styles, before.text + after.text))
+        other.pushFrom(node)
+        if (node.type.contains == "inline")
+          stitchTextNodes(other, start)
         iLeft = i - 1
         if (iRight) rightNodes[iRight - 1].remove(node)
         break

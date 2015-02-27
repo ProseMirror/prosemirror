@@ -26,6 +26,11 @@ export default class Node {
     this.content.push(child)
   }
 
+  pushFrom(other, start = 0, end = other.content.length) {
+    for (var i = start; i < end; i++)
+      this.push(other.content[i])
+  }
+
   remove(child) {
     var found = this.content.indexOf(child)
     if (found == -1) throw new Error("Child not found")
@@ -109,7 +114,7 @@ const styles = Node.styles = {
   em: {type: "em"},
   strong: {type: "strong"},
   link: (href, title) => ({type: "link", href: href, title: title || null}),
-  compare: function(a, b) {
+  same: function(a, b) {
     if (a.length != b.length) return false
     // FIXME deal with similar links, compare content
     // FIXME also come up with a sorting approach
