@@ -49,3 +49,13 @@ t("replace_restore_list",
   doc(h1("hell<a>o"), p("by<b>e")),
   doc(ol(li(p("on<a>e")), li(p("tw<b>o")))),
   doc(h1("helle"), ol(li(p("twe")))))
+
+t("replace_in_empty_block",
+  doc(p("a"), p("<a>"), p("b")),
+  doc(p("x<a>y<b>z")),
+  doc(p("a"), p("y"), p("b")))
+
+t("replace_ignore_across_block",
+  doc(p("on<a>e"), h1("<b>head")),
+  doc(p("<a>a"), p("b<b>")),
+  doc(p("ona"), p("b"), h1("head")))

@@ -61,7 +61,7 @@ export function after(node, pos, depth = 0) {
     copy.push(after(node.content[n], pos, depth + 1))
     copy.pushFrom(node, n + 1)
   } else if (!pos.inBlock) {
-    copy.pushFrom(node, n)
+    copy.pushFrom(node, pos.offset)
   } else {
     copyInlineFrom(node, pos.offset, copy)
   }
