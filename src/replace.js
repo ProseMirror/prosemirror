@@ -78,8 +78,10 @@ function join(left, leftDepth, right, rightDepth) {
     }
     for (var i = iLeft; i >= 0; i--) {
       let other = leftNodes[i], before, after
-      // FIXME this allows list items from one type to end up in another type of list
-      if (other.type.contains == node.type.contains && (i > 0 || iRight == 0)) {
+      var contains = node.type.contains;
+      if (contains == other.type.contains &&
+          (contains == "block" || contains == "inline" || node.type == other.type) &&
+          (i > 0 || iRight == 0)) {
         let start = other.content.length
         copyInto(other, node)
         // Stitch together adjacent text nodes
