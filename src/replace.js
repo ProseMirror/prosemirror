@@ -14,8 +14,8 @@ export default function replace(doc, from, to, repl = null, start = null, end = 
     let collapsed = [0]
     let middle = slice.between(repl, start, end, collapsed)
 
-    join(result, from.path.length, middle, start.path.length - collapsed[0])
-    join(result, end.path.length - collapsed[0] /* FIXME */, right, to.path.length)
+    let endDepth = join(result, from.path.length, middle, start.path.length - collapsed[0])
+    join(result, end.path.length - collapsed[0] + endDepth, right, to.path.length)
   } else {
     join(result, from.path.length, right, to.path.length)
   }
@@ -43,7 +43,7 @@ function reduceRight(node, pos) {
 }
 
 function nodesLeft(doc, depth) {
-  var nodes = []
+  let nodes = []
   for (let node = doc, i = 0;; i++) {
     nodes.push(node)
     if (i == depth) return nodes
@@ -52,7 +52,7 @@ function nodesLeft(doc, depth) {
 }
 
 function nodesRight(doc, depth) {
-  var nodes = []
+  let nodes = []
   for (let node = doc, i = 0;; i++) {
     nodes.push(node)
     if (i == depth) return nodes
@@ -77,8 +77,9 @@ function stitchTextNodes(node, at) {
 }
 
 function join(left, leftDepth, right, rightDepth) {
-  var leftNodes = nodesRight(left, leftDepth)
-  var rightNodes = nodesLeft(right, rightDepth)
+  let leftNodes = nodesRight(left, leftDepth)
+  let rightNodes = nodesLeft(right, rightDepth)
+  let lastInsertedAt = 0
   for (let iLeft = leftNodes.length - 1,
            iRight = rightNodes.length - 1; iRight >= 0; iRight--) {
     let node = rightNodes[iRight];
@@ -86,7 +87,7 @@ function join(left, leftDepth, right, rightDepth) {
       if (iRight) rightNodes[iRight - 1].remove(node)
       continue
     }
-    for (var i = iLeft; i >= 0; i--) {
+    for (let i = iLeft; i >= 0; i--) {
       let other = leftNodes[i]
       if (compatibleTypes(node.type, other.type) && (i > 0 || iRight == 0)) {
         let start = other.content.length
@@ -95,8 +96,10 @@ function join(left, leftDepth, right, rightDepth) {
           stitchTextNodes(other, start)
         iLeft = i - 1
         if (iRight) rightNodes[iRight - 1].remove(node)
+        lastInsertedAt = i - iRight
         break
       }
     }
   }
+  return lastInsertedAt
 }
