@@ -24,6 +24,8 @@ import slice from "./test-slice"
 run(slice)
 import replace from "./test-replace"
 run(replace)
+import style from "./test-style"
+run(style)
 
 console.log((fail ? "\n" : "") + ran + " test ran. " + (fail ? fail + " failures." : "All passed."))
 process.exit(fail ? 1 : 0)

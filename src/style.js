@@ -17,7 +17,7 @@ export function add(styles, style) {
       else return styles.slice(0, i).concat(style).concat(styles.slice(i + 1))
     }
     if (ordering.indexOf(other.type) < order)
-      return styles.slice(0, i).concat(style).concat(style.slice(i))
+      return styles.slice(0, i).concat(style).concat(styles.slice(i))
   }
   return styles.concat(style)
 }
@@ -38,9 +38,9 @@ export function sameSet(a, b) {
 
 export function same(a, b) {
   if (a == b) return true
-  for (var prop in a)
+  for (let prop in a)
     if (a[prop] != b[prop]) return false
-  for (var prop in b)
+  for (let prop in b)
     if (a[prop] != b[prop]) return false
   return true
 }
