@@ -26,6 +26,8 @@ import replace from "./test-replace"
 run(replace)
 import style from "./test-style"
 run(style)
+import block from "./test-block"
+run(block)
 
 console.log((fail ? "\n" : "") + ran + " test ran. " + (fail ? fail + " failures." : "All passed."))
 process.exit(fail ? 1 : 0)

@@ -19,7 +19,7 @@ function t(name, base, insert, expect) {
                          insert, insert && insert.tag.a, insert && insert.tag.b)
     cmp(result.doc, expect)
     for (let pos in expect.tag)
-      cmp(result.map(base.tag[pos]), expect.tag[pos], pos)
+      cmp(result.map.map(base.tag[pos]), expect.tag[pos], pos)
   }
 }
 

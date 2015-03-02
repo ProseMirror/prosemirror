@@ -82,48 +82,35 @@ function nodeWidth(node) {
   return node.type.contains == "inline" ? node.size : node.content.length
 }
 
-export function buildChunkMap(left, leftDepth, right, rightPos) {
+export function buildPosMap(posMap, base, left, leftDepth, right, rightPos) {
   let map = []
   simple(left, leftDepth, right, rightPos.path.length, function(from, fromDepth, to, toDepth) {
-    map.push({depth: fromDepth,
-              offset: nodeWidth(to),
-              prefix: pathRight(left, toDepth)})
+    pushChunkToMap(posMap, base, fromDepth, nodeWidth(to), pathRight(left, toDepth))
   })
-  return map
 }
 
-function findChunkEnd(doc, pos, depth) {
+function findChunkEnd(doc, base, depth) {
   for (let i = 0, node = doc;; i++) {
     if (i == depth)
       return node.type.contains == "inline"
-        ? new Pos(pos.path, node.size)
-        : new Pos(pos.path.slice(0, i), node.content.length, false)
-    node = node.content[pos.path[i]]
+        ? new Pos(base.path, node.size)
+        : new Pos(base.path.slice(0, i), node.content.length, false)
+    node = node.content[base.path[i]]
   }
 }
 
-export function buildPosMap(doc, from, to, chunkMap, depthOffset = 0) {
-  for (let i = 0; i < chunkMap.length; i++) {
-    let chunk = chunkMap[i]
-    chunk.end = findChunkEnd(doc, to, chunk.depth + depthOffset)
-  }
-
-  return function(pos) {
-    if (pos.cmp(from) < 0) return pos
-    if (pos.cmp(to) < 0) pos = to
-    for (let i = 0; i < chunkMap.length; i++) {
-      let chunk = chunkMap[i]
-      if (pos.cmp(chunk.end) <= 0 || i == chunkMap.length - 1) {
-        let path = chunk.prefix.slice(0), offset = chunk.offset
-        for (let j = chunk.depth + depthOffset;; j++) {
-          if (j == pos.path.length)
-            return new Pos(path, pos.offset - to.offset + offset)
-          path.push(pos.path[j] - to.path[j] + offset)
-          if (pos.path[j] != to.path[j])
-            return new Pos(path.concat(pos.path.slice(j + 1)), pos.offset)
-          offset = 0
-        }
-      }
+function pushChunkToMap(posMap, base, depth, offset, prefix) {
+  posMap.chunk(findChunkEnd(posMap.doc, base, depth), function(pos) {
+    if (pos.cmp(base) < 0) pos = base
+    let path = prefix.slice(0), extraOffset = offset
+    for (let j = depth;; j++) {
+      if (j == pos.path.length)
+        return new Pos(path, pos.offset - base.offset + extraOffset)
+      let prevOffset = j == base.path.length ? base.offset : base.path[j]
+      path.push(pos.path[j] - prevOffset + extraOffset)
+      if (pos.path[j] != base.path[j])
+        return new Pos(path.concat(pos.path.slice(j + 1)), pos.offset)
+      extraOffset = 0
     }
-  }
+  })
 }

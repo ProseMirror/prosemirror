@@ -83,6 +83,7 @@ export function doc() {
 }
 
 export let p = build("paragraph")
+export let blockquote = build("blockquote")
 export let h1 = build("heading", {level: 1})
 export let li = build("list_item")
 export let ul = build("bullet_list")
