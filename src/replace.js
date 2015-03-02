@@ -1,6 +1,7 @@
 import Pos from "./pos"
 import Node from "./node"
 import * as slice from "./slice"
+import * as style from "./style"
 
 export default function replace(doc, from, to, repl = null, start = null, end = null) {
   let origFrom = from, origTo = to
@@ -76,7 +77,7 @@ function stitchTextNodes(node, at) {
   if (at && node.content.length > at &&
       (before = node.content[at - 1]).type == Node.types.text &&
       (after = node.content[at]).type == Node.types.text &&
-      Node.styles.same(before.styles, after.styles)) {
+      style.sameSet(before.styles, after.styles)) {
     let joined = new Node.Inline(Node.types.text, before.styles, before.text + after.text)
     node.content.splice(at - 1, 2, joined)
   }

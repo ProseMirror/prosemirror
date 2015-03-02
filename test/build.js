@@ -1,5 +1,6 @@
 import Node from "../src/node"
 import Pos from "../src/pos"
+import * as style from "../src/style"
 
 let inlineContext = null
 
@@ -86,6 +87,6 @@ export let h1 = build("heading", {level: 1})
 export let li = build("list_item")
 export let ul = build("bullet_list")
 export let ol = build("ordered_list")
-export let em = buildInline(Node.styles.em)
-export let a = buildInline(Node.styles.link("http://foo.com"))
+export let em = buildInline(style.em)
+export let a = buildInline(style.link("http://foo.com"))
 export let br = {type: "insert", style: "hard_break"}

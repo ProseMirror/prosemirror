@@ -10,6 +10,7 @@ export default class Node {
   }
 
   toString() {
+    // FIXME join adjacent inline styles when possible
     if (this.type.contains)
       return this.type.name + "(" + this.content.join(", ") + ")"
     else
@@ -108,17 +109,3 @@ const nodeTypes = Node.types = {
 }
 
 for (let name in nodeTypes) nodeTypes[name].name = name
-
-const styles = Node.styles = {
-  code: {type: "code"},
-  em: {type: "em"},
-  strong: {type: "strong"},
-  link: (href, title) => ({type: "link", href: href, title: title || null}),
-  same: function(a, b) {
-    if (a.length != b.length) return false
-    // FIXME deal with similar links, compare content
-    // FIXME also come up with a sorting approach
-    for (var i = 0; i < a.length; i++) if (a[i] != b[i]) return false
-    return true
-  }
-}
