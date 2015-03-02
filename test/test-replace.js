@@ -15,7 +15,7 @@ function cmp(a, b) {
 function t(name, base, insert, expect) {
   tests[name] = function() {
     cmp(replace(base, base.tag.a, base.tag.b || base.tag.a,
-                insert, insert && insert.tag.a, insert && insert.tag.b),
+                insert, insert && insert.tag.a, insert && insert.tag.b).doc,
         expect)
   }
 }

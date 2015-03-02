@@ -9,6 +9,7 @@ export default function replace(doc, from, to, repl = null, start = null, end = 
   }
   let result = slice.before(doc, from)
   let right = slice.after(doc, to)
+  let chunkMap, newTo
 
   if (repl) {
     if (start.cmp(end) != 0) {
@@ -19,11 +20,14 @@ export default function replace(doc, from, to, repl = null, start = null, end = 
     let middle = slice.between(repl, start, end, collapsed)
     
     let endDepth = join_trackDepth(result, from.path.length, middle, start.path.length - collapsed[0])
-    join_buildPosMap(result, end.path.length - collapsed[0] + endDepth, right, to.path.length)
+    newTo = lastBlockPos(result)
+    chunkMap = join_buildChunkMap(result, end.path.length - collapsed[0] + endDepth, right, to)
   } else {
-    join_buildPosMap(result, from.path.length, right, to.path.length)
+    newTo = lastBlockPos(result)
+    chunkMap = join_buildChunkMap(result, from.path.length, right, to)
   }
-  return result
+  return {map: buildPosMap(from, to, newTo, chunkMap),
+          doc: result}
 }
 
 function reduceLeft(node, pos) {
@@ -108,16 +112,71 @@ function join(left, leftDepth, right, rightDepth, f) {
 
 function join_trackDepth(left, leftDepth, right, rightDepth) {
   let endDepth = 0
-  join(left, leftDepth, right, rightDepth, function(_from, fromDepth, to, toDepth) {
+  join(left, leftDepth, right, rightDepth, function(_from, fromDepth, _to, toDepth) {
     endDepth = toDepth - fromDepth
   })
   return endDepth
 }
 
-function join_buildPosMap(left, leftDepth, right, rightDepth) {
+function searchLastBlockPos(node, path) {
+  if (node.type.contains == "inline")
+    return new Pos(path, node.size)
+  for (let i = node.content.length - 1; i >= 0; i--) {
+    path.push(i)
+    let found = searchLastBlockPos(node.content[i], path)
+    if (found) return found
+    path.pop(i)
+  }
+}
+
+function lastBlockPos(doc) {
+  let found = searchLastBlockPos(doc, [])
+  if (!found) throw new Error("No block position in doc " + doc)
+  return found
+}
+
+function offsetAt(pos, depth) {
+  return depth == pos.path.length ? pos.offset : pos.path[depth]
+}
+
+function pathRight(node, depth) {
+  if (depth == 0) return []
+  let offset = node.content.length - 1
+  let inner = pathRight(node.content[offset], depth - 1)
+  inner.unshift(offset)
+  return inner
+}
+
+function nodeWidth(node) {
+  return node.type.contains == "inline" ? node.size : node.content.length
+}
+
+function join_buildChunkMap(left, leftDepth, right, rightPos) {
   let map = []
-  join(left, leftDepth, right, rightDepth, function(_from, fromDepth, to, toDepth) {
-    
+  join(left, leftDepth, right, rightPos.path.length, function(from, fromDepth, to, toDepth) {
+    map.push({start: lastBlockPos(left),
+              depth: fromDepth,
+              offsetDiff: offsetAt(rightPos, fromDepth) - nodeWidth(to),
+              prefix: pathRight(left, toDepth)})
   })
   return map
+}
+
+function buildPosMap(from, to, newTo, chunkMap) {
+  return function(pos) {
+    if (from.cmp(pos) <= 0) return pos
+    if (to.cmp(pos) <= 0) return newTo
+    for (let i = chunkMap.length - 1; i >= 0; i--) {
+      let chunk = chunkMap[i]
+      if (chunk.start.cmp(pos) >= 0) {
+        if (chunk.depth == pos.path.length) {
+          return new Pos(chunk.prefix, pos.offset + chunk.offsetDiff)
+        } else {
+          let join = pos.path[chunk.depth] + chunk.offsetDiff
+          return new Pos(chunk.prefix.concat(join).concat(pos.path.slice(chunk.depth + 1)), pos.offset)
+        }
+      }
+    }
+    return newTo
+  }
 }
