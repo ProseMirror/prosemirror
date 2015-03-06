@@ -77,3 +77,29 @@ t("inline_code",
 t("code_block",
   doc(blockquote(pre("some code")), p("and")),
   "<blockquote><pre><code>some code</code></pre></blockquote><p>and</p>")
+
+function recover(name, html, doc) {
+  tests["dom_recover_" + name] = function() {
+    cmpNode(fromDOM(domFor(html)), doc)
+  }
+}
+
+recover("list",
+        "<ol><p>Oh no</p></ol>",
+        doc(ol(li(p("Oh no")))))
+
+recover("divs_as_paragraphs",
+        "<div>hi</div><div>bye</div>",
+        doc(p("hi"), p("bye")))
+
+recover("i_and_b",
+        "<p><i>hello <b>there</b></i></p>",
+        doc(p(em("hello ", strong("there")))))
+
+recover("wrap_paragraph",
+        "hi",
+        doc(p("hi")))
+
+recover("extra_div",
+        "<div><p>one</p><p>two</p></div>",
+        doc(p("one"), p("two")))

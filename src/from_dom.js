@@ -20,6 +20,7 @@ class Context {
     this.stack = [new Node("doc")]
     this.frames = []
     this.styles = []
+    this.closing = false
   }
 
   get top() {
@@ -29,6 +30,8 @@ class Context {
   addDOM(dom) {
     if (dom.nodeType == 3) {
       this.insert(new Node.Inline("text", this.styles, dom.nodeValue))
+    } else if (dom.nodeType != 1) {
+      // Ignore non-text non-element nodes
     } else if (dom.hasAttribute("mm-html")) {
       let type = dom.getAttribute("mm-html")
       if (type == "html_tag")
@@ -40,10 +43,9 @@ class Context {
       if (name in tags) {
         tags[name](dom, this)
       } else {
-        let asPara = blockElements.hasOwnProperty(name) && this.top.type.contains == "block"
-        if (asPara) this.enter(new Node("paragraph"))
         this.addContent(dom)
-        if (asPara) this.leave()
+        if (blockElements.hasOwnProperty(name) && this.top.type == Node.types.paragraph)
+          this.closing = true
       }
     }
   }
@@ -54,6 +56,12 @@ class Context {
   }
 
   insert(node) {
+    if (this.closing) {
+      let left = this.stack.pop().copy()
+      this.top.push(left)
+      this.stack.push(left)
+      this.closing = false
+    }
     let top = this.stack[this.stack.length - 1]
     if (top.type.contains == node.type.type) {
       top.push(node)
@@ -61,13 +69,14 @@ class Context {
       let route = findRoute(top.type, node.type)
       if (!route) return false
       for (let i = 0; i < route.length; i++)
-        this.enter(new Node(route[i], null, Node.types[route[i]].defaultAttrs), false)
+        this.enter(new Node(route[i], null, route[i].defaultAttrs), false)
       this.top.push(node)
     }
     return true
   }
 
   enter(node, isFrame) {
+    // FIXME is it really okay to discard what we can't place?
     if (!this.insert(node)) return false
     if (this.styles.length) this.styles = []
     if (isFrame !== false)
@@ -78,6 +87,7 @@ class Context {
 
   leave() {
     this.stack.length = this.frames.pop()
+    this.closing = false
   }
 }
 
@@ -88,7 +98,7 @@ function findRoute(from, to) {
     let current = active.shift()
     for (var name in Node.types) {
       let type = Node.types[name]
-      if (current.from.contain == type.type && !(type.contains in seen)) {
+      if (current.from.contains == type.type && !(type.contains in seen)) {
         let via = current.via.concat(type)
         if (type.contains == to.type) return via
         active.push({from: type, via: via})
