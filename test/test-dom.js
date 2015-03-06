@@ -1,8 +1,11 @@
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br} from "./build"
 import Failure from "./failure"
+import cmpNode from "./cmpnode"
+
 import xmlDOM from "xmldom"
 
 import toDOM from "../src/to_dom"
+import fromDOM from "../src/from_dom"
 
 const tests = {}
 
@@ -29,6 +32,8 @@ function t(name, doc, dom) {
     var declaredText = domText(declaredDOM)
     if (derivedText != declaredText)
       throw new Failure("DOM text mismatch: " + derivedText + " vs " + declaredText)
+
+    cmpNode(doc, fromDOM(derivedDOM.documentElement))
   }
 }
 

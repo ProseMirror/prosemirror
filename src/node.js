@@ -94,21 +94,22 @@ class InlineNode extends Node {
 Node.Inline = InlineNode
 
 class NodeType {
-  constructor(type, contains, attrs = nullAttrs) {
+  constructor(type, contains, attrs = nullAttrs, defaultAttrs = nullAttrs) {
     this.name = ""
     this.type = type
     this.contains = contains
     this.attrs = attrs
+    this.defaultAttrs = defaultAttrs
   }
 }
 
 const nodeTypes = Node.types = {
   doc: new NodeType("doc", "block"),
-  blockquote: new NodeType("block", "block"),
   paragraph: new NodeType("block", "inline"),
+  blockquote: new NodeType("block", "block"),
   heading: new NodeType("block", "inline", {level: null}),
-  bullet_list: new NodeType("block", "list_item", {bullet: "str", tight: "bool"}),
-  ordered_list: new NodeType("block", "list_item", {order: "num", tight: "bool"}),
+  bullet_list: new NodeType("block", "list_item", {bullet: "str", tight: "bool"}, {bullet: "*", tight: true}),
+  ordered_list: new NodeType("block", "list_item", {order: "num", tight: "bool"}, {order: 1, tight: true}),
   list_item: new NodeType("list_item", "block"),
   html_block: new NodeType("block", null, {html: "str"}),
   code_block: new NodeType("block", "inline", {params: "str"}),
