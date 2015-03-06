@@ -1,15 +1,12 @@
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br} from "./build"
 import Failure from "./failure"
 import cmpNode from "./cmpnode"
+import tests from "./tests"
 
 import xmlDOM from "xmldom"
 
 import toDOM from "../src/to_dom"
 import fromDOM from "../src/from_dom"
-
-const tests = {}
-
-export default tests
 
 function domFor(str) {
   return (new xmlDOM.DOMParser).parseFromString("<!doctype html><html>" + str + "</html>")
@@ -80,5 +77,3 @@ t("inline_code",
 t("code_block",
   doc(blockquote(pre("some code")), p("and")),
   "<blockquote><pre><code>some code</code></pre></blockquote><p>and</p>")
-
-  

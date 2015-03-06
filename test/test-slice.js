@@ -2,10 +2,7 @@ import {doc, p, li, ul, em, a} from "./build"
 
 import Failure from "./failure"
 import * as slice from "../src/slice"
-
-const tests = {}
-
-export default tests
+import tests from "./tests"
 
 function cmp(a, b) {
   let as = a.toString(), bs = b.toString()
@@ -13,7 +10,7 @@ function cmp(a, b) {
 }
 
 function t(name, doc, expect) {
-  tests[name] = function() {
+  tests["slice_" + name] = function() {
     if (doc.tag.a && doc.tag.b)
       cmp(slice.between(doc, doc.tag.a, doc.tag.b), expect)
     else if (doc.tag.a)
