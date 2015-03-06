@@ -29,7 +29,7 @@ function pushInto(node, values) {
 function parseDoc(value) {
   if (typeof value == "string") {
     let re = /<(\w+)>/g, m, out = "", pos = 0
-    let node = new Node.Inline("text", styles.slice(), "")
+    let node = new Node.Inline("text", styles, "")
     while (m = re.exec(value)) {
       node.text += value.slice(pos, m.index)
       pos = m.index + m[0].length
@@ -39,7 +39,7 @@ function parseDoc(value) {
     return node
   } else if (value.type == "inline") {
     let start = styles, result = []
-    styles = styles.concat(value.style)
+    styles = style.add(styles, value.style)
     for (let i = 0; i < value.content.length; i++)
       result = result.concat(parseDoc(value.content[i]))
     styles = start
@@ -48,7 +48,7 @@ function parseDoc(value) {
     return new Node.Inline(value.style, styles)
   } else {
     let node = new Node(value.style, null, value.attrs)
-    styles.length = 0
+    styles = []
     for (let i = 0; i < value.content.length; i++)
       pushInto(node, parseDoc(value.content[i]))
     return node
@@ -84,10 +84,15 @@ export function doc() {
 
 export let p = build("paragraph")
 export let blockquote = build("blockquote")
+export let pre = build("code_block")
 export let h1 = build("heading", {level: 1})
+export let h2 = build("heading", {level: 2})
 export let li = build("list_item")
-export let ul = build("bullet_list")
+export let ul = build("bullet_list", {bullet: "*"})
 export let ol = build("ordered_list")
 export let em = buildInline(style.em)
-export let a = buildInline(style.link("http://foo.com"))
+export let strong = buildInline(style.strong)
+export let code = buildInline(style.code)
+export let a = buildInline(style.link("http://foo"))
+export let a2 = buildInline(style.link("http://bar"))
 export let br = {type: "insert", style: "hard_break"}

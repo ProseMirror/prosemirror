@@ -16,7 +16,7 @@ export function add(styles, style) {
       if (same(other, style)) return styles
       else return styles.slice(0, i).concat(style).concat(styles.slice(i + 1))
     }
-    if (ordering.indexOf(other.type) < order)
+    if (ordering.indexOf(other.type) > order)
       return styles.slice(0, i).concat(style).concat(styles.slice(i))
   }
   return styles.concat(style)

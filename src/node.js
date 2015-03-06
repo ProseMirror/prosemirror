@@ -28,21 +28,28 @@ export default class Node {
   }
 
   pushFrom(other, start = 0, end = other.content.length) {
-    for (var i = start; i < end; i++)
+    for (let i = start; i < end; i++)
       this.push(other.content[i])
   }
 
   remove(child) {
-    var found = this.content.indexOf(child)
+    let found = this.content.indexOf(child)
     if (found == -1) throw new Error("Child not found")
     this.content.splice(found, 1)
   }
 
   get size() {
     let sum = 0
-    for (var i = 0; i < this.content.length; i++)
+    for (let i = 0; i < this.content.length; i++)
       sum += this.content[i].size
     return sum
+  }
+
+  get textContent() {
+    let text = ""
+    for (let i = 0; i < this.content.length; i++)
+      text += this.content[i].textContent
+    return text
   }
 }
 
@@ -77,6 +84,10 @@ class InlineNode extends Node {
 
   get size() {
     return this.text.length
+  }
+
+  get textContent() {
+    return this.text
   }
 }
 

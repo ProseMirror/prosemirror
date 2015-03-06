@@ -28,6 +28,8 @@ import style from "./test-style"
 run(style)
 import block from "./test-block"
 run(block)
+import dom from "./test-dom"
+run(dom)
 
 console.log((fail ? "\n" : "") + ran + " test ran. " + (fail ? fail + " failures." : "All passed."))
 process.exit(fail ? 1 : 0)
