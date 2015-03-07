@@ -6,6 +6,7 @@ let filter = process.argv[2]
 
 import tests from "./tests"
 
+import "./test-parse"
 import "./test-slice"
 import "./test-replace"
 import "./test-style"

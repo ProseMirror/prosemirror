@@ -45,7 +45,7 @@ function parseDoc(value) {
     styles = start
     return result
   } else if (value.type == "insert") {
-    return new Node.Inline(value.style, styles)
+    return new Node.Inline(value.style, styles, value.text, value.attrs)
   } else {
     let node = new Node(value.style, null, value.attrs)
     styles = []
@@ -88,11 +88,13 @@ export let pre = build("code_block")
 export let h1 = build("heading", {level: 1})
 export let h2 = build("heading", {level: 2})
 export let li = build("list_item")
-export let ul = build("bullet_list", {bullet: "*", tight: false})
-export let ol = build("ordered_list", {order: 1, tight: false})
+export let ul = build("bullet_list", {bullet: "*", tight: true})
+export let uldash = build("bullet_list", {bullet: "-", tight: true})
+export let ol = build("ordered_list", {order: 1, tight: true})
 export let em = buildInline(style.em)
 export let strong = buildInline(style.strong)
 export let code = buildInline(style.code)
 export let a = buildInline(style.link("http://foo"))
 export let a2 = buildInline(style.link("http://bar"))
 export let br = {type: "insert", style: "hard_break"}
+export let img = {type: "insert", style: "image", attrs: {src: "x.png", alt: "x"}}

@@ -56,23 +56,23 @@ function closeNode(state) {
     state.styles = []
 }
 
-function openInline(state, style) {
-  state.styles = style.add(state.styles, style)
+function openInline(state, add) {
+  state.styles = style.add(state.styles, add)
 }
 
-function closeInline(state, type) {
-  state.styles = style.remove(state.styles, style)
+function closeInline(state, rm) {
+  state.styles = style.remove(state.styles, rm)
 }
 
 function addInline(state, type, text = null, attrs = Node.nullAttrs) {
-  let node = new Node.Inline(type, state.styles, text, attrs);
+  let node = new Node.Inline(type, state.styles, text, attrs)
   state.push(node)
   return node
 }
 
 function addText(state, text) {
   let nodes = state.top().content, last = nodes[nodes.length - 1]
-  if (last && style.sameSet(last.styles, state.styles))
+  if (last && last.type.name == "text" && style.sameSet(last.styles, state.styles))
     last.text += text
   else
     addInline(state, "text", text)
@@ -87,29 +87,33 @@ function tokBlock(name, extra = null) {
 }
 
 function tokInlineSpan(name, getStyle) {
-  let styleName = ""
+  let styleObj
   tokens[name + "_open"] = (state, tok) => {
-    let style = getStyle instanceof Function ? getStyle(state, tok) : getStyle
-    styleName = style.type
-    openInline(state, style)
+    styleObj = getStyle instanceof Function ? getStyle(state, tok) : getStyle
+    openInline(state, styleObj)
   }
   tokens[name + "_close"] = (state, tok) => {
-    closeInline(state, styleName)
+    closeInline(state, styleObj)
   }
+}
+
+function attr(tok, name) {
+  if (tok.attrs) for (let i = 0; i < tok.attrs.length; i++)
+    if (tok.attrs[i][0] == name) return tok.attrs[i][1]
 }
 
 ;["blockquote", "paragraph", "list_item", "table"].forEach(n => tokBlock(n))
 
-tokBlock("bullet_list", (state, _tok, node, offset) => {
-  node.attrs = {bullet: "FIXME", tight: state.tokens[offset + 2].tight}
+tokBlock("bullet_list", (state, tok, node, offset) => {
+  node.attrs = {bullet: tok.markup, tight: state.tokens[offset + 2].hidden}
 })
 
 tokBlock("ordered_list", (state, tok, node, offset) => {
-  node.attrs = {order: Number(tok.order || 1), tight: state.tokens[offset + 2].tight}
+  node.attrs = {order: Number(attr(tok, "order") || 1), tight: state.tokens[offset + 2].hidden}
 })
 
 tokBlock("heading", (_state, tok, node) => {
-  node.attrs = {level: Number(tok.level)}
+  node.attrs = {level: Number(tok.tag.slice(1))}
 })
 
 tokens.htmlblock = (state, tok) => {
@@ -117,48 +121,40 @@ tokens.htmlblock = (state, tok) => {
 }
 
 tokens.fence = (state, tok) => {
-  openNode(state, "code_block", {params: tok.params || null})
+  openNode(state, "code_block", {params: tok.info || null})
   addText(state, tok.content)
   closeNode(state)
 }
 
-tokens.code = (state, tok) => {
-  if (tok.block) {
-    openNode(state, "code_block")
-    addText(state, tok.content)
-    closeNode(state)
-  } else {
-    openInline(state, style.code)
-    addText(state, tok.content)
-    closeInline(state, "code")
-  }
+tokens.code_block = (state, tok) => {
+  openNode(state, "code_block")
+  addText(state, tok.content)
+  closeNode(state)
 }
 
-tokInlineSpan("link", (_state, tok) => style.link(tok.href, tok.title || null))
+tokens.code_inline = (state, tok) => {
+  openInline(state, style.code)
+  addText(state, tok.content)
+  closeInline(state, style.code)
+}
+
+tokInlineSpan("link", (_state, tok) => style.link(attr(tok, "href"), attr(tok, "title") || null))
 
 tokens.image = (state, tok) => {
-  addInline(state, "image", null, {src: tok.src, title: tok.title || null, alt: tok.alt || null})
+  addInline(state, "image", null, {src: attr(tok, "src"),
+                                   title: attr(tok, "title") || null,
+                                   alt: tok.children[0] && tok.children[0].content || null})
 }
 
-tokens.hardbreak = (state, tok) => {
-  addInline(state, "hard_break")
-}
+tokens.hardbreak = (state, tok) => addInline(state, "hard_break")
 
-tokens.softbreak = (state, tok) => {
-  addText(state, "\n")
-}
+tokens.softbreak = (state, tok) => addText(state, "\n")
 
-tokens.text = (state, tok) => {
-  addText(state, tok.content)
-}
+tokens.text = (state, tok) => addText(state, tok.content)
 
-tokens.htmltag = (state, tok) => {
-  addInline(state, "html_tag", null, {html: tok.content})
-}
+tokens.htmltag = (state, tok) => addInline(state, "html_tag", null, {html: tok.content})
 
-tokens.inline = (state, tok) => {
-  parseTokens(state, tok.children)
-}
+tokens.inline = (state, tok) => parseTokens(state, tok.children)
 
 tokInlineSpan("strong", style.strong)
 

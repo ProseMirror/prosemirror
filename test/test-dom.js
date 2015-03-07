@@ -52,11 +52,11 @@ t("links",
 
 t("unordered_list",
   doc(ul(li(p("one")), li(p("two")), li(p("three", strong("!")))), p("after")),
-  "<ul mm-bullet=\"*\"><li><p>one</p></li><li><p>two</p></li><li><p>three<strong>!</strong></p></li></ul><p>after</p>")
+  "<ul mm-bullet=\"*\" mm-tight=\"true\"><li><p>one</p></li><li><p>two</p></li><li><p>three<strong>!</strong></p></li></ul><p>after</p>")
 
 t("ordered_list",
   doc(ol(li(p("one")), li(p("two")), li(p("three", strong("!")))), p("after")),
-  "<ol><li><p>one</p></li><li><p>two</p></li><li><p>three<strong>!</strong></p></li></ol><p>after</p>")
+  "<ol mm-tight=\"true\"><li><p>one</p></li><li><p>two</p></li><li><p>three<strong>!</strong></p></li></ol><p>after</p>")
 
 t("blockquote",
   doc(blockquote(p("hello"), p("bye"))),
@@ -85,7 +85,7 @@ function recover(name, html, doc) {
 }
 
 recover("list",
-        "<ol><p>Oh no</p></ol>",
+        "<ol mm-tight=\"true\"><p>Oh no</p></ol>",
         doc(ol(li(p("Oh no")))))
 
 recover("divs_as_paragraphs",
