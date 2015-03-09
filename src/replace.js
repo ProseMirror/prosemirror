@@ -2,10 +2,9 @@ import Pos from "./pos"
 import Node from "./node"
 import * as slice from "./slice"
 import * as join from "./join"
-import PosMap from "./posmap"
+import Transform from "./transform"
 
 export default function replace(doc, from, to, repl = null, start = null, end = null) {
-  let posMap = new PosMap(doc, from)
   let origTo = to
 
   if (from.cmp(to) != 0) {
@@ -13,6 +12,7 @@ export default function replace(doc, from, to, repl = null, start = null, end = 
     to = reduceLeft(doc, to)
   }
   let result = slice.before(doc, from)
+  let transform = new Transform(doc, result, from)
   let right = slice.after(doc, to)
 
   if (repl) {
@@ -24,12 +24,12 @@ export default function replace(doc, from, to, repl = null, start = null, end = 
     let middle = slice.between(repl, start, end, collapsed)
     
     let endDepth = join.trackDepth(result, from.path.length, middle, start.path.length - collapsed[0])
-    join.buildPosMap(posMap, origTo, result, end.path.length - collapsed[0] + endDepth, right, to)
+    join.buildTransform(transform, origTo, result, end.path.length - collapsed[0] + endDepth, right, to)
   } else {
-    join.buildPosMap(posMap, origTo, result, from.path.length, right, to)
+    join.buildTransform(transform, origTo, result, from.path.length, right, to)
   }
 
-  return {map: posMap, doc: result}
+  return transform
 }
 
 function reduceLeft(node, pos) {

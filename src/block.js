@@ -1,7 +1,7 @@
 // Primitive block-based transformations
 
 import Pos from "./pos"
-import PosMap from "./posmap"
+import Transform from "./transform"
 import * as slice from "./slice"
 import * as join_ from "./join"
 
@@ -15,7 +15,7 @@ export function selectedSiblings(doc, from, to) {
 }
 
 function canUnwrap(container, from, to) {
-  var type = container.content[from].type.contains
+  let type = container.content[from].type.contains
   for (let i = from + 1; i < to; i++)
     if (container.content[i].type.contains != type)
       return false
@@ -44,7 +44,7 @@ export function canBeLifted(doc, from, to) {
 
 export function lift(doc, from, to) {
   let lift = canBeLifted(doc, from, to)
-  if (!lift) return PosMap.noOp(doc)
+  if (!lift) return Transform.identity(doc)
   let range = lift.range
 
   let before = new Pos(range.path, range.from, false)
@@ -54,8 +54,8 @@ export function lift(doc, from, to) {
   while (after.path.length > lift.path.length && after.offset == doc.path(after.path).content.length)
     after = new Pos(after.path.slice(0, after.path.length - 1), after.path[after.path.length - 1] + 1, false)
 
-  let posMap = new PosMap(doc, before)
   let result = slice.before(doc, before)
+  let transform = new Transform(doc, result, before)
   let container = result.path(lift.path), size = container.content.length
   let source = doc.path(range.path)
   if (lift.unwrap) {
@@ -65,7 +65,7 @@ export function lift(doc, from, to) {
     container.pushFrom(source, range.from, range.to)
   }
 
-  posMap.chunk(after, pos => {
+  transform.chunk(after, pos => {
     let origOffset = pos.path[range.path.length]
     let offset = size - range.from
     if (lift.unwrap) {
@@ -79,10 +79,10 @@ export function lift(doc, from, to) {
     return new Pos(path, pos.offset)
   })
 
-  join_.buildPosMap(posMap, after, result, lift.path.length,
-                    slice.after(doc, after), after, true)
+  join_.buildTransform(transform, after, result, lift.path.length,
+                       slice.after(doc, after), after, true)
 
-  return {doc: result, map: posMap}
+  return transform
 }
 
 export function joinPoint(doc, pos) {
@@ -98,10 +98,10 @@ export function joinPoint(doc, pos) {
 
 export function join(doc, pos) {
   let point = joinPoint(doc, pos)
-  if (!point) return PosMap.noOp(doc)
+  if (!point) return Transform.identity(doc)
 
-  let posMap = new PosMap(doc, point)
   let result = slice.before(doc, point)
+  let transform = new Transform(doc, result, point)
 
   let toJoined = point.path.concat(point.offset - 1)
   let target = result.path(toJoined)
@@ -109,12 +109,12 @@ export function join(doc, pos) {
   let source = doc.path(point.path.concat(point.offset))
   target.pushFrom(source)
   let after = new Pos(point.path, point.offset + 1, false)
-  posMap.chunk(after, pos => {
+  transform.chunk(after, pos => {
     let offset = pos.path[toJoined.length] + size
     return new Pos(toJoined.concat(offset).concat(pos.path.slice(toJoined.length + 1)), pos.offset)
   })
 
-  join_.buildPosMap(posMap, after, result, point.path.length + 1,
-                    slice.after(doc, after), after, true)
-  return {doc: result, map: posMap} // FIXME just return posmaps from these
+  join_.buildTransform(transform, after, result, point.path.length + 1,
+                       slice.after(doc, after), after, true)
+  return transform
 }

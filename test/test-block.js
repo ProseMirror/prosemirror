@@ -15,7 +15,7 @@ function t(op, name, doc, expect) {
     let result = block[op](doc, doc.tag.a, doc.tag.b || doc.tag.a)
     cmp(result.doc, expect)
     for (let pos in expect.tag)
-      cmp(result.map.map(doc.tag[pos]), expect.tag[pos], pos)
+      cmp(result.map(doc.tag[pos]), expect.tag[pos], pos)
   }
 }
 

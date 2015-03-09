@@ -1,8 +1,9 @@
 import Pos from "./pos"
 
-export default class PosMap {
-  constructor(doc, untouched = null) {
-    this.doc = doc
+export default class Transform {
+  constructor(before, after, untouched = null) {
+    this.before = before
+    this.doc = after
     this.untouched = untouched
     this.chunks = []
   }
@@ -23,6 +24,6 @@ export default class PosMap {
   }
 }
 
-PosMap.noOp = function(doc) {
-  return {doc: doc, map: new PosMap(doc, new Pos([], doc.content.length, false))}
+Transform.identity = function(doc) {
+  return new Transform(doc, doc, new Pos([], doc.content.length, false))
 };
