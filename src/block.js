@@ -15,11 +15,11 @@ export function selectedSiblings(doc, from, to) {
 }
 
 function canUnwrap(container, from, to) {
-  var type = container.content[from].type
+  var type = container.content[from].type.contains
   for (let i = from + 1; i < to; i++)
-    if (container.content[i].type != type)
+    if (container.content[i].type.contains != type)
       return false
-  return type.type
+  return type
 }
 
 export function canBeLifted(doc, from, to) {
@@ -57,11 +57,25 @@ export function lift(doc, from, to) {
   let posMap = new PosMap(doc, before)
   let result = slice.before(doc, before)
   let container = result.path(lift.path), size = container.content.length
-  container.pushFrom(doc.path(range.path), range.from, range.to)
+  let source = doc.path(range.path)
+  if (lift.unwrap) {
+    for (let i = range.from; i < range.to; i++)
+      container.pushFrom(source.content[i])
+  } else {
+    container.pushFrom(source, range.from, range.to)
+  }
 
   posMap.chunk(after, pos => {
-    let offset = pos.path[range.path.length] - range.from + size
-    let path = lift.path.concat(offset).concat(pos.path.slice(lift.path.length + 2))
+    let origOffset = pos.path[range.path.length]
+    let offset = size - range.from
+    if (lift.unwrap) {
+      offset += pos.path[range.path.length + 1]
+      for (let i = range.from; i < origOffset; i++)
+        offset += source.content[i].content.length
+    } else {
+      offset += origOffset
+    }
+    let path = lift.path.concat(offset).concat(pos.path.slice(lift.path.length + (lift.unwrap ? 3 : 2)))
     return new Pos(path, pos.offset)
   })
 

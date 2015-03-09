@@ -46,3 +46,9 @@ t("lift", "deeper",
 t("lift", "from_list",
   doc(ul(li(p("one")), li(p("two<a>")), li(p("three")))),
   doc(ul(li(p("one"))), p("two"), ul(li(p("three")))))
+t("lift", "multiple_from_list",
+  doc(ul(li(p("one<a>")), li(p("two<b>")), li(p("three<after>")))),
+  doc(p("one<a>"), p("two<b>"), ul(li(p("three<after>")))))
+t("lift", "multiple_from_list_with_two_items",
+  doc(ul(li(p("one<a>"), p("<half>half")), li(p("two<b>")), li(p("three<after>")))),
+  doc(p("one<a>"), p("<half>half"), p("two<b>"), ul(li(p("three<after>")))))
