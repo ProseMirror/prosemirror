@@ -22,3 +22,7 @@ export default class PosMap {
     }
   }
 }
+
+PosMap.noOp = function(doc) {
+  return {doc: doc, map: new PosMap(doc, new Pos([], doc.content.length, false))}
+};

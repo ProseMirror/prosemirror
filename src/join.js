@@ -48,7 +48,7 @@ export function simple(left, leftDepth, right, rightDepth, f) {
     }
     for (let i = iLeft; i >= 0; i--) {
       let other = leftNodes[i]
-      if (compatibleTypes(node.type, other.type) && (i > 0 || iRight == 0)) {
+      if (compatibleTypes(node.type, other.type) && (iRight > 0 || i == 0)) {
         if (f) f(node, iRight, other, i)
         let start = other.content.length
         other.pushFrom(node)
@@ -82,9 +82,11 @@ function nodeWidth(node) {
   return node.type.contains == "inline" ? node.size : node.content.length
 }
 
-export function buildPosMap(posMap, base, left, leftDepth, right, rightPos) {
-  let map = []
-  simple(left, leftDepth, right, rightPos.path.length, function(from, fromDepth, to, toDepth) {
+export function buildPosMap(posMap, base, left, leftDepth, right, rightPos, align) {
+  let rightDepth = rightPos.path.length
+  if (align)
+    leftDepth = rightDepth = Math.min(leftDepth, rightDepth)
+  simple(left, leftDepth, right, rightDepth, function(from, fromDepth, to, toDepth) {
     pushChunkToMap(posMap, base, fromDepth, nodeWidth(to), pathRight(left, toDepth))
   })
 }

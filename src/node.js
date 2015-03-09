@@ -51,6 +51,11 @@ export default class Node {
       text += this.content[i].textContent
     return text
   }
+
+  path(path) {
+    for (var i = 0, node = this; i < path.length; node = node.content[path[i]], i++) {}
+    return node
+  }
 }
 
 const nullAttrs = Node.nullAttrs = {}

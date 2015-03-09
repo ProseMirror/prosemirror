@@ -22,12 +22,6 @@ export default class Pos {
     else
       return this.offset - other.offset
   }
-
-  leaf(doc) {
-    for (var node = doc, i = 0; i < this.path.length; i++)
-      node = node.content[this.path[i]]
-    return node
-  }
 }
 
 Pos.end = function(node, path = []) {

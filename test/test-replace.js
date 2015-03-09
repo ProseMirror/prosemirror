@@ -1,4 +1,4 @@
-import {doc, h1, p, li, ol, ul, em, a, br} from "./build"
+import {doc, h1, blockquote, p, li, ol, ul, em, a, br} from "./build"
 
 import Failure from "./failure"
 import replace from "../src/replace"
@@ -64,3 +64,8 @@ t("ignore_across_block",
   doc(p("on<a>e"), h1("<b>head")),
   doc(p("<a>a"), p("b<b>")),
   doc(p("ona"), p("b"), h1("head")))
+
+t("dont_shift_everything",
+  doc(p("one<a>"), p("two"), p("three")),
+  doc(p("outside<a>"), blockquote(p("inside<b>"))),
+  doc(p("one"), blockquote(p("inside")), p("two"), p("three")))
