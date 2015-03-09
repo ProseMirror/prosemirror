@@ -52,3 +52,16 @@ t("lift", "multiple_from_list",
 t("lift", "multiple_from_list_with_two_items",
   doc(ul(li(p("one<a>"), p("<half>half")), li(p("two<b>")), li(p("three<after>")))),
   doc(p("one<a>"), p("<half>half"), p("two<b>"), ul(li(p("three<after>")))))
+
+t("join", "simple",
+  doc(blockquote(p("<before>a")), blockquote(p("<a>b")), p("after<after>")),
+  doc(blockquote(p("<before>a"), p("<a>b")), p("after<after>")))
+t("join", "deeper",
+  doc(blockquote(blockquote(p("a"), p("b<before>")), blockquote(p("<a>c"), p("d<after>")))),
+  doc(blockquote(blockquote(p("a"), p("b<before>"), p("<a>c"), p("d<after>")))))
+t("join", "lists",
+  doc(ol(li(p("one")), li(p("two"))), ol(li(p("three<a>")))),
+  doc(ol(li(p("one")), li(p("two")), li(p("three<a>")))))
+t("join", "list_item",
+  doc(ol(li(p("one")), li(p("two")), li(p("three<a>")))),
+  doc(ol(li(p("one")), li(p("two"), p("three<a>")))))

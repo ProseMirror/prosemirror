@@ -3,7 +3,7 @@
 import Pos from "./pos"
 import PosMap from "./posmap"
 import * as slice from "./slice"
-import * as join from "./join"
+import * as join_ from "./join"
 
 export function selectedSiblings(doc, from, to) {
   let len = Math.min(from.path.length, to.path.length)
@@ -79,8 +79,42 @@ export function lift(doc, from, to) {
     return new Pos(path, pos.offset)
   })
 
-  join.buildPosMap(posMap, after, result, lift.path.length,
-                   slice.after(doc, after), after, true)
+  join_.buildPosMap(posMap, after, result, lift.path.length,
+                    slice.after(doc, after), after, true)
 
   return {doc: result, map: posMap}
+}
+
+export function joinPoint(doc, pos) {
+  let joinDepth = -1
+  for (let i = 0, parent = doc; i < pos.path.length; i++) {
+    let index = pos.path[i]
+    if (index > 0 && parent.content[index - 1].type == parent.content[index].type)
+      joinDepth = i
+    parent = parent.content[index]
+  }
+  if (joinDepth > -1) return new Pos(pos.path.slice(0, joinDepth), pos.path[joinDepth], false)
+}
+
+export function join(doc, pos) {
+  let point = joinPoint(doc, pos)
+  if (!point) return PosMap.noOp(doc)
+
+  let posMap = new PosMap(doc, point)
+  let result = slice.before(doc, point)
+
+  let toJoined = point.path.concat(point.offset - 1)
+  let target = result.path(toJoined)
+  let size = target.content.length
+  let source = doc.path(point.path.concat(point.offset))
+  target.pushFrom(source)
+  let after = new Pos(point.path, point.offset + 1, false)
+  posMap.chunk(after, pos => {
+    let offset = pos.path[toJoined.length] + size
+    return new Pos(toJoined.concat(offset).concat(pos.path.slice(toJoined.length + 1)), pos.offset)
+  })
+
+  join_.buildPosMap(posMap, after, result, point.path.length + 1,
+                    slice.after(doc, after), after, true)
+  return {doc: result, map: posMap} // FIXME just return posmaps from these
 }
