@@ -11,6 +11,7 @@ import "./test-slice"
 import "./test-replace"
 import "./test-style"
 import "./test-block"
+import "./test-inline"
 import "./test-dom"
 
 for (let name in tests) {

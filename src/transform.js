@@ -13,7 +13,7 @@ export default class Transform {
   }
 
   map(pos) {
-    if (this.untouched && pos.cmp(this.untouched) < 0)
+    if (this.untouched == null || pos.cmp(this.untouched) < 0)
       return pos
 
     for (let i = 0;; i++) {
@@ -25,5 +25,5 @@ export default class Transform {
 }
 
 Transform.identity = function(doc) {
-  return new Transform(doc, doc, new Pos([], doc.content.length, false))
+  return new Transform(doc, doc, null)
 };

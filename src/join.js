@@ -25,7 +25,7 @@ function compatibleTypes(a, b) {
     (a.contains == "block" || a.contains == "inline" || a == b)
 }
 
-function stitchTextNodes(node, at) {
+export function stitchTextNodes(node, at) {
   let before, after
   if (at && node.content.length > at &&
       (before = node.content[at - 1]).type == Node.types.text &&
