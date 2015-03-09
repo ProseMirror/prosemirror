@@ -4,15 +4,18 @@ import Failure from "./failure"
 import * as block from "../src/block"
 import tests from "./tests"
 
+import Node from "../src/node"
+
 function cmp(a, b, comment) {
   let as = a.toString(), bs = b.toString()
   if (as != bs)
     throw new Failure("expected " + bs + ", got " + as + (comment ? " (" + comment + ")" : ""))
 }
 
-function t(op, name, doc, expect) {
+function t(op, name, doc, expect, wrap) {
   tests[op + "_" + name] = function() {
-    let result = block[op](doc, doc.tag.a, doc.tag.b || doc.tag.a)
+    if (wrap) wrap = new Node(Node.types[wrap], null, Node.types[wrap].defaultAttrs)
+    let result = block[op](doc, doc.tag.a, doc.tag.b || doc.tag.a, wrap)
     cmp(result.doc, expect)
     for (let pos in expect.tag)
       cmp(result.map(doc.tag[pos]), expect.tag[pos], pos)
@@ -65,3 +68,28 @@ t("join", "lists",
 t("join", "list_item",
   doc(ol(li(p("one")), li(p("two")), li(p("three<a>")))),
   doc(ol(li(p("one")), li(p("two"), p("three<a>")))))
+
+t("wrap", "simple",
+  doc(p("one"), p("<a>two"), p("three")),
+  doc(p("one"), blockquote(p("<a>two")), p("three")),
+  "blockquote")
+t("wrap", "two",
+  doc(p("one<1>"), p("<a>two"), p("<b>three"), p("four<4>")),
+  doc(p("one<1>"), blockquote(p("<a>two"), p("three")), p("four<4>")),
+  "blockquote")
+t("wrap", "list",
+  doc(p("<a>one"), p("<b>two")),
+  doc(ol(li(p("<a>one")), li(p("<b>two")))),
+  "ordered_list")
+t("wrap", "nested_list",
+  doc(ol(li(p("<1>one")), li(p("<a>two"), p("<b>three")), li(p("<4>four")))),
+  doc(ol(li(p("<1>one")), li(ol(li(p("<a>two")), li(p("<b>three")))), li(p("<4>four")))),
+  "ordered_list")
+t("wrap", "not_possible",
+  doc(p("hi<a>")),
+  doc(p("hi<a>")),
+  "horizontal_rule")
+t("wrap", "include_parent",
+  doc(blockquote(p("<1>one"), p("two<a>")), p("three<b>")),
+  doc(blockquote(blockquote(p("<1>one"), p("two<a>")), p("three<b>"))),
+  "blockquote")

@@ -66,7 +66,7 @@ class Context {
     if (top.type.contains == node.type.type) {
       top.push(node)
     } else {
-      let route = findRoute(top.type, node.type)
+      let route = Node.findConnection(top.type, node.type)
       if (!route) return false
       for (let i = 0; i < route.length; i++)
         this.enter(new Node(route[i], null, route[i].defaultAttrs), false)
@@ -88,23 +88,6 @@ class Context {
   leave() {
     this.stack.length = this.frames.pop()
     this.closing = false
-  }
-}
-
-function findRoute(from, to) {
-  var seen = Object.create(null)
-  var active = [{from: from, via: []}]
-  while (active.length) {
-    let current = active.shift()
-    for (var name in Node.types) {
-      let type = Node.types[name]
-      if (current.from.contains == type.type && !(type.contains in seen)) {
-        let via = current.via.concat(type)
-        if (type.contains == to.type) return via
-        active.push({from: type, via: via})
-        seen[type.contains] = true
-      }
-    }
   }
 }
 

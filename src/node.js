@@ -126,3 +126,22 @@ const nodeTypes = Node.types = {
 }
 
 for (let name in nodeTypes) nodeTypes[name].name = name
+
+Node.findConnection = function(from, to) {
+  if (from.contains == to.type) return []
+
+  let seen = Object.create(null)
+  let active = [{from: from, via: []}]
+  while (active.length) {
+    let current = active.shift()
+    for (let name in Node.types) {
+      let type = Node.types[name]
+      if (current.from.contains == type.type && !(type.contains in seen)) {
+        let via = current.via.concat(type)
+        if (type.contains == to.type) return via
+        active.push({from: type, via: via})
+        seen[type.contains] = true
+      }
+    }
+  }
+}

@@ -1,6 +1,7 @@
 // Primitive block-based transformations
 
 import Pos from "./pos"
+import Node from "./node"
 import Transform from "./transform"
 import * as slice from "./slice"
 import * as join_ from "./join"
@@ -115,6 +116,45 @@ export function join(doc, pos) {
   })
 
   join_.buildTransform(transform, after, result, point.path.length + 1,
+                       slice.after(doc, after), after, true)
+  return transform
+}
+
+export function wrap(doc, from, to, wrapper) {
+  let range = selectedSiblings(doc, from, to)
+  let before = new Pos(range.path, range.from, false)
+  let after = new Pos(range.path, range.to, false)
+
+  let result = slice.before(doc, before)
+  let transform = new Transform(doc, result, before)
+
+  let source = doc.path(range.path)
+  let connAround = Node.findConnection(source.type, wrapper.type)
+  let connInside = Node.findConnection(wrapper.type, source.content[range.from].type)
+  if (!connAround || !connInside) return Transform.identity(doc)
+
+  let newNode = wrapper.copy()
+  for (let pos = range.from; pos < range.to; pos++) {
+    let newChild = source.content[pos]
+    for (let i = connInside.length - 1; i >= 0; i--)
+      newChild = new Node(connInside[i], [newChild], connInside[i].defaultAttrs)
+    newNode.push(newChild)
+  }
+  for (let i = connAround.length - 1; i >= 0; i--)
+    newNode = new Node(connAround[i], [newNode], connAround[i].defaultAttrs)
+
+  result.path(range.path).push(newNode)
+  let prefix = range.path.concat(range.from), suffix = []
+  for (let i = 0; i < connAround.length; i++) prefix.push(0)
+  for (let i = 0; i < connInside.length; i++) suffix.push(0)
+  
+  transform.chunk(after, pos => {
+    return new Pos(prefix.concat(pos.path[range.path.length] - range.from)
+                     .concat(suffix).concat(pos.path.slice(range.path.length + 1)),
+                   pos.offset)
+  })
+
+  join_.buildTransform(transform, after, result, range.path.length,
                        slice.after(doc, after), after, true)
   return transform
 }

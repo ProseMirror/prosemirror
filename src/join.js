@@ -108,10 +108,12 @@ function pushChunkToMap(transform, base, depth, offset, prefix) {
     for (let j = depth;; j++) {
       if (j == pos.path.length)
         return new Pos(path, pos.offset - base.offset + extraOffset)
-      let prevOffset = j == base.path.length ? base.offset : base.path[j]
+      let diverging = pos.path[j] != base.path[j]
+      let prevOffset = j == base.path.length ? base.offset : base.path[j] + (diverging ? 1 : 0)
       path.push(pos.path[j] - prevOffset + extraOffset)
-      if (pos.path[j] != base.path[j])
+      if (diverging)
         return new Pos(path.concat(pos.path.slice(j + 1)), pos.offset)
+      
       extraOffset = 0
     }
   })
