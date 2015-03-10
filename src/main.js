@@ -1,10 +1,11 @@
 import * as options from "./options"
 import {Selection} from "./selection"
 import * as dom from "./dom"
+import {draw, redraw} from "./draw"
+
 import fromText from "./model/from_text"
 
 //var input = require("./input");
-//var draw = require("./draw");
 //var History = require("./history");
 
 export default class ProseMirror {
@@ -18,7 +19,7 @@ export default class ProseMirror {
 
     this.doc = typeof opts.value == "string" ? fromText(opts.value) : opts.value
 
-    //draw.draw(this.content, this.doc)
+    draw(this.content, this.doc)
     this.content.contentEditable = true
 
     this.state = {composeActive: 0}
@@ -72,7 +73,7 @@ export default class ProseMirror {
     this.operation = null
     let docChanged = op.doc != this.doc
     if (docChanged)
-      ;//draw.redraw(this.content, this.doc, op.doc);
+      redraw(this.content, this.doc, op.doc)
     if (docChanged || op.sel.anchor.cmp(this.sel.value.anchor) || op.sel.head.cmp(this.sel.value.head))
       this.sel.toDOM(docChanged)
   }

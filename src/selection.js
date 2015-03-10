@@ -97,7 +97,7 @@ function posFromDOM(pm, node, offset) {
   return new Pos(path, offset)
 }
 
-function findByPath(node, n) {
+export function findByPath(node, n) {
   for (let ch = node.firstChild; ch; ch = ch.nextSibling) {
     if (ch.nodeType != 1) continue;
     let path = ch.getAttribute("mm-path")

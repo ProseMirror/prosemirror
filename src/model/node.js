@@ -56,6 +56,14 @@ export default class Node {
     for (var i = 0, node = this; i < path.length; node = node.content[path[i]], i++) {}
     return node
   }
+
+  sameMarkup(other) {
+    if (this.type != other.type) return false
+    for (var prop in this.attrs)
+      if (other.attrs[prop] !== this.attrs[prop])
+        return false
+    return true
+  }
 }
 
 const nullAttrs = Node.nullAttrs = {}
