@@ -1,8 +1,4 @@
 export function elt(tag, attrs, ...args) {
-  if (typeof attrs == "string" || attrs.nodeType) {
-    args.unshift(attrs)
-    attrs = null
-  }
   let result = document.createElement(tag)
   if (attrs) for (let name in attrs) {
     if (name == "style")
@@ -17,3 +13,8 @@ export function elt(tag, attrs, ...args) {
   }
   return result
 }
+
+export const requestAnimationFrame =
+  window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+  window.webkitRequestAnimationFrame || window.msRequestAnimationFrame ||
+  function(f) { setTimeout(f, 10) }
