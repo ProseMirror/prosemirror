@@ -24,24 +24,57 @@ export default class Pos {
   }
 }
 
-Pos.end = function(node, path = []) {
-  if (node.type.contains == "inline")
-    return new Pos(path, node.size)
-  for (let i = node.content.length - 1; i >= 0; i--) {
-    path.push(i)
-    let found = Pos.end(node.content[i], path)
-    if (found) return found
-    path.pop(i)
-  }
-}
-
-Pos.start = function(node, path = []) {
+function findLeft(node, path) {
   if (node.type.contains == "inline")
     return new Pos(path, 0)
   for (let i = 0; i < node.content.length; i++) {
     path.push(i)
-    let found = Pos.start(node.content[i], path)
+    let found = findLeft(node.content[i], path)
     if (found) return found
-    path.pop(i)
+    path.pop()
   }
 }
+
+function findAfter(node, pos, path) {
+  if (node.type.contains == "inline")
+    return pos
+  let atEnd = path.length == pos.path.length
+  let start = atEnd ? pos.offset : pos.path[path.length]
+  for (let i = start; i < node.content.length; i++) {
+    path.push(i)
+    let child = node.content[i]
+    let found = i == start && !atEnd ? findAfter(child, pos, path) : findLeft(child, path)
+    if (found) return found
+    path.pop()
+  }
+}
+
+Pos.after = function(node, pos) { return findAfter(node, pos, []) }
+Pos.start = function(node) { return findLeft(node, []) }
+
+function findRight(node, path) {
+  if (node.type.contains == "inline")
+    return new Pos(path, node.size)
+  for (let i = node.content.length - 1; i >= 0; i--) {
+    path.push(i)
+    let found = findRight(node.content[i], path)
+    if (found) return found
+    path.pop()
+  }
+}
+
+function findBefore(node, pos, path) {
+  if (node.type.contains == "inline") return pos
+  let atEnd = pos.path.length == path.length
+  let end = atEnd ? pos.offset - 1 : pos.path[path.length]
+  for (let i = end; i >= 0; i--) {
+    path.push(i)
+    let child = node.content[i]
+    let found = i == end && !atEnd ? findBefore(child, pos, path) : findRight(child, path)
+    if (found) return found
+    path.pop()
+  }
+}
+
+Pos.before = function(node, pos) { return findbefore(node, pos, []) }
+Pos.end = function(node) { return findRight(node, []) }

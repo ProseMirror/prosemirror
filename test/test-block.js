@@ -97,11 +97,11 @@ t("wrap", "include_parent",
   "blockquote")
 
 function insert(name, doc, pos, value, expected) {
-  tests["insertBlock_" + name] = function() {
-    let result = block.insertBlock(doc, new Pos(pos.slice(0, pos.length - 1), pos[pos.length - 1], false), value.content[0])
+  tests["insert_" + name] = function() {
+    let result = block.insert(doc, new Pos(pos.slice(0, pos.length - 1), pos[pos.length - 1], false), value.content[0])
     cmpNode(result.doc, expected)
     for (var name in expected.tag)
-      cmp(result.map(doc.tag[name]), expected.tag[name])
+      cmp(result.map(doc.tag[name]), expected.tag[name], name)
   }
 }
 
@@ -120,3 +120,25 @@ insert("start_of_blockquote",
        [0, 0],
        doc(p("aye")),
        doc(blockquote(p("aye"), p("he<1>y")), p("after<2>")))
+
+function rm(name, doc, pos, expected) {
+  tests["remove_" + name] = function() {
+    let result = block.remove(doc, new Pos(pos.slice(0, pos.length - 1), pos[pos.length - 1], false))
+    cmpNode(result.doc, expected)
+    for (var name in expected.tag)
+      cmp(result.map(doc.tag[name]), expected.tag[name], name)
+  }
+}
+
+rm("simple",
+   doc(p("<1>one"), p("tw<2>o"), p("<3>three")),
+   [1],
+   doc(p("<1>one"), p("<2><3>three")))
+rm("only",
+   doc(blockquote(p("hi"))),
+   [0, 0],
+   doc(blockquote()))
+rm("outside_path",
+   doc(blockquote(p("a"), p("b")), p("c<1>")),
+   [0, 1],
+   doc(blockquote(p("a")), p("c<1>")))
