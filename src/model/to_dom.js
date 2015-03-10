@@ -11,11 +11,11 @@ export default function toDOM(node, options) {
 
 toDOM.renderNode = renderNode
 
-function elt(name) {
+function elt(name, ...children) {
   let dom = doc.createElement(name)
-  for (let i = 1; i < arguments.length; i++) {
-    let arg = arguments[i]
-    dom.appendChild(typeof arg == "string" ? doc.createTextNode(arg) : arg)
+  for (let i = 0; i < children.length; i++) {
+    let child = children[i]
+    dom.appendChild(typeof child == "string" ? doc.createTextNode(child) : child)
   }
   return dom
 }
