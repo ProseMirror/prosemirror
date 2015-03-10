@@ -7,6 +7,12 @@ import cmpNode from "./cmpnode"
 
 import * as style from "../src/style"
 
+function cmp(a, b, comment) {
+  let as = a.toString(), bs = b.toString()
+  if (as != bs)
+    throw new Failure("expected " + bs + ", got " + as + (comment ? " (" + comment + ")" : ""))
+}
+
 function t(op, name, doc, stl, expect) {
   tests[op + "_" + name] = function() {
     let result = inline[op](doc, doc.tag.a, doc.tag.b || doc.tag.a, stl)
@@ -95,3 +101,42 @@ has("different_link",
     doc(p(a("li<a>nk"))),
     style.link("http://baz"),
     false)
+
+function text(name, doc, text, expected) {
+  tests["insertText_" + name] = function() {
+    let result = inline.insertText(doc, doc.tag.a, text)
+    cmpNode(result.doc, expected)
+    for (var name in result.tag)
+      cmp(result.map(doc.tag[name]), result.tag[name])
+  }
+}
+
+text("simple",
+     doc(p("hello<a>")),
+     " world",
+     doc(p("hello world<a>")))
+text("left_associative",
+     doc(p(em("hello<a>"), " world<after>")),
+     " big",
+     doc(p(em("hello big"), " world<after>")))
+text("paths",
+     doc(p("<1>before"), p("<2>here<a>"), p("after<3>")),
+     "!",
+     doc(p("<1>before"), p("<2>here!<a>"), p("after<3>")))
+text("at start",
+     doc(p("<a>one")),
+     "two ",
+     doc(p("two <a>one")))
+text("after br",
+     doc(p("hello", br, "<a>you")),
+     "...",
+     doc(p("hello", br, "...you")))
+text("after_br_nojoin",
+     doc(p("hello", br, em("<a>you"))),
+     "...",
+     doc(p("hello", br, "...", em("you"))))
+text("before_br",
+     doc(p("<a>", br, "ok")),
+     "ay",
+     doc(p("ay", br, "ok")))
+     
