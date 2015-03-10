@@ -63,3 +63,35 @@ t("removeStyle", "across_blocks",
   doc(blockquote(p(em("much <a>em")), p(em("here too"))), p("between", em("...")), p(em("end<b>"))),
   style.em,
   doc(blockquote(p(em("much "), "em"), p("here too")), p("between..."), p("end")))
+
+function has(name, doc, style, result) {
+  tests["has_" + name] = function() {
+    if (inline.hasStyle(doc, doc.tag.a, style) != result)
+      throw new Failure("hasStyle(" + doc + ", " + doc.tag.a + ", " + style.type + ") returned " + !result)
+  }
+}
+
+has("simple",
+    doc(p(em("fo<a>o"))),
+    style.em,
+    true)
+has("simple_not",
+    doc(p(em("fo<a>o"))),
+    style.strong,
+    false)
+has("after",
+    doc(p(em("hi"), "<a> there")),
+    style.em,
+    true)
+has("before",
+    doc(p("one <a>", em("two"))),
+    style.em,
+    false)
+has("start",
+    doc(p(em("<a>one"))),
+    style.em,
+    true)
+has("different_link",
+    doc(p(a("li<a>nk"))),
+    style.link("http://baz"),
+    false)

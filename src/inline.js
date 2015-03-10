@@ -68,3 +68,12 @@ export function removeStyle(doc, from, to, rm) {
     return new Node.Inline(node.type, style.remove(node.styles, rm), node.text, node.attrs)
   })
 }
+
+export function hasStyle(doc, pos, st) {
+  let node = doc.path(pos.path)
+  for (let left = pos.offset, i = 0;; i++) {
+    let child = node.content[i]
+    left -= child.size
+    if (left <= 0) return style.contains(child.styles, st)
+  }
+}

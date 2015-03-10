@@ -44,3 +44,9 @@ export function same(a, b) {
     if (a[prop] != b[prop]) return false
   return true
 }
+
+export function contains(set, style) {
+  for (let i = 0; i < set.length; i++)
+    if (same(set[i], style)) return true
+  return false
+}
