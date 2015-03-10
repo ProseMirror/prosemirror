@@ -48,7 +48,8 @@ function apply(node, from, to, f, depth = 0) {
       copy.push(apply(node.content[start], from, to, f, depth + 1))
     } else {
       copy.push(apply(node.content[start], from, null, f, depth + 1))
-      copy.pushFrom(node, start + 1, end)
+      for (let i = start + 1; i < end; i++)
+        copy.push(apply(node.content[i], null, null, f, depth + 1))
       copy.push(apply(node.content[end], null, to, f, depth + 1))
     }
     copy.pushFrom(node, end + 1)
