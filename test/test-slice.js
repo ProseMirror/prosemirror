@@ -1,8 +1,9 @@
 import {doc, p, li, ul, em, a} from "./build"
 
 import Failure from "./failure"
-import * as slice from "../src/slice"
 import tests from "./tests"
+
+import * as slice from "../src/model/slice"
 
 function cmp(a, b) {
   let as = a.toString(), bs = b.toString()

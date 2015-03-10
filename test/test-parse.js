@@ -2,7 +2,7 @@ import {doc, blockquote, pre, h1, h2, p, li, ol, ul, uldash, em, strong, code, a
 import cmpNode from "./cmpnode"
 import tests from "./tests"
 
-import fromText from "../src/from_text"
+import fromText from "../src/model/from_text"
 
 function t(name, text, doc) {
   tests["parse_" + name] = function() {

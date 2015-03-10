@@ -1,5 +1,5 @@
 import Failure from "./failure"
-import * as style from "../src/style"
+import * as style from "../src/model/style"
 
 export default function cmpNode(a, b) {
   function raise(msg, path) {

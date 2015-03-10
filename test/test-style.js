@@ -1,4 +1,4 @@
-import * as style from "../src/style"
+import * as style from "../src/model/style"
 import Failure from "./failure"
 import tests from "./tests"
 

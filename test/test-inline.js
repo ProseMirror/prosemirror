@@ -1,11 +1,11 @@
 import {doc, blockquote, h1, p, li, ol, ul, em, strong, code, a, a2, br} from "./build"
 
 import Failure from "./failure"
-import * as inline from "../src/inline"
 import tests from "./tests"
 import cmpNode from "./cmpnode"
 
-import * as style from "../src/style"
+import * as inline from "../src/model/inline"
+import * as style from "../src/model/style"
 
 function cmp(a, b, comment) {
   let as = a.toString(), bs = b.toString()

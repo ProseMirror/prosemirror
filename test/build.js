@@ -1,6 +1,6 @@
-import Node from "../src/node"
-import Pos from "../src/pos"
-import * as style from "../src/style"
+import Node from "../src/model/node"
+import Pos from "../src/model/pos"
+import * as style from "../src/model/style"
 
 let inlineContext = null
 

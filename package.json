@@ -1,7 +1,7 @@
 {
-  "name": "markdown-model",
+  "name": "prosemirror",
   "version": "0.0.1",
-  "description": "Creation and manipulation of Markdown ASTs",
+  "description": "Well-defined WYSIWYG editor",
   "main": "src/index.js",
   "maintainers": [
     {
@@ -19,9 +19,5 @@
   "scripts": {
     "test": "node test/run.js",
     "build": "browserify --outfile dist/markdown-model.js src/index.js -s MarkdownModel"
-  },
-  "blint": {
-    "allowedGlobals": ["window"],
-    "namedFunctions": true
   }
 }
