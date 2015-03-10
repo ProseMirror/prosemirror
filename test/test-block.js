@@ -3,8 +3,10 @@ import {doc, blockquote, h1, p, li, ol, ul, em, a, br} from "./build"
 import Failure from "./failure"
 import * as block from "../src/block"
 import tests from "./tests"
+import cmpNode from "./cmpnode"
 
 import Node from "../src/node"
+import Pos from "../src/pos"
 
 function cmp(a, b, comment) {
   let as = a.toString(), bs = b.toString()
@@ -16,7 +18,7 @@ function t(op, name, doc, expect, wrap) {
   tests[op + "_" + name] = function() {
     if (wrap) wrap = new Node(Node.types[wrap], null, Node.types[wrap].defaultAttrs)
     let result = block[op](doc, doc.tag.a, doc.tag.b || doc.tag.a, wrap)
-    cmp(result.doc, expect)
+    cmpNode(result.doc, expect)
     for (let pos in expect.tag)
       cmp(result.map(doc.tag[pos]), expect.tag[pos], pos)
   }
@@ -93,3 +95,28 @@ t("wrap", "include_parent",
   doc(blockquote(p("<1>one"), p("two<a>")), p("three<b>")),
   doc(blockquote(blockquote(p("<1>one"), p("two<a>")), p("three<b>"))),
   "blockquote")
+
+function insert(name, doc, pos, value, expected) {
+  tests["insertBlock_" + name] = function() {
+    let result = block.insertBlock(doc, new Pos(pos.slice(0, pos.length - 1), pos[pos.length - 1], false), value.content[0])
+    cmpNode(result.doc, expected)
+    for (var name in expected.tag)
+      cmp(result.map(doc.tag[name]), expected.tag[name])
+  }
+}
+
+insert("simple",
+       doc(p("one<1>"), p("two<2>")),
+       [1],
+       doc(p("one and a half")),
+       doc(p("one<1>"), p("one and a half"), p("two<2>")))
+insert("end_of_blockquote",
+       doc(blockquote(p("he<before>y")), p("after<after>")),
+       [0, 1],
+       doc(p("aye")),
+       doc(blockquote(p("he<before>y"), p("aye")), p("after<after>")))
+insert("start_of_blockquote",
+       doc(blockquote(p("he<1>y")), p("after<2>")),
+       [0, 0],
+       doc(p("aye")),
+       doc(blockquote(p("aye"), p("he<1>y")), p("after<2>")))

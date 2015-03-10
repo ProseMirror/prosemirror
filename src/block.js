@@ -158,3 +158,17 @@ export function wrap(doc, from, to, wrapper) {
                        slice.after(doc, after), after, true)
   return transform
 }
+
+export function insertBlock(doc, pos, block) {
+  let copy = slice.around(doc, pos)
+  let parent = copy.path(pos.path)
+  parent.content.splice(pos.offset, 0, block)
+  let transform = new Transform(doc, copy, pos)
+  let depth = pos.path.length
+  transform.chunk(new Pos(pos.path, parent.content.length), pos => {
+    return new Pos(pos.path.slice(0, depth).concat(pos.path[depth] + 1).concat(pos.path.slice(depth + 1)),
+                   pos.offset)
+  })
+  transform.chunk(null, pos => pos)
+  return transform
+}

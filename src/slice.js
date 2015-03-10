@@ -98,3 +98,15 @@ export function between(node, from, to, collapsed = null, depth = 0) {
     return copy
   }
 }        
+
+export function around(node, pos, depth = 0) {
+  if (depth == pos.path.length)
+    return node.copy(node.content.slice())
+
+  let copy = node.copy()
+  let n = pos.path[depth]
+  copy.pushFrom(node, 0, n)
+  copy.push(around(node.content[n], pos, depth + 1))
+  copy.pushFrom(node, n + 1)
+  return copy
+}
