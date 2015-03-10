@@ -5,6 +5,7 @@ import Node from "./node"
 import Pos from "./pos"
 import {stitchTextNodes} from "./join"
 import Transform from "./transform"
+import * as slice from "./slice"
 
 function addInline(node, child) {
   node.push(child)
@@ -100,25 +101,23 @@ export function hasStyle(doc, pos, st) {
 export function insertText(doc, pos, text) {
   if (!text) return Transform.identity(doc)
 
-  let parentSize
-  let copy = copyStructure(doc, pos, pos, node => {
-    let copy = node.copy(node.content.slice())
-    let {node, offset, innerOffset} = inlineNodeAtOrBefore(copy, pos.offset)
-    if (node.type == Node.types.text) {
-      let newText = node.text.slice(0, innerOffset) + text + node.text.slice(innerOffset)
-      copy.content[offset] = new Node.Inline(node.type, node.styles, newText, node.attrs)
+  let copy = slice.around(doc, pos)
+  let parent = copy.path(pos.path)
+  let {node, offset, innerOffset} = inlineNodeAtOrBefore(parent, pos.offset)
+  if (node.type == Node.types.text) {
+    let newText = node.text.slice(0, innerOffset) + text + node.text.slice(innerOffset)
+    parent.content[offset] = new Node.Inline(node.type, node.styles, newText, node.attrs)
+  } else {
+    let newNode = new Node.Inline(Node.types.text, node.styles, text)
+    if (innerOffset == 0) {
+      parent.content.unshift(newNode)
     } else {
-      let newNode = new Node.Inline(Node.types.text, node.styles, text)
-      if (innerOffset == 0) {
-        copy.content.unshift(newNode)
-      } else {
-        copy.content.splice(offset + 1, 0, newNode)
-        stitchTextNodes(copy, offset + 2)
-      }
+      parent.content.splice(offset + 1, 0, newNode)
+      stitchTextNodes(parent, offset + 2)
     }
-    parentSize = copy.size
-    return copy
-  })
+  }
+  let parentSize = copy.size
+
   let transform = new Transform(doc, copy, pos)
   let end = new Pos(pos.path, parentSize)
   transform.chunk(end, pos => new Pos(pos.path, pos.offset + text.length))
