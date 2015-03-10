@@ -1,11 +1,13 @@
+import "../css/prosemirror.css"
+
+import fromText from "./model/from_text"
+
 import * as options from "./options"
 import {Selection} from "./selection"
 import * as dom from "./dom"
 import {draw, redraw} from "./draw"
+import {registerHandlers} from "./input"
 
-import fromText from "./model/from_text"
-
-//var input = require("./input");
 //var History = require("./history");
 
 export default class ProseMirror {
@@ -27,7 +29,7 @@ export default class ProseMirror {
     //this.history = new History(this);
 
     this.sel = new Selection(this)
-    //input.registerHandlers(this);
+    registerHandlers(this)
   }
 
   get selection() {
@@ -55,7 +57,7 @@ export default class ProseMirror {
     this.sel.set(anchor, head)
   }
 
-  applyTransformation(transform) {
+  applyTransform(transform) {
     let sel = this.selection
     this.updateDoc(transform.doc, transform.map(sel.anchor), transform.map(sel.head))
   }

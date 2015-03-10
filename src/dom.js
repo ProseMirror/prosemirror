@@ -14,7 +14,10 @@ export function elt(tag, attrs, ...args) {
   return result
 }
 
-export const requestAnimationFrame =
-  window.requestAnimationFrame || window.mozRequestAnimationFrame ||
-  window.webkitRequestAnimationFrame || window.msRequestAnimationFrame ||
-  function(f) { setTimeout(f, 10) }
+const reqFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+      window.webkitRequestAnimationFrame || window.msRequestAnimationFrame
+
+export function requestAnimationFrame(f) {
+  if (reqFrame) reqFrame(f)
+  else setTimeout(f, 10)
+}

@@ -14,7 +14,8 @@ const options = {
     if (/^html_/.test(node.type.type))
       dom.contentEditable = false
     return dom
-  }
+  },
+  document: document
 }
 
 export function draw(dom, doc) {
@@ -35,10 +36,12 @@ export function redraw(dom, node, prev) {
     --diffLen
   }
 
-  for (let i = sameStart, pos = null; i < prevLen; i++) {
+  let pos = null
+  for (let i = sameStart; i < prevLen; i++) {
     let old = findByPath(dom, i)
     if (i < prevLen - sameEnd) {
-      if (i < len && i == sameStart && node.content[i].desc.children &&
+      // FIXME define a coherent strategy for redrawing inline content
+      if (i < len && i == sameStart && node.content[i].type.contains != "inline" &&
           node.content[i].sameMarkup(prev.content[i])) {
         redraw(old, node.content[i], prev.content[i])
         ++sameStart

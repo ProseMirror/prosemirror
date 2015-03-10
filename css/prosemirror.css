@@ -1,0 +1,14 @@
+.ProseMirror {
+  border: 1px solid silver;
+  padding: 4px 8px;
+  white-space: pre-wrap;
+  line-height: 1.2;
+}
+
+.ProseMirror p, .ProseMirror li {
+  min-height: 1.2em;
+}
+
+.ProseMirror ul[mm-tight=true] p, .Sting ol[mm-tight=true] p {
+  margin: 0;
+}

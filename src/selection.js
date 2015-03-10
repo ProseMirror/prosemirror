@@ -1,13 +1,12 @@
 import Pos from "./model/pos"
-import {findByPath} from "./dom"
 
 export class Selection {
   constructor(pm) {
     this.pm = pm
     this.polling = null
     this.lastAnchorNode = this.lastHeadNode = this.lastAnchorOffset = this.lastHeadOffset = null
-    let left = Pos.left(pm.doc)
-    this.value = new Range(left, left)
+    let start = Pos.start(pm.doc)
+    this.value = new Range(start, start)
     pm.content.addEventListener("focus", () => this.receivedFocus())
   }
 
@@ -38,8 +37,8 @@ export class Selection {
       return
 
     let range = document.createRange()
-    let anchor = DOMFromPath(content, this.value.anchor)
-    let head = DOMFromPath(content, this.value.head)
+    let anchor = DOMFromPos(content, this.value.anchor)
+    let head = DOMFromPos(content, this.value.head)
     range.setEnd(anchor.node, anchor.offset)
     if (sel.extend)
       range.collapse()
@@ -55,10 +54,10 @@ export class Selection {
   }
 
   receivedFocus() {
-    let content = this.sting.content
+    let content = this.pm.content
     let poll = () => {
-      if (document.activeElement == this.sting.content) {
-        if (!this.sting.operation) this.poll()
+      if (document.activeElement == this.pm.content) {
+        if (!this.pm.operation) this.poll()
         clearTimeout(this.polling)
         this.polling = setTimeout(poll, 100)
       }
@@ -79,19 +78,23 @@ export class Range {
   get empty() { return this.anchor.cmp(this.head) == 0 }
 }
 
+function attr(node, name) {
+  return node.nodeType == 1 && node.getAttribute(name)
+}
+
 function posFromDOM(pm, node, offset) {
   let path = [], nodeBefore = false
   for (let cur = node; cur != pm.content; cur = cur.parentNode) {
-    let tag = cur.nodeType == 1 && cur.getAttribute("mm-path")
+    let tag = attr(cur, "mm-path")
     if (tag) path.unshift(+tag)
-    if (nodeBefore === false && cur.getAttribute("mm-inlinesize"))
+    if (nodeBefore === false && attr(cur, "mm-inlinesize"))
       nodeBefore = cur.previousSibling
   }
 
   if (nodeBefore === false) nodeBefore = node.previousSibling
   for (; nodeBefore; nodeBefore = nodeBefore.previousSibling) {
-    let size = nodeBefore.getAttribute("mm-inlinesize")
-    if (size) offset += size
+    let size = attr(nodeBefore, "mm-inlinesize")
+    if (size) offset += +size
   }
   
   return new Pos(path, offset)
@@ -130,7 +133,7 @@ function findByOffset(node, offset) {
 
 function DOMFromPos(node, pos) {
   for (let i = 0; i < pos.path.length; i++) {
-    node = dom.findByPath(node, pos.path[i])
+    node = findByPath(node, pos.path[i])
     if (!node) throw new Error("Failed to resolve pos " + pos)
   }
   let found = findByOffset(node, pos.offset)
