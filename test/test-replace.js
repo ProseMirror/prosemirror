@@ -28,12 +28,12 @@ t("simple",
 t("insert_paragraph",
   doc(p("one<a>two")),
   doc(p("a<a>"), p("hello"), p("<b>b")),
-  doc(p("one"), p("hello"), p("<a>two")))
+  doc(p("one"), p("hello<a>"), p("two")))
 
 t("overwrite_paragraph",
   doc(p("one<a>"), p("t<inside>wo"), p("<b>three<end>")),
   doc(p("a<a>"), p("TWO"), p("<b>b")),
-  doc(p("one"), p("TWO"), p("<b>three<end>")))
+  doc(p("one"), p("TWO<b>"), p("three<end>")))
 
 t("stitch",
   doc(p("foo ", em("bar<a>baz"), "<b> quux")),

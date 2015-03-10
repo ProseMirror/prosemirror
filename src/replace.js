@@ -23,9 +23,13 @@ export default function replace(doc, from, to, repl = null, start = null, end = 
     let collapsed = [0]
     let middle = slice.between(repl, start, end, collapsed)
     
-    let endDepth = join.trackDepth(result, from.path.length, middle, start.path.length - collapsed[0])
+    let endPos = join.trackEnd(result, from.path.length, middle, start.path.length - collapsed[0]) || origTo
+    let endDepth = endPos.path.length
+    if (!endPos.isBlock) endPos = Pos.end(result)
+    transform.chunk(origTo, _ => endPos)
     join.buildTransform(transform, origTo, result, end.path.length - collapsed[0] + endDepth, right, to)
   } else {
+    transform.chunk(origTo, _ => origTo)
     join.buildTransform(transform, origTo, result, from.path.length, right, to)
   }
 

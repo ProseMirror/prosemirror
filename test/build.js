@@ -65,10 +65,13 @@ function locateTags(doc, tags) {
         result[tag] = new Pos(path.slice(), tags[tag].offset + offset)
     if (node.type.type == "block") offset = 0
     for (let i = 0; i < node.content.length; i++) {
+      let child = node.content[i]
       if (node.type.contains != "inline") path.push(i)
-      scan(node.content[i])
+      scan(child)
       if (node.type.contains != "inline") path.pop()
-      else offset += node.content[i].size
+      else offset += child.size
+      if (child.type == Node.types.text && child.text == "")
+        node.content.splice(i--, 1)
     }
   }
   scan(doc)

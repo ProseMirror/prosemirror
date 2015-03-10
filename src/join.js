@@ -62,12 +62,12 @@ export function simple(left, leftDepth, right, rightDepth, f) {
   }
 }
 
-export function trackDepth(left, leftDepth, right, rightDepth) {
-  let endDepth = 0
-  simple(left, leftDepth, right, rightDepth, function(_from, fromDepth, _to, toDepth) {
-    endDepth = toDepth - fromDepth
+export function trackEnd(left, leftDepth, right, rightDepth) {
+  let endPos
+  simple(left, leftDepth, right, rightDepth, function(from, _fromDepth, to, toDepth) {
+    endPos = new Pos(pathRight(left, toDepth), to.content.length + from.content.length)
   })
-  return endDepth
+  return endPos
 }
 
 function pathRight(node, depth) {
