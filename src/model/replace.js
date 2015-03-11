@@ -4,22 +4,16 @@ import * as slice from "./slice"
 import * as join from "./join"
 import Transform from "./transform"
 
-export default function replace(doc, from, to, repl = null, start = null, end = null) {
-  let origTo = to, origFrom = from
+export default function replace(doc, origFrom, origTo,
+                                repl = null, origStart = null, origEnd = null) {
+  let [from, to] = maybeReduce(doc, origFrom, origTo)
 
-  if (from.cmp(to) != 0) {
-    from = reduceRight(doc, from)
-    to = reduceLeft(doc, to)
-  }
   let result = slice.before(doc, from)
   let transform = new Transform(doc, result, from)
   let right = slice.after(doc, to)
 
   if (repl) {
-    if (start.cmp(end) != 0) {
-      start = reduceRight(repl, start)
-      end = reduceLeft(repl, end)
-    }
+    let [start, end] = maybeReduce(repl, origStart, origEnd)
     let collapsed = [0]
     let middle = slice.between(repl, start, end, collapsed)
     
@@ -34,6 +28,14 @@ export default function replace(doc, from, to, repl = null, start = null, end = 
   }
 
   return transform
+}
+
+function maybeReduce(doc, from, to) {
+  if (from.cmp(to) == 0) return [from, to]
+  let newFrom = reduceRight(doc, from)
+  let newTo = reduceLeft(doc, to)
+  if (newFrom.cmp(newTo) >= 0) return [from, to]
+  return [newFrom, newTo]
 }
 
 function reduceLeft(node, pos) {
