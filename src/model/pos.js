@@ -22,6 +22,17 @@ export default class Pos {
     else
       return this.offset - other.offset
   }
+
+  shorten(to = null, offset = 0) {
+    if (to == null) to = this.path.length - 1
+    return new Pos(this.path.slice(0, to), this.path[to] + offset, false)
+  }
+
+  offsetAt(pos, offset) {
+    let path = this.path.slice()
+    path[pos] += offset
+    return new Pos(path, this.offset)
+  }
 }
 
 function findLeft(node, path) {
