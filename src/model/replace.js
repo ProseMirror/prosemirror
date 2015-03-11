@@ -5,7 +5,7 @@ import * as join from "./join"
 import Transform from "./transform"
 
 export default function replace(doc, from, to, repl = null, start = null, end = null) {
-  let origTo = to
+  let origTo = to, origFrom = from
 
   if (from.cmp(to) != 0) {
     from = reduceRight(doc, from)
@@ -29,7 +29,7 @@ export default function replace(doc, from, to, repl = null, start = null, end = 
     transform.chunk(origTo, _ => endPos)
     join.buildTransform(transform, origTo, result, end.path.length - collapsed[0] + endDepth, right, to)
   } else {
-    transform.chunk(origTo, _ => origTo)
+    transform.chunk(origTo, _ => origFrom)
     join.buildTransform(transform, origTo, result, from.path.length, right, to)
   }
 

@@ -69,3 +69,8 @@ t("dont_shift_everything",
   doc(p("one<a>"), p("two"), p("three")),
   doc(p("outside<a>"), blockquote(p("inside<b>"))),
   doc(p("one"), blockquote(p("inside")), p("two"), p("three")))
+
+t("del_selection",
+  doc(p("some <a>te<b>xt")),
+  null,
+  doc(p("some <a><b>xt")))
