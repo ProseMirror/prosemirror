@@ -2,8 +2,7 @@ import {fromDOM, fromText, toDOM, replace, Pos, inline, slice} from "./model"
 
 import * as keys from "./keys"
 
-let commands = {}
-//var commands = require("./commands");
+import commands from "./commands"
 
 let stopSeq = null
 const handlers = {}

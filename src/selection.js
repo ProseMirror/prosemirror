@@ -40,6 +40,7 @@ export class Selection {
     let range = document.createRange()
     let anchor = DOMFromPos(content, this.value.anchor)
     let head = DOMFromPos(content, this.value.head)
+
     range.setEnd(anchor.node, anchor.offset)
     if (sel.extend)
       range.collapse()
@@ -178,8 +179,9 @@ function DOMFromPos(node, pos) {
   let inner = leaf(found.node)
   if (inner.nodeType == 3)
     return {node: inner, offset: found.offset}
-  else
-    return {node: found.node, offset: found.atEnd ? 1 : 0}
+  let parent = found.node.parentNode
+  let offset = Array.prototype.indexOf.call(parent.childNodes, found.node) + (found.offset ? 1 : 0)
+  return {node: parent, offset: offset}
 }
 
 function selectionInNode(node) {

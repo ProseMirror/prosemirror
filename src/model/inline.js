@@ -85,42 +85,47 @@ export function removeStyle(doc, from, to, rm) {
 }
 
 function inlineNodeAtOrBefore(parent, offset) {
-  for (let i = 0;; i++) {
+  for (let i = 0; i < parent.content.length; i++) {
     let child = parent.content[i]
     offset -= child.size
     if (offset <= 0)
       return {node: child, offset: i, innerOffset: offset + child.size}
   }
+  return {node: null, offset: 0, innerOffset: 0}
 }
 
 export function hasStyle(doc, pos, st) {
   let {node} = inlineNodeAtOrBefore(doc.path(pos.path), pos.offset)
-  return style.contains(node.styles, st)
+  return style.contains(node ? node.styles : [], st)
+}
+
+export function insertNode(doc, pos, node) {
+  let copy = slice.around(doc, pos)
+  let parent = copy.path(pos.path)
+  let parentSize = parent.size, nodeSize = node.size
+  let {node: near, offset, innerOffset} = inlineNodeAtOrBefore(parent, pos.offset)
+  if (innerOffset && innerOffset != near.size) {
+    parent.content.splice(offset, 1, near.slice(0, innerOffset), near.slice(innerOffset))
+    offset += 1
+  } else if (innerOffset) {
+    offset += 1
+  }
+  parent.content.splice(offset, 0, new Node.Inline(node.type, near ? near.styles : [],
+                                                   node.text, node.attrs))
+  if (node.type == Node.types.text) {
+    stitchTextNodes(parent, offset + 1)
+    stitchTextNodes(parent, offset)
+  }
+
+  let transform = new Transform(doc, copy, pos)
+  let end = new Pos(pos.path, parentSize)
+  transform.chunk(end, pos => new Pos(pos.path, pos.offset + nodeSize))
+  transform.chunk(null, pos => pos)
+  return transform
 }
 
 export function insertText(doc, pos, text) {
   if (!text) return Transform.identity(doc)
 
-  let copy = slice.around(doc, pos)
-  let parent = copy.path(pos.path)
-  let {node, offset, innerOffset} = inlineNodeAtOrBefore(parent, pos.offset)
-  if (node.type == Node.types.text) {
-    let newText = node.text.slice(0, innerOffset) + text + node.text.slice(innerOffset)
-    parent.content[offset] = new Node.Inline(node.type, node.styles, newText, node.attrs)
-  } else {
-    let newNode = new Node.Inline(Node.types.text, node.styles, text)
-    if (innerOffset == 0) {
-      parent.content.unshift(newNode)
-    } else {
-      parent.content.splice(offset + 1, 0, newNode)
-      stitchTextNodes(parent, offset + 2)
-    }
-  }
-  let parentSize = copy.size
-
-  let transform = new Transform(doc, copy, pos)
-  let end = new Pos(pos.path, parentSize)
-  transform.chunk(end, pos => new Pos(pos.path, pos.offset + text.length))
-  transform.chunk(null, pos => pos)
-  return transform
+  return insertNode(doc, pos, new Node.Inline(Node.types.text, null, text))
 }

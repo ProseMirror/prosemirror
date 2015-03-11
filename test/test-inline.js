@@ -115,6 +115,10 @@ text("simple",
      doc(p("hello<a>")),
      " world",
      doc(p("hello world<a>")))
+text("simple_inside",
+     doc(p("he<a>llo")),
+     "j",
+     doc(p("hej<a>llo")))
 text("left_associative",
      doc(p(em("hello<a>"), " world<after>")),
      " big",
