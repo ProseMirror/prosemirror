@@ -43,7 +43,7 @@ export function redraw(dom, node, prev) {
     let old = findByPath(dom, i)
     if (i < prevLen - sameEnd) {
       // FIXME define a coherent strategy for redrawing inline content
-      if (i < len && i == sameStart && node.content[i].type.contains != "inline" &&
+      if (i < len - sameEnd && i == sameStart && node.content[i].type.contains != "inline" &&
           node.content[i].sameMarkup(prev.content[i])) {
         redraw(old, node.content[i], prev.content[i])
         ++sameStart

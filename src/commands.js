@@ -80,3 +80,22 @@ commands.delForward = pm => {
 
 commands.undo = pm => pm.history.undo()
 commands.redo = pm => pm.history.redo()
+
+commands.join = pm => {
+  pm.applyTransform(block.join(pm.doc, pm.selection.head))
+}
+
+commands.lift = pm => {
+  let sel = pm.selection
+  pm.applyTransform(block.lift(pm.doc, sel.from, sel.to))
+}
+
+function wrap(pm, type) {
+  let sel = pm.selection
+  let node = new Node(type, null, Node.types[type].defaultAttrs)
+  pm.applyTransform(block.wrap(pm.doc, sel.from, sel.to, node))
+}
+
+commands.wrapBulletList = pm => wrap(pm, "bullet_list")
+commands.wrapOrderedList = pm => wrap(pm, "ordered_list")
+commands.wrapBlockquote = pm => wrap(pm, "blockquote")

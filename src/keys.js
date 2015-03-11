@@ -61,7 +61,7 @@ export function normalizeKeymap(keymap) {
       continue
     }
 
-    let keys = keymap(keyname.split(" "), normalizeKeyName)
+    let keys = keyname.split(" ").map(normalizeKeyName)
     for (let i = 0; i < keys.length; i++) {
       let val, name
       if (i == keys.length - 1) {
