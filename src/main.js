@@ -7,8 +7,7 @@ import {Selection} from "./selection"
 import * as dom from "./dom"
 import {draw, redraw} from "./draw"
 import {registerHandlers} from "./input"
-
-//var History = require("./history");
+import History from "./history"
 
 export default class ProseMirror {
   constructor(opts) {
@@ -26,7 +25,7 @@ export default class ProseMirror {
 
     this.state = {composeActive: 0}
     this.operation = null
-    //this.history = new History(this);
+    this.history = new History(this)
 
     this.sel = new Selection(this)
     registerHandlers(this)
@@ -42,7 +41,7 @@ export default class ProseMirror {
   }
 
   updateDoc(doc, selAnchor, selHead) {
-    // this.history.mark()
+    this.history.mark()
     this.updateDocInner(doc, selAnchor || this.selection.anchor,
                         selHead || this.selection.head)
   }
