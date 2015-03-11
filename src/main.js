@@ -41,9 +41,11 @@ export default class ProseMirror {
   }
 
   updateDoc(doc, selAnchor, selHead) {
-    this.history.mark()
-    this.updateDocInner(doc, selAnchor || this.selection.anchor,
-                        selHead || this.selection.head)
+    if (doc != this.doc) {
+      this.history.mark()
+      this.updateDocInner(doc, selAnchor || this.selection.anchor,
+                          selHead || this.selection.head)
+    }
   }
 
   updateDocInner(doc, selAnchor, selHead) {

@@ -39,7 +39,7 @@ function delBlockBackward(pm, pos) {
   }
 
   let last = pos.path.length - 1
-  let parent = pm.doc.path(pos.path.slice(last))
+  let parent = pm.doc.path(pos.path.slice(0, last))
   let offset = pos.path[last]
   if (parent.type == Node.types.list_item &&
       offset == 0 && pos.path[last - 1] > 0) {
@@ -99,3 +99,15 @@ function wrap(pm, type) {
 commands.wrapBulletList = pm => wrap(pm, "bullet_list")
 commands.wrapOrderedList = pm => wrap(pm, "ordered_list")
 commands.wrapBlockquote = pm => wrap(pm, "blockquote")
+
+commands.endBlock = pm => {
+  let head = clearSelection(pm)
+  if (head.path.length > 1 && pm.doc.path(head.path).content.length == 0) {
+    pm.applyTransform(block.lift(pm.doc, head, head))
+  } else {
+    let end = head.path.length - 1
+    let isList = head.path.length > 1 && head.path[end] == 0 &&
+        pm.doc.path(head.path.slice(0, end)).type == Node.types.list_item
+    pm.applyTransform(block.split(pm.doc, head, isList ? 2 : 1))
+  }
+}
