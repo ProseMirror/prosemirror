@@ -58,7 +58,8 @@ function renderInlineContent(nodes, where, options) {
   let active = []
   for (let i = 0; i < nodes.length; i++) {
     let node = nodes[i], styles = node.styles
-    for (let keep = 0; keep < Math.min(active.length, styles.length); ++keep)
+    let keep = 0
+    for (; keep < Math.min(active.length, styles.length); ++keep)
       if (!style.same(active[keep], styles[keep])) break
     while (keep < active.length) {
       active.pop()

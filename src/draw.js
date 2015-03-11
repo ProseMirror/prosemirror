@@ -1,7 +1,7 @@
 import {elt} from "./dom"
 import {findByPath} from "./selection"
 
-import toDOM from "./model/to_dom"
+import {toDOM} from "./model"
 
 const options = {
   onRender: (node, dom, offset) => {

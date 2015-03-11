@@ -1,6 +1,6 @@
 import "../css/prosemirror.css"
 
-import fromText from "./model/from_text"
+import {fromText} from "./model"
 
 import * as options from "./options"
 import {Selection} from "./selection"
