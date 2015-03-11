@@ -11,7 +11,8 @@ export class Selection {
   }
 
   set(anchor, head) {
-    this.value = new Range(anchor, head)
+    this.value = new Range(ensureInBlock(this.pm.doc, anchor, this.value.anchor),
+                           ensureInBlock(this.pm.doc, head, this.value.head))
   }
 
   poll() {
@@ -82,22 +83,53 @@ function attr(node, name) {
   return node.nodeType == 1 && node.getAttribute(name)
 }
 
-function posFromDOM(pm, node, offset) {
-  let path = [], nodeBefore = false
-  for (let cur = node; cur != pm.content; cur = cur.parentNode) {
-    let tag = attr(cur, "mm-path")
-    if (tag) path.unshift(+tag)
-    if (nodeBefore === false && attr(cur, "mm-inlinesize"))
-      nodeBefore = cur.previousSibling
+function posFromDOM(pm, node, domOffset) {
+  let path = [], inText = false, offset = null, isBlock, prev
+  
+  if (node.nodeType == 3) {
+    inText = true
+    prev = node
+    node = node.parentNode
+  } else {
+    prev = node.childNodes[domOffset]
   }
 
-  if (nodeBefore === false) nodeBefore = node.previousSibling
-  for (; nodeBefore; nodeBefore = nodeBefore.previousSibling) {
-    let size = attr(nodeBefore, "mm-inlinesize")
-    if (size) offset += +size
+  for (let cur = node; cur != pm.content; prev = cur, cur = cur.parentNode) {
+    let tag, range
+    if (tag = cur.getAttribute("mm-path")) {
+      path.unshift(+tag)
+      if (offset == null) {
+        offset = 0
+        for (var scan = prev ? prev.previousSibling : cur.lastChild; scan; scan = scan.previousSibling) {
+          if (tag = attr(scan, "mm-path")) {
+            offset = +tag + 1
+            break
+          } else if (range = attr(scan, "mm-inline-span")) {
+            offset = +/-(\d+)/.exec(range)[1]
+            break
+          }
+        }
+      }
+    } else if (range = cur.getAttribute("mm-inline-span")) {
+      let [_, from, to] = /(\d+)-(\d+)/.exec(range)
+      if (inText)
+        offset = +from + domOffset
+      else
+        offset = domOffset ? +to : +from
+      isBlock = true
+    }
   }
-  
-  return new Pos(path, offset)
+  if (offset == null) throw new Error("Failed to find pos")
+  return new Pos(path, offset, isBlock)
+}
+
+function ensureInBlock(doc, pos, from) {
+  if (pos.inBlock) return pos
+  let dir = pos.cmp(from)
+  let found = dir < 0 ? Pos.before(doc, pos) : Pos.after(doc, pos)
+  if (!found)
+    found = dir >= 0 ? Pos.before(doc, pos) : Pos.after(doc, pos)
+  return found
 }
 
 export function findByPath(node, n) {
@@ -116,11 +148,11 @@ export function findByPath(node, n) {
 function findByOffset(node, offset) {
   function search(node) {
     if (node.nodeType != 1) return
-    let size = node.getAttribute("mm-inlinesize")
-    if (size) {
-      if (size >= offset)
-        return {node: node, offset: offset, atEnd: size == offset}
-      offset -= size
+    let range = node.getAttribute("mm-inline-span")
+    if (range) {
+      let [_, from, to] = /(\d+)-(\d+)/.exec(range)
+      if (+to >= offset)
+        return {node: node, offset: offset - +from, atEnd: +to == offset}
     } else {
       for (let ch = node.firstChild; ch; ch = ch.nextSibling) {
         let result = search(ch)
@@ -128,7 +160,12 @@ function findByOffset(node, offset) {
       }
     }
   }
-  search(node)
+  return search(node)
+}
+
+function leaf(node) {
+  while (node.firstChild) node = node.firstChild
+  return node
 }
 
 function DOMFromPos(node, pos) {
@@ -138,22 +175,11 @@ function DOMFromPos(node, pos) {
   }
   let found = findByOffset(node, pos.offset)
   if (!found) throw new Error("Failed to resolve offset in " + pos)
-  let child = found.node.firstChild
-  if (!child.nextSibling && child.nodeType == 3)
-    return {node: child, offset: found.offset}
-  if (found.offset == 0) {
-    let prev = found.node.previousSibling
-    if (prev && prev.lastChild && prev.lastChild.nodeType == 3)
-      return {node: prev.lastChild, offset: prev.lastChild.nodeValue.length}
-    return {node: found.node, offset: 0}
-  } else if (found.atEnd) {
-    let next = found.node.nextSibling
-    if (next && next.fistChild && next.firstChild.nodeValue == 3)
-      return {node: next.firstChild, offset: 0}
-    return {node: found.node, offset: found.node.childNodes.length}
-  } else {
-    throw new Error("Could not place cursor in node " + node.outerHTML)
-  }
+  let inner = leaf(found.node)
+  if (inner.nodeType == 3)
+    return {node: inner, offset: found.offset}
+  else
+    return {node: found.node, offset: found.atEnd ? 1 : 0}
 }
 
 function selectionInNode(node) {

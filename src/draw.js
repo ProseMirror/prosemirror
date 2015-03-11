@@ -4,15 +4,17 @@ import {findByPath} from "./selection"
 import toDOM from "./model/to_dom"
 
 const options = {
-  onRender: function(node, dom, offset) {
-    if (dom.nodeType != 1)
-      dom = elt("span", null, dom)
-    if (node.type.type == "inline")
-      dom.setAttribute("mm-inlinesize", node.size)
-    else if (offset != null)
+  onRender: (node, dom, offset) => {
+    if (node.type.type != "inline" && offset != null)
       dom.setAttribute("mm-path", offset)
     if (/^html_/.test(node.type.type))
       dom.contentEditable = false
+    return dom
+  },
+  renderInlineFlat: (node, dom, offset) => {
+    if (dom.nodeType != 1)
+      dom = elt("span", null, dom)
+    dom.setAttribute("mm-inline-span", offset + "-" + (offset + node.size))
     return dom
   },
   document: document

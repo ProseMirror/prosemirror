@@ -22,10 +22,12 @@ function elt(name, ...children) {
 
 function wrap(node, options, type) {
   let dom = elt(type || node.type.name)
-  if (node.type.contains == "inline")
-    renderInlineContent(node.content, dom, options)
-  else
+  if (node.type.contains != "inline")
     renderNodesInto(node.content, dom, options)
+  else if (options.renderInlineFlat)
+    renderInlineContentFlat(node.content, dom, options)
+  else
+    renderInlineContent(node.content, dom, options)
   return dom
 }
 
@@ -56,7 +58,7 @@ function renderInlineContent(nodes, where, options) {
   let active = []
   for (let i = 0; i < nodes.length; i++) {
     let node = nodes[i], styles = node.styles
-    for (var keep = 0; keep < Math.min(active.length, styles.length); ++keep)
+    for (let keep = 0; keep < Math.min(active.length, styles.length); ++keep)
       if (!style.same(active[keep], styles[keep])) break
     while (keep < active.length) {
       active.pop()
@@ -68,6 +70,22 @@ function renderInlineContent(nodes, where, options) {
       top = top.appendChild(renderStyle[add.type](add))
     }
     top.appendChild(renderNode(node, options, i))
+  }
+}
+
+function renderInlineContentFlat(nodes, where, options) {
+  let offset = 0
+  for (let i = 0; i < nodes.length; i++) {
+    let node = nodes[i], styles = node.styles
+    let dom = renderNode(node, options, i)
+    for (let j = styles.length - 1; j >= 0; j--) {
+      let wrap = renderStyle[styles[j].type](styles[j])
+      wrap.appendChild(dom)
+      dom = wrap
+    }
+    dom = options.renderInlineFlat(node, dom, offset) || dom
+    where.appendChild(dom)
+    offset += node.size
   }
 }
 
