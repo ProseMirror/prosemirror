@@ -16,11 +16,11 @@ export default class Transform {
     if (this.untouched == null || pos.cmp(this.untouched) < 0)
       return pos
 
-    for (let i = 0;; i++) {
+    for (let i = 0; i < this.chunks.length; i++) {
       let chunk = this.chunks[i]
-      if (i == this.chunks.length - 1 || pos.cmp(chunk.end) <= 0)
-        return chunk.map(pos)
+      if (pos.cmp(chunk.end) <= 0) return chunk.map(pos)
     }
+    return pos
   }
 }
 

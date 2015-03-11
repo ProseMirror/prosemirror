@@ -5,7 +5,7 @@ export default class Node {
     if (typeof type == "string") type = nodeTypes[type]
     if (!type) throw new Error("Node without type")
     this.type = type
-    this.content = content || (type.contains ? [] : nullContent)
+    this.content = content || (type.contains ? [] : Node.empty)
     this.attrs = attrs
   }
 
@@ -66,14 +66,15 @@ export default class Node {
   }
 }
 
+Node.empty = [] // Reused empty array for collections that are guaranteed to remain empty
+
 const nullAttrs = Node.nullAttrs = {}
-const nullStyles = []
 
 class InlineNode extends Node {
   constructor(type, styles, text, attrs = nullAttrs) {
     super(type, null, attrs)
     this.text = text == null ? "×" : text
-    this.styles = styles || nullStyles
+    this.styles = styles || Node.empty
   }
 
   toString() {

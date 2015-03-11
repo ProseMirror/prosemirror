@@ -99,19 +99,23 @@ export function hasStyle(doc, pos, st) {
   return style.contains(node ? node.styles : [], st)
 }
 
-export function insertNode(doc, pos, node) {
-  let copy = slice.around(doc, pos)
-  let parent = copy.path(pos.path)
-  let parentSize = parent.size, nodeSize = node.size
-  let {node: near, offset, innerOffset} = inlineNodeAtOrBefore(parent, pos.offset)
-  if (innerOffset && innerOffset != near.size) {
-    parent.content.splice(offset, 1, near.slice(0, innerOffset), near.slice(innerOffset))
+export function splitInlineAt(parent, offset) {
+  let {node, offset, innerOffset} = inlineNodeAtOrBefore(parent, offset)
+  if (innerOffset && innerOffset != node.size) {
+    parent.content.splice(offset, 1, node.slice(0, innerOffset), node.slice(innerOffset))
     offset += 1
   } else if (innerOffset) {
     offset += 1
   }
-  parent.content.splice(offset, 0, new Node.Inline(node.type, near ? near.styles : [],
-                                                   node.text, node.attrs))
+  return {offset: offset, styles: node ? node.styles : Node.empty}
+}
+
+export function insertNode(doc, pos, node) {
+  let copy = slice.around(doc, pos)
+  let parent = copy.path(pos.path)
+  let parentSize = parent.size, nodeSize = node.size
+  let {offset, styles} = splitInlineAt(parent, pos.offset)
+  parent.content.splice(offset, 0, new Node.Inline(node.type, styles, node.text, node.attrs))
   if (node.type == Node.types.text) {
     stitchTextNodes(parent, offset + 1)
     stitchTextNodes(parent, offset)
@@ -120,7 +124,6 @@ export function insertNode(doc, pos, node) {
   let transform = new Transform(doc, copy, pos)
   let end = new Pos(pos.path, parentSize)
   transform.chunk(end, pos => new Pos(pos.path, pos.offset + nodeSize))
-  transform.chunk(null, pos => pos)
   return transform
 }
 

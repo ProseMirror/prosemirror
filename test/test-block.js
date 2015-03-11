@@ -8,11 +8,13 @@ import Node from "../src/model/node"
 import Pos from "../src/model/pos"
 import * as block from "../src/model/block"
 
-function t(op, name, doc, expect, wrap) {
+function t(op, name, doc, expect, arg2) {
   tests[op + "_" + name] = function() {
     transform(doc, expect, () => {
-      if (wrap) wrap = new Node(Node.types[wrap], null, Node.types[wrap].defaultAttrs)
-      return block[op](doc, doc.tag.a, doc.tag.b || doc.tag.a, wrap)
+      let arg1 = doc.tag.b || doc.tag.a
+      if (op == "wrap") arg2 = new Node(Node.types[arg2], null, Node.types[arg2].defaultAttrs)
+      if (op == "split") arg1 = arg2 || 1
+      return block[op](doc, doc.tag.a, arg1, arg2)
     })
   }
 }
@@ -88,6 +90,34 @@ t("wrap", "include_parent",
   doc(blockquote(p("<1>one"), p("two<a>")), p("three<b>")),
   doc(blockquote(blockquote(p("<1>one"), p("two<a>")), p("three<b>"))),
   "blockquote")
+
+t("split", "simple",
+  doc(p("foo<a>bar")),
+  doc(p("foo"), p("<a>bar")))
+t("split", "before_and_after",
+  doc(p("<1>a"), p("<2>foo<a>bar<3>"), p("<4>b")),
+  doc(p("<1>a"), p("<2>foo"), p("<a>bar<3>"), p("<4>b")))
+t("split", "deeper",
+  doc(blockquote(blockquote(p("foo<a>bar"))), p("after<1>")),
+  doc(blockquote(blockquote(p("foo")), blockquote(p("<a>bar"))), p("after<1>")),
+  2)
+t("split", "and_deeper",
+  doc(blockquote(blockquote(p("foo<a>bar"))), p("after<1>")),
+  doc(blockquote(blockquote(p("foo"))), blockquote(blockquote(p("<a>bar"))), p("after<1>")),
+  3)
+t("split", "at_end",
+  doc(blockquote(p("hi<a>"))),
+  doc(blockquote(p("hi"), p("<a>"))))
+t("split", "at_start",
+  doc(blockquote(p("<a>hi"))),
+  doc(blockquote(p(), p("<a>hi"))))
+t("split", "list_paragraph",
+  doc(ol(li(p("one<1>")), li(p("two<a>three")), li(p("four<2>")))),
+  doc(ol(li(p("one<1>")), li(p("two"), p("<a>three")), li(p("four<2>")))))
+t("split", "list_item",
+  doc(ol(li(p("one<1>")), li(p("two<a>three")), li(p("four<2>")))),
+  doc(ol(li(p("one<1>")), li(p("two")), li(p("<a>three")), li(p("four<2>")))),
+  2)
 
 function insert(name, doc, pos, value, expected) {
   tests["insert_" + name] = function() {

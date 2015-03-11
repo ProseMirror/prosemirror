@@ -5,6 +5,7 @@ import Node from "./node"
 import Transform from "./transform"
 import * as slice from "./slice"
 import * as join_ from "./join"
+import * as inline from "./inline"
 
 export function selectedSiblings(doc, from, to) {
   let len = Math.min(from.path.length, to.path.length)
@@ -118,7 +119,6 @@ export function join(doc, pos) {
   })
   let endOfParent = point.shorten(null, 1)
   transform.chunk(endOfParent, pos => pos.offsetAt(point.path.length, -1))
-  transform.chunk(null, pos => pos)
 
   return transform
 }
@@ -162,6 +162,45 @@ export function wrap(doc, from, to, wrapper) {
   return transform
 }
 
+export function split(doc, pos, depth = 1) {
+  let copy = slice.around(doc, pos)
+  for (let cut, i = 0; i <= depth; i++) {
+    let end = pos.path.length - i
+    let target = copy.path(pos.path.slice(0, end))
+    if (i == 0) {
+      let {offset} = inline.splitInlineAt(target, pos.offset)
+      cut = target.copy(target.content.slice(offset))
+      target.content.length = offset
+    } else {
+      let offset = pos.path[end] + 1
+      if (i < depth) {
+        cut = target.copy([cut].concat(target.content.slice(offset)))
+        target.content.length = offset
+      } else {
+        target.content.splice(offset, 0, cut)
+      }
+    }
+  }
+
+  let transform = new Transform(doc, copy, pos)
+  let end = pos.shorten(pos.path.length - depth, 2)
+  transform.chunk(end, p => {
+    let base = pos.path.length - depth
+    let path = p.path.slice(0, base)
+    for (var i = 0; i < depth; i++) {
+      let a = p.path[base + i], b = pos.path[base + i]
+      path.push(i ? a - b : a + 1)
+      if (a != b) break
+    }
+    let offset = p.offset
+    if (i == depth) offset -= pos.offset
+    else i++
+    path = path.concat(p.path.slice(base + i))
+    return new Pos(path, offset)
+  })
+  return transform
+}
+
 export function insert(doc, pos, block) {
   let copy = slice.around(doc, pos)
   let parent = copy.path(pos.path)
@@ -169,7 +208,6 @@ export function insert(doc, pos, block) {
   let transform = new Transform(doc, copy, pos)
   let depth = pos.path.length
   transform.chunk(new Pos(pos.path, parent.content.length, false), pos => pos.offsetAt(depth, 1))
-  transform.chunk(null, pos => pos)
   return transform
 }
 
@@ -182,6 +220,5 @@ export function remove(doc, pos) {
   transform.chunk(new Pos(pos.path, pos.offset + 1), _ => after)
   let depth = pos.path.length
   transform.chunk(pos.shorten(null, 1), pos => pos.offsetAt(depth, -1))
-  transform.chunk(null, pos => pos)
   return transform
 }
