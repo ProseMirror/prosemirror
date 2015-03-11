@@ -2,22 +2,18 @@ import {doc, p, li, ul, em, a} from "./build"
 
 import Failure from "./failure"
 import tests from "./tests"
+import * as cmp from "./cmp"
 
 import * as slice from "../src/model/slice"
-
-function cmp(a, b) {
-  let as = a.toString(), bs = b.toString()
-  if (as != bs) throw new Failure("expected " + bs + "\n     got " + as)
-}
 
 function t(name, doc, expect) {
   tests["slice_" + name] = function() {
     if (doc.tag.a && doc.tag.b)
-      cmp(slice.between(doc, doc.tag.a, doc.tag.b), expect)
+      cmp.node(slice.between(doc, doc.tag.a, doc.tag.b), expect)
     else if (doc.tag.a)
-      cmp(slice.before(doc, doc.tag.a), expect)
+      cmp.node(slice.before(doc, doc.tag.a), expect)
     else
-      cmp(slice.after(doc, doc.tag.b), expect)
+      cmp.node(slice.after(doc, doc.tag.b), expect)
   }
 }
 

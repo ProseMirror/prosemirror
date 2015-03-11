@@ -3,20 +3,14 @@ import {doc, h1, blockquote, p, li, ol, ul, em, a, br} from "./build"
 import Failure from "./failure"
 import replace from "../src/model/replace"
 import tests from "./tests"
-
-function cmp(a, b, comment) {
-  let as = a.toString(), bs = b.toString()
-  if (as != bs)
-    throw new Failure("expected " + bs + ", got " + as + (comment ? " (" + comment + ")" : ""))
-}
+import {transform} from "./cmp"
 
 function t(name, base, insert, expect) {
   tests["replace_" + name] = function() {
-    let result = replace(base, base.tag.a, base.tag.b || base.tag.a,
-                         insert, insert && insert.tag.a, insert && insert.tag.b)
-    cmp(result.doc, expect)
-    for (let pos in expect.tag)
-      cmp(result.map(base.tag[pos]), expect.tag[pos], pos)
+    transform(base, expect, () => {
+      return replace(base, base.tag.a, base.tag.b || base.tag.a,
+                     insert, insert && insert.tag.a, insert && insert.tag.b)
+    })
   }
 }
 

@@ -2,25 +2,18 @@ import {doc, blockquote, h1, p, li, ol, ul, em, a, br} from "./build"
 
 import Failure from "./failure"
 import tests from "./tests"
-import cmpNode from "./cmpnode"
+import {transform} from "./cmp"
 
 import Node from "../src/model/node"
 import Pos from "../src/model/pos"
 import * as block from "../src/model/block"
 
-function cmp(a, b, comment) {
-  let as = a.toString(), bs = b.toString()
-  if (as != bs)
-    throw new Failure("expected " + bs + ", got " + as + (comment ? " (" + comment + ")" : ""))
-}
-
 function t(op, name, doc, expect, wrap) {
   tests[op + "_" + name] = function() {
-    if (wrap) wrap = new Node(Node.types[wrap], null, Node.types[wrap].defaultAttrs)
-    let result = block[op](doc, doc.tag.a, doc.tag.b || doc.tag.a, wrap)
-    cmpNode(result.doc, expect)
-    for (let pos in expect.tag)
-      cmp(result.map(doc.tag[pos]), expect.tag[pos], pos)
+    transform(doc, expect, () => {
+      if (wrap) wrap = new Node(Node.types[wrap], null, Node.types[wrap].defaultAttrs)
+      return block[op](doc, doc.tag.a, doc.tag.b || doc.tag.a, wrap)
+    })
   }
 }
 
@@ -98,10 +91,9 @@ t("wrap", "include_parent",
 
 function insert(name, doc, pos, value, expected) {
   tests["insert_" + name] = function() {
-    let result = block.insert(doc, new Pos(pos.slice(0, pos.length - 1), pos[pos.length - 1], false), value.content[0])
-    cmpNode(result.doc, expected)
-    for (var name in expected.tag)
-      cmp(result.map(doc.tag[name]), expected.tag[name], name)
+    transform(doc, expected, () => {
+      return block.insert(doc, new Pos(pos.slice(0, pos.length - 1), pos[pos.length - 1], false), value.content[0])
+    })
   }
 }
 
@@ -123,10 +115,9 @@ insert("start_of_blockquote",
 
 function rm(name, doc, pos, expected) {
   tests["remove_" + name] = function() {
-    let result = block.remove(doc, new Pos(pos.slice(0, pos.length - 1), pos[pos.length - 1], false))
-    cmpNode(result.doc, expected)
-    for (var name in expected.tag)
-      cmp(result.map(doc.tag[name]), expected.tag[name], name)
+    transform(doc, expected, () => {
+      return block.remove(doc, new Pos(pos.slice(0, pos.length - 1), pos[pos.length - 1], false))
+    })
   }
 }
 

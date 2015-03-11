@@ -2,21 +2,15 @@ import {doc, blockquote, h1, p, li, ol, ul, em, strong, code, a, a2, br} from ".
 
 import Failure from "./failure"
 import tests from "./tests"
-import cmpNode from "./cmpnode"
+import {transform} from "./cmp"
 
 import * as inline from "../src/model/inline"
 import * as style from "../src/model/style"
 
-function cmp(a, b, comment) {
-  let as = a.toString(), bs = b.toString()
-  if (as != bs)
-    throw new Failure("expected " + bs + ", got " + as + (comment ? " (" + comment + ")" : ""))
-}
-
 function t(op, name, doc, stl, expect) {
   tests[op + "_" + name] = function() {
-    let result = inline[op](doc, doc.tag.a, doc.tag.b || doc.tag.a, stl)
-    cmpNode(result, expect)
+    transform(doc, expect,
+              () => inline[op](doc, doc.tag.a, doc.tag.b || doc.tag.a, stl))
   }
 }
 
@@ -104,10 +98,8 @@ has("different_link",
 
 function text(name, doc, text, expected) {
   tests["insertText_" + name] = function() {
-    let result = inline.insertText(doc, doc.tag.a, text)
-    cmpNode(result.doc, expected)
-    for (var name in result.tag)
-      cmp(result.map(doc.tag[name]), result.tag[name])
+    transform(doc, expected,
+              () => inline.insertText(doc, doc.tag.a, text))
   }
 }
 

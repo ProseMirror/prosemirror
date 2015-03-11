@@ -1,12 +1,12 @@
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, uldash, em, strong, code, a, a2, br, img} from "./build"
-import cmpNode from "./cmpnode"
+import * as cmp from "./cmp"
 import tests from "./tests"
 
 import fromText from "../src/model/from_text"
 
 function t(name, text, doc) {
   tests["parse_" + name] = function() {
-    cmpNode(fromText(text), doc)
+    cmp.node(fromText(text), doc)
   }
 }
 

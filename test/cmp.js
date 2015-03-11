@@ -1,7 +1,7 @@
 import Failure from "./failure"
 import * as style from "../src/model/style"
 
-export default function cmpNode(a, b) {
+export function node(a, b) {
   function raise(msg, path) {
     throw new Failure(msg + " at " + path + " in " + a + " vs " + b)
   }
@@ -25,4 +25,20 @@ export default function cmpNode(a, b) {
       inner(a.content[i], b.content[i], path + "." + i)
   }
   inner(a, b, "doc")
+}
+
+export function simple(a, b, comment) {
+  let as = a.toString(), bs = b.toString()
+  if (as != bs)
+    throw new Failure("expected " + bs + ", got " + as + (comment ? " (" + comment + ")" : ""))
+}
+
+export function transform(doc, expect, f) {
+  let orig = doc.toString()
+  let transform = f()
+  node(transform.doc || transform, expect)
+  simple(doc, orig, "immutable")
+  if (transform.map)
+    for (let pos in expect.tag)
+      simple(transform.map(doc.tag[pos]), expect.tag[pos], pos)
 }
