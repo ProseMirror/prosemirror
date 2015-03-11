@@ -76,5 +76,5 @@ function findBefore(node, pos, path) {
   }
 }
 
-Pos.before = function(node, pos) { return findbefore(node, pos, []) }
+Pos.before = function(node, pos) { return findBefore(node, pos, []) }
 Pos.end = function(node) { return findRight(node, []) }

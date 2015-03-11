@@ -76,7 +76,7 @@ export function lift(doc, from, to) {
     } else {
       offset += origOffset
     }
-    let path = lift.path.concat(offset).concat(pos.path.slice(lift.path.length + (lift.unwrap ? 3 : 2)))
+    let path = lift.path.concat(offset).concat(pos.path.slice(range.path.length + (lift.unwrap ? 2 : 1)))
     return new Pos(path, pos.offset)
   })
 

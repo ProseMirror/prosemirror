@@ -50,7 +50,7 @@ t("lift", "deeper",
   doc(blockquote(blockquote(p("<1>one")), p("<a>two"), p("<3>three"), p("<b>four"), blockquote(p("<5>five")))))
 t("lift", "from_list",
   doc(ul(li(p("one")), li(p("two<a>")), li(p("three")))),
-  doc(ul(li(p("one"))), p("two"), ul(li(p("three")))))
+  doc(ul(li(p("one"))), p("two<a>"), ul(li(p("three")))))
 t("lift", "multiple_from_list",
   doc(ul(li(p("one<a>")), li(p("two<b>")), li(p("three<after>")))),
   doc(p("one<a>"), p("two<b>"), ul(li(p("three<after>")))))

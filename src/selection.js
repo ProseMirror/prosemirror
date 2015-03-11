@@ -175,7 +175,7 @@ function DOMFromPos(node, pos) {
     if (!node) throw new Error("Failed to resolve pos " + pos)
   }
   let found = findByOffset(node, pos.offset)
-  if (!found) throw new Error("Failed to resolve offset in " + pos)
+  if (!found) return {node: node, offset: 0}
   let inner = leaf(found.node)
   if (inner.nodeType == 3)
     return {node: inner, offset: found.offset}
