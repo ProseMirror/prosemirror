@@ -9,6 +9,12 @@
   min-height: 1.2em;
 }
 
-.ProseMirror ul[mm-tight=true] p, .Sting ol[mm-tight=true] p {
+.ProseMirror ul[mm-tight=true] p, .ProseMirror ol[mm-tight=true] p {
   margin: 0;
+}
+
+/* Kludge to work around https://code.google.com/p/chromium/issues/detail?id=466148&thanks=466148&ts=1426090625 */
+.ProseMirror li p:empty:after {
+  content: "";
+  display: block;
 }

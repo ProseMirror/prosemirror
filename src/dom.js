@@ -21,3 +21,5 @@ export function requestAnimationFrame(f) {
   if (reqFrame) reqFrame(f)
   else setTimeout(f, 10)
 }
+
+export const mac = /Mac/.test(navigator.platform)

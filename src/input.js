@@ -1,7 +1,7 @@
 import {fromDOM, fromText, toDOM, replace, Pos, inline, slice} from "./model"
 
 import * as keys from "./keys"
-
+import * as dom from "./dom"
 import commands from "./commands"
 
 let stopSeq = null
@@ -44,15 +44,13 @@ handlers.keydown = (pm, e) => {
   if (name) dispatchKey(pm, name, e)
 }
 
-let mac = /Mac/.test(navigator.platform)
-
 function replaceRange(pm, range, text) {
   if (!range.empty) pm.applyTransform(replace(pm.doc, range.from, range.to))
   if (text) pm.applyTransform(inline.insertText(pm.doc, range.from, text))
 }
 
 handlers.keypress = (pm, e) => {
-  if (e.ctrlKey && !e.altKey || mac && e.metaKey) return
+  if (e.ctrlKey && !e.altKey || dom.mac && e.metaKey) return
   let ch = String.fromCharCode(e.charCode == null ? e.keyCode : e.charCode)
   if (dispatchKey(pm, "'" + ch + "'", e)) return
   replaceRange(pm, pm.selection, ch)
