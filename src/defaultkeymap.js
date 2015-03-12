@@ -23,5 +23,5 @@ export default normalizeKeymap({
   "Ctrl-H '6'": "makeH6",
   "Ctrl-P": "makeParagraph",
   "Ctrl-`": "makeCodeBlock",
-  "Ctrl--": "insertRule"
+  "Ctrl-Space": "insertRule"
 })

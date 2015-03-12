@@ -39,7 +39,7 @@ export function redraw(dom, node, prev) {
   }
 
   let pos = null
-  for (let i = sameStart; i < prevLen; i++) {
+  for (let i = prevLen - 1; i >= sameStart; i--) {
     let old = findByPath(dom, i)
     if (i < prevLen - sameEnd) {
       // FIXME define a coherent strategy for redrawing inline content
@@ -52,7 +52,7 @@ export function redraw(dom, node, prev) {
       }
     } else {
       old.setAttribute("mm-path", i + (len - prevLen))
-      if (!pos) pos = old
+      pos = old
     }
   }
   for (let i = sameStart; i < len - sameEnd; i++)

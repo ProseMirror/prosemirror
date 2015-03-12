@@ -132,6 +132,8 @@ tokens.code_block = (state, tok) => {
   closeNode(state)
 }
 
+tokens.hr = (state, tok) => addNode(state, "horizontal_rule", {markup: tok.markup})
+
 tokens.code_inline = (state, tok) => {
   openInline(state, style.code)
   addText(state, tok.content)

@@ -20,10 +20,13 @@ export class Selection {
     let sel = getSelection()
     if (sel.anchorNode != this.lastAnchorNode || sel.anchorOffset != this.lastAnchorOffset ||
         sel.focusNode != this.lastHeadNode || sel.focusOffset != this.lastHeadOffset) {
-      this.pm.setSelection(posFromDOM(this.pm, this.lastAnchorNode = sel.anchorNode,
-                                      this.lastAnchorOffset = sel.anchorOffset),
-                           posFromDOM(this.pm, this.lastHeadNode = sel.focusNode,
-                                      this.lastHeadOffset = sel.focusOffset))
+      let anchor = posFromDOM(this.pm, this.lastAnchorNode = sel.anchorNode,
+                              this.lastAnchorOffset = sel.anchorOffset)
+      let head = posFromDOM(this.pm, this.lastHeadNode = sel.focusNode,
+                            this.lastHeadOffset = sel.focusOffset)
+      this.pm.setSelection(anchor, head)
+      if (this.value.anchor.cmp(anchor) || this.value.head.cmp(head))
+        this.toDOM(true)
       return true
     }
   }
@@ -61,7 +64,7 @@ export class Selection {
       if (document.activeElement == this.pm.content) {
         if (!this.pm.operation) this.poll()
         clearTimeout(this.polling)
-        this.polling = setTimeout(poll, 100)
+        this.polling = setTimeout(poll, 50)
       }
     }
     poll()
@@ -84,8 +87,19 @@ function attr(node, name) {
   return node.nodeType == 1 && node.getAttribute(name)
 }
 
+function scanOffset(node, parent) {
+  for (var scan = node ? node.previousSibling : parent.lastChild; scan; scan = scan.previousSibling) {
+    let tag, range
+    if (tag = attr(scan, "mm-path"))
+      return +tag + 1
+    else if (range = attr(scan, "mm-inline-span"))
+      return +/-(\d+)/.exec(range)[1]
+  }
+  return 0
+}
+
 function posFromDOM(pm, node, domOffset) {
-  let path = [], inText = false, offset = null, isBlock, prev
+  let path = [], inText = false, offset = null, isBlock = false, prev
   
   if (node.nodeType == 3) {
     inText = true
@@ -99,18 +113,8 @@ function posFromDOM(pm, node, domOffset) {
     let tag, range
     if (tag = cur.getAttribute("mm-path")) {
       path.unshift(+tag)
-      if (offset == null) {
-        offset = 0
-        for (var scan = prev ? prev.previousSibling : cur.lastChild; scan; scan = scan.previousSibling) {
-          if (tag = attr(scan, "mm-path")) {
-            offset = +tag + 1
-            break
-          } else if (range = attr(scan, "mm-inline-span")) {
-            offset = +/-(\d+)/.exec(range)[1]
-            break
-          }
-        }
-      }
+      if (offset == null)
+        offset = scanOffset(prev, cur)
     } else if (range = cur.getAttribute("mm-inline-span")) {
       let [_, from, to] = /(\d+)-(\d+)/.exec(range)
       if (inText)
@@ -120,7 +124,7 @@ function posFromDOM(pm, node, domOffset) {
       isBlock = true
     }
   }
-  if (offset == null) throw new Error("Failed to find pos")
+  if (offset == null) offset = scanOffset(prev, node)
   return new Pos(path, offset, isBlock)
 }
 
