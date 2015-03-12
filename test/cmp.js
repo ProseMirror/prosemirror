@@ -1,5 +1,5 @@
 import Failure from "./failure"
-import * as style from "../src/model/style"
+import {transform, style} from "../src/model"
 
 export function node(a, b) {
   function raise(msg, path) {
@@ -33,12 +33,11 @@ export function simple(a, b, comment) {
     throw new Failure("expected " + bs + ", got " + as + (comment ? " (" + comment + ")" : ""))
 }
 
-export function transform(doc, expect, f) {
+export function testTransform(doc, expect, params) {
   let orig = doc.toString()
-  let transform = f()
-  node(transform.doc || transform, expect)
+  let result = transform.apply(doc, params)
+  node(result.doc, expect)
   simple(doc, orig, "immutable")
-  if (transform.map)
-    for (let pos in expect.tag)
-      simple(transform.map(doc.tag[pos]), expect.tag[pos], pos)
+  for (let pos in expect.tag)
+    simple(result.map(doc.tag[pos]), expect.tag[pos], pos)
 }

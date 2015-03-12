@@ -2,33 +2,33 @@ import Pos from "./pos"
 import Node from "./node"
 import * as slice from "./slice"
 import * as join from "./join"
-import Transform from "./transform"
+import * as transform from "./transform"
 
-export default function replace(doc, origFrom, origTo,
-                                repl = null, origStart = null, origEnd = null) {
-  let [from, to] = maybeReduce(doc, origFrom, origTo)
+transform.define("replace", function(doc, params) {
+  let origTo = params.end || params.pos
+  let [from, to] = maybeReduce(doc, params.pos, origTo)
 
-  let result = slice.before(doc, from)
-  let transform = new Transform(doc, result, from)
+  let output = slice.before(doc, from)
+  let result = new transform.Result(doc, output, from)
   let right = slice.after(doc, to)
 
-  if (repl) {
-    let [start, end] = maybeReduce(repl, origStart, origEnd)
+  if (params.source) {
+    let [start, end] = maybeReduce(params.source, params.from, params.to)
     let collapsed = [0]
-    let middle = slice.between(repl, start, end, collapsed)
+    let middle = slice.between(params.source, start, end, collapsed)
     
-    let endPos = join.trackEnd(result, from.path.length, middle, start.path.length - collapsed[0]) || origTo
+    let endPos = join.trackEnd(output, from.path.length, middle, start.path.length - collapsed[0]) || params.to
     let endDepth = endPos.path.length
-    if (!endPos.isBlock) endPos = Pos.end(result)
-    transform.chunk(origTo, _ => endPos)
-    join.buildTransform(transform, origTo, result, end.path.length - collapsed[0] + endDepth, right, to)
+    if (!endPos.isBlock) endPos = Pos.end(output)
+    result.chunk(origTo, _ => endPos)
+    join.buildResult(result, origTo, output, end.path.length - collapsed[0] + endDepth, right, to)
   } else {
-    transform.chunk(origTo, _ => origFrom)
-    join.buildTransform(transform, origTo, result, from.path.length, right, to)
+    result.chunk(origTo, _ => params.pos)
+    join.buildResult(result, origTo, output, from.path.length, right, to)
   }
 
-  return transform
-}
+  return result
+})
 
 function maybeReduce(doc, from, to) {
   if (from.cmp(to) == 0) return [from, to]

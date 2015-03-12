@@ -3,13 +3,17 @@ import {doc, h1, blockquote, p, li, ol, ul, em, a, br} from "./build"
 import Failure from "./failure"
 import replace from "../src/model/replace"
 import tests from "./tests"
-import {transform} from "./cmp"
+import {testTransform} from "./cmp"
 
-function t(name, base, insert, expect) {
+function t(name, base, source, expect) {
   tests["replace_" + name] = function() {
-    transform(base, expect, () => {
-      return replace(base, base.tag.a, base.tag.b || base.tag.a,
-                     insert, insert && insert.tag.a, insert && insert.tag.b)
+    testTransform(base, expect, {
+      name: "replace",
+      pos: base.tag.a,
+      end: base.tag.b,
+      source: source,
+      from: source && source.tag.a,
+      to: source && source.tag.b
     })
   }
 }

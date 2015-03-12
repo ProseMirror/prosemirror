@@ -82,12 +82,12 @@ function nodeWidth(node) {
   return node.type.contains == "inline" ? node.size : node.content.length
 }
 
-export function buildTransform(transform, base, left, leftDepth, right, rightPos, align) {
+export function buildResult(result, base, left, leftDepth, right, rightPos, align) {
   let rightDepth = rightPos.path.length
   if (align)
     leftDepth = rightDepth = Math.min(leftDepth, rightDepth)
   simple(left, leftDepth, right, rightDepth, function(from, fromDepth, to, toDepth) {
-    pushChunkToMap(transform, base, fromDepth, nodeWidth(to), pathRight(left, toDepth))
+    pushChunkToMap(result, base, fromDepth, nodeWidth(to), pathRight(left, toDepth))
   })
 }
 
@@ -101,8 +101,8 @@ function findChunkEnd(doc, base, depth) {
   }
 }
 
-function pushChunkToMap(transform, base, depth, offset, prefix) {
-  transform.chunk(findChunkEnd(transform.before, base, depth), function(pos) {
+function pushChunkToMap(result, base, depth, offset, prefix) {
+  result.chunk(findChunkEnd(result.before, base, depth), function(pos) {
     if (pos.cmp(base) < 0) pos = base
     let path = prefix.slice(0), extraOffset = offset
     for (let j = depth;; j++) {

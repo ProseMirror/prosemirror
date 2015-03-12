@@ -4,7 +4,7 @@ import * as style from "./style"
 import Node from "./node"
 import Pos from "./pos"
 import {stitchTextNodes} from "./join"
-import Transform from "./transform"
+import * as transform from "./transform"
 import * as slice from "./slice"
 
 function addInline(node, child) {
@@ -66,32 +66,35 @@ function copyInline(node, from, to, f) {
   return copy
 }
 
-export function addStyle(doc, from, to, add) {
-  return copyStructure(doc, from, to, (node, from, to) => {
+transform.define("addStyle", function(doc, params) {
+  let copy = copyStructure(doc, params.pos, params.end || params.pos, (node, from, to) => {
     return copyInline(node, from, to, node => {
-      return new Node.Inline(node.type, style.add(node.styles, add),
+      return new Node.Inline(node.type, style.add(node.styles, params.style),
                              node.text, node.attrs)
     })
   })
-}
+  return transform.flat(doc, copy)
+})
 
-export function removeStyle(doc, from, to, rm) {
-  return copyStructure(doc, from, to, (node, from, to) => {
+transform.define("removeStyle", function(doc, params) {
+  let copy = copyStructure(doc, params.pos, params.end || params.pos, (node, from, to) => {
     return copyInline(node, from, to, node => {
-      return new Node.Inline(node.type, style.remove(node.styles, rm),
+      return new Node.Inline(node.type, params.style ? style.remove(node.styles, params.style) : Node.empty,
                              node.text, node.attrs)
     })
   })
-}
+  return transform.flat(doc, copy)
+})
 
-export function setType(doc, from, to, example) {
-  return copyStructure(doc, from, to, node => {
+transform.define("setType", function(doc, params) {
+  let copy = copyStructure(doc, params.pos, params.end || params.pos, node => {
     let copy = node.copy(node.content)
-    copy.type = example.type
-    copy.attrs = example.attrs
+    copy.type = Node.types[params.type]
+    copy.attrs = params.attrs || copy.type.defaultAttrs
     return copy
   })
-}
+  return transform.flat(doc, copy)
+})
 
 function inlineNodeAtOrBefore(parent, offset) {
   for (let i = 0; i < parent.content.length; i++) {
@@ -119,7 +122,7 @@ export function splitInlineAt(parent, offset) {
   return {offset: offset, styles: node ? node.styles : Node.empty}
 }
 
-export function insertNode(doc, pos, node) {
+function insertNode(doc, pos, node) {
   let copy = slice.around(doc, pos)
   let parent = copy.path(pos.path)
   let parentSize = parent.size, nodeSize = node.size
@@ -130,14 +133,18 @@ export function insertNode(doc, pos, node) {
     stitchTextNodes(parent, offset)
   }
 
-  let transform = new Transform(doc, copy, pos)
+  let result = new transform.Result(doc, copy, pos)
   let end = new Pos(pos.path, parentSize)
-  transform.chunk(end, pos => new Pos(pos.path, pos.offset + nodeSize))
-  return transform
+  result.chunk(end, pos => new Pos(pos.path, pos.offset + nodeSize))
+  return result
 }
 
-export function insertText(doc, pos, text) {
-  if (!text) return Transform.identity(doc)
+transform.define("insertInline", function(doc, params) {
+  return insertNode(doc, params.pos,
+                    new Node(params.type, params.text, params.attrs))
+})
 
-  return insertNode(doc, pos, new Node.Inline(Node.types.text, null, text))
-}
+transform.define("insertText", function(doc, params) {
+  if (!params.text) return Transform.identity(doc)
+  return insertNode(doc, params.pos, new Node.Inline(Node.types.text, null, params.text))
+})

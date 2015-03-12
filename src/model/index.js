@@ -6,9 +6,10 @@ import fromText from "./from_text"
 import fromDOM from "./from_dom"
 import toDOM from "./to_dom"
 
+import "./replace"
 import * as slice from "./slice"
-import replace from "./replace"
 import * as block from "./block"
 import * as inline from "./inline"
+import * as transform from "./transform"
 
-export {Node, Pos, style, fromText, fromDOM, toDOM, slice, replace, block, inline}
+export {Node, Pos, style, fromText, fromDOM, toDOM, block, inline, slice, transform}

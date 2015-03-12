@@ -1,6 +1,6 @@
 import Pos from "./pos"
 
-export default class Transform {
+export class Result {
   constructor(before, after, untouched = null) {
     this.before = before
     this.doc = after
@@ -24,6 +24,22 @@ export default class Transform {
   }
 }
 
-Transform.identity = function(doc) {
-  return new Transform(doc, doc, null)
-};
+const transforms = Object.create(null)
+
+export function define(name, impl) {
+  transforms[name] = impl
+}
+
+export function apply(doc, params) {
+  let fn = transforms[params.name]
+  if (!fn) throw new Error("Undefined transform " + params.name)
+  return fn(doc, params)
+}
+
+export function identity(doc) {
+  return new Result(doc, doc, null)
+}
+
+export function flat(doc, result) {
+  return new Result(doc, result, null)
+}

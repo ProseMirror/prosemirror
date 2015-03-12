@@ -2,20 +2,17 @@ import {doc, blockquote, h1, p, li, ol, ul, em, a, br} from "./build"
 
 import Failure from "./failure"
 import tests from "./tests"
-import {transform} from "./cmp"
+import {testTransform} from "./cmp"
 
-import Node from "../src/model/node"
-import Pos from "../src/model/pos"
-import * as block from "../src/model/block"
+import {Node, Pos} from "../src/model"
 
-function t(op, name, doc, expect, arg2) {
+function t(op, name, doc, expect, params) {
   tests[op + "_" + name] = function() {
-    transform(doc, expect, () => {
-      let arg1 = doc.tag.b || doc.tag.a
-      if (op == "wrap") arg2 = new Node(Node.types[arg2], null, Node.types[arg2].defaultAttrs)
-      if (op == "split") arg1 = arg2 || 1
-      return block[op](doc, doc.tag.a, arg1, arg2)
-    })
+    if (!params) params = {}
+    params.name = op
+    if (!params.pos) params.pos = doc.tag.a
+    if (!params.end) params.end = doc.tag.b
+    testTransform(doc, expect, params)
   }
 }
 
@@ -69,27 +66,27 @@ t("join", "list_item",
 t("wrap", "simple",
   doc(p("one"), p("<a>two"), p("three")),
   doc(p("one"), blockquote(p("<a>two")), p("three")),
-  "blockquote")
+  {type: "blockquote"})
 t("wrap", "two",
   doc(p("one<1>"), p("<a>two"), p("<b>three"), p("four<4>")),
   doc(p("one<1>"), blockquote(p("<a>two"), p("three")), p("four<4>")),
-  "blockquote")
+  {type: "blockquote"})
 t("wrap", "list",
   doc(p("<a>one"), p("<b>two")),
   doc(ol(li(p("<a>one")), li(p("<b>two")))),
-  "ordered_list")
+  {type: "ordered_list"})
 t("wrap", "nested_list",
   doc(ol(li(p("<1>one")), li(p("<a>two"), p("<b>three")), li(p("<4>four")))),
   doc(ol(li(p("<1>one")), li(ol(li(p("<a>two")), li(p("<b>three")))), li(p("<4>four")))),
-  "ordered_list")
+  {type: "ordered_list"})
 t("wrap", "not_possible",
   doc(p("hi<a>")),
   doc(p("hi<a>")),
-  "horizontal_rule")
+  {type: "horizontal_rule"})
 t("wrap", "include_parent",
   doc(blockquote(p("<1>one"), p("two<a>")), p("three<b>")),
   doc(blockquote(blockquote(p("<1>one"), p("two<a>")), p("three<b>"))),
-  "blockquote")
+  {type: "blockquote"})
 
 t("split", "simple",
   doc(p("foo<a>bar")),
@@ -100,11 +97,11 @@ t("split", "before_and_after",
 t("split", "deeper",
   doc(blockquote(blockquote(p("foo<a>bar"))), p("after<1>")),
   doc(blockquote(blockquote(p("foo")), blockquote(p("<a>bar"))), p("after<1>")),
-  2)
+  {depth: 2})
 t("split", "and_deeper",
   doc(blockquote(blockquote(p("foo<a>bar"))), p("after<1>")),
   doc(blockquote(blockquote(p("foo"))), blockquote(blockquote(p("<a>bar"))), p("after<1>")),
-  3)
+  {depth: 3})
 t("split", "at_end",
   doc(blockquote(p("hi<a>"))),
   doc(blockquote(p("hi"), p("<a>"))))
@@ -117,49 +114,30 @@ t("split", "list_paragraph",
 t("split", "list_item",
   doc(ol(li(p("one<1>")), li(p("two<a>three")), li(p("four<2>")))),
   doc(ol(li(p("one<1>")), li(p("two")), li(p("<a>three")), li(p("four<2>")))),
-  2)
+  {depth: 2})
 
-function insert(name, doc, pos, value, expected) {
-  tests["insert_" + name] = function() {
-    transform(doc, expected, () => {
-      return block.insert(doc, new Pos(pos.slice(0, pos.length - 1), pos[pos.length - 1], false), value.content[0])
-    })
-  }
-}
+t("insert", "simple",
+  doc(p("one<1>"), p("two<2>")),
+  doc(p("one<1>"), p(), p("two<2>")),
+  {pos: new Pos([], 1, false), type: "paragraph"})
+t("insert", "end_of_blockquote",
+  doc(blockquote(p("he<before>y")), p("after<after>")),
+  doc(blockquote(p("he<before>y"), p()), p("after<after>")),
+  {pos: new Pos([0], 1, false), type: "paragraph"})
+t("insert", "start_of_blockquote",
+  doc(blockquote(p("he<1>y")), p("after<2>")),
+  doc(blockquote(p(), p("he<1>y")), p("after<2>")),
+  {pos: new Pos([0], 0, false), type: "paragraph"})
 
-insert("simple",
-       doc(p("one<1>"), p("two<2>")),
-       [1],
-       doc(p("one and a half")),
-       doc(p("one<1>"), p("one and a half"), p("two<2>")))
-insert("end_of_blockquote",
-       doc(blockquote(p("he<before>y")), p("after<after>")),
-       [0, 1],
-       doc(p("aye")),
-       doc(blockquote(p("he<before>y"), p("aye")), p("after<after>")))
-insert("start_of_blockquote",
-       doc(blockquote(p("he<1>y")), p("after<2>")),
-       [0, 0],
-       doc(p("aye")),
-       doc(blockquote(p("aye"), p("he<1>y")), p("after<2>")))
-
-function rm(name, doc, pos, expected) {
-  tests["remove_" + name] = function() {
-    transform(doc, expected, () => {
-      return block.remove(doc, new Pos(pos.slice(0, pos.length - 1), pos[pos.length - 1], false))
-    })
-  }
-}
-
-rm("simple",
-   doc(p("<1>one"), p("tw<2>o"), p("<3>three")),
-   [1],
-   doc(p("<1>one"), p("<2><3>three")))
-rm("only",
-   doc(blockquote(p("hi"))),
-   [0, 0],
-   doc(blockquote()))
-rm("outside_path",
-   doc(blockquote(p("a"), p("b")), p("c<1>")),
-   [0, 1],
-   doc(blockquote(p("a")), p("c<1>")))
+t("remove", "simple",
+  doc(p("<1>one"), p("tw<2>o"), p("<3>three")),
+  doc(p("<1>one"), p("<2><3>three")),
+ {pos: new Pos([], 1, false)})
+t("remove", "only",
+  doc(blockquote(p("hi"))),
+  doc(blockquote()),
+  {pos: new Pos([0], 0, false)})
+t("remove", "outside_path",
+  doc(blockquote(p("a"), p("b")), p("c<1>")),
+  doc(blockquote(p("a")), p("c<1>")),
+  {pos: new Pos([0], 1, false)})
