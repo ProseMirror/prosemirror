@@ -69,7 +69,7 @@ class Context {
       let route = Node.findConnection(top.type, node.type)
       if (!route) return false
       for (let i = 0; i < route.length; i++)
-        this.enter(new Node(route[i], null, route[i].defaultAttrs), false)
+        this.enter(new Node(route[i]), false)
       this.top.push(node)
     }
     return true

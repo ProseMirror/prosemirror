@@ -1,12 +1,12 @@
 const nullContent = []
 
 export default class Node {
-  constructor(type, content, attrs = nullAttrs) {
+  constructor(type, content, attrs = null) {
     if (typeof type == "string") type = nodeTypes[type]
     if (!type) throw new Error("Node without type")
     this.type = type
     this.content = content || (type.contains ? [] : Node.empty)
-    this.attrs = attrs
+    this.attrs = attrs || type.defaultAttrs
   }
 
   toString() {
@@ -68,10 +68,8 @@ export default class Node {
 
 Node.empty = [] // Reused empty array for collections that are guaranteed to remain empty
 
-const nullAttrs = Node.nullAttrs = {}
-
 class InlineNode extends Node {
-  constructor(type, styles, text, attrs = nullAttrs) {
+  constructor(type, styles, text, attrs = null) {
     super(type, null, attrs)
     this.text = text == null ? "×" : text
     this.styles = styles || Node.empty
@@ -106,6 +104,8 @@ class InlineNode extends Node {
 }
 
 Node.Inline = InlineNode
+
+const nullAttrs = Node.nullAttrs = {}
 
 class NodeType {
   constructor(type, contains, attrs = nullAttrs, defaultAttrs = nullAttrs) {

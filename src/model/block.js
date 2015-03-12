@@ -137,15 +137,15 @@ transform.define("wrap", function(doc, params) {
   let output = slice.before(doc, before)
   let result = new transform.Result(doc, output, before)
 
-  let newNode = new Node(wrapperType, null, params.attrs || wrapperType.defaultAttrs)
+  let newNode = new Node(wrapperType, null, params.attrs)
   for (let pos = range.from; pos < range.to; pos++) {
     let newChild = source.content[pos]
     for (let i = connInside.length - 1; i >= 0; i--)
-      newChild = new Node(connInside[i], [newChild], connInside[i].defaultAttrs)
+      newChild = new Node(connInside[i], [newChild])
     newNode.push(newChild)
   }
   for (let i = connAround.length - 1; i >= 0; i--)
-    newNode = new Node(connAround[i], [newNode], connAround[i].defaultAttrs)
+    newNode = new Node(connAround[i], [newNode])
 
   output.path(range.path).push(newNode)
   let prefix = range.path.concat(range.from), suffix = []

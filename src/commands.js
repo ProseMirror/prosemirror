@@ -92,7 +92,6 @@ commands.lift = pm => {
 
 function wrap(pm, type) {
   let sel = pm.selection
-  let node = new Node(type, null, Node.types[type].defaultAttrs)
   pm.apply({name: "wrap", pos: sel.from, end: sel.to, type: type})
 }
 
