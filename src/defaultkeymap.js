@@ -14,5 +14,13 @@ export default normalizeKeymap({
   "Alt-Left": "lift",
   "Alt-Right '*'": "wrapBulletList",
   "Alt-Right '1'": "wrapOrderedList",
-  "Alt-Right '>'": "wrapBlockquote"
+  "Alt-Right '>'": "wrapBlockquote",
+  "Ctrl-H '1'": "makeH1",
+  "Ctrl-H '2'": "makeH2",
+  "Ctrl-H '3'": "makeH3",
+  "Ctrl-H '4'": "makeH4",
+  "Ctrl-H '5'": "makeH5",
+  "Ctrl-H '6'": "makeH6",
+  "Ctrl-P": "makeParagraph",
+  "Ctrl-`": "makeCodeBlock"
 })

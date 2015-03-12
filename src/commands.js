@@ -111,3 +111,19 @@ commands.endBlock = pm => {
     pm.applyTransform(block.split(pm.doc, head, isList ? 2 : 1))
   }
 }
+
+function setType(pm, type, attrs) {
+  let sel = pm.selection
+  pm.updateDoc(inline.setType(pm.doc, sel.from, sel.to,
+                              new Node(type, null, attrs || Node.types[type].defaultAttrs)))
+}
+
+commands.makeH1 = pm => setType(pm, "heading", {level: 1})
+commands.makeH2 = pm => setType(pm, "heading", {level: 2})
+commands.makeH3 = pm => setType(pm, "heading", {level: 3})
+commands.makeH4 = pm => setType(pm, "heading", {level: 4})
+commands.makeH5 = pm => setType(pm, "heading", {level: 5})
+commands.makeH6 = pm => setType(pm, "heading", {level: 6})
+
+commands.makeParagraph = pm => setType(pm, "paragraph")
+commands.makeCodeBlock = pm => setType(pm, "code_block") // FIXME kill styling
