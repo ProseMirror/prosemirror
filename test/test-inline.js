@@ -1,11 +1,10 @@
-import {doc, blockquote, h1, p, li, ol, ul, em, strong, code, a, a2, br} from "./build"
+import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br} from "./build"
 
 import Failure from "./failure"
 import tests from "./tests"
 import {transform} from "./cmp"
 
-import * as inline from "../src/model/inline"
-import * as style from "../src/model/style"
+import {inline, style, Node} from "../src/model"
 
 function t(op, name, doc, stl, expect) {
   tests[op + "_" + name] = function() {
@@ -63,6 +62,19 @@ t("removeStyle", "across_blocks",
   doc(blockquote(p(em("much <a>em")), p(em("here too"))), p("between", em("...")), p(em("end<b>"))),
   style.em,
   doc(blockquote(p(em("much "), "em"), p("here too")), p("between..."), p("end")))
+
+t("setType", "simple",
+  doc(p("am<a> i")),
+  new Node("heading", null, {level: 2}),
+  doc(h2("am i")))
+t("setType", "multiple",
+  doc(h1("<a>hello"), p("there"), p("<b>you"), p("end")),
+  new Node("code_block"),
+  doc(pre("hello"), pre("there"), pre("you"), p("end")))
+t("setType", "inside",
+  doc(blockquote(p("one<a>"), p("two<b>"))),
+  new Node("heading", null, {level: 1}),
+  doc(blockquote(h1("one<a>"), h1("two<b>"))))
 
 function has(name, doc, style, result) {
   tests["has_" + name] = function() {
@@ -135,4 +147,3 @@ text("before_br",
      doc(p("<a>", br, "ok")),
      "ay",
      doc(p("ay", br, "ok")))
-     

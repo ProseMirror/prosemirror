@@ -84,6 +84,15 @@ export function removeStyle(doc, from, to, rm) {
   })
 }
 
+export function setType(doc, from, to, example) {
+  return copyStructure(doc, from, to, node => {
+    let copy = node.copy(node.content)
+    copy.type = example.type
+    copy.attrs = example.attrs
+    return copy
+  })
+}
+
 function inlineNodeAtOrBefore(parent, offset) {
   for (let i = 0; i < parent.content.length; i++) {
     let child = parent.content[i]
