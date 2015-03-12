@@ -6,6 +6,8 @@ export default class Node {
     if (!type) throw new Error("Node without type")
     this.type = type
     this.content = content || (type.contains ? [] : Node.empty)
+    if (!attrs && !(attrs = type.defaultAttrs))
+      throw new Error("No default attributes for node type " + type.name)
     this.attrs = attrs || type.defaultAttrs
   }
 
@@ -108,12 +110,12 @@ Node.Inline = InlineNode
 const nullAttrs = Node.nullAttrs = {}
 
 class NodeType {
-  constructor(type, contains, attrs = nullAttrs, defaultAttrs = nullAttrs) {
+  constructor(type, contains, attrs = nullAttrs, defaultAttrs = null) {
     this.name = ""
     this.type = type
     this.contains = contains
     this.attrs = attrs
-    this.defaultAttrs = defaultAttrs
+    this.defaultAttrs = defaultAttrs || (attrs == nullAttrs && nullAttrs)
   }
 }
 
@@ -126,9 +128,9 @@ const nodeTypes = Node.types = {
   ordered_list: new NodeType("block", "list_item", {order: "num", tight: "bool"}, {order: 1, tight: true}),
   list_item: new NodeType("list_item", "block"),
   html_block: new NodeType("block", null, {html: "str"}),
-  code_block: new NodeType("block", "inline", {params: "str"}),
-  horizontal_rule: new NodeType("block", null, {markup: "str"}),
-  text: new NodeType("inline", null, {text: "str", style: "arr"}),
+  code_block: new NodeType("block", "inline", {params: "str"}, {params: null}),
+  horizontal_rule: new NodeType("block", null, {markup: "str"}, {markup: "---"}),
+  text: new NodeType("inline", null),
   image: new NodeType("inline", null, {src: "str", title: "str", alt: "str"}),
   hard_break: new NodeType("inline", null),
   html_tag: new NodeType("inline", null, {html: "str"})
