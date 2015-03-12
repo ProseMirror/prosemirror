@@ -110,12 +110,13 @@ transform.define("setType", function(doc, params) {
 })
 
 function clearMarkup(node) {
-  node.content = node.content.slice()
-  for (var i = 0; i < node.content.length; i++) {
-    let child = node.content[i]
-    if (child.styles)
-      node.content[i] = new Node.Inline(child.type, Node.empty, child.text, child.attrs)
-    if (i && stitchTextNodes(node, i)) --i
+  if (node.content.length > 1 || node.content[0].type != Node.types.text || node.content[0].styles.length) {
+    let text = ""
+    for (var i = 0; i < node.content.length; i++) {
+      let child = node.content[i]
+      if (child.type == Node.types.text) text += child.text
+    }
+    node.content = [new Node.Inline("text", Node.empty, text)]
   }
 }
 
@@ -163,6 +164,10 @@ function insertNode(doc, pos, node) {
 }
 
 transform.define("insertInline", function(doc, params) {
+  if (params.type != "text" &&
+      doc.path(params.pos.path).type == Node.types.code_block)
+    return transform.identity(doc)
+
   return insertNode(doc, params.pos,
                     new Node(params.type, params.text, params.attrs))
 })
