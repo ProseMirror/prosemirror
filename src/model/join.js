@@ -1,6 +1,7 @@
 import Pos from "./pos"
 import Node from "./node"
 import * as style from "./style"
+import {stitchTextNodes} from "./inline"
 
 function nodesLeft(doc, depth) {
   let nodes = []
@@ -23,17 +24,6 @@ function nodesRight(doc, depth) {
 function compatibleTypes(a, b) {
   return a.contains == b.contains &&
     (a.contains == "block" || a.contains == "inline" || a == b)
-}
-
-export function stitchTextNodes(node, at) {
-  let before, after
-  if (at && node.content.length > at &&
-      (before = node.content[at - 1]).type == Node.types.text &&
-      (after = node.content[at]).type == Node.types.text &&
-      style.sameSet(before.styles, after.styles)) {
-    let joined = new Node.Inline(Node.types.text, before.styles, before.text + after.text)
-    node.content.splice(at - 1, 2, joined)
-  }
 }
 
 export function simple(left, leftDepth, right, rightDepth, f) {

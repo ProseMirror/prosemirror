@@ -3,9 +3,20 @@
 import * as style from "./style"
 import Node from "./node"
 import Pos from "./pos"
-import {stitchTextNodes} from "./join"
 import * as transform from "./transform"
 import * as slice from "./slice"
+
+export function stitchTextNodes(node, at) {
+  let before, after
+  if (at && node.content.length > at &&
+      (before = node.content[at - 1]).type == Node.types.text &&
+      (after = node.content[at]).type == Node.types.text &&
+      style.sameSet(before.styles, after.styles)) {
+    let joined = new Node.Inline(Node.types.text, before.styles, before.text + after.text)
+    node.content.splice(at - 1, 2, joined)
+    return true
+  }
+}
 
 function addInline(node, child) {
   node.push(child)
@@ -68,6 +79,7 @@ function copyInline(node, from, to, f) {
 
 transform.define("addStyle", function(doc, params) {
   let copy = copyStructure(doc, params.pos, params.end || params.pos, (node, from, to) => {
+    if (node.type == Node.types.code_block) return node
     return copyInline(node, from, to, node => {
       return new Node.Inline(node.type, style.add(node.styles, params.style),
                              node.text, node.attrs)
@@ -91,10 +103,21 @@ transform.define("setType", function(doc, params) {
     let copy = node.copy(node.content)
     copy.type = Node.types[params.type]
     copy.attrs = params.attrs || copy.type.defaultAttrs
+    if (copy.type == Node.types.code_block) clearMarkup(copy)
     return copy
   })
   return transform.flat(doc, copy)
 })
+
+function clearMarkup(node) {
+  node.content = node.content.slice()
+  for (var i = 0; i < node.content.length; i++) {
+    let child = node.content[i]
+    if (child.styles)
+      node.content[i] = new Node.Inline(child.type, Node.empty, child.text, child.attrs)
+    if (i && stitchTextNodes(node, i)) --i
+  }
+}
 
 function inlineNodeAtOrBefore(parent, offset) {
   for (let i = 0; i < parent.content.length; i++) {

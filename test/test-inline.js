@@ -82,6 +82,14 @@ t("setType", "inside",
   doc(blockquote(p("one<a>"), p("two<b>"))),
   doc(blockquote(h1("one<a>"), h1("two<b>"))),
   {type: "heading", attrs: {level: 1}})
+t("setType", "clear_markup",
+  doc(p("hello ", em("world"))),
+  doc(pre("hello world")),
+  {type: "code_block"})
+t("setType", "only_clear_for_code_block",
+  doc(p("hello ", em("world"))),
+  doc(h1("hello ", em("world"))),
+  {type: "heading", attrs: {level: 1}})
 
 t("insertText", "simple",
   doc(p("hello<a>")),

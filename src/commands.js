@@ -125,4 +125,4 @@ commands.makeH5 = pm => setType(pm, "heading", {level: 5})
 commands.makeH6 = pm => setType(pm, "heading", {level: 6})
 
 commands.makeParagraph = pm => setType(pm, "paragraph")
-commands.makeCodeBlock = pm => setType(pm, "code_block") // FIXME kill styling
+commands.makeCodeBlock = pm => setType(pm, "code_block")
