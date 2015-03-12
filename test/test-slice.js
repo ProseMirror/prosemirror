@@ -4,7 +4,7 @@ import Failure from "./failure"
 import tests from "./tests"
 import * as cmp from "./cmp"
 
-import * as slice from "../src/model/slice"
+import {slice} from "../src/model"
 
 function t(name, doc, expect) {
   tests["slice_" + name] = function() {

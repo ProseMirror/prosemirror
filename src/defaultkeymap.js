@@ -25,3 +25,6 @@ export default normalizeKeymap({
   "Ctrl-`": "makeCodeBlock",
   "Ctrl-Space": "insertRule"
 })
+
+// FIXME ctrl-backspace, ctrl-delete
+// FIXME mac-style bindings

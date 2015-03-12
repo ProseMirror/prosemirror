@@ -1,6 +1,4 @@
-import Node from "../src/model/node"
-import Pos from "../src/model/pos"
-import * as style from "../src/model/style"
+import {Node, Pos, style} from "../src/model"
 
 let inlineContext = null
 
@@ -45,7 +43,11 @@ function parseDoc(value) {
     styles = start
     return result
   } else if (value.type == "insert") {
-    return new Node.Inline(value.style, styles, value.text, value.attrs)
+    let type = Node.types[value.style]
+    if (type.type == "inline")
+      return new Node.Inline(type, styles, value.text, value.attrs)
+    else
+      return new Node(type, value.content, value.attrs)
   } else {
     let node = new Node(value.style, null, value.attrs)
     styles = []
@@ -88,6 +90,7 @@ export function doc() {
 export let p = build("paragraph")
 export let blockquote = build("blockquote")
 export let pre = build("code_block")
+export let pre2 = build("code_block", {params: null, markup: "```"})
 export let h1 = build("heading", {level: 1})
 export let h2 = build("heading", {level: 2})
 export let li = build("list_item")
@@ -101,3 +104,4 @@ export let a = buildInline(style.link("http://foo"))
 export let a2 = buildInline(style.link("http://bar"))
 export let br = {type: "insert", style: "hard_break"}
 export let img = {type: "insert", style: "image", attrs: {src: "x.png", alt: "x"}}
+export let hr = {type: "insert", style: "horizontal_rule"}

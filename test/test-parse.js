@@ -1,12 +1,13 @@
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, uldash, em, strong, code, a, a2, br, img} from "./build"
+import {doc, blockquote, hr, pre, pre2, h1, h2, p, li, ol, ul, uldash, em, strong, code, a, a2, br, img} from "./build"
 import * as cmp from "./cmp"
 import tests from "./tests"
 
-import fromText from "../src/model/from_text"
+import {fromText, toText} from "../src/model"
 
 function t(name, text, doc) {
   tests["parse_" + name] = function() {
     cmp.node(fromText(text), doc)
+    cmp.simple(toText(doc), text)
   }
 }
 
@@ -19,7 +20,7 @@ t("heading",
   doc(h1("one"), h2("two"), p("three")))
 
 t("quote",
-  "> once\n\n>> twice",
+  "> once\n\n> > twice",
   doc(blockquote(p("once")), blockquote(blockquote(p("twice")))))
 
 t("bullet_list",
@@ -27,12 +28,12 @@ t("bullet_list",
   doc(ul(li(p("foo"), uldash(li(p("bar")), li(p("baz")))), li(p("quux")))))
 
 t("ordered_list",
-  "1. Hello\n2. Goodbye\n3. Nest\n   1. Hey\n    2. Aye",
+  "1. Hello\n2. Goodbye\n3. Nest\n   1. Hey\n   2. Aye",
   doc(ol(li(p("Hello")), li(p("Goodbye")), li(p("Nest"), ol(li(p("Hey")), li(p("Aye")))))))
 
 t("code_block",
   "```\nMy Code\n```\n\n    Other code\n\nPara",
-  doc(pre("My Code\n"), pre("Other code\n"), p("Para")))
+  doc(pre2("My Code\n"), pre("Other code\n"), p("Para")))
 
 t("inline",
   "Hello. Some *em* text, some **strong** text, and some `code`",
@@ -53,3 +54,7 @@ t("image",
 t("break",
   "line one\\\nline two",
   doc(p("line one", br, "line two")))
+
+t("horizontal_rule",
+  "one two\n\n---\n\nthree",
+  doc(p("one two"), hr, p("three")))

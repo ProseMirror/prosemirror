@@ -38,13 +38,13 @@ const tokens = Object.create(null)
 // and _close tokens with more tokens in between them, and `token` for
 // atomic tokens.
 
-function addNode(state, type, attrs = Node.nullAttrs) {
+function addNode(state, type, attrs = null) {
   let node = new Node(type, null, attrs)
   state.push(node)
   return node
 }
 
-function openNode(state, type, attrs = Node.nullAttrs) {
+function openNode(state, type, attrs = null) {
   let node = addNode(state, type, attrs)
   state.stack.push(node)
   return node
@@ -64,7 +64,7 @@ function closeInline(state, rm) {
   state.styles = style.remove(state.styles, rm)
 }
 
-function addInline(state, type, text = null, attrs = Node.nullAttrs) {
+function addInline(state, type, text = null, attrs = null) {
   let node = new Node.Inline(type, state.styles, text, attrs)
   state.push(node)
   return node
@@ -78,10 +78,9 @@ function addText(state, text) {
     addInline(state, "text", text)
 }
 
-function tokBlock(name, extra = null) {
+function tokBlock(name, getAttrs = null) {
   tokens[name + "_open"] = (state, tok, offset) => {
-    let node = openNode(state, name)
-    if (extra) extra(state, tok, node, offset)
+    openNode(state, name, getAttrs ? getAttrs(state, tok, offset) : null)
   }
   tokens[name + "_close"] = closeNode
 }
@@ -104,16 +103,16 @@ function attr(tok, name) {
 
 ;["blockquote", "paragraph", "list_item", "table"].forEach(n => tokBlock(n))
 
-tokBlock("bullet_list", (state, tok, node, offset) => {
-  node.attrs = {bullet: tok.markup, tight: state.tokens[offset + 2].hidden}
+tokBlock("bullet_list", (state, tok, offset) => {
+  return {bullet: tok.markup, tight: state.tokens[offset + 2].hidden}
 })
 
-tokBlock("ordered_list", (state, tok, node, offset) => {
-  node.attrs = {order: Number(attr(tok, "order") || 1), tight: state.tokens[offset + 2].hidden}
+tokBlock("ordered_list", (state, tok, offset) => {
+  return {order: Number(attr(tok, "order") || 1), tight: state.tokens[offset + 2].hidden}
 })
 
-tokBlock("heading", (_state, tok, node) => {
-  node.attrs = {level: Number(tok.tag.slice(1))}
+tokBlock("heading", (_state, tok) => {
+  return {level: Number(tok.tag.slice(1))}
 })
 
 tokens.htmlblock = (state, tok) => {
@@ -121,7 +120,7 @@ tokens.htmlblock = (state, tok) => {
 }
 
 tokens.fence = (state, tok) => {
-  openNode(state, "code_block", {params: tok.info || null})
+  openNode(state, "code_block", {params: tok.info || null, markup: "```"})
   addText(state, tok.content)
   closeNode(state)
 }

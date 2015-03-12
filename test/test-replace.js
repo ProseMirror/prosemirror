@@ -1,7 +1,6 @@
 import {doc, h1, blockquote, p, li, ol, ul, em, a, br} from "./build"
 
 import Failure from "./failure"
-import replace from "../src/model/replace"
 import tests from "./tests"
 import {testTransform} from "./cmp"
 
