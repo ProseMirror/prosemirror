@@ -1,6 +1,6 @@
 import "../css/prosemirror.css"
 
-import {fromText} from "./model"
+import {fromText, transform} from "./model"
 
 import * as options from "./options"
 import {Selection} from "./selection"
@@ -40,15 +40,19 @@ export default class ProseMirror {
     return this.doc
   }
 
-  updateDoc(doc, selAnchor, selHead) {
-    if (doc != this.doc) {
+
+  apply(params) {
+    let sel = this.selection
+    let result = transform.apply(this.doc, params)
+    if (result.doc != this.doc) {
       this.history.mark()
-      this.updateDocInner(doc, selAnchor || this.selection.anchor,
-                          selHead || this.selection.head)
+      this.updateInner(result.doc,
+                       result.map(sel.anchor),
+                       result.map(sel.head))
     }
   }
 
-  updateDocInner(doc, selAnchor, selHead) {
+  updateInner(doc, selAnchor, selHead) {
     this.ensureOperation()
     this.doc = doc
     this.setSelection(selAnchor, selHead)
@@ -57,11 +61,6 @@ export default class ProseMirror {
   setSelection(anchor, head) {
     this.ensureOperation()
     this.sel.set(anchor, head)
-  }
-
-  applyTransform(transform) {
-    let sel = this.selection
-    this.updateDoc(transform.doc, transform.map(sel.anchor), transform.map(sel.head))
   }
 
   ensureOperation() {

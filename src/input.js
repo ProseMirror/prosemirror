@@ -1,4 +1,4 @@
-import {fromDOM, fromText, toDOM, replace, Pos, inline, slice} from "./model"
+import {fromDOM, fromText, toDOM, Pos, slice} from "./model"
 
 import * as keys from "./keys"
 import * as dom from "./dom"
@@ -45,8 +45,8 @@ handlers.keydown = (pm, e) => {
 }
 
 function replaceRange(pm, range, text) {
-  if (!range.empty) pm.applyTransform(replace(pm.doc, range.from, range.to))
-  if (text) pm.applyTransform(inline.insertText(pm.doc, range.from, text))
+  if (!range.empty) pm.apply({name: "replace", pos: range.from, end: range.to})
+  if (text) pm.apply({name: "insertText", pos: range.from, text: text})
 }
 
 handlers.keypress = (pm, e) => {
@@ -129,8 +129,8 @@ handlers.paste = (pm, e) => {
     } else {
       doc = fromText(text)
     }
-    pm.applyTransform(replace(pm.doc, sel.from, sel.to,
-                              doc, from || Pos.start(doc), to || Pos.end(doc)))
+    pm.apply({name: "replace", pos: sel.from, end: sel.to,
+              source: doc, from: from || Pos.start(doc), to: to || Pos.end(doc)})
   }
 }
 

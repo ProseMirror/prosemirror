@@ -29,7 +29,7 @@ function move(hist, from, to) {
   var event = from.pop();
   if (event) {
     to.push(new Event(hist.pm.doc, hist.pm.selection))
-    hist.pm.updateDocInner(event.doc, event.sel.anchor, event.sel.head)
+    hist.pm.updateInner(event.doc, event.sel.anchor, event.sel.head)
     hist.lastAddedAt = 0
   }
 }
