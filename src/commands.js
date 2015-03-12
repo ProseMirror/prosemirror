@@ -36,7 +36,10 @@ commands.toggleEm = pm => setInlineStyle(pm, style.em, null)
 function delBlockBackward(pm, pos) {
   if (pos.path.length == 1) { // Top level block, join with block above
     let before = Pos.before(pm.doc, new Pos([], pos.path[0], false))
-    if (before) pm.apply({name: "replace", pos: before, end: pos})
+    if (before)
+      pm.apply({name: "replace", pos: before, end: pos})
+    else if (pos.path[0] > 0)
+      pm.apply({name: "remove", pos: new Pos([], pos.path[0] - 1, false)})
     return
   }
 
@@ -67,7 +70,10 @@ commands.delBackward = pm => {
 function delBlockForward(pm, pos) {
   let lst = pos.path.length - 1
   let after = Pos.after(pm.doc, new Pos(pos.path.slice(0, lst), pos.path[lst] + 1, false))
-  if (after) pm.apply({name: "replace", pos: pos, end: after})
+  if (after)
+    pm.apply({name: "replace", pos: pos, end: after})
+  else if (pos.path[0] < pm.doc.content.length)
+    pm.apply({name: "remove", pos: new Pos([], offset + 1, false)})
 }
 
 commands.delForward = pm => {
@@ -113,8 +119,8 @@ commands.endBlock = pm => {
 
 function setType(pm, type, attrs) {
   let sel = pm.selection
-  pm.apply({name: "setType", pos: sel.from, end: sel.to,
-            type: type, attrs: attrs})
+  return pm.apply({name: "setType", pos: sel.from, end: sel.to,
+                   type: type, attrs: attrs})
 }
 
 commands.makeH1 = pm => setType(pm, "heading", {level: 1})
@@ -126,3 +132,17 @@ commands.makeH6 = pm => setType(pm, "heading", {level: 6})
 
 commands.makeParagraph = pm => setType(pm, "paragraph")
 commands.makeCodeBlock = pm => setType(pm, "code_block")
+
+function insertOpaqueBlock(pm, type, attrs) {
+  let sel = pm.selection
+  if (!sel.empty) return false
+  let parent = pm.doc.path(sel.head.path)
+  if (parent.type.type != "block") return false
+  if (sel.head.offset) {
+    pm.apply({name: "split", pos: sel.head})
+    sel = pm.selection
+  }
+  pm.apply({name: "insert", pos: sel.head.shorten(), type: type, attrs: attrs})
+}
+
+commands.insertRule = pm => insertOpaqueBlock(pm, "horizontal_rule")

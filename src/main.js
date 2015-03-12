@@ -49,7 +49,9 @@ export default class ProseMirror {
       this.updateInner(result.doc,
                        result.map(sel.anchor),
                        result.map(sel.head))
+      return true
     }
+    return false
   }
 
   updateInner(doc, selAnchor, selHead) {
