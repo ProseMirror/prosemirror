@@ -94,8 +94,8 @@ function renderInlineContentFlat(nodes, where, options) {
 
 render.blockquote = wrap
 
-render.code_block = node => {
-  let code = elt("code", node.textContent)
+render.code_block = (node, options) => {
+  let code = wrap(node, options, "code")
   if (node.attrs.params) {
     code.className = node.attrs.params.replace(/(^|\s+)/g, "$&lang-")
     code.setAttribute("mm-params", node.attrs.params)
