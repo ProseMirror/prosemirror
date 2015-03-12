@@ -13,16 +13,16 @@ function clearSelection(pm) {
 
 commands.insertHardBreak = pm => {
   let pos = clearSelection(pm)
-  pm.apply({name: "insertInline", pos: pos, type: "hard_break"})
+  return pm.apply({name: "insertInline", pos: pos, type: "hard_break"})
 }
 
 function setInlineStyle(pm, style, to) {
   let sel = pm.selection
   if (to == null)
     to = !inline.hasStyle(pm.doc, sel.head, style)
-  pm.apply({name: to ? "addStyle" : "removeStyle",
-            pos: sel.from, end: sel.to,
-            style: style})
+  return pm.apply({name: to ? "addStyle" : "removeStyle",
+                   pos: sel.from, end: sel.to,
+                   style: style})
 }
 
 commands.makeStrong = pm => setInlineStyle(pm, style.strong, true)
@@ -40,20 +40,20 @@ function delBlockBackward(pm, pos) {
       pm.apply({name: "replace", pos: before, end: pos})
     else if (pos.path[0] > 0)
       pm.apply({name: "remove", pos: new Pos([], pos.path[0] - 1, false)})
-    return
-  }
-
-  let last = pos.path.length - 1
-  let parent = pm.doc.path(pos.path.slice(0, last))
-  let offset = pos.path[last]
-  if (parent.type == Node.types.list_item &&
-      offset == 0 && pos.path[last - 1] > 0) {
+    else
+      return false
+  } else {
+    let last = pos.path.length - 1
+    let parent = pm.doc.path(pos.path.slice(0, last))
+    let offset = pos.path[last]
     // Top of list item below other list item
     // Join with the one above
-    pm.apply({name: "join", pos: pos})
-  } else {
+    if (parent.type == Node.types.list_item &&
+        offset == 0 && pos.path[last - 1] > 0)
+      return pm.apply({name: "join", pos: pos})
     // Any other nested block, lift up
-    pm.apply({name: "lift", pos: pos})
+    else
+      return pm.apply({name: "lift", pos: pos})
   }
 }
 
@@ -62,9 +62,9 @@ commands.delBackward = pm => {
   if (!sel.empty)
     clearSelection(pm)
   else if (sel.head.offset)
-    pm.apply({name: "replace", pos: new Pos(head.path, head.offset - 1), end: head})
+    return pm.apply({name: "replace", pos: new Pos(head.path, head.offset - 1), end: head})
   else
-    delBlockBackward(pm, head)
+    return delBlockBackward(pm, head)
 }
 
 function delBlockForward(pm, pos) {
@@ -74,6 +74,8 @@ function delBlockForward(pm, pos) {
     pm.apply({name: "replace", pos: pos, end: after})
   else if (pos.path[0] < pm.doc.content.length)
     pm.apply({name: "remove", pos: new Pos([], offset + 1, false)})
+  else
+    return false
 }
 
 commands.delForward = pm => {
@@ -81,9 +83,9 @@ commands.delForward = pm => {
   if (!sel.empty)
     clearSelection(pm)
   else if (head.offset < pm.doc.path(head.path).size)
-    pm.apply({name: "replace", pos: head, end: new Pos(head.path, head.offset + 1)})
+    return pm.apply({name: "replace", pos: head, end: new Pos(head.path, head.offset + 1)})
   else
-    delBlockForward(pm, head)
+    return delBlockForward(pm, head)
 }
 
 commands.undo = pm => pm.history.undo()
@@ -93,12 +95,12 @@ commands.join = pm => pm.apply({name: "join", pos: pm.selection.head})
 
 commands.lift = pm => {
   let sel = pm.selection
-  pm.apply({name: "lift", pos: sel.from, end: sel.to})
+  return pm.apply({name: "lift", pos: sel.from, end: sel.to})
 }
 
 function wrap(pm, type) {
   let sel = pm.selection
-  pm.apply({name: "wrap", pos: sel.from, end: sel.to, type: type})
+  return pm.apply({name: "wrap", pos: sel.from, end: sel.to, type: type})
 }
 
 commands.wrapBulletList = pm => wrap(pm, "bullet_list")
@@ -108,12 +110,12 @@ commands.wrapBlockquote = pm => wrap(pm, "blockquote")
 commands.endBlock = pm => {
   let head = clearSelection(pm)
   if (head.path.length > 1 && pm.doc.path(head.path).content.length == 0) {
-    pm.apply({name: "lift", pos: head})
+    return pm.apply({name: "lift", pos: head})
   } else {
     let end = head.path.length - 1
     let isList = head.path.length > 1 && head.path[end] == 0 &&
         pm.doc.path(head.path.slice(0, end)).type == Node.types.list_item
-    pm.apply({name: "split", pos: head, depth: isList ? 2 : 1})
+    return pm.apply({name: "split", pos: head, depth: isList ? 2 : 1})
   }
 }
 

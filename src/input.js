@@ -23,7 +23,7 @@ function dispatchKey(pm, name, e) {
       bound = commands[bound]
       if (!bound) return false
     }
-    return bound(pm) != false
+    return bound(pm) !== false
   }, pm)
 
   if (result == "multi")
