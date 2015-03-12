@@ -65,6 +65,10 @@ t("removeStyle", "across_blocks",
   doc(blockquote(p(em("much <a>em")), p(em("here too"))), p("between", em("...")), p(em("end<b>"))),
   doc(blockquote(p(em("much "), "em"), p("here too")), p("between..."), p("end")),
   {style: style.em})
+t("removeStyle", "all",
+  doc(p("<a>hello, ", em("this is ", strong("much"), " ", a("markup<b>")))),
+  doc(p("<a>hello, this is much markup")),
+  {style: null})
 
 t("setType", "simple",
   doc(p("am<a> i")),
