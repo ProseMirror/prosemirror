@@ -7,7 +7,6 @@ import toText from "./to_text"
 import fromDOM from "./from_dom"
 import toDOM from "./to_dom"
 
-import "./replace"
 import * as slice from "./slice"
 import * as block from "./block"
 import * as inline from "./inline"
