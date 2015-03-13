@@ -112,14 +112,14 @@ render.horizontal_rule = node => {
 render.bullet_list = (node, options) => {
   let dom = wrap(node, options, "ul")
   dom.setAttribute("mm-bullet", node.attrs.bullet)
-  if (node.attrs.tight) dom.setAttribute("mm-tight", "true")
+  if (node.attrs.tight) dom.setAttribute("class", "tight")
   return dom
 }
 
 render.ordered_list = (node, options) => {
   let dom = wrap(node, options, "ol")
   if (node.attrs.order > 1) dom.setAttribute("start", node.attrs.order)
-  if (node.attrs.tight) dom.setAttribute("mm-tight", "true")
+  if (node.attrs.tight) dom.setAttribute("class", "tight")
   return dom
 }
 

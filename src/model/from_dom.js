@@ -122,7 +122,7 @@ for (var i = 1; i <= 6; i++) (function(attrs) {
 tags.hr = (_, context) => context.insert(new Node("horizontal_rule"))
 
 tags.pre = (dom, context) => {
-  let params = dom.firstChild && /^code$/i.test(dom.firstChild.nodeName) && dom.firstChild.className
+  let params = dom.firstChild && /^code$/i.test(dom.firstChild.nodeName) && dom.firstChild.getAttribute("class")
   if (params && /fence/.test(params)) {
     let found = [], re = /(?:^|\s)lang-(\S+)/g, m
     while (m = re.test(params)) found.push(m[1])
@@ -136,13 +136,13 @@ tags.pre = (dom, context) => {
 
 tags.ul = (dom, context) => {
   let attrs = {bullet: dom.getAttribute("mm-bullet") || "-",
-               tight: dom.hasAttribute("mm-tight")}
+               tight: /\btight\b/.test(dom.getAttribute("class"))}
   wrap(dom, context, new Node("bullet_list", null, attrs))
 }
 
 tags.ol = (dom, context) => {
   let attrs = {order: dom.getAttribute("start") || 1,
-               tight: dom.hasAttribute("mm-tight")}
+               tight: /\btight\b/.test(dom.getAttribute("class"))}
   wrap(dom, context, new Node("ordered_list", null, attrs))
 }
 

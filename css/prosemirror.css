@@ -9,7 +9,7 @@
   min-height: 1.2em;
 }
 
-.ProseMirror ul[mm-tight=true] p, .ProseMirror ol[mm-tight=true] p {
+.ProseMirror ul.tight p, .ProseMirror ol.tight p {
   margin: 0;
 }
 
