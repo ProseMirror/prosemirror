@@ -6,13 +6,19 @@ import {testTransform} from "./cmp"
 
 function t(name, base, source, expect) {
   tests["replace_" + name] = function() {
+    let text = null
+    if (typeof source == "string") {
+      text = source
+      source = null
+    }
     testTransform(base, expect, {
       name: "replace",
       pos: base.tag.a,
       end: base.tag.b,
-      source: source,
+      source: !text && source,
       from: source && source.tag.a,
-      to: source && source.tag.b
+      to: source && source.tag.b,
+      text: text
     })
   }
 }
@@ -25,12 +31,12 @@ t("simple",
 t("insert_paragraph",
   doc(p("one<a>two")),
   doc(p("a<a>"), p("hello"), p("<b>b")),
-  doc(p("one"), p("hello<a>"), p("two")))
+  doc(p("one"), p("hello"), p("<a>two")))
 
 t("overwrite_paragraph",
   doc(p("one<a>"), p("t<inside>wo"), p("<b>three<end>")),
   doc(p("a<a>"), p("TWO"), p("<b>b")),
-  doc(p("one"), p("TWO<b>"), p("three<end>")))
+  doc(p("one"), p("TWO"), p("<a>three<end>")))
 
 t("stitch",
   doc(p("foo ", em("bar<a>baz"), "<b> quux")),
@@ -57,11 +63,6 @@ t("in_empty_block",
   doc(p("x<a>y<b>z")),
   doc(p("a"), p("y<a>"), p("b")))
 
-t("ignore_across_block",
-  doc(p("on<a>e"), h1("<b>head")),
-  doc(p("<a>a"), p("b<b>")),
-  doc(p("ona"), p("b"), h1("head")))
-
 t("dont_shift_everything",
   doc(p("one<a>"), p("two"), p("three")),
   doc(p("outside<a>"), blockquote(p("inside<b>"))),
@@ -71,3 +72,13 @@ t("del_selection",
   doc(p("some <a>te<b>xt")),
   null,
   doc(p("some <a><b>xt")))
+
+t("insert_text",
+  doc(p("a <a>b<b> c<after>")),
+  "D",
+  doc(p("a D<a><b> c<after>")))
+
+t("text_across_paragraphs",
+  doc(p("on<a>e"), p("t<b>wo")),
+  "abc",
+  doc(p("onabc<a>wo")))
