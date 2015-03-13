@@ -96,10 +96,8 @@ render.blockquote = wrap
 
 render.code_block = (node, options) => {
   let code = wrap(node, options, "code")
-  if (node.attrs.params) {
-    code.className = node.attrs.params.replace(/(^|\s+)/g, "$&lang-")
-    code.setAttribute("mm-params", node.attrs.params)
-  }
+  if (node.attrs.params != null)
+    code.className = "fence " + node.attrs.params.replace(/(^|\s+)/g, "$&lang-")
   return elt("pre", code)
 }
 

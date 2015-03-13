@@ -119,15 +119,21 @@ tokens.htmlblock = (state, tok) => {
   addNode(state, "html_block", {html: tok.content})
 }
 
+function cleanTrailingNewline(str) {
+  if (str.charAt(str.length - 1) == "\n")
+    return str.slice(0, str.length - 1)
+  return str
+}
+
 tokens.fence = (state, tok) => {
-  openNode(state, "code_block", {params: tok.info || null, markup: "```"})
-  addText(state, tok.content)
+  openNode(state, "code_block", {params: tok.info || ""})
+  addText(state, cleanTrailingNewline(tok.content))
   closeNode(state)
 }
 
 tokens.code_block = (state, tok) => {
   openNode(state, "code_block")
-  addText(state, tok.content)
+  addText(state, cleanTrailingNewline(tok.content))
   closeNode(state)
 }
 

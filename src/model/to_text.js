@@ -22,6 +22,7 @@ class State {
   constructor() {
     this.delim = this.out = ""
     this.closed = false
+    this.inTightList = false
   }
 
   closeBlock(node) {
@@ -41,11 +42,6 @@ class State {
       }
       this.closed = false
     }
-  }
-
-  doubleSpaceIf(type) {
-    if (this.closed && this.closed.type == type)
-      this.flushClose(3)
   }
 
   wrapBlock(delim, firstDelim, node, f) {
@@ -124,6 +120,22 @@ class State {
       if (node) this.render(node)
     }
   }
+
+  renderList(node, delim, firstDelim) {
+    if (this.closed && this.closed.type == node.type)
+      this.flushClose(3)
+    else if (this.inTightList)
+      this.flushClose(1)
+
+    let prevTight = this.inTightList
+    this.inTightList = node.attrs.tight
+    for (let i = 0; i < node.content.length; i++) {
+       if (i && node.attrs.tight) this.flushClose(1)
+      let item = node.content[i]
+      this.wrapBlock(delim, firstDelim(i), node, () => this.render(item))
+    }
+    this.inTightList = prevTight
+  }
 }
 
 const render = Object.create(null)
@@ -133,10 +145,10 @@ render.blockquote = (state, node) => {
 }
 
 render.code_block = (state, node) => {
-  if (node.attrs.markup == "    ") {
+  if (node.attrs.params == null) {
     state.wrapBlock("    ", null, node, () => state.text(node.textContent, false))
   } else {
-    state.write("```" + (node.attrs.params || "") + "\n")
+    state.write("```" + node.attrs.params + "\n")
     state.text(node.textContent, false)
     state.ensureNewLine()
     state.write("```")
@@ -155,27 +167,20 @@ render.horizontal_rule = (state, node) => {
   state.closeBlock(node)
 }
 
+
+
 render.bullet_list = (state, node) => {
-  state.doubleSpaceIf(node.type)
-  for (let i = 0; i < node.content.length; i++) {
-    if (i && node.attrs.tight) state.flushClose(1)
-    let item = node.content[i]
-    state.wrapBlock("  ", node.attrs.bullet + " ", node, () => state.render(item))
-  }
+  state.renderList(node, "  ", () => node.attrs.bullet + " ")
 }
 
 render.ordered_list = (state, node) => {
-  state.doubleSpaceIf(node.type)
   let start = Number(node.attrs.order || 1)
   let maxW = String(start + node.content.length - 1).length
   let space = rep(" ", maxW + 2)
-  for (let i = 0; i < node.content.length; i++) {
-    if (i && node.attrs.tight) state.flushClose(1)
-    let item = node.content[i]
+  state.renderList(node, space, i => {
     let nStr = String(start + i)
-    state.wrapBlock(space, rep(" ", maxW - nStr.length) + nStr + ". ", node,
-                    () => state.render(item))
-  }
+    return rep(" ", maxW - nStr.length) + nStr + ". "
+  })
 }
 
 render.list_item = (state, node) => state.renderNodes(node.content)

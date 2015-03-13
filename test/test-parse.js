@@ -24,7 +24,7 @@ t("quote",
   doc(blockquote(p("once")), blockquote(blockquote(p("twice")))))
 
 t("bullet_list",
-  " * foo\n    - bar\n    - baz\n * quux",
+  "* foo\n  - bar\n  - baz\n* quux",
   doc(ul(li(p("foo"), uldash(li(p("bar")), li(p("baz")))), li(p("quux")))))
 
 t("ordered_list",
@@ -33,7 +33,7 @@ t("ordered_list",
 
 t("code_block",
   "```\nMy Code\n```\n\n    Other code\n\nPara",
-  doc(pre2("My Code\n"), pre("Other code\n"), p("Para")))
+  doc(pre2("My Code"), pre("Other code"), p("Para")))
 
 t("inline",
   "Hello. Some *em* text, some **strong** text, and some `code`",

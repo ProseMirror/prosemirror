@@ -122,10 +122,16 @@ for (var i = 1; i <= 6; i++) (function(attrs) {
 tags.hr = (_, context) => context.insert(new Node("horizontal_rule"))
 
 tags.pre = (dom, context) => {
-  let params = dom.firstChild && /^code$/i.test(dom.firstChild.nodeName) &&
-      dom.firstChild.getAttribute("mm-params")
+  let params = dom.firstChild && /^code$/i.test(dom.firstChild.nodeName) && dom.firstChild.className
+  if (params && /fence/.test(params)) {
+    let found = [], re = /(?:^|\s)lang-(\S+)/g, m
+    while (m = re.test(params)) found.push(m[1])
+    params = found.join(" ")
+  } else {
+    params = null
+  }
   context.insert(new Node("code_block", [new Node.Inline("text", null, dom.textContent)],
-                          {params: params || null}))
+                          {params: params}))
 }
 
 tags.ul = (dom, context) => {

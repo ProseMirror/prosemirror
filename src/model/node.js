@@ -128,7 +128,7 @@ const nodeTypes = Node.types = {
   ordered_list: new NodeType("block", "list_item", {order: "num", tight: "bool"}, {order: 1, tight: true}),
   list_item: new NodeType("list_item", "block"),
   html_block: new NodeType("block", null, {html: "str"}),
-  code_block: new NodeType("block", "inline", {params: "str"}, {params: null, markup: "    "}),
+  code_block: new NodeType("block", "inline", {params: "str"}, {params: null}),
   horizontal_rule: new NodeType("block", null, {markup: "str"}, {markup: "---"}),
   text: new NodeType("inline", null),
   image: new NodeType("inline", null, {src: "str", title: "str", alt: "str"}),

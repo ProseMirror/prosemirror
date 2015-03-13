@@ -90,7 +90,7 @@ export function doc() {
 export let p = build("paragraph")
 export let blockquote = build("blockquote")
 export let pre = build("code_block")
-export let pre2 = build("code_block", {params: null, markup: "```"})
+export let pre2 = build("code_block", {params: ""})
 export let h1 = build("heading", {level: 1})
 export let h2 = build("heading", {level: 2})
 export let li = build("list_item")
