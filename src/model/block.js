@@ -171,7 +171,11 @@ transform.define("split", function(doc, params) {
     let target = copy.path(pos.path.slice(0, end))
     if (i == 0) {
       let {offset} = inline.splitInlineAt(target, pos.offset)
-      cut = target.copy(target.content.slice(offset))
+      let restContent = target.content.slice(offset)
+      if (params.type)
+        cut = new Node(params.type, restContent, params.attrs)
+      else
+        cut = target.copy(restContent)
       target.content.length = offset
     } else {
       let offset = pos.path[end] + 1

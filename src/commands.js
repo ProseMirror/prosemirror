@@ -109,13 +109,17 @@ commands.wrapBlockquote = pm => wrap(pm, "blockquote")
 
 commands.endBlock = pm => {
   let head = clearSelection(pm)
-  if (head.path.length > 1 && pm.doc.path(head.path).content.length == 0) {
+  let block = pm.doc.path(head.path)
+  if (head.path.length > 1 && block.content.length == 0) {
     return pm.apply({name: "lift", pos: head})
+  } else if (block.type == Node.types.code_block) {
+    return pm.apply({name: "insertText", pos: head, text: "\n"})
   } else {
     let end = head.path.length - 1
     let isList = head.path.length > 1 && head.path[end] == 0 &&
         pm.doc.path(head.path.slice(0, end)).type == Node.types.list_item
-    return pm.apply({name: "split", pos: head, depth: isList ? 2 : 1})
+    let backToPara = block.type == Node.types.heading && head.offset == block.size
+    return pm.apply({name: "split", pos: head, depth: isList ? 2 : 1, type: backToPara ? "paragraph" : null})
   }
 }
 
