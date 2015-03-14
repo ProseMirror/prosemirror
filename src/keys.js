@@ -81,7 +81,7 @@ export function normalizeKeymap(keymap) {
 }
 
 export function lookupKey(key, map, handle, context) {
-  let found = map.call ? map.call(key, context) : map[key]
+  let found = map.call ? map.call(null, key, context) : map[key]
   if (found === false) return "nothing"
   if (found === "...") return "multi"
   if (found != null && handle(found)) return "handled"

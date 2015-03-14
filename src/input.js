@@ -19,13 +19,21 @@ function dispatchKey(pm, name, e) {
     }, 50)
     name = seq + " " + name
   }
-  let result = keys.lookupKey(name, pm.options.keymap, bound => {
+
+  let handle = function(bound) {
     if (typeof bound == "string") {
       bound = commands[bound]
       if (!bound) return false
     }
     return bound(pm) !== false
-  }, pm)
+  }
+
+  let result
+  for (let i = 0; !result && i < pm.state.keymaps.length; i++)
+    result = keys.lookupKey(name, pm.state.keymaps[i], handle, pm)
+  if (!result)
+    result = keys.lookupKey(name, pm.options.extraKeymap, handle, pm) ||
+      keys.lookupKey(name, pm.options.keymap, handle, pm)
 
   if (result == "multi")
     pm.state.keySeq = name

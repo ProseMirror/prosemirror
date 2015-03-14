@@ -23,7 +23,7 @@ export default class ProseMirror {
     draw(this.content, this.doc)
     this.content.contentEditable = true
 
-    this.state = {composeActive: 0}
+    this.state = {composeActive: 0, keymaps: []}
     this.operation = null
     this.history = new History(this)
 
@@ -81,5 +81,17 @@ export default class ProseMirror {
       redraw(this.content, this.doc, op.doc)
     if (docChanged || op.sel.anchor.cmp(this.sel.value.anchor) || op.sel.head.cmp(this.sel.value.head))
       this.sel.toDOM(docChanged)
+  }
+
+  addKeymap(map, bottom) {
+    this.state.keymaps[bottom ? "push" : "unshift"](map)
+  }
+
+  removeKeymap(map) {
+    let maps = this.state.keymaps
+    for (let i = 0; i < maps.length; ++i) if (maps[i] == map || maps[i].name == map) {
+      maps.splice(i, 1)
+      return true
+    }
   }
 }

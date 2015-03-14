@@ -19,6 +19,8 @@ defineOption("place", null)
 
 defineOption("keymap", defaultKeymap)
 
+defineOption("extraKeymap", {})
+
 defineOption("historyDepth", 50)
 
 defineOption("historyEventDelay", 500)
