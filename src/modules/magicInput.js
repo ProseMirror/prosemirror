@@ -26,9 +26,10 @@ defineModule("magicInput", {
     })
 
     ii.defineRule(/^```$/, function(pm, _, pos) {
-      pm.apply({name: "setType", pos: pos, type: "code_block", attrs: {params: ""}})
-      pos = pm.selection.head
-      pm.apply({name: "replace", pos: new Pos(pos.path, 0), end: pos})
+      setAs(pm, pos, "code_block", {params: ""})
+    })
+    ii.defineRule(/^(#{1,6}) $/, function(pm, match, pos) {
+      setAs(pm, pos, "heading", {level: match[1].length})
     })
   },
 
@@ -45,4 +46,10 @@ function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
   pos = pm.selection.head
   pm.apply({name: "replace", pos: new Pos(pos.path, 0), end: pos})
   if (join) pm.apply({name: "join", pos: pm.selection.head})
+}
+
+function setAs(pm, pos, type, attrs) {
+  pm.apply({name: "setType", pos: pos, type: type, attrs: attrs})
+  pos = pm.selection.head
+  pm.apply({name: "replace", pos: new Pos(pos.path, 0), end: pos})
 }
