@@ -2,3 +2,4 @@
 .tern-port
 /dist/*
 /notes.txt
+/demo/demo-built.js

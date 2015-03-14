@@ -24,3 +24,5 @@ defineOption("extraKeymap", {})
 defineOption("historyDepth", 50)
 
 defineOption("historyEventDelay", 500)
+
+defineOption("modules", Object.create(null))

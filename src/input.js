@@ -3,7 +3,6 @@ import {fromDOM, fromText, toDOM, toText, Pos, slice} from "./model"
 import * as keys from "./keys"
 import * as dom from "./dom"
 import commands from "./commands"
-import {interpretTextInput} from "./interpret"
 
 let stopSeq = null
 const handlers = {}
@@ -56,7 +55,7 @@ handlers.keydown = (pm, e) => {
 function inputText(pm, range, text) {
   if (range.empty && !text) return false
   pm.apply({name: "replace", pos: range.from, end: range.end, text: text})
-  if (range.empty) interpretTextInput(pm, pm.selection.head)
+  pm.signal("textInput", pm, text, pm.selection.head)
 }
 
 handlers.keypress = (pm, e) => {

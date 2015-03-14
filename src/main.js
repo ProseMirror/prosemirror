@@ -8,6 +8,8 @@ import * as dom from "./dom"
 import {draw, redraw} from "./draw"
 import {registerHandlers} from "./input"
 import History from "./history"
+import {initModules} from "./module"
+import {eventMixin} from "./event"
 
 export default class ProseMirror {
   constructor(opts) {
@@ -24,11 +26,13 @@ export default class ProseMirror {
     this.content.contentEditable = true
 
     this.state = {composeActive: 0, keymaps: []}
+    this.modules = Object.create(null)
     this.operation = null
     this.history = new History(this)
 
     this.sel = new Selection(this)
     registerHandlers(this)
+    initModules(this, this.options.modules)
   }
 
   get selection() {
@@ -95,3 +99,5 @@ export default class ProseMirror {
     }
   }
 }
+
+eventMixin(ProseMirror)
