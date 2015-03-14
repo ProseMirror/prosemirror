@@ -6,7 +6,8 @@ class Rule {
 }
 
 class InterpretInput {
-  constructor() {
+  constructor(pm) {
+    this.pm = pm
     this.rules = []
   }
 
@@ -14,22 +15,21 @@ class InterpretInput {
     this.rules.push(new Rule(match, handler))
   }
 
-  defineReplacement(before, after) {
-    let re = new RegExp(before.replace(/[^\w\s]/g, "\\$&") + "$")
-    this.defineRule(re, function(pm, from, to) {
-      pm.apply({name: "replace", pos: from, end: to, text: after})
-    })
-  }
-
-  onTextInput(pm, pos) {
-    let {textBefore, isCode} = getContext(pm.doc, pos)
+  onTextInput(pos) {
+    let {textBefore, isCode} = getContext(this.pm.doc, pos)
     if (isCode) return
 
     for (let i = 0; i < this.rules.length; i++) {
       let rule = this.rules[i], match = rule.match.exec(textBefore)
       if (match) {
-        let offset = pos.offset - (match[1] || match[0]).length
-        return rule.handler(pm, new Pos(pos.path, offset), pos)
+        if (typeof rule.handler == "string") {
+          let offset = pos.offset - (match[1] || match[0]).length
+          let start = new Pos(pos.path, offset)
+          this.pm.apply({name: "replace", pos: start, end: pos, text: rule.handler})
+        } else {
+          rule.handler(this.pm, match, pos)
+        }
+        return
       }
     }
   }
@@ -38,7 +38,7 @@ class InterpretInput {
 defineModule("interpretInput", {
   init(pm) {
     let obj = new InterpretInput(pm)
-    pm.on("textInput", (pm, _text, pos) => obj.onTextInput(pm, pos))
+    pm.on("textInput", (_text, pos) => obj.onTextInput(pos))
     return obj
   }
 })

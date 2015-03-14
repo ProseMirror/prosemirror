@@ -5,7 +5,15 @@
   line-height: 1.2;
 }
 
-.ProseMirror p, .ProseMirror li {
+.ProseMirror p,
+.ProseMirror li,
+.ProseMirror h1,
+.ProseMirror h2,
+.ProseMirror h3,
+.ProseMirror h4,
+.ProseMirror h5,
+.ProseMirror h6,
+.ProseMirror pre {
   min-height: 1.2em;
 }
 

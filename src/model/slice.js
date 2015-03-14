@@ -1,6 +1,7 @@
 function copyInlineTo(node, offset, copy) {
   for (let left = offset, i = 0; left > 0; i++) {
     let chunk = node.content[i]
+    if (!chunk) console.log("searhcing for " + offset + " in " + node)
     if (chunk.text.length <= left) {
       left -= chunk.text.length
       copy.push(chunk)

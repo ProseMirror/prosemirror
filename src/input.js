@@ -55,7 +55,7 @@ handlers.keydown = (pm, e) => {
 function inputText(pm, range, text) {
   if (range.empty && !text) return false
   pm.apply({name: "replace", pos: range.from, end: range.end, text: text})
-  pm.signal("textInput", pm, text, pm.selection.head)
+  pm.signal("textInput", text, pm.selection.head)
 }
 
 handlers.keypress = (pm, e) => {
