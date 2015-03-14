@@ -3,6 +3,7 @@ import {fromDOM, fromText, toDOM, Pos, slice} from "./model"
 import * as keys from "./keys"
 import * as dom from "./dom"
 import commands from "./commands"
+import {interpretTextInput} from "./interpret"
 
 let stopSeq = null
 const handlers = {}
@@ -44,16 +45,17 @@ handlers.keydown = (pm, e) => {
   if (name) dispatchKey(pm, name, e)
 }
 
-function replaceRange(pm, range, text) {
-  if (!range.empty) pm.apply({name: "replace", pos: range.from, end: range.to})
-  if (text) pm.apply({name: "insertText", pos: range.from, text: text})
+function inputText(pm, range, text) {
+  if (range.empty && !text) return false
+  pm.apply({name: "replace", pos: range.from, end: range.end, text: text})
+  if (range.empty) interpretTextInput(pm, pm.selection.head)
 }
 
 handlers.keypress = (pm, e) => {
   if (e.ctrlKey && !e.altKey || dom.mac && e.metaKey) return
   let ch = String.fromCharCode(e.charCode == null ? e.keyCode : e.charCode)
   if (dispatchKey(pm, "'" + ch + "'", e)) return
-  replaceRange(pm, pm.selection, ch)
+  inputText(pm, pm.selection, ch)
   e.preventDefault()
 }
 
@@ -82,7 +84,7 @@ handlers.compositionend = (pm, e) => {
 }
 
 function applyComposition(pm, info) {
-  replaceRange(pm, info.sel, info.data)
+  inputText(pm, info.sel, info.data)
 }
 
 handlers.input = (pm) => {
@@ -108,7 +110,8 @@ handlers.copy = handlers.cut = (pm, e) => {
     e.clipboardData.clearData()
     e.clipboardData.setData("text/html", lastCopied.html)
 //    e.clipboardData.setData("text/plain", lastCopied.text);
-    if (e.type == "cut") replaceRange(pm, sel)
+    if (e.type == "cut" && !sel.empty)
+      pm.apply({name: "replace", pos: sel.from, end: sel.to})
   }
 }
 
