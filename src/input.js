@@ -1,4 +1,4 @@
-import {fromDOM, fromText, toDOM, Pos, slice} from "./model"
+import {fromDOM, fromText, toDOM, toText, Pos, slice} from "./model"
 
 import * as keys from "./keys"
 import * as dom from "./dom"
@@ -95,21 +95,20 @@ handlers.input = (pm) => {
 
 let lastCopied = null
 
-// FIXME also copy/paste text
-
 handlers.copy = handlers.cut = (pm, e) => {
   let sel = pm.selection
   if (sel.empty) return
   let elt = document.createElement("div")
   let fragment = slice.between(pm.doc, sel.from, sel.to)
   elt.appendChild(toDOM(fragment, {document: document}))
-  lastCopied = {doc: pm.doc, from: sel.from, to: sel.to, html: elt.innerHTML}
+  lastCopied = {doc: pm.doc, from: sel.from, to: sel.to,
+                html: elt.innerHTML, text: toText(fragment)}
 
   if (e.clipboardData) {
     e.preventDefault()
     e.clipboardData.clearData()
     e.clipboardData.setData("text/html", lastCopied.html)
-//    e.clipboardData.setData("text/plain", lastCopied.text);
+    e.clipboardData.setData("text/plain", lastCopied.text);
     if (e.type == "cut" && !sel.empty)
       pm.apply({name: "replace", pos: sel.from, end: sel.to})
   }
