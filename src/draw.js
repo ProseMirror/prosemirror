@@ -3,11 +3,13 @@ import {findByPath} from "./selection"
 
 import {toDOM} from "./model"
 
+const nonEditable = {html_block: true, html_tag: true, horizontal_rule: true}
+
 const options = {
   onRender: (node, dom, offset) => {
     if (node.type.type != "inline" && offset != null)
       dom.setAttribute("mm-path", offset)
-    if (/^html_/.test(node.type.type))
+    if (nonEditable.hasOwnProperty(node.type.name))
       dom.contentEditable = false
     return dom
   },
