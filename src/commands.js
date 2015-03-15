@@ -33,13 +33,25 @@ commands.makeEm = pm => setInlineStyle(pm, style.em, true)
 commands.removeEm = pm => setInlineStyle(pm, style.em, false)
 commands.toggleEm = pm => setInlineStyle(pm, style.em, null)
 
+function blockBefore(pos) {
+  for (let i = pos.path.length - 1; i >= 0; i--) {
+    let offset = pos.path[i] - 1
+    if (offset >= 0) return new Pos(pos.path.slice(0, i), offset, false)
+  }
+}
+
 function delBlockBackward(pm, pos) {
   if (pos.path.length == 1) { // Top level block, join with block above
-    let before = Pos.before(pm.doc, new Pos([], pos.path[0], false))
-    if (before)
-      pm.apply({name: "replace", pos: before, end: pos})
-    else if (pos.path[0] > 0)
-      pm.apply({name: "remove", pos: new Pos([], pos.path[0] - 1, false)})
+    let iBefore = Pos.before(pm.doc, new Pos([], pos.path[0], false))
+    let bBefore = blockBefore(pos)
+    if (iBefore && bBefore) {
+      if (iBefore.cmp(bBefore) > 0) bBefore = null
+      else iBefore = null
+    }
+    if (iBefore)
+      pm.apply({name: "replace", pos: iBefore, end: pos})
+    else if (bBefore)
+      pm.apply({name: "remove", pos: bBefore})
     else
       return false
   } else {
@@ -67,13 +79,30 @@ commands.delBackward = pm => {
     return delBlockBackward(pm, head)
 }
 
+function blockAfter(doc, pos) {
+  let path = pos.path
+  while (path.length > 0) {
+    let end = path.length - 1
+    let offset = path[end] + 1
+    path = path.slice(0, end)
+    let node = doc.path(path)
+    if (offset < node.content.length)
+      return new Pos(path, offset, false)
+  }
+}
+
 function delBlockForward(pm, pos) {
   let lst = pos.path.length - 1
-  let after = Pos.after(pm.doc, new Pos(pos.path.slice(0, lst), pos.path[lst] + 1, false))
-  if (after)
-    pm.apply({name: "replace", pos: pos, end: after})
-  else if (pos.path[0] < pm.doc.content.length)
-    pm.apply({name: "remove", pos: new Pos([], offset + 1, false)})
+  let iAfter = Pos.after(pm.doc, new Pos(pos.path.slice(0, lst), pos.path[lst] + 1, false))
+  let bAfter = blockAfter(pm.doc, pos)
+  if (iAfter && bAfter) {
+    if (iAfter.cmp(bAfter) < 0) bAfter = null
+    else iAfter = null
+  }
+  if (iAfter)
+    pm.apply({name: "replace", pos: pos, end: iAfter})
+  else if (bAfter)
+    pm.apply({name: "remove", pos: bAfter})
   else
     return false
 }
