@@ -69,7 +69,7 @@ export default class ProseMirror {
 
   ensureOperation() {
     if (this.operation) return
-    this.sel.poll()
+    if (!this.input.suppressPolling) this.sel.poll()
     this.operation = {doc: this.doc, sel: this.sel.range}
     dom.requestAnimationFrame(() => this.endOp())
   }

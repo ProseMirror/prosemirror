@@ -28,7 +28,10 @@ function clearSelection(pm) {
 
 commands.insertHardBreak = pm => {
   let pos = clearSelection(pm)
-  return pm.apply({name: "insertInline", pos: pos, type: "hard_break"})
+  if (pm.doc.path(pos.path).type == Node.types.code_block)
+    return pm.apply({name: "insertText", pos: pos, text: "\n"})
+  else
+    return pm.apply({name: "insertInline", pos: pos, type: "hard_break"})
 }
 
 function setInlineStyle(pm, style, to) {
@@ -156,14 +159,14 @@ commands.endBlock = pm => {
   let block = pm.doc.path(head.path)
   if (head.path.length > 1 && block.content.length == 0) {
     return pm.apply({name: "lift", pos: head})
-  } else if (block.type == Node.types.code_block) {
+  } else if (block.type == Node.types.code_block && head.offset < block.size) {
     return pm.apply({name: "insertText", pos: head, text: "\n"})
   } else {
     let end = head.path.length - 1
     let isList = head.path.length > 1 && head.path[end] == 0 &&
         pm.doc.path(head.path.slice(0, end)).type == Node.types.list_item
-    let backToPara = block.type == Node.types.heading && head.offset == block.size
-    return pm.apply({name: "split", pos: head, depth: isList ? 2 : 1, type: backToPara ? "paragraph" : null})
+    let type = head.offset == block.size ? "paragraph" : null
+    return pm.apply({name: "split", pos: head, depth: isList ? 2 : 1, type: type})
   }
 }
 

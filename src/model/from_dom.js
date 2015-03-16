@@ -1,9 +1,9 @@
 import Node from "./node"
 import * as style from "./style"
 
-export default function fromDOM(dom) {
-  let context = new Context;
-  context.addContent(dom)
+export default function fromDOM(dom, options) {
+  let context = new Context(options.topNode || new Node("doc"))
+  context.addContent(dom, options.from || 0, options.to != null ? options.to : dom.childNodes.length)
   return context.stack[0]
 }
 
@@ -16,8 +16,8 @@ const blockElements = {
 }
 
 class Context {
-  constructor() {
-    this.stack = [new Node("doc")]
+  constructor(topNode) {
+    this.stack = [topNode]
     this.frames = []
     this.styles = []
     this.closing = false
@@ -50,9 +50,9 @@ class Context {
     }
   }
 
-  addContent(dom) {
-    for (let child = dom.firstChild; child; child = child.nextSibling)
-      this.addDOM(child)
+  addContent(dom, start = 0, end = dom.childNodes.length) {
+    for (let i = start; i < end; i++)
+      this.addDOM(dom.childNodes[i])
   }
 
   insert(node) {

@@ -137,9 +137,10 @@ function ensureInBlock(doc, pos, from) {
   return found
 }
 
-export function findByPath(node, n) {
-  for (let ch = node.firstChild; ch; ch = ch.nextSibling) {
-    if (ch.nodeType != 1) continue;
+export function findByPath(node, n, fromEnd) {
+  for (let ch = fromEnd ? node.lastChild : node.firstChild; ch;
+       ch = fromEnd ? ch.previousSibling : ch.nextSibling) {
+    if (ch.nodeType != 1) continue
     let path = ch.getAttribute("mm-path")
     if (!path) {
       let found = findByPath(ch, n)
@@ -148,6 +149,15 @@ export function findByPath(node, n) {
       return ch
     }
   }
+}
+
+export function resolvePath(parent, path) {
+  let node = parent
+  for (let i = 0; i < path.length; i++) {
+    node = findByPath(node, path[i])
+    if (!node) throw new Error("Failed to resolve path " + path.join(","))
+  }
+  return node
 }
 
 function findByOffset(node, offset) {
@@ -173,11 +183,8 @@ function leaf(node) {
   return node
 }
 
-function DOMFromPos(node, pos) {
-  for (let i = 0; i < pos.path.length; i++) {
-    node = findByPath(node, pos.path[i])
-    if (!node) throw new Error("Failed to resolve pos " + pos)
-  }
+function DOMFromPos(parent, pos) {
+  let node = resolvePath(parent, pos.path)
   let found = findByOffset(node, pos.offset)
   if (!found) return {node: node, offset: 0}
   let inner = leaf(found.node)
@@ -189,6 +196,6 @@ function DOMFromPos(node, pos) {
 }
 
 function selectionInNode(node) {
-  var sel = window.getSelection();
-  return sel.rangeCount && node.contains(sel.anchorNode);
+  let sel = window.getSelection()
+  return sel.rangeCount && node.contains(sel.anchorNode)
 }

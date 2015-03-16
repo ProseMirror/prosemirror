@@ -3,6 +3,7 @@ import {fromDOM, fromText, toDOM, toText, Pos, slice} from "./model"
 import * as keys from "./keys"
 import * as dom from "./dom"
 import {execCommand} from "./commands"
+import {applyDOMChange} from "./domchange"
 
 let stopSeq = null
 const handlers = {}
@@ -115,8 +116,10 @@ function applyComposition(pm, info) {
 
 handlers.input = (pm) => {
   if (pm.input.composeActive) return
-  console.log("INPUT EVENT!");
-  // FIXME poll DOM for changes
+  pm.input.suppressPolling = true
+  applyDOMChange(pm)
+  pm.input.suppressPolling = false
+  pm.sel.poll()
 }
 
 let lastCopied = null
