@@ -6,7 +6,7 @@ import * as options from "./options"
 import {Selection} from "./selection"
 import * as dom from "./dom"
 import {draw, redraw} from "./draw"
-import {registerHandlers} from "./input"
+import {Input} from "./input"
 import History from "./history"
 import {initModules} from "./module"
 import {eventMixin} from "./event"
@@ -25,13 +25,12 @@ export default class ProseMirror {
     draw(this.content, this.doc)
     this.content.contentEditable = true
 
-    this.state = {composeActive: 0, keymaps: []}
     this.modules = Object.create(null)
     this.operation = null
     this.history = new History(this)
 
     this.sel = new Selection(this)
-    registerHandlers(this)
+    this.input = new Input(this)
     initModules(this, this.options.modules)
   }
 
@@ -88,15 +87,21 @@ export default class ProseMirror {
   }
 
   addKeymap(map, bottom) {
-    this.state.keymaps[bottom ? "push" : "unshift"](map)
+    this.keymaps[bottom ? "push" : "unshift"](map)
   }
 
   removeKeymap(map) {
-    let maps = this.state.keymaps
+    let maps = this.keymaps
     for (let i = 0; i < maps.length; ++i) if (maps[i] == map || maps[i].name == map) {
       maps.splice(i, 1)
       return true
     }
+  }
+
+  extendCommand(name, priority, f) {
+    if (f == null) { f = priority; priority = "normal"; }
+    if (!/^(normal|low|high)$/.test(priority)) throw new Error("Invalid priority: " + priority)
+    this.input.extendCommand(name, priority, f)
   }
 }
 

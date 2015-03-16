@@ -2,40 +2,58 @@ import {fromDOM, fromText, toDOM, toText, Pos, slice} from "./model"
 
 import * as keys from "./keys"
 import * as dom from "./dom"
-import commands from "./commands"
+import {execCommand} from "./commands"
 
 let stopSeq = null
 const handlers = {}
 
+export class Input {
+  constructor(pm) {
+    this.pm = pm
+    this.keySeq = null
+    this.composeActive = 0
+    this.keymaps = []
+    this.commandExtensions = Object.create(null)
+
+    for (let event in handlers) {
+      let handler = handlers[event]
+      pm.content.addEventListener(event, (e) => handler(pm, e))
+    }
+  }
+
+  extendCommand(name, priority, f) {
+    let obj = this.commandExtensions[name] ||
+        (this.commandExtensions[name] = {low: [], normal: [], high: []})
+    obj[priority].push(f)
+  }
+}
+
 function dispatchKey(pm, name, e) {
-  let seq = pm.state.keySeq
+  let seq = pm.input.keySeq
   if (seq) {
     if (keys.isModifierKey(name)) return true
     clearTimeout(stopSeq)
     stopSeq = setTimeout(function() {
-      if (pm.state.keySeq == seq)
-        pm.state.keySeq = null;
+      if (pm.input.keySeq == seq)
+        pm.input.keySeq = null;
     }, 50)
     name = seq + " " + name
   }
 
   let handle = function(bound) {
-    if (typeof bound == "string") {
-      bound = commands[bound]
-      if (!bound) return false
-    }
-    return bound(pm) !== false
+    let result = typeof bound == "string" ? execCommand(pm, bound) : bound(pm)
+    return result !== false
   }
 
   let result
-  for (let i = 0; !result && i < pm.state.keymaps.length; i++)
-    result = keys.lookupKey(name, pm.state.keymaps[i], handle, pm)
+  for (let i = 0; !result && i < pm.input.keymaps.length; i++)
+    result = keys.lookupKey(name, pm.input.keymaps[i], handle, pm)
   if (!result)
     result = keys.lookupKey(name, pm.options.extraKeymap, handle, pm) ||
       keys.lookupKey(name, pm.options.keymap, handle, pm)
 
   if (result == "multi")
-    pm.state.keySeq = name
+    pm.input.keySeq = name
 
   if (result == "handled" || result == "multi")
     e.preventDefault()
@@ -68,26 +86,26 @@ handlers.keypress = (pm, e) => {
 
 handlers.compositionstart = (pm, e) => {
   let data = e.data
-  pm.state.composing = {sel: pm.selection,
+  pm.input.composing = {sel: pm.selection,
                         data: data,
                         startData: data}
-  pm.state.composeActive++
+  pm.input.composeActive++
   // FIXME set selection around existing data if applicable
 }
 
 handlers.compositionupdate = (pm, e) => {
-  pm.state.composing.data = e.data;
+  pm.input.composing.data = e.data;
 }
 
 handlers.compositionend = (pm, e) => {
-  let info = pm.state.composing
+  let info = pm.input.composing
   if (!info) return
-  pm.state.composing = null
+  pm.input.composing = null
   if (e.data != info.startData && !/\u200b/.test(e.data))
     info.data = e.data
   applyComposition(pm, info)
   // Disable input events for a short time more
-  setTimeout((() => pm.state.composeActive--), 50)
+  setTimeout((() => pm.input.composeActive--), 50)
 }
 
 function applyComposition(pm, info) {
@@ -95,7 +113,7 @@ function applyComposition(pm, info) {
 }
 
 handlers.input = (pm) => {
-  if (pm.state.composeActive) return
+  if (pm.input.composeActive) return
   console.log("INPUT EVENT!");
   // FIXME poll DOM for changes
 }
@@ -140,12 +158,5 @@ handlers.paste = (pm, e) => {
     }
     pm.apply({name: "replace", pos: sel.from, end: sel.to,
               source: doc, from: from || Pos.start(doc), to: to || Pos.end(doc)})
-  }
-}
-
-exports.registerHandlers = function(pm) {
-  for (let event in handlers) {
-    let handler = handlers[event]
-    pm.content.addEventListener(event, (e) => handler(pm, e))
   }
 }

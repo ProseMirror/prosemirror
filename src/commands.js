@@ -2,7 +2,22 @@ import {Node, Pos, style, inline} from "./model"
 
 const commands = Object.create(null)
 
-export default commands
+export function registerCommand(name, func) {
+  commands[name] = func
+}
+
+export function execCommand(pm, name) {
+  let ext = pm.input.commandExtensions[name]
+  if (ext && ext.high) for (let i = 0; i < ext.high.length; i++)
+    if (ext.high[i](pm) !== false) return true
+  if (ext && ext.normal) for (let i = 0; i < ext.normal.length; i++)
+    if (ext.normal[i](pm) !== false) return true
+  let base = commands[name]
+  if (base && base(pm) !== false) return true
+  if (ext && ext.low) for (let i = 0; i < ext.low.length; i++)
+    if (ext.low[i](pm) !== false) return true
+  return false
+}
 
 function clearSelection(pm) {
   let sel = pm.selection
