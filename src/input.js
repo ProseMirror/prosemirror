@@ -11,16 +11,33 @@ const handlers = {}
 export class Input {
   constructor(pm) {
     this.pm = pm
+
     this.keySeq = null
     this.composing = null
     this.composeActive = 0
+
     this.keymaps = []
     this.commandExtensions = Object.create(null)
+
+    this.storedStyles = null
+    this.storedStylesAt = null
 
     for (let event in handlers) {
       let handler = handlers[event]
       pm.content.addEventListener(event, (e) => handler(pm, e))
     }
+  }
+
+  get storedInlineStyles() {
+    if (this.storedStyles && !this.pm.isInState(this.storedStylesAt))
+      this.storedStyles = null
+    return this.storedStyles
+  }
+
+  storeInlineStyle(styles) {
+    console.log("storing", styles)
+    this.storedStyles = styles
+    this.storedStylesAt = this.pm.markState(true)
   }
 
   extendCommand(name, priority, f) {
@@ -74,7 +91,8 @@ handlers.keydown = (pm, e) => {
 
 function inputText(pm, range, text) {
   if (range.empty && !text) return false
-  pm.apply({name: "replace", pos: range.from, end: range.end, text: text})
+  pm.apply({name: "replace", pos: range.from, end: range.end,
+            text: text, styles: pm.input.storedInlineStyles})
   pm.signal("textInput", text, pm.selection.head)
 }
 

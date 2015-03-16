@@ -130,9 +130,13 @@ function inlineNodeAtOrBefore(parent, offset) {
   return {node: null, offset: 0, innerOffset: 0}
 }
 
-export function hasStyle(doc, pos, st) {
+export function inlineStylesAt(doc, pos) {
   let {node} = inlineNodeAtOrBefore(doc.path(pos.path), pos.offset)
-  return style.contains(node ? node.styles : [], st)
+  return node ? node.styles : Node.empty
+}
+
+export function hasStyle(doc, pos, st) {
+  return style.contains(inlineStylesAt(doc, pos), st)
 }
 
 export function splitInlineAt(parent, offset) {

@@ -1,6 +1,6 @@
 import "../css/prosemirror.css"
 
-import {fromText, transform} from "./model"
+import {fromText, transform, inline, style} from "./model"
 
 import * as options from "./options"
 import {Selection, Range} from "./selection"
@@ -114,6 +114,17 @@ export default class ProseMirror {
   backToState(state) {
     if (!state.sel) throw new Error("Can only return to a state that includes selection")
     this.updateInner(state.doc, state.sel)
+  }
+
+  setInlineStyle(st, to, range) {
+    if (!range) range = this.selection
+    let styles = this.input.storedInlineStyle || inline.inlineStylesAt(this.doc, range.head)
+    if (to == null) to = !style.contains(styles, st)
+    if (range.empty)
+      this.input.storeInlineStyle(to ? style.add(styles, st) : style.remove(styles, st))
+    else
+      this.apply({name: to ? "addStyle" : "removeStyle",
+                  pos: range.from, end: range.to, style: st})
   }
 }
 

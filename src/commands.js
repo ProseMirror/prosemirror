@@ -34,22 +34,13 @@ commands.insertHardBreak = pm => {
     return pm.apply({name: "insertInline", pos: pos, type: "hard_break"})
 }
 
-function setInlineStyle(pm, style, to) {
-  let sel = pm.selection
-  if (to == null)
-    to = !inline.hasStyle(pm.doc, sel.head, style)
-  return pm.apply({name: to ? "addStyle" : "removeStyle",
-                   pos: sel.from, end: sel.to,
-                   style: style})
-}
+commands.makeStrong = pm => pm.setInlineStyle(style.strong, true)
+commands.removeStrong = pm => pm.setInlineStyle(style.strong, false)
+commands.toggleStrong = pm => pm.setInlineStyle(style.strong, null)
 
-commands.makeStrong = pm => setInlineStyle(pm, style.strong, true)
-commands.removeStrong = pm => setInlineStyle(pm, style.strong, false)
-commands.toggleStrong = pm => setInlineStyle(pm, style.strong, null)
-
-commands.makeEm = pm => setInlineStyle(pm, style.em, true)
-commands.removeEm = pm => setInlineStyle(pm, style.em, false)
-commands.toggleEm = pm => setInlineStyle(pm, style.em, null)
+commands.makeEm = pm => pm.setInlineStyle(style.em, true)
+commands.removeEm = pm => pm.setInlineStyle(style.em, false)
+commands.toggleEm = pm => pm.setInlineStyle(style.em, null)
 
 function blockBefore(pos) {
   for (let i = pos.path.length - 1; i >= 0; i--) {
