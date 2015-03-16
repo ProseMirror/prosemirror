@@ -1,6 +1,6 @@
 import "./editor.css"
 
-import {fromText, transform, inline, style, Node} from "../model"
+import {transform, inline, style, Node} from "../model"
 
 import * as options from "./options"
 import {Selection, Range} from "./selection"
@@ -9,6 +9,7 @@ import {draw, redraw} from "./draw"
 import {Input} from "./input"
 import {initModules} from "./module"
 import {eventMixin} from "./event"
+import {defineModule} from "./module"
 
 export default class ProseMirror {
   constructor(opts) {
@@ -19,7 +20,7 @@ export default class ProseMirror {
     else if (opts.place)
       opts.place(this.wrapper)
 
-    this.doc = typeof opts.value == "string" ? fromText(opts.value) : opts.value
+    this.doc = opts.doc
 
     draw(this.content, this.doc)
     this.content.contentEditable = true
@@ -37,10 +38,6 @@ export default class ProseMirror {
   get selection() {
     this.ensureOperation()
     return this.sel.range
-  }
-
-  get value() {
-    return this.doc
   }
 
   apply(params) {
@@ -128,6 +125,8 @@ export default class ProseMirror {
 }
 
 eventMixin(ProseMirror)
+
+ProseMirror.defineModule = defineModule
 
 class State {
   constructor(doc, sel) { this.doc = doc; this.sel = sel }

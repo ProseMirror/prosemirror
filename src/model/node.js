@@ -107,6 +107,8 @@ class InlineNode extends Node {
 
 Node.Inline = InlineNode
 
+Node.text = (text, styles) => new InlineNode(nodeTypes.text, styles, text)
+
 const nullAttrs = Node.nullAttrs = {}
 
 class NodeType {

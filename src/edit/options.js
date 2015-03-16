@@ -1,4 +1,5 @@
 import defaultKeymap from "./defaultkeymap"
+import {Node} from "../model"
 
 export var defaults = Object.create(null)
 
@@ -13,7 +14,7 @@ export function init(obj) {
   return result
 }
 
-defineOption("value", "")
+defineOption("doc", new Node("doc", [new Node("paragraph")]))
 
 defineOption("place", null)
 

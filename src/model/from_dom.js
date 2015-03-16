@@ -30,7 +30,7 @@ class Context {
 
   addDOM(dom) {
     if (dom.nodeType == 3) {
-      this.insert(new Node.Inline("text", this.styles, dom.nodeValue))
+      this.insert(Node.text(dom.nodeValue, this.styles))
     } else if (dom.nodeType != 1) {
       // Ignore non-text non-element nodes
     } else if (dom.hasAttribute("mm-html")) {
@@ -131,8 +131,7 @@ tags.pre = (dom, context) => {
   } else {
     params = null
   }
-  context.insert(new Node("code_block", [new Node.Inline("text", null, dom.textContent)],
-                          {params: params}))
+  context.insert(new Node("code_block", [Node.text(dom.textContent)], {params: params}))
 }
 
 tags.ul = (dom, context) => {

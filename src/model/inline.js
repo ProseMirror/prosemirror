@@ -12,7 +12,7 @@ export function stitchTextNodes(node, at) {
       (before = node.content[at - 1]).type == Node.types.text &&
       (after = node.content[at]).type == Node.types.text &&
       style.sameSet(before.styles, after.styles)) {
-    let joined = new Node.Inline(Node.types.text, before.styles, before.text + after.text)
+    let joined = Node.text(before.text + after.text, before.styles)
     node.content.splice(at - 1, 2, joined)
     return true
   }
@@ -116,7 +116,7 @@ function clearMarkup(node) {
       let child = node.content[i]
       if (child.type == Node.types.text) text += child.text
     }
-    node.content = [new Node.Inline("text", Node.empty, text)]
+    node.content = [Node.text(text)]
   }
 }
 
@@ -174,5 +174,5 @@ transform.define("insertInline", function(doc, params) {
 
 transform.define("insertText", function(doc, params) {
   if (!params.text) return Transform.identity(doc)
-  return insertNode(doc, params.pos, new Node.Inline(Node.types.text, null, params.text))
+  return insertNode(doc, params.pos, Node.text(params.text))
 })

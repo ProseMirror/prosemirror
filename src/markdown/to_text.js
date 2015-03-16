@@ -1,4 +1,4 @@
-import * as style from "./style"
+import {style} from "../model"
 
 export default function toText(doc) {
   let state = new State()

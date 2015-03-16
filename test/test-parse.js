@@ -2,7 +2,8 @@ import {doc, blockquote, hr, pre, pre2, h1, h2, p, li, ol, ul, uldash, em, stron
 import * as cmp from "./cmp"
 import tests from "./tests"
 
-import {fromText, toText} from "../src/model"
+import fromText from "../src/markdown/from_text"
+import toText from "../src/markdown/to_text"
 
 function t(name, text, doc) {
   tests["parse_" + name] = function() {

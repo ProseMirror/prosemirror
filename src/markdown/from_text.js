@@ -1,6 +1,5 @@
 import markdownit from "markdown-it"
-import Node from "./node"
-import * as style from "./style"
+import {Node, style} from "../model"
 
 function parseTokens(state, toks) {
   for (let i = 0; i < toks.length; i++) {
