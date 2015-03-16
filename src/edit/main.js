@@ -1,6 +1,6 @@
-import "../css/prosemirror.css"
+import "./editor.css"
 
-import {fromText, transform, inline, style, Node} from "./model"
+import {fromText, transform, inline, style, Node} from "../model"
 
 import * as options from "./options"
 import {Selection, Range} from "./selection"

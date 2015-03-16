@@ -1,4 +1,4 @@
-import ProseMirror from "../src/main"
+import ProseMirror from "../src/edit/main"
 import "../src/modules/magicInput"
 
 var pm = window.pm = new ProseMirror({

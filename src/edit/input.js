@@ -1,4 +1,4 @@
-import {fromDOM, fromText, toDOM, toText, Pos, slice} from "./model"
+import {fromDOM, fromText, toDOM, toText, Pos, slice} from "../model"
 
 import * as keys from "./keys"
 import * as dom from "./dom"

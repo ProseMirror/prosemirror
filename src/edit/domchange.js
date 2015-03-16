@@ -1,4 +1,4 @@
-import {fromDOM, Node, Pos, style} from "./model"
+import {fromDOM, Node, Pos, style} from "../model"
 
 import {findByPath} from "./selection"
 

@@ -1,4 +1,4 @@
-import {Node, Pos, style, inline} from "./model"
+import {Node, Pos, style, inline} from "../model"
 
 const commands = Object.create(null)
 

@@ -1,7 +1,7 @@
 import {elt} from "./dom"
 import {findByPath} from "./selection"
 
-import {toDOM} from "./model"
+import {toDOM} from "../model"
 
 const nonEditable = {html_block: true, html_tag: true, horizontal_rule: true}
 

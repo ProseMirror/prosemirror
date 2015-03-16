@@ -1,5 +1,5 @@
 import {Node, Pos, style} from "../model"
-import {defineModule} from "../module"
+import {defineModule} from "../edit/module"
 
 class Rule {
   constructor(match, handler) { this.match = match; this.handler = handler }

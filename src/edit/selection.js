@@ -1,4 +1,4 @@
-import {Pos} from "./model"
+import {Pos} from "../model"
 
 export class Selection {
   constructor(pm) {
