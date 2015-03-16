@@ -1,12 +1,11 @@
 export default class Pos {
-  constructor(path, offset, inBlock = true) {
+  constructor(path, offset) {
     this.path = path
     this.offset = offset
-    this.inBlock = inBlock
   }
 
   toString() {
-    return this.path.join("/") + ":" + this.offset + (this.inBlock ? "" : "#")
+    return this.path.join("/") + ":" + this.offset
   }
 
   cmp(other) {
@@ -25,7 +24,7 @@ export default class Pos {
 
   shorten(to = null, offset = 0) {
     if (to == null) to = this.path.length - 1
-    return new Pos(this.path.slice(0, to), this.path[to] + offset, false)
+    return new Pos(this.path.slice(0, to), this.path[to] + offset)
   }
 
   offsetAt(pos, offset) {

@@ -2,6 +2,7 @@ import Node from "./node"
 import * as style from "./style"
 
 export default function fromDOM(dom, options) {
+  if (!options) options = {}
   let context = new Context(options.topNode || new Node("doc"))
   context.addContent(dom, options.from || 0, options.to != null ? options.to : dom.childNodes.length)
   return context.stack[0]

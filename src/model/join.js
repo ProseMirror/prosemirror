@@ -55,11 +55,16 @@ export function simple(left, leftDepth, right, rightDepth, f) {
 }
 
 function trackEnd(left, leftDepth, right, rightDepth) {
-  let endPos
+  let endPos, endPosInline
   simple(left, leftDepth, right, rightDepth, function(from, _fromDepth, to, toDepth) {
-    endPos = new Pos(pathRight(left, toDepth), to.content.length + from.content.length)
+    let offset
+    if (endPosInline = to.type.contains == "inline")
+      offset = to.size + from.size
+    else
+      offset = to.content.length + from.content.length
+    endPos = new Pos(pathRight(left, toDepth), offset)
   })
-  return endPos
+  return {pos: endPos, inline: endPosInline}
 }
 
 function pathRight(node, depth) {
@@ -88,7 +93,7 @@ function findChunkEnd(doc, base, depth) {
     if (i == depth)
       return node.type.contains == "inline"
         ? new Pos(base.path, node.size)
-        : new Pos(base.path.slice(0, i), node.content.length, false)
+        : new Pos(base.path.slice(0, i), node.content.length)
     node = node.content[base.path[i]]
   }
 }
@@ -123,9 +128,10 @@ transform.define("replace", function(doc, params) {
     let collapsed = [0]
     let middle = slice.between(params.source, start, end, collapsed)
 
-    let endPos = trackEnd(output, from.path.length, middle, start.path.length - collapsed[0]) || params.to
+    let {pos: endPos, inline: endPosInline} =
+        trackEnd(output, from.path.length, middle, start.path.length - collapsed[0]) || params.to
     let endDepth = endPos.path.length
-    if (!endPos.isBlock) endPos = Pos.end(output)
+    if (!endPosInline) endPos = Pos.end(output)
     result.chunk(to, _ => endPos)
     buildResult(result, to, output, end.path.length - collapsed[0] + endDepth, right, to)
   } else {

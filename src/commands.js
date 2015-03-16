@@ -54,13 +54,13 @@ commands.toggleEm = pm => setInlineStyle(pm, style.em, null)
 function blockBefore(pos) {
   for (let i = pos.path.length - 1; i >= 0; i--) {
     let offset = pos.path[i] - 1
-    if (offset >= 0) return new Pos(pos.path.slice(0, i), offset, false)
+    if (offset >= 0) return new Pos(pos.path.slice(0, i), offset)
   }
 }
 
 function delBlockBackward(pm, pos) {
   if (pos.path.length == 1) { // Top level block, join with block above
-    let iBefore = Pos.before(pm.doc, new Pos([], pos.path[0], false))
+    let iBefore = Pos.before(pm.doc, new Pos([], pos.path[0]))
     let bBefore = blockBefore(pos)
     if (iBefore && bBefore) {
       if (iBefore.cmp(bBefore) > 0) bBefore = null
@@ -105,13 +105,13 @@ function blockAfter(doc, pos) {
     path = path.slice(0, end)
     let node = doc.path(path)
     if (offset < node.content.length)
-      return new Pos(path, offset, false)
+      return new Pos(path, offset)
   }
 }
 
 function delBlockForward(pm, pos) {
   let lst = pos.path.length - 1
-  let iAfter = Pos.after(pm.doc, new Pos(pos.path.slice(0, lst), pos.path[lst] + 1, false))
+  let iAfter = Pos.after(pm.doc, new Pos(pos.path.slice(0, lst), pos.path[lst] + 1))
   let bAfter = blockAfter(pm.doc, pos)
   if (iAfter && bAfter) {
     if (iAfter.cmp(bAfter) < 0) bAfter = null

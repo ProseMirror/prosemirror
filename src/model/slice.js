@@ -47,7 +47,7 @@ export function before(node, pos, depth = 0) {
     let n = pos.path[depth]
     copy.pushFrom(node, 0, n)
     copy.push(before(node.content[n], pos, depth + 1))
-  } else if (!pos.inBlock) {
+  } else if (node.type.contains != "inline") {
     copy.pushFrom(node, 0, pos.offset)
   } else {
     copyInlineTo(node, pos.offset, copy)
@@ -61,7 +61,7 @@ export function after(node, pos, depth = 0) {
     let n = pos.path[depth]
     copy.push(after(node.content[n], pos, depth + 1))
     copy.pushFrom(node, n + 1)
-  } else if (!pos.inBlock) {
+  } else if (node.type.contains != "inline") {
     copy.pushFrom(node, pos.offset)
   } else {
     copyInlineFrom(node, pos.offset, copy)
@@ -81,7 +81,7 @@ export function between(node, from, to, collapsed = null, depth = 0) {
     }
   } else {
     var copy = node.copy()
-    if (depth == from.path.length && depth == to.path.length && to.inBlock) {
+    if (depth == from.path.length && depth == to.path.length && node.type.contains == "inline") {
       copyInlineBetween(node, from.offset, to.offset, copy)
     } else {
       let start

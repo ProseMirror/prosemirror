@@ -49,10 +49,10 @@ transform.define("lift", function(doc, params) {
   if (!lift) return transform.identity(doc)
   let range = lift.range
 
-  let before = new Pos(range.path, range.from, false)
+  let before = new Pos(range.path, range.from)
   while (before.path.length > lift.path.length && before.offset == 0)
     before = before.shorten()
-  let after = new Pos(range.path, range.to, false)
+  let after = new Pos(range.path, range.to)
   while (after.path.length > lift.path.length && after.offset == doc.path(after.path).content.length)
     after = after.shorten(null, 1)
 
@@ -112,7 +112,7 @@ transform.define("join", function(doc, params) {
   target.pushFrom(from)
 
   let result = new transform.Result(doc, output, point)
-  let after = new Pos(point.path, point.offset + 1, false)
+  let after = new Pos(point.path, point.offset + 1)
   result.chunk(after, pos => {
     let offset = pos.path[toJoined.length] + size
     return new Pos(toJoined.concat(offset).concat(pos.path.slice(toJoined.length + 1)), pos.offset)
@@ -125,8 +125,8 @@ transform.define("join", function(doc, params) {
 
 transform.define("wrap", function(doc, params) {
   let range = selectedSiblings(doc, params.pos, params.end || params.pos)
-  let before = new Pos(range.path, range.from, false)
-  let after = new Pos(range.path, range.to, false)
+  let before = new Pos(range.path, range.from)
+  let after = new Pos(range.path, range.to)
 
   let source = doc.path(range.path)
   let wrapperType = Node.types[params.type]
@@ -215,7 +215,7 @@ transform.define("insert", function(doc, params) {
   parent.content.splice(pos.offset, 0, block)
   let result = new transform.Result(doc, copy, pos)
   let depth = pos.path.length
-  result.chunk(new Pos(pos.path, parent.content.length, false), pos => pos.offsetAt(depth, 1))
+  result.chunk(new Pos(pos.path, parent.content.length), pos => pos.offsetAt(depth, 1))
   return result
 })
 

@@ -19,12 +19,14 @@ export class Selection {
     let sel = getSelection()
     if (sel.anchorNode != this.lastAnchorNode || sel.anchorOffset != this.lastAnchorOffset ||
         sel.focusNode != this.lastHeadNode || sel.focusOffset != this.lastHeadOffset) {
-      let anchor = posFromDOM(this.pm, this.lastAnchorNode = sel.anchorNode,
+      let {pos: anchor, inline: anchorInline} =
+        posFromDOM(this.pm, this.lastAnchorNode = sel.anchorNode,
                               this.lastAnchorOffset = sel.anchorOffset)
-      let head = posFromDOM(this.pm, this.lastHeadNode = sel.focusNode,
-                            this.lastHeadOffset = sel.focusOffset)
-      this.pm.setSelection(new Range(ensureInBlock(this.pm.doc, anchor, this.range.anchor),
-                                     ensureInBlock(this.pm.doc, head, this.range.head)))
+      let {pos: head, inline: headInline} =
+          posFromDOM(this.pm, this.lastHeadNode = sel.focusNode,
+                     this.lastHeadOffset = sel.focusOffset)
+      this.pm.setSelection(new Range(anchorInline ? anchor : moveInline(this.pm.doc, anchor, this.range.anchor),
+                                     headInline ? head: moveInline(this.pm.doc, head, this.range.head)))
       if (this.range.anchor.cmp(anchor) || this.range.head.cmp(head))
         this.toDOM(true)
       return true
@@ -99,7 +101,7 @@ function scanOffset(node, parent) {
 }
 
 function posFromDOM(pm, node, domOffset) {
-  let path = [], inText = false, offset = null, isBlock = false, prev
+  let path = [], inText = false, offset = null, inline = false, prev
   
   if (node.nodeType == 3) {
     inText = true
@@ -121,15 +123,14 @@ function posFromDOM(pm, node, domOffset) {
         offset = +from + domOffset
       else
         offset = domOffset ? +to : +from
-      isBlock = true
+      inline = true
     }
   }
   if (offset == null) offset = scanOffset(prev, node)
-  return new Pos(path, offset, isBlock)
+  return {pos: new Pos(path, offset), inline}
 }
 
-function ensureInBlock(doc, pos, from) {
-  if (pos.inBlock) return pos
+function moveInline(doc, pos, from) {
   let dir = pos.cmp(from)
   let found = dir < 0 ? Pos.before(doc, pos) : Pos.after(doc, pos)
   if (!found)
