@@ -11,7 +11,12 @@ export class Selection {
   }
 
   set(range) {
-    this.range = range
+    if (range.head.cmp(this.range.head) ||
+        range.anchor.cmp(this.range.anchor)) {
+      this.pm.ensureOperation()
+      this.range = range
+      this.pm.signal("selectionChange")
+    }
   }
 
   poll() {

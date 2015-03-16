@@ -43,7 +43,6 @@ export default class ProseMirror {
     return this.doc
   }
 
-
   apply(params) {
     let sel = this.selection
     let result = transform.apply(this.doc, params)
@@ -51,6 +50,7 @@ export default class ProseMirror {
       this.history.mark()
       this.updateInner(result.doc,
                        new Range(result.map(sel.anchor), result.map(sel.head)))
+      this.signal("change", params)
       return true
     }
     return false
@@ -63,7 +63,6 @@ export default class ProseMirror {
   }
 
   setSelection(range) {
-    this.ensureOperation()
     this.sel.set(range)
   }
 

@@ -92,7 +92,7 @@ function inputText(pm, range, text) {
   if (range.empty && !text) return false
   pm.apply({name: "replace", pos: range.from, end: range.end,
             text: text, styles: pm.input.storedInlineStyles})
-  pm.signal("textInput", text, pm.selection.head)
+  pm.signal("textInput", text)
 }
 
 handlers.keypress = (pm, e) => {

@@ -17,6 +17,7 @@ class InterpretInput {
   }
 
   onTextInput(pos) {
+    let pos = this.pm.selection.head
     this.afterState = this.beforeState = null
 
     let {textBefore, isCode} = getContext(this.pm.doc, pos)
@@ -52,7 +53,7 @@ class InterpretInput {
 defineModule("interpretInput", {
   init(pm) {
     let obj = new InterpretInput(pm)
-    pm.on("textInput", (_text, pos) => obj.onTextInput(pos))
+    pm.on("textInput", () => obj.onTextInput())
     pm.extendCommand("delBackward", "high", () => obj.delBackward())
     return obj
   }
