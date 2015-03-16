@@ -124,10 +124,10 @@ t("insertText", "before_br",
   doc(p("ay", br, "ok")),
   {text: "ay"})
 
-function has(name, doc, style, result) {
+function has(name, doc, st, result) {
   tests["has_" + name] = function() {
-    if (inline.hasStyle(doc, doc.tag.a, style) != result)
-      throw new Failure("hasStyle(" + doc + ", " + doc.tag.a + ", " + style.type + ") returned " + !result)
+    if (style.contains(inline.inlineStylesAt(doc, doc.tag.a), st) != result)
+      throw new Failure("hasStyle(" + doc + ", " + doc.tag.a + ", " + st.type + ") returned " + !result)
   }
 }
 

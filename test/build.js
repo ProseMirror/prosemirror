@@ -104,4 +104,4 @@ export let a = buildInline(style.link("http://foo"))
 export let a2 = buildInline(style.link("http://bar"))
 export let br = {type: "insert", style: "hard_break"}
 export let img = {type: "insert", style: "image", attrs: {src: "x.png", alt: "x"}}
-export let hr = {type: "insert", style: "horizontal_rule"}
+export let hr = {type: "insert", style: "horizontal_rule", attrs: {markup: "---"}}
