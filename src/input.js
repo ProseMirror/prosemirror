@@ -11,6 +11,7 @@ export class Input {
   constructor(pm) {
     this.pm = pm
     this.keySeq = null
+    this.composing = null
     this.composeActive = 0
     this.keymaps = []
     this.commandExtensions = Object.create(null)

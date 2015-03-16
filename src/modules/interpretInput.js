@@ -9,6 +9,7 @@ class InterpretInput {
   constructor(pm) {
     this.pm = pm
     this.rules = []
+    this.afterState = this.beforeState = null
   }
 
   defineRule(match, handler) {
@@ -16,12 +17,15 @@ class InterpretInput {
   }
 
   onTextInput(pos) {
+    this.afterState = this.beforeState = null
+
     let {textBefore, isCode} = getContext(this.pm.doc, pos)
     if (isCode) return
 
     for (let i = 0; i < this.rules.length; i++) {
       let rule = this.rules[i], match = rule.match.exec(textBefore)
       if (match) {
+        this.beforeState = this.pm.markState(true)
         if (typeof rule.handler == "string") {
           let offset = pos.offset - (match[1] || match[0]).length
           let start = new Pos(pos.path, offset)
@@ -29,8 +33,18 @@ class InterpretInput {
         } else {
           rule.handler(this.pm, match, pos)
         }
+        this.afterState = this.pm.markState(true)
         return
       }
+    }
+  }
+
+  delBackward() {
+    if (this.afterState && this.pm.isInState(this.afterState)) {
+      this.pm.backToState(this.beforeState)
+      this.afterState = this.beforeState = null
+    } else {
+      return false
     }
   }
 }
@@ -39,6 +53,7 @@ defineModule("interpretInput", {
   init(pm) {
     let obj = new InterpretInput(pm)
     pm.on("textInput", (_text, pos) => obj.onTextInput(pos))
+    pm.extendCommand("delBackward", "high", () => obj.delBackward())
     return obj
   }
 })

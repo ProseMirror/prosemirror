@@ -6,13 +6,12 @@ export class Selection {
     this.polling = null
     this.lastAnchorNode = this.lastHeadNode = this.lastAnchorOffset = this.lastHeadOffset = null
     let start = Pos.start(pm.doc)
-    this.value = new Range(start, start)
+    this.range = new Range(start, start)
     pm.content.addEventListener("focus", () => this.receivedFocus())
   }
 
-  set(anchor, head) {
-    this.value = new Range(ensureInBlock(this.pm.doc, anchor, this.value.anchor),
-                           ensureInBlock(this.pm.doc, head, this.value.head))
+  set(range) {
+    this.range = range
   }
 
   poll() {
@@ -24,8 +23,9 @@ export class Selection {
                               this.lastAnchorOffset = sel.anchorOffset)
       let head = posFromDOM(this.pm, this.lastHeadNode = sel.focusNode,
                             this.lastHeadOffset = sel.focusOffset)
-      this.pm.setSelection(anchor, head)
-      if (this.value.anchor.cmp(anchor) || this.value.head.cmp(head))
+      this.pm.setSelection(new Range(ensureInBlock(this.pm.doc, anchor, this.range.anchor),
+                                     ensureInBlock(this.pm.doc, head, this.range.head)))
+      if (this.range.anchor.cmp(anchor) || this.range.head.cmp(head))
         this.toDOM(true)
       return true
     }
@@ -41,8 +41,8 @@ export class Selection {
       return
 
     let range = document.createRange()
-    let anchor = DOMFromPos(content, this.value.anchor)
-    let head = DOMFromPos(content, this.value.head)
+    let anchor = DOMFromPos(content, this.range.anchor)
+    let head = DOMFromPos(content, this.range.head)
 
     range.setEnd(anchor.node, anchor.offset)
     if (sel.extend)
