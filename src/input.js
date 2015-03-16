@@ -35,7 +35,6 @@ export class Input {
   }
 
   storeInlineStyle(styles) {
-    console.log("storing", styles)
     this.storedStyles = styles
     this.storedStylesAt = this.pm.markState(true)
   }

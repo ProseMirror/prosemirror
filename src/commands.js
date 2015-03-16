@@ -34,13 +34,17 @@ commands.insertHardBreak = pm => {
     return pm.apply({name: "insertInline", pos: pos, type: "hard_break"})
 }
 
-commands.makeStrong = pm => pm.setInlineStyle(style.strong, true)
-commands.removeStrong = pm => pm.setInlineStyle(style.strong, false)
+commands.setStrong = pm => pm.setInlineStyle(style.strong, true)
+commands.unsetStrong = pm => pm.setInlineStyle(style.strong, false)
 commands.toggleStrong = pm => pm.setInlineStyle(style.strong, null)
 
-commands.makeEm = pm => pm.setInlineStyle(style.em, true)
-commands.removeEm = pm => pm.setInlineStyle(style.em, false)
+commands.setEm = pm => pm.setInlineStyle(style.em, true)
+commands.unsetEm = pm => pm.setInlineStyle(style.em, false)
 commands.toggleEm = pm => pm.setInlineStyle(style.em, null)
+
+commands.setCode = pm => pm.setInlineStyle(style.code, true)
+commands.unsetCode = pm => pm.setInlineStyle(style.code, false)
+commands.toggleCode = pm => pm.setInlineStyle(style.code, null)
 
 function blockBefore(pos) {
   for (let i = pos.path.length - 1; i >= 0; i--) {

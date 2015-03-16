@@ -5,6 +5,7 @@ export default normalizeKeymap({
   "Ctrl-Enter": "insertHardBreak",
   "Ctrl-B": "toggleStrong",
   "Ctrl-I": "toggleEm",
+  "Ctrl-`": "toggleCode",
   "Backspace": "delBackward",
   "Delete": "delForward",
   "Ctrl-Z": "undo",
@@ -22,7 +23,7 @@ export default normalizeKeymap({
   "Ctrl-H '5'": "makeH5",
   "Ctrl-H '6'": "makeH6",
   "Ctrl-P": "makeParagraph",
-  "Ctrl-`": "makeCodeBlock",
+  "Ctrl-\\": "makeCodeBlock",
   "Ctrl-Space": "insertRule"
 })
 
