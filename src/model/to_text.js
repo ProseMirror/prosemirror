@@ -163,7 +163,7 @@ render.heading = (state, node) => {
 }
 
 render.horizontal_rule = (state, node) => {
-  state.write(node.attrs.markup)
+  state.write(node.attrs.markup || "---")
   state.closeBlock(node)
 }
 

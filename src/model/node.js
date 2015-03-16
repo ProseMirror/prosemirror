@@ -129,7 +129,7 @@ const nodeTypes = Node.types = {
   list_item: new NodeType("list_item", "block"),
   html_block: new NodeType("block", null, {html: "str"}),
   code_block: new NodeType("block", "inline", {params: "str"}, {params: null}),
-  horizontal_rule: new NodeType("block", null, {markup: "str"}, {markup: "---"}),
+  horizontal_rule: new NodeType("block", null),
   text: new NodeType("inline", null),
   image: new NodeType("inline", null, {src: "str", title: "str", alt: "str"}),
   hard_break: new NodeType("inline", null),

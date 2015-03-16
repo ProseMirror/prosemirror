@@ -103,11 +103,7 @@ render.code_block = (node, options) => {
 
 render.heading = (node, options) => wrap(node, options, "h" + node.attrs.level)
 
-render.horizontal_rule = node => {
-  let dom = elt("hr")
-  dom.setAttribute("mm-markup", node.attrs.markup)
-  return dom
-}
+render.horizontal_rule = node => elt("hr")
 
 render.bullet_list = (node, options) => {
   let dom = wrap(node, options, "ul")

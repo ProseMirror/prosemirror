@@ -67,7 +67,7 @@ function getContext(doc, pos) {
     let child = parent.content[i++], size = child.size
     textBefore += offset + size > pos.offset ? child.text.slice(0, pos.offset - offset) : child.text
     if (offset + size >= pos.offset) {
-      if (child.styles.some(s => style.same(s, style.code)))
+      if (style.contains(child.styles, child.code))
         isCode = true
       break
     }
