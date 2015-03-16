@@ -51,7 +51,7 @@ t("links",
 
 t("unordered_list",
   doc(ul(li(p("one")), li(p("two")), li(p("three", strong("!")))), p("after")),
-  "<ul mm-bullet=\"*\" class=\"tight\"><li><p>one</p></li><li><p>two</p></li><li><p>three<strong>!</strong></p></li></ul><p>after</p>")
+  "<ul class=\"bullet_star\" class=\"tight\"><li><p>one</p></li><li><p>two</p></li><li><p>three<strong>!</strong></p></li></ul><p>after</p>")
 
 t("ordered_list",
   doc(ol(li(p("one")), li(p("two")), li(p("three", strong("!")))), p("after")),

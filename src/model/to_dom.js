@@ -107,7 +107,8 @@ render.horizontal_rule = node => elt("hr")
 
 render.bullet_list = (node, options) => {
   let dom = wrap(node, options, "ul")
-  dom.setAttribute("mm-bullet", node.attrs.bullet)
+  let bul = node.attrs.bullet
+  dom.setAttribute("class", bul == "+" ? "bullet_plus" : bul == "-" ? "bullet_dash" : "bullet_star")
   if (node.attrs.tight) dom.setAttribute("class", "tight")
   return dom
 }

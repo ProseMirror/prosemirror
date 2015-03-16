@@ -136,7 +136,8 @@ tags.pre = (dom, context) => {
 }
 
 tags.ul = (dom, context) => {
-  let attrs = {bullet: dom.getAttribute("mm-bullet") || "-",
+  let cls = dom.getAttribute("class")
+  let attrs = {bullet: /bullet_dash/.test(cls) ? "-" : /bullet_plus/.test(cls) ? "+" : "*",
                tight: /\btight\b/.test(dom.getAttribute("class"))}
   wrap(dom, context, new Node("bullet_list", null, attrs))
 }
