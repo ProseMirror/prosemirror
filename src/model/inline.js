@@ -135,10 +135,6 @@ export function inlineStylesAt(doc, pos) {
   return node ? node.styles : Node.empty
 }
 
-export function hasStyle(doc, pos, st) {
-  return style.contains(inlineStylesAt(doc, pos), st)
-}
-
 export function splitInlineAt(parent, offset) {
   let {node, offset, innerOffset} = inlineNodeAtOrBefore(parent, offset)
   if (innerOffset && innerOffset != node.size) {
