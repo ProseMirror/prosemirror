@@ -1,31 +1,70 @@
 import {Node, Pos, style} from "../model"
-import {defineModule} from "../edit/module"
 
-class Rule {
-  constructor(match, handler) { this.match = match; this.handler = handler }
+export function addInputRules(pm, rules) {
+  if (!pm.modules.interpretInput)
+    pm.modules.interpretInput = new InputRules(pm)
+  pm.modules.interpretInput.addRules(rules)
 }
 
-class InterpretInput {
+export function removeInputRule(pm, rules) {
+  let ii = pm.modules.interpretInput
+  if (!ii) return
+  ii.removeRules(rules)
+  if (ii.rules.length == 0) {
+    ii.unregister()
+    pm.modules.interpretInput = null
+  }
+}
+
+export class Rule {
+  constructor(lastChar, match, handler) {
+    this.lastChar = lastChar
+    this.match = match
+    this.handler = handler
+  }
+}
+
+class InputRules {
   constructor(pm) {
     this.pm = pm
     this.rules = []
     this.afterState = this.beforeState = null
+
+    pm.on("textInput", this.onTextInput = this.onTextInput.bind(this))
+    pm.extendCommand("delBackward", "high", this.delBackward = this.delBackward.bind(this))
   }
 
-  defineRule(match, handler) {
-    this.rules.push(new Rule(match, handler))
+  unregister() {
+    pm.off("textInput", this.onTextInput)
+    pm.unextendCommand("delBackward", "high", this.delBackward)
   }
 
-  onTextInput(pos) {
+  addRules(rules) {
+    this.rules = this.rules.concat(rules)
+  }
+
+  removeRules(rules) {
+    for (let i = 0; i < rules.length; i++) {
+      let found = this.rules.indexOf(rules[i])
+      if (found > -1) this.rules.splice(found, 1)
+    }
+  }
+
+  onTextInput(text) {
     let pos = this.pm.selection.head
     this.afterState = this.beforeState = null
 
-    let {textBefore, isCode} = getContext(this.pm.doc, pos)
-    if (isCode) return
-
+    let textBefore, isCode
+    let lastCh = text[text.length - 1]
+    
     for (let i = 0; i < this.rules.length; i++) {
-      let rule = this.rules[i], match = rule.match.exec(textBefore)
-      if (match) {
+      let rule = this.rules[i], match
+      if (rule.lastChar && rule.lastChar != lastCh) continue
+      if (textBefore == null) {
+        ({textBefore, isCode}) = getContext(this.pm.doc, pos)
+        if (isCode) return
+      }
+      if (match = rule.match.exec(textBefore)) {
         this.beforeState = this.pm.markState(true)
         if (typeof rule.handler == "string") {
           let offset = pos.offset - (match[1] || match[0]).length
@@ -49,15 +88,6 @@ class InterpretInput {
     }
   }
 }
-
-defineModule("interpretInput", {
-  init(pm) {
-    let obj = new InterpretInput(pm)
-    pm.on("textInput", () => obj.onTextInput())
-    pm.extendCommand("delBackward", "high", () => obj.delBackward())
-    return obj
-  }
-})
 
 function getContext(doc, pos) {
   let parent = doc.path(pos.path)

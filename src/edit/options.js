@@ -1,29 +1,50 @@
 import defaultKeymap from "./defaultkeymap"
-import {Node} from "../model"
+import {Range} from "./selection"
+import {Node, Pos} from "../model"
 
-export var defaults = Object.create(null)
-
-export function defineOption(name, defaultValue) {
-  defaults[name] = defaultValue
+class Option {
+  constructor(defaultValue, update, updateOnInit) {
+    this.defaultValue = defaultValue
+    this.update = update
+    this.updateOnInit = updateOnInit !== false
+  }
 }
 
-export function init(obj) {
+const options = {
+  __proto__: null,
+
+  doc: new Option(new Node("doc", [new Node("paragraph")]), function(pm, value) {
+    pm.update(value)
+  }, false),
+
+  place: new Option(null),
+
+  keymap: new Option(defaultKeymap),
+
+  extraKeymap: new Option(Object.create(null)),
+
+  historyDepth: new Option(50),
+
+  historyEventDelay: new Option(500),
+}
+
+export function defineOption(name, defaultValue, update, updateOnInit) {
+  options[name] = new Option(defaultValue, update, updateOnInit)
+}
+
+export function parseOptions(obj) {
   let result = Object.create(null)
-  for (let opt in defaults)
-    result[opt] = obj && Object.prototype.hasOwnProperty.call(obj, opt) ? obj[opt] : defaults[opt]
+  for (let opt in options) {
+    let inObj = obj && Object.prototype.hasOwnProperty.call(obj, opt)
+    result[opt] = inObj ? obj[opt] : options[opt].defaultValue
+  }
   return result
 }
 
-defineOption("doc", new Node("doc", [new Node("paragraph")]))
-
-defineOption("place", null)
-
-defineOption("keymap", defaultKeymap)
-
-defineOption("extraKeymap", {})
-
-defineOption("historyDepth", 50)
-
-defineOption("historyEventDelay", 500)
-
-defineOption("modules", Object.create(null))
+export function initOptions(pm) {
+  for (var opt in options) {
+    let desc = options[opt]
+    if (desc.update && desc.updateOnInit)
+      desc.update(pm, pm.options[opt], null, true)
+  }
+}

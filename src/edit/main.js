@@ -1,19 +1,17 @@
 import "./editor.css"
 
-import {transform, inline, style, Node} from "../model"
+import {transform, inline, style, Node, Pos} from "../model"
 
-import * as options from "./options"
+import {parseOptions, initOptions} from "./options"
 import {Selection, Range} from "./selection"
 import * as dom from "./dom"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
-import {initModules} from "./module"
 import {eventMixin} from "./event"
-import {defineModule} from "./module"
 
 export default class ProseMirror {
   constructor(opts) {
-    opts = this.options = options.init(opts)
+    opts = this.options = parseOptions(opts)
     this.wrapper = this.content = dom.elt("div", {class: "ProseMirror"})
     if (opts.place && opts.place.appendChild)
       opts.place.appendChild(this.wrapper)
@@ -32,7 +30,7 @@ export default class ProseMirror {
     this.sel = new Selection(this)
     this.input = new Input(this)
 
-    initModules(this, this.options.modules)
+    initOptions(this)
   }
 
   get selection() {
@@ -44,19 +42,28 @@ export default class ProseMirror {
     let sel = this.selection
     let result = transform.apply(this.doc, params)
     if (result.doc != this.doc) {
-      this.history.mark()
-      this.updateInner(result.doc,
-                       new Range(result.map(sel.anchor), result.map(sel.head)))
-      this.signal("change", params)
+      this.update(result.doc,
+                  new Range(result.map(sel.anchor), result.map(sel.head)))
+      this.signal("transform", params)
       return true
     }
     return false
+  }
+
+  update(doc, sel) {
+    this.history.mark()
+    if (!sel) {
+      let start = Pos.start(doc)
+      sel = new Range(start, start)
+    }
+    this.updateInner(doc, sel)
   }
 
   updateInner(doc, sel) {
     this.ensureOperation()
     this.doc = doc
     this.setSelection(sel)
+    this.signal("change")
   }
 
   setSelection(range) {
@@ -99,6 +106,11 @@ export default class ProseMirror {
     this.input.extendCommand(name, priority, f)
   }
 
+  unextendCommand(name, priority, f) {
+    if (f == null) { f = priority; priority = "normal"; }
+    this.input.unextendCommand(name, priority, f)
+  }
+
   markState(includeSelection) {
     return {doc: this.doc, sel: includeSelection && this.selection}
   }
@@ -109,7 +121,7 @@ export default class ProseMirror {
 
   backToState(state) {
     if (!state.sel) throw new Error("Can only return to a state that includes selection")
-    this.updateInner(state.doc, state.sel)
+    this.update(state.doc, state.sel)
   }
 
   setInlineStyle(st, to, range) {
@@ -125,8 +137,6 @@ export default class ProseMirror {
 }
 
 eventMixin(ProseMirror)
-
-ProseMirror.defineModule = defineModule
 
 class State {
   constructor(doc, sel) { this.doc = doc; this.sel = sel }
@@ -158,7 +168,7 @@ class History {
     var state = from.pop();
     if (state) {
       to.push(pm.markState(true))
-      this.pm.backToState(state)
+      this.pm.updateInner(state.doc, state.sel)
       this.lastAddedAt = 0
     }
   }

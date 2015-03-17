@@ -1,6 +1,6 @@
 import ProseMirror from "../src/edit/main"
 import {Node} from "../src/model"
-import "../src/modules/magicInput"
+import "../src/modules/autoinput"
 
 let doc = new Node("doc", [
   new Node("heading", [Node.text("Hello!")], {level: 1}),
@@ -16,5 +16,5 @@ let doc = new Node("doc", [
 let pm = window.pm = new ProseMirror({
   place: document.body,
   doc: doc,
-  modules: {magicInput: true}
+  autoInput: true
 });

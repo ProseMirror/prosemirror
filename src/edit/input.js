@@ -4,6 +4,7 @@ import * as keys from "./keys"
 import * as dom from "./dom"
 import {execCommand} from "./commands"
 import {applyDOMChange} from "./domchange"
+import text from "./text"
 
 let stopSeq = null
 const handlers = {}
@@ -43,6 +44,13 @@ export class Input {
     let obj = this.commandExtensions[name] ||
         (this.commandExtensions[name] = {low: [], normal: [], high: []})
     obj[priority].push(f)
+  }
+
+  unextendCommand(name, priority, f) {
+    let obj = this.commandExtensions[name]
+    let arr = obj && obj[priority]
+    if (arr) for (let i = 0; i < arr.length; i++)
+      if (arr[i] == f) { arr.splice(i, 1); break }
   }
 }
 
@@ -148,7 +156,7 @@ handlers.copy = handlers.cut = (pm, e) => {
   let fragment = slice.between(pm.doc, sel.from, sel.to)
   elt.appendChild(toDOM(fragment, {document: document}))
   lastCopied = {doc: pm.doc, from: sel.from, to: sel.to,
-                html: elt.innerHTML, text: toText(pm, fragment)}
+                html: elt.innerHTML, text: text.toText(pm, fragment)}
 
   if (e.clipboardData) {
     e.preventDefault()
@@ -175,49 +183,9 @@ handlers.paste = (pm, e) => {
       elt.innerHTML = html
       doc = fromDOM(elt)
     } else {
-      doc = fromText(pm, text)
+      doc = (text.fromMarkdown || text.fromText)(pm, text)
     }
     pm.apply({name: "replace", pos: sel.from, end: sel.to,
               source: doc, from: from || Pos.start(doc), to: to || Pos.end(doc)})
   }
-}
-
-function fromText(pm, text) {
-  if (pm.modules.markdown) return pm.modules.markdown.fromText(doc)
-
-  let blocks = text.trim().split("\n\n")
-  let doc = new Node("doc")
-  for (let i = 0; i < blocks.length; i++) {
-    let para = new Node("paragraph")
-    let parts = blocks[i].split("\n")
-    for (let j = 0; j < parts.length; j++) {
-      if (j) para.push(new Node("hard_break"))
-      para.push(Node.text(parts[j]))
-    }
-    doc.push(para)
-  }
-  return doc
-}
-
-function toText(pm, doc) {
-  if (pm.modules.markdown) return pm.modules.markdown.toText(doc)
-
-  let out = ""
-  function explore(node) {
-    if (node.type.contains == "inline") {
-      let text = ""
-      for (let i = 0; i < node.content.length; i++) {
-        let child = node.content[i]
-        if (child.type == Node.types.text)
-          text += child.text
-        else if (child.type == Node.types.hard_break)
-          text += "\n"
-      }
-      if (text) out += (out ? "\n\n" : "") + text
-    } else {
-      node.content.forEach(explore)
-    }
-  }
-  explore(doc)
-  return out
 }
