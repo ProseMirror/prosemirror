@@ -12,7 +12,11 @@ import {eventMixin} from "./event"
 export default class ProseMirror {
   constructor(opts) {
     opts = this.options = parseOptions(opts)
-    this.wrapper = this.content = dom.elt("div", {class: "ProseMirror"})
+    this.content = dom.elt("div", {class: "ProseMirror-content"})
+    this.wrapper = dom.elt("div", {class: "ProseMirror"}, this.content)
+    this.wrapper.ProseMirror = this
+    ensureResizeHandler()
+
     if (opts.place && opts.place.appendChild)
       opts.place.appendChild(this.wrapper)
     else if (opts.place)
@@ -23,7 +27,7 @@ export default class ProseMirror {
     draw(this.content, this.doc)
     this.content.contentEditable = true
 
-    this.modules = Object.create(null)
+    this.mod = Object.create(null)
     this.operation = null
     this.history = new History(this)
 
@@ -86,6 +90,7 @@ export default class ProseMirror {
       redraw(this.content, this.doc, op.doc)
     if (docChanged || op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head))
       this.sel.toDOM(docChanged)
+    this.signal("draw")
   }
 
   addKeymap(map, bottom) {
@@ -126,13 +131,15 @@ export default class ProseMirror {
 
   setInlineStyle(st, to, range) {
     if (!range) range = this.selection
-    let styles = this.input.storedInlineStyle || inline.inlineStylesAt(this.doc, range.head)
-    if (to == null) to = !style.contains(styles, st)
-    if (!range.empty)
+    if (!range.empty) {
+      if (to == null) to = !inline.rangeHasInlineStyle(this.doc, range.from, range.to, st.type)
       this.apply({name: to ? "addStyle" : "removeStyle",
                   pos: range.from, end: range.to, style: st})
-    else if (this.doc.path(range.head.path).type != Node.types.code_block)
+    } else if (this.doc.path(range.head.path).type != Node.types.code_block) {
+      let styles = this.input.storedInlineStyle || inline.inlineStylesAt(this.doc, range.head)
+      if (to == null) to = !style.contains(styles, st)
       this.input.storeInlineStyle(to ? style.add(styles, st) : style.remove(styles, st))
+    }
   }
 }
 
@@ -172,4 +179,25 @@ class History {
       this.lastAddedAt = 0
     }
   }
+}
+
+function signalResize() {
+  let byClass = document.body.getElementsByClassName("ProseMirror")
+  for (let i = 0; i < byClass.length; i++) {
+    let pm = byClass[i].ProseMirror
+    if (!pm) continue
+    if (pm) pm.signal("resize")
+  }
+}
+
+let resizeHandlerRegistered = false
+function ensureResizeHandler() {
+  if (resizeHandlerRegistered) return
+  let resizeTimer = null
+  window.addEventListener("resize", () => {
+    if (resizeTimer == null) resizeTimer = window.setTimeout(function() {
+      resizeTimer = null
+      signalResize()
+    }, 100)
+  })
 }

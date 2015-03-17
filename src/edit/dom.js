@@ -3,7 +3,7 @@ export function elt(tag, attrs, ...args) {
   if (attrs) for (let name in attrs) {
     if (name == "style")
       result.style.cssText = attrs[name]
-    else
+    else if (attrs[name] != null)
       result.setAttribute(name, attrs[name])
   }
   for (let i = 0; i < args.length; i++) {

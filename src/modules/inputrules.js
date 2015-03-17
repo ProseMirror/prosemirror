@@ -1,18 +1,18 @@
 import {Node, Pos, style} from "../model"
 
 export function addInputRules(pm, rules) {
-  if (!pm.modules.interpretInput)
-    pm.modules.interpretInput = new InputRules(pm)
-  pm.modules.interpretInput.addRules(rules)
+  if (!pm.mod.interpretInput)
+    pm.mod.interpretInput = new InputRules(pm)
+  pm.mod.interpretInput.addRules(rules)
 }
 
 export function removeInputRule(pm, rules) {
-  let ii = pm.modules.interpretInput
+  let ii = pm.mod.interpretInput
   if (!ii) return
   ii.removeRules(rules)
   if (ii.rules.length == 0) {
     ii.unregister()
-    pm.modules.interpretInput = null
+    pm.mod.interpretInput = null
   }
 }
 

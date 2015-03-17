@@ -1,5 +1,8 @@
 .ProseMirror {
   border: 1px solid silver;
+}
+
+.ProseMirror-content {
   padding: 4px 8px;
   white-space: pre-wrap;
   line-height: 1.2;

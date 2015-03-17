@@ -28,6 +28,7 @@ function copyStructure(node, from, to, f, depth = 0) {
     return f(node, from, to)
   } else {
     let copy = node.copy()
+    if (node.content.length == 0) return copy
     let start = from ? from.path[depth] : 0
     let end = to ? to.path[depth] : node.content.length - 1
     copy.pushFrom(node, 0, start)
@@ -91,8 +92,14 @@ transform.define("addStyle", function(doc, params) {
 transform.define("removeStyle", function(doc, params) {
   let copy = copyStructure(doc, params.pos, params.end || params.pos, (node, from, to) => {
     return copyInline(node, from, to, node => {
-      return new Node.Inline(node.type, params.style ? style.remove(node.styles, params.style) : Node.empty,
-                             node.text, node.attrs)
+      let styles = node.styles
+      if (typeof params.style == "string")
+        styles = style.removeType(styles, params.style)
+      else if (params.style)
+        styles = style.remove(styles, params.style)
+      else
+        styles = Node.empty
+      return new Node.Inline(node.type, styles, node.text, node.attrs)
     })
   })
   return transform.flat(doc, copy)
@@ -133,6 +140,33 @@ function inlineNodeAtOrBefore(parent, offset) {
 export function inlineStylesAt(doc, pos) {
   let {node} = inlineNodeAtOrBefore(doc.path(pos.path), pos.offset)
   return node ? node.styles : Node.empty
+}
+
+export function rangeHasInlineStyle(doc, from, to, type) {
+  function scan(node, from, to, type, depth) {
+    if (node.type.contains == "inline") {
+      let start = from ? from.offset : 0
+      let end = to ? to.offset : 1e5
+      for (let i = 0, offset = 0; i < node.content.length; i++) {
+        let child = node.content[i], size = child.text.length
+        if (offset < end && offset + size > start && style.containsType(child.styles, type))
+          return true
+        offset += size
+      }
+    } else if (node.content.length) {
+      let start = from ? from.path[depth] : 0
+      let end = to ? to.path[depth] : node.content.length - 1
+      if (start == end) {
+        return scan(node.content[start], from, to, type, depth + 1)
+      } else {
+        let found = scan(node.content[start], from, null, type, depth + 1)
+        for (let i = start + 1; i < end && !found; i++)
+          found = scan(node.content[i], null, null, type, depth + 1)
+        return found || scan(node.content[end], null, to, type, depth + 1)
+      }
+    }
+  }
+  return scan(doc, from, to, type, 0)
 }
 
 export function splitInlineAt(parent, offset) {

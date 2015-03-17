@@ -29,6 +29,13 @@ export function remove(styles, style) {
   return styles
 }
 
+export function removeType(styles, type) {
+  for (var i = 0; i < styles.length; i++)
+    if (styles[i].type == type)
+      return styles.slice(0, i).concat(styles.slice(i + 1))
+  return styles
+}
+
 export function sameSet(a, b) {
   if (a.length != b.length) return false
   for (let i = 0; i < a.length; i++)
@@ -48,5 +55,11 @@ export function same(a, b) {
 export function contains(set, style) {
   for (let i = 0; i < set.length; i++)
     if (same(set[i], style)) return true
+  return false
+}
+
+export function containsType(set, type) {
+  for (let i = 0; i < set.length; i++)
+    if (set[i].type == type) return true
   return false
 }
