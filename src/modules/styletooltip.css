@@ -1,36 +1,20 @@
 .ProseMirror-styletooltip {
-  position: absolute;
-  visibility: hidden;
-
-  border-radius: 5px;
-  background: #555;
-  padding: 5px 3px;
-  margin: 0;
-  color: white;
+  padding: 0;
+  margin: 0 -4px;
+  display: block;
   line-height: 0;
-}
-
-.ProseMirror-styletooltip-pointer {
-  content: "";
-  position: absolute;
-  bottom: -6px;
-  width: 0; height: 0;
-  border-left: 6px solid transparent;
-  border-right: 6px solid transparent;
-  border-top: 6px solid #555;
 }
 
 .ProseMirror-styletooltip li {
   display: inline-block;
   margin: 0;
-  padding: 4px 7px 0;
+  padding: 2px 7px;
   margin: 0 2px;
   cursor: pointer;
-  font-size: 10pt;
 }
 
 .ProseMirror-styletooltip-active {
-  background: #777;
+  background: #555;
   border-radius: 4px;
 }
 

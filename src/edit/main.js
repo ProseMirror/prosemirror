@@ -141,6 +141,11 @@ export default class ProseMirror {
       this.input.storeInlineStyle(to ? style.add(styles, st) : style.remove(styles, st))
     }
   }
+
+  focus() {
+    this.content.focus()
+    this.sel.toDOM()
+  }
 }
 
 eventMixin(ProseMirror)

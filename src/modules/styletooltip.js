@@ -1,8 +1,11 @@
 import {defineOption} from "../edit"
 import {style, inline} from "../model"
 import {elt} from "../edit/dom"
+import {MeasuredElement, Tooltip} from "./tooltip"
 
 import "./styletooltip.css"
+
+const classPrefix = "ProseMirror-styletooltip"
 
 defineOption("styleTooltip", false, function(pm, value) {
   if (pm.mod.styleTooltip)
@@ -11,61 +14,49 @@ defineOption("styleTooltip", false, function(pm, value) {
     pm.mod.styleTooltip = new StyleTooltip(pm, value)
 })
 
-const classPrefix = "ProseMirror-styletooltip"
-
 const defaultButtons = [
-  {type: "strong", title: "Strong text", style: () => style.strong},
-  {type: "em", title: "Italic text", style: () => style.em},
-  {type: "link", title: "Hyperlink", style: linkDialog},
-  {type: "code", title: "Code font", style: () => style.code}
+  {type: "strong", title: "Strong text", style: style.strong},
+  {type: "em", title: "Italic text", style: style.em},
+  {type: "link", title: "Hyperlink", style: linkDialog, prepare: prepareLinkDialog},
+  {type: "code", title: "Code font", style: style.code}
 ]
 
 class StyleTooltip {
   constructor(pm, config) {
     this.pm = pm
     this.buttons = config === true ? defaultButtons : config
-    this.buildTooltip()
+    this.prepared = this.buttons.map(b => b.prepare && b.prepare(pm))
     this.pending = null
-    this.setting = false
 
-    pm.on("selectionChange", this.update = this.update.bind(this))
-    pm.on("change", this.update)
-    pm.on("resize", this.resized = this.resized.bind(this))
+    this.dom = this.buildDOM()
+    this.tooltip = new Tooltip(pm)
+
+    pm.on("selectionChange", this.updateFunc = () => this.update())
   }
 
   detach() {
-    window.clearTimeout(this.pending)
-    this.pm.mod.styleTooltip = null
-    this.menu.parentNode.removeChild(this.menu)
-    this.pm.off("selectionChange", this.update)
-    this.pm.off("change", this.update)
-    this.pm.off("resize", this.resized)
+    this.tooltip.detach()
+    
+    pm.off("selectionChange", this.updateFunc)
   }
 
   update() {
-    if (this.setting) return
-    this.closeTooltip()
     window.clearTimeout(this.pending)
     this.pending = window.setTimeout(() => {
       let sel = this.pm.selection
-      if (!sel.empty) this.openTooltip()
-    }, 200)
+      if (sel.empty) this.tooltip.close()
+      else this.showTooltip()
+    }, 100)
   }
 
-  resized() {
-    this.closeTooltip()
-  }
-
-  buildTooltip() {
-    let node = this.menu = elt("ul", {class: classPrefix})
+  buildDOM() {
+    let dom = elt("ul", {class: classPrefix})
     this.buttons.forEach(button => {
       let cls = classPrefix + "-icon " + classPrefix + "-" + button.type
-      let li = node.appendChild(elt("li", null, elt("span", {class: cls})))
-      li.addEventListener("mousedown", () => this.buttonClicked(button))
+      let li = dom.appendChild(elt("li", null, elt("span", {class: cls})))
+      li.addEventListener("mousedown", e => { e.preventDefault(); this.buttonClicked(button) })
     })
-    this.pointer = node.appendChild(elt("div", {class: classPrefix + "-pointer"}))
-    node.addEventListener("mousedown", e => e.preventDefault())
-    this.pm.wrapper.appendChild(node)
+    return new MeasuredElement(this.pm, dom)
   }
 
   isActive(button) {
@@ -73,53 +64,67 @@ class StyleTooltip {
     return inline.rangeHasInlineStyle(this.pm.doc, sel.from, sel.to, button.type)
   }
 
-  closeTooltip() {
-    this.menu.style.visibility = ""
-  }
-
   updateActiveStyles() {
     for (let i = 0; i < this.buttons.length; i++) {
-      let button = this.buttons[i], li = this.menu.childNodes[i]
+      let button = this.buttons[i]
+      let li = this.dom.dom.childNodes[i]
       li.className = this.isActive(button) ? classPrefix + "-active" : ""
     }
   }
 
-  openTooltip() {
-    let width = this.menu.offsetWidth, height = this.menu.offsetHeight
-    let pointerWidth = this.pointer.offsetWidth
-    let around = this.pm.wrapper.getBoundingClientRect()
+  showTooltip() {
     this.updateActiveStyles()
     let {top, left} = topCenterOfSelection()
-    let pointerLeft = (width - pointerWidth) / 2
-    left -= width / 2
-    if (left < 0) {
-      pointerLeft += left
-      left = 0
-    } else if (left + width > window.innerWidth) {
-      pointerLeft += left + width - window.innerWidth
-      left = window.innerWidth - width
-    }
-
-    this.menu.style.top = (Math.max(0, top - 10 - height) - around.top) + "px"
-    this.menu.style.left = (left - around.left) + "px"
-    this.menu.style.visibility = "visible"
-    this.pointer.style.left = pointerLeft + "px"
+    this.tooltip.show(this.dom, left, top)
   }
 
   buttonClicked(button) {
     let sel = this.pm.selection
-    this.setting = true
-    if (this.isActive(button))
+    this.tooltip.active = true
+    let done = () => {
+      this.tooltip.active = false
+      this.updateActiveStyles()
+    }
+
+    if (this.isActive(button)) {
       this.pm.apply({name: "removeStyle", pos: sel.from, end: sel.to, style: button.type})
-    else
-      this.pm.apply({name: "addStyle", pos: sel.from, end: sel.to, style: button.style(this.pm)})
-    this.setting = false
-    this.updateActiveStyles()
+      done()
+    } else if (!(button.style instanceof Function)) {
+      this.pm.apply({name: "addStyle", pos: sel.from, end: sel.to, style: button.style})
+      done()
+    } else {
+      button.style(this.pm, this.tooltip, this.prepared[this.buttons.indexOf(button)], st => {
+        if (st)
+          this.pm.apply({name: "addStyle", pos: sel.from, end: sel.to, style: st})
+        this.tooltip.show(this.dom)
+        this.pm.focus()
+        done()
+      })
+    }
   }
 }
 
-function linkDialog(pm) {
-  return style.link(prompt("Link to", "http://")) // FIXME
+function prepareLinkDialog(pm) {
+  let form =  elt("form", {class: classPrefix + "-link-form", action: "."},
+                  elt("div", null, elt("input", {name: "href", type: "text", placeholder: "Target URL",
+                                                 size: 40})),
+                  elt("div", null, elt("input", {name: "title", type: "text", placeholder: "Title", size: 40}),
+                      elt("button", {type: "submit", style: "display: none"})))
+  return new MeasuredElement(pm, form)
+}
+
+function linkDialog(pm, tooltip, dom, done) {
+  tooltip.show(dom)
+  let elts = dom.dom.elements
+  dom.dom.onsubmit = e => {
+    e.preventDefault()
+    if (elts.href.value) done(style.link(elts.href.value, elts.title.value))
+  }
+  dom.dom.onkeydown = e => {
+    if (e.keyCode == 27) done(null)
+  }
+  elts.href.value = elts.title.value = ""
+  elts.href.focus()
 }
 
 function topCenterOfSelection() {

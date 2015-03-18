@@ -1,0 +1,41 @@
+.ProseMirror-tooltip {
+  position: absolute;
+  display: none;
+  box-sizing: border-box;
+  -moz-box-sizing: border- box;
+  overflow: hidden;
+
+  -webkit-transition: width 0.2s, height 0.2s, left 0.2s, top 0.2s;
+  transition: width 0.2s, height 0.2s, left 0.2s, top 0.2s;
+
+  border-radius: 5px;
+  padding: 5px 7px;
+  margin: 0;
+  background: #333;
+  color: white;
+}
+
+.ProseMirror-tooltip-pointer {
+  content: "";
+  position: absolute;
+  display: none;
+  width: 0; height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #333;
+
+  -webkit-transition: left 0.2s, top 0.2s;
+  transition: left 0.2s, top 0.2s;
+}
+
+.ProseMirror-tooltip input[type="text"],
+.ProseMirror-tooltip textarea {
+  background: #555;
+  color: white;
+  border: none;
+  outline: none;
+}
+
+.ProseMirror-tooltip input[type="text"] {
+  padding: 0 4px;
+}
