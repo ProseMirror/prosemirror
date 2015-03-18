@@ -26,6 +26,7 @@ class StyleTooltip {
     this.buttons = config === true ? defaultButtons : config
     this.buildTooltip()
     this.pending = null
+    this.setting = false
 
     pm.on("selectionChange", this.update = this.update.bind(this))
     pm.on("change", this.update)
@@ -42,6 +43,7 @@ class StyleTooltip {
   }
 
   update() {
+    if (this.setting) return
     this.closeTooltip()
     window.clearTimeout(this.pending)
     this.pending = window.setTimeout(() => {
@@ -75,13 +77,17 @@ class StyleTooltip {
     this.menu.style.visibility = ""
   }
 
-  openTooltip() {
-    let width = this.menu.offsetWidth, height = this.menu.offsetHeight
-    let pointerWidth = this.pointer.offsetWidth
+  updateActiveStyles() {
     for (let i = 0; i < this.buttons.length; i++) {
       let button = this.buttons[i], li = this.menu.childNodes[i]
       li.className = this.isActive(button) ? "prosemirror-styletooltip-active" : ""
     }
+  }
+
+  openTooltip() {
+    let width = this.menu.offsetWidth, height = this.menu.offsetHeight
+    let pointerWidth = this.pointer.offsetWidth
+    this.updateActiveStyles()
     let {top, left} = topCenterOfSelection()
     let pointerLeft = (width - pointerWidth) / 2
     left -= width / 2
@@ -101,11 +107,13 @@ class StyleTooltip {
 
   buttonClicked(button) {
     let sel = this.pm.selection
+    this.setting = true
     if (this.isActive(button))
       this.pm.apply({name: "removeStyle", pos: sel.from, end: sel.to, style: button.type})
     else
       this.pm.apply({name: "addStyle", pos: sel.from, end: sel.to, style: button.style(this.pm)})
-    this.openTooltip()
+    this.setting = false
+    this.updateActiveStyles()
   }
 }
 
