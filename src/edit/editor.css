@@ -1,5 +1,6 @@
 .ProseMirror {
   border: 1px solid silver;
+  position: relative;
 }
 
 .ProseMirror-content {

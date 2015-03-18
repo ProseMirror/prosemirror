@@ -11,7 +11,7 @@ defineOption("styleTooltip", false, function(pm, value) {
     pm.mod.styleTooltip = new StyleTooltip(pm, value)
 })
 
-const classPrefix = "prosemirror-styletooltip"
+const classPrefix = "ProseMirror-styletooltip"
 
 const defaultButtons = [
   {type: "strong", title: "Strong text", style: () => style.strong},
@@ -80,13 +80,14 @@ class StyleTooltip {
   updateActiveStyles() {
     for (let i = 0; i < this.buttons.length; i++) {
       let button = this.buttons[i], li = this.menu.childNodes[i]
-      li.className = this.isActive(button) ? "prosemirror-styletooltip-active" : ""
+      li.className = this.isActive(button) ? classPrefix + "-active" : ""
     }
   }
 
   openTooltip() {
     let width = this.menu.offsetWidth, height = this.menu.offsetHeight
     let pointerWidth = this.pointer.offsetWidth
+    let around = this.pm.wrapper.getBoundingClientRect()
     this.updateActiveStyles()
     let {top, left} = topCenterOfSelection()
     let pointerLeft = (width - pointerWidth) / 2
@@ -98,9 +99,9 @@ class StyleTooltip {
       pointerLeft += left + width - window.innerWidth
       left = window.innerWidth - width
     }
-    
-    this.menu.style.top = Math.max(0, top - 10 - height) + "px"
-    this.menu.style.left = left + "px"
+
+    this.menu.style.top = (Math.max(0, top - 10 - height) - around.top) + "px"
+    this.menu.style.left = (left - around.left) + "px"
     this.menu.style.visibility = "visible"
     this.pointer.style.left = pointerLeft + "px"
   }
