@@ -3,7 +3,7 @@ import "./editor.css"
 import {transform, inline, style, Node, Pos} from "../model"
 
 import {parseOptions, initOptions} from "./options"
-import {Selection, Range} from "./selection"
+import {Selection, Range, posFromCoords} from "./selection"
 import * as dom from "./dom"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
@@ -49,7 +49,7 @@ export default class ProseMirror {
       this.update(result.doc,
                   new Range(result.map(sel.anchor), result.map(sel.head)))
       this.signal("transform", params)
-      return true
+      return result
     }
     return false
   }
@@ -145,6 +145,10 @@ export default class ProseMirror {
   focus() {
     this.content.focus()
     this.sel.toDOM()
+  }
+
+  posUnder(coords) {
+    return posFromCoords(this, coords)
   }
 }
 

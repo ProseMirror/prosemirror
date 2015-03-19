@@ -205,3 +205,46 @@ function selectionInNode(node) {
   let sel = window.getSelection()
   return sel.rangeCount && node.contains(sel.anchorNode)
 }
+
+export function posFromCoords(pm, coords) {
+  let element = document.elementFromPoint(coords.left, coords.top)
+  if (!pm.content.contains(element)) return Pos.start(pm.doc)
+
+  let offset
+  if (element.childNodes.length == 1 && element.firstChild.nodeType == 3) {
+    element = element.firstChild
+    offset = offsetInTextNode(element, coords)
+  } else {
+    offset = offsetInElement(element, coords)
+  }
+
+  let {pos, inline} = posFromDOM(pm, element, offset)
+  return inline ? pos : moveInline(pm.doc, pos, pos)
+}
+
+function offsetInTextNode(text, coords) {
+  let {top: y, left: x} = coords
+  let len = text.nodeValue.length
+  let minY = 1e5, minX = 1e5, offset = 0
+  let range = document.createRange()
+  for (let i = 0; i < len - 1; i++) {
+    range.setEnd(text, i + 1)
+    range.setStart(text, i)
+    let rect = range.getBoundingClientRect()
+    if (!rect || (rect.top == 0 && rect.bottom == 0)) continue
+    let dY = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0
+    if (dY > minY) continue
+    if (dY < minY) { minY = dY; minX = 1e5 }
+    let dX = x < rect.left ? rect.left - x : x > rect.right ? x - rect.right : 0
+    if (dX < minX) {
+      minX = dX
+      offset = Math.abs(x - rect.left) < Math.abs(x - rect.right) ? i : i + 1
+    }
+  }
+  return offset
+}
+
+function offsetInElement(element, coords) {
+  let rect = element.getBoundingClientRect()
+  return !element.firstChild || Math.abs(coords.left - rect.left) < Math.abs(coords.left - rect.right) ? 0 : 1
+}
