@@ -5,6 +5,7 @@ import * as dom from "./dom"
 import {execCommand} from "./commands"
 import {applyDOMChange} from "./domchange"
 import text from "./text"
+import {Range} from "./selection"
 
 let stopSeq = null
 const handlers = {}
@@ -156,7 +157,7 @@ handlers.copy = handlers.cut = (pm, e) => {
   let fragment = slice.between(pm.doc, sel.from, sel.to)
   elt.appendChild(toDOM(fragment, {document: document}))
   lastCopied = {doc: pm.doc, from: sel.from, to: sel.to,
-                html: elt.innerHTML, text: text.toText(pm, fragment)}
+                html: elt.innerHTML, text: text.toText(fragment)}
 
   if (e.clipboardData) {
     e.preventDefault()
@@ -183,9 +184,47 @@ handlers.paste = (pm, e) => {
       elt.innerHTML = html
       doc = fromDOM(elt)
     } else {
-      doc = (text.fromMarkdown || text.fromText)(pm, text)
+      doc = (text.fromMarkdown || text.fromText)(text)
     }
     pm.apply({name: "replace", pos: sel.from, end: sel.to,
               source: doc, from: from || Pos.start(doc), to: to || Pos.end(doc)})
+  }
+}
+
+handlers.dragstart = (pm, e) => {
+  if (!e.dataTransfer) return
+
+  let sel = pm.selection
+  let elt = document.createElement("div")
+  let fragment = slice.between(pm.doc, sel.from, sel.to)
+  elt.appendChild(toDOM(fragment, {document: document}))
+
+  e.dataTransfer.setData("text/html", elt.innerHTML)
+  e.dataTransfer.setData("text/plain", text.toText(fragment) + "??")
+}
+
+handlers.dragover = handlers.dragenter = (_, e) => e.preventDefault()
+
+handlers.drop = (pm, e) => {
+  if (!e.dataTransfer) return
+
+  let html, text, doc
+  if (html = e.dataTransfer.getData("text/html")) {
+    let elt = document.createElement("div")
+    elt.innerHTML = html
+    doc = fromDOM(elt)
+  } else if (text = e.dataTransfer.getData("text/plain")) {
+    doc = (text.fromMarkdown || text.fromText)(text)
+  }
+  if (doc) {
+    e.preventDefault()
+    if (!e.ctrlKey) {
+      let sel = pm.selection
+      pm.apply({name: "replace", pos: sel.from, end: sel.to})
+    }
+    let insertPos = pm.posUnder({left: e.clientX, top: e.clientY})
+    let result = pm.apply({name: "replace", pos: insertPos,
+                           source: doc, from: Pos.start(doc), to: Pos.end(doc)})
+    pm.setSelection(new Range(insertPos, result.map(insertPos)))
   }
 }

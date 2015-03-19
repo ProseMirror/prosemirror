@@ -2,7 +2,7 @@ import {Node} from "../model"
 
 export default {toText, fromText}
 
-function fromText(pm, text) {
+function fromText(text) {
   let blocks = text.trim().split("\n\n")
   let doc = new Node("doc")
   for (let i = 0; i < blocks.length; i++) {
@@ -17,7 +17,7 @@ function fromText(pm, text) {
   return doc
 }
 
-function toText(pm, doc) {
+function toText(doc) {
   let out = ""
   function explore(node) {
     if (node.type.contains == "inline") {
