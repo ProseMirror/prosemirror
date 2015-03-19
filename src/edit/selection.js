@@ -106,6 +106,9 @@ function scanOffset(node, parent) {
 }
 
 function posFromDOM(pm, node, domOffset) {
+  if (pm.operation && pm.doc != pm.operation.doc)
+    throw new Error("Fetching a position from an outdated DOM structure")
+
   let path = [], inText = false, offset = null, inline = false, prev
   
   if (node.nodeType == 3) {
@@ -222,15 +225,11 @@ export function posFromCoords(pm, coords) {
   return inline ? pos : moveInline(pm.doc, pos, pos)
 }
 
-function offsetInTextNode(text, coords) {
+function offsetInRects(coords, rects) {
   let {top: y, left: x} = coords
-  let len = text.nodeValue.length
   let minY = 1e5, minX = 1e5, offset = 0
-  let range = document.createRange()
-  for (let i = 0; i < len - 1; i++) {
-    range.setEnd(text, i + 1)
-    range.setStart(text, i)
-    let rect = range.getBoundingClientRect()
+  for (let i = 0; i < rects.length; i++) {
+    let rect = rects[i]
     if (!rect || (rect.top == 0 && rect.bottom == 0)) continue
     let dY = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0
     if (dY > minY) continue
@@ -244,7 +243,21 @@ function offsetInTextNode(text, coords) {
   return offset
 }
 
+function offsetInTextNode(text, coords) {
+  let len = text.nodeValue.length
+  let range = document.createRange()
+  let rects = []
+  for (let i = 0; i < len - 1; i++) {
+    range.setEnd(text, i + 1)
+    range.setStart(text, i)
+    rects.push(range.getBoundingClientRect())
+  }
+  return offsetInRects(coords, rects)
+}
+
 function offsetInElement(element, coords) {
-  let rect = element.getBoundingClientRect()
-  return !element.firstChild || Math.abs(coords.left - rect.left) < Math.abs(coords.left - rect.right) ? 0 : 1
+  let rects = []
+  for (let child = element.firstChild; child; child = child.nextSibling)
+    rects.push(child.getBoundingClientRect())
+  return offsetInRects(coords, rects)
 }

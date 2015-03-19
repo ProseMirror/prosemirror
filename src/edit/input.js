@@ -18,6 +18,8 @@ export class Input {
     this.composing = null
     this.composeActive = 0
 
+    this.draggingFrom = false
+
     this.keymaps = []
     this.commandExtensions = Object.create(null)
 
@@ -62,7 +64,7 @@ function dispatchKey(pm, name, e) {
     clearTimeout(stopSeq)
     stopSeq = setTimeout(function() {
       if (pm.input.keySeq == seq)
-        pm.input.keySeq = null;
+        pm.input.keySeq = null
     }, 50)
     name = seq + " " + name
   }
@@ -122,7 +124,7 @@ handlers.compositionstart = (pm, e) => {
 }
 
 handlers.compositionupdate = (pm, e) => {
-  pm.input.composing.data = e.data;
+  pm.input.composing.data = e.data
 }
 
 handlers.compositionend = (pm, e) => {
@@ -163,7 +165,7 @@ handlers.copy = handlers.cut = (pm, e) => {
     e.preventDefault()
     e.clipboardData.clearData()
     e.clipboardData.setData("text/html", lastCopied.html)
-    e.clipboardData.setData("text/plain", lastCopied.text);
+    e.clipboardData.setData("text/plain", lastCopied.text)
     if (e.type == "cut" && !sel.empty)
       pm.apply({name: "replace", pos: sel.from, end: sel.to})
   }
@@ -201,7 +203,10 @@ handlers.dragstart = (pm, e) => {
 
   e.dataTransfer.setData("text/html", elt.innerHTML)
   e.dataTransfer.setData("text/plain", text.toText(fragment) + "??")
+  pm.input.draggingFrom = true
 }
+
+handlers.dragend = pm => window.setTimeout(() => pm.input.dragginFrom = false, 50)
 
 handlers.dragover = handlers.dragenter = (_, e) => e.preventDefault()
 
@@ -218,13 +223,15 @@ handlers.drop = (pm, e) => {
   }
   if (doc) {
     e.preventDefault()
-    if (!e.ctrlKey) {
-      let sel = pm.selection
-      pm.apply({name: "replace", pos: sel.from, end: sel.to})
-    }
     let insertPos = pm.posUnder({left: e.clientX, top: e.clientY})
+    if (pm.input.draggingFrom && !e.ctrlKey) {
+      let sel = pm.selection
+      let result = pm.apply({name: "replace", pos: sel.from, end: sel.to})
+      insertPos = result.map(insertPos)
+    }
     let result = pm.apply({name: "replace", pos: insertPos,
                            source: doc, from: Pos.start(doc), to: Pos.end(doc)})
     pm.setSelection(new Range(insertPos, result.map(insertPos)))
+    pm.focus()
   }
 }
