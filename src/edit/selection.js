@@ -20,7 +20,7 @@ export class Selection {
   }
 
   poll() {
-    if (!selectionInNode(this.pm.content)) return
+    if (!hasFocus(this.pm)) return
     let sel = getSelection()
     if (sel.anchorNode != this.lastAnchorNode || sel.anchorOffset != this.lastAnchorOffset ||
         sel.focusNode != this.lastHeadNode || sel.focusOffset != this.lastHeadOffset) {
@@ -40,14 +40,14 @@ export class Selection {
 
   toDOM(force) {
     let sel = window.getSelection()
-    let content = this.pm.content
-    if (!selectionInNode(content) ||
+    if (!hasFocus(this.pm) ||
         !force &&
         sel.anchorNode == this.lastAnchorNode && sel.anchorOffset == this.lastAnchorOffset &&
         sel.focusNode == this.lastHeadNode && sel.focusOffset == this.lastHeadOffset)
       return
 
     let range = document.createRange()
+    let content = this.pm.content
     let anchor = DOMFromPos(content, this.range.anchor)
     let head = DOMFromPos(content, this.range.head)
 
@@ -201,9 +201,9 @@ function DOMFromPos(parent, pos) {
   return {node: parent, offset: offset}
 }
 
-function selectionInNode(node) {
+export function hasFocus(pm) {
   let sel = window.getSelection()
-  return sel.rangeCount && node.contains(sel.anchorNode)
+  return sel.rangeCount && pm.content.contains(sel.anchorNode)
 }
 
 export function posFromCoords(pm, coords) {

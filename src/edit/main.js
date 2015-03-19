@@ -3,7 +3,7 @@ import "./editor.css"
 import {transform, inline, style, Node, Pos} from "../model"
 
 import {parseOptions, initOptions} from "./options"
-import {Selection, Range, posFromCoords} from "./selection"
+import {Selection, Range, posFromCoords, hasFocus} from "./selection"
 import * as dom from "./dom"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
@@ -145,6 +145,10 @@ export default class ProseMirror {
   focus() {
     this.content.focus()
     this.sel.toDOM()
+  }
+
+  hasFocus() {
+    return hasFocus(this)
   }
 
   posUnder(coords) {

@@ -44,7 +44,7 @@ class StyleTooltip {
     window.clearTimeout(this.pending)
     this.pending = window.setTimeout(() => {
       let sel = this.pm.selection
-      if (sel.empty) this.tooltip.close()
+      if (sel.empty || !this.pm.hasFocus()) this.tooltip.close()
       else this.showTooltip()
     }, 100)
   }
