@@ -3,21 +3,10 @@ import "./tooltip.css"
 
 const prefix = "ProseMirror-tooltip"
 
-export class MeasuredElement {
-  constructor(pm, dom) {
-    this.dom = dom
-    let testElt = pm.wrapper.appendChild(elt("div", {class: prefix}, dom))
-    testElt.style.visibility = "hidden"
-    testElt.style.display = "block"
-    this.width = testElt.offsetWidth
-    this.height = testElt.offsetHeight
-    pm.wrapper.removeChild(testElt)
-  }
-}
-
 export class Tooltip {
   constructor(pm) {
     this.pm = pm
+    this.knownSizes = Object.create(null)
     this.pointer = pm.wrapper.appendChild(elt("div", {class: prefix + "-pointer"}))
     this.pointerWidth = this.pointerHeight = null
     this.dom = pm.wrapper.appendChild(elt("div", {class: prefix}))
@@ -42,31 +31,43 @@ export class Tooltip {
     pm.wrapper.removeEventListener("mousedown", this.mouseFunc)
   }
 
-  show(me, left, top) {
+  getSize(type) {
+    let known = this.knownSizes[type]
+    if (!known) {
+      let unhide = this.dom.style.display != "block"
+      if (unhide) this.dom.style.display = "block"
+      known = this.knownSizes[type] = {width: this.dom.offsetWidth, height: this.dom.offsetHeight}
+      if (unhide) this.dom.style.display = ""
+    }
+    return known
+  }
+
+  show(type, node, left, top) {
     if (left == null) left = this.lastLeft
     else this.lastLeft = left
     if (top == null) top = this.lastTop
     else this.lastTop = top
 
-    // FIXME do something if top < 0
-
-    let leftPos = left - me.width / 2
-    let pointerMid = me.width / 2
-    if (leftPos < 0) {
-      pointerMid += leftPos
-      leftPos = 0
-    } else if (leftPos + me.width > window.innerWidth) {
-      pointerMid += leftPos + me.width - window.innerWidth
-      leftPos = window.innerWidth - me.width
-    }
-
-    let around = this.pm.wrapper.getBoundingClientRect()
-
     for (let child = this.dom.firstChild, next; child; child = next) {
       next = child.nextSibling
       if (child != this.pointer) this.dom.removeChild(child)
     }
-    this.dom.appendChild(me.dom)
+    this.dom.appendChild(node)
+
+    let size = this.getSize(type)
+
+    // FIXME do something if top < 0
+    let leftPos = left - size.width / 2
+    let pointerMid = size.width / 2
+    if (leftPos < 0) {
+      pointerMid += leftPos
+      leftPos = 0
+    } else if (leftPos + size.width > window.innerWidth) {
+      pointerMid += leftPos + size.width - window.innerWidth
+      leftPos = window.innerWidth - size.width
+    }
+
+    let around = this.pm.wrapper.getBoundingClientRect()
     this.dom.style.display = this.pointer.style.display = "block"
 
     if (this.pointerWidth == null) {
@@ -74,13 +75,13 @@ export class Tooltip {
       this.pointerHeight = this.pointer.offsetHeight
     }
 
-    this.dom.style.width = me.width + "px"
-    this.dom.style.height = me.height + "px"
+    this.dom.style.width = size.width + "px"
+    this.dom.style.height = size.height + "px"
     let finalLeft = leftPos - around.left
     this.dom.style.left = finalLeft + "px"
-    let finalTop = top - around.top - 5 - this.pointerHeight - me.height
+    let finalTop = top - around.top - 5 - this.pointerHeight - size.height
     this.dom.style.top = finalTop + "px"
-    this.pointer.style.top = (finalTop + me.height) + "px"
+    this.pointer.style.top = (finalTop + size.height) + "px"
     this.pointer.style.left = (finalLeft + pointerMid - this.pointerWidth / 2) + "px"
   }
 

@@ -1,7 +1,7 @@
 import {defineOption} from "../edit"
 import {style, inline} from "../model"
 import {elt} from "../edit/dom"
-import {MeasuredElement, Tooltip} from "./tooltip"
+import {Tooltip} from "./tooltip"
 
 import "./styletooltip.css"
 
@@ -16,21 +16,22 @@ defineOption("styleTooltip", false, function(pm, value) {
 
 class Form {
   constructor(pm) {
-    this.form = this.build()
-    this.prepared = new MeasuredElement(pm, this.form)
+    this.form = this.build(pm)
   }
   showDialog(tooltip, callback) {
-    tooltip.show(this.prepared)
-    this.init()
-    this.form.onsubmit = e => {
+    tooltip.show(this.name, this.form)
+    this.form.addEventListener("submit", e => {
       e.preventDefault()
       callback(this.read())
-    }
-    this.form.onkeydown = e => {
+    })
+    this.form.addEventListener("keydown", e => {
       if (e.keyCode == 27) callback(null)
-    }
+    })
+    this.focus()
   }
-  init() {}
+  focus() {
+    this.form.querySelector("input").focus()
+  }
 }
 
 class LinkForm extends Form {
@@ -40,12 +41,6 @@ class LinkForm extends Form {
                                               size: 40})),
                elt("div", null, elt("input", {name: "title", type: "text", placeholder: "Title", size: 40}),
                    elt("button", {type: "submit", style: "display: none"})))
-  }
-
-  init() {
-    this.form.elements.href.value =
-      this.form.elements.title.value = ""
-    this.form.elements.href.focus()
   }
 
   read() {
@@ -66,10 +61,8 @@ class StyleTooltip {
   constructor(pm, config) {
     this.pm = pm
     this.buttons = config === true ? defaultButtons : config
-    this.forms = this.buttons.map(b => b.form && new b.form(this.pm))
     this.pending = null
 
-    this.dom = this.buildDOM()
     this.tooltip = new Tooltip(pm)
 
     pm.on("selectionChange", this.updateFunc = () => this.update())
@@ -86,18 +79,19 @@ class StyleTooltip {
     this.pending = window.setTimeout(() => {
       let sel = this.pm.selection
       if (sel.empty || !this.pm.hasFocus()) this.tooltip.close()
-      else this.showTooltip()
+      else this.popUp()
     }, 100)
   }
 
-  buildDOM() {
+  buildButtons() {
     let dom = elt("ul", {class: classPrefix})
     this.buttons.forEach(button => {
       let cls = classPrefix + "-icon " + classPrefix + "-" + button.type
-      let li = dom.appendChild(elt("li", {title: button.title}, elt("span", {class: cls})))
+      let activeCls = this.isActive(button) ? classPrefix + "-active" : ""
+      let li = dom.appendChild(elt("li", {class: activeCls, title: button.title}, elt("span", {class: cls})))
       li.addEventListener("mousedown", e => { e.preventDefault(); this.buttonClicked(button) })
     })
-    return new MeasuredElement(this.pm, dom)
+    return dom
   }
 
   isActive(button) {
@@ -105,18 +99,13 @@ class StyleTooltip {
     return inline.rangeHasInlineStyle(this.pm.doc, sel.from, sel.to, button.type)
   }
 
-  updateActiveStyles() {
-    for (let i = 0; i < this.buttons.length; i++) {
-      let button = this.buttons[i]
-      let li = this.dom.dom.childNodes[i]
-      li.className = this.isActive(button) ? classPrefix + "-active" : ""
-    }
+  popUp() {
+    let {left, top} = topCenterOfSelection()
+    this.showTooltip(left, top)
   }
 
-  showTooltip() {
-    this.updateActiveStyles()
-    let {top, left} = topCenterOfSelection()
-    this.tooltip.show(this.dom, left, top)
+  showTooltip(left, top) {
+    this.tooltip.show("styletooltip", this.buildButtons(), left, top)
   }
 
   buttonClicked(button) {
@@ -124,7 +113,7 @@ class StyleTooltip {
     this.tooltip.active = true
     let done = () => {
       this.tooltip.active = false
-      this.updateActiveStyles()
+      this.showTooltip()
     }
 
     if (this.isActive(button)) {
@@ -134,10 +123,10 @@ class StyleTooltip {
       this.pm.apply({name: "addStyle", pos: sel.from, end: sel.to, style: button.style})
       done()
     } else {
-      this.forms[this.buttons.indexOf(button)].showDialog(this.tooltip, st => {
+      (new button.form(this.pm)).showDialog(this.tooltip, st => {
         if (st)
           this.pm.apply({name: "addStyle", pos: sel.from, end: sel.to, style: st})
-        this.tooltip.show(this.dom)
+        this.showTooltip()
         this.pm.focus()
         done()
       })
@@ -151,7 +140,7 @@ function topCenterOfSelection() {
   for (let i = 1; i < rects.length; i++) {
     if (rects[i].top < rects[0].bottom - 1 &&
         // Chrome bug where bogus rectangles are inserted at span boundaries
-        (i == rects.length - 1 || rects[i + 1].left != rects[i].left)) {
+        (i == rects.length - 1 || Math.abs(rects[i + 1].left - rects[i].left) > 1)) {
       left = Math.min(left, rects[i].left)
       right = Math.max(right, rects[i].right)
       top = Math.min(top, rects[i].top)
