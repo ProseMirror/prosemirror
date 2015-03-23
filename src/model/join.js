@@ -140,7 +140,7 @@ transform.define("replace", function(doc, params) {
       let block = output.path(from.path), end = block.content.length
       if (!block.type.contains == "inline")
         throw new Error("Can not insert text at a non-inline position")
-      let styles = block.type == Node.types.code_block ? params.styles || inlineStylesAt(doc, from) : Node.empty
+      let styles = block.type != Node.types.code_block ? params.styles || inlineStylesAt(doc, from) : Node.empty
       block.content.push(Node.text(params.text, styles))
       stitchTextNodes(block, end)
       endPos = new Pos(endPos.path, endPos.offset + params.text.length)

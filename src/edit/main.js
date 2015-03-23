@@ -145,7 +145,7 @@ export default class ProseMirror {
       if (to == null) to = !inline.rangeHasInlineStyle(this.doc, range.from, range.to, st.type)
       this.apply({name: to ? "addStyle" : "removeStyle",
                   pos: range.from, end: range.to, style: st})
-    } else if (this.doc.path(range.head.path).type != Node.types.code_block) {
+    } else if (this.doc.path(range.head.path).type != Node.types.code_block && range == this.selection) {
       let styles = this.input.storedInlineStyle || inline.inlineStylesAt(this.doc, range.head)
       if (to == null) to = !style.contains(styles, st)
       this.input.storeInlineStyle(to ? style.add(styles, st) : style.remove(styles, st))
