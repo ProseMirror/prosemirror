@@ -1,6 +1,6 @@
 import "./editor.css"
 
-import {transform, inline, style, Node, Pos} from "../model"
+import {transform, inline, style, slice, Node, Pos} from "../model"
 
 import {parseOptions, initOptions} from "./options"
 import {Selection, Range, posFromCoords, hasFocus} from "./selection"
@@ -8,6 +8,7 @@ import * as dom from "./dom"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
 import {eventMixin} from "./event"
+import text from "./text"
 
 export default class ProseMirror {
   constructor(opts) {
@@ -40,6 +41,15 @@ export default class ProseMirror {
   get selection() {
     this.ensureOperation()
     return this.sel.range
+  }
+
+  get selectedDoc() {
+    let sel = this.selection
+    return slice.between(pm.doc, sel.from, sel.to)
+  }
+
+  get selectedText() {
+    return text.toText(this.selectedDoc)
   }
 
   apply(params) {

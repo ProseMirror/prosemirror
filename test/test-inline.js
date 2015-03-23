@@ -117,12 +117,17 @@ t("insertText", "after br",
   {text: "..."})
 t("insertText", "after_br_nojoin",
   doc(p("hello", br, em("<a>you"))),
-  doc(p("hello", br, "...", em("you"))),
+  doc(p("hello", br, "...<a>", em("you"))),
   {text: "..."})
 t("insertText", "before_br",
   doc(p("<a>", br, "ok")),
   doc(p("ay", br, "ok")),
   {text: "ay"})
+
+t("insertInline", "break",
+  doc(p("hello<a>there")),
+  doc(p("hello", br, "<a>there")),
+  {type: "hard_break"})
 
 function has(name, doc, st, result) {
   tests["has_" + name] = function() {

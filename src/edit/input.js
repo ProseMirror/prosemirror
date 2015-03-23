@@ -1,4 +1,4 @@
-import {fromDOM, toDOM, Pos, Node, slice} from "../model"
+import {fromDOM, toDOM, Pos, Node} from "../model"
 
 import * as keys from "./keys"
 import * as dom from "./dom"
@@ -156,7 +156,7 @@ handlers.copy = handlers.cut = (pm, e) => {
   let sel = pm.selection
   if (sel.empty) return
   let elt = document.createElement("div")
-  let fragment = slice.between(pm.doc, sel.from, sel.to)
+  let fragment = this.selectedDoc
   elt.appendChild(toDOM(fragment, {document: document}))
   lastCopied = {doc: pm.doc, from: sel.from, to: sel.to,
                 html: elt.innerHTML, text: text.toText(fragment)}
@@ -198,7 +198,7 @@ handlers.dragstart = (pm, e) => {
 
   let sel = pm.selection
   let elt = document.createElement("div")
-  let fragment = slice.between(pm.doc, sel.from, sel.to)
+  let fragment = pm.selectedDoc
   elt.appendChild(toDOM(fragment, {document: document}))
 
   e.dataTransfer.setData("text/html", elt.innerHTML)

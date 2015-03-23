@@ -203,7 +203,7 @@ transform.define("insertInline", function(doc, params) {
     return transform.identity(doc)
 
   return insertNode(doc, params.pos,
-                    new Node(params.type, params.text, params.attrs))
+                    new Node.Inline(params.type, null, params.text, params.attrs))
 })
 
 transform.define("insertText", function(doc, params) {

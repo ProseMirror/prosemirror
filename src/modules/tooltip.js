@@ -31,13 +31,13 @@ export class Tooltip {
     pm.wrapper.removeEventListener("mousedown", this.mouseFunc)
   }
 
-  getSize(type) {
+  getSize(type, node) {
     let known = this.knownSizes[type]
     if (!known) {
-      let unhide = this.dom.style.display != "block"
-      if (unhide) this.dom.style.display = "block"
-      known = this.knownSizes[type] = {width: this.dom.offsetWidth, height: this.dom.offsetHeight}
-      if (unhide) this.dom.style.display = ""
+      let wrap = this.pm.wrapper.appendChild(elt("div", {class: prefix}, node))
+      wrap.style.display = "block"
+      known = this.knownSizes[type] = {width: wrap.offsetWidth, height: wrap.offsetHeight}
+      wrap.parentNode.removeChild(wrap)
     }
     return known
   }
@@ -48,13 +48,7 @@ export class Tooltip {
     if (top == null) top = this.lastTop
     else this.lastTop = top
 
-    for (let child = this.dom.firstChild, next; child; child = next) {
-      next = child.nextSibling
-      if (child != this.pointer) this.dom.removeChild(child)
-    }
-    this.dom.appendChild(node)
-
-    let size = this.getSize(type)
+    let size = this.getSize(type, node)
 
     // FIXME do something if top < 0
     let leftPos = left - size.width / 2
@@ -68,6 +62,13 @@ export class Tooltip {
     }
 
     let around = this.pm.wrapper.getBoundingClientRect()
+
+    for (let child = this.dom.firstChild, next; child; child = next) {
+      next = child.nextSibling
+      if (child != this.pointer) this.dom.removeChild(child)
+    }
+    this.dom.appendChild(node)
+
     this.dom.style.display = this.pointer.style.display = "block"
 
     if (this.pointerWidth == null) {

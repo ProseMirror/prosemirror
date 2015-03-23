@@ -16,7 +16,8 @@ defineOption("styleTooltip", false, function(pm, value) {
 
 class Form {
   constructor(pm) {
-    this.form = this.build(pm)
+    this.pm = pm
+    this.form = this.build()
   }
   showDialog(tooltip, callback) {
     tooltip.show(this.name, this.form)
@@ -43,6 +44,8 @@ class LinkForm extends Form {
                    elt("button", {type: "submit", style: "display: none"})))
   }
 
+  get name() { return "linkform" }
+
   read() {
     let elts = this.form.elements
     if (!elts.href.value) return null
@@ -50,10 +53,35 @@ class LinkForm extends Form {
   }
 }
 
+class ImageForm extends Form {
+  build() {
+    let alt = this.pm.selectedText
+    return elt("form", {class: classPrefix + "-image-form", action: "."},
+               elt("div", null, elt("input", {name: "src", type: "text", placeholder: "Image URL", size: 40})),
+               elt("div", null, elt("input", {name: "alt", type: "text", value: alt,
+                                              placeholder: "Description / alternative text", size: 40})),
+               elt("div", null, elt("input", {name: "title", type: "text", placeholder: "Title", size: 40}),
+                   elt("button", {type: "submit", style: "display: none"})))
+  }
+
+  get name() { return "imageform" }
+
+  read() {
+    let elts = this.form.elements
+    if (!elts.src.value) return null
+    let sel = this.pm.selection
+    this.pm.apply({name: "replace", pos: sel.from, end: sel.to})
+    let attrs = {src: elts.src.value, alt: elts.alt.value, title: elts.title.value}
+    this.pm.apply({name: "insertInline", pos: sel.from, type: "image", attrs: attrs})
+    return false
+  }
+}
+
 const defaultButtons = [
   {type: "strong", title: "Strong text", style: style.strong},
   {type: "em", title: "Emphasized text", style: style.em},
   {type: "link", title: "Hyperlink", form: LinkForm},
+  {type: "image", title: "Image", form: ImageForm},
   {type: "code", title: "Code font", style: style.code}
 ]
 
@@ -65,7 +93,7 @@ class StyleTooltip {
 
     this.tooltip = new Tooltip(pm)
 
-    pm.on("selectionChange", this.updateFunc = () => this.update())
+    pm.on("selectionChange", this.updateFunc = () => this.scheduleUpdate())
   }
 
   detach() {
@@ -74,13 +102,22 @@ class StyleTooltip {
     pm.off("selectionChange", this.updateFunc)
   }
 
-  update() {
+  scheduleUpdate() {
     window.clearTimeout(this.pending)
     this.pending = window.setTimeout(() => {
-      let sel = this.pm.selection
-      if (sel.empty || !this.pm.hasFocus()) this.tooltip.close()
-      else this.popUp()
+      this.pending = null
+      this.update()
     }, 100)
+  }
+
+  update() {
+    let sel = this.pm.selection
+    if (sel.empty || !this.pm.hasFocus()) {
+      this.tooltip.close()
+    } else {
+      let {left, top} = topCenterOfSelection()
+      this.showTooltip(left, top)
+    }
   }
 
   buildButtons() {
@@ -99,16 +136,13 @@ class StyleTooltip {
     return inline.rangeHasInlineStyle(this.pm.doc, sel.from, sel.to, button.type)
   }
 
-  popUp() {
-    let {left, top} = topCenterOfSelection()
-    this.showTooltip(left, top)
-  }
-
   showTooltip(left, top) {
     this.tooltip.show("styletooltip", this.buildButtons(), left, top)
   }
 
   buttonClicked(button) {
+    if (this.pending != null) return
+
     let sel = this.pm.selection
     this.tooltip.active = true
     let done = () => {
@@ -126,7 +160,8 @@ class StyleTooltip {
       (new button.form(this.pm)).showDialog(this.tooltip, st => {
         if (st)
           this.pm.apply({name: "addStyle", pos: sel.from, end: sel.to, style: st})
-        this.showTooltip()
+        if (st === false) this.update()
+        else this.showTooltip()
         this.pm.focus()
         done()
       })
