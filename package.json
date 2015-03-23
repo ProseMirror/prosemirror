@@ -18,6 +18,6 @@
   },
   "scripts": {
     "test": "node test/run.js",
-    "build": "browserify --outfile dist/markdown-model.js src/index.js -s MarkdownModel"
+    "demo": "watchify -d --outfile demo/demo-built.js -t babelify -t cssify demo/demo.js"
   }
 }

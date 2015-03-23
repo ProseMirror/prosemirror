@@ -14,10 +14,51 @@ defineOption("styleTooltip", false, function(pm, value) {
     pm.mod.styleTooltip = new StyleTooltip(pm, value)
 })
 
+class Form {
+  constructor(pm) {
+    this.form = this.build()
+    this.prepared = new MeasuredElement(pm, this.form)
+  }
+  showDialog(tooltip, callback) {
+    tooltip.show(this.prepared)
+    this.init()
+    this.form.onsubmit = e => {
+      e.preventDefault()
+      callback(this.read())
+    }
+    this.form.onkeydown = e => {
+      if (e.keyCode == 27) callback(null)
+    }
+  }
+  init() {}
+}
+
+class LinkForm extends Form {
+  build() {
+    return elt("form", {class: classPrefix + "-link-form", action: "."},
+               elt("div", null, elt("input", {name: "href", type: "text", placeholder: "Target URL",
+                                              size: 40})),
+               elt("div", null, elt("input", {name: "title", type: "text", placeholder: "Title", size: 40}),
+                   elt("button", {type: "submit", style: "display: none"})))
+  }
+
+  init() {
+    this.form.elements.href.value =
+      this.form.elements.title.value = ""
+    this.form.elements.href.focus()
+  }
+
+  read() {
+    let elts = this.form.elements
+    if (!elts.href.value) return null
+    return style.link(elts.href.value, elts.title.value)
+  }
+}
+
 const defaultButtons = [
   {type: "strong", title: "Strong text", style: style.strong},
-  {type: "em", title: "Italic text", style: style.em},
-  {type: "link", title: "Hyperlink", style: linkDialog, prepare: prepareLinkDialog},
+  {type: "em", title: "Emphasized text", style: style.em},
+  {type: "link", title: "Hyperlink", form: LinkForm},
   {type: "code", title: "Code font", style: style.code}
 ]
 
@@ -25,7 +66,7 @@ class StyleTooltip {
   constructor(pm, config) {
     this.pm = pm
     this.buttons = config === true ? defaultButtons : config
-    this.prepared = this.buttons.map(b => b.prepare && b.prepare(pm))
+    this.forms = this.buttons.map(b => b.form && new b.form(this.pm))
     this.pending = null
 
     this.dom = this.buildDOM()
@@ -53,7 +94,7 @@ class StyleTooltip {
     let dom = elt("ul", {class: classPrefix})
     this.buttons.forEach(button => {
       let cls = classPrefix + "-icon " + classPrefix + "-" + button.type
-      let li = dom.appendChild(elt("li", null, elt("span", {class: cls})))
+      let li = dom.appendChild(elt("li", {title: button.title}, elt("span", {class: cls})))
       li.addEventListener("mousedown", e => { e.preventDefault(); this.buttonClicked(button) })
     })
     return new MeasuredElement(this.pm, dom)
@@ -89,11 +130,11 @@ class StyleTooltip {
     if (this.isActive(button)) {
       this.pm.apply({name: "removeStyle", pos: sel.from, end: sel.to, style: button.type})
       done()
-    } else if (!(button.style instanceof Function)) {
+    } else if (button.style) {
       this.pm.apply({name: "addStyle", pos: sel.from, end: sel.to, style: button.style})
       done()
     } else {
-      button.style(this.pm, this.tooltip, this.prepared[this.buttons.indexOf(button)], st => {
+      this.forms[this.buttons.indexOf(button)].showDialog(this.tooltip, st => {
         if (st)
           this.pm.apply({name: "addStyle", pos: sel.from, end: sel.to, style: st})
         this.tooltip.show(this.dom)
@@ -102,29 +143,6 @@ class StyleTooltip {
       })
     }
   }
-}
-
-function prepareLinkDialog(pm) {
-  let form =  elt("form", {class: classPrefix + "-link-form", action: "."},
-                  elt("div", null, elt("input", {name: "href", type: "text", placeholder: "Target URL",
-                                                 size: 40})),
-                  elt("div", null, elt("input", {name: "title", type: "text", placeholder: "Title", size: 40}),
-                      elt("button", {type: "submit", style: "display: none"})))
-  return new MeasuredElement(pm, form)
-}
-
-function linkDialog(pm, tooltip, dom, done) {
-  tooltip.show(dom)
-  let elts = dom.dom.elements
-  dom.dom.onsubmit = e => {
-    e.preventDefault()
-    if (elts.href.value) done(style.link(elts.href.value, elts.title.value))
-  }
-  dom.dom.onkeydown = e => {
-    if (e.keyCode == 27) done(null)
-  }
-  elts.href.value = elts.title.value = ""
-  elts.href.focus()
 }
 
 function topCenterOfSelection() {
