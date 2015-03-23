@@ -3,15 +3,15 @@ import {style, inline} from "../model"
 import {elt} from "../edit/dom"
 import {Tooltip} from "./tooltip"
 
-import "./styletooltip.css"
+import "./inlinetooltip.css"
 
-const classPrefix = "ProseMirror-styletooltip"
+const classPrefix = "ProseMirror-inlinetooltip"
 
-defineOption("styleTooltip", false, function(pm, value) {
-  if (pm.mod.styleTooltip)
-    pm.mod.styleTooltip.detach()
+defineOption("inlineTooltip", false, function(pm, value) {
+  if (pm.mod.inlineTooltip)
+    pm.mod.inlineTooltip.detach()
   if (value)
-    pm.mod.styleTooltip = new StyleTooltip(pm, value)
+    pm.mod.inlineTooltip = new Inlinetooltip(pm, value)
 })
 
 class Form {
@@ -85,7 +85,7 @@ const defaultButtons = [
   {type: "code", title: "Code font", style: style.code}
 ]
 
-class StyleTooltip {
+class Inlinetooltip {
   constructor(pm, config) {
     this.pm = pm
     this.buttons = config === true ? defaultButtons : config
@@ -137,7 +137,7 @@ class StyleTooltip {
   }
 
   showTooltip(left, top) {
-    this.tooltip.show("styletooltip", this.buildButtons(), left, top)
+    this.tooltip.show("inlinetooltip", this.buildButtons(), left, top)
   }
 
   buttonClicked(button) {

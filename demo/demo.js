@@ -1,7 +1,7 @@
 import ProseMirror from "../src/edit/main"
 import {Node} from "../src/model"
 import "../src/modules/autoinput"
-import "../src/modules/styletooltip"
+import "../src/modules/inlinetooltip"
 
 let doc = new Node("doc", [
   new Node("heading", [Node.text("Hello!")], {level: 1}),
@@ -18,5 +18,5 @@ let pm = window.pm = new ProseMirror({
   place: document.body,
   doc: doc,
   autoInput: true,
-  styleTooltip: true
+  inlineTooltip: true
 });
