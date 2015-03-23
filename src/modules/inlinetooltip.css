@@ -18,6 +18,20 @@
   border-radius: 4px;
 }
 
+.ProseMirror-inlinetooltip-linktext a {
+  font-family: monospace;
+  color: white;
+  text-decoration: none;
+  padding: 0 5px;
+}
+
+.ProseMirror-inlinetooltip-linktext a:hover {
+  font-family: monospace;
+  color: white;
+  text-decoration: underline;
+  padding: 0 5px;
+}
+
 .ProseMirror-inlinetooltip-icon {
   display: block;
   height: 1em;

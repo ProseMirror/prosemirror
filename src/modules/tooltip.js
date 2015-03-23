@@ -18,7 +18,7 @@ export class Tooltip {
     pm.on("change", this.updateFunc = () => { if (!this.active) this.close() })
     pm.on("resize", this.updateFunc)
     pm.wrapper.addEventListener("mousedown", this.mouseFunc = e => {
-      if (!this.dom.contains(e.target) && pm.wrapper.contains(e.target))
+      if (this.active && !this.dom.contains(e.target) && pm.wrapper.contains(e.target))
         this.close()
     })
   }

@@ -77,18 +77,19 @@ class ImageForm extends Form {
   }
 }
 
-const defaultButtons = [
-  {type: "strong", title: "Strong text", style: style.strong},
-  {type: "em", title: "Emphasized text", style: style.em},
-  {type: "link", title: "Hyperlink", form: LinkForm},
-  {type: "image", title: "Image", form: ImageForm},
-  {type: "code", title: "Code font", style: style.code}
-]
+export const defaultButtons = {
+  strong: {title: "Strong text", style: style.strong},
+  em: {title: "Emphasized text", style: style.em},
+  link: {title: "Hyperlink", form: LinkForm},
+  image: {title: "Image", form: ImageForm},
+  code: {title: "Code font", style: style.code}
+}
 
 class Inlinetooltip {
   constructor(pm, config) {
     this.pm = pm
-    this.buttons = config === true ? defaultButtons : config
+    this.buttons = (config && config.buttons) || defaultButtons
+    this.showLinks = config ? config.showLinks !== false : true
     this.pending = null
 
     this.tooltip = new Tooltip(pm)
@@ -111,36 +112,52 @@ class Inlinetooltip {
   }
 
   update() {
-    let sel = this.pm.selection
-    if (sel.empty || !this.pm.hasFocus()) {
+    let sel = this.pm.selection, link
+    if (!this.pm.hasFocus()) {
       this.tooltip.close()
-    } else {
+    } else if (!sel.empty) {
       let {left, top} = topCenterOfSelection()
       this.showTooltip(left, top)
+    } else if (this.showLinks && (link = this.linkUnderCursor())) {
+      let {left, top} = topOfCursor()
+      this.showLink(link, left, top)
+    } else {
+      this.tooltip.close()
     }
   }
 
   buildButtons() {
     let dom = elt("ul", {class: classPrefix})
-    this.buttons.forEach(button => {
-      let cls = classPrefix + "-icon " + classPrefix + "-" + button.type
-      let activeCls = this.isActive(button) ? classPrefix + "-active" : ""
+    for (let type in this.buttons) {
+      let button = this.buttons[type]
+      let cls = classPrefix + "-icon " + classPrefix + "-" + type
+      let activeCls = this.isActive(type) ? classPrefix + "-active" : ""
       let li = dom.appendChild(elt("li", {class: activeCls, title: button.title}, elt("span", {class: cls})))
-      li.addEventListener("mousedown", e => { e.preventDefault(); this.buttonClicked(button) })
-    })
+      li.addEventListener("mousedown", e => { e.preventDefault(); this.buttonClicked(type, button) })
+    }
     return dom
   }
 
-  isActive(button) {
+  isActive(type) {
     let sel = this.pm.selection
-    return inline.rangeHasInlineStyle(this.pm.doc, sel.from, sel.to, button.type)
+    return inline.rangeHasInlineStyle(this.pm.doc, sel.from, sel.to, type)
+  }
+
+  linkUnderCursor() {
+    let styles = inline.inlineStylesAt(this.pm.doc, this.pm.selection.head)
+    return styles.reduce((found, st) => found || (st.type == "link" && st), null)
   }
 
   showTooltip(left, top) {
     this.tooltip.show("inlinetooltip", this.buildButtons(), left, top)
   }
 
-  buttonClicked(button) {
+  showLink(link, left, top) {
+    let node = elt("div", {class: classPrefix + "-linktext"}, elt("a", {href: link.href, title: link.title}, link.href))
+    this.tooltip.show("link-" + link.href, node, left, top)
+  }
+
+  buttonClicked(type, button) {
     if (this.pending != null) return
 
     let sel = this.pm.selection
@@ -150,8 +167,8 @@ class Inlinetooltip {
       this.showTooltip()
     }
 
-    if (this.isActive(button)) {
-      this.pm.apply({name: "removeStyle", pos: sel.from, end: sel.to, style: button.type})
+    if (this.isActive(type)) {
+      this.pm.apply({name: "removeStyle", pos: sel.from, end: sel.to, style: type})
       done()
     } else if (button.style) {
       this.pm.apply({name: "addStyle", pos: sel.from, end: sel.to, style: button.style})
@@ -182,4 +199,20 @@ function topCenterOfSelection() {
     }
   }
   return {top, left: (left + right) / 2}
+}
+
+function topOfCursor() {
+  let {focusOffset: offset, focusNode: node} = window.getSelection()
+  let rect
+  if (node.nodeType == 3 && node.nodeValue) {
+    let range = document.createRange()
+    range.setEnd(node, offset ? offset : offset + 1)
+    range.setStart(node, offset ? offset - 1 : offset)
+    rect = range.getBoundingClientRect()
+  } else if (node.nodeType == 1 && node.firstChild) {
+    rect = node.childNodes[offset ? offset - 1 : offset].getBoundingClientRect()
+  } else {
+    rect = node.getBoundingClientRect()
+  }
+  return {top: rect.top, left: offset ? rect.right : rect.left}
 }
