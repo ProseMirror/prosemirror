@@ -18,9 +18,9 @@ export var rules = [
     wrapAndJoin(pm, pos, "blockquote")
   }),
   new Rule(" ", /^(\d+)\. $/, function(pm, match, pos) {
-    let start = +match[1]
-    wrapAndJoin(pm, pos, "ordered_list", {start: start || null, tight: true},
-                node => node.content.length == start - 1)
+    let order = +match[1]
+    wrapAndJoin(pm, pos, "ordered_list", {order: order || null, tight: true},
+                node => node.content.length + (node.attrs.order || 1) == order)
   }),
   new Rule(" ", /^\s*([-+*]) $/, function(pm, match, pos) {
     let bullet = match[1]
