@@ -18,14 +18,28 @@
 .ProseMirror-blocktooltip-line {
   position: absolute;
   display: none;
-  left: 1px; width: 9px;
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 3"><path stroke="#bbb" fill="none" d="M3 0 L 0 3 M 6 0 L 3 3 M 9 0 L 6 3"></path></svg>');
-  background-repeat: repeat-y;
+  left: 1px; width: 12px;
   cursor: pointer;
+  border-color: #ddd;
+}
+
+.ProseMirror-blocktooltip-line:before {
+  content: "";
+  display: block;
+  position: absolute;
+  left: 3px;
+  top: 0; bottom: 0;
+  width: 4px;
+  border-color: inherit;
+  border-style: solid;
+  border-top-width: 1px;
+  border-bottom-width: 1px;
+  border-right-width: 0;
+  border-left-width: 4px;
 }
 
 .ProseMirror-blocktooltip-line:hover {
-  background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9 3"><path stroke="#fb4" fill="none" d="M3 0 L 0 3 M 6 0 L 3 3 M 9 0 L 6 3"></path></svg>');
+  border-color: #bbb;
 }
 
 .ProseMirror-blocktooltip-icon {
