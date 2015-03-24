@@ -4,15 +4,15 @@ import {Tooltip} from "./tooltip"
 import {resolvePath} from "../edit/selection"
 import {block} from "../model"
 
-import "./blocktooltip.css"
+import "./menu.css"
 
-const classPrefix = "ProseMirror-blocktooltip"
+const classPrefix = "ProseMirror-menu"
 
-defineOption("blockTooltip", false, function(pm, value) {
+defineOption("menu", false, function(pm, value) {
   if (pm.mod.blockTooltip)
-    pm.mod.blockTooltip.detach()
+    pm.mod.menu.detach()
   if (value)
-    pm.mod.blockTooltip = new BlockTooltip(pm, value)
+    pm.mod.menu = new Menu(pm, value)
 })
 
 export class Item {
@@ -103,56 +103,31 @@ export const defaultItems = [
   new JoinItem()
 ]
 
-class BlockTooltip {
+class Menu {
   constructor(pm, config) {
     this.pm = pm
-    this.tooltip = new Tooltip(pm, "right")
-    this.line = pm.wrapper.appendChild(elt("div", {class: classPrefix + "-line"}))
-    this.line.addEventListener("mousedown", e => { e.preventDefault(); this.clickLine(e) })
-    this.pending = null
+
+    this.tooltip = new Tooltip(pm, "left", true)
+    this.hamburger = pm.wrapper.appendChild(elt("button", {class: classPrefix + "-button"},
+                                                elt("div"), elt("div"), elt("div")))
+    this.hamburger.addEventListener("mousedown", e => { e.preventDefault(); e.stopPropagation(); this.openMenu() })
+
+    pm.on("selectionChange", this.updateFunc = () => this.tooltip.close())
+    pm.on("change", this.updateFunc)
 
     this.menuItems = config && config.items || defaultItems
-
-    pm.on("selectionChange", this.updateFunc = () => this.scheduleUpdate())
-    pm.on("change", this.updateFunc = () => this.scheduleUpdate())
   }
 
   detach() {
+    this.hamburger.parentNode.removeChild(this.hamburger)
     this.tooltip.detach()
-    
+
     pm.off("selectionChange", this.updateFunc)
-  }
-
-  scheduleUpdate() {
-    this.tooltip.close()
-    window.clearTimeout(this.pending)
-    this.pending = window.setTimeout(() => {
-      this.pending = null
-      this.update()
-    }, 100)
-  }
-
-  update() {
-    if (!this.pm.hasFocus()) this.hide()
-    else this.showLine()
+    pm.off("change", this.updateFunc)
   }
 
   select() {
     return this.menuItems.filter(i => i.select(this.pm))
-  }
-
-  showLine() {
-    let {top, bottom} = blockPosition(this.pm)
-    top -= 2 // Compensate for the fact that fonts tend to have more space below than above
-    let base = this.pm.wrapper.getBoundingClientRect()
-    this.line.style.display = "block"
-    this.line.style.top = (top - base.top) + "px"
-    this.line.style.height = (bottom - top) + "px"
-  }
-
-  hide() {
-    this.tooltip.close()
-    this.line.style.display = ""
   }
 
   renderItems(items) {
@@ -160,18 +135,19 @@ class BlockTooltip {
     items.forEach(item => {
       let cls = classPrefix + "-icon " + classPrefix + "-" + item.icon
       let li = dom.appendChild(elt("li", {title: item.title}, elt("span", {class: cls})))
-      li.addEventListener("mousedown", e => { e.preventDefault(); this.clickItem(item) })
+      li.addEventListener("mousedown", e => { e.preventDefault(); e.stopPropagation(); this.clickItem(item) })
     })
     return dom
   }
 
-  showItems(items, left, top) {
-    let id = "blocktooltip-" + items.map(i => i.icon).join("-")
-    this.tooltip.show(id, this.renderItems(items), left, top)
+  openMenu() {
+    let rect = this.hamburger.getBoundingClientRect()
+    this.showItems(this.select(), rect.left, (rect.top + rect.bottom) / 2)
   }
 
-  clickLine(e) {
-    this.showItems(this.select(), e.clientX, e.clientY)
+  showItems(items, left, top) {
+    let id = "menu-" + items.map(i => i.icon).join("-")
+    this.tooltip.show(id, this.renderItems(items), left, top)
   }
 
   clickItem(item) {

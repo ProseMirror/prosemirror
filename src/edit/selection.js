@@ -164,7 +164,7 @@ export function resolvePath(parent, path) {
   let node = parent
   for (let i = 0; i < path.length; i++) {
     node = findByPath(node, path[i])
-    if (!node) throw new Error("Failed to resolve path " + path.join(","))
+    if (!node) throw new Error("Failed to resolve path " + path.join("/"))
   }
   return node
 }

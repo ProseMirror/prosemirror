@@ -4,7 +4,7 @@ import "./tooltip.css"
 const prefix = "ProseMirror-tooltip"
 
 export class Tooltip {
-  constructor(pm, dir) {
+  constructor(pm, dir, closeOnClick) {
     this.pm = pm
     this.dir = dir || "above"
     this.knownSizes = Object.create(null)
@@ -13,13 +13,14 @@ export class Tooltip {
     this.dom = pm.wrapper.appendChild(elt("div", {class: prefix}))
     // Prevent clicks on the tooltip from clearing editor selection
     this.dom.addEventListener("mousedown", e => { if (!this.active) e.preventDefault() })
-    this.active = false
+    this.active = this.open = false
+    this.closeOnClick = closeOnClick
     this.lastLeft = this.lastRight = null
 
     pm.on("change", this.updateFunc = () => { if (!this.active) this.close() })
     pm.on("resize", this.updateFunc)
     pm.wrapper.addEventListener("mousedown", this.mouseFunc = e => {
-      if (this.active && !this.dom.contains(e.target) && pm.wrapper.contains(e.target))
+      if ((this.active || this.closeOnClick) && !this.dom.contains(e.target) && pm.wrapper.contains(e.target))
         this.close()
     })
   }
@@ -82,18 +83,28 @@ export class Tooltip {
       this.dom.style.top = tipTop + "px"
       this.pointer.style.top = (tipTop + size.height) + "px"
       this.pointer.style.left = (left - around.left - this.pointerWidth / 2) + "px"
-    } else { // right
-      let pointerLeft = left - around.left + margin
-      this.dom.style.left = (pointerLeft + this.pointerWidth) + "px"
+    } else { // left/right
       this.dom.style.top = (top - around.top - size.height / 2) + "px"
-      this.pointer.style.left = pointerLeft + "px"
       this.pointer.style.top = (top - this.pointerHeight / 2 - around.top) + "px"
+      if (this.dir == "left") {
+        let pointerLeft = left - around.left - margin - this.pointerWidth
+        this.dom.style.left = (pointerLeft - size.width) + "px"
+        this.pointer.style.left = pointerLeft + "px"
+      } else { // right
+        let pointerLeft = left - around.left + margin
+        this.dom.style.left = (pointerLeft + this.pointerWidth) + "px"
+        this.pointer.style.left = pointerLeft + "px"
+      }
     }
+    this.open = true
   }
 
   close() {
-    this.dom.style.display = this.pointer.style.display = ""
-    this.active = false
-    if (this.pm.mod.tooltip == this) this.pm.mod.tooltip = null
+    if (this.open) {
+      this.open = false
+      this.dom.style.display = this.pointer.style.display = ""
+      this.active = false
+      if (this.pm.mod.tooltip == this) this.pm.mod.tooltip = null
+    }
   }
 }

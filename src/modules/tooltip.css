@@ -43,6 +43,12 @@
   border-right: 6px solid #333;
 }
 
+.ProseMirror-tooltip-pointer-left {
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 6px solid #333;
+}
+
 .ProseMirror-tooltip input[type="text"],
 .ProseMirror-tooltip textarea {
   background: #555;
