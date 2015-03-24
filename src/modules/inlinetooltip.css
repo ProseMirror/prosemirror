@@ -7,7 +7,6 @@
 
 .ProseMirror-inlinetooltip li {
   display: inline-block;
-  margin: 0;
   padding: 2px 7px;
   margin: 0 2px;
   cursor: pointer;
@@ -19,7 +18,6 @@
 }
 
 .ProseMirror-inlinetooltip-linktext a {
-  font-family: monospace;
   color: white;
   text-decoration: none;
   padding: 0 5px;

@@ -11,7 +11,7 @@ defineOption("inlineTooltip", false, function(pm, value) {
   if (pm.mod.inlineTooltip)
     pm.mod.inlineTooltip.detach()
   if (value)
-    pm.mod.inlineTooltip = new Inlinetooltip(pm, value)
+    pm.mod.inlineTooltip = new InlineTooltip(pm, value)
 })
 
 class Form {
@@ -85,7 +85,7 @@ export const defaultButtons = {
   code: {title: "Code font", style: style.code}
 }
 
-class Inlinetooltip {
+class InlineTooltip {
   constructor(pm, config) {
     this.pm = pm
     this.buttons = (config && config.buttons) || defaultButtons

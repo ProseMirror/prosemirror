@@ -4,29 +4,39 @@
 }
 
 .ProseMirror-content {
-  padding: 4px 8px;
+  padding: 4px 8px 4px 24px;
   white-space: pre-wrap;
   line-height: 1.2;
 }
 
-.ProseMirror p,
-.ProseMirror li,
-.ProseMirror h1,
-.ProseMirror h2,
-.ProseMirror h3,
-.ProseMirror h4,
-.ProseMirror h5,
-.ProseMirror h6,
-.ProseMirror pre {
+.ProseMirror-content p,
+.ProseMirror-content li,
+.ProseMirror-content h1,
+.ProseMirror-content h2,
+.ProseMirror-content h3,
+.ProseMirror-content h4,
+.ProseMirror-content h5,
+.ProseMirror-content h6,
+.ProseMirror-content pre {
   min-height: 1.2em;
 }
 
-.ProseMirror ul.tight p, .ProseMirror ol.tight p {
+.ProseMirror-content ul.tight p, .ProseMirror-content ol.tight p {
   margin: 0;
 }
 
 /* Kludge to work around https://code.google.com/p/chromium/issues/detail?id=466148&thanks=466148&ts=1426090625 */
-.ProseMirror li p:empty:after {
+.ProseMirror-content li p:empty:after {
   content: "";
   display: block;
+}
+
+.ProseMirror-content ul, .ProseMirror-content ol {
+  padding-left: 2em;
+}
+
+.ProseMirror-content blockquote {
+  padding-left: 1em;
+  border-left: 3px solid #eee;
+  margin-left: 0; margin-right: 0;
 }

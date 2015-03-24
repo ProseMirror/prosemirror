@@ -14,6 +14,8 @@
   margin: 0;
   background: #333;
   color: white;
+
+  z-index: 5;
 }
 
 .ProseMirror-tooltip-pointer {
@@ -28,6 +30,8 @@
   -webkit-transition: left 0.4s ease-out, top 0.4s ease-out;
   -moz-transition: left 0.4s ease-out, top 0.4s ease-out;
   transition: left 0.4s ease-out, top 0.4s ease-out;
+
+  z-index: 5;
 }
 
 .ProseMirror-tooltip input[type="text"],

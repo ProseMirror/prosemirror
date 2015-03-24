@@ -43,6 +43,10 @@ export class Tooltip {
   }
 
   show(type, node, left, top) {
+    if (this.pm.mod.tooltip && this.pm.mod.tooltip != this)
+      this.pm.mod.tooltip.close()
+    this.pm.mod.tooltip = this
+
     if (left == null) left = this.lastLeft
     else this.lastLeft = left
     if (top == null) top = this.lastTop
@@ -76,7 +80,7 @@ export class Tooltip {
       this.pointerHeight = this.pointer.offsetHeight
     }
 
-    this.dom.style.width = size.width + "px"
+    this.dom.style.width = (size.width + 1) + "px"
     this.dom.style.height = size.height + "px"
     let finalLeft = leftPos - around.left
     this.dom.style.left = finalLeft + "px"
@@ -89,5 +93,6 @@ export class Tooltip {
   close() {
     this.dom.style.display = this.pointer.style.display = ""
     this.active = false
+    if (this.pm.mod.tooltip == this) this.pm.mod.tooltip = null
   }
 }

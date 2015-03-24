@@ -82,6 +82,8 @@ function delBlockBackward(pm, pos) {
   }
 }
 
+// FIXME maybe make deleting inside of a list join items rather than escape to top?
+
 commands.delBackward = pm => {
   let sel = pm.selection, head = sel.head
   if (!sel.empty)
