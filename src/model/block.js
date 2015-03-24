@@ -91,7 +91,8 @@ export function joinPoint(doc, pos) {
   let joinDepth = -1
   for (let i = 0, parent = doc; i < pos.path.length; i++) {
     let index = pos.path[i]
-    if (index > 0 && parent.content[index - 1].type == parent.content[index].type)
+    let type = parent.content[index].type
+    if (index > 0 && parent.content[index - 1].type == type && type.contains != "inline")
       joinDepth = i
     parent = parent.content[index]
   }
