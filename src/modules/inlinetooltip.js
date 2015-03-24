@@ -92,7 +92,7 @@ class InlineTooltip {
     this.showLinks = config ? config.showLinks !== false : true
     this.pending = null
 
-    this.tooltip = new Tooltip(pm)
+    this.tooltip = new Tooltip(pm, "above")
 
     pm.on("selectionChange", this.updateFunc = () => this.scheduleUpdate())
   }

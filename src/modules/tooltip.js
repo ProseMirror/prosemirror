@@ -4,10 +4,11 @@ import "./tooltip.css"
 const prefix = "ProseMirror-tooltip"
 
 export class Tooltip {
-  constructor(pm) {
+  constructor(pm, dir) {
     this.pm = pm
+    this.dir = dir || "above"
     this.knownSizes = Object.create(null)
-    this.pointer = pm.wrapper.appendChild(elt("div", {class: prefix + "-pointer"}))
+    this.pointer = pm.wrapper.appendChild(elt("div", {class: prefix + "-pointer-" + this.dir + " " + prefix + "-pointer"}))
     this.pointerWidth = this.pointerHeight = null
     this.dom = pm.wrapper.appendChild(elt("div", {class: prefix}))
     // Prevent clicks on the tooltip from clearing editor selection
@@ -54,17 +55,6 @@ export class Tooltip {
 
     let size = this.getSize(type, node)
 
-    // FIXME do something if top < 0
-    let leftPos = left - size.width / 2
-    let pointerMid = size.width / 2
-    if (leftPos < 0) {
-      pointerMid += leftPos
-      leftPos = 0
-    } else if (leftPos + size.width > window.innerWidth) {
-      pointerMid += leftPos + size.width - window.innerWidth
-      leftPos = window.innerWidth - size.width
-    }
-
     let around = this.pm.wrapper.getBoundingClientRect()
 
     for (let child = this.dom.firstChild, next; child; child = next) {
@@ -80,14 +70,25 @@ export class Tooltip {
       this.pointerHeight = this.pointer.offsetHeight
     }
 
-    this.dom.style.width = (size.width + 1) + "px"
+    this.dom.style.width = size.width + "px"
     this.dom.style.height = size.height + "px"
-    let finalLeft = leftPos - around.left
-    this.dom.style.left = finalLeft + "px"
-    let finalTop = top - around.top - 5 - this.pointerHeight - size.height
-    this.dom.style.top = finalTop + "px"
-    this.pointer.style.top = (finalTop + size.height) + "px"
-    this.pointer.style.left = (finalLeft + pointerMid - this.pointerWidth / 2) + "px"
+
+    const margin = 5
+    if (this.dir == "above") {
+      let tipLeft = Math.max(0, Math.min(left - size.width / 2, window.innerWidth - size.width))
+      this.dom.style.left = (tipLeft - around.left) + "px"
+      // FIXME do something if top < 0
+      let tipTop = top - around.top - margin - this.pointerHeight - size.height
+      this.dom.style.top = tipTop + "px"
+      this.pointer.style.top = (tipTop + size.height) + "px"
+      this.pointer.style.left = (left - around.left - this.pointerWidth / 2) + "px"
+    } else { // right
+      let pointerLeft = left - around.left + margin
+      this.dom.style.left = (pointerLeft + this.pointerWidth) + "px"
+      this.dom.style.top = (top - around.top - size.height / 2) + "px"
+      this.pointer.style.left = pointerLeft + "px"
+      this.pointer.style.top = (top - this.pointerHeight / 2 - around.top) + "px"
+    }
   }
 
   close() {
