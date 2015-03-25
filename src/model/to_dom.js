@@ -9,7 +9,14 @@ export default function toDOM(node, options) {
   return renderNodes(node.content, options)
 }
 
-toDOM.renderNode = renderNode
+toDOM.renderNode = function(node, options, offset) {
+  let dom = renderNode(node, options, offset)
+  if (options.renderInlineFlat && node.type.type == "inline") {
+    dom = wrapInlineFlat(node, dom)
+    dom = options.renderInlineFlat(node, dom, offset) || dom
+  }
+  return dom
+}
 
 function elt(name, ...children) {
   let dom = doc.createElement(name)
@@ -74,16 +81,21 @@ function renderInlineContent(nodes, where, options) {
   }
 }
 
+function wrapInlineFlat(node, dom) {
+  let styles = node.styles
+  for (let i = styles.length - 1; i >= 0; i--) {
+    let wrap = renderStyle[styles[i].type](styles[i])
+    wrap.appendChild(dom)
+    dom = wrap
+  }
+  return dom
+}
+
 function renderInlineContentFlat(nodes, where, options) {
   let offset = 0
   for (let i = 0; i < nodes.length; i++) {
-    let node = nodes[i], styles = node.styles
-    let dom = renderNode(node, options, i)
-    for (let j = styles.length - 1; j >= 0; j--) {
-      let wrap = renderStyle[styles[j].type](styles[j])
-      wrap.appendChild(dom)
-      dom = wrap
-    }
+    let node = nodes[i]
+    let dom = wrapInlineFlat(node, renderNode(node, options, i))
     dom = options.renderInlineFlat(node, dom, offset) || dom
     where.appendChild(dom)
     offset += node.size
