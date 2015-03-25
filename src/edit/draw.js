@@ -7,7 +7,7 @@ const nonEditable = {html_block: true, html_tag: true, horizontal_rule: true}
 const options = {
   onRender: (node, dom, offset) => {
     if (node.type.type != "inline" && offset != null)
-      dom.setAttribute("mm-path", offset)
+      dom.setAttribute("pm-path", offset)
     if (nonEditable.hasOwnProperty(node.type.name))
       dom.contentEditable = false
     return dom
@@ -15,7 +15,7 @@ const options = {
   renderInlineFlat: (node, dom, offset) => {
     if (dom.nodeType != 1)
       dom = elt("span", null, dom)
-    dom.setAttribute("mm-inline-span", offset + "-" + (offset + node.size))
+    dom.setAttribute("pm-inline-span", offset + "-" + (offset + node.size))
     return dom
   },
   document: document
@@ -48,9 +48,9 @@ export function redraw(dom, node, prev) {
     if (found > -1) {
       domPos = deleteNextNodes(dom, domPos, found - j)
       if (inline)
-        domPos.setAttribute("mm-inline-span", offset + "-" + (offset + child.size))
+        domPos.setAttribute("pm-inline-span", offset + "-" + (offset + child.size))
       else
-        domPos.setAttribute("mm-path", i)
+        domPos.setAttribute("pm-path", i)
       domPos = domPos.nextSibling
       j = found + 1
     } else if (!inline && j < prev.content.length && corresponds[j] == -1 &&

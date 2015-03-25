@@ -33,8 +33,8 @@ class Context {
       this.insert(Node.text(dom.nodeValue, this.styles))
     } else if (dom.nodeType != 1) {
       // Ignore non-text non-element nodes
-    } else if (dom.hasAttribute("mm-html")) {
-      let type = dom.getAttribute("mm-html")
+    } else if (dom.hasAttribute("pm-html")) {
+      let type = dom.getAttribute("pm-html")
       if (type == "html_tag")
         this.insert(new Node.Inline("html_tag", this.styles, null, {html: dom.innerHTML}))
       else

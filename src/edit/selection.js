@@ -103,9 +103,9 @@ function attr(node, name) {
 function scanOffset(node, parent) {
   for (var scan = node ? node.previousSibling : parent.lastChild; scan; scan = scan.previousSibling) {
     let tag, range
-    if (tag = attr(scan, "mm-path"))
+    if (tag = attr(scan, "pm-path"))
       return +tag + 1
-    else if (range = attr(scan, "mm-inline-span"))
+    else if (range = attr(scan, "pm-inline-span"))
       return +/-(\d+)/.exec(range)[1]
   }
   return 0
@@ -127,11 +127,11 @@ function posFromDOM(pm, node, domOffset, force) {
 
   for (let cur = node; cur != pm.content; prev = cur, cur = cur.parentNode) {
     let tag, range
-    if (tag = cur.getAttribute("mm-path")) {
+    if (tag = cur.getAttribute("pm-path")) {
       path.unshift(+tag)
       if (offset == null)
         offset = scanOffset(prev, cur)
-    } else if (range = cur.getAttribute("mm-inline-span")) {
+    } else if (range = cur.getAttribute("pm-inline-span")) {
       let [_, from, to] = /(\d+)-(\d+)/.exec(range)
       if (inText)
         offset = +from + domOffset
@@ -156,7 +156,7 @@ export function findByPath(node, n, fromEnd) {
   for (let ch = fromEnd ? node.lastChild : node.firstChild; ch;
        ch = fromEnd ? ch.previousSibling : ch.nextSibling) {
     if (ch.nodeType != 1) continue
-    let path = ch.getAttribute("mm-path")
+    let path = ch.getAttribute("pm-path")
     if (!path) {
       let found = findByPath(ch, n)
       if (found) return found
@@ -178,7 +178,7 @@ export function resolvePath(parent, path) {
 function findByOffset(node, offset) {
   function search(node) {
     if (node.nodeType != 1) return
-    let range = node.getAttribute("mm-inline-span")
+    let range = node.getAttribute("pm-inline-span")
     if (range) {
       let [_, from, to] = /(\d+)-(\d+)/.exec(range)
       if (+to >= offset)

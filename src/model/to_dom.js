@@ -139,7 +139,7 @@ render.paragraph = wrapIn("p")
 render.html_block = node => {
   let dom = elt("div")
   dom.innerHTML = node.attrs.html
-  dom.setAttribute("mm-html", "html_block")
+  dom.setAttribute("pm-html", "html_block")
   return dom
 }
 
@@ -160,7 +160,7 @@ render.hard_break = node => elt("br")
 render.html_tag = node => {
   let dom = elt("span")
   dom.innerHTML = node.attrs.html
-  dom.setAttribute("mm-html", "html_tag")
+  dom.setAttribute("pm-html", "html_tag")
   return dom
 }
 
