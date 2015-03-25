@@ -1,5 +1,4 @@
 import {elt} from "./dom"
-import {findByPath} from "./selection"
 
 import {toDOM} from "../model"
 
@@ -27,36 +26,37 @@ export function draw(dom, doc) {
   dom.appendChild(toDOM(doc, options))
 }
 
-export function redraw(dom, node, prev) {
-  let sameStart = 0, sameEnd = 0
-  let len = node.content.length, prevLen = prev.content.length
-  let diffLen = Math.min(len, prevLen)
-  while (diffLen && node.content[sameStart] == prev.content[sameStart]) {
-    ++sameStart
-    --diffLen
+function deleteNextNodes(parent, at, amount) {
+  for (let i = 0; i < amount; i++) {
+    let prev = at
+    at = at.nextSibling
+    parent.removeChild(prev)
   }
-  while (diffLen && node.content[len - 1 - sameEnd] == prev.content[prevLen - 1 - sameEnd]) {
-    ++sameEnd
-    --diffLen
-  }
+  return at
+}
 
-  let pos = null
-  for (let i = prevLen - 1; i >= sameStart; i--) {
-    let old = findByPath(dom, i)
-    if (i < prevLen - sameEnd) {
-      // FIXME define a coherent strategy for redrawing inline content
-      if (i < len - sameEnd && i == sameStart && node.content[i].type.contains != "inline" &&
-          node.content[i].sameMarkup(prev.content[i])) {
-        redraw(old, node.content[i], prev.content[i])
-        ++sameStart
-      } else {
-        dom.removeChild(old)
-      }
+export function redraw(dom, node, prev) {
+  let corresponds = []
+  for (let i = 0; i < prev.content.length; i++)
+    corresponds.push(node.content.indexOf(prev.content[i]))
+
+  let domPos = dom.firstChild, j = 0
+  for (let i = 0; i < node.content.length; i++) {
+    let child = node.content[i]
+    let found = prev.content.indexOf(child)
+    if (found > -1) {
+      domPos = deleteNextNodes(dom, domPos, found - j)
+      domPos.setAttribute("mm-path", i)
+      domPos = domPos.nextSibling
+      j = found + 1
+    } else if (j < prev.content.length && corresponds[j] == -1 &&
+               child.type.contains != "inline" && child.sameMarkup(prev.content[j])) {
+      redraw(domPos, child, prev.content[j])
+      domPos = domPos.nextSibling
+      j++
     } else {
-      old.setAttribute("mm-path", i + (len - prevLen))
-      pos = old
+      dom.insertBefore(toDOM.renderNode(child, options, i), domPos)
     }
   }
-  for (let i = sameStart; i < len - sameEnd; i++)
-    dom.insertBefore(toDOM.renderNode(node.content[i], options, i), pos)
+  deleteNextNodes(dom, domPos, prev.content.length - j)
 }
