@@ -3,7 +3,7 @@ import "./editor.css"
 import {transform, inline, style, slice, Node, Pos} from "../model"
 
 import {parseOptions, initOptions} from "./options"
-import {Selection, Range, posFromCoords, hasFocus} from "./selection"
+import {Selection, Range, posAtCoords, coordsAtPos, scrollIntoView, hasFocus} from "./selection"
 import * as dom from "./dom"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
@@ -87,7 +87,7 @@ export default class ProseMirror {
   ensureOperation() {
     if (this.operation) return
     if (!this.input.suppressPolling) this.sel.poll()
-    this.operation = {doc: this.doc, sel: this.sel.range}
+    this.operation = {doc: this.doc, sel: this.sel.range, scrollIntoView: false}
     dom.requestAnimationFrame(() => this.endOp())
   }
 
@@ -100,6 +100,8 @@ export default class ProseMirror {
       redraw(this.content, this.doc, op.doc)
     if (docChanged || op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head))
       this.sel.toDOM(docChanged)
+    if (op.scrollIntoView !== false)
+      scrollIntoView(this, op.scrollIntoView)
     this.signal("draw")
   }
 
@@ -161,8 +163,17 @@ export default class ProseMirror {
     return hasFocus(this)
   }
 
-  posUnder(coords) {
-    return posFromCoords(this, coords)
+  posAtCoords(coords) {
+    return posAtCoords(this, coords)
+  }
+
+  coordsAtPos(pos) {
+    return coordsAtPos(this, pos)
+  }
+
+  scrollIntoView(pos = null) {
+    this.ensureOperation()
+    this.operation.scrollIntoView = pos
   }
 }
 

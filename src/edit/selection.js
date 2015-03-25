@@ -1,4 +1,5 @@
 import {Pos} from "../model"
+import {elt} from "./dom"
 
 export class Selection {
   constructor(pm) {
@@ -19,17 +20,17 @@ export class Selection {
     }
   }
 
-  poll() {
+  poll(force) {
     if (!hasFocus(this.pm)) return
     let sel = getSelection()
-    if (sel.anchorNode != this.lastAnchorNode || sel.anchorOffset != this.lastAnchorOffset ||
+    if (force || sel.anchorNode != this.lastAnchorNode || sel.anchorOffset != this.lastAnchorOffset ||
         sel.focusNode != this.lastHeadNode || sel.focusOffset != this.lastHeadOffset) {
       let {pos: anchor, inline: anchorInline} =
-        posFromDOM(this.pm, this.lastAnchorNode = sel.anchorNode,
-                              this.lastAnchorOffset = sel.anchorOffset)
+          posFromDOM(this.pm, this.lastAnchorNode = sel.anchorNode,
+                     this.lastAnchorOffset = sel.anchorOffset, force)
       let {pos: head, inline: headInline} =
           posFromDOM(this.pm, this.lastHeadNode = sel.focusNode,
-                     this.lastHeadOffset = sel.focusOffset)
+                     this.lastHeadOffset = sel.focusOffset, force)
       this.pm.setSelection(new Range(anchorInline ? anchor : moveInline(this.pm.doc, anchor, this.range.anchor),
                                      headInline ? head: moveInline(this.pm.doc, head, this.range.head)))
       if (this.range.anchor.cmp(anchor) || this.range.head.cmp(head))
@@ -78,6 +79,11 @@ export class Selection {
   }
 }
 
+function windowRect() {
+  return {left: 0, right: window.innerWidth,
+          top: 0, bottom: window.innerHeight}
+}
+
 export class Range {
   constructor(anchor, head) {
     this.anchor = anchor
@@ -105,8 +111,8 @@ function scanOffset(node, parent) {
   return 0
 }
 
-function posFromDOM(pm, node, domOffset) {
-  if (pm.operation && pm.doc != pm.operation.doc)
+function posFromDOM(pm, node, domOffset, force) {
+  if (!force && pm.operation && pm.doc != pm.operation.doc)
     throw new Error("Fetching a position from an outdated DOM structure")
 
   let path = [], inText = false, offset = null, inline = false, prev
@@ -209,7 +215,7 @@ export function hasFocus(pm) {
   return sel.rangeCount && pm.content.contains(sel.anchorNode)
 }
 
-export function posFromCoords(pm, coords) {
+export function posAtCoords(pm, coords) {
   let element = document.elementFromPoint(coords.left, coords.top)
   if (!pm.content.contains(element)) return Pos.start(pm.doc)
 
@@ -223,6 +229,43 @@ export function posFromCoords(pm, coords) {
 
   let {pos, inline} = posFromDOM(pm, element, offset)
   return inline ? pos : moveInline(pm.doc, pos, pos)
+}
+
+export function coordsAtPos(pm, pos) {
+  let {node, offset} = DOMFromPos(pm.content, pos)
+  let rect
+  if (node.nodeType == 3 && node.nodeValue) {
+    let range = document.createRange()
+    range.setEnd(node, offset ? offset : offset + 1)
+    range.setStart(node, offset ? offset - 1 : offset)
+    rect = range.getBoundingClientRect()
+  } else if (node.nodeType == 1 && node.firstChild) {
+    rect = node.childNodes[offset ? offset - 1 : offset].getBoundingClientRect()
+  } else {
+    rect = node.getBoundingClientRect()
+  }
+  let x = offset ? rect.right : rect.left
+  return {top: rect.top, bottom: rect.bottom, left: x, right: x}
+}
+
+const scrollMargin = 5
+
+export function scrollIntoView(pm, pos) {
+  if (!pos) pos = pm.sel.range.head
+  let coords = coordsAtPos(pm, pos)
+  for (let parent = pm.wrapper;; parent = parent.parentNode) {
+    let atBody = parent == document.body
+    let rect = atBody ? windowRect() : parent.getBoundingClientRect()
+    if (coords.top < rect.top)
+      parent.scrollTop -= rect.top - coords.top + scrollMargin
+    else if (coords.bottom > rect.bottom)
+      parent.scrollTop += coords.bottom - rect.bottom + scrollMargin
+    if (coords.left < rect.left)
+      parent.scrollLeft -= rect.left - coords.left + scrollMargin
+    else if (coords.right > rect.right)
+      parent.scrollLeft += coords.right - rect.right + scrollMargin
+    if (atBody) break
+  }
 }
 
 function offsetInRects(coords, rects) {

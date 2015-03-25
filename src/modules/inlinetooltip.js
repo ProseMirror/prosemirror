@@ -119,7 +119,7 @@ class InlineTooltip {
       let {left, top} = topCenterOfSelection()
       this.showTooltip(left, top)
     } else if (this.showLinks && (link = this.linkUnderCursor())) {
-      let {left, top} = topOfCursor()
+      let {left, top} = this.pm.coordsAtPos(sel.head)
       this.showLink(link, left, top)
     } else {
       this.tooltip.close()
@@ -199,20 +199,4 @@ function topCenterOfSelection() {
     }
   }
   return {top, left: (left + right) / 2}
-}
-
-function topOfCursor() {
-  let {focusOffset: offset, focusNode: node} = window.getSelection()
-  let rect
-  if (node.nodeType == 3 && node.nodeValue) {
-    let range = document.createRange()
-    range.setEnd(node, offset ? offset : offset + 1)
-    range.setStart(node, offset ? offset - 1 : offset)
-    rect = range.getBoundingClientRect()
-  } else if (node.nodeType == 1 && node.firstChild) {
-    rect = node.childNodes[offset ? offset - 1 : offset].getBoundingClientRect()
-  } else {
-    rect = node.getBoundingClientRect()
-  }
-  return {top: rect.top, left: offset ? rect.right : rect.left}
 }

@@ -27,6 +27,7 @@ function clearSelection(pm) {
 }
 
 commands.insertHardBreak = pm => {
+  pm.scrollIntoView()
   let pos = clearSelection(pm)
   if (pm.doc.path(pos.path).type == Node.types.code_block)
     return pm.apply({name: "insertText", pos: pos, text: "\n"})
@@ -85,6 +86,7 @@ function delBlockBackward(pm, pos) {
 // FIXME maybe make deleting inside of a list join items rather than escape to top?
 
 commands.delBackward = pm => {
+  pm.scrollIntoView()
   let sel = pm.selection, head = sel.head
   if (!sel.empty)
     clearSelection(pm)
@@ -123,6 +125,7 @@ function delBlockForward(pm, pos) {
 }
 
 commands.delForward = pm => {
+  pm.scrollIntoView()
   let sel = pm.selection, head = sel.head
   if (!sel.empty)
     clearSelection(pm)
@@ -132,18 +135,25 @@ commands.delForward = pm => {
     return delBlockForward(pm, head)
 }
 
-commands.undo = pm => pm.history.undo()
-commands.redo = pm => pm.history.redo()
+function scrollAnd(pm, value) {
+  pm.scrollIntoView()
+  return value
+}
 
-commands.join = pm => pm.apply({name: "join", pos: pm.selection.head})
+commands.undo = pm => scrollAnd(pm, pm.history.undo())
+commands.redo = pm => scrollAnd(pm, pm.history.redo())
+
+commands.join = pm => scrollAnd(pm, pm.apply({name: "join", pos: pm.selection.head}))
 
 commands.lift = pm => {
   let sel = pm.selection
+  pm.scrollIntoView()
   return pm.apply({name: "lift", pos: sel.from, end: sel.to})
 }
 
 function wrap(pm, type) {
   let sel = pm.selection
+  pm.scrollIntoView()
   return pm.apply({name: "wrap", pos: sel.from, end: sel.to, type: type})
 }
 
@@ -152,6 +162,7 @@ commands.wrapOrderedList = pm => wrap(pm, "ordered_list")
 commands.wrapBlockquote = pm => wrap(pm, "blockquote")
 
 commands.endBlock = pm => {
+  pm.scrollIntoView()
   let head = clearSelection(pm)
   let block = pm.doc.path(head.path)
   if (head.path.length > 1 && block.content.length == 0) {
@@ -169,6 +180,7 @@ commands.endBlock = pm => {
 
 function setType(pm, type, attrs) {
   let sel = pm.selection
+  pm.scrollIntoView()
   return pm.apply({name: "setType", pos: sel.from, end: sel.to,
                    type: type, attrs: attrs})
 }
@@ -184,6 +196,7 @@ commands.makeParagraph = pm => setType(pm, "paragraph")
 commands.makeCodeBlock = pm => setType(pm, "code_block")
 
 function insertOpaqueBlock(pm, type, attrs) {
+  pm.scrollIntoView()
   let sel = pm.selection
   if (!sel.empty) return false
   let parent = pm.doc.path(sel.head.path)

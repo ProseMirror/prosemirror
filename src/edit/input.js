@@ -104,6 +104,7 @@ function inputText(pm, range, text) {
   pm.apply({name: "replace", pos: range.from, end: range.to,
             text: text, styles: pm.input.storedInlineStyles})
   pm.signal("textInput", text)
+  pm.scrollIntoView()
 }
 
 handlers.keypress = (pm, e) => {
@@ -147,7 +148,8 @@ handlers.input = (pm) => {
   pm.input.suppressPolling = true
   applyDOMChange(pm)
   pm.input.suppressPolling = false
-  pm.sel.poll()
+  pm.sel.poll(true)
+  pm.scrollIntoView()
 }
 
 let lastCopied = null
@@ -156,7 +158,7 @@ handlers.copy = handlers.cut = (pm, e) => {
   let sel = pm.selection
   if (sel.empty) return
   let elt = document.createElement("div")
-  let fragment = this.selectedDoc
+  let fragment = pm.selectedDoc
   elt.appendChild(toDOM(fragment, {document: document}))
   lastCopied = {doc: pm.doc, from: sel.from, to: sel.to,
                 html: elt.innerHTML, text: text.toText(fragment)}
@@ -175,21 +177,22 @@ handlers.paste = (pm, e) => {
   if (!e.clipboardData) return
   let sel = pm.selection
   let html = e.clipboardData.getData("text/html")
-  let text = e.clipboardData.getData("text/plain")
-  if (html || text) {
+  let txt = e.clipboardData.getData("text/plain")
+  if (html || txt) {
     e.preventDefault()
     let doc, from, to
-    if (lastCopied && (lastCopied.html == html || lastCopied.text == text)) {
+    if (lastCopied && (lastCopied.html == html || lastCopied.text == txt)) {
       ({doc, from, to}) = lastCopied
     } else if (html) {
       let elt = document.createElement("div")
       elt.innerHTML = html
       doc = fromDOM(elt)
     } else {
-      doc = (text.fromMarkdown || text.fromText)(text)
+      doc = (text.fromMarkdown || text.fromText)(txt)
     }
     pm.apply({name: "replace", pos: sel.from, end: sel.to,
               source: doc, from: from || Pos.start(doc), to: to || Pos.end(doc)})
+    pm.scrollIntoView()
   }
 }
 
@@ -213,17 +216,17 @@ handlers.dragover = handlers.dragenter = (_, e) => e.preventDefault()
 handlers.drop = (pm, e) => {
   if (!e.dataTransfer) return
 
-  let html, text, doc
+  let html, txt, doc
   if (html = e.dataTransfer.getData("text/html")) {
     let elt = document.createElement("div")
     elt.innerHTML = html
     doc = fromDOM(elt)
-  } else if (text = e.dataTransfer.getData("text/plain")) {
-    doc = (text.fromMarkdown || text.fromText)(text)
+  } else if (txt = e.dataTransfer.getData("text/plain")) {
+    doc = (text.fromMarkdown || text.fromText)(txt)
   }
   if (doc) {
     e.preventDefault()
-    let insertPos = pm.posUnder({left: e.clientX, top: e.clientY})
+    let insertPos = pm.posAtCoords({left: e.clientX, top: e.clientY})
     if (pm.input.draggingFrom && !e.ctrlKey) {
       let sel = pm.selection
       let result = pm.apply({name: "replace", pos: sel.from, end: sel.to})
