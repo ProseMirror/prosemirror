@@ -112,10 +112,12 @@ class Menu {
                                                 elt("div"), elt("div"), elt("div")))
     this.hamburger.addEventListener("mousedown", e => { e.preventDefault(); e.stopPropagation(); this.openMenu() })
 
-    pm.on("selectionChange", this.updateFunc = () => this.tooltip.close())
+    pm.on("selectionChange", this.updateFunc = () => this.updated())
     pm.on("change", this.updateFunc)
+    this.scheduled = null
 
     this.menuItems = config && config.items || defaultItems
+    this.followCursor = config && config.followCursor
   }
 
   detach() {
@@ -124,6 +126,14 @@ class Menu {
 
     pm.off("selectionChange", this.updateFunc)
     pm.off("change", this.updateFunc)
+  }
+
+  updated() {
+    this.tooltip.close()
+    if (this.menuItems) {
+      window.clearTimeout(this.scheduled)
+      this.scheduled = window.setTimeout(() => this.alignButton(), 100)
+    }
   }
 
   select() {
@@ -159,11 +169,11 @@ class Menu {
       this.pm.focus()
     }
   }
-}
 
-function blockPosition(pm) {
-  let sel = pm.selection
-  let topRect = resolvePath(pm.content, sel.from.path).getBoundingClientRect()
-  let botRect = resolvePath(pm.content, sel.to.path).getBoundingClientRect()
-  return {top: topRect.top, bottom: botRect.bottom}
+  alignButton() {
+    let blockElt = resolvePath(this.pm.content, this.pm.selection.from.path)
+    let {top} = blockElt.getBoundingClientRect()
+    let around = this.pm.wrapper.getBoundingClientRect()
+    this.hamburger.style.top = Math.max(top - this.hamburger.offsetHeight - 2 - around.top, 7) + "px"
+  }
 }

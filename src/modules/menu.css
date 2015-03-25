@@ -8,6 +8,10 @@
   border: none;
   background: transparent;
   padding: 0;
+
+  -webkit-transition: top 0.3s ease-out;
+  -moz-transition: top 0.3s ease-out;
+  transition: top 0.3s ease-out;
 }
 
 .ProseMirror-menu-button div {

@@ -20,5 +20,5 @@ let pm = window.pm = new ProseMirror({
   doc: doc,
   autoInput: true,
   inlineTooltip: true,
-  menu: true
+  menu: {followCursor: true}
 });
