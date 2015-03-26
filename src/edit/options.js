@@ -34,9 +34,15 @@ export function defineOption(name, defaultValue, update, updateOnInit) {
 
 export function parseOptions(obj) {
   let result = Object.create(null)
-  for (let opt in options) {
-    let inObj = obj && Object.prototype.hasOwnProperty.call(obj, opt)
-    result[opt] = inObj ? obj[opt] : options[opt].defaultValue
+  let given = obj ? [obj].concat(obj.use || []) : []
+  outer: for (let opt in options) {
+    for (let i = 0; i < given.length; i++) {
+      if (Object.prototype.hasOwnProperty.call(given[i], opt)) {
+        result[opt] = given[i][opt]
+        continue outer
+      }
+    }
+    result[opt] = options[opt].defaultValue
   }
   return result
 }
