@@ -1,5 +1,3 @@
-const nullContent = []
-
 export default class Node {
   constructor(type, content, attrs = null) {
     if (typeof type == "string") type = nodeTypes[type]
@@ -66,9 +64,29 @@ export default class Node {
         return false
     return true
   }
+
+  toJSON() {
+    return {type: this.type.name,
+            content: this.content.length ? this.content.map(n => n.toJSON()) : this.content,
+            attrs: this.attrs}
+  }
+
+  static fromJSON(json) {
+    if (json.styles)
+      return new InlineNode(json.type, maybeEmpty(json.styles), json.text, maybeNull(json.attrs))
+    else
+      return new Node(json.type, maybeEmpty(json.content.map(n => Node.fromJSON(n))), maybeNull(json.attrs))
+  }
 }
 
 Node.empty = [] // Reused empty array for collections that are guaranteed to remain empty
+
+function maybeNull(obj) {
+  for (let _prop in obj) return obj
+  return nullAttrs
+}
+
+function maybeEmpty(arr) { return arr.length ? arr : Node.empty }
 
 class InlineNode extends Node {
   constructor(type, styles, text, attrs = null) {
@@ -102,6 +120,13 @@ class InlineNode extends Node {
 
   get textContent() {
     return this.text
+  }
+
+  toJSON() {
+    let obj = super.toJSON()
+    obj.text = this.text
+    obj.styles = this.styles
+    return obj
   }
 }
 

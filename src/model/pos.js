@@ -32,6 +32,8 @@ export default class Pos {
     path[pos] += offset
     return new Pos(path, this.offset)
   }
+
+  static fromJSON(json) { return new Pos(json.path, json.offset) }
 }
 
 function findLeft(node, path) {
