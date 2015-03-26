@@ -31,7 +31,8 @@ class Form {
     this.focus()
   }
   focus() {
-    this.form.querySelector("input").focus()
+    let input = this.form.querySelector("input")
+    if (input) input.focus()
   }
 }
 
@@ -39,8 +40,9 @@ class LinkForm extends Form {
   build() {
     return elt("form", {class: classPrefix + "-link-form", action: "."},
                elt("div", null, elt("input", {name: "href", type: "text", placeholder: "Target URL",
-                                              size: 40})),
-               elt("div", null, elt("input", {name: "title", type: "text", placeholder: "Title", size: 40}),
+                                              size: 40, autocomplete: "off"})),
+               elt("div", null, elt("input", {name: "title", type: "text", placeholder: "Title",
+                                              size: 40, autocomplete: "off"}),
                    elt("button", {type: "submit", style: "display: none"})))
   }
 
@@ -57,10 +59,12 @@ class ImageForm extends Form {
   build() {
     let alt = this.pm.selectedText
     return elt("form", {class: classPrefix + "-image-form", action: "."},
-               elt("div", null, elt("input", {name: "src", type: "text", placeholder: "Image URL", size: 40})),
-               elt("div", null, elt("input", {name: "alt", type: "text", value: alt,
+               elt("div", null, elt("input", {name: "src", type: "text", placeholder: "Image URL",
+                                              size: 40, autocomplete: "off"})),
+               elt("div", null, elt("input", {name: "alt", type: "text", value: alt, autocomplete: "off",
                                               placeholder: "Description / alternative text", size: 40})),
-               elt("div", null, elt("input", {name: "title", type: "text", placeholder: "Title", size: 40}),
+               elt("div", null, elt("input", {name: "title", type: "text", placeholder: "Title",
+                                              size: 40, autcomplete: "off"}),
                    elt("button", {type: "submit", style: "display: none"})))
   }
 

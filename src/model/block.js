@@ -87,6 +87,8 @@ transform.define("lift", function(doc, params) {
   return result
 })
 
+// FIXME allow both searching up and searching down
+
 export function joinPoint(doc, pos) {
   let joinDepth = -1
   for (let i = 0, parent = doc; i < pos.path.length; i++) {
@@ -98,6 +100,8 @@ export function joinPoint(doc, pos) {
   }
   if (joinDepth > -1) return pos.shorten(joinDepth)
 }
+
+// FIXME pass in an already found join point
 
 transform.define("join", function(doc, params) {
   let point = joinPoint(doc, params.pos)
