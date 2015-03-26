@@ -5,6 +5,7 @@ import {resolvePath} from "../edit/selection"
 import {block, Node} from "../model"
 
 import "./menu.css"
+import "./icons.css"
 
 const classPrefix = "ProseMirror-menu"
 
@@ -24,8 +25,8 @@ export class Item {
 }
 
 export class LiftItem extends Item {
-  constructor() {
-    super("lift", "Move out of block")
+  constructor(icon, title) {
+    super(icon, title || "Move out of block")
   }
   select(pm) {
     let sel = pm.selection
@@ -38,8 +39,8 @@ export class LiftItem extends Item {
 }
 
 export class JoinItem extends Item {
-  constructor() {
-    super("join", "Join with above block")
+  constructor(icon, title) {
+    super(icon, title || "Join with above block")
   }
   select(pm) {
     return block.joinPoint(pm.doc, pm.selection.head)
@@ -103,28 +104,28 @@ export class WrapItem extends Item {
     
 export const defaultItems = [
   new SubmenuItem("paragraph", "Paragraph type", [
-    new SubmenuItem("heading", "Heading", [
-      new BlockTypeItem("heading-1", "Heading 1", "heading", {level: 1}),
-      new BlockTypeItem("heading-2", "Heading 2", "heading", {level: 2}),
-      new BlockTypeItem("heading-3", "Heading 3", "heading", {level: 3}),
-      new BlockTypeItem("heading-4", "Heading 4", "heading", {level: 4}),
-      new BlockTypeItem("heading-5", "Heading 5", "heading", {level: 5}),
-      new BlockTypeItem("heading-6", "Heading 6", "heading", {level: 6}),
+    new SubmenuItem("header", "Heading", [
+      new BlockTypeItem("1", "Heading 1", "heading", {level: 1}),
+      new BlockTypeItem("2", "Heading 2", "heading", {level: 2}),
+      new BlockTypeItem("3", "Heading 3", "heading", {level: 3}),
+      new BlockTypeItem("4", "Heading 4", "heading", {level: 4}),
+      new BlockTypeItem("5", "Heading 5", "heading", {level: 5}),
+      new BlockTypeItem("6", "Heading 6", "heading", {level: 6}),
     ]),
     new BlockTypeItem("paragraph", "Normal paragraph", "paragraph"),
     new BlockTypeItem("code", "Code block", "code_block")
   ]),
-  new LiftItem(),
-  new SubmenuItem("wrap", "Wrap block", [
-    new WrapItem("ordered-list", "Wrap in ordered list", "ordered_list"),
-    new WrapItem("bullet-list", "Wrap in bullet list", "bullet_list"),
-    new WrapItem("blockquote", "Wrap in blockquote", "blockquote")
+  new LiftItem("dedent"),
+  new SubmenuItem("indent", "Wrap block", [
+    new WrapItem("list-ol", "Wrap in ordered list", "ordered_list"),
+    new WrapItem("list-ul", "Wrap in bullet list", "bullet_list"),
+    new WrapItem("quote-left", "Wrap in blockquote", "blockquote")
   ]),
-  new SubmenuItem("insert", "Insert", [
-    new InsertBlockItem("insert-rule", "Horizontal rule", "horizontal_rule"),
+  new SubmenuItem("plus", "Insert", [
+    new InsertBlockItem("minus", "Horizontal rule", "horizontal_rule"),
     // FIXME insert image, allow dialog in this tooltip
   ]),
-  new JoinItem()
+  new JoinItem("arrow-up")
 ]
 
 class Menu {
@@ -167,7 +168,7 @@ class Menu {
   renderItems(items) {
     let dom = elt("ul", {class: classPrefix})
     items.forEach(item => {
-      let cls = classPrefix + "-icon " + classPrefix + "-" + item.icon
+      let cls = "ProseMirror-icon ProseMirror-icon-" + item.icon
       let li = dom.appendChild(elt("li", {title: item.title}, elt("span", {class: cls})))
       li.addEventListener("mousedown", e => { e.preventDefault(); e.stopPropagation(); this.clickItem(item) })
     })

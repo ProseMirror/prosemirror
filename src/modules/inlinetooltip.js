@@ -78,11 +78,11 @@ class ImageForm extends Form {
 }
 
 export const defaultButtons = {
-  strong: {title: "Strong text", style: style.strong},
-  em: {title: "Emphasized text", style: style.em},
-  link: {title: "Hyperlink", form: LinkForm},
-  image: {title: "Image", form: ImageForm},
-  code: {title: "Code font", style: style.code}
+  strong: {icon: "bold", title: "Strong text", style: style.strong},
+  em: {icon: "italic", title: "Emphasized text", style: style.em},
+  link: {icon: "chain", title: "Hyperlink", form: LinkForm},
+  image: {icon: "image", title: "Image", form: ImageForm},
+  code: {icon: "code", title: "Code font", style: style.code}
 }
 
 class InlineTooltip {
@@ -95,12 +95,14 @@ class InlineTooltip {
     this.tooltip = new Tooltip(pm, "above")
 
     pm.on("selectionChange", this.updateFunc = () => this.scheduleUpdate())
+    pm.on("change", this.updateFunc)
   }
 
   detach() {
     this.tooltip.detach()
     
     pm.off("selectionChange", this.updateFunc)
+    pm.off("change", this.updateFunc)
   }
 
   scheduleUpdate() {
@@ -130,7 +132,7 @@ class InlineTooltip {
     let dom = elt("ul", {class: classPrefix})
     for (let type in this.buttons) {
       let button = this.buttons[type]
-      let cls = classPrefix + "-icon " + classPrefix + "-" + type
+      let cls = "ProseMirror-icon ProseMirror-icon-" + button.icon
       let activeCls = this.isActive(type) ? classPrefix + "-active" : ""
       let li = dom.appendChild(elt("li", {class: activeCls, title: button.title}, elt("span", {class: cls})))
       li.addEventListener("mousedown", e => { e.preventDefault(); this.buttonClicked(type, button) })
