@@ -44,22 +44,25 @@ export function redraw(dom, node, prev) {
   let inline = node.type.contains == "inline"
   for (let i = 0, offset = 0; i < node.content.length; i++) {
     let child = node.content[i]
-    let found = prev.content.indexOf(child)
+    let found = prev.content.indexOf(child, j)
+    let nodeLeft = true
     if (found > -1) {
       domPos = deleteNextNodes(dom, domPos, found - j)
+      j = found
+    } else if (!inline && j < prev.content.length && corresponds[j] == -1 &&
+               child.sameMarkup(prev.content[j])) {
+      redraw(domPos, child, prev.content[j])
+    } else {
+      dom.insertBefore(toDOM.renderNode(child, options, inline ? offset : i), domPos)
+      nodeLeft = false
+    }
+    if (nodeLeft) {
       if (inline)
         domPos.setAttribute("pm-inline-span", offset + "-" + (offset + child.size))
       else
         domPos.setAttribute("pm-path", i)
       domPos = domPos.nextSibling
-      j = found + 1
-    } else if (!inline && j < prev.content.length && corresponds[j] == -1 &&
-               child.sameMarkup(prev.content[j])) {
-      redraw(domPos, child, prev.content[j])
-      domPos = domPos.nextSibling
       j++
-    } else {
-      dom.insertBefore(toDOM.renderNode(child, options, inline ? offset : i), domPos)
     }
     if (inline) offset += child.size
   }
