@@ -1,8 +1,8 @@
 import ProseMirror from "../src/edit/main"
 import {Node} from "../src/model"
-import "../src/modules/autoinput"
-import "../src/modules/inlinetooltip"
-import "../src/modules/menu"
+import "../src/inputrules/autoinput"
+import "../src/menu/inlinetooltip"
+import "../src/menu/menu"
 
 let doc = new Node("doc", [
   new Node("heading", [Node.text("Hello!")], {level: 1}),
