@@ -24,20 +24,3 @@
 .ProseMirror-menu-button:hover div {
   background: #333;
 }
-
-.ProseMirror-menu {
-  padding: 0;
-  margin: 0 -4px;
-  display: block;
-  line-height: 1;
-  white-space: pre;
-  width: -webkit-fit-content;
-  width: fit-content;
-}
-
-.ProseMirror-menu li {
-  display: inline-block;
-  padding: 2px 7px;
-  margin: 0 2px;
-  cursor: pointer;
-}

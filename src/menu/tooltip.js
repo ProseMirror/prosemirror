@@ -44,15 +44,13 @@ export class Tooltip {
     return known
   }
 
-  show(type, node, left, top) {
+  show(type, node, pos) {
     if (this.pm.mod.tooltip && this.pm.mod.tooltip != this)
       this.pm.mod.tooltip.close()
     this.pm.mod.tooltip = this
 
-    if (left == null) left = this.lastLeft
-    else this.lastLeft = left
-    if (top == null) top = this.lastTop
-    else this.lastTop = top
+    let left = this.lastLeft = pos ? pos.left : this.lastLeft
+    let top = this.lastTop = pos ? pos.top : this.lastTop
 
     let size = this.getSize(type, node)
 
