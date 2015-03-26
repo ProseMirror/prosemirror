@@ -25,9 +25,10 @@ export class Tooltip {
     pm.on("change", this.updateFunc = () => { if (!this.active && !this.persistent) this.close() })
     pm.on("resize", this.updateFunc)
     pm.wrapper.addEventListener("mousedown", this.mouseFunc = e => {
-      if ((this.active || !this.persistent) && !this.dom.contains(e.target) && pm.wrapper.contains(e.target))
+      if ((this.active || !this.persistent) && !this.dom.contains(e.target))
         this.close()
     })
+    pm.content.addEventListener("dragover", this.dragFunc = () => this.close())
   }
 
   detach() {
@@ -36,6 +37,7 @@ export class Tooltip {
     pm.off("change", this.updateFunc)
     pm.off("resize", this.updateFunc)
     pm.wrapper.removeEventListener("mousedown", this.mouseFunc)
+    pm.content.removeEventListener("dragover", this.dragFunc)
   }
 
   getSize(type, node) {
