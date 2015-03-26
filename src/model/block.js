@@ -130,15 +130,15 @@ transform.define("wrap", function(doc, params) {
   let after = new Pos(range.path, range.to)
 
   let source = doc.path(range.path)
-  let wrapperType = Node.types[params.type]
-  let connAround = Node.findConnection(source.type, wrapperType)
-  let connInside = Node.findConnection(wrapperType, source.content[range.from].type)
+  let newNode = params.node || new Node(params.type, null, params.attrs)
+  let wrapperType = newNode.type
+  let connAround = Node.findConnection(source.type, newNode.type)
+  let connInside = Node.findConnection(newNode.type, source.content[range.from].type)
   if (!connAround || !connInside) return transform.identity(doc)
 
   let output = slice.before(doc, before)
   let result = new transform.Result(doc, output, before)
 
-  let newNode = new Node(wrapperType, null, params.attrs)
   for (let pos = range.from; pos < range.to; pos++) {
     let newChild = source.content[pos]
     for (let i = connInside.length - 1; i >= 0; i--)
@@ -211,7 +211,7 @@ transform.define("split", function(doc, params) {
 transform.define("insert", function(doc, params) {
   let pos = params.pos
   let copy = slice.around(doc, pos)
-  let block = new Node(params.type, null, params.attrs)
+  let block = params.node || new Node(params.type, null, params.attrs)
   let parent = copy.path(pos.path)
   parent.content.splice(pos.offset, 0, block)
   let result = new transform.Result(doc, copy, pos)

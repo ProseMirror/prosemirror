@@ -108,8 +108,13 @@ transform.define("removeStyle", function(doc, params) {
 transform.define("setType", function(doc, params) {
   let copy = copyStructure(doc, params.pos, params.end || params.pos, node => {
     let copy = node.copy(node.content)
-    copy.type = Node.types[params.type]
-    copy.attrs = params.attrs || copy.type.defaultAttrs
+    if (params.node) {
+      copy.type = params.node.type
+      copy.attrs = params.node.attrs
+    } else {
+      copy.type = Node.types[params.type]
+      copy.attrs = params.attrs || copy.type.defaultAttrs
+    }
     if (copy.type == Node.types.code_block) clearMarkup(copy)
     return copy
   })
@@ -198,12 +203,12 @@ function insertNode(doc, pos, node) {
 }
 
 transform.define("insertInline", function(doc, params) {
-  if (params.type != "text" &&
+  let node = params.node || new Node.Inline(params.type, null, params.text, params.attrs)
+  if (node.type != Node.types.text &&
       doc.path(params.pos.path).type == Node.types.code_block)
     return transform.identity(doc)
 
-  return insertNode(doc, params.pos,
-                    new Node.Inline(params.type, null, params.text, params.attrs))
+  return insertNode(doc, params.pos, node)
 })
 
 transform.define("insertText", function(doc, params) {
