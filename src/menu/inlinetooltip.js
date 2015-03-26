@@ -31,10 +31,11 @@ class InlineTooltip {
     this.showLinks = config ? config.showLinks !== false : true
     this.pending = null
 
-    this.tooltip = new Tooltip(pm, "above")
-
     pm.on("selectionChange", this.updateFunc = () => this.scheduleUpdate())
     pm.on("change", this.updateFunc)
+
+    this.tooltip = new Tooltip(pm, "above", true)
+    this.tooltip.reset = this.updateFunc
 
     forceFontLoad(pm)
   }

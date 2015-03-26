@@ -36,6 +36,8 @@ function chainResult(tooltip, result, pm) {
     showItems(tooltip, result, pm)
   else if (result instanceof Dialog)
     showDialog(tooltip, result, pm)
+  else if (tooltip.reset)
+    tooltip.reset()
   else
     tooltip.close()
 }
@@ -43,8 +45,6 @@ function chainResult(tooltip, result, pm) {
 function itemClicked(tooltip, item, pm) {
   chainResult(tooltip, item.apply(pm), pm)
 }
-
-// FIXME option to leave tooltip open / call a callback
 
 function showDialog(tooltip, dialog, pm) {
   tooltip.active = true
@@ -63,8 +63,9 @@ function showDialog(tooltip, dialog, pm) {
   })
   form.addEventListener("keydown", e => {
     if (e.keyCode == 27) {
-      tooltip.close()
       finish()
+      if (tooltip.reset) tooltip.reset()
+      else tooltip.close()
     }
   })
   tooltip.show(dialog.id, form)

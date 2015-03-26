@@ -46,7 +46,7 @@ class Menu {
   constructor(pm, config) {
     this.pm = pm
 
-    this.tooltip = new Tooltip(pm, "left", true)
+    this.tooltip = new Tooltip(pm, "left")
     this.hamburger = pm.wrapper.appendChild(elt("button", {class: classPrefix + "-button"},
                                                 elt("div"), elt("div"), elt("div")))
     this.hamburger.addEventListener("mousedown", e => { e.preventDefault(); e.stopPropagation(); this.openMenu() })

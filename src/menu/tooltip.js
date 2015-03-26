@@ -4,7 +4,7 @@ import "./tooltip.css"
 const prefix = "ProseMirror-tooltip"
 
 export class Tooltip {
-  constructor(pm, dir, closeOnClick) {
+  constructor(pm, dir, persistent) {
     this.pm = pm
     this.dir = dir || "above"
     this.knownSizes = Object.create(null)
@@ -14,13 +14,13 @@ export class Tooltip {
     // Prevent clicks on the tooltip from clearing editor selection
     this.dom.addEventListener("mousedown", e => { if (!this.active) e.preventDefault() })
     this.active = this.open = false
-    this.closeOnClick = closeOnClick
+    this.persistent = persistent
     this.lastLeft = this.lastRight = null
 
-    pm.on("change", this.updateFunc = () => { if (!this.active) this.close() })
+    pm.on("change", this.updateFunc = () => { if (!this.active && !this.persistent) this.close() })
     pm.on("resize", this.updateFunc)
     pm.wrapper.addEventListener("mousedown", this.mouseFunc = e => {
-      if ((this.active || this.closeOnClick) && !this.dom.contains(e.target) && pm.wrapper.contains(e.target))
+      if ((this.active || !this.persistent) && !this.dom.contains(e.target) && pm.wrapper.contains(e.target))
         this.close()
     })
   }
