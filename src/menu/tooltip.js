@@ -11,8 +11,13 @@ export class Tooltip {
     this.pointer = pm.wrapper.appendChild(elt("div", {class: prefix + "-pointer-" + this.dir + " " + prefix + "-pointer"}))
     this.pointerWidth = this.pointerHeight = null
     this.dom = pm.wrapper.appendChild(elt("div", {class: prefix}))
+    this.dom.addEventListener("transitionend", () => {
+      if (this.dom.style.opacity == "0")
+        this.dom.style.display = this.pointer.style.display = ""
+    })
     // Prevent clicks on the tooltip from clearing editor selection
     this.dom.addEventListener("mousedown", e => { if (!this.active) e.preventDefault() })
+
     this.active = this.open = false
     this.persistent = persistent
     this.lastLeft = this.lastRight = null
@@ -78,9 +83,10 @@ export class Tooltip {
       this.dom.style.left = (tipLeft - around.left) + "px"
       // FIXME do something if top < 0
       let tipTop = top - around.top - margin - this.pointerHeight - size.height
+      this.pointer.style.left = (left - around.left - this.pointerWidth / 2) + "px"
+
       this.dom.style.top = tipTop + "px"
       this.pointer.style.top = (tipTop + size.height) + "px"
-      this.pointer.style.left = (left - around.left - this.pointerWidth / 2) + "px"
     } else { // left/right
       this.dom.style.top = (top - around.top - size.height / 2) + "px"
       this.pointer.style.top = (top - this.pointerHeight / 2 - around.top) + "px"
@@ -94,15 +100,18 @@ export class Tooltip {
         this.pointer.style.left = pointerLeft + "px"
       }
     }
+
+    getComputedStyle(this.dom).opacity
+    getComputedStyle(this.pointer).opacity
+    this.dom.style.opacity = this.pointer.style.opacity = 1
     this.open = true
   }
 
   close() {
     if (this.open) {
-      this.open = false
-      this.dom.style.display = this.pointer.style.display = ""
-      this.active = false
+      this.open = this.active = false
       if (this.pm.mod.tooltip == this) this.pm.mod.tooltip = null
+      this.dom.style.opacity = this.pointer.style.opacity = 0
     }
   }
 }

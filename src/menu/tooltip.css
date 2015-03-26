@@ -5,9 +5,10 @@
   -moz-box-sizing: border- box;
   overflow: hidden;
 
-  -webkit-transition: width 0.4s ease-out, height 0.4s ease-out, left 0.4s ease-out, top 0.4s ease-out;
-  -moz-transition: width 0.4s ease-out, height 0.4s ease-out, left 0.4s ease-out, top 0.4s ease-out;
-  transition: width 0.4s ease-out, height 0.4s ease-out, left 0.4s ease-out, top 0.4s ease-out;
+  -webkit-transition: width 0.4s ease-out, height 0.4s ease-out, left 0.4s ease-out, top 0.4s ease-out, opacity 0.2s;
+  -moz-transition: width 0.4s ease-out, height 0.4s ease-out, left 0.4s ease-out, top 0.4s ease-out, opacity 0.2s;
+  transition: width 0.4s ease-out, height 0.4s ease-out, left 0.4s ease-out, top 0.4s ease-out, opacity 0.2s;
+  opacity: 0;
 
   border-radius: 5px;
   padding: 5px 7px;
@@ -24,9 +25,10 @@
   display: none;
   width: 0; height: 0;
 
-  -webkit-transition: left 0.4s ease-out, top 0.4s ease-out;
-  -moz-transition: left 0.4s ease-out, top 0.4s ease-out;
-  transition: left 0.4s ease-out, top 0.4s ease-out;
+  -webkit-transition: left 0.4s ease-out, top 0.4s ease-out, opacity 0.2s;
+  -moz-transition: left 0.4s ease-out, top 0.4s ease-out, opacity 0.2s;
+  transition: left 0.4s ease-out, top 0.4s ease-out, opacity 0.2s;
+  opacity: 0;
 
   z-index: 5;
 }
