@@ -5,9 +5,6 @@
   width: 15px;
   height: 13px;
   cursor: pointer;
-  border: none;
-  background: transparent;
-  padding: 0;
 
   -webkit-transition: top 0.3s ease-out;
   -moz-transition: top 0.3s ease-out;
