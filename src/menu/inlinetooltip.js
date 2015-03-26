@@ -1,5 +1,5 @@
 import {defineOption} from "../edit"
-import {style, inline} from "../model"
+import {style, inline, Node} from "../model"
 import {elt} from "../edit/dom"
 import {Tooltip} from "./tooltip"
 import {InlineStyleItem, ImageItem, LinkDialog} from "./menuitem"
@@ -54,11 +54,17 @@ class InlineTooltip {
     }, 100)
   }
 
+  inCodeBlock(sel) {
+    let start = this.pm.doc.path(sel.from.path)
+    let end = this.pm.doc.path(sel.to.path)
+    return start.type == Node.types.code_block && end.type == Node.types.code_block
+  }
+
   update() {
     let sel = this.pm.selection, link
     if (!this.pm.hasFocus())
       this.tooltip.close()
-    else if (!sel.empty)
+    else if (!sel.empty && !this.inCodeBlock(sel))
       openMenu(this.tooltip, this.items, pm, topCenterOfSelection())
     else if (this.showLinks && (link = this.linkUnderCursor()))
       this.showLink(link, this.pm.coordsAtPos(sel.head))
