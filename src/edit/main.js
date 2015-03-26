@@ -9,6 +9,7 @@ import {draw, redraw} from "./draw"
 import {Input} from "./input"
 import {eventMixin} from "./event"
 import text from "./text"
+import {execCommand} from "./commands"
 
 export default class ProseMirror {
   constructor(opts) {
@@ -175,6 +176,8 @@ export default class ProseMirror {
     this.ensureOperation()
     this.operation.scrollIntoView = pos
   }
+
+  execCommand(name) { execCommand(this, name) }
 }
 
 eventMixin(ProseMirror)
