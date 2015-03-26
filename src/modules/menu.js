@@ -2,7 +2,7 @@ import {defineOption} from "../edit"
 import {elt} from "../edit/dom"
 import {Tooltip} from "./tooltip"
 import {resolvePath} from "../edit/selection"
-import {block} from "../model"
+import {block, Node} from "../model"
 
 import "./menu.css"
 
@@ -70,6 +70,26 @@ export class BlockTypeItem extends Item {
   }
 }
 
+export class InsertBlockItem extends Item {
+  constructor(icon, title, type, attrs) {
+    super(icon, title)
+    this.type = type
+    this.attrs = attrs
+  }
+  select(pm) {
+    let sel = pm.selection
+    return sel.empty && pm.doc.path(sel.path).type.type == Node.types[this.type].type
+  }
+  apply(pm) {
+    let sel = pm.selection
+    if (sel.head.offset) {
+      pm.apply({name: "split", pos: sel.head})
+      sel = pm.selection
+    }
+    pm.apply({name: "insert", pos: sel.head.shorten(), type: this.type, attrs: this.attrs})
+  }
+}
+
 export class WrapItem extends Item {
   constructor(icon, title, type) {
     super(icon, title)
@@ -99,6 +119,10 @@ export const defaultItems = [
     new WrapItem("ordered-list", "Wrap in ordered list", "ordered_list"),
     new WrapItem("bullet-list", "Wrap in bullet list", "bullet_list"),
     new WrapItem("blockquote", "Wrap in blockquote", "blockquote")
+  ]),
+  new SubmenuItem("insert", "Insert", [
+    new InsertBlockItem("insert-rule", "Horizontal rule", "horizontal_rule"),
+    // FIXME insert image, allow dialog in this tooltip
   ]),
   new JoinItem()
 ]

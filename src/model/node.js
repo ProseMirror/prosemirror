@@ -1,7 +1,11 @@
 export default class Node {
   constructor(type, content, attrs = null) {
-    if (typeof type == "string") type = nodeTypes[type]
-    if (!type) throw new Error("Node without type")
+    if (typeof type == "string") {
+      let found = nodeTypes[type]
+      if (!found) throw new Error("Unknown node type: " + type)
+      type = found
+    }
+    if (!(type instanceof NodeType)) throw new Error("Invalid node type: " + type)
     this.type = type
     this.content = content || (type.contains ? [] : Node.empty)
     if (!attrs && !(attrs = type.defaultAttrs))
