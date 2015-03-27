@@ -58,12 +58,12 @@ defineTransform("lift", function(doc, params) {
   if (lift.unwrap) {
     for (let i = range.from; i < range.to; i++) {
       let node = source.content[i], path = range.path.concat(i)
-      result.chunk(new Pos(path, 0), new Pos(path, node.content.length),
+      result.chunk(new Pos(path, 0), node.content.length,
                    new Pos(lift.path, container.content.length))
       container.pushFrom(source.content[i])
     }
   } else {
-    result.chunk(new Pos(range.path, range.from), new Pos(range.path, range.to),
+    result.chunk(new Pos(range.path, range.from), range.to - range.from,
                  new Pos(lift.path, container.content.length))
     container.pushFrom(source, range.from, range.to)
   }
@@ -102,9 +102,9 @@ defineTransform("join", function(doc, params) {
 
   let result = new Result(doc, output, point)
   let pathToFrom = point.path.concat(point.offset)
-  result.chunk(new Pos(pathToFrom, 0), new Pos(pathToFrom, from.content.length),
+  result.chunk(new Pos(pathToFrom, 0), from.content.length,
                new Pos(point.path.concat(point.offset - 1), target.content.length))
-  result.chunk(new Pos(point.path, point.offset + 1), new Pos(point.path, parent.content.length),
+  result.chunk(new Pos(point.path, point.offset + 1), parent.content.length - point.offset - 1,
                new Pos(point.path, point.offset))
 
   parent.content.splice(point.offset, 1)
@@ -131,7 +131,7 @@ defineTransform("wrap", function(doc, params) {
   let prefix = range.path.concat(range.from), suffix
   for (let i = 0; i < connAround.length; i++) prefix.push(0)
   if (!connInside.length) {
-    result.chunk(new Pos(range.path, range.from), new Pos(range.path, range.to),
+    result.chunk(new Pos(range.path, range.from), range.to - range.from,
                  new Pos(prefix, 0))
   } else {
     suffix = []
@@ -145,7 +145,7 @@ defineTransform("wrap", function(doc, params) {
     newNode.push(newChild)
     if (suffix) {
       let path = range.path.concat(pos)
-      result.chunk(new Pos(path, 0), new Pos(path, newChild.content.length),
+      result.chunk(new Pos(path, 0), newChild.content.length,
                    new Pos(prefix.concat(pos - range.from).concat(suffix), 0))
     }
   }
@@ -166,8 +166,7 @@ defineTransform("split", function(doc, params) {
   let target = copy.path(pos.path)
   let adjusted = pos.path.slice()
   adjusted[adjusted.length - depth]++
-  result.chunk(pos, new Pos(pos.path, target.size),
-               new Pos(adjusted, 0))
+  result.chunk(pos, target.size - pos.offset, new Pos(adjusted, 0))
 
   let {offset} = inline.splitInlineAt(target, pos.offset)
   let restContent = target.content.slice(offset), cut
@@ -186,12 +185,12 @@ defineTransform("split", function(doc, params) {
     if (i < depth) {
       let adjusted = toTarget.slice()
       adjusted[adjusted.length - depth]++
-      result.chunk(new Pos(toTarget, offset), new Pos(toTarget, target.content.length),
+      result.chunk(new Pos(toTarget, offset), target.content.length - offset,
                    new Pos(adjusted, 0))
       cut = target.copy([cut].concat(target.content.slice(offset)))
       target.content.length = offset
     } else {
-      result.chunk(new Pos(toTarget, offset), new Pos(toTarget, target.content.length),
+      result.chunk(new Pos(toTarget, offset), target.content.length - offset,
                    new Pos(toTarget, offset + 1))
       target.content.splice(offset, 0, cut)
     }
@@ -207,7 +206,7 @@ defineTransform("insert", function(doc, params) {
 
   let block = params.node || new Node(params.type, null, params.attrs)
   let parent = copy.path(pos.path)
-  result.chunk(pos, new Pos(pos.path, parent.content.length),
+  result.chunk(pos, parent.content.length - pos.offset,
                new Pos(pos.path, pos.offset + 1))
   parent.content.splice(pos.offset, 0, block)
 
@@ -220,7 +219,7 @@ defineTransform("remove", function(doc, params) {
   let result = new Result(doc, copy, pos)
 
   let parent = copy.path(pos.path)
-  result.chunk(new Pos(pos.path, pos.offset + 1), new Pos(pos.path, parent.content.length),
+  result.chunk(new Pos(pos.path, pos.offset + 1), parent.content.length - pos.offset - 1,
                pos)
   parent.content.splice(pos.offset, 1)
   return result

@@ -93,7 +93,6 @@ export function joinAndTrack(result, base, left, leftDepth, right, rightPos, ali
       while (base.path.length > len) base = base.shorten()
       if (fromDepth < len && base.offset == 0) continue
       let inline = node.type.contains == "inline"
-      let end = new Pos(base.path, base.offset + (inline ? node.size : node.content.length))
 
       let newStart
       if (fromDepth < len) {
@@ -105,7 +104,7 @@ export function joinAndTrack(result, base, left, leftDepth, right, rightPos, ali
         newStart = new Pos(pathToOutput, inline ? to.size : to.content.length)
       }
 
-      result.chunk(base, end, newStart)
+      result.chunk(base, inline ? node.size : node.content.length, newStart)
     }
   })
 }

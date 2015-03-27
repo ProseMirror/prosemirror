@@ -8,19 +8,21 @@ export default class Pos {
     return this.path.join("/") + ":" + this.offset
   }
 
-  cmp(other) {
-    let len = this.path.length, oLen = other.path.length;
-    for (var i = 0, end = Math.min(len, oLen); i < end; i++) {
-      var diff = this.path[i] - other.path[i]
+  static cmp(pathA, offsetA, pathB, offsetB) {
+    let lenA = pathA.length, lenB = pathB.length;
+    for (var i = 0, end = Math.min(lenA, lenB); i < end; i++) {
+      var diff = pathA[i] - pathB[i]
       if (diff != 0) return diff
     }
-    if (len > oLen)
-      return other.offset <= this.path[i] ? 1 : -1
-    else if (oLen > len)
-      return this.offset <= other.path[i] ? -1 : 1
+    if (lenA > lenB)
+      return offsetB <= pathA[i] ? 1 : -1
+    else if (lenB > lenA)
+      return offsetA <= pathB[i] ? -1 : 1
     else
-      return this.offset - other.offset
+      return offsetA - offsetB
   }
+
+  cmp(other) { return Pos.cmp(this.path, this.offset, other.path, other.offset) }
 
   shorten(to = null, offset = 0) {
     if (to == null) to = this.path.length - 1

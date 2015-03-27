@@ -5,7 +5,7 @@ function insertNode(doc, pos, node) {
   let copy = slice.around(doc, pos)
   let parent = copy.path(pos.path)
   let result = new Result(doc, copy, pos)
-  result.chunk(pos, new Pos(pos.path, parent.size),
+  result.chunk(pos, parent.size - pos.offset,
                new Pos(pos.path, pos.offset + node.size))
 
   let {offset, styles} = inline.splitInlineAt(parent, pos.offset)
