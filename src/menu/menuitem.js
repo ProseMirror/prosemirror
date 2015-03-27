@@ -1,4 +1,5 @@
-import {style, inline, block, Node} from "../model"
+import {style, inline, Node} from "../model"
+import {joinPoint, canBeLifted} from "../transform"
 import {elt} from "../edit/dom"
 
 export class Item {
@@ -16,7 +17,7 @@ export class LiftItem extends Item {
   }
   select(pm) {
     let sel = pm.selection
-    return block.canBeLifted(pm.doc, sel.from, sel.to)
+    return canBeLifted(pm.doc, sel.from, sel.to)
   }
   apply(pm) {
     let sel = pm.selection
@@ -29,7 +30,7 @@ export class JoinItem extends Item {
     super(icon, title || "Join with above block")
   }
   select(pm) {
-    return block.joinPoint(pm.doc, pm.selection.head)
+    return joinPoint(pm.doc, pm.selection.head)
   }
   apply(pm) {
     pm.apply({name: "join", pos: pm.selection.head})

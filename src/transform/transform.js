@@ -1,4 +1,4 @@
-import Pos from "./pos"
+import {Pos} from "../model"
 
 export class Result {
   constructor(before, after, untouched = null) {
@@ -26,20 +26,16 @@ export class Result {
 
 const transforms = Object.create(null)
 
-export function define(name, impl) {
+export function defineTransform(name, impl) {
   transforms[name] = impl
 }
 
-export function apply(doc, params) {
+export function applyTransform(doc, params) {
   let fn = transforms[params.name]
   if (!fn) throw new Error("Undefined transform " + params.name)
   return fn(doc, params)
 }
 
-export function identity(doc) {
-  return new Result(doc, doc, null)
-}
-
-export function flat(doc, result) {
-  return new Result(doc, result, null)
+export function flatTransform(doc, result) {
+  return new Result(doc, result || doc, null)
 }

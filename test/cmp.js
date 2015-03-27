@@ -1,5 +1,6 @@
 import Failure from "./failure"
-import {transform, style} from "../src/model"
+import {style} from "../src/model"
+import {applyTransform} from "../src/transform"
 
 export function node(a, b) {
   function raise(msg, path) {
@@ -35,7 +36,7 @@ export function simple(a, b, comment) {
 
 export function testTransform(doc, expect, params) {
   let orig = doc.toString()
-  let result = transform.apply(doc, params)
+  let result = applyTransform(doc, params)
   node(result.doc, expect)
   simple(doc, orig, "immutable")
   for (let pos in expect.tag)

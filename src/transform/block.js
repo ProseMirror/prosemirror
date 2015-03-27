@@ -1,11 +1,6 @@
-// Primitive block-based transformations
-
-import Pos from "./pos"
-import Node from "./node"
-import * as transform from "./transform"
-import * as slice from "./slice"
-import * as join_ from "./join"
-import * as inline from "./inline"
+import {Pos, Node, slice, inline} from "../model"
+import {defineTransform, Result, flatTransform} from "./transform"
+import {joinAndTrack} from "./replace"
 
 export function selectedSiblings(doc, from, to) {
   let len = Math.min(from.path.length, to.path.length)
@@ -44,9 +39,9 @@ export function canBeLifted(doc, from, to) {
   }
 }
 
-transform.define("lift", function(doc, params) {
+defineTransform("lift", function(doc, params) {
   let lift = canBeLifted(doc, params.pos, params.end || params.pos)
-  if (!lift) return transform.identity(doc)
+  if (!lift) return flatTransform(doc)
   let range = lift.range
 
   let before = new Pos(range.path, range.from)
@@ -57,7 +52,7 @@ transform.define("lift", function(doc, params) {
     after = after.shorten(null, 1)
 
   let output = slice.before(doc, before)
-  let result = new transform.Result(doc, output, before)
+  let result = new Result(doc, output, before)
   let container = output.path(lift.path), size = container.content.length
   let source = doc.path(range.path)
   if (lift.unwrap) {
@@ -81,8 +76,8 @@ transform.define("lift", function(doc, params) {
     return new Pos(path, pos.offset)
   })
 
-  join_.buildResult(result, after, output, lift.path.length,
-                       slice.after(doc, after), after, true)
+  joinAndTrack(result, after, output, lift.path.length,
+               slice.after(doc, after), after, true)
 
   return result
 })
@@ -103,9 +98,9 @@ export function joinPoint(doc, pos) {
 
 // FIXME pass in an already found join point
 
-transform.define("join", function(doc, params) {
+defineTransform("join", function(doc, params) {
   let point = joinPoint(doc, params.pos)
-  if (!point) return transform.identity(doc)
+  if (!point) return flatTransform(doc)
 
   let toJoined = point.path.concat(point.offset - 1)
   let output = slice.around(doc, new Pos(toJoined, 0))
@@ -116,7 +111,7 @@ transform.define("join", function(doc, params) {
   parent.content.splice(point.offset, 1)
   target.pushFrom(from)
 
-  let result = new transform.Result(doc, output, point)
+  let result = new Result(doc, output, point)
   let after = new Pos(point.path, point.offset + 1)
   result.chunk(after, pos => {
     let offset = pos.path[toJoined.length] + size
@@ -128,7 +123,7 @@ transform.define("join", function(doc, params) {
   return result
 })
 
-transform.define("wrap", function(doc, params) {
+defineTransform("wrap", function(doc, params) {
   let range = selectedSiblings(doc, params.pos, params.end || params.pos)
   let before = new Pos(range.path, range.from)
   let after = new Pos(range.path, range.to)
@@ -138,10 +133,10 @@ transform.define("wrap", function(doc, params) {
   let wrapperType = newNode.type
   let connAround = Node.findConnection(source.type, newNode.type)
   let connInside = Node.findConnection(newNode.type, source.content[range.from].type)
-  if (!connAround || !connInside) return transform.identity(doc)
+  if (!connAround || !connInside) return flatTransform(doc)
 
   let output = slice.before(doc, before)
-  let result = new transform.Result(doc, output, before)
+  let result = new Result(doc, output, before)
 
   for (let pos = range.from; pos < range.to; pos++) {
     let newChild = source.content[pos]
@@ -163,12 +158,12 @@ transform.define("wrap", function(doc, params) {
                    pos.offset)
   })
 
-  join_.buildResult(result, after, output, range.path.length,
-                    slice.after(doc, after), after, true)
+  joinAndTrack(result, after, output, range.path.length,
+               slice.after(doc, after), after, true)
   return result
 })
 
-transform.define("split", function(doc, params) {
+defineTransform("split", function(doc, params) {
   let depth = params.depth || 1, pos = params.pos
   let copy = slice.around(doc, pos)
   for (let cut, i = 0; i <= depth; i++) {
@@ -193,7 +188,7 @@ transform.define("split", function(doc, params) {
     }
   }
 
-  let result = new transform.Result(doc, copy, pos)
+  let result = new Result(doc, copy, pos)
   let end = pos.shorten(pos.path.length - depth, 2)
   result.chunk(end, p => {
     let base = pos.path.length - depth
@@ -212,24 +207,24 @@ transform.define("split", function(doc, params) {
   return result
 })
 
-transform.define("insert", function(doc, params) {
+defineTransform("insert", function(doc, params) {
   let pos = params.pos
   let copy = slice.around(doc, pos)
   let block = params.node || new Node(params.type, null, params.attrs)
   let parent = copy.path(pos.path)
   parent.content.splice(pos.offset, 0, block)
-  let result = new transform.Result(doc, copy, pos)
+  let result = new Result(doc, copy, pos)
   let depth = pos.path.length
   result.chunk(new Pos(pos.path, parent.content.length), pos => pos.offsetAt(depth, 1))
   return result
 })
 
-transform.define("remove", function(doc, params) {
+defineTransform("remove", function(doc, params) {
   let pos = params.pos
   let copy = slice.around(doc, pos)
   let parent = copy.path(pos.path)
   parent.content.splice(pos.offset, 1)
-  let result = new transform.Result(doc, copy, pos)
+  let result = new Result(doc, copy, pos)
   let after = Pos.after(copy, pos)
   result.chunk(new Pos(pos.path, pos.offset + 1), _ => after)
   let depth = pos.path.length

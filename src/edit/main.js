@@ -1,6 +1,7 @@
 import "./editor.css"
 
-import {transform, inline, style, slice, Node, Pos} from "../model"
+import {inline, style, slice, Node, Pos} from "../model"
+import {applyTransform} from "../transform"
 
 import {parseOptions, initOptions} from "./options"
 import {Selection, Range, posAtCoords, coordsAtPos, scrollIntoView, hasFocus} from "./selection"
@@ -55,7 +56,7 @@ export default class ProseMirror {
 
   apply(params) {
     let sel = this.selection
-    let result = transform.apply(this.doc, params)
+    let result = applyTransform(this.doc, params)
     if (result.doc != this.doc) {
       this.update(result.doc,
                   new Range(result.map(sel.anchor), result.map(sel.head)))

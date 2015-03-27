@@ -6,8 +6,6 @@ import fromDOM from "./from_dom"
 import toDOM from "./to_dom"
 
 import * as slice from "./slice"
-import * as block from "./block"
 import * as inline from "./inline"
-import * as transform from "./transform"
 
-export {Node, Pos, style, fromDOM, toDOM, block, inline, slice, transform}
+export {Node, Pos, style, fromDOM, toDOM, inline, slice}
