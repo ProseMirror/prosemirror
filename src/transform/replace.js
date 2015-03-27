@@ -77,37 +77,35 @@ function nodeWidth(node) {
 
 export function joinAndTrack(result, base, left, leftDepth, right, rightPos, align) {
   let rightDepth = rightPos.path.length
+  let spine = []
+  for (let i = 0, node = right; i <= rightDepth; i++) {
+    spine.push(node)
+    node = node.content[0]
+  }
+
   if (align)
     leftDepth = rightDepth = Math.min(leftDepth, rightDepth)
+
   join(left, leftDepth, right, rightDepth, function(from, fromDepth, to, toDepth) {
-    pushChunkToMap(result, base, fromDepth, nodeWidth(to), pathRight(left, toDepth))
-  })
-}
+    let pathToOutput = pathRight(left, toDepth)
+    while (fromDepth < spine.length) {
+      let  node = spine.pop(), len = spine.length
+      while (base.path.length > len) base = base.shorten()
+      if (fromDepth < len && base.offset == 0) continue
+      let inline = node.type.contains == "inline"
+      let end = new Pos(base.path, base.offset + (inline ? node.size : node.content.length))
 
-function findChunkEnd(doc, base, depth) {
-  for (let i = 0, node = doc;; i++) {
-    if (i == depth)
-      return node.type.contains == "inline"
-        ? new Pos(base.path, node.size)
-        : new Pos(base.path.slice(0, i), node.content.length)
-    node = node.content[base.path[i]]
-  }
-}
+      let newStart
+      if (fromDepth < len) {
+        let newPath = pathToOutput.slice()
+        newPath.push(inline ? to.size : to.content.length)
+        for (let i = fromDepth + 1; i < len; i++) newPath.push(0)
+        newStart = new Pos(newPath, 0)
+      } else {
+        newStart = new Pos(pathToOutput, inline ? to.size : to.content.length)
+      }
 
-function pushChunkToMap(result, base, depth, offset, prefix) {
-  result.chunk(findChunkEnd(result.before, base, depth), function(pos) {
-    if (pos.cmp(base) < 0) pos = base
-    let path = prefix.slice(0), extraOffset = offset
-    for (let j = depth;; j++) {
-      if (j == pos.path.length)
-        return new Pos(path, pos.offset - base.offset + extraOffset)
-      let diverging = pos.path[j] != base.path[j]
-      let prevOffset = j == base.path.length ? base.offset : base.path[j] + (diverging ? 1 : 0)
-      path.push(pos.path[j] - prevOffset + extraOffset)
-      if (diverging)
-        return new Pos(path.concat(pos.path.slice(j + 1)), pos.offset)
-      
-      extraOffset = 0
+      result.chunk(base, end, newStart)
     }
   })
 }
@@ -127,11 +125,8 @@ defineTransform("replace", function(doc, params) {
     let {pos: endPos, inline: endPosInline} =
         trackEnd(output, from.path.length, middle, start.path.length - collapsed[0]) || params.to
     let endDepth = endPos.path.length
-    if (!endPosInline) endPos = Pos.end(output)
-    result.chunk(to, _ => endPos)
     joinAndTrack(result, to, output, end.path.length - collapsed[0] + endDepth, right, to)
   } else {
-    let endPos = params.pos
     if (params.text) {
       let block = output.path(from.path), end = block.content.length
       if (!block.type.contains == "inline")
@@ -139,9 +134,7 @@ defineTransform("replace", function(doc, params) {
       let styles = block.type != Node.types.code_block ? params.styles || inline.inlineStylesAt(doc, from) : Node.empty
       block.content.push(Node.text(params.text, styles))
       inline.stitchTextNodes(block, end)
-      endPos = new Pos(endPos.path, endPos.offset + params.text.length)
     }
-    result.chunk(to, _ => endPos)
     joinAndTrack(result, to, output, from.path.length, right, to)
   }
 

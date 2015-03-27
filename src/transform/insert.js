@@ -4,7 +4,10 @@ import {Result, defineTransform, flatTransform} from "./transform"
 function insertNode(doc, pos, node) {
   let copy = slice.around(doc, pos)
   let parent = copy.path(pos.path)
-  let parentSize = parent.size, nodeSize = node.size
+  let result = new Result(doc, copy, pos)
+  result.chunk(pos, new Pos(pos.path, parent.size),
+               new Pos(pos.path, pos.offset + node.size))
+
   let {offset, styles} = inline.splitInlineAt(parent, pos.offset)
   parent.content.splice(offset, 0, new Node.Inline(node.type, styles, node.text, node.attrs))
   if (node.type == Node.types.text) {
@@ -12,9 +15,6 @@ function insertNode(doc, pos, node) {
     inline.stitchTextNodes(parent, offset)
   }
 
-  let result = new Result(doc, copy, pos)
-  let end = new Pos(pos.path, parentSize)
-  result.chunk(end, pos => new Pos(pos.path, pos.offset + nodeSize))
   return result
 }
 

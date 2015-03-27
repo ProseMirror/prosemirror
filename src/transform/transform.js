@@ -8,8 +8,8 @@ export class Result {
     this.chunks = []
   }
 
-  chunk(end, map) {
-    this.chunks.push({end: end, map: map})
+  chunk(start, end, newStart) {
+    this.chunks.push({start: start, end: end, newStart: newStart})
   }
 
   map(pos) {
@@ -18,7 +18,17 @@ export class Result {
 
     for (let i = 0; i < this.chunks.length; i++) {
       let chunk = this.chunks[i]
-      if (pos.cmp(chunk.end) <= 0) return chunk.map(pos)
+      if (pos.cmp(chunk.end) <= 0) {
+        let depth = chunk.start.path.length
+        if (pos.cmp(chunk.start) < 0) {
+          return Pos.after(this.doc, chunk.newStart)
+        } else if (pos.path.length > depth) {
+          let offset = chunk.newStart.offset + (pos.path[depth] - chunk.start.offset)
+          return new Pos(chunk.newStart.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset)
+        } else {
+          return new Pos(chunk.newStart.path, chunk.newStart.offset + (pos.offset - chunk.start.offset))
+        }
+      }
     }
     return pos
   }

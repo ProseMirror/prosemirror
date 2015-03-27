@@ -56,25 +56,17 @@ defineTransform("lift", function(doc, params) {
   let container = output.path(lift.path), size = container.content.length
   let source = doc.path(range.path)
   if (lift.unwrap) {
-    for (let i = range.from; i < range.to; i++)
+    for (let i = range.from; i < range.to; i++) {
+      let node = source.content[i], path = range.path.concat(i)
+      result.chunk(new Pos(path, 0), new Pos(path, node.content.length),
+                   new Pos(lift.path, container.content.length))
       container.pushFrom(source.content[i])
+    }
   } else {
+    result.chunk(new Pos(range.path, range.from), new Pos(range.path, range.to),
+                 new Pos(lift.path, container.content.length))
     container.pushFrom(source, range.from, range.to)
   }
-
-  result.chunk(after, pos => {
-    let origOffset = pos.path[range.path.length]
-    let offset = size - range.from
-    if (lift.unwrap) {
-      offset += pos.path[range.path.length + 1]
-      for (let i = range.from; i < origOffset; i++)
-        offset += source.content[i].content.length
-    } else {
-      offset += origOffset
-    }
-    let path = lift.path.concat(offset).concat(pos.path.slice(range.path.length + (lift.unwrap ? 2 : 1)))
-    return new Pos(path, pos.offset)
-  })
 
   joinAndTrack(result, after, output, lift.path.length,
                slice.after(doc, after), after, true)
@@ -106,19 +98,17 @@ defineTransform("join", function(doc, params) {
   let output = slice.around(doc, new Pos(toJoined, 0))
   let parent = output.path(point.path)
   let target = parent.content[point.offset - 1]
-  let size = target.content.length
   let from = parent.content[point.offset]
-  parent.content.splice(point.offset, 1)
-  target.pushFrom(from)
 
   let result = new Result(doc, output, point)
-  let after = new Pos(point.path, point.offset + 1)
-  result.chunk(after, pos => {
-    let offset = pos.path[toJoined.length] + size
-    return new Pos(toJoined.concat(offset).concat(pos.path.slice(toJoined.length + 1)), pos.offset)
-  })
-  let endOfParent = point.shorten(null, 1)
-  result.chunk(endOfParent, pos => pos.offsetAt(point.path.length, -1))
+  let pathToFrom = point.path.concat(point.offset)
+  result.chunk(new Pos(pathToFrom, 0), new Pos(pathToFrom, from.content.length),
+               new Pos(point.path.concat(point.offset - 1), target.content.length))
+  result.chunk(new Pos(point.path, point.offset + 1), new Pos(point.path, parent.content.length),
+               new Pos(point.path, point.offset))
+
+  parent.content.splice(point.offset, 1)
+  target.pushFrom(from)
 
   return result
 })
@@ -138,25 +128,30 @@ defineTransform("wrap", function(doc, params) {
   let output = slice.before(doc, before)
   let result = new Result(doc, output, before)
 
+  let prefix = range.path.concat(range.from), suffix
+  for (let i = 0; i < connAround.length; i++) prefix.push(0)
+  if (!connInside.length) {
+    result.chunk(new Pos(range.path, range.from), new Pos(range.path, range.to),
+                 new Pos(prefix, 0))
+  } else {
+    suffix = []
+    for (let i = 0; i < connInside.length; i++) suffix.push(0)
+  }
+
   for (let pos = range.from; pos < range.to; pos++) {
     let newChild = source.content[pos]
     for (let i = connInside.length - 1; i >= 0; i--)
       newChild = new Node(connInside[i], [newChild])
     newNode.push(newChild)
+    if (suffix) {
+      let path = range.path.concat(pos)
+      result.chunk(new Pos(path, 0), new Pos(path, newChild.content.length),
+                   new Pos(prefix.concat(pos - range.from).concat(suffix), 0))
+    }
   }
   for (let i = connAround.length - 1; i >= 0; i--)
     newNode = new Node(connAround[i], [newNode])
-
   output.path(range.path).push(newNode)
-  let prefix = range.path.concat(range.from), suffix = []
-  for (let i = 0; i < connAround.length; i++) prefix.push(0)
-  for (let i = 0; i < connInside.length; i++) suffix.push(0)
-  
-  result.chunk(after, pos => {
-    return new Pos(prefix.concat(pos.path[range.path.length] - range.from)
-                     .concat(suffix).concat(pos.path.slice(range.path.length + 1)),
-                   pos.offset)
-  })
 
   joinAndTrack(result, after, output, range.path.length,
                slice.after(doc, after), after, true)
@@ -166,68 +161,67 @@ defineTransform("wrap", function(doc, params) {
 defineTransform("split", function(doc, params) {
   let depth = params.depth || 1, pos = params.pos
   let copy = slice.around(doc, pos)
-  for (let cut, i = 0; i <= depth; i++) {
+  let result = new Result(doc, copy, pos)
+
+  let target = copy.path(pos.path)
+  let adjusted = pos.path.slice()
+  adjusted[adjusted.length - depth]++
+  result.chunk(pos, new Pos(pos.path, target.size),
+               new Pos(adjusted, 0))
+
+  let {offset} = inline.splitInlineAt(target, pos.offset)
+  let restContent = target.content.slice(offset), cut
+  if (params.type)
+    cut = new Node(params.type, restContent, params.attrs)
+  else
+    cut = target.copy(restContent)
+  target.content.length = offset
+
+  for (let i = 1; i <= depth; i++) {
     let end = pos.path.length - i
-    let target = copy.path(pos.path.slice(0, end))
-    if (i == 0) {
-      let {offset} = inline.splitInlineAt(target, pos.offset)
-      let restContent = target.content.slice(offset)
-      if (params.type)
-        cut = new Node(params.type, restContent, params.attrs)
-      else
-        cut = target.copy(restContent)
+    let toTarget = pos.path.slice(0, end)
+    let target = copy.path(toTarget)
+    let offset = pos.path[end] + 1
+
+    if (i < depth) {
+      let adjusted = toTarget.slice()
+      adjusted[adjusted.length - depth]++
+      result.chunk(new Pos(toTarget, offset), new Pos(toTarget, target.content.length),
+                   new Pos(adjusted, 0))
+      cut = target.copy([cut].concat(target.content.slice(offset)))
       target.content.length = offset
     } else {
-      let offset = pos.path[end] + 1
-      if (i < depth) {
-        cut = target.copy([cut].concat(target.content.slice(offset)))
-        target.content.length = offset
-      } else {
-        target.content.splice(offset, 0, cut)
-      }
+      result.chunk(new Pos(toTarget, offset), new Pos(toTarget, target.content.length),
+                   new Pos(toTarget, offset + 1))
+      target.content.splice(offset, 0, cut)
     }
   }
 
-  let result = new Result(doc, copy, pos)
-  let end = pos.shorten(pos.path.length - depth, 2)
-  result.chunk(end, p => {
-    let base = pos.path.length - depth
-    let path = p.path.slice(0, base)
-    for (var i = 0; i < depth; i++) {
-      let a = p.path[base + i], b = pos.path[base + i]
-      path.push(i ? a - b : a + 1)
-      if (a != b) break
-    }
-    let offset = p.offset
-    if (i == depth) offset -= pos.offset
-    else i++
-    path = path.concat(p.path.slice(base + i))
-    return new Pos(path, offset)
-  })
   return result
 })
 
 defineTransform("insert", function(doc, params) {
   let pos = params.pos
   let copy = slice.around(doc, pos)
+  let result = new Result(doc, copy, pos)
+
   let block = params.node || new Node(params.type, null, params.attrs)
   let parent = copy.path(pos.path)
+  result.chunk(pos, new Pos(pos.path, parent.content.length),
+               new Pos(pos.path, pos.offset + 1))
   parent.content.splice(pos.offset, 0, block)
-  let result = new Result(doc, copy, pos)
-  let depth = pos.path.length
-  result.chunk(new Pos(pos.path, parent.content.length), pos => pos.offsetAt(depth, 1))
+
   return result
 })
 
 defineTransform("remove", function(doc, params) {
   let pos = params.pos
   let copy = slice.around(doc, pos)
-  let parent = copy.path(pos.path)
-  parent.content.splice(pos.offset, 1)
   let result = new Result(doc, copy, pos)
-  let after = Pos.after(copy, pos)
-  result.chunk(new Pos(pos.path, pos.offset + 1), _ => after)
-  let depth = pos.path.length
-  result.chunk(pos.shorten(null, 1), pos => pos.offsetAt(depth, -1))
+
+  let parent = copy.path(pos.path)
+  result.chunk(new Pos(pos.path, pos.offset + 1), new Pos(pos.path, parent.content.length),
+               pos)
+  parent.content.splice(pos.offset, 1)
   return result
 })

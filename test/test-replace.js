@@ -79,6 +79,6 @@ t("insert_text",
   doc(p("a D<a><b> c<after>")))
 
 t("text_across_paragraphs",
-  doc(p("on<a>e"), p("t<b>wo")),
+  doc(p("on<a>e"), p("t<b>wo"), p("three")),
   "abc",
-  doc(p("onabc<a>wo")))
+  doc(p("onabc<a>wo"), p("three")))
