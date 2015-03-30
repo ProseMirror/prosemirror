@@ -50,7 +50,7 @@ export function join(left, leftDepth, right, rightDepth, f) {
   }
 }
 
-function trackEnd(left, leftDepth, right, rightDepth) {
+function joinInserted(left, leftDepth, right, rightDepth) {
   let endPos, endPosInline
   join(left, leftDepth, right, rightDepth, function(from, _fromDepth, to, toDepth) {
     let offset
@@ -71,12 +71,7 @@ function pathRight(node, depth) {
   return inner
 }
 
-function nodeWidth(node) {
-  return node.type.contains == "inline" ? node.size : node.content.length
-}
-
-export function joinAndTrack(result, base, left, leftDepth, right, rightPos, align) {
-  let rightDepth = rightPos.path.length
+export function joinAndTrack(result, base, left, leftDepth, right, rightDepth, align) {
   let spine = []
   for (let i = 0, node = right; i <= rightDepth; i++) {
     spine.push(node)
@@ -109,12 +104,57 @@ export function joinAndTrack(result, base, left, leftDepth, right, rightPos, ali
   })
 }
 
+function addDeletedChunksAfter(result, node, pos, depth) {
+  if (depth == pos.path.length) {
+    result.chunkDeleted(pos, (node.type.contains == "inline" ? node.size : node.content.length) - pos.offset)
+  } else {
+    let n = pos.path[depth]
+    addDeletedChunksAfter(result, node.content[n], pos, depth + 1)
+    let size =  node.content.length - n - 1
+    if (size)
+      result.chunkDeleted(new Pos(pos.path.slice(0, depth), n + 1), size)
+  }
+}
+
+function addDeletedChunksBefore(result, node, pos, depth) {
+  if (depth == pos.path.lengh) {
+    result.chunkDeleted(new Pos(pos.path, 0), pos.offset)
+  } else {
+    let n = pos.path[depth]
+    if (n)
+      result.chunkDeleted(new Pos(pos.path.slice(0, depth), 0), n)
+    addDeletedChunksBefore(result, node.content[n], pos, depth + 1)
+  }    
+}
+
+function addDeletedChunks(result, node, from, to, depth = 0) {
+  var fromEnd = depth == from.path.length, toEnd = depth == to.path.length
+  if (!fromEnd && !toEnd && from.path[depth] == to.path[depth]) {
+    addDeletedChunks(result, node.content[from.path[depth]], from, to, depth + 1)
+  } else if (fromEnd && toEnd) {
+    if (to.offset != from.offset)
+      result.chunkDeleted(from, to.offset - from.offset)
+  } else {
+    let start = from.offset
+    if (!fromEnd) {
+      start = from.path[depth] + 1
+      addDeletedChunksAfter(result, node, from, depth + 1)
+    }
+    let end = toEnd ? to.offset : to.path[depth]
+    if (end != start)
+      result.chunkDeleted(new Pos(from.path.slice(0, depth), start), end - start)
+    if (!toEnd)
+      addDeletedChunksAfter(result, node, to, depth + 1)
+  }
+}
+
 defineTransform("replace", function(doc, params) {
   let from = params.pos, to = params.end || params.pos
 
   let output = slice.before(doc, from)
   let result = new Result(doc, output, from)
   let right = slice.after(doc, to)
+  addDeletedChunks(result, doc, from, to)
 
   if (params.source) {
     let start = params.from, end = params.to
@@ -122,9 +162,9 @@ defineTransform("replace", function(doc, params) {
     let middle = slice.between(params.source, start, end, collapsed)
 
     let {pos: endPos, inline: endPosInline} =
-        trackEnd(output, from.path.length, middle, start.path.length - collapsed[0]) || params.to
+        joinInserted(output, from.path.length, middle, start.path.length - collapsed[0]) || params.to
     let endDepth = endPos.path.length
-    joinAndTrack(result, to, output, end.path.length - collapsed[0] + endDepth, right, to)
+    joinAndTrack(result, to, output, end.path.length - collapsed[0] + endDepth, right, to.path.length)
   } else {
     if (params.text) {
       let block = output.path(from.path), end = block.content.length
@@ -134,7 +174,7 @@ defineTransform("replace", function(doc, params) {
       block.content.push(Node.text(params.text, styles))
       inline.stitchTextNodes(block, end)
     }
-    joinAndTrack(result, to, output, from.path.length, right, to)
+    joinAndTrack(result, to, output, from.path.length, right, to.path.length)
   }
 
   return result

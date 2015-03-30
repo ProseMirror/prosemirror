@@ -1,5 +1,13 @@
 import {Pos} from "../model"
 
+class Chunk {
+  constructor(start, size, newStart) {
+    this.start = start
+    this.size = size
+    this.newStart = newStart
+  }
+}
+
 export class Result {
   constructor(before, after, untouched = null) {
     this.before = before
@@ -9,7 +17,15 @@ export class Result {
   }
 
   chunk(start, size, newStart) {
-    this.chunks.push({start: start, size: size, newStart: newStart})
+    this.chunks.push(new Chunk(start, size, newStart))
+  }
+
+  chunkDeleted(start, size) {
+    this.chunks.push(new Chunk(start, size, null))
+  }
+
+  chunkAdded(start, size) {
+    this.chunks.push(new Chunk(null, size, start))
   }
 
   map(pos) {
@@ -18,6 +34,7 @@ export class Result {
 
     for (let i = 0; i < this.chunks.length; i++) {
       let chunk = this.chunks[i]
+      if (!chunk.newStart) continue // FIXME look at deleted chunks
       if (Pos.cmp(pos.path, pos.offset,
                   chunk.start.path, chunk.start.offset + chunk.size) <= 0) {
         let depth = chunk.start.path.length

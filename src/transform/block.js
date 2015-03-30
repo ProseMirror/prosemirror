@@ -69,7 +69,7 @@ defineTransform("lift", function(doc, params) {
   }
 
   joinAndTrack(result, after, output, lift.path.length,
-               slice.after(doc, after), after, true)
+               slice.after(doc, after), after.path.length, true)
 
   return result
 })
@@ -154,7 +154,7 @@ defineTransform("wrap", function(doc, params) {
   output.path(range.path).push(newNode)
 
   joinAndTrack(result, after, output, range.path.length,
-               slice.after(doc, after), after, true)
+               slice.after(doc, after), after.path.length, true)
   return result
 })
 
