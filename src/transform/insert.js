@@ -2,7 +2,7 @@ import {slice, inline, Node, Pos} from "../model"
 import {Result, defineTransform, flatTransform} from "./transform"
 
 function insertNode(doc, pos, node) {
-  let copy = slice.around(doc, pos)
+  let copy = slice.around(doc, pos.path)
   let parent = copy.path(pos.path)
   let result = new Result(doc, copy, pos)
   result.chunk(pos, parent.size - pos.offset,

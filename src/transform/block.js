@@ -95,7 +95,7 @@ defineTransform("join", function(doc, params) {
   if (!point) return flatTransform(doc)
 
   let toJoined = point.path.concat(point.offset - 1)
-  let output = slice.around(doc, new Pos(toJoined, 0))
+  let output = slice.around(doc, toJoined)
   let parent = output.path(point.path)
   let target = parent.content[point.offset - 1]
   let from = parent.content[point.offset]
@@ -160,7 +160,7 @@ defineTransform("wrap", function(doc, params) {
 
 defineTransform("split", function(doc, params) {
   let depth = params.depth || 1, pos = params.pos
-  let copy = slice.around(doc, pos)
+  let copy = slice.around(doc, pos.path)
   let result = new Result(doc, copy, pos)
 
   let target = copy.path(pos.path)
@@ -201,7 +201,7 @@ defineTransform("split", function(doc, params) {
 
 defineTransform("insert", function(doc, params) {
   let pos = params.pos
-  let copy = slice.around(doc, pos)
+  let copy = slice.around(doc, pos.path)
   let result = new Result(doc, copy, pos)
 
   let block = params.node || new Node(params.type, null, params.attrs)
@@ -215,7 +215,7 @@ defineTransform("insert", function(doc, params) {
 
 defineTransform("remove", function(doc, params) {
   let pos = params.pos
-  let copy = slice.around(doc, pos)
+  let copy = slice.around(doc, pos.path)
   let result = new Result(doc, copy, pos)
 
   let parent = copy.path(pos.path)
