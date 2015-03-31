@@ -1,6 +1,6 @@
 import {Pos, Node, slice, inline} from "../model"
 import {defineTransform, Result, flatTransform} from "./transform"
-import {joinAndTrack} from "./replace"
+import {glue} from "./replace"
 
 export function selectedSiblings(doc, from, to) {
   let len = Math.min(from.path.length, to.path.length)
@@ -68,8 +68,7 @@ defineTransform("lift", function(doc, params) {
     container.pushFrom(source, range.from, range.to)
   }
 
-  joinAndTrack(result, after, output, lift.path.length,
-               slice.after(doc, after), after.path.length, true)
+  glue(output, lift.path.length, slice.after(doc, after), after, result, true)
 
   return result
 })
@@ -153,8 +152,7 @@ defineTransform("wrap", function(doc, params) {
     newNode = new Node(connAround[i], [newNode])
   output.path(range.path).push(newNode)
 
-  joinAndTrack(result, after, output, range.path.length,
-               slice.after(doc, after), after.path.length, true)
+  glue(output, range.path.length, slice.after(doc, after), after, result, true)
   return result
 })
 

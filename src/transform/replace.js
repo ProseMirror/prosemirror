@@ -24,43 +24,66 @@ function compatibleTypes(a, b) {
     (a.contains == "block" || a.contains == "inline" || a == b)
 }
 
-export function join(left, leftDepth, right, rightDepth, f) {
+export function glue(left, leftDepth, right, rightBorder, onChunk, align) {
+  let rightDepth = rightBorder.path.length
+  let cutDepth = 0
+  if (align) {
+    cutDepth = Math.max(0, rightDepth - leftDepth)
+    leftDepth = rightDepth = Math.min(leftDepth, rightDepth)
+  }
   let leftNodes = nodesRight(left, leftDepth)
   let rightNodes = nodesLeft(right, rightDepth)
+
   for (let iLeft = leftNodes.length - 1,
            iRight = rightNodes.length - 1; iRight >= 0; iRight--) {
-    let node = rightNodes[iRight];
+    let node = rightNodes[iRight]
     if (node.content.length == 0) {
       if (iRight) rightNodes[iRight - 1].remove(node)
       continue
     }
+    let found, target
     for (let i = iLeft; i >= 0; i--) {
-      let other = leftNodes[i]
-      if (compatibleTypes(node.type, other.type) && (iRight > 0 || i == 0)) {
-        if (f) f(node, iRight, other, i)
-        let start = other.content.length
-        other.pushFrom(node)
-        if (node.type.contains == "inline")
-          inline.stitchTextNodes(other, start)
-        iLeft = i - 1
-        if (iRight) rightNodes[iRight - 1].remove(node)
+      target = leftNodes[i]
+      if (compatibleTypes(node.type, target.type) && (iRight > 0 || i == 0)) {
+        found = i
         break
       }
     }
-  }
-}
+    if (found != null) {
+      if (onChunk) for (let depth = cutDepth; depth >= 0; depth--) {
+        while (rightBorder.path.length > iRight + depth) rightBorder = rightBorder.shorten()
+        if (depth && rightBorder.offset == 0) continue
 
-function joinInserted(left, leftDepth, right, rightDepth) {
-  let endPos, endPosInline
-  join(left, leftDepth, right, rightDepth, function(from, _fromDepth, to, toDepth) {
-    let offset
-    if (endPosInline = to.type.contains == "inline")
-      offset = to.size + from.size
-    else
-      offset = to.content.length + from.content.length
-    endPos = new Pos(pathRight(left, toDepth), offset)
-  })
-  return {pos: endPos, inline: endPosInline}
+        let pathToOutput = pathRight(left, found)
+        let cur = node
+        for (let i = 0; i < depth; i++) cur = cur.content[0]
+        let inline = cur.type.contains == "inline"
+
+        let newStart, targetSize = inline ? target.size : target.content.length
+        let chunkSize = inline ? cur.size : cur.content.length
+        if (depth) {
+          pathToOutput.push(targetSize)
+          for (let i = 1; i < depth; i++) pathToOutput.push(0)
+          newStart = new Pos(pathToOutput, 0)
+        } else {
+          newStart = new Pos(pathToOutput, targetSize)
+        }
+        if (onChunk.chunk) onChunk.chunk(rightBorder, chunkSize, newStart)
+        else onChunk(rightBorder, chunkSize, newStart)
+      }
+
+      let start = target.content.length
+      target.pushFrom(node)
+      if (node.type.contains == "inline")
+        inline.stitchTextNodes(target, start)
+
+      iLeft = found - 1
+      cutDepth = 0
+      if (iRight) rightNodes[iRight - 1].remove(node)
+    } else {
+      ++cutDepth
+    }
+  }
 }
 
 function pathRight(node, depth) {
@@ -69,39 +92,6 @@ function pathRight(node, depth) {
   let inner = pathRight(node.content[offset], depth - 1)
   inner.unshift(offset)
   return inner
-}
-
-export function joinAndTrack(result, base, left, leftDepth, right, rightDepth, align) {
-  let spine = []
-  for (let i = 0, node = right; i <= rightDepth; i++) {
-    spine.push(node)
-    node = node.content[0]
-  }
-
-  if (align)
-    leftDepth = rightDepth = Math.min(leftDepth, rightDepth)
-
-  join(left, leftDepth, right, rightDepth, function(from, fromDepth, to, toDepth) {
-    let pathToOutput = pathRight(left, toDepth)
-    while (fromDepth < spine.length) {
-      let  node = spine.pop(), len = spine.length
-      while (base.path.length > len) base = base.shorten()
-      if (fromDepth < len && base.offset == 0) continue
-      let inline = node.type.contains == "inline"
-
-      let newStart
-      if (fromDepth < len) {
-        let newPath = pathToOutput.slice()
-        newPath.push(inline ? to.size : to.content.length)
-        for (let i = fromDepth + 1; i < len; i++) newPath.push(0)
-        newStart = new Pos(newPath, 0)
-      } else {
-        newStart = new Pos(pathToOutput, inline ? to.size : to.content.length)
-      }
-
-      result.chunk(base, inline ? node.size : node.content.length, newStart)
-    }
-  })
 }
 
 function addDeletedChunksAfter(result, node, pos, depth) {
@@ -158,13 +148,13 @@ defineTransform("replace", function(doc, params) {
 
   if (params.source) {
     let start = params.from, end = params.to
-    let collapsed = [0]
-    let middle = slice.between(params.source, start, end, collapsed)
+    let middle = slice.between(params.source, start, end, false)
 
-    let {pos: endPos, inline: endPosInline} =
-        joinInserted(output, from.path.length, middle, start.path.length - collapsed[0]) || params.to
-    let endDepth = endPos.path.length
-    joinAndTrack(result, to, output, end.path.length - collapsed[0] + endDepth, right, to.path.length)
+    let depthOffset = 0
+    glue(output, from.path.length, middle, start, (oldPos, _, newPos) => {
+      depthOffset = newPos.path.length - oldPos.path.length
+    })
+    glue(output, end.path.length + depthOffset, right, to, result)
   } else {
     if (params.text) {
       let block = output.path(from.path), end = block.content.length
@@ -174,7 +164,7 @@ defineTransform("replace", function(doc, params) {
       block.content.push(Node.text(params.text, styles))
       inline.stitchTextNodes(block, end)
     }
-    joinAndTrack(result, to, output, from.path.length, right, to.path.length)
+    glue(output, from.path.length, right, to, result)
   }
 
   return result

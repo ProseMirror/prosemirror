@@ -1,6 +1,6 @@
 import {Pos} from "../model"
 
-class Chunk {
+export class Chunk {
   constructor(start, size, newStart) {
     this.start = start
     this.size = size

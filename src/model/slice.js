@@ -1,3 +1,5 @@
+import Node from "./node"
+
 function copyInlineTo(node, offset, copy) {
   for (let left = offset, i = 0; left > 0; i++) {
     let chunk = node.content[i]
@@ -69,16 +71,15 @@ export function after(node, pos, depth = 0) {
   return copy
 }
 
-export function between(node, from, to, collapsed = null, depth = 0) {
+export function between(node, from, to, collapse = true, depth = 0) {
   if (depth < from.path.length && depth < to.path.length &&
       from.path[depth] == to.path[depth]) {
-    var inner = between(node.content[from.path[depth]], from, to, collapsed, depth + 1)
-    if (inner.type.type != "block" || node.type.type == "doc") {
-      return node.copy([inner])
-    } else {
-      if (collapsed) collapsed[0]++
-      return inner
-    }
+    var inner = between(node.content[from.path[depth]], from, to, collapse, depth + 1)
+    if (!collapse) return node.copy([inner])
+    if (node.type.name != "doc") return inner
+    var conn = Node.findConnection(node.type, inner.type)
+    for (let i = conn.length - 1; i >= 0; i--) inner = new Node(conn[i], [inner])
+    return node.copy([inner])
   } else {
     var copy = node.copy()
     if (depth == from.path.length && depth == to.path.length && node.type.contains == "inline") {
