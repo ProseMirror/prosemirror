@@ -29,23 +29,30 @@ export class Result {
       this.chunks.push(new Chunk(before, sizeBefore, after, sizeAfter))
   }
 
-  map(pos) {
+  mapDir(pos, back) {
     if (this.untouched == null || pos.cmp(this.untouched) < 0)
       return pos
 
     for (let i = 0; i < this.chunks.length; i++) {
-      let chunk = this.chunks[i]
-      if (chunk.sizeBefore == 0 && chunk.sizeAfter > 0) continue
-      if (pos.cmp(chunk.before) >= 0) {
-        if (Pos.cmp(pos.path, pos.offset, chunk.before.path, chunk.before.offset + chunk.sizeBefore) <= 0) {
-          let depth = chunk.before.path.length
-          if (chunk.sizeAfter == 0) {
-            return Pos.after(this.doc, chunk.after)
+      let sizeBefore, sizeAfter, before, after
+      if (back) {
+        ({sizeBefore: sizeAfter, sizeAfter: sizeBefore, before: after, after: before}) = this.chunks[i]
+      } else {
+        ({sizeBefore, sizeAfter, before, after}) = this.chunks[i]
+      }
+
+      if (sizeBefore == 0 && sizeAfter > 0) continue
+      if (pos.cmp(before) >= 0) {
+        if (Pos.cmp(pos.path, pos.offset, before.path, before.offset + sizeBefore) <= 0) {
+          let depth = before.path.length
+          if (sizeBefore > 0 && sizeAfter == 0) {
+            let pos = Pos.after(this.doc, after) || Pos.before(this.doc, after)
+            return pos
           } else if (pos.path.length > depth) {
-            let offset = chunk.after.offset + (pos.path[depth] - chunk.before.offset)
-            return new Pos(chunk.after.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset)
+            let offset = after.offset + (pos.path[depth] - before.offset)
+            return new Pos(after.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset)
           } else {
-            return new Pos(chunk.after.path, chunk.after.offset + (pos.offset - chunk.before.offset))
+            return new Pos(after.path, after.offset + (pos.offset - before.offset))
           }
         }
       } else {
@@ -54,6 +61,9 @@ export class Result {
     }
     return pos
   }
+
+  map(pos) { return this.mapDir(pos, false) }
+  mapBack(pos) { return this.mapDir(pos, true) }
 }
 
 const transforms = Object.create(null)

@@ -219,8 +219,7 @@ defineTransform("remove", function(doc, params) {
 
   let parent = copy.path(pos.path)
   result.chunk(pos, 1, pos, 0)
-  result.chunk(new Pos(pos.path, pos.offset + 1), parent.content.length - pos.offset - 1,
-               pos)
+  result.chunk(new Pos(pos.path, pos.offset + 1), parent.content.length - pos.offset - 1, pos)
   parent.content.splice(pos.offset, 1)
   return result
 })
