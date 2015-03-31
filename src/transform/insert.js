@@ -4,7 +4,7 @@ import {Result, defineTransform, flatTransform} from "./transform"
 function insertNode(doc, pos, node) {
   let copy = slice.around(doc, pos.path)
   let parent = copy.path(pos.path)
-  let result = new Result(doc, copy, pos)
+  let result = new Result(doc, copy)
   result.chunk(pos, 0, pos, node.size)
   result.chunk(pos, parent.size - pos.offset,
                new Pos(pos.path, pos.offset + node.size))

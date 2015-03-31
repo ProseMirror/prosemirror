@@ -136,7 +136,7 @@ defineTransform("replace", function(doc, params) {
   let from = params.pos, to = params.end || params.pos
 
   let output = slice.before(doc, from)
-  let result = new Result(doc, output, from)
+  let result = new Result(doc, output)
   let right = slice.after(doc, to)
   let depthAfter
 
@@ -151,18 +151,16 @@ defineTransform("replace", function(doc, params) {
     depthAfter = end.path.length
     for (let i = 0; i < middleChunks.length; i++) {
       let chunk = middleChunks[i]
+      let start = chunk.after, size = chunk.size
       if (i == middleChunks.length - 1) {
         depthAfter += chunk.after.path.length - chunk.before.path.length
-        let start = chunk.before, size = chunk.size
         for (let depth = chunk.before.path.length + 1; depth <= end.path.length; depth++) {
           result.chunk(to, 0, start, size - 1)
           start = new Pos(start.path.concat(start.offset + size - 1), 0)
           size = depth == end.path.length ? end.offset : end.path[depth]
         }
-        result.chunk(to, 0, start, size)
-      } else {
-        result.chunk(to, 0, chunk.after, chunk.size)
       }
+      result.chunk(to, 0, start, size)
     }
   } else {
     if (params.text) {

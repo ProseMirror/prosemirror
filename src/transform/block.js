@@ -52,7 +52,7 @@ defineTransform("lift", function(doc, params) {
     after = after.shorten(null, 1)
 
   let output = slice.before(doc, before)
-  let result = new Result(doc, output, before)
+  let result = new Result(doc, output)
   let container = output.path(lift.path), size = container.content.length
   let source = doc.path(range.path)
   if (lift.unwrap) {
@@ -99,7 +99,7 @@ defineTransform("join", function(doc, params) {
   let target = parent.content[point.offset - 1]
   let from = parent.content[point.offset]
 
-  let result = new Result(doc, output, point)
+  let result = new Result(doc, output)
   let pathToFrom = point.path.concat(point.offset)
   result.chunk(new Pos(pathToFrom, 0), from.content.length,
                new Pos(point.path.concat(point.offset - 1), target.content.length))
@@ -125,7 +125,7 @@ defineTransform("wrap", function(doc, params) {
   if (!connAround || !connInside) return flatTransform(doc)
 
   let output = slice.before(doc, before)
-  let result = new Result(doc, output, before)
+  let result = new Result(doc, output)
 
   let prefix = range.path.concat(range.from), suffix
   for (let i = 0; i < connAround.length; i++) prefix.push(0)
@@ -159,7 +159,7 @@ defineTransform("wrap", function(doc, params) {
 defineTransform("split", function(doc, params) {
   let depth = params.depth || 1, pos = params.pos
   let copy = slice.around(doc, pos.path)
-  let result = new Result(doc, copy, pos)
+  let result = new Result(doc, copy)
 
   let target = copy.path(pos.path)
   let adjusted = pos.path.slice()
@@ -200,7 +200,7 @@ defineTransform("split", function(doc, params) {
 defineTransform("insert", function(doc, params) {
   let pos = params.pos
   let copy = slice.around(doc, pos.path)
-  let result = new Result(doc, copy, pos)
+  let result = new Result(doc, copy)
 
   let block = params.node || new Node(params.type, null, params.attrs)
   let parent = copy.path(pos.path)
@@ -215,7 +215,7 @@ defineTransform("insert", function(doc, params) {
 defineTransform("remove", function(doc, params) {
   let pos = params.pos
   let copy = slice.around(doc, pos.path)
-  let result = new Result(doc, copy, pos)
+  let result = new Result(doc, copy)
 
   let parent = copy.path(pos.path)
   result.chunk(pos, 1, pos, 0)

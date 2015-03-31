@@ -21,10 +21,9 @@ export class Chunk {
 }
 
 export class Result {
-  constructor(before, after, untouched = null) {
+  constructor(before, after) {
     this.before = before
     this.doc = after
-    this.untouched = untouched
     this.chunks = []
   }
 
@@ -33,10 +32,8 @@ export class Result {
       this.chunks.push(new Chunk(before, sizeBefore, after, sizeAfter))
   }
 
+  // FIXME This is too suble and messy. At some point, try to clean it up.
   mapDir(pos, back, offset) {
-    if (this.untouched == null || pos.cmp(this.untouched) < 0)
-      return pos
-
     let deletedID = 0, insertedID = 0
     let isRecover = offset && offset.rangeID != null
 
@@ -60,7 +57,7 @@ export class Result {
         if (Pos.cmp(pos.path, pos.offset, before.path, before.offset + sizeBefore) <= 0) {
           let depth = before.path.length
           if (deleted) {
-            if (offset) offset({rangeID: deletedID, offset: pos.baseOn(after)})
+            if (offset) offset({rangeID: deletedID, offset: pos.baseOn(before)})
             return Pos.after(this.doc, after) || Pos.before(this.doc, after)
           } else if (pos.path.length > depth) {
             let offset = after.offset + (pos.path[depth] - before.offset)
@@ -69,7 +66,7 @@ export class Result {
             return new Pos(after.path, after.offset + (pos.offset - before.offset))
           }
         }
-      } else {
+      } else if (!isRecover && !back) {
         break
       }
       if (deleted) ++deletedID
@@ -94,5 +91,5 @@ export function applyTransform(doc, params) {
 }
 
 export function flatTransform(doc, result) {
-  return new Result(doc, result || doc, null)
+  return new Result(doc, result || doc)
 }
