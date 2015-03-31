@@ -49,6 +49,10 @@ export default class Node {
     return sum
   }
 
+  get maxOffset() {
+    return this.type.contains == "inline" ? this.size : this.content.length
+  }
+
   get textContent() {
     let text = ""
     for (let i = 0; i < this.content.length; i++)

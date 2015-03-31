@@ -204,6 +204,7 @@ defineTransform("insert", function(doc, params) {
 
   let block = params.node || new Node(params.type, null, params.attrs)
   let parent = copy.path(pos.path)
+  result.chunk(pos, 0, pos, 1)
   result.chunk(pos, parent.content.length - pos.offset,
                new Pos(pos.path, pos.offset + 1))
   parent.content.splice(pos.offset, 0, block)
@@ -217,6 +218,7 @@ defineTransform("remove", function(doc, params) {
   let result = new Result(doc, copy, pos)
 
   let parent = copy.path(pos.path)
+  result.chunk(pos, 1, pos, 0)
   result.chunk(new Pos(pos.path, pos.offset + 1), parent.content.length - pos.offset - 1,
                pos)
   parent.content.splice(pos.offset, 1)
