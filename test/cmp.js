@@ -39,6 +39,9 @@ export function testTransform(doc, expect, params) {
   let result = applyTransform(doc, params)
   node(result.doc, expect)
   simple(doc, orig, "immutable")
-  for (let pos in expect.tag)
-    simple(result.map(doc.tag[pos]), expect.tag[pos], pos)
+  for (let pos in expect.tag) {
+    let offset, mapped = result.map(doc.tag[pos], p => offset = p)
+    simple(mapped, expect.tag[pos], pos)
+    simple(result.mapBack(mapped, offset), doc.tag[pos], pos + " back")
+  }
 }

@@ -35,6 +35,26 @@ export default class Pos {
     return new Pos(path, this.offset)
   }
 
+  extend(pos) {
+    let path = this.path.slice(), add = this.offset
+    for (let i = 0; i < pos.path.length; i++) {
+      path.push(pos.path[i] + add)
+      add = 0
+    }
+    return new Pos(path, pos.offset + add)
+  }
+
+  baseOn(base) {
+    if (this.path.length > base.path.length) {
+      let path = [this.path[base.path.length] - base.offset]
+      for (let i = base.path.length + 1; i < this.path.length; i++)
+        path.push(this.path[i])
+      return new Pos(path, this.offset)
+    } else {
+      return new Pos([], this.offset - base.offset)
+    }
+  }
+
   static fromJSON(json) { return new Pos(json.path, json.offset) }
 }
 

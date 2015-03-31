@@ -14,6 +14,10 @@ export class Chunk {
   get endBefore() {
     return new Pos(this.before.path, this.before.offset + this.sizeBefore)
   }
+
+  toString() {
+    return this.before + "+" + this.sizeBefore + " -> " + this.after + "+" + this.sizeAfter
+  }
 }
 
 export class Result {
@@ -29,9 +33,12 @@ export class Result {
       this.chunks.push(new Chunk(before, sizeBefore, after, sizeAfter))
   }
 
-  mapDir(pos, back) {
+  mapDir(pos, back, offset) {
     if (this.untouched == null || pos.cmp(this.untouched) < 0)
       return pos
+
+    let deletedID = 0, insertedID = 0
+    let isRecover = offset && offset.rangeID != null
 
     for (let i = 0; i < this.chunks.length; i++) {
       let sizeBefore, sizeAfter, before, after
@@ -41,13 +48,20 @@ export class Result {
         ({sizeBefore, sizeAfter, before, after}) = this.chunks[i]
       }
 
-      if (sizeBefore == 0 && sizeAfter > 0) continue
-      if (pos.cmp(before) >= 0) {
+      if (sizeBefore == 0 && sizeAfter > 0) { // Inserted chunk
+        if (isRecover && insertedID == offset.rangeID)
+          return after.extend(offset.offset)
+        ++insertedID
+        continue
+      }
+
+      let deleted = sizeBefore > 0 && sizeAfter == 0
+      if (!isRecover && pos.cmp(before) >= 0) {
         if (Pos.cmp(pos.path, pos.offset, before.path, before.offset + sizeBefore) <= 0) {
           let depth = before.path.length
-          if (sizeBefore > 0 && sizeAfter == 0) {
-            let pos = Pos.after(this.doc, after) || Pos.before(this.doc, after)
-            return pos
+          if (deleted) {
+            if (offset) offset({rangeID: deletedID, offset: pos.baseOn(after)})
+            return Pos.after(this.doc, after) || Pos.before(this.doc, after)
           } else if (pos.path.length > depth) {
             let offset = after.offset + (pos.path[depth] - before.offset)
             return new Pos(after.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset)
@@ -58,12 +72,13 @@ export class Result {
       } else {
         break
       }
+      if (deleted) ++deletedID
     }
     return pos
   }
 
-  map(pos) { return this.mapDir(pos, false) }
-  mapBack(pos) { return this.mapDir(pos, true) }
+  map(pos, offset = null) { return this.mapDir(pos, false, offset) }
+  mapBack(pos, offset = null) { return this.mapDir(pos, true, offset) }
 }
 
 const transforms = Object.create(null)

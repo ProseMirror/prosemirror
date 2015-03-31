@@ -144,12 +144,26 @@ defineTransform("replace", function(doc, params) {
     let start = params.from, end = params.to
     let middle = slice.between(params.source, start, end, false)
 
-    let depthOffset = 0
-    glue(output, from.path.length, middle, start, (oldPos, size, newPos) => {
-      result.chunk(from, 0, newPos, size)
-      depthOffset = newPos.path.length - oldPos.path.length
+    let middleChunks = []
+    glue(output, from.path.length, middle, start, (before, size, after) => {
+      middleChunks.push({before: before, size: size, after: after})
     })
-    depthAfter = end.path.length + depthOffset
+    depthAfter = end.path.length
+    for (let i = 0; i < middleChunks.length; i++) {
+      let chunk = middleChunks[i]
+      if (i == middleChunks.length - 1) {
+        depthAfter += chunk.after.path.length - chunk.before.path.length
+        let start = chunk.before, size = chunk.size
+        for (let depth = chunk.before.path.length + 1; depth <= end.path.length; depth++) {
+          result.chunk(to, 0, start, size - 1)
+          start = new Pos(start.path.concat(start.offset + size - 1), 0)
+          size = depth == end.path.length ? end.offset : end.path[depth]
+        }
+        result.chunk(to, 0, start, size)
+      } else {
+        result.chunk(to, 0, chunk.after, chunk.size)
+      }
+    }
   } else {
     if (params.text) {
       result.chunk(from, 0, from, params.text.length)
