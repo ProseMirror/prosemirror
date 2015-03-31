@@ -51,13 +51,13 @@ export function glue(left, leftDepth, right, rightBorder, onChunk, align) {
     }
     if (found != null) {
       if (onChunk) for (let depth = cutDepth; depth >= 0; depth--) {
-        while (rightBorder.path.length > iRight + depth) rightBorder = rightBorder.shorten()
+        while (rightBorder.path.length > iRight + depth) rightBorder = rightBorder.shorten(null, 1)
         if (depth && rightBorder.offset == 0) continue
 
         let cur = node
         for (let i = 0; i < depth; i++) cur = cur.content[0]
         let newStart = posRight(left, found)
-        if (cutDepth) {
+        if (depth) {
           newStart.path.push(newStart.offset)
           for (let i = 1; i < depth; i++) newStart.path.push(0)
           newStart.offset = 0
@@ -92,12 +92,11 @@ function posRight(node, depth) {
 
 function addDeletedChunksAfter(result, node, pos, ref, depth) {
   if (depth == pos.path.length) {
-    result.chunk(pos, node.maxOffset - pos.offset,
-                 ref, 0)
+    result.chunk(pos, node.maxOffset - pos.offset, ref, 0)
   } else {
     let n = pos.path[depth]
     addDeletedChunksAfter(result, node.content[n], pos, ref, depth + 1)
-    let size =  node.content.length - n - 1
+    let size = node.content.length - n - 1
     if (size)
       result.chunk(new Pos(pos.path.slice(0, depth), n + 1), size, ref, 0)
   }
@@ -118,8 +117,7 @@ function addDeletedChunks(result, node, from, to, ref, depth = 0) {
   if (!fromEnd && !toEnd && from.path[depth] == to.path[depth]) {
     addDeletedChunks(result, node.content[from.path[depth]], from, to, ref, depth + 1)
   } else if (fromEnd && toEnd) {
-    if (to.offset != from.offset)
-      result.chunk(from, to.offset - from.offset, ref, 0)
+    result.chunk(from, to.offset - from.offset, ref, 0)
   } else {
     let start = from.offset
     if (!fromEnd) {
