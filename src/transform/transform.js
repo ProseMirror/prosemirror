@@ -20,6 +20,11 @@ export class Chunk {
   }
 }
 
+function isInChunk(pos, before, sizeBefore) {
+  return pos.cmp(before) >= 0 &&
+    Pos.cmp(pos.path, pos.offset, before.path, before.offset + sizeBefore) <= 0
+}
+
 export class Result {
   constructor(before, after) {
     this.before = before
@@ -32,12 +37,8 @@ export class Result {
       this.chunks.push(new Chunk(before, sizeBefore, after, sizeAfter))
   }
 
-  // FIXME This is too suble and messy. At some point, try to clean it up.
-  mapDir(pos, back, offset) {
-    let deletedID = 0, insertedID = 0
-    let isRecover = offset && offset.rangeID != null
-
-    for (let i = 0; i < this.chunks.length; i++) {
+  iterChunks(back, type, f) {
+    for (let i = 0, off = 0; i < this.chunks.length; i++) {
       let sizeBefore, sizeAfter, before, after
       if (back) {
         ({sizeBefore: sizeAfter, sizeAfter: sizeBefore, before: after, after: before}) = this.chunks[i]
@@ -45,33 +46,40 @@ export class Result {
         ({sizeBefore, sizeAfter, before, after}) = this.chunks[i]
       }
 
-      if (sizeBefore == 0 && sizeAfter > 0) { // Inserted chunk
-        if (isRecover && insertedID == offset.rangeID)
-          return after.extend(offset.offset)
-        ++insertedID
-        continue
+      if (type == (sizeBefore == sizeAfter ? "normal" : sizeBefore ? "deleted" : "inserted")) {
+        let value = f(before, sizeBefore, after, sizeAfter, off++)
+        if (value != null) return value
       }
-
-      let deleted = sizeBefore > 0 && sizeAfter == 0
-      if (!isRecover && pos.cmp(before) >= 0) {
-        if (Pos.cmp(pos.path, pos.offset, before.path, before.offset + sizeBefore) <= 0) {
-          let depth = before.path.length
-          if (deleted) {
-            if (offset) offset({rangeID: deletedID, offset: pos.baseOn(before)})
-            return Pos.after(this.doc, after) || Pos.before(this.doc, after)
-          } else if (pos.path.length > depth) {
-            let offset = after.offset + (pos.path[depth] - before.offset)
-            return new Pos(after.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset)
-          } else {
-            return new Pos(after.path, after.offset + (pos.offset - before.offset))
-          }
-        }
-      } else if (!isRecover && !back) {
-        break
-      }
-      if (deleted) ++deletedID
     }
-    return pos
+  }
+
+  mapDir(pos, back, offset) {
+    if (offset && offset.rangeID != null)
+      return this.iterChunks(back, "inserted", (_before, _sizeBefore, after, _sizeAfter, i) => {
+        if (i == offset.rangeID) return after.extend(offset.offset)
+      })
+
+    let normal = this.iterChunks(back, "normal", (before, sizeBefore, after) => {
+      if (isInChunk(pos, before, sizeBefore)) {
+        let depth = before.path.length
+        if (pos.path.length > depth) {
+          let offset = after.offset + (pos.path[depth] - before.offset)
+          return new Pos(after.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset)
+        } else {
+          return new Pos(after.path, after.offset + (pos.offset - before.offset))
+        }
+      }
+    })
+    if (normal) return normal
+
+    let deleted = this.iterChunks(back, "deleted", (before, sizeBefore, after, _, i) => {
+      if (isInChunk(pos, before, sizeBefore)) {
+        if (offset) offset({rangeID: i, offset: pos.baseOn(before)})
+        return Pos.after(this.doc, after) || Pos.before(this.doc, after)
+      }
+    })
+
+    return deleted || pos
   }
 
   map(pos, offset = null) { return this.mapDir(pos, false, offset) }
