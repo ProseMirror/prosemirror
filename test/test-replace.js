@@ -82,3 +82,8 @@ t("text_across_paragraphs",
   doc(p("on<a>e"), p("t<b>wo"), p("three")),
   "abc",
   doc(p("onabc<a>wo"), p("three")))
+
+t("deep_insert",
+  doc(blockquote(blockquote(p("one"), p("tw<a>o"), p("t<b>hree<3>"), p("four<4>")))),
+  doc(ol(li(p("hello<a>world")), li(p("bye"))), p("ne<b>xt")),
+  doc(blockquote(blockquote(p("one"), p("twworld"))), ol(li(p("bye"))), p("ne<a><b>hree<3>"), p("four<4>")))

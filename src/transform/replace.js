@@ -24,10 +24,10 @@ function compatibleTypes(a, b) {
     (a.contains == "block" || a.contains == "inline" || a == b)
 }
 
-export function glue(left, leftDepth, right, rightBorder, onChunk, align) {
+export function glue(left, leftDepth, right, rightBorder, options = {}) {
   let rightDepth = rightBorder.path.length
   let cutDepth = 0
-  if (align) {
+  if (options.align) {
     cutDepth = Math.max(0, rightDepth - leftDepth)
     leftDepth = rightDepth = Math.min(leftDepth, rightDepth)
   }
@@ -50,7 +50,7 @@ export function glue(left, leftDepth, right, rightBorder, onChunk, align) {
       }
     }
     if (found != null) {
-      if (onChunk) for (let depth = cutDepth; depth >= 0; depth--) {
+      if (options.result || options.onChunk) for (let depth = cutDepth; depth >= 0; depth--) {
         while (rightBorder.path.length > iRight + depth) rightBorder = rightBorder.shorten(null, 1)
         if (depth && rightBorder.offset == 0) continue
 
@@ -62,8 +62,10 @@ export function glue(left, leftDepth, right, rightBorder, onChunk, align) {
           for (let i = 1; i < depth; i++) newStart.path.push(0)
           newStart.offset = 0
         }
-        if (onChunk.chunk) onChunk.chunk(rightBorder, cur.maxOffset, newStart)
-        else onChunk(rightBorder, cur.maxOffset, newStart)
+        if (options.result)
+          options.result.chunk(rightBorder, cur.maxOffset, newStart)
+        if (options.onChunk)
+          options.onChunk(rightBorder, cur.maxOffset, newStart)
       }
 
       let start = target.content.length
@@ -145,8 +147,10 @@ defineTransform("replace", function(doc, params) {
     let middle = slice.between(params.source, start, end, false)
 
     let middleChunks = []
-    glue(output, from.path.length, middle, start, (before, size, after) => {
-      middleChunks.push({before: before, size: size, after: after})
+    glue(output, from.path.length, middle, start, {
+      onChunk: (before, size, after) => {
+        middleChunks.push({before: before, size: size, after: after})
+      }
     })
     depthAfter = end.path.length
     for (let i = 0; i < middleChunks.length; i++) {
@@ -178,7 +182,7 @@ defineTransform("replace", function(doc, params) {
   }
   
   addDeletedChunks(result, doc, from, to, posRight(output, depthAfter))
-  glue(output, depthAfter, right, to, result)
+  glue(output, depthAfter, right, to, {result: result})
 
   return result
 })
