@@ -19,7 +19,13 @@ function canUnwrap(container, from, to) {
   return type
 }
 
-export function canBeLifted(doc, from, to) {
+export function liftableRange(doc, from, to) {
+  let found = canBeLifted(doc, from, to)
+  if (found) return {from: Pos.after(doc, from),
+                     to: Pos.before(doc, to)}
+}
+
+function canBeLifted(doc, from, to) {
   let range = selectedSiblings(doc, from, to)
   let container = doc.path(range.path)
   let parentDepth, unwrap = false, innerType = container.type.contains

@@ -1,5 +1,5 @@
 export {defineTransform, applyTransform, flatTransform, Result} from "./transform"
-export {joinPoint, canBeLifted} from "./block"
+export {joinPoint, liftableRange} from "./block"
 export {glue} from "./replace"
 import "./insert"
 import "./style"

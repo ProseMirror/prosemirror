@@ -1,5 +1,5 @@
 import {style, inline, Node} from "../model"
-import {joinPoint, canBeLifted} from "../transform"
+import {joinPoint, liftableRange} from "../transform"
 import {elt} from "../edit/dom"
 
 export class Item {
@@ -17,11 +17,12 @@ export class LiftItem extends Item {
   }
   select(pm) {
     let sel = pm.selection
-    return canBeLifted(pm.doc, sel.from, sel.to)
+    return liftableRange(pm.doc, sel.from, sel.to)
   }
   apply(pm) {
     let sel = pm.selection
-    pm.apply({name: "lift", pos: sel.from, end: sel.to})
+    let range = liftableRange(pm.doc, sel.from, sel.to)
+    pm.apply({name: "lift", pos: range.from, end: range.to})
   }
 }
 

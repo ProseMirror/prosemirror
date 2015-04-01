@@ -1,5 +1,5 @@
 import {Node, Pos, style, inline} from "../model"
-import {joinPoint} from "../transform"
+import {joinPoint, liftableRange} from "../transform"
 
 const commands = Object.create(null)
 
@@ -73,14 +73,17 @@ function delBlockBackward(pm, pos) {
     let last = pos.path.length - 1
     let parent = pm.doc.path(pos.path.slice(0, last))
     let offset = pos.path[last]
+    let range
     // Top of list item below other list item
     // Join with the one above
     if (parent.type == Node.types.list_item &&
         offset == 0 && pos.path[last - 1] > 0)
       return pm.apply({name: "join", pos: pos})
     // Any other nested block, lift up
+    else if (range = liftableRange(pm.doc, pos, pos))
+      return pm.apply({name: "lift", pos: range.from, end: range.to})
     else
-      return pm.apply({name: "lift", pos: pos})
+      return false
   }
 }
 
@@ -154,8 +157,13 @@ commands.join = pm => {
 
 commands.lift = pm => {
   let sel = pm.selection
-  pm.scrollIntoView()
-  return pm.apply({name: "lift", pos: sel.from, end: sel.to})
+  let range = liftableRange(pm.doc, sel.from, sel.to)
+  if (range) {
+    pm.scrollIntoView()
+    return pm.apply({name: "lift", pos: range.from, end: range.to})
+  } else {
+    return false
+  }
 }
 
 function wrap(pm, type) {
@@ -171,9 +179,10 @@ commands.wrapBlockquote = pm => wrap(pm, "blockquote")
 commands.endBlock = pm => {
   pm.scrollIntoView()
   let head = clearSelection(pm)
-  let block = pm.doc.path(head.path)
-  if (head.path.length > 1 && block.content.length == 0) {
-    return pm.apply({name: "lift", pos: head})
+  let block = pm.doc.path(head.path), range
+  if (head.path.length > 1 && block.content.length == 0 &&
+      (range = liftableRange(pm.doc, head, head))) {
+    return pm.apply({name: "lift", pos: range.from, end: range.to})
   } else if (block.type == Node.types.code_block && head.offset < block.size) {
     return pm.apply({name: "insertText", pos: head, text: "\n"})
   } else {
