@@ -1,5 +1,5 @@
 import {Node, Pos, style, inline} from "../model"
-import {joinPoint, liftableRange} from "../transform"
+import {joinPoint, liftableRange, wrappableRange} from "../transform"
 
 const commands = Object.create(null)
 
@@ -169,7 +169,8 @@ commands.lift = pm => {
 function wrap(pm, type) {
   let sel = pm.selection
   pm.scrollIntoView()
-  return pm.apply({name: "wrap", pos: sel.from, end: sel.to, type: type})
+  let range = wrappableRange(pm.doc, sel.from, sel.to)
+  return pm.apply({name: "wrap", pos: range.from, end: range.to, type: type})
 }
 
 commands.wrapBulletList = pm => wrap(pm, "bullet_list")

@@ -21,8 +21,11 @@ function canUnwrap(container, from, to) {
 
 export function liftableRange(doc, from, to) {
   let found = canBeLifted(doc, from, to)
-  if (found) return {from: Pos.after(doc, from),
-                     to: Pos.before(doc, to)}
+  if (found) {
+    let range = found.range
+    return {from: Pos.after(doc, new Pos(range.path, range.from)),
+            to: Pos.before(doc, new Pos(range.path, range.to))}
+  }
 }
 
 function canBeLifted(doc, from, to) {
@@ -118,6 +121,12 @@ defineTransform("join", function(doc, params) {
 
   return result
 })
+
+export function wrappableRange(doc, from, to) {
+  let range = selectedSiblings(doc, from, to)
+  return {from: Pos.after(doc, new Pos(range.path, range.from)),
+          to: Pos.before(doc, new Pos(range.path, range.to))}
+}
 
 defineTransform("wrap", function(doc, params) {
   let range = selectedSiblings(doc, params.pos, params.end || params.pos)

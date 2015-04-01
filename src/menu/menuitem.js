@@ -1,5 +1,5 @@
 import {style, inline, Node} from "../model"
-import {joinPoint, liftableRange} from "../transform"
+import {joinPoint, liftableRange, wrappableRange} from "../transform"
 import {elt} from "../edit/dom"
 
 export class Item {
@@ -87,7 +87,8 @@ export class WrapItem extends Item {
   }
   apply(pm) {
     let sel = pm.selection
-    pm.apply({name: "wrap", pos: sel.from, end: sel.to, type: this.type})
+    let range = wrappableRange(pm.doc, sel.from, sel.to)
+    pm.apply({name: "wrap", pos: range.from, end: range.to, type: this.type})
   }
 }
 
