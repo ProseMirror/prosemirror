@@ -87,6 +87,10 @@ t("wrap", "include_parent",
   doc(blockquote(p("<1>one"), p("two<a>")), p("three<b>")),
   doc(blockquote(blockquote(p("<1>one"), p("two<a>")), p("three<b>"))),
   {type: "blockquote"})
+t("wrap", "bullet_list",
+  doc(p("x"), p("yyyy<a>y"), p("z")),
+  doc(p("x"), ul(li(p("yyyy<a>y"))), p("z")),
+  {type: "bullet_list"})
 
 t("split", "simple",
   doc(p("foo<a>bar")),

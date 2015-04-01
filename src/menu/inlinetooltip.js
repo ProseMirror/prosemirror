@@ -75,6 +75,7 @@ class InlineTooltip {
 
   linkUnderCursor() {
     let styles = inline.inlineStylesAt(this.pm.doc, this.pm.selection.head)
+    if (!styles) console.log("none at " + this.pm.doc + " under " + this.pm.selection.head)
     return styles.reduce((found, st) => found || (st.type == "link" && st), null)
   }
 

@@ -141,7 +141,7 @@ defineTransform("wrap", function(doc, params) {
                  new Pos(prefix, 0))
   } else {
     suffix = []
-    for (let i = 0; i < connInside.length; i++) suffix.push(0)
+    for (let i = 1; i < connInside.length; i++) suffix.push(0)
   }
 
   for (let pos = range.from; pos < range.to; pos++) {
@@ -151,7 +151,7 @@ defineTransform("wrap", function(doc, params) {
     newNode.push(newChild)
     if (suffix) {
       let path = range.path.concat(pos)
-      result.chunk(new Pos(path, 0), newChild.content.length,
+      result.chunk(new Pos(range.path, pos), 1,
                    new Pos(prefix.concat(pos - range.from).concat(suffix), 0))
     }
   }
