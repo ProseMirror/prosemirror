@@ -57,11 +57,11 @@ t("join", "deeper",
   doc(blockquote(blockquote(p("a"), p("b<before>")), blockquote(p("<a>c"), p("d<after>")))),
   doc(blockquote(blockquote(p("a"), p("b<before>"), p("<a>c"), p("d<after>")))))
 t("join", "lists",
-  doc(ol(li(p("one")), li(p("two"))), ol(li(p("three<a>")))),
-  doc(ol(li(p("one")), li(p("two")), li(p("three<a>")))))
+  doc(ol(li(p("one")), li(p("two"))), ol(li(p("<a>three")))),
+  doc(ol(li(p("one")), li(p("two")), li(p("<a>three")))))
 t("join", "list_item",
-  doc(ol(li(p("one")), li(p("two")), li(p("three<a>")))),
-  doc(ol(li(p("one")), li(p("two"), p("three<a>")))))
+  doc(ol(li(p("one")), li(p("two")), li(p("<a>three")))),
+  doc(ol(li(p("one")), li(p("two"), p("<a>three")))))
 
 t("wrap", "simple",
   doc(p("one"), p("<a>two"), p("three")),

@@ -73,9 +73,7 @@ defineTransform("lift", function(doc, params) {
   return result
 })
 
-// FIXME allow both searching up and searching down
-
-export function joinPoint(doc, pos) {
+function preciseJoinPoint(doc, pos) {
   let joinDepth = -1
   for (let i = 0, parent = doc; i < pos.path.length; i++) {
     let index = pos.path[i]
@@ -87,11 +85,14 @@ export function joinPoint(doc, pos) {
   if (joinDepth > -1) return pos.shorten(joinDepth)
 }
 
-// FIXME pass in an already found join point
+export function joinPoint(doc, pos) {
+  var found = preciseJoinPoint(doc, pos)
+  return found && Pos.after(doc, found)
+}
 
 defineTransform("join", function(doc, params) {
-  let point = joinPoint(doc, params.pos)
-  if (!point) return flatTransform(doc)
+  let point = preciseJoinPoint(doc, params.pos)
+  if (!point || params.pos.cmp(Pos.after(doc, point))) return flatTransform(doc)
 
   let toJoined = point.path.concat(point.offset - 1)
   let output = slice.around(doc, toJoined)

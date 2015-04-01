@@ -1,4 +1,5 @@
 import {Node, Pos, style, inline} from "../model"
+import {joinPoint} from "../transform"
 
 const commands = Object.create(null)
 
@@ -143,7 +144,13 @@ function scrollAnd(pm, value) {
 commands.undo = pm => scrollAnd(pm, pm.history.undo())
 commands.redo = pm => scrollAnd(pm, pm.history.redo())
 
-commands.join = pm => scrollAnd(pm, pm.apply({name: "join", pos: pm.selection.head}))
+commands.join = pm => {
+  let point = joinPoint(pm.doc, pm.selection.head)
+  if (point) {
+    pm.scrollIntoView()
+    pm.apply({name: "join", pos: point})
+  }
+}
 
 commands.lift = pm => {
   let sel = pm.selection
