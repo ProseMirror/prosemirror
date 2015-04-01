@@ -122,13 +122,13 @@ function addDeletedChunks(result, node, from, to, ref, depth = 0) {
     let start = from.offset
     if (!fromEnd) {
       start = from.path[depth] + 1
-      addDeletedChunksAfter(result, node, from, ref, depth + 1)
+      addDeletedChunksAfter(result, node.content[start - 1], from, ref, depth + 1)
     }
     let end = toEnd ? to.offset : to.path[depth]
     if (end != start)
       result.chunk(new Pos(from.path.slice(0, depth), start), end - start, ref, 0)
     if (!toEnd)
-      addDeletedChunksBefore(result, node, to, ref, depth + 1)
+      addDeletedChunksBefore(result, node.content[end], to, ref, depth + 1)
   }
 }
 
