@@ -19,18 +19,17 @@ function nodesRight(doc, depth) {
   }
 }
 
-function compatibleTypes(a, b) {
-  return a.contains == b.contains &&
-    (a.contains == "block" || a.contains == "inline" || a == b)
+function compatibleTypes(a, aDepth, b, bDepth, options) {
+  if (a.contains != b.contains) return false
+  if (options.liberal)
+    return a.contains == "block" || a.contains == "inline" || a == b
+  else
+    return a.contains == "inline" || a == b && aDepth == bDepth
 }
 
 export function glue(left, leftDepth, right, rightBorder, options = {}) {
   let rightDepth = rightBorder.path.length
   let cutDepth = 0
-  if (options.align) {
-    cutDepth = Math.max(0, rightDepth - leftDepth)
-    leftDepth = rightDepth = Math.min(leftDepth, rightDepth)
-  }
   let leftNodes = nodesRight(left, leftDepth)
   let rightNodes = nodesLeft(right, rightDepth)
 
@@ -44,7 +43,7 @@ export function glue(left, leftDepth, right, rightBorder, options = {}) {
     let found, target
     for (let i = iLeft; i >= 0; i--) {
       target = leftNodes[i]
-      if (compatibleTypes(node.type, target.type) && (iRight > 0 || i == 0)) {
+      if (compatibleTypes(node.type, iRight, target.type, i, options) && (iRight > 0 || i == 0)) {
         found = i
         break
       }
@@ -150,7 +149,8 @@ defineTransform("replace", function(doc, params) {
     glue(output, from.path.length, middle, start, {
       onChunk: (before, size, after) => {
         middleChunks.push({before: before, size: size, after: after})
-      }
+      },
+      liberal: true
     })
     depthAfter = end.path.length
     for (let i = 0; i < middleChunks.length; i++) {

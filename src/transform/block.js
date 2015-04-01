@@ -68,8 +68,7 @@ defineTransform("lift", function(doc, params) {
     container.pushFrom(source, range.from, range.to)
   }
 
-  glue(output, lift.path.length, slice.after(doc, after), after,
-       {result: result, align: true})
+  glue(output, lift.path.length, slice.after(doc, after), after, {result: result})
 
   return result
 })
@@ -154,8 +153,7 @@ defineTransform("wrap", function(doc, params) {
     newNode = new Node(connAround[i], [newNode])
   output.path(range.path).push(newNode)
 
-  glue(output, range.path.length, slice.after(doc, after), after,
-       {result: result, align: true})
+  glue(output, range.path.length, slice.after(doc, after), after, {result: result})
   return result
 })
 
