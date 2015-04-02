@@ -1,28 +1,38 @@
 import {Pos} from "../model"
 
 export class Chunk {
-  constructor(before, sizeBefore, after, sizeAfter) {
-    this.before = before
-    this.sizeBefore = sizeBefore
-    this.after = after
-    this.sizeAfter = sizeAfter
-  }
-
-  get endAfter() {
-    return new Pos(this.after.path, this.after.offset + this.sizeAfter)
-  }
-  get endBefore() {
-    return new Pos(this.before.path, this.before.offset + this.sizeBefore)
-  }
-
-  toString() {
-    return this.before + "+" + this.sizeBefore + " -> " + this.after + "+" + this.sizeAfter
+  constructor(start, size) {
+    this.start = start
+    this.size = size
   }
 }
 
-function isInChunk(pos, before, sizeBefore) {
-  return pos.cmp(before) >= 0 &&
-    Pos.cmp(pos.path, pos.offset, before.path, before.offset + sizeBefore) <= 0
+export class MovedChunk extends Chunk {
+  constructor(start, size, dest) {
+    super(start, size)
+    this.dest = dest
+  }
+}
+
+export class Collapsed {
+  constructor(from, to, ref) {
+    this.from = from
+    this.to = to
+    this.ref = ref
+    this.chunks = []
+  }
+  chunk(start, size) {
+    this.chunks.push(new Chunk(start, size))
+  }
+}
+
+function findInChunks(pos, chunks, back) {
+  for (let i = 0; i < chunks.length; i++) {
+    let chunk = chunks[i], start = back ? chunk.dest : chunk.start
+    if (pos.cmp(start) >= 0 &&
+        Pos.cmp(pos.path, pos.offset, start.path, start.offset + chunk.size) <= 0)
+      return i
+  }
 }
 
 export class Result {
@@ -30,56 +40,48 @@ export class Result {
     this.before = before
     this.doc = after
     this.chunks = []
+    this.inserted = null
+    this.deleted = null
   }
 
-  chunk(before, sizeBefore, after, sizeAfter=sizeBefore) {
-    if (before.cmp(after) || sizeBefore != sizeAfter)
-      this.chunks.push(new Chunk(before, sizeBefore, after, sizeAfter))
-  }
-
-  iterChunks(back, type, f) {
-    for (let i = 0, off = 0; i < this.chunks.length; i++) {
-      let sizeBefore, sizeAfter, before, after
-      if (back) {
-        ({sizeBefore: sizeAfter, sizeAfter: sizeBefore, before: after, after: before}) = this.chunks[i]
-      } else {
-        ({sizeBefore, sizeAfter, before, after}) = this.chunks[i]
-      }
-
-      if (type == (sizeBefore == sizeAfter ? "normal" : sizeBefore ? "deleted" : "inserted")) {
-        let value = f(before, sizeBefore, after, sizeAfter, off++)
-        if (value != null) return value
-      }
-    }
+  chunk(before, size, after) {
+    if (before.cmp(after))
+      this.chunks.push(new MovedChunk(before, size, after))
   }
 
   mapDir(pos, back, offset) {
-    if (offset && offset.rangeID != null)
-      return this.iterChunks(back, "inserted", (_before, _sizeBefore, after, _sizeAfter, i) => {
-        if (i == offset.rangeID) return after.extend(offset.offset)
-      })
+    let deleted = (back ? this.inserted : this.deleted)
+    let inserted = (back ? this.deleted : this.inserted)
 
-    let normal = this.iterChunks(back, "normal", (before, sizeBefore, after) => {
-      if (isInChunk(pos, before, sizeBefore)) {
-        let depth = before.path.length
-        if (pos.path.length > depth) {
-          let offset = after.offset + (pos.path[depth] - before.offset)
-          return new Pos(after.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset)
-        } else {
-          return new Pos(after.path, after.offset + (pos.offset - before.offset))
+    if (offset && offset.chunkID != null)
+      return inserted.chunks[offset.chunkID].start.extend(offset.offset)
+
+    if (deleted) {
+      let front = pos.cmp(deleted.from), back = pos.cmp(deleted.to)
+      if (front >= 0 && back <= 0) {
+        if (offset) {
+          let found = findInChunks(pos, deleted.chunks, false)
+          if (found == null) throw new Error("Deleted chunks don't cover deleted area")
+          offset({chunkID: found,
+                  offset: pos.baseOn(deleted.chunks[found].start),
+                  inside: !!(front && back)})
         }
+        return deleted.ref
       }
-    })
-    if (normal) return normal
+    }
 
-    let deleted = this.iterChunks(back, "deleted", (before, sizeBefore, after, _, i) => {
-      if (isInChunk(pos, before, sizeBefore)) {
-        if (offset) offset({rangeID: i, offset: pos.baseOn(before)})
-        return Pos.after(this.doc, after) || Pos.before(this.doc, after)
-      }
-    })
+    let found = findInChunks(pos, this.chunks, back)
+    if (found == null) return pos
 
-    return deleted || pos
+    let chunk = this.chunks[found]
+    let start = back ? chunk.dest : chunk.start, dest = back ? chunk.start : chunk.dest
+    let depth = start.path.length
+    if (pos.path.length > depth) {
+      let offset = dest.offset + (pos.path[depth] - start.offset)
+      return new Pos(dest.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset)
+    } else {
+      return new Pos(dest.path, dest.offset + (pos.offset - start.offset))
+    }
   }
 
   map(pos, offset = null) { return this.mapDir(pos, false, offset) }

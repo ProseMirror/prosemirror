@@ -1,5 +1,5 @@
 import {Pos, Node, slice, inline} from "../model"
-import {defineTransform, Result, flatTransform} from "./transform"
+import {Collapsed, defineTransform, Result, flatTransform} from "./transform"
 import {glue} from "./replace"
 
 export function selectedSiblings(doc, from, to) {
@@ -220,10 +220,11 @@ defineTransform("insert", function(doc, params) {
 
   let block = params.node || new Node(params.type, null, params.attrs)
   let parent = copy.path(pos.path)
-  result.chunk(pos, 0, pos, 1)
-  result.chunk(pos, parent.content.length - pos.offset,
-               new Pos(pos.path, pos.offset + 1))
   parent.content.splice(pos.offset, 0, block)
+  result.inserted = new Collapsed(pos, new Pos(pos.path, pos.offset + 1), Pos.near(copy, pos))
+  result.inserted.chunk(pos, 1)
+  result.chunk(pos, parent.content.length - pos.offset + 1,
+               new Pos(pos.path, pos.offset + 1))
 
   return result
 })
@@ -234,8 +235,9 @@ defineTransform("remove", function(doc, params) {
   let result = new Result(doc, copy)
 
   let parent = copy.path(pos.path)
-  result.chunk(pos, 1, pos, 0)
-  result.chunk(new Pos(pos.path, pos.offset + 1), parent.content.length - pos.offset - 1, pos)
   parent.content.splice(pos.offset, 1)
+  result.deleted = new Collapsed(pos, new Pos(pos.path, pos.offset + 1), Pos.near(copy, pos))
+  result.deleted.chunk(pos, 1)
+  result.chunk(new Pos(pos.path, pos.offset + 1), parent.content.length - pos.offset, pos)
   return result
 })

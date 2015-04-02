@@ -23,7 +23,7 @@ export function mapPosition(back, forward, pos) {
   let offsets = Object.create(null)
   let current, deleted = false
   function storeOffset(offset) { offsets[current.id] = offset }
-  function setDeleted() { deleted = true }
+  function setDeleted(offset) { if (offset.inside) deleted = true }
 
   for (let i = back.length - 1; i >= 0; i--) {
     current = back[i]

@@ -112,3 +112,5 @@ function findBefore(node, pos, path) {
 
 Pos.before = function(node, pos) { return findBefore(node, pos, []) }
 Pos.end = function(node) { return findRight(node, []) }
+
+Pos.near = function(node, pos) { return Pos.after(node, pos) || Pos.before(node, pos) }

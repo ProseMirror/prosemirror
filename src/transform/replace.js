@@ -1,5 +1,5 @@
 import {Pos, Node, style, inline, slice} from "../model"
-import {defineTransform, Result} from "./transform"
+import {Collapsed, defineTransform, Result} from "./transform"
 
 function nodesLeft(doc, depth) {
   let nodes = []
@@ -91,45 +91,45 @@ function posRight(node, depth) {
   return new Pos(path, node.maxOffset)
 }
 
-function addDeletedChunksAfter(result, node, pos, ref, depth) {
+function addDeletedChunksAfter(del, node, pos, depth) {
   if (depth == pos.path.length) {
-    result.chunk(pos, node.maxOffset - pos.offset, ref, 0)
+    del.chunk(pos, node.maxOffset - pos.offset)
   } else {
     let n = pos.path[depth]
-    addDeletedChunksAfter(result, node.content[n], pos, ref, depth + 1)
+    addDeletedChunksAfter(del, node.content[n], pos, depth + 1)
     let size = node.content.length - n - 1
     if (size)
-      result.chunk(new Pos(pos.path.slice(0, depth), n + 1), size, ref, 0)
+      del.chunk(new Pos(pos.path.slice(0, depth), n + 1), size)
   }
 }
 
-function addDeletedChunksBefore(result, node, pos, ref, depth) {
+function addDeletedChunksBefore(del, node, pos, depth) {
   if (depth == pos.path.length) {
-    result.chunk(new Pos(pos.path, 0), pos.offset, ref, 0)
+    del.chunk(new Pos(pos.path, 0), pos.offset)
   } else {
     let n = pos.path[depth]
-    if (n) result.chunk(new Pos(pos.path.slice(0, depth), 0), n, ref, 0)
-    addDeletedChunksBefore(result, node.content[n], pos, ref, depth + 1)
+    if (n) del.chunk(new Pos(pos.path.slice(0, depth), 0), n)
+    addDeletedChunksBefore(del, node.content[n], pos, depth + 1)
   }    
 }
 
-function addDeletedChunks(result, node, from, to, ref, depth = 0) {
+function addDeletedChunks(del, node, from, to, depth = 0) {
   var fromEnd = depth == from.path.length, toEnd = depth == to.path.length
   if (!fromEnd && !toEnd && from.path[depth] == to.path[depth]) {
-    addDeletedChunks(result, node.content[from.path[depth]], from, to, ref, depth + 1)
+    addDeletedChunks(del, node.content[from.path[depth]], from, to, depth + 1)
   } else if (fromEnd && toEnd) {
-    result.chunk(from, to.offset - from.offset, ref, 0)
+    del.chunk(from, to.offset - from.offset)
   } else {
     let start = from.offset
     if (!fromEnd) {
       start = from.path[depth] + 1
-      addDeletedChunksAfter(result, node.content[start - 1], from, ref, depth + 1)
+      addDeletedChunksAfter(del, node.content[start - 1], from, depth + 1)
     }
     let end = toEnd ? to.offset : to.path[depth]
     if (end != start)
-      result.chunk(new Pos(from.path.slice(0, depth), start), end - start, ref, 0)
+      del.chunk(new Pos(from.path.slice(0, depth), start), end - start)
     if (!toEnd)
-      addDeletedChunksBefore(result, node.content[end], to, ref, depth + 1)
+      addDeletedChunksBefore(del, node.content[end], to, depth + 1)
   }
 }
 
@@ -153,22 +153,25 @@ defineTransform("replace", function(doc, params) {
       liberal: true
     })
     depthAfter = end.path.length
+    result.inserted = new Collapsed(from, null, to)
     for (let i = 0; i < middleChunks.length; i++) {
       let chunk = middleChunks[i]
       let start = chunk.after, size = chunk.size
       if (i == middleChunks.length - 1) {
         depthAfter += chunk.after.path.length - chunk.before.path.length
         for (let depth = chunk.before.path.length + 1; depth <= end.path.length; depth++) {
-          result.chunk(to, 0, start, size - 1)
+          result.inserted.chunk(start, size - 1)
           start = new Pos(start.path.concat(start.offset + size - 1), 0)
           size = depth == end.path.length ? end.offset : end.path[depth]
         }
       }
-      result.chunk(to, 0, start, size)
+      result.inserted.chunk(start, size)
     }
+    result.inserted.to = Pos.end(output) // FIXME is this robust?
   } else {
     if (params.text) {
-      result.chunk(from, 0, from, params.text.length)
+      result.inserted = new Collapsed(from, new Pos(from.path, from.offset + params.text.length))
+      result.inserted.chunk(from, params.text.length)
       let block = output.path(from.path), end = block.content.length
       if (!block.type.contains == "inline")
         throw new Error("Can not insert text at a non-inline position")
@@ -176,12 +179,13 @@ defineTransform("replace", function(doc, params) {
       block.content.push(Node.text(params.text, styles))
       inline.stitchTextNodes(block, end)
     } else {
-      result.chunk(from, 0, from, 0)
+//      result.chunk(from, 0, from, 0)
     }
     depthAfter = from.path.length
   }
-  
-  addDeletedChunks(result, doc, from, to, posRight(output, depthAfter))
+
+  result.deleted = new Collapsed(from, to, posRight(output, depthAfter))
+  addDeletedChunks(result.deleted, doc, from, to)
   glue(output, depthAfter, right, to, {result: result})
 
   return result
