@@ -63,8 +63,8 @@ export class VersionStore {
     while (id != oldID) {
       let version = this.versions[parent]
       trs.unshift(find(version.children, xorIDs(id, parent)))
-      parent = version.parent
       id = parent
+      parent = version.parent
     }
     return trs
   }

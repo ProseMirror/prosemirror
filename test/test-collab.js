@@ -1,7 +1,7 @@
 import {doc, blockquote, h1, p, li, ol, ul, em, a, br} from "./build"
 import Failure from "./failure"
 import tests from "./tests"
-import {cmpNode} from "./cmp"
+import {cmpNode, cmpStr} from "./cmp"
 
 import {Transition, VersionStore} from "../src/collab/versions"
 import {mergeChangeSets, mapPosition, rebaseChanges} from "../src/collab/rebase"
@@ -73,6 +73,18 @@ function runRebase(startDoc, clients, result) {
 
   let rebased = rebaseChanges(nullID, allChanges, store)
   cmpNode(rebased.doc, result)
+  for (let tag in startDoc.tag) {
+    let mapped = mapPosition([], rebased.forward, startDoc.tag[tag])
+    let expected = result.tag[tag]
+    if (mapped.deleted) {
+      if (expected)
+        throw new Failure("Tag " + tag + " was unexpectedly deleted")
+    } else {
+      if (!expected)
+        throw new Failure("Tag " + tag + " is not actually deleted")
+      cmpStr(mapped.pos, expected, tag)
+    }
+  }
 }
 
 function rebase(name, startDoc, ...clients) {
@@ -80,8 +92,69 @@ function rebase(name, startDoc, ...clients) {
   tests["rebase_" + name] = () => runRebase(startDoc, clients, result)
 }
 
-rebase("type_simple",
-       doc(p("h<1>ell<2>o")),
-       [{name: "insertText", pos: "1", text: "X"}],
-       [{name: "insertText", pos: "2", text: "Y"}],
-       doc(p("hXellYo")))
+function permute(array) {
+  if (array.length < 2) return [array]
+  let result = []
+  for (let i = 0; i < array.length; i++) {
+    let others = permute(array.slice(0, i).concat(array.slice(i + 1)))
+    for (let j = 0; j < others.length; j++)
+      result.push([array[i]].concat(others[j]))
+  }
+  return result
+}
+
+function rebase$(name, startDoc, ...clients) {
+  let result = clients.pop()
+  tests["rebase_" + name] = () => {
+    permute(clients).forEach(clients => runRebase(startDoc, clients, result))
+  }
+}
+
+rebase$("type_simple",
+        doc(p("h<1>ell<2>o")),
+        [{name: "insertText", pos: "1", text: "X"}],
+        [{name: "insertText", pos: "2", text: "Y"}],
+        doc(p("hX<1>ellY<2>o")))
+
+rebase$("type_simple_multiple",
+        doc(p("h<1>ell<2>o")),
+        [{name: "insertText", pos: "1", text: "X"},
+         {name: "insertText", pos: "1", text: "Y"},
+         {name: "insertText", pos: "1", text: "Z"}],
+        [{name: "insertText", pos: "2", text: "U"},
+         {name: "insertText", pos: "2", text: "V"}],
+        doc(p("hXYZ<1>ellUV<2>o")))
+
+rebase$("type_simple",
+        doc(p("h<1>ell<2>o")),
+        [{name: "insertText", pos: "2", text: "Y"}],
+        [{name: "insertText", pos: "1", text: "X"}],
+        doc(p("hX<1>ellY<2>o")))
+
+rebase$("type_simple_multiple",
+        doc(p("h<1>ell<2>o")),
+        [{name: "insertText", pos: "2", text: "U"},
+         {name: "insertText", pos: "2", text: "V"}],
+        [{name: "insertText", pos: "1", text: "X"},
+         {name: "insertText", pos: "1", text: "Y"},
+         {name: "insertText", pos: "1", text: "Z"}],
+        doc(p("hXYZ<1>ellUV<2>o")))
+
+rebase$("type_three",
+        doc(p("h<1>ell<2>o th<3>ere")),
+        [{name: "insertText", pos: "1", text: "X"}],
+        [{name: "insertText", pos: "2", text: "Y"}],
+        [{name: "insertText", pos: "3", text: "Z"}],
+        doc(p("hX<1>ellY<2>o thZ<3>ere")))
+
+rebase$("wrap",
+        doc(p("<1>hell<2>o<3>")),
+        [{name: "insertText", pos: "2", text: "X"}],
+        [{name: "wrap", pos: "1", end: "3", type: "blockquote"}],
+        doc(blockquote(p("<1>hellX<2>o<3>"))))
+
+rebase("delete",
+       doc(p("hello<1> wo<2>rld<3>")),
+       [{name: "replace", pos: "1", end: "3"}],
+       [{name: "insertText", pos: "2", text: "X"}],
+       doc(p("hello<1><3>")))
