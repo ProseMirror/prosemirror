@@ -1,4 +1,4 @@
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br} from "./build"
+import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 import Failure from "./failure"
 import {cmpNode} from "./cmp"
 import tests from "./tests"
@@ -102,3 +102,15 @@ recover("wrap_paragraph",
 recover("extra_div",
         "<div><p>one</p><p>two</p></div>",
         doc(p("one"), p("two")))
+
+recover("ignore_whitespace",
+        " <blockquote> <p>woo  \n  <em> hooo</em></p> </blockquote> ",
+        doc(blockquote(p("woo ", em("hooo")))))
+
+recover("find_place",
+        "<ul class=\"tight\"><li>hi</li><p>whoah</p><li>again</li></ul>",
+        doc(ul(li(p("hi")), li(p("whoah")), li(p("again")))))
+
+recover("move_up",
+        "<p>hello<hr/>bye</p>",
+        doc(p("hello"), hr, p("bye")))

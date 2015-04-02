@@ -1,4 +1,4 @@
-import {doc, blockquote, hr, pre, pre2, h1, h2, p, li, ol, ul, uldash, em, strong, code, a, a2, br, img} from "./build"
+import {doc, blockquote, hr2, pre, pre2, h1, h2, p, li, ol, ul, uldash, em, strong, code, a, a2, br, img} from "./build"
 import {cmpNode, cmpStr} from "./cmp"
 import tests from "./tests"
 
@@ -58,4 +58,4 @@ t("break",
 
 t("horizontal_rule",
   "one two\n\n---\n\nthree",
-  doc(p("one two"), hr, p("three")))
+  doc(p("one two"), hr2, p("three")))

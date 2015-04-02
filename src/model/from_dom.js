@@ -4,7 +4,9 @@ import * as style from "./style"
 export default function fromDOM(dom, options) {
   if (!options) options = {}
   let context = new Context(options.topNode || new Node("doc"))
-  context.addContent(dom, options.from || 0, options.to != null ? options.to : dom.childNodes.length)
+  let start = options.from ? dom.childNodes[options.from] : dom.firstChild
+  let end = options.to != null && dom.childNodes[options.to] || null
+  context.addAll(start, end, true)
   return context.stack[0]
 }
 
@@ -19,7 +21,6 @@ const blockElements = {
 class Context {
   constructor(topNode) {
     this.stack = [topNode]
-    this.frames = []
     this.styles = []
     this.closing = false
   }
@@ -30,7 +31,14 @@ class Context {
 
   addDOM(dom) {
     if (dom.nodeType == 3) {
-      this.insert(Node.text(dom.nodeValue, this.styles))
+      let value = dom.nodeValue
+      let top = this.top, inline = top.type.contains == "inline"
+      if (/\S/.test(value) || inline) {
+        value = value.replace(/\s+/g, " ")
+        if (/^\s/.test(value) && top.content.length && /\s$/.test(top.content[top.content.length - 1].text))
+          value = value.slice(1)
+        this.insert(Node.text(value, this.styles))
+      }
     } else if (dom.nodeType != 1) {
       // Ignore non-text non-element nodes
     } else if (dom.hasAttribute("pm-html")) {
@@ -44,50 +52,68 @@ class Context {
       if (name in tags) {
         tags[name](dom, this)
       } else {
-        this.addContent(dom)
+        this.addAll(dom.firstChild, null)
         if (blockElements.hasOwnProperty(name) && this.top.type == Node.types.paragraph)
           this.closing = true
       }
     }
   }
 
-  addContent(dom, start = 0, end = dom.childNodes.length) {
-    for (let i = start; i < end; i++)
-      this.addDOM(dom.childNodes[i])
+  addAll(from, to, sync) {
+    let stack = sync && this.stack.slice()
+    for (let dom = from; dom != to; dom = dom.nextSibling) {
+      this.addDOM(dom)
+      if (sync && blockElements.hasOwnProperty(dom.nodeName.toLowerCase()))
+        this.sync(stack)
+    }
+  }
+
+  doClose() {
+    if (!this.closing) return
+    let left = this.stack.pop().copy()
+    this.top.push(left)
+    this.stack.push(left)
+    this.closing = false
   }
 
   insert(node) {
-    if (this.closing) {
-      let left = this.stack.pop().copy()
-      this.top.push(left)
-      this.stack.push(left)
-      this.closing = false
-    }
-    let top = this.stack[this.stack.length - 1]
-    if (top.type.contains == node.type.type) {
-      top.push(node)
+    if (this.top.type.contains == node.type.type) {
+      this.doClose()
     } else {
-      let route = Node.findConnection(top.type, node.type)
-      if (!route) return false
-      for (let i = 0; i < route.length; i++)
-        this.enter(new Node(route[i]), false)
-      this.top.push(node)
+      for (let i = this.stack.length - 1; i >= 0; i--) {
+        let route = Node.findConnection(this.stack[i].type, node.type)
+        if (!route) continue
+        if (i == this.stack.length - 1)
+          this.doClose()
+        else
+          this.stack.length = i + 1
+        for (let j = 0; j < route.length; j++) {
+          let wrap = new Node(route[j])
+          this.top.push(wrap)
+          this.stack.push(wrap)
+        }
+        if (this.styles.length) this.styles = []
+        break
+      }
     }
-    return true
+    this.top.push(node)
   }
 
-  enter(node, isFrame) {
-    // FIXME is it really okay to discard what we can't place?
-    if (!this.insert(node)) return false
+  enter(node) {
+    this.insert(node)
     if (this.styles.length) this.styles = []
-    if (isFrame !== false)
-      this.frames.push(this.stack.length)
     this.stack.push(node)
-    return true
   }
 
-  leave() {
-    this.stack.length = this.frames.pop()
+  sync(stack) {
+    while (this.stack.length > stack.length) this.stack.pop()
+    while (!stack[this.stack.length - 1].sameMarkup(stack[this.stack.length - 1])) this.stack.pop()
+    while (stack.length > this.stack.length) {
+      let add = stack[this.stack.length].copy()
+      this.top.push(add)
+      this.stack.push(add)
+    }
+    if (this.styles.length) this.styles = []
     this.closing = false
   }
 }
@@ -95,10 +121,9 @@ class Context {
 const tags = Object.create(null)
 
 function wrap(dom, context, node) {
-  if (context.enter(node)) {
-    context.addContent(dom)
-    context.leave()
-  }
+  context.enter(node)
+  context.addAll(dom.firstChild, null, true)
+  context.stack.pop()
 }
 
 function wrapAs(type) {
@@ -108,7 +133,7 @@ function wrapAs(type) {
 function inline(dom, context, added) {
   var old = context.styles
   context.styles = style.add(old, added)
-  context.addContent(dom)
+  context.addAll(dom.firstChild, null)
   context.styles = old
 }
 
@@ -163,5 +188,5 @@ tags.img = (dom, context) => {
   let attrs = {src: dom.getAttribute("src"),
                title: dom.getAttribute("title") || null,
                alt: dom.getAttribute("alt") || null}
-  context.insert(new Node.Inline("image", null, attrs))
+  context.insert(new Node.Inline("image", null, null, attrs))
 }
