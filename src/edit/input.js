@@ -173,6 +173,8 @@ handlers.copy = handlers.cut = (pm, e) => {
   }
 }
 
+// FIXME support markup-less form of paste when shift is held
+
 handlers.paste = (pm, e) => {
   if (!e.clipboardData) return
   let sel = pm.selection

@@ -1,4 +1,4 @@
 import ProseMirror from "./main"
-import {defineOption} from "./options"
-
-export {ProseMirror, defineOption}
+export {defineOption} from "./options"
+export {Range} from "./selection"
+export {ProseMirror}

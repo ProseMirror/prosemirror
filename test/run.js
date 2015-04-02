@@ -13,6 +13,7 @@ import "./test-style"
 import "./test-block"
 import "./test-inline"
 import "./test-dom"
+import "./test-collab"
 
 for (let name in tests) {
   if (filter && name.indexOf(filter) == -1) continue

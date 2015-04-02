@@ -1,5 +1,5 @@
 import {doc, blockquote, hr, pre, pre2, h1, h2, p, li, ol, ul, uldash, em, strong, code, a, a2, br, img} from "./build"
-import * as cmp from "./cmp"
+import {cmpNode, cmpStr} from "./cmp"
 import tests from "./tests"
 
 import fromText from "../src/markdown/from_text"
@@ -7,8 +7,8 @@ import toText from "../src/markdown/to_text"
 
 function t(name, text, doc) {
   tests["parse_" + name] = function() {
-    cmp.node(fromText(text), doc)
-    cmp.simple(toText(doc), text)
+    cmpNode(fromText(text), doc)
+    cmpStr(toText(doc), text)
   }
 }
 

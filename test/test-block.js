@@ -1,6 +1,5 @@
 import {doc, blockquote, h1, p, li, ol, ul, em, a, br} from "./build"
 
-import Failure from "./failure"
 import tests from "./tests"
 import {testTransform} from "./cmp"
 

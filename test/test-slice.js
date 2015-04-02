@@ -2,18 +2,18 @@ import {doc, p, li, ul, em, a} from "./build"
 
 import Failure from "./failure"
 import tests from "./tests"
-import * as cmp from "./cmp"
+import {cmpNode} from "./cmp"
 
 import {slice} from "../src/model"
 
 function t(name, doc, expect) {
   tests["slice_" + name] = function() {
     if (doc.tag.a && doc.tag.b)
-      cmp.node(slice.between(doc, doc.tag.a, doc.tag.b), expect)
+      cmpNode(slice.between(doc, doc.tag.a, doc.tag.b), expect)
     else if (doc.tag.a)
-      cmp.node(slice.before(doc, doc.tag.a), expect)
+      cmpNode(slice.before(doc, doc.tag.a), expect)
     else
-      cmp.node(slice.after(doc, doc.tag.b), expect)
+      cmpNode(slice.after(doc, doc.tag.b), expect)
   }
 }
 

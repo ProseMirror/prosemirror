@@ -60,7 +60,7 @@ export default class ProseMirror {
     if (result.doc != this.doc) {
       this.update(result.doc,
                   new Range(result.map(sel.anchor), result.map(sel.head)))
-      this.signal("transform", params)
+      this.signal("transform", params, result)
       return result
     }
     return false

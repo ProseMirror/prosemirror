@@ -1,6 +1,6 @@
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br} from "./build"
 import Failure from "./failure"
-import * as cmp from "./cmp"
+import {cmpNode} from "./cmp"
 import tests from "./tests"
 
 import xmlDOM from "xmldom"
@@ -29,7 +29,7 @@ function t(name, doc, dom) {
     if (derivedText != declaredText)
       throw new Failure("DOM text mismatch: " + derivedText + " vs " + declaredText)
 
-    cmp.node(doc, fromDOM(derivedDOM.documentElement))
+    cmpNode(doc, fromDOM(derivedDOM.documentElement))
   }
 }
 
@@ -79,7 +79,7 @@ t("code_block",
 
 function recover(name, html, doc) {
   tests["dom_recover_" + name] = function() {
-    cmp.node(fromDOM(domFor(html)), doc)
+    cmpNode(fromDOM(domFor(html)), doc)
   }
 }
 

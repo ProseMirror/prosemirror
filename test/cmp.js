@@ -2,7 +2,7 @@ import Failure from "./failure"
 import {style} from "../src/model"
 import {applyTransform} from "../src/transform"
 
-export function node(a, b) {
+export function cmpNode(a, b) {
   function raise(msg, path) {
     throw new Failure(msg + " at " + path + " in " + a + " vs " + b)
   }
@@ -28,7 +28,7 @@ export function node(a, b) {
   inner(a, b, "doc")
 }
 
-export function simple(a, b, comment) {
+export function cmpStr(a, b, comment) {
   let as = a.toString(), bs = b.toString()
   if (as != bs)
     throw new Failure("expected " + bs + ", got " + as + (comment ? " (" + comment + ")" : ""))
@@ -37,11 +37,11 @@ export function simple(a, b, comment) {
 export function testTransform(doc, expect, params) {
   let orig = doc.toString()
   let result = applyTransform(doc, params)
-  node(result.doc, expect)
-  simple(doc, orig, "immutable")
+  cmpNode(result.doc, expect)
+  cmpStr(doc, orig, "immutable")
   for (let pos in expect.tag) {
     let offset, mapped = result.map(doc.tag[pos], p => offset = p)
-    simple(mapped, expect.tag[pos], pos)
-    simple(result.mapBack(mapped, offset), doc.tag[pos], pos + " back")
+    cmpStr(mapped, expect.tag[pos], pos)
+    cmpStr(result.mapBack(mapped, offset), doc.tag[pos], pos + " back")
   }
 }
