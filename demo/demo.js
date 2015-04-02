@@ -1,24 +1,47 @@
 import ProseMirror from "../src/edit/main"
-import {Node} from "../src/model"
+import {Node, fromDOM, toDOM} from "../src/model"
 import "../src/inputrules/autoinput"
 import "../src/menu/inlinetooltip"
 import "../src/menu/menu"
 
-let doc = new Node("doc", [
-  new Node("heading", [Node.text("Hello!")], {level: 1}),
-  new Node("horizontal_rule"),
-  new Node("paragraph", [Node.text("This is a "), Node.text("Markdown", [{type: "strong"}]), Node.text(" editor")]),
-  new Node("ordered_list", [
-    new Node("list_item", [new Node("paragraph", [Node.text("With a")])]),
-    new Node("list_item", [new Node("paragraph", [Node.text("List of")])]),
-    new Node("list_item", [new Node("paragraph", [Node.text("Three items")])])
-  ])
-])
+import jsBeautify from "js-beautify"
+
+let te = document.querySelector("#content")
 
 let pm = window.pm = new ProseMirror({
   place: document.body,
-  doc: doc,
   autoInput: true,
   inlineTooltip: true,
   menu: {followCursor: true}
 });
+
+fromHTML()
+
+function toHTML() {
+  let dummy = document.createElement("div")
+  dummy.appendChild(toDOM(pm.doc, {document: document}))
+  te.value = jsBeautify.html(dummy.innerHTML, {
+    indent_size: 2,
+    preserve_newlines: false
+  })
+
+  te.style.display = ""
+  pm.wrapper.style.display = "none"
+}
+
+function fromHTML() {
+  let dummy = document.createElement("div")
+  dummy.innerHTML = te.value
+  pm.update(fromDOM(dummy))
+
+  te.style.display = "none"
+  pm.wrapper.style.display = ""
+  
+}
+
+document.querySelector("input[value=\"editor\"]").addEventListener("change", e => {
+  if (e.target.checked) fromHTML()
+})
+document.querySelector("input[value=\"html\"]").addEventListener("change", e => {
+  if (e.target.checked) toHTML()
+})
