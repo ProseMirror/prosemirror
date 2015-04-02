@@ -108,8 +108,8 @@ function inputText(pm, range, text) {
 }
 
 handlers.keypress = (pm, e) => {
-  if (e.ctrlKey && !e.altKey || dom.mac && e.metaKey) return
-  let ch = String.fromCharCode(e.charCode == null ? e.keyCode : e.charCode)
+  if (!e.charCode || e.ctrlKey && !e.altKey || dom.mac && e.metaKey) return
+  let ch = String.fromCharCode(e.charCode)
   if (dispatchKey(pm, "'" + ch + "'", e)) return
   inputText(pm, pm.selection, ch)
   e.preventDefault()
