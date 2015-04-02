@@ -66,7 +66,7 @@ function delBlockBackward(pm, pos) {
     if (iBefore)
       pm.apply({name: "replace", pos: iBefore, end: pos})
     else if (bBefore)
-      pm.apply({name: "remove", pos: bBefore})
+      pm.apply({name: "remove", pos: pos, direction: "before"})
     else
       return false
   } else {
@@ -123,7 +123,7 @@ function delBlockForward(pm, pos) {
   if (iAfter)
     pm.apply({name: "replace", pos: pos, end: iAfter})
   else if (bAfter)
-    pm.apply({name: "remove", pos: bAfter})
+    pm.apply({name: "remove", pos: pos, direction: "after"})
   else
     return false
 }
@@ -222,7 +222,7 @@ function insertOpaqueBlock(pm, type, attrs) {
     pm.apply({name: "split", pos: sel.head})
     sel = pm.selection
   }
-  pm.apply({name: "insert", pos: sel.head.shorten(), type: type, attrs: attrs})
+  pm.apply({name: "insert", pos: sel.head, direction: "before", type: type, attrs: attrs})
 }
 
 commands.insertRule = pm => insertOpaqueBlock(pm, "horizontal_rule")

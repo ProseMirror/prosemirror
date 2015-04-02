@@ -76,7 +76,7 @@ export class InsertBlockItem extends Item {
       pm.apply({name: "split", pos: sel.head})
       sel = pm.selection
     }
-    pm.apply({name: "insert", pos: sel.head.shorten(), type: this.type, attrs: this.attrs})
+    pm.apply({name: "insert", pos: sel.head, direction: "before", type: this.type, attrs: this.attrs})
   }
 }
 

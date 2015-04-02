@@ -119,28 +119,38 @@ t("split", "list_item",
   doc(ol(li(p("one<1>")), li(p("two")), li(p("<a>three")), li(p("four<2>")))),
   {depth: 2})
 
-t("insert", "simple",
-  doc(p("one<1>"), p("two<2>")),
-  doc(p("one<1>"), p(), p("two<2>")),
-  {pos: new Pos([], 1, false), type: "paragraph"})
+t("insert", "simple_after",
+  doc(p("one<a>"), p("two<2>")),
+  doc(p("one<a>"), p(), p("two<2>")),
+  {direction: "after", type: "paragraph"})
+t("insert", "simple_before",
+  doc(p("one"), p("<a>two")),
+  doc(p("one"), p(), p("<a>two")),
+  {direction: "before", type: "paragraph"})
 t("insert", "end_of_blockquote",
-  doc(blockquote(p("he<before>y")), p("after<after>")),
+  doc(blockquote(p("he<before>y<a>")), p("after<after>")),
   doc(blockquote(p("he<before>y"), p()), p("after<after>")),
-  {pos: new Pos([0], 1, false), type: "paragraph"})
+  {direction: "after", type: "paragraph"})
 t("insert", "start_of_blockquote",
-  doc(blockquote(p("he<1>y")), p("after<2>")),
+  doc(blockquote(p("<a>he<1>y")), p("after<2>")),
   doc(blockquote(p(), p("he<1>y")), p("after<2>")),
-  {pos: new Pos([0], 0, false), type: "paragraph"})
+  {direction: "before", type: "paragraph"})
 
-t("remove", "simple",
-  doc(p("<1>one"), p("tw<2>o"), p("<3>three")),
+t("remove", "simple_after",
+  doc(p("<1>one<a>"), p("tw<2>o"), p("<3>three")),
   doc(p("<1>one"), p("<2><3>three")),
- {pos: new Pos([], 1, false)})
+  {direction: "after"})
+t("remove", "simple_before",
+  doc(p("one"), p("two"), p("<a>three")),
+  doc(p("one"), p("three")),
+  {direction: "before"})
+t("remove", "simple_self",
+  doc(p("one"), p("<a>two"), p("three")),
+  doc(p("one"), p("three")))
 t("remove", "only",
-  doc(blockquote(p("hi"))),
-  doc(blockquote()),
-  {pos: new Pos([0], 0, false)})
+  doc(blockquote(p("<a>hi"))),
+  doc(blockquote()))
 t("remove", "outside_path",
-  doc(blockquote(p("a"), p("b")), p("c<1>")),
+  doc(blockquote(p("a<a>"), p("b")), p("c<1>")),
   doc(blockquote(p("a")), p("c<1>")),
-  {pos: new Pos([0], 1, false)})
+  {direction: "after"})

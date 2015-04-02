@@ -214,7 +214,7 @@ defineTransform("split", function(doc, params) {
 })
 
 defineTransform("insert", function(doc, params) {
-  let pos = params.pos
+  let pos = params.pos.shorten(null, params.direction == "before" ? 0 : 1)
   let copy = slice.around(doc, pos.path)
   let result = new Result(doc, copy)
 
@@ -231,6 +231,20 @@ defineTransform("insert", function(doc, params) {
 
 defineTransform("remove", function(doc, params) {
   let pos = params.pos
+  let dir = params.direction == "before" ? -1 : params.direction == "after" ? 1 : 0
+  pos = pos.shorten(null, dir)
+  if (dir == -1) {
+    while (pos.offset < 0) {
+      if (pos.path.length) pos = pos.shorten(null, -1)
+      else return flatTransform(doc)
+    }
+  } else if (dir == 1) {
+    while (pos.offset == doc.path(pos.path).content.length) {
+      if (pos.path.length) pos = pos.shorten(null, 1)
+      else return flatTransform(doc)
+    }
+  }
+  
   let copy = slice.around(doc, pos.path)
   let result = new Result(doc, copy)
 
