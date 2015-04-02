@@ -6,7 +6,7 @@ import {cmpNode, cmpStr} from "./cmp"
 import {Transition, VersionStore} from "../src/collab/versions"
 import {mergeChangeSets, mapPosition, rebaseChanges} from "../src/collab/rebase"
 import {nullID, xorIDs, randomID} from "../src/collab/id"
-import {Pos} from "../src/model"
+import {Pos, style} from "../src/model"
 import {applyTransform} from "../src/transform"
 
 function merge(name, known, add, expect) {
@@ -153,8 +153,52 @@ rebase$("wrap",
         [{name: "wrap", pos: "1", end: "3", type: "blockquote"}],
         doc(blockquote(p("<1>hellX<2>o<3>"))))
 
-rebase("delete",
-       doc(p("hello<1> wo<2>rld<3>")),
+rebase$("delete",
+        doc(p("hello<1> wo<2>rld<3>!")),
+        [{name: "replace", pos: "1", end: "3"}],
+        [{name: "insertText", pos: "2", text: "X"}],
+        doc(p("hello<1><3>!")))
+
+rebase("delete_twice",
+       doc(p("hello<1> wo<2>rld<3>!")),
        [{name: "replace", pos: "1", end: "3"}],
-       [{name: "insertText", pos: "2", text: "X"}],
-       doc(p("hello<1><3>")))
+       [{name: "replace", pos: "1", end: "3"}],
+       doc(p("hello<1><3>!")))
+
+rebase$("join",
+        doc(ul(li(p("one")), li(p("<1>tw<2>o")))),
+        [{name: "insertText", pos: "2", text: "A"}],
+        [{name: "join", pos: "1"}],
+        doc(ul(li(p("one"), p("<1>twA<2>o")))))
+
+rebase$("style",
+        doc(p("hello <1>wo<2>rld<3>")),
+        [{name: "addStyle", style: style.em, pos: "1", end: "3"}],
+        [{name: "insertText", pos: "2", text: "_"}],
+        doc(p("hello <1>", em("wo_<2>rld<3>"))))
+
+rebase("style_unstyle",
+       doc(p("hello <1>world<2>")),
+       [{name: "addStyle", style: style.em, pos: "1", end: "2"}],
+       [{name: "removeStyle", style: style.em, pos: "1", end: "2"}],
+       doc(p("hello <1>world<2>")))
+
+rebase("unstyle_style",
+       doc(p("hello ", em("<1>world<2>"))),
+       [{name: "removeStyle", style: style.em, pos: "1", end: "2"}],
+       [{name: "addStyle", style: style.em, pos: "1", end: "2"}],
+       doc(p("hello ", em("<1>world<2>"))))
+
+rebase("replace_nested",
+       doc(p("b<before>efore"), blockquote(ul(li(p("o<1>ne")), li(p("t<2>wo")), li(p("thr<3>ee")))), p("a<after>fter")),
+       [{name: "replace", pos: "1", end: "3",
+         source: doc(p("a"), blockquote(p("b")), p("c")), from: new Pos([0], 1), to: new Pos([2], 0)}],
+       [{name: "insertText", pos: "2", text: "ayay"}],
+       doc(p("b<before>efore"), blockquote(ul(li(p("o")))), blockquote(p("b")), p("<1><3>ee"), p("a<after>fter")))
+
+rebase$("map_through_insert",
+        doc(p("X<1>X<2>X")),
+        [{name: "insertText", pos: "1", text: "hello"}],
+        [{name: "insertText", pos: "2", text: "goodbye"},
+         {name: "replace", pos: "2-6", end: "2-3"}],
+        doc(p("Xhello<1>Xgbye<2>X")))
