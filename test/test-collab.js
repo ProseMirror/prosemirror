@@ -202,3 +202,21 @@ rebase$("map_through_insert",
         [{name: "insertText", pos: "2", text: "goodbye"},
          {name: "replace", pos: "2-6", end: "2-3"}],
         doc(p("Xhello<1>Xgbye<2>X")))
+
+rebase("double_remove",
+       doc(p("a"), p("b<1>"), p("c")),
+       [{name: "remove", pos: "1"}],
+       [{name: "remove", pos: "1"}],
+       doc(p("a"), p("c")))
+
+rebase$("edit_in_removed",
+        doc(p("a"), p("b<1>"), p("c")),
+        [{name: "remove", pos: "1"}],
+        [{name: "insertText", pos: "1", text: "ay"}],
+        doc(p("a"), p("c")))
+
+rebase("double_insert",
+       doc(p("a<1>"), p("b")),
+       [{name: "insert", pos: "1", type: "paragraph", direction: "after"}],
+       [{name: "insert", pos: "1", type: "paragraph", direction: "after"}],
+       doc(p("a<1>"), p(), p(), p("b")))
