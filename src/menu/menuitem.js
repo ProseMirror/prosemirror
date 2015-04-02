@@ -34,7 +34,7 @@ export class JoinItem extends Item {
     return joinPoint(pm.doc, pm.selection.head)
   }
   apply(pm) {
-    let point = joinsPoint(pm.doc, pm.selection.head)
+    let point = joinPoint(pm.doc, pm.selection.head)
     if (point) pm.apply({name: "join", pos: point})
   }
 }
