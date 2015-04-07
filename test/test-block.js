@@ -156,8 +156,8 @@ t("remove", "simple_self",
   doc(p("one"), p("<a>two"), p("three")),
   doc(p("one"), p("three")))
 t("remove", "only",
-  doc(blockquote(p("<a>hi"))),
-  doc(blockquote()))
+  doc(blockquote(p("<a>hi")), p("x")),
+  doc(blockquote(), p("x")))
 t("remove", "outside_path",
   doc(blockquote(p("a<a>"), p("b")), p("c<1>")),
   doc(blockquote(p("a")), p("c<1>")),

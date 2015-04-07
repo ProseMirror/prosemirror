@@ -105,7 +105,7 @@ export function applyTransform(doc, params) {
 }
 
 export function invertTransform(result, params) {
-  if (result.doc == result.after) return {name: "null"}
+  if (result.doc == result.before) return {name: "null"}
   return transforms[params.name].invert(result, params)
 }
 

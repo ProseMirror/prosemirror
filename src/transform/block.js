@@ -86,39 +86,35 @@ defineTransform("lift", {
   apply: lift,
   invert(result, params) {
     let lift = canBeLifted(result.before, params.pos, params.end || params.pos)
-    if (!lift) return {name: "null"}
     let parent = result.before.path(lift.range.path)
     let joinLeft = lift.range.from > 0
     let joinRight = lift.range.to < parent.content.length
     return {name: "wrap", joinLeft: joinLeft, joinRight: joinRight,
             pos: result.map(params.pos), end: params.end && result.map(params.end),
-            type: parent.type.name}
+            type: parent.type.name, attrs: parent.attrs}
   }
 })
 
-function preciseJoinPoint(doc, pos) {
+function preciseJoinPoint(doc, pos, allowInline) {
   let joinDepth = -1
   for (let i = 0, parent = doc; i < pos.path.length; i++) {
     let index = pos.path[i]
     let type = parent.content[index].type
-    if (index > 0 && parent.content[index - 1].type == type && type.contains != "inline")
+    if (index > 0 && parent.content[index - 1].type == type &&
+        (allowInline || type.contains != "inline"))
       joinDepth = i
     parent = parent.content[index]
   }
   if (joinDepth > -1) return pos.shorten(joinDepth)
 }
 
-export function joinPoint(doc, pos) {
-  var found = preciseJoinPoint(doc, pos)
+export function joinPoint(doc, pos, allowInline) {
+  var found = preciseJoinPoint(doc, pos, allowInline)
   return found && Pos.after(doc, found)
 }
 
-defineTransform("join", {
-  apply: join
-})
-
 function join(doc, params) {
-  let point = preciseJoinPoint(doc, params.pos)
+  let point = preciseJoinPoint(doc, params.pos, params.allowInline)
   if (!point || params.pos.cmp(Pos.after(doc, point))) return flatTransform(doc)
 
   let toJoined = point.path.concat(point.offset - 1)
@@ -129,26 +125,34 @@ function join(doc, params) {
 
   let result = new Result(doc, output)
   let pathToFrom = point.path.concat(point.offset)
-  result.chunk(new Pos(pathToFrom, 0), from.content.length,
-               new Pos(point.path.concat(point.offset - 1), target.content.length))
+  result.chunk(new Pos(pathToFrom, 0), from.maxOffset,
+               new Pos(point.path.concat(point.offset - 1), target.maxOffset))
   result.chunk(new Pos(point.path, point.offset + 1), parent.content.length - point.offset - 1,
                new Pos(point.path, point.offset))
 
   parent.content.splice(point.offset, 1)
+  let oldSize = target.content.length
   target.pushFrom(from)
+  if (target.type.contains == "inline")
+    inline.stitchTextNodes(target, oldSize)
 
   return result
 }
+
+defineTransform("join", {
+  apply: join,
+  invert(result, params) {
+    let point = preciseJoinPoint(result.before, params.pos)
+    return {name: "split", clean: true,
+            pos: result.map(params.pos), depth: params.pos.path.length - point.path.length}
+  }
+})
 
 export function wrappableRange(doc, from, to) {
   let range = selectedSiblings(doc, from, to)
   return {from: Pos.after(doc, new Pos(range.path, range.from)),
           to: Pos.before(doc, new Pos(range.path, range.to))}
 }
-
-defineTransform("wrap", {
-  apply: wrap
-})
 
 function wrap(doc, params) {
   let range = selectedSiblings(doc, params.pos, params.end || params.pos)
@@ -215,8 +219,11 @@ function wrap(doc, params) {
   return result
 }
 
-defineTransform("split", {
-  apply: split
+defineTransform("wrap", {
+  apply: wrap,
+  invert(result, params) {
+    return {name: "lift", pos: result.map(params.pos), end: params.end && result.map(params.end)}
+  }
 })
 
 function split(doc, params) {
@@ -229,39 +236,59 @@ function split(doc, params) {
   adjusted[adjusted.length - depth]++
   result.chunk(pos, target.size - pos.offset, new Pos(adjusted, 0))
 
-  let {offset} = inline.splitInlineAt(target, pos.offset)
-  let restContent = target.content.slice(offset), cut
-  if (params.type)
-    cut = new Node(params.type, restContent, params.attrs)
-  else
-    cut = target.copy(restContent)
-  target.content.length = offset
+  let cut, removed = false
+  if (pos.offset == 0 && params.clean) {
+    removed = true
+    cut = target
+  } else if (!params.clean || pos.offset < offset) {
+    let {offset} = inline.splitInlineAt(target, pos.offset)
+    let restContent = target.content.slice(offset)
+    if (params.type)
+      cut = new Node(params.type, restContent, params.attrs)
+    else
+      cut = target.copy(restContent)
+    target.content.length = offset
+  }
 
   for (let i = 1; i <= depth; i++) {
     let end = pos.path.length - i
     let toTarget = pos.path.slice(0, end)
     let target = copy.path(toTarget)
-    let offset = pos.path[end] + 1
+    let offset = pos.path[end] + (removed ? 0 : 1)
+    if (removed) target.content.splice(offset, 1)
 
     if (i < depth) {
       let adjusted = toTarget.slice()
-      adjusted[adjusted.length - depth]++
-      result.chunk(new Pos(toTarget, offset), target.content.length - offset,
-                   new Pos(adjusted, 0))
-      cut = target.copy([cut].concat(target.content.slice(offset)))
-      target.content.length = offset
+      if (!removed) adjusted[adjusted.length - depth]++
+      if (removed && params.clean && offset == 0) {
+        removed = true
+        if (cut) target.push(cut)
+        cut = target
+      } else if (!params.clean || offset < target.content.length || cut) {
+        removed = false
+        result.chunk(new Pos(toTarget, offset), target.content.length - offset,
+                     new Pos(adjusted, 0))
+        cut = target.copy((cut ? [cut] : []).concat(target.content.slice(offset)))
+        target.content.length = offset
+      } else {
+        removed = false
+        cut = null
+      }
     } else {
       result.chunk(new Pos(toTarget, offset), target.content.length - offset,
                    new Pos(toTarget, offset + 1))
-      target.content.splice(offset, 0, cut)
+      if (cut) target.content.splice(offset, 0, cut)
     }
   }
 
   return result
 }
 
-defineTransform("insert", {
-  apply: insert
+defineTransform("split", {
+  apply: split,
+  invert(result, params) {
+    return {name: "join", pos: result.map(params.pos), allowInline: (params.depth || 1) == 1}
+  }
 })
 
 function insert(doc, params) {
@@ -280,8 +307,11 @@ function insert(doc, params) {
   return result
 }
 
-defineTransform("remove", {
-  apply: remove
+defineTransform("insert", {
+  apply: insert,
+  invert(result, params) {
+    return {name: "remove", pos: result.map(params.pos), direction: params.direction}
+  }
 })
 
 function remove(doc, params) {
@@ -310,3 +340,13 @@ function remove(doc, params) {
   result.chunk(new Pos(pos.path, pos.offset + 1), parent.content.length - pos.offset, pos)
   return result
 }
+
+defineTransform("remove", {
+  apply: remove,
+  invert(result, params) {
+    let moved = result.deleted.ref.cmp(params.pos)
+    let node = result.before.path(result.deleted.from.path).content[result.deleted.from.offset]
+    return {name: "insert", pos: result.deleted.ref, direction: moved < 0 ? "after" : "before",
+            node: node}
+  }
+})

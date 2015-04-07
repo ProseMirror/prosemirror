@@ -61,10 +61,6 @@ function copyInline(node, from, to, f) {
   return copy
 }
 
-defineTransform("addStyle", {
-  apply: addStyle
-})
-
 function addStyle(doc, params) {
   let copy = copyStructure(doc, params.pos, params.end || params.pos, (node, from, to) => {
     if (node.type == Node.types.code_block) return node
@@ -76,8 +72,12 @@ function addStyle(doc, params) {
   return flatTransform(doc, copy)
 }
 
-defineTransform("removeStyle", {
-  apply: removeStyle
+defineTransform("addStyle", {
+  apply: addStyle,
+  invert(result, params) {
+    return {name: "replace", pos: result.map(params.pos), end: result.map(params.end),
+            source: result.before, from: params.pos, to: params.end}
+  }
 })
 
 function removeStyle(doc, params) {
@@ -96,8 +96,12 @@ function removeStyle(doc, params) {
   return flatTransform(doc, copy)
 }
 
-defineTransform("setType", {
-  apply: setType
+defineTransform("removeStyle", {
+  apply: removeStyle,
+  invert(result, params) {
+    return {name: "replace", pos: result.map(params.pos), end: result.map(params.end),
+            source: result.before, from: params.pos, to: params.end}
+  }
 })
 
 function setType(doc, params) {
@@ -115,3 +119,12 @@ function setType(doc, params) {
   })
   return flatTransform(doc, copy)
 }
+
+defineTransform("setType", {
+  apply: setType,
+  invert(result, params) {
+    let oldNode = result.before.path(params.pos.path)
+    return {name: "setType", pos: result.map(params.pos), end: params.end && result.map(params.end),
+            type: oldNode.type.name, attrs: oldNode.attrs}
+  }
+})

@@ -44,5 +44,3 @@ defineTransform("insertText", {
     return {name: "replace", pos: params.pos, end: new Pos(params.pos.path, params.pos.offset + params.text.length)}
   }
 })
-
-

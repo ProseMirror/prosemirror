@@ -133,10 +133,6 @@ function addDeletedChunks(del, node, from, to, depth = 0) {
   }
 }
 
-defineTransform("replace", {
-  apply: replace
-})
-
 function replace(doc, params) {
   let from = params.pos, to = params.end || params.pos
 
@@ -192,3 +188,12 @@ function replace(doc, params) {
 
   return result
 }
+
+defineTransform("replace", {
+  apply: replace,
+  invert(result, params) {
+    let pos = result.map(params.pos)
+    return {name: "replace", pos: result.inserted ? result.inserted.from : pos, end: pos,
+            source: result.before, from: params.pos, to: params.end || params.pos}
+  }
+})

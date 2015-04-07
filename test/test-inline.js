@@ -4,14 +4,14 @@ import Failure from "./failure"
 import tests from "./tests"
 import {testTransform} from "./cmp"
 
-import {inline, style, Node} from "../src/model"
+import {inline, style, Node, Pos} from "../src/model"
 
 function t(op, name, doc, expect, params) {
   tests[op + "_" + name] = function() {
     if (!params) params = {}
     params.name = op
-    if (!params.pos) params.pos = doc.tag.a
-    if (!params.end) params.end = doc.tag.b
+    if (!params.pos) params.pos = doc.tag.a || Pos.start(doc)
+    if (!params.end) params.end = doc.tag.b || Pos.end(doc)
     testTransform(doc, expect, params)
   }
 }
@@ -83,12 +83,12 @@ t("setType", "inside",
   doc(blockquote(h1("one<a>"), h1("two<b>"))),
   {type: "heading", attrs: {level: 1}})
 t("setType", "clear_markup",
-  doc(p("hello ", em("world"))),
+  doc(p("hello<a> ", em("world"))),
   doc(pre("hello world")),
   {type: "code_block"})
 t("setType", "only_clear_for_code_block",
-  doc(p("hello ", em("world"))),
-  doc(h1("hello ", em("world"))),
+  doc(p("hello<a> ", em("world"))),
+  doc(h1("hello<a> ", em("world"))),
   {type: "heading", attrs: {level: 1}})
 
 t("insertText", "simple",
