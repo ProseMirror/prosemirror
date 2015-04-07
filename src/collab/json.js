@@ -2,10 +2,10 @@ import {Pos, Node} from "../model"
 
 // FIXME minimize (slice) source documents in "replace" queries
 
-export function transitionToJSON(transition) {
+export function paramsToJSON(params) {
   let result = {}
-  for (let prop in transition) {
-    let value = transition[prop]
+  for (let prop in params) {
+    let value = params[prop]
     if (value == null) continue
     if (value.toJSON) value = value.toJSON()
     result[prop] = value
@@ -13,7 +13,7 @@ export function transitionToJSON(transition) {
   return result
 }
 
-export function transitionFromJSON(json) {
+export function paramsFromJSON(json) {
   let result = {}
   for (let prop in json) {
     let value = json[prop]

@@ -23,7 +23,8 @@ export class Tooltip {
     this.lastLeft = this.lastRight = null
 
     pm.on("change", this.updateFunc = () => { if (!this.active && !this.persistent) this.close() })
-    pm.on("resize", this.updateFunc)
+    pm.on("resize", this.closeFunc = () => { if (!this.active) this.close() })
+    pm.on("blur", this.closeFunc)
     pm.wrapper.addEventListener("mousedown", this.mouseFunc = e => {
       if ((this.active || !this.persistent) && !this.dom.contains(e.target))
         this.close()
@@ -35,7 +36,8 @@ export class Tooltip {
     this.dom.parentNode.removeChild(this.dom)
     this.pointer.parentNode.removeChild(this.pointer)
     pm.off("change", this.updateFunc)
-    pm.off("resize", this.updateFunc)
+    pm.off("resize", this.closeFunc)
+    pm.off("blur", this.closeFunc)
     pm.wrapper.removeEventListener("mousedown", this.mouseFunc)
     pm.content.removeEventListener("dragover", this.dragFunc)
   }

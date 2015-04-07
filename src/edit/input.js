@@ -1,7 +1,7 @@
 import {fromDOM, toDOM, Pos, Node} from "../model"
 
 import * as keys from "./keys"
-import * as dom from "./dom"
+import {mac, addClass, rmClass} from "./dom"
 import {execCommand} from "./commands"
 import {applyDOMChange} from "./domchange"
 import text from "./text"
@@ -108,7 +108,7 @@ function inputText(pm, range, text) {
 }
 
 handlers.keypress = (pm, e) => {
-  if (!e.charCode || e.ctrlKey && !e.altKey || dom.mac && e.metaKey) return
+  if (!e.charCode || e.ctrlKey && !e.altKey || mac && e.metaKey) return
   let ch = String.fromCharCode(e.charCode)
   if (dispatchKey(pm, "'" + ch + "'", e)) return
   inputText(pm, pm.selection, ch)
@@ -239,4 +239,14 @@ handlers.drop = (pm, e) => {
     pm.setSelection(new Range(insertPos, result.map(insertPos)))
     pm.focus()
   }
+}
+
+handlers.focus = pm => {
+  addClass(pm.wrapper, "ProseMirror-focused")
+  pm.signal("focus")
+}
+
+handlers.blur = pm => {
+  rmClass(pm.wrapper, "ProseMirror-focused")
+  pm.signal("blur")
 }

@@ -14,8 +14,7 @@
     "markdown-it": "^3.0.0"
   },
   "devDependencies": {
-    "xmldom": "^0.1.0",
-    "js-beautify": "^1.5.0"
+    "xmldom": "^0.1.0"
   },
   "scripts": {
     "test": "node test/run.js",

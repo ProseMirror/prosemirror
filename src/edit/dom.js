@@ -23,3 +23,19 @@ export function requestAnimationFrame(f) {
 }
 
 export const mac = /Mac/.test(navigator.platform)
+
+function classTest(cls) { return new RegExp("(^|\\s)" + cls + "(?:$|\\s)\\s*"); }
+
+export function rmClass(node, cls) {
+  var current = node.className;
+  var match = classTest(cls).exec(current);
+  if (match) {
+    var after = current.slice(match.index + match[0].length);
+    node.className = current.slice(0, match.index) + (after ? match[1] + after : "");
+  }
+}
+
+export function addClass(node, cls) {
+  var current = node.className;
+  if (!classTest(cls).test(current)) node.className += (current ? " " : "") + cls;
+}

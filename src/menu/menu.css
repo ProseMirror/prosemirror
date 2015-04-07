@@ -1,4 +1,5 @@
 .ProseMirror-menu-button {
+  display: none;
   position: absolute;
   top: 7px;
   right: 7px;
@@ -9,6 +10,10 @@
   -webkit-transition: top 0.3s ease-out;
   -moz-transition: top 0.3s ease-out;
   transition: top 0.3s ease-out;
+}
+
+.ProseMirror-focused .ProseMirror-menu-button {
+  display: block;
 }
 
 .ProseMirror-menu-button div {

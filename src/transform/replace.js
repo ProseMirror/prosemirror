@@ -170,7 +170,7 @@ defineTransform("replace", function(doc, params) {
     result.inserted.to = Pos.end(output) // FIXME is this robust?
   } else {
     if (params.text) {
-      result.inserted = new Collapsed(from, new Pos(from.path, from.offset + params.text.length))
+      result.inserted = new Collapsed(from, new Pos(from.path, from.offset + params.text.length), from)
       result.inserted.chunk(from, params.text.length)
       let block = output.path(from.path), end = block.content.length
       if (!block.type.contains == "inline")
@@ -178,8 +178,6 @@ defineTransform("replace", function(doc, params) {
       let styles = block.type != Node.types.code_block ? params.styles || inline.inlineStylesAt(doc, from) : Node.empty
       block.content.push(Node.text(params.text, styles))
       inline.stitchTextNodes(block, end)
-    } else {
-//      result.chunk(from, 0, from, 0)
     }
     depthAfter = from.path.length
   }

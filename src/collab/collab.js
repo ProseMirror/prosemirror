@@ -1,7 +1,7 @@
 import {defineOption, Range} from "../edit"
 import {applyTransform} from "../transform"
 import {randomID, xorIDs, nullID} from "./id"
-import {transitionToJSON, transitionFromJSON} from "./json"
+import {paramsToJSON, paramsFromJSON} from "./json"
 import {mergeChangeSets, rebaseChanges, mapPosition} from "./rebase"
 import {Transition, VersionStore} from "./versions"
 
@@ -36,7 +36,7 @@ class Collab {
         base: this.versionID,
         id: id,
         by: this.clientID,
-        transition: transitionToJSON(ch.transition)
+        params: paramsToJSON(params)
       })
       let newID = xorIDs(this.versionID, id)
       this.store.storeVersion(newID, this.versionID, result.doc)
@@ -45,18 +45,20 @@ class Collab {
       this.versionID = newID
 
       if (options.autoSend !== false) {
-        window.clearTimeout(debounce)
+        window.clearTimeout(this.debounce)
         this.debounce = window.setTimeout(() => this.send(), 200)
       }
     })
+
+    this.channel.register(this.clientID, this)
   }
 
   send() {
     let len = this.toSend.length
-    if (!this.sending && len == 0) {
-      let data = this.changes.slice(this.sentUpto).map(ch => ())
+    if (!this.sending && len > 0) {
+      let data = this.toSend.slice()
       this.sending = true
-      this.channel.send(data, err => {
+      this.channel.send(this.clientID, data, err => {
         // FIXME error handling
         this.sending = false
         if (!err) this.toSend = this.toSend.slice(len)
@@ -66,22 +68,23 @@ class Collab {
   }
 
   receive(data) {
-    let newChanges = []
+    let newTransitions = []
     let baseID = data[0].base
 
     // Pump changes into our version store
     for (let i = 0; i < data.length; i++) {
-      let params = transitionFromJSON(json.transition)
-      let result = applyTransform(this.store.getVersion(json.base), change.params)
-      let change = new Transition(json.id, json.base, json.by, params, result)
-      newChanges.push(change)
-      let newID = xorIDs(json.base, change.id)
+      let json = data[i]
+      let params = paramsFromJSON(json.params)
+      let result = applyTransform(this.store.getVersion(json.base), params)
+      let tr = new Transition(json.id, json.base, json.by, params, result)
+      newTransitions.push(tr)
+      let newID = xorIDs(json.base, tr.id)
       this.store.storeVersion(newID, json.base, result.doc)
-      this.store.storeTransition(change)
+      this.store.storeTransition(tr)
     }
 
     let knownChanges = this.store.transitionsBetween(baseID, this.versionID)
-    let changes = mergeChangeSets(knownChanges, newChanges)
+    let changes = mergeChangeSets(knownChanges, newTransitions)
     let rebased = rebaseChanges(baseID, changes, this.store)
     let sel = this.pm.selection
     let newRange = new Range(mapPosition(knownChanges, rebased.forward, sel.anchor).pos,

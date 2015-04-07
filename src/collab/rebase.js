@@ -27,6 +27,7 @@ export function mapPosition(back, forward, pos) {
 
   for (let i = back.length - 1; i >= 0; i--) {
     current = back[i]
+    let p1 = pos
     pos = current.result.mapBack(pos, storeOffset)
   }
   for (let i = 0; i < forward.length; i++) {
