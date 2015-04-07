@@ -90,6 +90,14 @@ t("wrap", "bullet_list",
   doc(p("x"), p("yyyy<a>y"), p("z")),
   doc(p("x"), ul(li(p("yyyy<a>y"))), p("z")),
   {type: "bullet_list"})
+t("wrap", "join_left",
+  doc(ol(li(p("hi<1>"))), p("aye<a>"), p("oy<b>")),
+  doc(ol(li(p("hi<1>")), li(p("aye<a>")), li(p("oy<b>")))),
+  {type: "ordered_list", joinLeft: true})
+t("wrap", "join_right",
+  doc(p("aye<a>"), p("oy<b>"), ol(li(p("hi<1>")))),
+  doc(ol(li(p("aye<a>")), li(p("oy<b>")), li(p("hi<1>")))),
+  {type: "ordered_list", joinRight: true})
 
 t("split", "simple",
   doc(p("foo<a>bar")),

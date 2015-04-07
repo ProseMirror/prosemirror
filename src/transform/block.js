@@ -48,10 +48,6 @@ function canBeLifted(doc, from, to) {
   }
 }
 
-defineTransform("lift", {
-  apply: lift
-})
-
 function lift(doc, params) {
   let lift = canBeLifted(doc, params.pos, params.end || params.pos)
   if (!lift) return flatTransform(doc)
@@ -85,6 +81,20 @@ function lift(doc, params) {
 
   return result
 }
+
+defineTransform("lift", {
+  apply: lift,
+  invert(result, params) {
+    let lift = canBeLifted(result.before, params.pos, params.end || params.pos)
+    if (!lift) return {name: "null"}
+    let parent = result.before.path(lift.range.path)
+    let joinLeft = lift.range.from > 0
+    let joinRight = lift.range.to < parent.content.length
+    return {name: "wrap", joinLeft: joinLeft, joinRight: joinRight,
+            pos: result.map(params.pos), end: params.end && result.map(params.end),
+            type: parent.type.name}
+  }
+})
 
 function preciseJoinPoint(doc, pos) {
   let joinDepth = -1
@@ -142,24 +152,39 @@ defineTransform("wrap", {
 
 function wrap(doc, params) {
   let range = selectedSiblings(doc, params.pos, params.end || params.pos)
-  let before = new Pos(range.path, range.from)
-  let after = new Pos(range.path, range.to)
 
   let source = doc.path(range.path)
   let newNode = params.node || new Node(params.type, null, params.attrs)
-  let wrapperType = newNode.type
   let connAround = Node.findConnection(source.type, newNode.type)
   let connInside = Node.findConnection(newNode.type, source.content[range.from].type)
   if (!connAround || !connInside) return flatTransform(doc)
+  let outerNode = newNode
+  for (let i = connAround.length - 1; i >= 0; i--)
+    outerNode = new Node(connAround[i], [outerNode])
 
+  let joinLeft = params.joinLeft && range.from &&
+      outerNode.sameMarkup(source.content[range.from - 1])
+  let joinRight = params.joinRight && range.to < source.content.length &&
+      outerNode.sameMarkup(source.content[range.to])
+
+  let before = new Pos(range.path, range.from - (joinLeft ? 1 : 0))
+  let after = new Pos(range.path, range.to + (joinRight ? 1 : 0))
   let output = slice.before(doc, before)
   let result = new Result(doc, output)
 
-  let prefix = range.path.concat(range.from), suffix
-  for (let i = 0; i < connAround.length; i++) prefix.push(0)
+  let leftStart = 0
+  if (joinLeft) {
+    let joinSource = source.content[range.from - 1]
+    outerNode.content = joinSource.content.concat(outerNode.content)
+    leftStart = joinSource.content.length
+  }
+  let prefix = range.path.concat(range.from - (joinLeft ? 1 : 0)), suffix
+  for (let i = 0; i < connAround.length; i++) {
+    prefix.push(leftStart)
+    leftStart = 0
+  }
   if (!connInside.length) {
-    result.chunk(new Pos(range.path, range.from), range.to - range.from,
-                 new Pos(prefix, 0))
+    result.chunk(new Pos(range.path, range.from), range.to - range.from, new Pos(prefix, leftStart))
   } else {
     suffix = []
     for (let i = 1; i < connInside.length; i++) suffix.push(0)
@@ -173,12 +198,18 @@ function wrap(doc, params) {
     if (suffix) {
       let path = range.path.concat(pos)
       result.chunk(new Pos(range.path, pos), 1,
-                   new Pos(prefix.concat(pos - range.from).concat(suffix), 0))
+                   new Pos(prefix.concat(leftStart + pos - range.from).concat(suffix), 0))
     }
   }
-  for (let i = connAround.length - 1; i >= 0; i--)
-    newNode = new Node(connAround[i], [newNode])
-  output.path(range.path).push(newNode)
+
+  if (joinRight) {
+    let joinSource = source.content[range.to]
+    result.chunk(new Pos(range.path.concat(range.to), 0), joinSource.content.length,
+                 new Pos(range.path.concat(range.from - (joinLeft ? 1 : 0)), outerNode.content.length))
+    outerNode.pushFrom(joinSource)
+  }
+
+  output.path(range.path).push(outerNode)
 
   glue(output, range.path.length, slice.after(doc, after), after, {result: result})
   return result

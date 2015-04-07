@@ -93,6 +93,11 @@ export function defineTransform(name, impl) {
   transforms[name] = impl
 }
 
+defineTransform("null", {
+  apply(doc) { return flatTransform(doc) },
+  invert(_, params) { return params }
+})
+
 export function applyTransform(doc, params) {
   let impl = transforms[params.name]
   if (!impl) throw new Error("Undefined transform " + params.name)
@@ -100,6 +105,7 @@ export function applyTransform(doc, params) {
 }
 
 export function invertTransform(result, params) {
+  if (result.doc == result.after) return {name: "null"}
   return transforms[params.name].invert(result, params)
 }
 

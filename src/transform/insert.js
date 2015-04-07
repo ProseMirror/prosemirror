@@ -21,23 +21,28 @@ function insertNode(doc, pos, node) {
 }
 
 defineTransform("insertInline", {
-  apply: insertInline
+  apply(doc, params) {
+    let node = params.node || new Node.Inline(params.type, null, params.text, params.attrs)
+    if (node.type != Node.types.text &&
+        doc.path(params.pos.path).type == Node.types.code_block)
+      return flatTransform(doc)
+
+    return insertNode(doc, params.pos, node)
+  },
+  invert(result, params) {
+    let len = params.text == null ? 1 : params.text.length
+    return {name: "replace", pos: params.pos, end: new Pos(params.pos.path, params.pos.offset + len)}
+  }
 })
-
-function insertInline(doc, params) {
-  let node = params.node || new Node.Inline(params.type, null, params.text, params.attrs)
-  if (node.type != Node.types.text &&
-      doc.path(params.pos.path).type == Node.types.code_block)
-    return flatTransform(doc)
-
-  return insertNode(doc, params.pos, node)
-}
 
 defineTransform("insertText", {
-  apply: insertText
+  apply(doc, params) {
+    if (!params.text) return flatTransform(doc)
+    return insertNode(doc, params.pos, Node.text(params.text))
+  },
+  invert(_result, params) {
+    return {name: "replace", pos: params.pos, end: new Pos(params.pos.path, params.pos.offset + params.text.length)}
+  }
 })
 
-function insertText(doc, params) {
-  if (!params.text) return flatTransform(doc)
-  return insertNode(doc, params.pos, Node.text(params.text))
-}
+
