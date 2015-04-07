@@ -43,7 +43,7 @@ export class VersionStore {
     let found = [baseID], obj = Object.create(null)
     let followed = 0
     while (followed < found.length) {
-      let next = found[++followed]
+      let next = found[followed++]
       obj[next] = true
       let transitions = this.versions[next].children
       if (transitions) for (let i = 0; i < transitions.length; i++)

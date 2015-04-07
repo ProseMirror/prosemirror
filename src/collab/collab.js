@@ -20,7 +20,7 @@ class Collab {
     this.pm = pm
     this.options = options
     this.channel = options.channel
-    this.clientID = randomID()
+    this.clientID = options.clientID || randomID()
     this.versionID = options.rootID || nullID
     this.debounce = null
 
@@ -46,7 +46,7 @@ class Collab {
 
       if (options.autoSend !== false) {
         window.clearTimeout(this.debounce)
-        this.debounce = window.setTimeout(() => this.send(), 200)
+        this.debounce = window.setTimeout(() => this.send(), 1000)
       }
     })
 
@@ -58,7 +58,7 @@ class Collab {
     if (!this.sending && len > 0) {
       let data = this.toSend.slice()
       this.sending = true
-      this.channel.send(this.clientID, data, err => {
+      this.channel.send(this.clientID, data, this.versionID, err => {
         // FIXME error handling
         this.sending = false
         if (!err) this.toSend = this.toSend.slice(len)
@@ -90,7 +90,12 @@ class Collab {
     let newRange = new Range(mapPosition(knownChanges, rebased.forward, sel.anchor).pos,
                              mapPosition(knownChanges, rebased.forward, sel.head).pos)
     this.pm.updateInner(rebased.doc, newRange)
-    this.versionID = rebased.id
+
+    return this.versionID = rebased.id
+  }
+
+  confirm(id) {
+    this.store.cleanUp(id)
   }
 }
 

@@ -53,7 +53,7 @@ export class Result {
     let deleted = (back ? this.inserted : this.deleted)
     let inserted = (back ? this.deleted : this.inserted)
 
-    if (offset && offset.chunkID != null)
+    if (offset && offset.chunkID != null && inserted)
       return inserted.chunks[offset.chunkID].start.extend(offset.offset)
 
     if (deleted) {
