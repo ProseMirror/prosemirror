@@ -48,7 +48,11 @@ function canBeLifted(doc, from, to) {
   }
 }
 
-defineTransform("lift", function(doc, params) {
+defineTransform("lift", {
+  apply: lift
+})
+
+function lift(doc, params) {
   let lift = canBeLifted(doc, params.pos, params.end || params.pos)
   if (!lift) return flatTransform(doc)
   let range = lift.range
@@ -80,7 +84,7 @@ defineTransform("lift", function(doc, params) {
   glue(output, lift.path.length, slice.after(doc, after), after, {result: result})
 
   return result
-})
+}
 
 function preciseJoinPoint(doc, pos) {
   let joinDepth = -1
@@ -99,7 +103,11 @@ export function joinPoint(doc, pos) {
   return found && Pos.after(doc, found)
 }
 
-defineTransform("join", function(doc, params) {
+defineTransform("join", {
+  apply: join
+})
+
+function join(doc, params) {
   let point = preciseJoinPoint(doc, params.pos)
   if (!point || params.pos.cmp(Pos.after(doc, point))) return flatTransform(doc)
 
@@ -120,7 +128,7 @@ defineTransform("join", function(doc, params) {
   target.pushFrom(from)
 
   return result
-})
+}
 
 export function wrappableRange(doc, from, to) {
   let range = selectedSiblings(doc, from, to)
@@ -128,7 +136,11 @@ export function wrappableRange(doc, from, to) {
           to: Pos.before(doc, new Pos(range.path, range.to))}
 }
 
-defineTransform("wrap", function(doc, params) {
+defineTransform("wrap", {
+  apply: wrap
+})
+
+function wrap(doc, params) {
   let range = selectedSiblings(doc, params.pos, params.end || params.pos)
   let before = new Pos(range.path, range.from)
   let after = new Pos(range.path, range.to)
@@ -170,9 +182,13 @@ defineTransform("wrap", function(doc, params) {
 
   glue(output, range.path.length, slice.after(doc, after), after, {result: result})
   return result
+}
+
+defineTransform("split", {
+  apply: split
 })
 
-defineTransform("split", function(doc, params) {
+function split(doc, params) {
   let depth = params.depth || 1, pos = params.pos
   let copy = slice.around(doc, pos.path)
   let result = new Result(doc, copy)
@@ -211,9 +227,13 @@ defineTransform("split", function(doc, params) {
   }
 
   return result
+}
+
+defineTransform("insert", {
+  apply: insert
 })
 
-defineTransform("insert", function(doc, params) {
+function insert(doc, params) {
   let pos = params.pos.shorten(null, params.direction == "before" ? 0 : 1)
   let copy = slice.around(doc, pos.path)
   let result = new Result(doc, copy)
@@ -227,9 +247,13 @@ defineTransform("insert", function(doc, params) {
                new Pos(pos.path, pos.offset + 1))
 
   return result
+}
+
+defineTransform("remove", {
+  apply: remove
 })
 
-defineTransform("remove", function(doc, params) {
+function remove(doc, params) {
   let pos = params.pos
   let dir = params.direction == "before" ? -1 : params.direction == "after" ? 1 : 0
   pos = pos.shorten(null, dir)
@@ -254,4 +278,4 @@ defineTransform("remove", function(doc, params) {
   result.deleted.chunk(pos, 1)
   result.chunk(new Pos(pos.path, pos.offset + 1), parent.content.length - pos.offset, pos)
   return result
-})
+}

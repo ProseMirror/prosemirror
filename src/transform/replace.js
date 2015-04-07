@@ -133,7 +133,11 @@ function addDeletedChunks(del, node, from, to, depth = 0) {
   }
 }
 
-defineTransform("replace", function(doc, params) {
+defineTransform("replace", {
+  apply: replace
+})
+
+function replace(doc, params) {
   let from = params.pos, to = params.end || params.pos
 
   let output = slice.before(doc, from)
@@ -187,4 +191,4 @@ defineTransform("replace", function(doc, params) {
   glue(output, depthAfter, right, to, {result: result})
 
   return result
-})
+}

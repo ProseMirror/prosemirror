@@ -20,16 +20,24 @@ function insertNode(doc, pos, node) {
   return result
 }
 
-defineTransform("insertInline", function(doc, params) {
+defineTransform("insertInline", {
+  apply: insertInline
+})
+
+function insertInline(doc, params) {
   let node = params.node || new Node.Inline(params.type, null, params.text, params.attrs)
   if (node.type != Node.types.text &&
       doc.path(params.pos.path).type == Node.types.code_block)
     return flatTransform(doc)
 
   return insertNode(doc, params.pos, node)
+}
+
+defineTransform("insertText", {
+  apply: insertText
 })
 
-defineTransform("insertText", function(doc, params) {
+function insertText(doc, params) {
   if (!params.text) return flatTransform(doc)
   return insertNode(doc, params.pos, Node.text(params.text))
-})
+}

@@ -40,8 +40,7 @@ export class Result {
     this.before = before
     this.doc = after
     this.chunks = []
-    this.inserted = null
-    this.deleted = null
+    this.inserted = this.deleted = null
   }
 
   chunk(before, size, after) {
@@ -95,9 +94,13 @@ export function defineTransform(name, impl) {
 }
 
 export function applyTransform(doc, params) {
-  let fn = transforms[params.name]
-  if (!fn) throw new Error("Undefined transform " + params.name)
-  return fn(doc, params)
+  let impl = transforms[params.name]
+  if (!impl) throw new Error("Undefined transform " + params.name)
+  return impl.apply(doc, params)
+}
+
+export function invertTransform(result, params) {
+  return transforms[params.name].invert(result, params)
 }
 
 export function flatTransform(doc, result) {

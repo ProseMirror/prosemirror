@@ -61,7 +61,11 @@ function copyInline(node, from, to, f) {
   return copy
 }
 
-defineTransform("addStyle", function(doc, params) {
+defineTransform("addStyle", {
+  apply: addStyle
+})
+
+function addStyle(doc, params) {
   let copy = copyStructure(doc, params.pos, params.end || params.pos, (node, from, to) => {
     if (node.type == Node.types.code_block) return node
     return copyInline(node, from, to, node => {
@@ -70,9 +74,13 @@ defineTransform("addStyle", function(doc, params) {
     })
   })
   return flatTransform(doc, copy)
+}
+
+defineTransform("removeStyle", {
+  apply: removeStyle
 })
 
-defineTransform("removeStyle", function(doc, params) {
+function removeStyle(doc, params) {
   let copy = copyStructure(doc, params.pos, params.end || params.pos, (node, from, to) => {
     return copyInline(node, from, to, node => {
       let styles = node.styles
@@ -86,9 +94,13 @@ defineTransform("removeStyle", function(doc, params) {
     })
   })
   return flatTransform(doc, copy)
+}
+
+defineTransform("setType", {
+  apply: setType
 })
 
-defineTransform("setType", function(doc, params) {
+function setType(doc, params) {
   let copy = copyStructure(doc, params.pos, params.end || params.pos, node => {
     let copy = node.copy(node.content)
     if (params.node) {
@@ -102,4 +114,4 @@ defineTransform("setType", function(doc, params) {
     return copy
   })
   return flatTransform(doc, copy)
-})
+}
