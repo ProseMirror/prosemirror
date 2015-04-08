@@ -211,16 +211,25 @@ function addPositions(doc, params, pos, end) {
   return params
 }
 
-export function insertText(pos, text, options) {
-  let textNode = new Node.text(text, options && options.styles || Node.empty)
-  let dummy = new Node("doc", [new Node("paragraph", [textNode])])
-  let params = {name: "replace", source: dummy, from: new Pos([0], 0), to: new Pos([0], text.length)}
+function insertNode(pos, node, options) {
+  let dummy = new Node("doc", [new Node("paragraph", [node])])
+  let params = {name: "replace", source: dummy, from: new Pos([0], 0), to: new Pos([0], node.size)}
   if (!options || !options.styles) params.inheritStyles = true
   if (options && options.doc)
-    addPositions(doc, params, pos, options && options.end)
+    addPositions(options.doc, params, pos, options.end)
   else
     ;[params.pos, params.end] = [pos, options && options.end || pos]
   return params
+}
+
+export function insertText(pos, text, options) {
+  return insertNode(pos, new Node.text(text, options && options.styles), options)
+}
+
+export function insertInline(pos, options) {
+  let node = options.node ||
+      new Node.Inline(options.type, options.styles, null, options.attrs)
+  return insertNode(pos, node, options)
 }
 
 export function remove(doc, pos, end) {

@@ -1,5 +1,5 @@
 import {style, inline, Node} from "../model"
-import {splitAt, joinPoint, liftableRange, wrappableRange, describeTarget} from "../transform"
+import {splitAt, joinPoint, liftableRange, wrappableRange, describeTarget, insertInline} from "../transform"
 import {elt} from "../edit/dom"
 
 export class Item {
@@ -173,6 +173,6 @@ export class ImageDialog extends Dialog {
     let sel = pm.selection
     pm.apply({name: "replace", pos: sel.from, end: sel.to})
     let attrs = {src: elts.src.value, alt: elts.alt.value, title: elts.title.value}
-    pm.apply({name: "insertInline", pos: sel.from, type: "image", attrs: attrs})
+    pm.apply(insertInline(sel.from, {type: "image", attrs: attrs}))
   }
 }

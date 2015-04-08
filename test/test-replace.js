@@ -1,4 +1,5 @@
-import {insertText} from "../src/transform"
+import {Node} from "../src/model"
+import {insertText, insertInline} from "../src/transform"
 
 import {doc, h1, blockquote, p, li, ol, ul, em, a, br} from "./build"
 
@@ -12,15 +13,13 @@ function t(name, base, source, expect) {
     let params
     if (typeof source == "string") {
       params = insertText(base.tag.a, source, {end: base.tag.b})
+    } else if (!source) {
+      params = {name: "replace", pos: base.tag.a, end: base.tag.b}
+    } else if (source.tag) {
+      params = {name: "replace", pos: base.tag.a, end: base.tag.b,
+                source: source, from: source.tag.a, to: source.tag.b}
     } else {
-      params = {
-        name: "replace",
-        pos: base.tag.a,
-        end: base.tag.b,
-        source: !text && source,
-        from: source && source.tag.a,
-        to: source && source.tag.b
-      }
+      params = insertInline(base.tag.a, {node: source})
     }
     testTransform(base, expect, params)
   }
@@ -129,3 +128,8 @@ t("text_before_br",
   doc(p("<a>", br, "ok")),
   "ay",
   doc(p("ay", br, "ok")))
+
+t("insert_break",
+  doc(p("hello<a>there")),
+  new Node.Inline("hard_break"),
+  doc(p("hello", br, "<a>there")))

@@ -91,11 +91,6 @@ t("setType", "only_clear_for_code_block",
   doc(h1("hello<a> ", em("world"))),
   {type: "heading", attrs: {level: 1}})
 
-t("insertInline", "break",
-  doc(p("hello<a>there")),
-  doc(p("hello", br, "<a>there")),
-  {type: "hard_break"})
-
 function has(name, doc, st, result) {
   tests["has_" + name] = function() {
     if (style.contains(inline.inlineStylesAt(doc, doc.tag.a), st) != result)
