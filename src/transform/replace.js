@@ -28,6 +28,8 @@ function compatibleTypes(a, aDepth, b, bDepth, options) {
     return a.contains == "inline" || a == b && aDepth == bDepth
 }
 
+// FIXME kill styles in code blocks
+
 export function glue(left, leftDepth, right, rightBorder, options = {}) {
   let rightDepth = rightBorder.path.length
   let cutDepth = 0
@@ -68,10 +70,21 @@ export function glue(left, leftDepth, right, rightBorder, options = {}) {
           options.onChunk(rightBorder, cur.maxOffset, newStart)
       }
 
-      let start = target.content.length
-      target.pushFrom(node)
-      if (node.type.contains == "inline")
+      if (node.type.contains == "inline") {
+        let start = target.content.length
+        if (options.inheritStyles) {
+          let styles = inline.inlineStylesAt(target, new Pos([], target.size))
+          for (let i = 0; i < node.content.length; i++) {
+            let child = node.content[i]
+            target.push(new Node.Inline(child.type, styles, child.text, child.attrs))
+          }
+        } else {
+          target.pushFrom(node)
+        }
         inline.stitchTextNodes(target, start)
+      } else {
+        target.pushFrom(node)
+      }
 
       iLeft = found - 1
       cutDepth = 0
@@ -153,7 +166,8 @@ function replace(doc, params) {
       onChunk: (before, size, after) => {
         middleChunks.push({before: before, size: size, after: after})
       },
-      liberal: true
+      liberal: true,
+      inheritStyles: params.inheritStyles
     })
     depthAfter = end.path.length
     result.inserted = new Collapsed(from, null, to)
@@ -172,17 +186,6 @@ function replace(doc, params) {
     }
     result.inserted.to = Pos.end(output) // FIXME is this robust?
   } else {
-    if (params.text) {
-      let block = output.path(from.path), end = block.content.length
-      if (block.type.contains != "inline") throw new Error("Can not insert text here")
-      result.inserted = new Collapsed(from, new Pos(from.path, from.offset + params.text.length), from)
-      result.inserted.chunk(from, params.text.length)
-      if (!block.type.contains == "inline")
-        throw new Error("Can not insert text at a non-inline position")
-      let styles = block.type != Node.types.code_block ? params.styles || inline.inlineStylesAt(doc, from) : Node.empty
-      block.content.push(Node.text(params.text, styles))
-      inline.stitchTextNodes(block, end)
-    }
     depthAfter = from.path.length
   }
 
@@ -201,3 +204,25 @@ defineTransform("replace", {
             source: result.before, from: params.pos, to: params.end || params.pos}
   }
 })
+
+function addPositions(doc, params, pos, end) {
+  ;({pos: params.pos, info: params.posInfo}) = describePos(doc, pos, "right")
+  ;({pos: params.end, info: params.endInfo}) = end ? describePos(doc, end, "left") : posDesc
+  return params
+}
+
+export function insertText(pos, text, options) {
+  let textNode = new Node.text(text, options && options.styles || Node.empty)
+  let dummy = new Node("doc", [new Node("paragraph", [textNode])])
+  let params = {name: "replace", source: dummy, from: new Pos([0], 0), to: new Pos([0], text.length)}
+  if (!options || !options.styles) params.inheritStyles = true
+  if (options && options.doc)
+    addPositions(doc, params, pos, options && options.end)
+  else
+    ;[params.pos, params.end] = [pos, options && options.end || pos]
+  return params
+}
+
+export function remove(doc, pos, end) {
+  return addPositions(doc, {name: "replace"}, pos, end)
+}

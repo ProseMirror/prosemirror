@@ -34,13 +34,3 @@ defineTransform("insertInline", {
     return {name: "replace", pos: params.pos, end: new Pos(params.pos.path, params.pos.offset + len)}
   }
 })
-
-defineTransform("insertText", {
-  apply(doc, params) {
-    if (!params.text) return flatTransform(doc)
-    return insertNode(doc, params.pos, Node.text(params.text))
-  },
-  invert(_result, params) {
-    return {name: "replace", pos: params.pos, end: new Pos(params.pos.path, params.pos.offset + params.text.length)}
-  }
-})

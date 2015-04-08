@@ -91,39 +91,6 @@ t("setType", "only_clear_for_code_block",
   doc(h1("hello<a> ", em("world"))),
   {type: "heading", attrs: {level: 1}})
 
-t("insertText", "simple",
-  doc(p("hello<a>")),
-  doc(p("hello world<a>")),
-  {text: " world"})
-t("insertText", "simple_inside",
-  doc(p("he<a>llo")),
-  doc(p("hej<a>llo")),
-  {text: "j"})
-t("insertText", "left_associative",
-  doc(p(em("hello<a>"), " world<after>")),
-  doc(p(em("hello big"), " world<after>")),
-  {text: " big"})
-t("insertText", "paths",
-  doc(p("<1>before"), p("<2>here<a>"), p("after<3>")),
-  doc(p("<1>before"), p("<2>here!<a>"), p("after<3>")),
-  {text: "!"})
-t("insertText", "at start",
-  doc(p("<a>one")),
-  doc(p("two <a>one")),
-  {text: "two "})
-t("insertText", "after br",
-  doc(p("hello", br, "<a>you")),
-  doc(p("hello", br, "...you")),
-  {text: "..."})
-t("insertText", "after_br_nojoin",
-  doc(p("hello", br, em("<a>you"))),
-  doc(p("hello", br, "...<a>", em("you"))),
-  {text: "..."})
-t("insertText", "before_br",
-  doc(p("<a>", br, "ok")),
-  doc(p("ay", br, "ok")),
-  {text: "ay"})
-
 t("insertInline", "break",
   doc(p("hello<a>there")),
   doc(p("hello", br, "<a>there")),

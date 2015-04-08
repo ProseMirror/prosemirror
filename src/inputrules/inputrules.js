@@ -1,4 +1,5 @@
 import {Node, Pos, style} from "../model"
+import {insertText} from "../transform"
 
 export function addInputRules(pm, rules) {
   if (!pm.mod.interpretInput)
@@ -69,7 +70,7 @@ class InputRules {
         if (typeof rule.handler == "string") {
           let offset = pos.offset - (match[1] || match[0]).length
           let start = new Pos(pos.path, offset)
-          this.pm.apply({name: "replace", pos: start, end: pos, text: rule.handler})
+          this.pm.apply(insertText(start, rule.handler, {end: pos}))
         } else {
           rule.handler(this.pm, match, pos)
         }

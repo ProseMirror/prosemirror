@@ -1,6 +1,6 @@
 import {Node, Pos, style, inline} from "../model"
 import {splitAt, joinPoint, liftableRange, wrappableRange,
-        describeTarget, describePos} from "../transform"
+        describeTarget, describePos, insertText} from "../transform"
 
 const commands = Object.create(null)
 
@@ -32,7 +32,7 @@ commands.insertHardBreak = pm => {
   pm.scrollIntoView()
   let pos = clearSelection(pm)
   if (pm.doc.path(pos.path).type == Node.types.code_block)
-    return pm.apply({name: "insertText", pos: pos, text: "\n"})
+    return pm.apply(insertText(pos, "\n"))
   else
     return pm.apply({name: "insertInline", pos: pos, type: "hard_break"})
 }
@@ -189,7 +189,7 @@ commands.endBlock = pm => {
       (range = liftableRange(pm.doc, head, head))) {
     return pm.apply(range)
   } else if (block.type == Node.types.code_block && head.offset < block.size) {
-    return pm.apply({name: "insertText", pos: head, text: "\n"})
+    return pm.apply(insertText(head, "\n"))
   } else {
     let end = head.path.length - 1
     let isList = head.path.length > 1 && head.path[end] == 0 &&

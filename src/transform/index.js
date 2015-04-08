@@ -1,6 +1,6 @@
 export {defineTransform, applyTransform, invertTransform, flatTransform, Result} from "./transform"
 export {joinPoint, splitAt, liftableRange, wrappableRange} from "./block"
 export {describePos, describeTarget} from "./resolve"
-export {glue} from "./replace"
+export {remove, insertText} from "./replace"
 import "./insert"
 import "./style"

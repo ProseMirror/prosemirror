@@ -1,3 +1,5 @@
+import {insertText} from "../src/transform"
+
 import {doc, h1, blockquote, p, li, ol, ul, em, a, br} from "./build"
 
 import Failure from "./failure"
@@ -7,19 +9,20 @@ import {testTransform} from "./cmp"
 function t(name, base, source, expect) {
   tests["replace_" + name] = function() {
     let text = null
+    let params
     if (typeof source == "string") {
-      text = source
-      source = null
+      params = insertText(base.tag.a, source, {end: base.tag.b})
+    } else {
+      params = {
+        name: "replace",
+        pos: base.tag.a,
+        end: base.tag.b,
+        source: !text && source,
+        from: source && source.tag.a,
+        to: source && source.tag.b
+      }
     }
-    testTransform(base, expect, {
-      name: "replace",
-      pos: base.tag.a,
-      end: base.tag.b,
-      source: !text && source,
-      from: source && source.tag.a,
-      to: source && source.tag.b,
-      text: text
-    })
+    testTransform(base, expect, params)
   }
 }
 
@@ -88,3 +91,41 @@ t("deep_insert",
   doc(ol(li(p("hello<a>world")), li(p("bye"))), p("ne<b>xt")),
   doc(blockquote(blockquote(p("one"), p("twworld"))), ol(li(p("bye"))), p("ne<a><b>hree<3>"),
       blockquote(blockquote(p("four<4>")))))
+
+t("text_inherit_style",
+  doc(p(em("he<a>lo"))),
+  "l",
+  doc(p(em("hello"))))
+
+t("text_simple",
+  doc(p("hello<a>")),
+  " world",
+  doc(p("hello world<a>")))
+t("text_simple_inside",
+  doc(p("he<a>llo")),
+  "j",
+  doc(p("hej<a>llo")))
+t("text_left_associative",
+  doc(p(em("hello<a>"), " world<after>")),
+  " big",
+  doc(p(em("hello big"), " world<after>")))
+t("text_paths",
+  doc(p("<1>before"), p("<2>here<a>"), p("after<3>")),
+  "!",
+  doc(p("<1>before"), p("<2>here!<a>"), p("after<3>")))
+t("text_at_start",
+  doc(p("<a>one")),
+  "two ",
+  doc(p("two <a>one")))
+t("text_after br",
+  doc(p("hello", br, "<a>you")),
+  "...",
+  doc(p("hello", br, "...you")))
+t("text_after_br_nojoin",
+  doc(p("hello", br, em("<a>you"))),
+  "...",
+  doc(p("hello", br, "...<a>", em("you"))))
+t("text_before_br",
+  doc(p("<a>", br, "ok")),
+  "ay",
+  doc(p("ay", br, "ok")))

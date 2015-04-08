@@ -1,4 +1,5 @@
 import {fromDOM, toDOM, Pos, Node} from "../model"
+import {insertText} from "../transform"
 
 import * as keys from "./keys"
 import {mac, addClass, rmClass} from "./dom"
@@ -101,8 +102,7 @@ handlers.keydown = (pm, e) => {
 
 function inputText(pm, range, text) {
   if (range.empty && !text) return false
-  pm.apply({name: "replace", pos: range.from, end: range.to,
-            text: text, styles: pm.input.storedInlineStyles})
+  pm.apply(insertText(range.from, text, {end: range.to, styles: pm.input.storedInlineStyles}))
   pm.signal("textInput", text)
   pm.scrollIntoView()
 }
