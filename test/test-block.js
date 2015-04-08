@@ -4,7 +4,7 @@ import tests from "./tests"
 import {testTransform} from "./cmp"
 
 import {Node, Pos} from "../src/model"
-import {liftableRange, describeTarget, describePos, joinPoint} from "../src/transform"
+import {splitAt, wrappableRange, liftableRange, describeTarget, describePos, joinPoint} from "../src/transform"
 
 function t(op, name, doc, expect, params) {
   tests[op + "_" + name] = function() {
@@ -18,12 +18,16 @@ function t(op, name, doc, expect, params) {
       let desc = describePos(doc, pos, pos.offset ? "left" : "right")
       params.pos = desc.pos
       params.posInfo = desc.info
+    } else if (op == "wrap") {
+      params = wrappableRange(doc, doc.tag.a, doc.tag.b || doc.tag.a, params.type, params.attrs, params.join)
     } else if (op == "remove") {
       let desc = describeTarget(doc, doc.tag.a.path)
       params.pos = desc.pos
       params.posInfo = desc.info
-    } else if (op == "lift") {
+    } else if (op == "join") {
       params = joinPoint(doc, doc.tag.a)
+    } else if (op == "split") {
+      params = splitAt(doc, doc.tag.a, params.depth)
     } else {
       if (!params.pos) params.pos = doc.tag.a
       if (!params.end) params.end = doc.tag.b
@@ -107,11 +111,11 @@ t("wrap", "bullet_list",
 t("wrap", "join_left",
   doc(ol(li(p("hi<1>"))), p("aye<a>"), p("oy<b>")),
   doc(ol(li(p("hi<1>")), li(p("aye<a>")), li(p("oy<b>")))),
-  {type: "ordered_list", joinLeft: true})
+  {type: "ordered_list", join: "left"})
 t("wrap", "join_right",
   doc(p("aye<a>"), p("oy<b>"), ol(li(p("hi<1>")))),
   doc(ol(li(p("aye<a>")), li(p("oy<b>")), li(p("hi<1>")))),
-  {type: "ordered_list", joinRight: true})
+  {type: "ordered_list", join: "right"})
 
 t("split", "simple",
   doc(p("foo<a>bar")),

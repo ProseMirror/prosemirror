@@ -1,5 +1,6 @@
 import {Pos, Node, style, inline, slice} from "../model"
 import {Collapsed, defineTransform, Result} from "./transform"
+import {resolvePos} from "./resolve"
 
 function nodesLeft(doc, depth) {
   let nodes = []
@@ -134,7 +135,9 @@ function addDeletedChunks(del, node, from, to, depth = 0) {
 }
 
 function replace(doc, params) {
-  let from = params.pos, to = params.end || params.pos
+  let from = resolvePos(doc, params.pos, params.posInfo)
+  let to = params.end ? resolvePos(doc, params.end, params.endInfo) : from
+  if (!from || !to) return flatTransform(doc)
 
   let output = slice.before(doc, from)
   let result = new Result(doc, output)
@@ -170,9 +173,10 @@ function replace(doc, params) {
     result.inserted.to = Pos.end(output) // FIXME is this robust?
   } else {
     if (params.text) {
+      let block = output.path(from.path), end = block.content.length
+      if (block.type.contains != "inline") throw new Error("Can not insert text here")
       result.inserted = new Collapsed(from, new Pos(from.path, from.offset + params.text.length), from)
       result.inserted.chunk(from, params.text.length)
-      let block = output.path(from.path), end = block.content.length
       if (!block.type.contains == "inline")
         throw new Error("Can not insert text at a non-inline position")
       let styles = block.type != Node.types.code_block ? params.styles || inline.inlineStylesAt(doc, from) : Node.empty

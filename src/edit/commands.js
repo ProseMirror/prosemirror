@@ -1,5 +1,6 @@
 import {Node, Pos, style, inline} from "../model"
-import {joinPoint, liftableRange, wrappableRange, describeTarget, describePos} from "../transform"
+import {splitAt, joinPoint, liftableRange, wrappableRange,
+        describeTarget, describePos} from "../transform"
 
 const commands = Object.create(null)
 
@@ -79,7 +80,7 @@ function delBlockBackward(pm, pos) {
     // Top of list item below other list item
     // Join with the one above
     if (parent.type == Node.types.list_item &&
-        offset == 0 && pos.path[last - 1] > 0) {
+        offset == 0 && pos.path[last - 1] > 0)
       return pm.apply(joinPoint(pm.doc, pos))
     // Any other nested block, lift up
     else if (range = liftableRange(pm.doc, pos, pos))
@@ -173,8 +174,7 @@ commands.lift = pm => {
 function wrap(pm, type) {
   let sel = pm.selection
   pm.scrollIntoView()
-  let range = wrappableRange(pm.doc, sel.from, sel.to)
-  return pm.apply({name: "wrap", pos: range.from, end: range.to, type: type})
+  return pm.apply(wrappableRange(pm.doc, sel.from, sel.to, type))
 }
 
 commands.wrapBulletList = pm => wrap(pm, "bullet_list")
@@ -195,7 +195,7 @@ commands.endBlock = pm => {
     let isList = head.path.length > 1 && head.path[end] == 0 &&
         pm.doc.path(head.path.slice(0, end)).type == Node.types.list_item
     let type = head.offset == block.size ? "paragraph" : null
-    return pm.apply({name: "split", pos: head, depth: isList ? 2 : 1, type: type})
+    return pm.apply(splitAt(pm.doc, head, isList ? 2 : 1, type})
   }
 }
 
@@ -223,7 +223,7 @@ function insertOpaqueBlock(pm, type, attrs) {
   let parent = pm.doc.path(sel.head.path)
   if (parent.type.type != "block") return false
   if (sel.head.offset) {
-    pm.apply({name: "split", pos: sel.head})
+    pm.apply(splitAt(pm.doc, sel.head))
     sel = pm.selection
   }
   let desc = describePos(pm.doc, sel.head.shorten(), "right")

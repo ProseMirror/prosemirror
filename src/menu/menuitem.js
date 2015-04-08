@@ -1,5 +1,5 @@
 import {style, inline, Node} from "../model"
-import {joinPoint, liftableRange, wrappableRange, describeTarget} from "../transform"
+import {splitAt, joinPoint, liftableRange, wrappableRange, describeTarget} from "../transform"
 import {elt} from "../edit/dom"
 
 export class Item {
@@ -73,7 +73,7 @@ export class InsertBlockItem extends Item {
   apply(pm) {
     let sel = pm.selection
     if (sel.head.offset) {
-      pm.apply({name: "split", pos: sel.head})
+      pm.apply(splitAt(pm.doc, sel.head))
       sel = pm.selection
     }
     let desc = describeTarget(pm.doc, sel.head.shorten(), "right")
@@ -88,8 +88,7 @@ export class WrapItem extends Item {
   }
   apply(pm) {
     let sel = pm.selection
-    let range = wrappableRange(pm.doc, sel.from, sel.to)
-    pm.apply({name: "wrap", pos: range.from, end: range.to, type: this.type})
+    pm.apply(wrappableRange(pm.doc, sel.from, sel.to, this.type))
   }
 }
 

@@ -93,7 +93,7 @@ defineTransform("lift", {
     let parent = result.before.path(lift.range.path)
     let joinLeft = lift.range.from > 0
     let joinRight = lift.range.to < parent.content.length
-    return {name: "wrap", joinLeft: joinLeft, joinRight: joinRight,
+    return {name: "wrap", join: joinLeft && joinRight ? true : joinLeft ? "left" : joinRight ? "right" : false,
             pos: result.map(params.pos), end: params.end && result.map(params.end),
             type: parent.type.name, attrs: parent.attrs}
   }
@@ -101,15 +101,16 @@ defineTransform("lift", {
 
 function preciseJoinPoint(doc, pos, allowInline) {
   let joinDepth = -1
-  for (let i = 0, parent = doc; i < pos.path.length; i++) {
-    let index = pos.path[i]
+  for (let i = 0, parent = doc; i <= pos.path.length; i++) {
+    let index = i == pos.path.length ? pos.offset : pos.path[i]
     let type = parent.content[index].type
     if (index > 0 && parent.content[index - 1].type == type &&
         (allowInline || type.contains != "inline"))
       joinDepth = i
     parent = parent.content[index]
   }
-  if (joinDepth > -1) return pos.shorten(joinDepth)
+  if (joinDepth > -1)
+    return joinDepth == pos.path.length ? pos : pos.shorten(joinDepth)
 }
 
 export function joinPoint(doc, pos, allowInline) {
@@ -123,7 +124,7 @@ export function joinPoint(doc, pos, allowInline) {
 function join(doc, params) {
   let pos = resolvePos(doc, params.pos, params.posInfo)
   let point = pos && preciseJoinPoint(doc, pos, params.allowInline)
-  if (!point || pos.cmp(Pos.after(doc, point))) return flatTransform(doc)
+  if (!point || pos.cmp(point)) return flatTransform(doc)
 
   let toJoined = point.path.concat(point.offset - 1)
   let output = slice.around(doc, toJoined)
@@ -156,14 +157,21 @@ defineTransform("join", {
   }
 })
 
-export function wrappableRange(doc, from, to) {
+export function wrappableRange(doc, from, to, type, attrs, join) {
   let range = selectedSiblings(doc, from, to)
-  return {from: Pos.after(doc, new Pos(range.path, range.from)),
-          to: Pos.before(doc, new Pos(range.path, range.to))}
+  let descFrom = describePos(doc, new Pos(range.path, range.from), "right")
+  let descTo = describePos(doc, new Pos(range.path, range.to), "left")
+  return {name: "wrap", pos: descFrom.pos, posInfo: descFrom.info,
+          end: descTo.pos, endInfo: descTo.info,
+          type: type, attrs: attrs, join: join}
 }
 
 function wrap(doc, params) {
-  let range = selectedSiblings(doc, params.pos, params.end || params.pos)
+  let pos = resolvePos(doc, params.pos, params.posInfo)
+  let end = resolvePos(doc, params.end, params.endInfo)
+  if (!pos || !end || !sameArray(pos.path, end.path) || pos.offset >= end.offset)
+    return flatTransform(doc)
+  let range = {path: pos.path, from: pos.offset, to: end.offset}
 
   let source = doc.path(range.path)
   let newNode = params.node || new Node(params.type, null, params.attrs)
@@ -174,9 +182,9 @@ function wrap(doc, params) {
   for (let i = connAround.length - 1; i >= 0; i--)
     outerNode = new Node(connAround[i], [outerNode])
 
-  let joinLeft = params.joinLeft && range.from &&
+  let joinLeft = params.join && params.join != "right" && range.from &&
       outerNode.sameMarkup(source.content[range.from - 1])
-  let joinRight = params.joinRight && range.to < source.content.length &&
+  let joinRight = params.join && params.join != "left" && range.to < source.content.length &&
       outerNode.sameMarkup(source.content[range.to])
 
   let before = new Pos(range.path, range.from - (joinLeft ? 1 : 0))
@@ -234,8 +242,15 @@ defineTransform("wrap", {
   }
 })
 
+export function splitAt(doc, pos, depth, type, from) {
+  let desc = describePos(doc, pos, from)
+  return {name: "split", pos: desc.pos, posInfo: desc.info,
+          depth: depth || 1, type: type}
+}
+
 function split(doc, params) {
-  let depth = params.depth || 1, pos = params.pos
+  let pos = resolvePos(doc, params.pos, params.posInfo)
+  let depth = params.depth || 1
   let copy = slice.around(doc, pos.path)
   let result = new Result(doc, copy)
 
