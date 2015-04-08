@@ -206,10 +206,10 @@ defineTransform("replace", {
   }
 })
 
-function addPositions(doc, params, pos, end) {
-  let posDesc = describePos(doc, pos, "right")
+function addPositions(doc, params, pos, end, from) {
+  let posDesc = describePos(doc, pos, from || "right")
   ;({pos: params.pos, info: params.posInfo}) = posDesc
-  ;({pos: params.end, info: params.endInfo}) = end ? describePos(doc, end, "left") : posDesc
+  ;({pos: params.end, info: params.endInfo}) = end ? describePos(doc, end, from || "left") : posDesc
   return params
 }
 
@@ -254,4 +254,27 @@ export function remove(doc, pos, end, options) {
 export function removeNode(doc, path, options) {
   let before = Pos.shorten(path), after = Pos.shorten(path, null, 1)
   return addPositions(doc, {name: "replace"}, before, after, options && options.from)
+}
+
+function joinPoint(doc, pos, allowInline) {
+  let joinDepth = -1
+  for (let i = 0, parent = doc; i <= pos.path.length; i++) {
+    let index = i == pos.path.length ? pos.offset : pos.path[i]
+    let type = parent.content[index].type
+    if (index > 0 && parent.content[index - 1].type == type &&
+        (allowInline || type.contains != "inline"))
+      joinDepth = i
+    parent = parent.content[index]
+  }
+  if (joinDepth > -1)
+    return joinDepth == pos.path.length ? pos : pos.shorten(joinDepth)
+}
+
+export function joinNodes(doc, pos, options) {
+  let point = joinPoint(doc, pos, options && options.allowInline)
+  if (!point) return null
+  let leftPath = point.path.concat(point.offset - 1)
+  let left = new Pos(leftPath, doc.path(leftPath).maxOffset)
+  let right = new Pos(point.path.concat(point.offset), 0)
+  return remove(doc, left, right)
 }

@@ -4,7 +4,7 @@ import tests from "./tests"
 import {testTransform} from "./cmp"
 
 import {Node, Pos} from "../src/model"
-import {splitAt, wrappableRange, liftableRange, describeTarget, describePos, joinPoint} from "../src/transform"
+import {splitAt, wrappableRange, liftableRange, describeTarget, describePos} from "../src/transform"
 
 function t(op, name, doc, expect, params) {
   tests[op + "_" + name] = function() {
@@ -12,20 +12,8 @@ function t(op, name, doc, expect, params) {
     params.name = op
     if (op == "lift" && !params.pos) {
       params = liftableRange(doc, doc.tag.a, doc.tag.b || doc.tag.a)
-    } else if (op == "insert") {
-      let pos = doc.tag.a
-      pos = pos.shorten(null, pos.offset ? 1 : 0)
-      let desc = describePos(doc, pos, pos.offset ? "left" : "right")
-      params.pos = desc.pos
-      params.posInfo = desc.info
     } else if (op == "wrap") {
       params = wrappableRange(doc, doc.tag.a, doc.tag.b || doc.tag.a, params.type, params.attrs, params.join)
-    } else if (op == "remove") {
-      let desc = describeTarget(doc, doc.tag.a.path)
-      params.pos = desc.pos
-      params.posInfo = desc.info
-    } else if (op == "join") {
-      params = joinPoint(doc, doc.tag.a)
     } else if (op == "split") {
       params = splitAt(doc, doc.tag.a, params.depth)
     } else {
@@ -66,19 +54,6 @@ t("lift", "multiple_from_list",
 t("lift", "multiple_from_list_with_two_items",
   doc(ul(li(p("one<a>"), p("<half>half")), li(p("two<b>")), li(p("three<after>")))),
   doc(p("one<a>"), p("<half>half"), p("two<b>"), ul(li(p("three<after>")))))
-
-t("join", "simple",
-  doc(blockquote(p("<before>a")), blockquote(p("<a>b")), p("after<after>")),
-  doc(blockquote(p("<before>a"), p("<a>b")), p("after<after>")))
-t("join", "deeper",
-  doc(blockquote(blockquote(p("a"), p("b<before>")), blockquote(p("<a>c"), p("d<after>")))),
-  doc(blockquote(blockquote(p("a"), p("b<before>"), p("<a>c"), p("d<after>")))))
-t("join", "lists",
-  doc(ol(li(p("one")), li(p("two"))), ol(li(p("<a>three")))),
-  doc(ol(li(p("one")), li(p("two")), li(p("<a>three")))))
-t("join", "list_item",
-  doc(ol(li(p("one")), li(p("two")), li(p("<a>three")))),
-  doc(ol(li(p("one")), li(p("two"), p("<a>three")))))
 
 t("wrap", "simple",
   doc(p("one"), p("<a>two"), p("three")),

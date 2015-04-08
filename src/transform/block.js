@@ -99,64 +99,6 @@ defineTransform("lift", {
   }
 })
 
-function preciseJoinPoint(doc, pos, allowInline) {
-  let joinDepth = -1
-  for (let i = 0, parent = doc; i <= pos.path.length; i++) {
-    let index = i == pos.path.length ? pos.offset : pos.path[i]
-    let type = parent.content[index].type
-    if (index > 0 && parent.content[index - 1].type == type &&
-        (allowInline || type.contains != "inline"))
-      joinDepth = i
-    parent = parent.content[index]
-  }
-  if (joinDepth > -1)
-    return joinDepth == pos.path.length ? pos : pos.shorten(joinDepth)
-}
-
-export function joinPoint(doc, pos, allowInline) {
-  var found = preciseJoinPoint(doc, pos, allowInline)
-  if (found) {
-    let desc = describePos(doc, found, "right")
-    return {name: "join", pos: desc.pos, posInfo: desc.info}
-  }
-}
-
-function join(doc, params) {
-  let pos = resolvePos(doc, params.pos, params.posInfo)
-  let point = pos && preciseJoinPoint(doc, pos, params.allowInline)
-  if (!point || pos.cmp(point)) return flatTransform(doc)
-
-  let toJoined = point.path.concat(point.offset - 1)
-  let output = slice.around(doc, toJoined)
-  let parent = output.path(point.path)
-  let target = parent.content[point.offset - 1]
-  let from = parent.content[point.offset]
-
-  let result = new Result(doc, output)
-  let pathToFrom = point.path.concat(point.offset)
-  result.chunk(new Pos(pathToFrom, 0), from.maxOffset,
-               new Pos(point.path.concat(point.offset - 1), target.maxOffset))
-  result.chunk(new Pos(point.path, point.offset + 1), parent.content.length - point.offset - 1,
-               new Pos(point.path, point.offset))
-
-  parent.content.splice(point.offset, 1)
-  let oldSize = target.content.length
-  target.pushFrom(from)
-  if (target.type.contains == "inline")
-    inline.stitchTextNodes(target, oldSize)
-
-  return result
-}
-
-defineTransform("join", {
-  apply: join,
-  invert(result, params) {
-    let point = preciseJoinPoint(result.before, params.pos)
-    return {name: "split", clean: true,
-            pos: result.map(params.pos), depth: params.pos.path.length - point.path.length}
-  }
-})
-
 export function wrappableRange(doc, from, to, type, attrs, join) {
   let range = selectedSiblings(doc, from, to)
   let descFrom = describePos(doc, new Pos(range.path, range.from), "right")

@@ -1,5 +1,5 @@
 import {Node, Pos, style, inline} from "../model"
-import {splitAt, joinPoint, liftableRange, wrappableRange,
+import {splitAt, joinNodes, liftableRange, wrappableRange,
         insertText, insertNode, removeNode} from "../transform"
 
 const commands = Object.create(null)
@@ -79,7 +79,7 @@ function delBlockBackward(pm, pos) {
     // Join with the one above
     if (parent.type == Node.types.list_item &&
         offset == 0 && pos.path[last - 1] > 0)
-      return pm.apply(joinPoint(pm.doc, pos))
+      return pm.apply(joinNodes(pm.doc, pos))
     // Any other nested block, lift up
     else if (range = liftableRange(pm.doc, pos, pos))
       return pm.apply(range)
@@ -149,10 +149,10 @@ commands.undo = pm => scrollAnd(pm, pm.history.undo())
 commands.redo = pm => scrollAnd(pm, pm.history.redo())
 
 commands.join = pm => {
-  let point = joinPoint(pm.doc, pm.selection.head)
-  if (point) {
+  let join = joinNodes(pm.doc, pm.selection.head)
+  if (join) {
     pm.scrollIntoView()
-    pm.apply(point)
+    pm.apply(join)
   }
 }
 

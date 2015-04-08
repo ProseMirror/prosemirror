@@ -1,5 +1,5 @@
 import {Node} from "../src/model"
-import {insertText, insertNode, removeNode} from "../src/transform"
+import {insertText, insertNode, removeNode, joinNodes} from "../src/transform"
 
 import {doc, h1, blockquote, p, li, ol, ul, em, a, br} from "./build"
 
@@ -11,7 +11,9 @@ function t(name, base, source, expect) {
   tests["replace_" + name] = function() {
     let text = null
     let params
-    if (typeof source == "string") {
+    if (source == "~") {
+      params = joinNodes(base, base.tag.a)
+    } else if (typeof source == "string") {
       params = insertText(base.tag.a, source, {end: base.tag.b})
     } else if (source === false) {
       params = removeNode(base, base.tag.a.path)
@@ -160,3 +162,20 @@ t("insert_start_of_blockquote",
   doc(blockquote("<a>", p("he<1>y")), p("after<2>")),
   new Node("paragraph"),
   doc(blockquote(p(), p("<a>he<1>y")), p("after<2>")))
+
+t("join_simple",
+  doc(blockquote(p("<before>a")), blockquote(p("<a>b")), p("after<after>")),
+  "~",
+  doc(blockquote(p("<before>a"), p("<a>b")), p("after<after>")))
+t("join_deeper",
+  doc(blockquote(blockquote(p("a"), p("b<before>")), blockquote(p("<a>c"), p("d<after>")))),
+  "~",
+  doc(blockquote(blockquote(p("a"), p("b<before>"), p("<a>c"), p("d<after>")))))
+t("join_lists",
+  doc(ol(li(p("one")), li(p("two"))), ol(li(p("<a>three")))),
+  "~",
+  doc(ol(li(p("one")), li(p("two")), li(p("<a>three")))))
+t("join_list_item",
+  doc(ol(li(p("one")), li(p("two")), li(p("<a>three")))),
+  "~",
+  doc(ol(li(p("one")), li(p("two"), p("<a>three")))))

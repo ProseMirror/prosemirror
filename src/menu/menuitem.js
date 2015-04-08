@@ -1,5 +1,5 @@
 import {style, inline, Node} from "../model"
-import {splitAt, joinPoint, liftableRange, wrappableRange, insertNode} from "../transform"
+import {splitAt, joinNodes, liftableRange, wrappableRange, insertNode} from "../transform"
 import {elt} from "../edit/dom"
 
 export class Item {
@@ -31,10 +31,10 @@ export class JoinItem extends Item {
     super(icon, title || "Join with above block")
   }
   select(pm) {
-    return joinPoint(pm.doc, pm.selection.head)
+    return joinNodes(pm.doc, pm.selection.head)
   }
   apply(pm) {
-    let point = joinPoint(pm.doc, pm.selection.head)
+    let point = joinNodes(pm.doc, pm.selection.head)
     if (point) pm.apply(point)
   }
 }
