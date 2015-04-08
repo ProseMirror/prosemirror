@@ -65,12 +65,16 @@ export default class Node {
     return node
   }
 
-  sameMarkup(other) {
-    if (this.type != other.type) return false
-    for (var prop in this.attrs)
-      if (other.attrs[prop] !== this.attrs[prop])
+  static compareMarkup(typeA, typeB, attrsA, attrsB) {
+    if (typeA != typeB) return false
+    for (var prop in attrsA)
+      if (attrsB[prop] !== attrsA[prop])
         return false
     return true
+  }
+
+  sameMarkup(other) {
+    return compareMarkup(this.type, other.type, this.attrs, other.attrs)
   }
 
   toJSON() {

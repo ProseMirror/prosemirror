@@ -4,13 +4,18 @@ import tests from "./tests"
 import {testTransform} from "./cmp"
 
 import {Node, Pos} from "../src/model"
+import {liftableRange} from "../src/transform"
 
 function t(op, name, doc, expect, params) {
   tests[op + "_" + name] = function() {
     if (!params) params = {}
     params.name = op
-    if (!params.pos) params.pos = doc.tag.a
-    if (!params.end) params.end = doc.tag.b
+    if (op == "lift" && !params.pos) {
+      params = liftableRange(doc, doc.tag.a, doc.tag.b || doc.tag.a)
+    } else {
+      if (!params.pos) params.pos = doc.tag.a
+      if (!params.end) params.end = doc.tag.b
+    }
     testTransform(doc, expect, params)
   }
 }
@@ -27,9 +32,6 @@ t("lift", "simple_at_end",
 t("lift", "simple_alone",
   doc(blockquote(p("<a>t<in>wo"))),
   doc(p("<a>t<in>wo")))
-t("lift", "noop",
-  doc(p("<a>hi")),
-  doc(p("<a>hi")))
 t("lift", "multiple",
   doc(blockquote(blockquote(p("on<a>e"), p("tw<b>o")), p("three"))),
   doc(blockquote(p("on<a>e"), p("tw<b>o"), p("three"))))

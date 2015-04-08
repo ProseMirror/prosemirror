@@ -1,6 +1,8 @@
 import {Pos, Node, slice, inline} from "../model"
 import {Collapsed, defineTransform, Result, flatTransform} from "./transform"
 import {glue} from "./replace"
+import {resolveTarget, resolvePos, describePos} from "./resolve"
+import {sameArray} from "./util"
 
 export function selectedSiblings(doc, from, to) {
   let len = Math.min(from.path.length, to.path.length)
@@ -20,16 +22,17 @@ function canUnwrap(container, from, to) {
 }
 
 export function liftableRange(doc, from, to) {
-  let found = canBeLifted(doc, from, to)
+  let range = selectedSiblings(doc, from, to)
+  let found = canBeLifted(doc, range)
   if (found) {
-    let range = found.range
-    return {from: Pos.after(doc, new Pos(range.path, range.from)),
-            to: Pos.before(doc, new Pos(range.path, range.to))}
+    let fromDesc = describePos(doc, new Pos(range.path, range.from), "right")
+    let toDesc = describePos(doc, new Pos(range.path, range.to), "left")
+    return {name: "lift", pos: fromDesc.pos, info: fromDesc.info,
+            end: toDesc.pos, endInfo: toDesc.info}
   }
 }
 
-function canBeLifted(doc, from, to) {
-  let range = selectedSiblings(doc, from, to)
+function canBeLifted(doc, range) {
   let container = doc.path(range.path)
   let parentDepth, unwrap = false, innerType = container.type.contains
   for (;;) {
@@ -38,20 +41,21 @@ function canBeLifted(doc, from, to) {
       if (node.type.contains == innerType) parentDepth = i
       node = node.content[range.path[i]]
     }
-    if (parentDepth > -1) return {
-      range: range,
-      path: range.path.slice(0, parentDepth),
-      unwrap: unwrap
-    }
+    if (parentDepth > -1) return {path: range.path.slice(0, parentDepth),
+                                  unwrap: unwrap}
     if (unwrap || !(innerType = canUnwrap(container, range.from, range.to))) return null
     unwrap = true
   }
 }
 
 function lift(doc, params) {
-  let lift = canBeLifted(doc, params.pos, params.end || params.pos)
+  let pos = resolvePos(doc, params.pos, params.info)
+  let end = resolvePos(doc, params.end, params.endInfo)
+  if (!sameArray(pos.path, end.path) || pos.offset >= end.offset)
+    return flatTransform(doc)
+  let range = {path: pos.path, from: pos.offset, to: end.offset}
+  let lift = canBeLifted(doc, range)
   if (!lift) return flatTransform(doc)
-  let range = lift.range
 
   let before = new Pos(range.path, range.from)
   while (before.path.length > lift.path.length && before.offset == 0)

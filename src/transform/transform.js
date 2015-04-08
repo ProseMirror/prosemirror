@@ -1,4 +1,4 @@
-import {Pos} from "../model"
+import {Pos, Node} from "../model"
 
 export class Chunk {
   constructor(start, size) {

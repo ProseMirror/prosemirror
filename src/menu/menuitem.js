@@ -22,7 +22,7 @@ export class LiftItem extends Item {
   apply(pm) {
     let sel = pm.selection
     let range = liftableRange(pm.doc, sel.from, sel.to)
-    pm.apply({name: "lift", pos: range.from, end: range.to})
+    pm.apply(range)
   }
 }
 

@@ -24,9 +24,13 @@ export default class Pos {
 
   cmp(other) { return Pos.cmp(this.path, this.offset, other.path, other.offset) }
 
+  static shorten(path, to = null, offset = 0) {
+    if (to == null) to = path.length - 1
+    return new Pos(path.slice(0, to), path[to] + offset)
+  }
+
   shorten(to = null, offset = 0) {
-    if (to == null) to = this.path.length - 1
-    return new Pos(this.path.slice(0, to), this.path[to] + offset)
+    return Pos.shorten(this.path, to, offset)
   }
 
   offsetAt(pos, offset) {

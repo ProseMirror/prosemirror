@@ -81,7 +81,7 @@ function delBlockBackward(pm, pos) {
       return pm.apply({name: "join", pos: pos})
     // Any other nested block, lift up
     else if (range = liftableRange(pm.doc, pos, pos))
-      return pm.apply({name: "lift", pos: range.from, end: range.to})
+      return pm.apply(range)
     else
       return false
   }
@@ -160,7 +160,7 @@ commands.lift = pm => {
   let range = liftableRange(pm.doc, sel.from, sel.to)
   if (range) {
     pm.scrollIntoView()
-    return pm.apply({name: "lift", pos: range.from, end: range.to})
+    return pm.apply(range)
   } else {
     return false
   }
@@ -183,7 +183,7 @@ commands.endBlock = pm => {
   let block = pm.doc.path(head.path), range
   if (head.path.length > 1 && block.content.length == 0 &&
       (range = liftableRange(pm.doc, head, head))) {
-    return pm.apply({name: "lift", pos: range.from, end: range.to})
+    return pm.apply(range)
   } else if (block.type == Node.types.code_block && head.offset < block.size) {
     return pm.apply({name: "insertText", pos: head, text: "\n"})
   } else {
