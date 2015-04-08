@@ -16,73 +16,46 @@ function build(type, attrs) {
 
 let styles = []
 
-function pushInto(node, values) {
-  if (Array.isArray(values))
-    for (var i = 0; i < values.length; i++)
-      node.push(values[i])
-  else
-    node.push(values)
-}
-
-function parseDoc(value) {
+function parseDoc(value, target, path) {
   if (typeof value == "string") {
-    let re = /<(\w+)>/g, m, out = "", pos = 0
-    let node = new Node.Inline("text", styles, "")
+    let offset = target.maxOffset
+    let re = /<(\w+)>/g, m, pos = 0, out = ""
     while (m = re.exec(value)) {
-      node.text += value.slice(pos, m.index)
+      out += value.slice(pos, m.index)
       pos = m.index + m[0].length
-      tags[m[1]] = {node: node, offset: node.text.length}
+      tags[m[1]] = new Pos(path, offset + out.length)
     }
-    node.text += value.slice(pos)
-    return node
+    out += value.slice(pos)
+    if (out) target.push(Node.text(out, styles))
   } else if (value.type == "inline") {
     let start = styles, result = []
     styles = style.add(styles, value.style)
     for (let i = 0; i < value.content.length; i++)
-      result = result.concat(parseDoc(value.content[i]))
+      parseDoc(value.content[i], target, path)
     styles = start
-    return result
   } else if (value.type == "insert") {
     let type = Node.types[value.style]
     if (type.type == "inline")
-      return new Node.Inline(type, styles, value.text, value.attrs)
+      target.push(new Node.Inline(type, styles, value.text, value.attrs))
     else
-      return new Node(type, value.content, value.attrs)
+      target.push(new Node(type, value.content, value.attrs))
   } else {
     let node = new Node(value.style, null, value.attrs)
+    let nodePath = path.concat(target.maxOffset)
     styles = []
     for (let i = 0; i < value.content.length; i++)
-      pushInto(node, parseDoc(value.content[i]))
-    return node
+      parseDoc(value.content[i], node, nodePath)
+    target.push(node)
   }
 }
 
 let tags = Object.create(null)
 
-function locateTags(doc, tags) {
-  let path = [], offset = 0, result = {}
-  function scan(node) {
-    for (let tag in tags)
-      if (tags[tag].node == node)
-        result[tag] = new Pos(path.slice(), tags[tag].offset + offset)
-    if (node.type.type == "block") offset = 0
-    for (let i = 0; i < node.content.length; i++) {
-      let child = node.content[i]
-      if (node.type.contains != "inline") path.push(i)
-      scan(child)
-      if (node.type.contains != "inline") path.pop()
-      else offset += child.size
-      if (child.type == Node.types.text && child.text == "")
-        node.content.splice(i--, 1)
-    }
-  }
-  scan(doc)
-  return result
-}
-
 export function doc() {
-  let doc = parseDoc(build("doc").apply(null, arguments))
-  doc.tag = locateTags(doc, tags)
+  let doc = new Node("doc")
+  for (let i = 0; i < arguments.length; i++)
+    parseDoc(arguments[i], doc, [])
+  doc.tag = tags
   tags = Object.create(null)
   return doc
 }
