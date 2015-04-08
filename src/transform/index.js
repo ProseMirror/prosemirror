@@ -1,5 +1,5 @@
 export {defineTransform, applyTransform, invertTransform, flatTransform, Result} from "./transform"
 export {joinPoint, splitAt, liftableRange, wrappableRange} from "./block"
 export {describePos, describeTarget} from "./resolve"
-export {remove, insertText, insertInline} from "./replace"
+export {remove, insertText, insertInline, removeNode} from "./replace"
 import "./style"

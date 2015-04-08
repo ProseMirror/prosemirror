@@ -1,5 +1,5 @@
 import {Node} from "../src/model"
-import {insertText, insertInline} from "../src/transform"
+import {insertText, insertInline, removeNode} from "../src/transform"
 
 import {doc, h1, blockquote, p, li, ol, ul, em, a, br} from "./build"
 
@@ -13,7 +13,9 @@ function t(name, base, source, expect) {
     let params
     if (typeof source == "string") {
       params = insertText(base.tag.a, source, {end: base.tag.b})
-    } else if (!source) {
+    } else if (source === false) {
+      params = removeNode(base, base.tag.a.path)
+    } else if (source == null) {
       params = {name: "replace", pos: base.tag.a, end: base.tag.b}
     } else if (source.tag) {
       params = {name: "replace", pos: base.tag.a, end: base.tag.b,
@@ -133,3 +135,16 @@ t("insert_break",
   doc(p("hello<a>there")),
   new Node.Inline("hard_break"),
   doc(p("hello", br, "<a>there")))
+
+t("remove_block_simple",
+  doc(p("<1>one"), p("<a>tw<2>o"), p("<3>three")),
+  false,
+  doc(p("<1>one"), p("<2><3>three")))
+t("remove_block_only_child",
+  doc(blockquote(p("<a>hi")), p("x")),
+  false,
+  doc(blockquote(), p("x")))
+t("remove_block_outside_path",
+  doc(blockquote(p("a"), p("b<a>")), p("c<1>")),
+  false,
+  doc(blockquote(p("a")), p("c<1>")))

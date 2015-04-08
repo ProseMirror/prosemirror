@@ -1,6 +1,6 @@
 import {Pos, Node, style, inline, slice} from "../model"
 import {Collapsed, defineTransform, Result} from "./transform"
-import {resolvePos} from "./resolve"
+import {resolvePos, describePos} from "./resolve"
 
 function nodesLeft(doc, depth) {
   let nodes = []
@@ -170,7 +170,7 @@ function replace(doc, params) {
       inheritStyles: params.inheritStyles
     })
     depthAfter = end.path.length
-    result.inserted = new Collapsed(from, null, to)
+    result.inserted = new Collapsed(from, null, Pos.after(doc, to))
     for (let i = 0; i < middleChunks.length; i++) {
       let chunk = middleChunks[i]
       let start = chunk.after, size = chunk.size
@@ -189,9 +189,10 @@ function replace(doc, params) {
     depthAfter = from.path.length
   }
 
-  result.deleted = new Collapsed(from, to, posRight(output, depthAfter))
-  addDeletedChunks(result.deleted, doc, from, to)
+  let deletedEnd = posRight(output, depthAfter)
   glue(output, depthAfter, right, to, {result: result})
+  result.deleted = new Collapsed(from, to, Pos.after(output, deletedEnd))
+  addDeletedChunks(result.deleted, doc, from, to)
 
   return result
 }
@@ -232,6 +233,11 @@ export function insertInline(pos, options) {
   return insertNode(pos, node, options)
 }
 
-export function remove(doc, pos, end) {
-  return addPositions(doc, {name: "replace"}, pos, end)
+export function remove(doc, pos, end, options) {
+  return addPositions(doc, {name: "replace"}, pos, end, options && options.from)
+}
+
+export function removeNode(doc, path, options) {
+  let before = Pos.shorten(path), after = Pos.shorten(path, null, 1)
+  return addPositions(doc, {name: "replace"}, before, after, options && options.from)
 }

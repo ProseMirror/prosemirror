@@ -157,13 +157,3 @@ t("insert", "start_of_blockquote",
   doc(blockquote(p("<a>he<1>y")), p("after<2>")),
   doc(blockquote(p(), p("he<1>y")), p("after<2>")),
   {direction: "before", type: "paragraph"})
-
-t("remove", "simple",
-  doc(p("<1>one"), p("<a>tw<2>o"), p("<3>three")),
-  doc(p("<1>one"), p("<2><3>three")))
-t("remove", "only",
-  doc(blockquote(p("<a>hi")), p("x")),
-  doc(blockquote(), p("x")))
-t("remove", "outside_path",
-  doc(blockquote(p("a"), p("b<a>")), p("c<1>")),
-  doc(blockquote(p("a")), p("c<1>")))

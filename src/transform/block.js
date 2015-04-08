@@ -338,28 +338,3 @@ defineTransform("insert", {
     return {name: "remove", pos: result.map(params.pos), direction: params.direction}
   }
 })
-
-function remove(doc, params) {
-  let path = resolveTarget(doc, params.pos, params.posInfo)
-  if (!path) return flatTransform(doc)
-  let pos = Pos.shorten(path)
-  let copy = slice.around(doc, pos.path)
-  let result = new Result(doc, copy)
-
-  let parent = copy.path(pos.path)
-  parent.content.splice(pos.offset, 1)
-  result.deleted = new Collapsed(pos, new Pos(pos.path, pos.offset + 1), Pos.near(copy, pos))
-  result.deleted.chunk(pos, 1)
-  result.chunk(new Pos(pos.path, pos.offset + 1), parent.content.length - pos.offset, pos)
-  return result
-}
-
-defineTransform("remove", {
-  apply: remove,
-  invert(result, params) {
-    let moved = result.deleted.ref.cmp(params.pos)
-    let node = result.before.path(result.deleted.from.path).content[result.deleted.from.offset]
-    return {name: "insert", pos: result.deleted.ref, direction: moved < 0 ? "after" : "before",
-            node: node}
-  }
-})

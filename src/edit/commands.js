@@ -1,6 +1,7 @@
 import {Node, Pos, style, inline} from "../model"
 import {splitAt, joinPoint, liftableRange, wrappableRange,
-        describeTarget, describePos, insertText, insertInline} from "../transform"
+        describeTarget, describePos, insertText, insertInline,
+        removeNode} from "../transform"
 
 const commands = Object.create(null)
 
@@ -64,14 +65,12 @@ function delBlockBackward(pm, pos) {
       if (iBefore.cmp(Pos.shorten(bBefore)) > 0) bBefore = null
       else iBefore = null
     }
-    if (iBefore) {
+    if (iBefore)
       pm.apply({name: "replace", pos: iBefore, end: pos})
-    } else if (bBefore) {
-      let desc = describeTarget(pm.doc, bBefore, "right")
-      pm.apply({name: "remove", pos: desc.pos, posInfo: desc.info})
-    } else {
+    else if (bBefore)
+      pm.apply(removeNode(pm.doc, bBefore, {from: "right"}))
+    else
       return false
-    }
   } else {
     let last = pos.path.length - 1
     let parent = pm.doc.path(pos.path.slice(0, last))
@@ -123,14 +122,12 @@ function delBlockForward(pm, pos) {
     if (iAfter.cmp(Pos.shorten(bAfter)) < 0) bAfter = null
     else iAfter = null
   }
-  if (iAfter) {
+  if (iAfter)
     pm.apply({name: "replace", pos: pos, end: iAfter})
-  } else if (bAfter) {
-    let desc = describeTarget(pm.doc, bAfter, "left")
-    pm.apply({name: "remove", pos: desc.pos, posInfo: desc.info})
-  } else {
+  else if (bAfter)
+    pm.apply(removeNode(pm.doc, bAfter, {from: "left"}))
+  else
     return false
-  }
 }
 
 commands.delForward = pm => {
