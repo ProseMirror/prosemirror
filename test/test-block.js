@@ -144,16 +144,3 @@ t("split", "list_item",
   doc(ol(li(p("one<1>")), li(p("two<a>three")), li(p("four<2>")))),
   doc(ol(li(p("one<1>")), li(p("two")), li(p("<a>three")), li(p("four<2>")))),
   {depth: 2})
-
-t("insert", "simple",
-  doc(p("one<a>"), p("two<2>")),
-  doc(p("one<a>"), p(), p("two<2>")),
-  {type: "paragraph"})
-t("insert", "end_of_blockquote",
-  doc(blockquote(p("he<before>y<a>")), p("after<after>")),
-  doc(blockquote(p("he<before>y"), p()), p("after<after>")),
-  {type: "paragraph"})
-t("insert", "start_of_blockquote",
-  doc(blockquote(p("<a>he<1>y")), p("after<2>")),
-  doc(blockquote(p(), p("he<1>y")), p("after<2>")),
-  {direction: "before", type: "paragraph"})

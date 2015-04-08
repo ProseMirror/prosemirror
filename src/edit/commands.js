@@ -1,7 +1,6 @@
 import {Node, Pos, style, inline} from "../model"
 import {splitAt, joinPoint, liftableRange, wrappableRange,
-        describeTarget, describePos, insertText, insertInline,
-        removeNode} from "../transform"
+        insertText, insertNode, removeNode} from "../transform"
 
 const commands = Object.create(null)
 
@@ -35,7 +34,7 @@ commands.insertHardBreak = pm => {
   if (pm.doc.path(pos.path).type == Node.types.code_block)
     return pm.apply(insertText(pos, "\n"))
   else
-    return pm.apply(insertInline(pos, {type: "hard_break"}))
+    return pm.apply(insertNode(pm.doc, pos, {type: "hard_break"}))
 }
 
 commands.setStrong = pm => pm.setInlineStyle(style.strong, true)
@@ -223,8 +222,7 @@ function insertOpaqueBlock(pm, type, attrs) {
     pm.apply(splitAt(pm.doc, sel.head))
     sel = pm.selection
   }
-  let desc = describePos(pm.doc, sel.head.shorten(), "right")
-  pm.apply({name: "insert", pos: desc.pos, posInfo: desc.info, type: type, attrs: attrs})
+  pm.apply(insertNode(pm.doc, sel.head.shorten(), {type: type, attrs: attrs}))
 }
 
 commands.insertRule = pm => insertOpaqueBlock(pm, "horizontal_rule")

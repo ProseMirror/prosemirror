@@ -1,5 +1,5 @@
 import {style, inline, Node} from "../model"
-import {splitAt, joinPoint, liftableRange, wrappableRange, describeTarget, insertInline} from "../transform"
+import {splitAt, joinPoint, liftableRange, wrappableRange, insertNode} from "../transform"
 import {elt} from "../edit/dom"
 
 export class Item {
@@ -76,8 +76,7 @@ export class InsertBlockItem extends Item {
       pm.apply(splitAt(pm.doc, sel.head))
       sel = pm.selection
     }
-    let desc = describeTarget(pm.doc, sel.head.shorten(), "right")
-    pm.apply({name: "insert", pos: desc.pos, info: desc.info, type: this.type, attrs: this.attrs})
+    pm.apply(insertNode(pm.doc, sel.head.shorten(), {type: this.type, attrs: this.attrs}))
   }
 }
 
@@ -173,6 +172,6 @@ export class ImageDialog extends Dialog {
     let sel = pm.selection
     pm.apply({name: "replace", pos: sel.from, end: sel.to})
     let attrs = {src: elts.src.value, alt: elts.alt.value, title: elts.title.value}
-    pm.apply(insertInline(sel.from, {type: "image", attrs: attrs}))
+    pm.apply(insertNode(pm.doc, sel.from, {type: "image", attrs: attrs}))
   }
 }

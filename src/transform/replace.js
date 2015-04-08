@@ -1,5 +1,5 @@
 import {Pos, Node, style, inline, slice} from "../model"
-import {Collapsed, defineTransform, Result} from "./transform"
+import {Collapsed, defineTransform, Result, flatTransform} from "./transform"
 import {resolvePos, describePos} from "./resolve"
 
 function nodesLeft(doc, depth) {
@@ -46,7 +46,7 @@ export function glue(left, leftDepth, right, rightBorder, options = {}) {
     let found, target
     for (let i = iLeft; i >= 0; i--) {
       target = leftNodes[i]
-      if (compatibleTypes(node.type, iRight, target.type, i, options) && (iRight > 0 || i == 0)) {
+      if (compatibleTypes(node.type, iRight, target.type, i, options)) {
         found = i
         break
       }
@@ -150,7 +150,7 @@ function addDeletedChunks(del, node, from, to, depth = 0) {
 function replace(doc, params) {
   let from = resolvePos(doc, params.pos, params.posInfo)
   let to = params.end ? resolvePos(doc, params.end, params.endInfo) : from
-  if (!from || !to) return flatTransform(doc)
+  if (!from || !to || (!params.source && !from.cmp(to))) return flatTransform(doc)
 
   let output = slice.before(doc, from)
   let result = new Result(doc, output)
@@ -207,30 +207,44 @@ defineTransform("replace", {
 })
 
 function addPositions(doc, params, pos, end) {
-  ;({pos: params.pos, info: params.posInfo}) = describePos(doc, pos, "right")
+  let posDesc = describePos(doc, pos, "right")
+  ;({pos: params.pos, info: params.posInfo}) = posDesc
   ;({pos: params.end, info: params.endInfo}) = end ? describePos(doc, end, "left") : posDesc
   return params
 }
 
-function insertNode(pos, node, options) {
-  let dummy = new Node("doc", [new Node("paragraph", [node])])
-  let params = {name: "replace", source: dummy, from: new Pos([0], 0), to: new Pos([0], node.size)}
-  if (!options || !options.styles) params.inheritStyles = true
-  if (options && options.doc)
-    addPositions(options.doc, params, pos, options.end)
-  else
-    ;[params.pos, params.end] = [pos, options && options.end || pos]
+export function insertNode(doc, pos, options, node) {
+  let node = node || options && options.node
+  if (!node) {
+    let type = Node.types[options.type]
+    if (type.type == "inline")
+      node = new Node.Inline(type, options.styles, null, options.attrs)
+    else
+      node = new Node(type, null, options.attrs)
+  }
+  let inline = node.type.type == "inline"
+  let size = inline ? node.size : 1
+  let wrap = Node.findConnection(Node.types.doc, node.type)
+  let path = []
+  for (let i = wrap.length - 1; i >= 0; i--) {
+    node = new Node(wrap[i], [node])
+    path.push(0)
+  }
+  let params = {name: "replace", source: new Node("doc", [node]),
+                from: new Pos(path, 0), to: new Pos(path, size)}
+  if (!options || !options.styles && inline)
+    params.inheritStyles = true
+  if (doc) {
+    addPositions(doc, params, pos, options.end)
+  } else {
+    ;[params.pos, params.end] = [pos, options.end]
+  }
   return params
 }
 
 export function insertText(pos, text, options) {
-  return insertNode(pos, new Node.text(text, options && options.styles), options)
-}
-
-export function insertInline(pos, options) {
-  let node = options.node ||
-      new Node.Inline(options.type, options.styles, null, options.attrs)
-  return insertNode(pos, node, options)
+  return insertNode(options && options.doc, pos, options,
+                    new Node.text(text, options && options.styles))
 }
 
 export function remove(doc, pos, end, options) {

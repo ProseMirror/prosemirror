@@ -313,28 +313,3 @@ defineTransform("split", {
     return {name: "join", pos: result.map(params.pos), allowInline: (params.depth || 1) == 1}
   }
 })
-
-function insert(doc, params) {
-  let pos = resolvePos(doc, params.pos, params.posInfo)
-  if (!pos) return flatTransform(doc)
-  let copy = slice.around(doc, pos.path)
-  let result = new Result(doc, copy)
-
-  let block = params.node || new Node(params.type, null, params.attrs)
-  let parent = copy.path(pos.path)
-  parent.content.splice(pos.offset, 0, block)
-  result.inserted = new Collapsed(pos, new Pos(pos.path, pos.offset + 1),
-                                  Pos.near(copy, pos))
-  result.inserted.chunk(pos, 1)
-  result.chunk(pos, parent.content.length - pos.offset + 1,
-               new Pos(pos.path, pos.offset + 1))
-
-  return result
-}
-
-defineTransform("insert", {
-  apply: insert,
-  invert(result, params) {
-    return {name: "remove", pos: result.map(params.pos), direction: params.direction}
-  }
-})

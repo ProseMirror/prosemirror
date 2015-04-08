@@ -93,5 +93,5 @@ export function describePos(doc, goal, from) {
     ({pos, info: targetInfo}) = describeTarget(doc, goal.path.concat(goal.offset - 1), from)
     side = "after"
   }
-  return {pos: pos, info: {target: targetInfo, side: side}}
+  return {pos, info: {target: targetInfo, side: side}}
 }

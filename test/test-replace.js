@@ -1,5 +1,5 @@
 import {Node} from "../src/model"
-import {insertText, insertInline, removeNode} from "../src/transform"
+import {insertText, insertNode, removeNode} from "../src/transform"
 
 import {doc, h1, blockquote, p, li, ol, ul, em, a, br} from "./build"
 
@@ -21,7 +21,7 @@ function t(name, base, source, expect) {
       params = {name: "replace", pos: base.tag.a, end: base.tag.b,
                 source: source, from: source.tag.a, to: source.tag.b}
     } else {
-      params = insertInline(base.tag.a, {node: source})
+      params = insertNode(base, base.tag.a, {node: source})
     }
     testTransform(base, expect, params)
   }
@@ -90,8 +90,8 @@ t("text_across_paragraphs",
 t("deep_insert",
   doc(blockquote(blockquote(p("one"), p("tw<a>o"), p("t<b>hree<3>"), p("four<4>")))),
   doc(ol(li(p("hello<a>world")), li(p("bye"))), p("ne<b>xt")),
-  doc(blockquote(blockquote(p("one"), p("twworld"))), ol(li(p("bye"))), p("ne<a><b>hree<3>"),
-      blockquote(blockquote(p("four<4>")))))
+  doc(blockquote(blockquote(p("one"), p("twworld"), ol(li(p("bye"))), p("ne<a><b>hree<3>"),
+      p("four<4>")))))
 
 t("text_inherit_style",
   doc(p(em("he<a>lo"))),
@@ -131,11 +131,6 @@ t("text_before_br",
   "ay",
   doc(p("ay", br, "ok")))
 
-t("insert_break",
-  doc(p("hello<a>there")),
-  new Node.Inline("hard_break"),
-  doc(p("hello", br, "<a>there")))
-
 t("remove_block_simple",
   doc(p("<1>one"), p("<a>tw<2>o"), p("<3>three")),
   false,
@@ -148,3 +143,20 @@ t("remove_block_outside_path",
   doc(blockquote(p("a"), p("b<a>")), p("c<1>")),
   false,
   doc(blockquote(p("a")), p("c<1>")))
+
+t("insert_break",
+  doc(p("hello<a>there")),
+  new Node.Inline("hard_break"),
+  doc(p("hello", br, "<a>there")))
+t("insert_simple",
+  doc(p("one"), "<a>", p("two<2>")),
+  new Node("paragraph"),
+  doc(p("one"), p(), p("<a>two<2>")))
+t("insert_end_of_blockquote",
+  doc(blockquote(p("he<before>y"), "<a>"), p("after<after>")),
+  new Node("paragraph"),
+  doc(blockquote(p("he<before>y"), p()), p("after<after>")))
+t("insert_start_of_blockquote",
+  doc(blockquote("<a>", p("he<1>y")), p("after<2>")),
+  new Node("paragraph"),
+  doc(blockquote(p(), p("<a>he<1>y")), p("after<2>")))
