@@ -1,5 +1,5 @@
 import {Node} from "../src/model"
-import {insertText, insertNode, removeNode, joinNodes} from "../src/transform"
+import {insertText, insertNode, removeNode, joinNodes, splitAt} from "../src/transform"
 
 import {doc, h1, blockquote, p, li, ol, ul, em, a, br} from "./build"
 
@@ -7,23 +7,25 @@ import Failure from "./failure"
 import tests from "./tests"
 import {testTransform} from "./cmp"
 
-function t(name, base, source, expect) {
+function t(name, base, spec, expect) {
   tests["replace_" + name] = function() {
     let text = null
     let params
-    if (source == "~") {
+    if (spec == "~") {
       params = joinNodes(base, base.tag.a)
-    } else if (typeof source == "string") {
-      params = insertText(base.tag.a, source, {end: base.tag.b})
-    } else if (source === false) {
+    } else if (typeof spec == "string") {
+      params = insertText(base.tag.a, spec, {end: base.tag.b})
+    } else if (typeof spec == "number") {
+      params = splitAt(base, base.tag.a, {depth: spec})
+    } else if (spec === false) {
       params = removeNode(base, base.tag.a.path)
-    } else if (source == null) {
+    } else if (spec == null) {
       params = {name: "replace", pos: base.tag.a, end: base.tag.b}
-    } else if (source.tag) {
+    } else if (spec.tag) {
       params = {name: "replace", pos: base.tag.a, end: base.tag.b,
-                source: source, from: source.tag.a, to: source.tag.b}
+                source: spec, from: spec.tag.a, to: spec.tag.b}
     } else {
-      params = insertNode(base, base.tag.a, {node: source})
+      params = insertNode(base, base.tag.a, {node: spec})
     }
     testTransform(base, expect, params)
   }
@@ -92,8 +94,8 @@ t("text_across_paragraphs",
 t("deep_insert",
   doc(blockquote(blockquote(p("one"), p("tw<a>o"), p("t<b>hree<3>"), p("four<4>")))),
   doc(ol(li(p("hello<a>world")), li(p("bye"))), p("ne<b>xt")),
-  doc(blockquote(blockquote(p("one"), p("twworld"), ol(li(p("bye"))), p("ne<a><b>hree<3>"),
-      p("four<4>")))))
+  doc(blockquote(blockquote(p("one"), p("twworld")), ol(li(p("bye"))), p("ne<a><b>hree<3>"),
+                 blockquote(p("four<4>")))))
 
 t("text_inherit_style",
   doc(p(em("he<a>lo"))),
@@ -179,3 +181,37 @@ t("join_list_item",
   doc(ol(li(p("one")), li(p("two")), li(p("<a>three")))),
   "~",
   doc(ol(li(p("one")), li(p("two"), p("<a>three")))))
+
+
+t("split_simple",
+  doc(p("foo<a>bar")),
+  1,
+  doc(p("foo"), p("<a>bar")))
+t("split_before_and_after",
+  doc(p("<1>a"), p("<2>foo<a>bar<3>"), p("<4>b")),
+  1,
+  doc(p("<1>a"), p("<2>foo"), p("<a>bar<3>"), p("<4>b")))
+t("split_deeper",
+  doc(blockquote(blockquote(p("foo<a>bar"))), p("after<1>")),
+  2,
+  doc(blockquote(blockquote(p("foo")), blockquote(p("<a>bar"))), p("after<1>")))
+t("split_and_deeper",
+  doc(blockquote(blockquote(p("foo<a>bar"))), p("after<1>")),
+  3,
+  doc(blockquote(blockquote(p("foo"))), blockquote(blockquote(p("<a>bar"))), p("after<1>")))
+t("split_at_end",
+  doc(blockquote(p("hi<a>"))),
+  1,
+  doc(blockquote(p("hi"), p("<a>"))))
+t("split_at_start",
+  doc(blockquote(p("<a>hi"))),
+  1,
+  doc(blockquote(p(), p("<a>hi"))))
+t("split_list_paragraph",
+  doc(ol(li(p("one<1>")), li(p("two<a>three")), li(p("four<2>")))),
+  1,
+  doc(ol(li(p("one<1>")), li(p("two"), p("<a>three")), li(p("four<2>")))))
+t("split_list_item",
+  doc(ol(li(p("one<1>")), li(p("two<a>three")), li(p("four<2>")))),
+  2,
+  doc(ol(li(p("one<1>")), li(p("two")), li(p("<a>three")), li(p("four<2>")))))

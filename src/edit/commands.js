@@ -191,7 +191,7 @@ commands.endBlock = pm => {
     let isList = head.path.length > 1 && head.path[end] == 0 &&
         pm.doc.path(head.path.slice(0, end)).type == Node.types.list_item
     let type = head.offset == block.size ? "paragraph" : null
-    return pm.apply(splitAt(pm.doc, head, isList ? 2 : 1, type})
+    return pm.apply(splitAt(pm.doc, head, isList ? 2 : 1, type))
   }
 }
 

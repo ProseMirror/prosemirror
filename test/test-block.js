@@ -4,7 +4,7 @@ import tests from "./tests"
 import {testTransform} from "./cmp"
 
 import {Node, Pos} from "../src/model"
-import {splitAt, wrappableRange, liftableRange, describeTarget, describePos} from "../src/transform"
+import {wrappableRange, liftableRange, describeTarget, describePos} from "../src/transform"
 
 function t(op, name, doc, expect, params) {
   tests[op + "_" + name] = function() {
@@ -14,8 +14,6 @@ function t(op, name, doc, expect, params) {
       params = liftableRange(doc, doc.tag.a, doc.tag.b || doc.tag.a)
     } else if (op == "wrap") {
       params = wrappableRange(doc, doc.tag.a, doc.tag.b || doc.tag.a, params.type, params.attrs, params.join)
-    } else if (op == "split") {
-      params = splitAt(doc, doc.tag.a, params.depth)
     } else {
       if (!params.pos) params.pos = doc.tag.a
       if (!params.end) params.end = doc.tag.b
@@ -91,31 +89,3 @@ t("wrap", "join_right",
   doc(p("aye<a>"), p("oy<b>"), ol(li(p("hi<1>")))),
   doc(ol(li(p("aye<a>")), li(p("oy<b>")), li(p("hi<1>")))),
   {type: "ordered_list", join: "right"})
-
-t("split", "simple",
-  doc(p("foo<a>bar")),
-  doc(p("foo"), p("<a>bar")))
-t("split", "before_and_after",
-  doc(p("<1>a"), p("<2>foo<a>bar<3>"), p("<4>b")),
-  doc(p("<1>a"), p("<2>foo"), p("<a>bar<3>"), p("<4>b")))
-t("split", "deeper",
-  doc(blockquote(blockquote(p("foo<a>bar"))), p("after<1>")),
-  doc(blockquote(blockquote(p("foo")), blockquote(p("<a>bar"))), p("after<1>")),
-  {depth: 2})
-t("split", "and_deeper",
-  doc(blockquote(blockquote(p("foo<a>bar"))), p("after<1>")),
-  doc(blockquote(blockquote(p("foo"))), blockquote(blockquote(p("<a>bar"))), p("after<1>")),
-  {depth: 3})
-t("split", "at_end",
-  doc(blockquote(p("hi<a>"))),
-  doc(blockquote(p("hi"), p("<a>"))))
-t("split", "at_start",
-  doc(blockquote(p("<a>hi"))),
-  doc(blockquote(p(), p("<a>hi"))))
-t("split", "list_paragraph",
-  doc(ol(li(p("one<1>")), li(p("two<a>three")), li(p("four<2>")))),
-  doc(ol(li(p("one<1>")), li(p("two"), p("<a>three")), li(p("four<2>")))))
-t("split", "list_item",
-  doc(ol(li(p("one<1>")), li(p("two<a>three")), li(p("four<2>")))),
-  doc(ol(li(p("one<1>")), li(p("two")), li(p("<a>three")), li(p("four<2>")))),
-  {depth: 2})

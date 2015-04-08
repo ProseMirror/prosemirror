@@ -39,17 +39,17 @@ export function glue(left, leftDepth, right, rightBorder, options = {}) {
   for (let iLeft = leftNodes.length - 1,
            iRight = rightNodes.length - 1; iRight >= 0; iRight--) {
     let node = rightNodes[iRight]
-    if (node.content.length == 0) {
-      if (iRight) rightNodes[iRight - 1].remove(node)
-      continue
-    }
     let found, target
     for (let i = iLeft; i >= 0; i--) {
       target = leftNodes[i]
-      if (compatibleTypes(node.type, iRight, target.type, i, options)) {
+      if (compatibleTypes(node.type, iRight, target.type, i, options) && (i > 0 || iRight == 0)) {
         found = i
         break
       }
+    }
+    if (found == null && node.content.length == 0) {
+      if (iRight) rightNodes[iRight - 1].remove(node)
+      continue
     }
     if (found != null) {
       if (options.result || options.onChunk) for (let depth = cutDepth; depth >= 0; depth--) {
@@ -277,4 +277,27 @@ export function joinNodes(doc, pos, options) {
   let left = new Pos(leftPath, doc.path(leftPath).maxOffset)
   let right = new Pos(point.path.concat(point.offset), 0)
   return remove(doc, left, right)
+}
+
+export function splitAt(doc, pos, options) {
+  let depth = options && options.depth || 1
+  let left = null, right = null
+  let leftPath = [], rightPath = []
+  for (let i = 0; i < depth; i++) {
+    let node = doc.path(pos.path.slice(0, pos.path.length - i))
+    left = node.copy(left && [left])
+    right = node.copy(right && [right])
+    leftPath.push(0)
+    rightPath.push(rightPath.length ? 0 : 1)
+  }
+  let wrap
+  for (let i = pos.path.length - depth; i >= 0; i--) {
+    wrap = doc.path(pos.path.slice(0, i)).copy(wrap ? [wrap] : [left, right])
+    if (i) {
+      leftPath.unshift(0)
+      rightPath.unshift(0)
+    }
+  }
+  let params = {name: "replace", source: wrap, from: new Pos(leftPath, 0), to: new Pos(rightPath, 0)}
+  return addPositions(doc, params, pos)
 }
