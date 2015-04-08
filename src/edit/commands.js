@@ -1,5 +1,5 @@
 import {Node, Pos, style, inline} from "../model"
-import {joinPoint, liftableRange, wrappableRange} from "../transform"
+import {joinPoint, liftableRange, wrappableRange, describeTarget, describePos} from "../transform"
 
 const commands = Object.create(null)
 
@@ -51,7 +51,7 @@ commands.toggleCode = pm => pm.setInlineStyle(style.code, null)
 function blockBefore(pos) {
   for (let i = pos.path.length - 1; i >= 0; i--) {
     let offset = pos.path[i] - 1
-    if (offset >= 0) return new Pos(pos.path.slice(0, i), offset)
+    if (offset >= 0) return pos.path.slice(0, i).concat(offset)
   }
 }
 
@@ -60,15 +60,17 @@ function delBlockBackward(pm, pos) {
     let iBefore = Pos.before(pm.doc, new Pos([], pos.path[0]))
     let bBefore = blockBefore(pos)
     if (iBefore && bBefore) {
-      if (iBefore.cmp(bBefore) > 0) bBefore = null
+      if (iBefore.cmp(Pos.shorten(bBefore)) > 0) bBefore = null
       else iBefore = null
     }
-    if (iBefore)
+    if (iBefore) {
       pm.apply({name: "replace", pos: iBefore, end: pos})
-    else if (bBefore)
-      pm.apply({name: "remove", pos: pos, direction: "before"})
-    else
+    } else if (bBefore) {
+      let desc = describeTarget(pm.doc, bBefore, "right")
+      pm.apply({name: "remove", pos: desc.pos, posInfo: desc.info})
+    } else {
       return false
+    }
   } else {
     let last = pos.path.length - 1
     let parent = pm.doc.path(pos.path.slice(0, last))
@@ -77,8 +79,8 @@ function delBlockBackward(pm, pos) {
     // Top of list item below other list item
     // Join with the one above
     if (parent.type == Node.types.list_item &&
-        offset == 0 && pos.path[last - 1] > 0)
-      return pm.apply({name: "join", pos: pos})
+        offset == 0 && pos.path[last - 1] > 0) {
+      return pm.apply(joinPoint(pm.doc, pos))
     // Any other nested block, lift up
     else if (range = liftableRange(pm.doc, pos, pos))
       return pm.apply(range)
@@ -108,7 +110,7 @@ function blockAfter(doc, pos) {
     path = path.slice(0, end)
     let node = doc.path(path)
     if (offset < node.content.length)
-      return new Pos(path, offset)
+      return path.concat(offset)
   }
 }
 
@@ -117,15 +119,17 @@ function delBlockForward(pm, pos) {
   let iAfter = Pos.after(pm.doc, new Pos(pos.path.slice(0, lst), pos.path[lst] + 1))
   let bAfter = blockAfter(pm.doc, pos)
   if (iAfter && bAfter) {
-    if (iAfter.cmp(bAfter) < 0) bAfter = null
+    if (iAfter.cmp(Pos.shorten(bAfter)) < 0) bAfter = null
     else iAfter = null
   }
-  if (iAfter)
+  if (iAfter) {
     pm.apply({name: "replace", pos: pos, end: iAfter})
-  else if (bAfter)
-    pm.apply({name: "remove", pos: pos, direction: "after"})
-  else
+  } else if (bAfter) {
+    let desc = describeTarget(pm.doc, bAfter, "left")
+    pm.apply({name: "remove", pos: desc.pos, posInfo: desc.info})
+  } else {
     return false
+  }
 }
 
 commands.delForward = pm => {
@@ -151,7 +155,7 @@ commands.join = pm => {
   let point = joinPoint(pm.doc, pm.selection.head)
   if (point) {
     pm.scrollIntoView()
-    pm.apply({name: "join", pos: point})
+    pm.apply(point)
   }
 }
 
@@ -222,7 +226,8 @@ function insertOpaqueBlock(pm, type, attrs) {
     pm.apply({name: "split", pos: sel.head})
     sel = pm.selection
   }
-  pm.apply({name: "insert", pos: sel.head, direction: "before", type: type, attrs: attrs})
+  let desc = describePos(pm.doc, sel.head.shorten(), "right")
+  pm.apply({name: "insert", pos: desc.pos, posInfo: desc.info, type: type, attrs: attrs})
 }
 
 commands.insertRule = pm => insertOpaqueBlock(pm, "horizontal_rule")

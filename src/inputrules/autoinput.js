@@ -1,6 +1,6 @@
 import {Pos} from "../model"
 import {defineOption} from "../edit"
-import {wrappableRange} from "../transform"
+import {wrappableRange, joinPoint} from "../transform"
 import {Rule, addInputRules, removeInputRules} from "./inputrules"
 
 defineOption("autoInput", false, function(pm, val, old) {
@@ -44,7 +44,7 @@ function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
   pm.apply({name: "wrap", pos: range.from, end: range.to, type: type, attrs: attrs})
   pos = pm.selection.head
   pm.apply({name: "replace", pos: new Pos(pos.path, 0), end: pos})
-  if (join) pm.apply({name: "join", pos: pm.selection.head})
+  if (join) pm.apply(joinPoint(pm.doc, pm.selection.head))
 }
 
 function setAs(pm, pos, type, attrs) {

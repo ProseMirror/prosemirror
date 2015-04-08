@@ -74,7 +74,7 @@ export default class Node {
   }
 
   sameMarkup(other) {
-    return compareMarkup(this.type, other.type, this.attrs, other.attrs)
+    return Node.compareMarkup(this.type, other.type, this.attrs, other.attrs)
   }
 
   toJSON() {

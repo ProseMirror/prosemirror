@@ -4,7 +4,7 @@ import tests from "./tests"
 import {testTransform} from "./cmp"
 
 import {Node, Pos} from "../src/model"
-import {liftableRange} from "../src/transform"
+import {liftableRange, describeTarget, describePos, joinPoint} from "../src/transform"
 
 function t(op, name, doc, expect, params) {
   tests[op + "_" + name] = function() {
@@ -12,6 +12,18 @@ function t(op, name, doc, expect, params) {
     params.name = op
     if (op == "lift" && !params.pos) {
       params = liftableRange(doc, doc.tag.a, doc.tag.b || doc.tag.a)
+    } else if (op == "insert") {
+      let pos = doc.tag.a
+      pos = pos.shorten(null, pos.offset ? 1 : 0)
+      let desc = describePos(doc, pos, pos.offset ? "left" : "right")
+      params.pos = desc.pos
+      params.posInfo = desc.info
+    } else if (op == "remove") {
+      let desc = describeTarget(doc, doc.tag.a.path)
+      params.pos = desc.pos
+      params.posInfo = desc.info
+    } else if (op == "lift") {
+      params = joinPoint(doc, doc.tag.a)
     } else {
       if (!params.pos) params.pos = doc.tag.a
       if (!params.end) params.end = doc.tag.b
@@ -129,38 +141,25 @@ t("split", "list_item",
   doc(ol(li(p("one<1>")), li(p("two")), li(p("<a>three")), li(p("four<2>")))),
   {depth: 2})
 
-t("insert", "simple_after",
+t("insert", "simple",
   doc(p("one<a>"), p("two<2>")),
   doc(p("one<a>"), p(), p("two<2>")),
-  {direction: "after", type: "paragraph"})
-t("insert", "simple_before",
-  doc(p("one"), p("<a>two")),
-  doc(p("one"), p(), p("<a>two")),
-  {direction: "before", type: "paragraph"})
+  {type: "paragraph"})
 t("insert", "end_of_blockquote",
   doc(blockquote(p("he<before>y<a>")), p("after<after>")),
   doc(blockquote(p("he<before>y"), p()), p("after<after>")),
-  {direction: "after", type: "paragraph"})
+  {type: "paragraph"})
 t("insert", "start_of_blockquote",
   doc(blockquote(p("<a>he<1>y")), p("after<2>")),
   doc(blockquote(p(), p("he<1>y")), p("after<2>")),
   {direction: "before", type: "paragraph"})
 
-t("remove", "simple_after",
-  doc(p("<1>one<a>"), p("tw<2>o"), p("<3>three")),
-  doc(p("<1>one"), p("<2><3>three")),
-  {direction: "after"})
-t("remove", "simple_before",
-  doc(p("one"), p("two"), p("<a>three")),
-  doc(p("one"), p("three")),
-  {direction: "before"})
-t("remove", "simple_self",
-  doc(p("one"), p("<a>two"), p("three")),
-  doc(p("one"), p("three")))
+t("remove", "simple",
+  doc(p("<1>one"), p("<a>tw<2>o"), p("<3>three")),
+  doc(p("<1>one"), p("<2><3>three")))
 t("remove", "only",
   doc(blockquote(p("<a>hi")), p("x")),
   doc(blockquote(), p("x")))
 t("remove", "outside_path",
-  doc(blockquote(p("a<a>"), p("b")), p("c<1>")),
-  doc(blockquote(p("a")), p("c<1>")),
-  {direction: "after"})
+  doc(blockquote(p("a"), p("b<a>")), p("c<1>")),
+  doc(blockquote(p("a")), p("c<1>")))

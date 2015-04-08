@@ -1,5 +1,5 @@
 import {style, inline, Node} from "../model"
-import {joinPoint, liftableRange, wrappableRange} from "../transform"
+import {joinPoint, liftableRange, wrappableRange, describeTarget} from "../transform"
 import {elt} from "../edit/dom"
 
 export class Item {
@@ -35,7 +35,7 @@ export class JoinItem extends Item {
   }
   apply(pm) {
     let point = joinPoint(pm.doc, pm.selection.head)
-    if (point) pm.apply({name: "join", pos: point})
+    if (point) pm.apply(point)
   }
 }
 
@@ -76,7 +76,8 @@ export class InsertBlockItem extends Item {
       pm.apply({name: "split", pos: sel.head})
       sel = pm.selection
     }
-    pm.apply({name: "insert", pos: sel.head, direction: "before", type: this.type, attrs: this.attrs})
+    let desc = describeTarget(pm.doc, sel.head.shorten(), "right")
+    pm.apply({name: "insert", pos: desc.pos, info: desc.info, type: this.type, attrs: this.attrs})
   }
 }
 

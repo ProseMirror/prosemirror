@@ -27,7 +27,7 @@ export function liftableRange(doc, from, to) {
   if (found) {
     let fromDesc = describePos(doc, new Pos(range.path, range.from), "right")
     let toDesc = describePos(doc, new Pos(range.path, range.to), "left")
-    return {name: "lift", pos: fromDesc.pos, info: fromDesc.info,
+    return {name: "lift", pos: fromDesc.pos, posInfo: fromDesc.info,
             end: toDesc.pos, endInfo: toDesc.info}
   }
 }
@@ -49,9 +49,9 @@ function canBeLifted(doc, range) {
 }
 
 function lift(doc, params) {
-  let pos = resolvePos(doc, params.pos, params.info)
+  let pos = resolvePos(doc, params.pos, params.posInfo)
   let end = resolvePos(doc, params.end, params.endInfo)
-  if (!sameArray(pos.path, end.path) || pos.offset >= end.offset)
+  if (!pos || !end || !sameArray(pos.path, end.path) || pos.offset >= end.offset)
     return flatTransform(doc)
   let range = {path: pos.path, from: pos.offset, to: end.offset}
   let lift = canBeLifted(doc, range)
@@ -114,12 +114,16 @@ function preciseJoinPoint(doc, pos, allowInline) {
 
 export function joinPoint(doc, pos, allowInline) {
   var found = preciseJoinPoint(doc, pos, allowInline)
-  return found && Pos.after(doc, found)
+  if (found) {
+    let desc = describePos(doc, found, "right")
+    return {name: "join", pos: desc.pos, posInfo: desc.info}
+  }
 }
 
 function join(doc, params) {
-  let point = preciseJoinPoint(doc, params.pos, params.allowInline)
-  if (!point || params.pos.cmp(Pos.after(doc, point))) return flatTransform(doc)
+  let pos = resolvePos(doc, params.pos, params.posInfo)
+  let point = pos && preciseJoinPoint(doc, pos, params.allowInline)
+  if (!point || pos.cmp(Pos.after(doc, point))) return flatTransform(doc)
 
   let toJoined = point.path.concat(point.offset - 1)
   let output = slice.around(doc, toJoined)
@@ -296,14 +300,16 @@ defineTransform("split", {
 })
 
 function insert(doc, params) {
-  let pos = params.pos.shorten(null, params.direction == "before" ? 0 : 1)
+  let pos = resolvePos(doc, params.pos, params.posInfo)
+  if (!pos) return flatTransform(doc)
   let copy = slice.around(doc, pos.path)
   let result = new Result(doc, copy)
 
   let block = params.node || new Node(params.type, null, params.attrs)
   let parent = copy.path(pos.path)
   parent.content.splice(pos.offset, 0, block)
-  result.inserted = new Collapsed(pos, new Pos(pos.path, pos.offset + 1), Pos.near(copy, pos))
+  result.inserted = new Collapsed(pos, new Pos(pos.path, pos.offset + 1),
+                                  Pos.near(copy, pos))
   result.inserted.chunk(pos, 1)
   result.chunk(pos, parent.content.length - pos.offset + 1,
                new Pos(pos.path, pos.offset + 1))
@@ -319,21 +325,9 @@ defineTransform("insert", {
 })
 
 function remove(doc, params) {
-  let pos = params.pos
-  let dir = params.direction == "before" ? -1 : params.direction == "after" ? 1 : 0
-  pos = pos.shorten(null, dir)
-  if (dir == -1) {
-    while (pos.offset < 0) {
-      if (pos.path.length) pos = pos.shorten(null, -1)
-      else return flatTransform(doc)
-    }
-  } else if (dir == 1) {
-    while (pos.offset == doc.path(pos.path).content.length) {
-      if (pos.path.length) pos = pos.shorten(null, 1)
-      else return flatTransform(doc)
-    }
-  }
-  
+  let path = resolveTarget(doc, params.pos, params.posInfo)
+  if (!path) return flatTransform(doc)
+  let pos = Pos.shorten(path)
   let copy = slice.around(doc, pos.path)
   let result = new Result(doc, copy)
 
