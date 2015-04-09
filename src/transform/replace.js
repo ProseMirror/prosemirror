@@ -236,9 +236,9 @@ export function insertNode(doc, pos, options, node) {
   if (!options || !options.styles && inline)
     params.inheritStyles = true
   if (doc) {
-    addPositions(doc, params, pos, options.end)
+    addPositions(doc, params, pos, options && options.end)
   } else {
-    ;[params.pos, params.end] = [pos, options.end]
+    ;[params.pos, params.end] = [pos, options && options.end]
   }
   return params
 }

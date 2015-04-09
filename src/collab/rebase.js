@@ -43,7 +43,7 @@ function mapParams(back, forward, params) {
   let allDeleted = true
   for (var prop in params) {
     let value = params[prop]
-    if (prop == "pos" || prop == "end") {
+    if (value && (prop == "pos" || prop == "end")) {
       let result = mapPosition(back, forward, value)
       value = result.pos
       if (!result.deleted) allDeleted = false
