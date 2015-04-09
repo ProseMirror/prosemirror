@@ -1,17 +1,18 @@
+import {inline, style, Node, Pos} from "../src/model"
+import {addStyle, removeStyle, setBlockType} from "../src/transform"
+
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br} from "./build"
 
 import Failure from "./failure"
 import tests from "./tests"
 import {testTransform} from "./cmp"
 
-import {inline, style, Node, Pos} from "../src/model"
-
 function t(op, name, doc, expect, params) {
   tests[op + "_" + name] = function() {
-    if (!params) params = {}
-    params.name = op
-    if (!params.pos) params.pos = doc.tag.a || Pos.start(doc)
-    if (!params.end) params.end = doc.tag.b || Pos.end(doc)
+    if (op == "setType")
+      params = setBlockType(doc.tag.a, doc.tag.b || doc.tag.a, params.type, params.attrs)
+    else
+      params = (op == "addStyle" ? addStyle : removeStyle)(doc.tag.a, doc.tag.b, params.style)
     testTransform(doc, expect, params)
   }
 }

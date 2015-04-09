@@ -21,7 +21,7 @@ function canUnwrap(container, from, to) {
   return type
 }
 
-export function liftableRange(doc, from, to) {
+export function liftRange(doc, from, to) {
   let range = selectedSiblings(doc, from, to)
   let found = canBeLifted(doc, range)
   if (found) {
@@ -99,7 +99,7 @@ defineTransform("lift", {
   }
 })
 
-export function wrappableRange(doc, from, to, type, attrs, join) {
+export function wrapRange(doc, from, to, type, attrs, join) {
   let range = selectedSiblings(doc, from, to)
   let descFrom = describePos(doc, new Pos(range.path, range.from), "right")
   let descTo = describePos(doc, new Pos(range.path, range.to), "left")

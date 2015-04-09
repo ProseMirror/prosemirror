@@ -1,5 +1,5 @@
 import {Node, Pos, style, inline} from "../model"
-import {splitAt, joinNodes, liftableRange, wrappableRange,
+import {splitAt, joinNodes, liftRange, wrapRange, remove, setBlockType,
         insertText, insertNode, removeNode} from "../transform"
 
 const commands = Object.create(null)
@@ -24,7 +24,7 @@ export function execCommand(pm, name) {
 function clearSelection(pm) {
   let sel = pm.selection
   if (!sel.empty)
-    pm.apply({name: "replace", pos: sel.from, end: sel.to})
+    pm.apply(remove(pm.doc, sel.from, sel.to))
   return sel.from
 }
 
@@ -65,7 +65,7 @@ function delBlockBackward(pm, pos) {
       else iBefore = null
     }
     if (iBefore)
-      pm.apply({name: "replace", pos: iBefore, end: pos})
+      pm.apply(remove(pm.doc, iBefore, pos))
     else if (bBefore)
       pm.apply(removeNode(pm.doc, bBefore, {from: "right"}))
     else
@@ -81,7 +81,7 @@ function delBlockBackward(pm, pos) {
         offset == 0 && pos.path[last - 1] > 0)
       return pm.apply(joinNodes(pm.doc, pos))
     // Any other nested block, lift up
-    else if (range = liftableRange(pm.doc, pos, pos))
+    else if (range = liftRange(pm.doc, pos, pos))
       return pm.apply(range)
     else
       return false
@@ -96,7 +96,7 @@ commands.delBackward = pm => {
   if (!sel.empty)
     clearSelection(pm)
   else if (sel.head.offset)
-    return pm.apply({name: "replace", pos: new Pos(head.path, head.offset - 1), end: head})
+    return pm.apply(remove(pm.doc, new Pos(head.path, head.offset - 1), head))
   else
     return delBlockBackward(pm, head)
 }
@@ -122,7 +122,7 @@ function delBlockForward(pm, pos) {
     else iAfter = null
   }
   if (iAfter)
-    pm.apply({name: "replace", pos: pos, end: iAfter})
+    pm.apply(remove(pm.doc, pos, iAfter))
   else if (bAfter)
     pm.apply(removeNode(pm.doc, bAfter, {from: "left"}))
   else
@@ -135,7 +135,7 @@ commands.delForward = pm => {
   if (!sel.empty)
     clearSelection(pm)
   else if (head.offset < pm.doc.path(head.path).size)
-    return pm.apply({name: "replace", pos: head, end: new Pos(head.path, head.offset + 1)})
+    return pm.apply(remove(pm.doc, head, new Pos(head.path, head.offset + 1)))
   else
     return delBlockForward(pm, head)
 }
@@ -158,7 +158,7 @@ commands.join = pm => {
 
 commands.lift = pm => {
   let sel = pm.selection
-  let range = liftableRange(pm.doc, sel.from, sel.to)
+  let range = liftRange(pm.doc, sel.from, sel.to)
   if (range) {
     pm.scrollIntoView()
     return pm.apply(range)
@@ -170,7 +170,7 @@ commands.lift = pm => {
 function wrap(pm, type) {
   let sel = pm.selection
   pm.scrollIntoView()
-  return pm.apply(wrappableRange(pm.doc, sel.from, sel.to, type))
+  return pm.apply(wrapRange(pm.doc, sel.from, sel.to, type))
 }
 
 commands.wrapBulletList = pm => wrap(pm, "bullet_list")
@@ -182,7 +182,7 @@ commands.endBlock = pm => {
   let head = clearSelection(pm)
   let block = pm.doc.path(head.path), range
   if (head.path.length > 1 && block.content.length == 0 &&
-      (range = liftableRange(pm.doc, head, head))) {
+      (range = liftRange(pm.doc, head, head))) {
     return pm.apply(range)
   } else if (block.type == Node.types.code_block && head.offset < block.size) {
     return pm.apply(insertText(head, "\n"))
@@ -198,8 +198,7 @@ commands.endBlock = pm => {
 function setType(pm, type, attrs) {
   let sel = pm.selection
   pm.scrollIntoView()
-  return pm.apply({name: "setType", pos: sel.from, end: sel.to,
-                   type: type, attrs: attrs})
+  return pm.apply(setBlockType(sel.from, sel.to, type, attrs))
 }
 
 commands.makeH1 = pm => setType(pm, "heading", {level: 1})

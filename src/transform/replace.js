@@ -207,9 +207,10 @@ defineTransform("replace", {
 })
 
 function addPositions(doc, params, pos, end, from) {
-  let posDesc = describePos(doc, pos, from || "right")
-  ;({pos: params.pos, info: params.posInfo}) = posDesc
-  ;({pos: params.end, info: params.endInfo}) = end ? describePos(doc, end, from || "left") : posDesc
+  ;({pos: params.pos, info: params.posInfo}) = describePos(doc, pos, from || "right")
+  if (end) {
+    ;({pos: params.end, info: params.endInfo}) = describePos(doc, end, from || "left")
+  }
   return params
 }
 
@@ -300,4 +301,8 @@ export function splitAt(doc, pos, options) {
   }
   let params = {name: "replace", source: wrap, from: new Pos(leftPath, 0), to: new Pos(rightPath, 0)}
   return addPositions(doc, params, pos)
+}
+
+export function replace_(doc, from, to, source, start, end) {
+  return addPositions(doc, {name: "replace", source: source, from: start, to: end}, from, to)
 }

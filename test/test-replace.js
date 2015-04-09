@@ -1,5 +1,6 @@
 import {Node} from "../src/model"
-import {insertText, insertNode, removeNode, joinNodes, splitAt} from "../src/transform"
+import {insertText, insertNode, removeNode, joinNodes, splitAt,
+        remove, replace} from "../src/transform"
 
 import {doc, h1, blockquote, p, li, ol, ul, em, a, br} from "./build"
 
@@ -20,10 +21,10 @@ function t(name, base, spec, expect) {
     } else if (spec === false) {
       params = removeNode(base, base.tag.a.path)
     } else if (spec == null) {
-      params = {name: "replace", pos: base.tag.a, end: base.tag.b}
+      params = remove(base, base.tag.a, base.tag.b)
     } else if (spec.tag) {
-      params = {name: "replace", pos: base.tag.a, end: base.tag.b,
-                source: spec, from: spec.tag.a, to: spec.tag.b}
+      params = replace(base, base.tag.a, base.tag.b,
+                       spec, spec.tag.a, spec.tag.b)
     } else {
       params = insertNode(base, base.tag.a, {node: spec})
     }

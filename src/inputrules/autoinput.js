@@ -1,6 +1,6 @@
 import {Pos} from "../model"
 import {defineOption} from "../edit"
-import {wrappableRange, joinNodes} from "../transform"
+import {wrapRange, joinNodes, remove, setBlockType} from "../transform"
 import {Rule, addInputRules, removeInputRules} from "./inputrules"
 
 defineOption("autoInput", false, function(pm, val, old) {
@@ -40,14 +40,14 @@ function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
   let parentOffset = pos.path[pos.path.length - 1]
   let sibling = parentOffset > 0 && pm.doc.path(pos.shorten()).content[parentOffset - 1]
   let join = sibling.type.name == type && (!predicate || predicate(sibling))
-  pm.apply(wrappableRange(pm.doc, pos, pos, type, attrs))
+  pm.apply(wrapRange(pm.doc, pos, pos, type, attrs))
   pos = pm.selection.head
-  pm.apply({name: "replace", pos: new Pos(pos.path, 0), end: pos})
+  pm.apply(remove(pm.doc, new Pos(pos.path, 0), pos))
   if (join) pm.apply(joinNodes(pm.doc, pm.selection.head))
 }
 
 function setAs(pm, pos, type, attrs) {
-  pm.apply({name: "setType", pos: pos, type: type, attrs: attrs})
+  pm.apply(setBlockType(pos, null, type, attrs))
   pos = pm.selection.head
-  pm.apply({name: "replace", pos: new Pos(pos.path, 0), end: pos})
+  pm.apply(remove(pm.doc, new Pos(pos.path, 0), pos))
 }

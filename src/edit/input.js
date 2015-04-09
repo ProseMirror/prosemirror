@@ -1,5 +1,5 @@
 import {fromDOM, toDOM, Pos, Node} from "../model"
-import {insertText} from "../transform"
+import {insertText, remove, replace} from "../transform"
 
 import * as keys from "./keys"
 import {mac, addClass, rmClass} from "./dom"
@@ -169,7 +169,7 @@ handlers.copy = handlers.cut = (pm, e) => {
     e.clipboardData.setData("text/html", lastCopied.html)
     e.clipboardData.setData("text/plain", lastCopied.text)
     if (e.type == "cut" && !sel.empty)
-      pm.apply({name: "replace", pos: sel.from, end: sel.to})
+      pm.apply(remove(pm.doc, sel.from, sel.to))
   }
 }
 
@@ -192,8 +192,8 @@ handlers.paste = (pm, e) => {
     } else {
       doc = (text.fromMarkdown || text.fromText)(txt)
     }
-    pm.apply({name: "replace", pos: sel.from, end: sel.to,
-              source: doc, from: from || Pos.start(doc), to: to || Pos.end(doc)})
+    pm.apply(replace(pm.doc, sel.from, sel.to,
+                     doc, from || Pos.start(doc), to || Pos.end(doc)))
     pm.scrollIntoView()
   }
 }
@@ -231,11 +231,11 @@ handlers.drop = (pm, e) => {
     let insertPos = pm.posAtCoords({left: e.clientX, top: e.clientY})
     if (pm.input.draggingFrom && !e.ctrlKey) {
       let sel = pm.selection
-      let result = pm.apply({name: "replace", pos: sel.from, end: sel.to})
+      let result = pm.apply(remove(pm.doc, sel.from, sel.to))
       insertPos = result.map(insertPos)
     }
-    let result = pm.apply({name: "replace", pos: insertPos,
-                           source: doc, from: Pos.start(doc), to: Pos.end(doc)})
+    let result = pm.apply(replace(pm.doc, insertPos, null,
+                                  doc, Pos.start(doc), Pos.end(doc)))
     pm.setSelection(new Range(insertPos, result.map(insertPos)))
     pm.focus()
   }

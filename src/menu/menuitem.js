@@ -1,5 +1,6 @@
 import {style, inline, Node} from "../model"
-import {splitAt, joinNodes, liftableRange, wrappableRange, insertNode} from "../transform"
+import {splitAt, joinNodes, liftRange, wrapRange, insertNode,
+        addStyle, removeStyle, setBlockType, remove} from "../transform"
 import {elt} from "../edit/dom"
 
 export class Item {
@@ -17,11 +18,11 @@ export class LiftItem extends Item {
   }
   select(pm) {
     let sel = pm.selection
-    return liftableRange(pm.doc, sel.from, sel.to)
+    return liftRange(pm.doc, sel.from, sel.to)
   }
   apply(pm) {
     let sel = pm.selection
-    let range = liftableRange(pm.doc, sel.from, sel.to)
+    let range = liftRange(pm.doc, sel.from, sel.to)
     pm.apply(range)
   }
 }
@@ -56,7 +57,7 @@ export class BlockTypeItem extends Item {
   }
   apply(pm) {
     let sel = pm.selection
-    pm.apply({name: "setType", pos: sel.from, end: sel.to, type: this.type, attrs: this.attrs})
+    pm.apply(setBlockType(sel.from, sel.to, this.type, this.attrs))
   }
 }
 
@@ -87,7 +88,7 @@ export class WrapItem extends Item {
   }
   apply(pm) {
     let sel = pm.selection
-    pm.apply(wrappableRange(pm.doc, sel.from, sel.to, this.type))
+    pm.apply(wrapRange(pm.doc, sel.from, sel.to, this.type))
   }
 }
 
@@ -104,11 +105,11 @@ export class InlineStyleItem extends Item {
   apply(pm) {
     let sel = pm.selection
     if (this.active(pm))
-      pm.apply({name: "removeStyle", pos: sel.from, end: sel.to, style: this.style.type})
+      pm.apply(removeStyle(sel.from, sel.to, this.style.type))
     else if (this.dialog)
       return this.dialog
     else
-      pm.apply({name: "addStyle", pos: sel.from, end: sel.to, style: this.style})
+      pm.apply(addStyle(sel.from, sel.to, this.style))
   }
 }
 
@@ -149,8 +150,7 @@ export class LinkDialog extends Dialog {
     let elts = form.elements
     if (!elts.href.value) return
     let sel = pm.selection
-    pm.apply({name: "addStyle", pos: sel.from, end: sel.to,
-              style: style.link(elts.href.value, elts.title.value)})
+    pm.apply(addStyle(sel.from, sel.to, style.link(elts.href.value, elts.title.value)))
   }
 }
 
@@ -170,7 +170,7 @@ export class ImageDialog extends Dialog {
     let elts = form.elements
     if (!elts.src.value) return
     let sel = pm.selection
-    pm.apply({name: "replace", pos: sel.from, end: sel.to})
+    pm.apply(remove(pm.doc, sel.from, sel.to))
     let attrs = {src: elts.src.value, alt: elts.alt.value, title: elts.title.value}
     pm.apply(insertNode(pm.doc, sel.from, {type: "image", attrs: attrs}))
   }

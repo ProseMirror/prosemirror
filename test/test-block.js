@@ -4,20 +4,16 @@ import tests from "./tests"
 import {testTransform} from "./cmp"
 
 import {Node, Pos} from "../src/model"
-import {wrappableRange, liftableRange, describeTarget, describePos} from "../src/transform"
+import {wrapRange, liftRange, describeTarget, describePos} from "../src/transform"
 
 function t(op, name, doc, expect, params) {
   tests[op + "_" + name] = function() {
     if (!params) params = {}
     params.name = op
-    if (op == "lift" && !params.pos) {
-      params = liftableRange(doc, doc.tag.a, doc.tag.b || doc.tag.a)
-    } else if (op == "wrap") {
-      params = wrappableRange(doc, doc.tag.a, doc.tag.b || doc.tag.a, params.type, params.attrs, params.join)
-    } else {
-      if (!params.pos) params.pos = doc.tag.a
-      if (!params.end) params.end = doc.tag.b
-    }
+    if (op == "lift")
+      params = liftRange(doc, doc.tag.a, doc.tag.b || doc.tag.a)
+    else if (op == "wrap")
+      params = wrapRange(doc, doc.tag.a, doc.tag.b || doc.tag.a, params.type, params.attrs, params.join)
     testTransform(doc, expect, params)
   }
 }

@@ -1,4 +1,5 @@
 import {fromDOM, Node, Pos, style} from "../model"
+import {replace} from "../transform"
 
 import {findByPath} from "./selection"
 
@@ -23,8 +24,8 @@ export function applyDOMChange(pm) {
       if (changeStart) {
         let changeEnd = findChangeEnd(node, path, toOffset + 1, updated, updatedPath)
         let before = changeEnd.orig.cmp(changeStart.orig) < 0
-        pm.apply({name: "replace", pos: changeStart.orig, end: before ? changeStart.orig : changeEnd.orig,
-                  source: updatedDoc, from: changeStart.updated, to: before ? changeStart.updated : changeEnd.updated})
+        pm.apply(replace(pm.doc, changeStart.orig, before ? changeStart.orig : changeEnd.orig,
+                         updatedDoc, changeStart.updated, before ? changeStart.updated : changeEnd.updated))
         return true
       } else {
         return false
