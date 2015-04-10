@@ -92,11 +92,15 @@ t("text_across_paragraphs",
   "abc",
   doc(p("onabc<a>wo"), p("three")))
 
+t("lopsided",
+  doc(blockquote(p("b<a>c"), p("d<b>e"), p("f"))),
+  doc(blockquote(p("x<a>y")), p("z<b>")),
+  doc(blockquote(p("by")), p("z<a><b>e"), blockquote(p("f"))))
+
 t("deep_insert",
   doc(blockquote(blockquote(p("one"), p("tw<a>o"), p("t<b>hree<3>"), p("four<4>")))),
   doc(ol(li(p("hello<a>world")), li(p("bye"))), p("ne<b>xt")),
-  doc(blockquote(blockquote(p("one"), p("twworld")), ol(li(p("bye"))), p("ne<a><b>hree<3>"),
-                 blockquote(p("four<4>")))))
+  doc(blockquote(blockquote(p("one"), p("twworld")), ol(li(p("bye"))), p("ne<a><b>hree<3>"), blockquote(p("four<4>")))))
 
 t("text_inherit_style",
   doc(p(em("he<a>lo"))),

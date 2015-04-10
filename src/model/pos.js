@@ -22,6 +22,12 @@ export default class Pos {
       return offsetA - offsetB
   }
 
+  static samePath(pathA, pathB) {
+    if (pathA.length != pathB.length) return false
+    for (let i = 0; i < pathA.length; i++) if (pathA[i] !== pathB[i]) return false
+    return true
+  }
+
   cmp(other) { return Pos.cmp(this.path, this.offset, other.path, other.offset) }
 
   static shorten(path, to = null, offset = 0) {

@@ -1,11 +1,6 @@
 import {style, Node, inline, slice} from "../model"
 import {defineTransform, flatTransform} from "./transform"
 
-function addInline(node, child) {
-  node.push(child)
-  inline.stitchTextNodes(node, node.content.length - 1)
-}
-
 function copyStructure(node, from, to, f, depth = 0) {
   if (node.type.contains == "inline") {
     return f(node, from, to)
@@ -26,6 +21,11 @@ function copyStructure(node, from, to, f, depth = 0) {
     copy.pushFrom(node, end + 1)
     return copy
   }
+}
+
+function addInline(node, child) {
+  node.push(child)
+  inline.stitchTextNodes(node, node.content.length - 1)
 }
 
 function copyInline(node, from, to, f) {

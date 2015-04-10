@@ -37,7 +37,7 @@ export function cmpStr(a, b, comment) {
 export function testTransform(doc, expect, params) {
   let orig = doc.toString()
   let result = applyTransform(doc, params)
-//  let inverse = invertTransform(result, params)
+  let inverse = invertTransform(result, params)
   cmpNode(result.doc, expect)
   cmpStr(doc, orig, "immutable")
   for (let pos in expect.tag) {
@@ -45,6 +45,6 @@ export function testTransform(doc, expect, params) {
     cmpStr(mapped, expect.tag[pos], pos)
     cmpStr(result.mapBack(mapped, offset), doc.tag[pos], pos + " back")
   }
-//  let invertedResult = applyTransform(result.doc, inverse)
-//  cmpNode(invertedResult.doc, doc, "inverse")
+  let invertedResult = applyTransform(result.doc, inverse)
+  cmpNode(invertedResult.doc, doc, "inverse")
 }

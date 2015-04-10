@@ -200,9 +200,10 @@ function replace(doc, params) {
 defineTransform("replace", {
   apply: replace,
   invert(result, params) {
-    let pos = result.map(params.pos)
-    return {name: "replace", pos: result.inserted ? result.inserted.from : pos, end: pos,
-            source: result.before, from: params.pos, to: params.end || params.pos}
+    let {from, to} = result.inserted ||
+        {from: resolvePos(result.before, params.pos, params.posInfo), to: null}
+    return replace_(result.doc, from, to,
+                    result.before, result.deleted.from, result.deleted.to)
   }
 })
 

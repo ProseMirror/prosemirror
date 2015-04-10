@@ -9,7 +9,7 @@ function findNodeFrom(doc, type, attrs, pos, dir) {
     if (node.type.contains == "inline")
       return onPos ? null : false
 
-    let n = onPos ? pos.path[depth] : dir > 0 ? 0 : node.content.length - 1
+    let n = onPos ? pos.path[path.length] : dir > 0 ? 0 : node.content.length - 1
     for (let i = n; dir < 0 ? i >= 0 : i < node.content.length; i += dir) {
       path.push(i)
       let result = search(node.content[i], onPos && i == n)
@@ -18,7 +18,7 @@ function findNodeFrom(doc, type, attrs, pos, dir) {
       path.pop()
     }
   }
-  return search(doc)
+  return search(doc, true)
 }
 
 function findNodeAround(doc, type, attrs, pos) {

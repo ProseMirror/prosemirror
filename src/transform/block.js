@@ -5,11 +5,15 @@ import {resolveTarget, resolvePos, describePos} from "./resolve"
 import {sameArray} from "./util"
 
 export function selectedSiblings(doc, from, to) {
-  let len = Math.min(from.path.length, to.path.length)
-  for (let i = 0;; i++) {
-    let left = from.path[i], right = to.path[i]
-    if (left != right || i == len - 1)
-      return {path: from.path.slice(0, i), from: left, to: right + 1}
+  for (let i = 0, node = doc;; i++) {
+    if (node.type.contains == "inline")
+      return {path: from.path.slice(0, i - 1), from: from.path[i - 1], to: from.path[i - 1] + 1}
+    let fromEnd = i == from.path.length, toEnd = i == to.path.length
+    let left = fromEnd ? from.offset : from.path[i]
+    let right = toEnd ? to.offset : to.path[i]
+    if (fromEnd || toEnd || left != right)
+      return {path: from.path.slice(0, i), from: left, to: right}
+    node = node.content[left]
   }
 }
 
@@ -48,14 +52,25 @@ function canBeLifted(doc, range) {
   }
 }
 
-function lift(doc, params) {
+function resolveSiblingRange(doc, params) {
   let pos = resolvePos(doc, params.pos, params.posInfo)
   let end = resolvePos(doc, params.end, params.endInfo)
-  if (!pos || !end || !sameArray(pos.path, end.path) || pos.offset >= end.offset)
-    return flatTransform(doc)
+  if (pos && end && sameArray(pos.path, end.path) && pos.offset < end.offset)
+    return {pos: pos, end: end}
+}
+
+function verifyLiftPos(doc, params) {
+  let {pos, end} = resolveSiblingRange(doc, params)
+  if (!pos) return null
+
   let range = {path: pos.path, from: pos.offset, to: end.offset}
   let lift = canBeLifted(doc, range)
-  if (!lift) return flatTransform(doc)
+  if (lift) return {range: range, lift: lift}
+}
+
+function lift(doc, params) {
+  let {range, lift} = verifyLiftPos(doc, params)
+  if (!range) return flatTransform(doc)
 
   let before = new Pos(range.path, range.from)
   while (before.path.length > lift.path.length && before.offset == 0)
@@ -89,13 +104,19 @@ function lift(doc, params) {
 defineTransform("lift", {
   apply: lift,
   invert(result, params) {
-    let lift = canBeLifted(result.before, params.pos, params.end || params.pos)
-    let parent = result.before.path(lift.range.path)
-    let joinLeft = lift.range.from > 0
-    let joinRight = lift.range.to < parent.content.length
-    return {name: "wrap", join: joinLeft && joinRight ? true : joinLeft ? "left" : joinRight ? "right" : false,
-            pos: result.map(params.pos), end: params.end && result.map(params.end),
-            type: parent.type.name, attrs: parent.attrs}
+    let {range, lift} = verifyLiftPos(result.before, params)
+    if (!range) return {name: "null"}
+
+    let parent = result.before.path(range.path)
+    let join = range.from > 0 ? "left" : false
+    if (range.to < parent.content.length) join = join ? true : "right"
+
+    let start = Pos.shorten(range.path, lift.path.length)
+    let end = Pos.shorten(range.path, lift.path.length, range.to - range.from)
+    console.log("start/end=" + start + " " + end, "p=", range.path)
+
+    return wrapRange(result.doc, start, end,
+                     parent.type.name, parent.attrs, join)
   }
 })
 
@@ -109,77 +130,77 @@ export function wrapRange(doc, from, to, type, attrs, join) {
 }
 
 function wrap(doc, params) {
-  let pos = resolvePos(doc, params.pos, params.posInfo)
-  let end = resolvePos(doc, params.end, params.endInfo)
-  if (!pos || !end || !sameArray(pos.path, end.path) || pos.offset >= end.offset)
-    return flatTransform(doc)
+  let {pos, end} = resolveSiblingRange(doc, params)
+  if (!pos) return flatTransform(doc)
+
   let range = {path: pos.path, from: pos.offset, to: end.offset}
 
-  let source = doc.path(range.path)
+  let source = doc.path(pos.path)
   let newNode = params.node || new Node(params.type, null, params.attrs)
   let connAround = Node.findConnection(source.type, newNode.type)
-  let connInside = Node.findConnection(newNode.type, source.content[range.from].type)
+  let connInside = Node.findConnection(newNode.type, source.content[pos.offset].type)
   if (!connAround || !connInside) return flatTransform(doc)
   let outerNode = newNode
   for (let i = connAround.length - 1; i >= 0; i--)
     outerNode = new Node(connAround[i], [outerNode])
 
-  let joinLeft = params.join && params.join != "right" && range.from &&
-      outerNode.sameMarkup(source.content[range.from - 1])
-  let joinRight = params.join && params.join != "left" && range.to < source.content.length &&
-      outerNode.sameMarkup(source.content[range.to])
+  let joinLeft = params.join && params.join != "right" && pos.offset &&
+      outerNode.sameMarkup(source.content[pos.offset - 1])
+  let joinRight = params.join && params.join != "left" && end.offset < source.content.length &&
+      outerNode.sameMarkup(source.content[end.offset])
 
-  let before = new Pos(range.path, range.from - (joinLeft ? 1 : 0))
-  let after = new Pos(range.path, range.to + (joinRight ? 1 : 0))
+  let before = new Pos(pos.path, pos.offset - (joinLeft ? 1 : 0))
+  let after = new Pos(pos.path, end.offset + (joinRight ? 1 : 0))
   let output = slice.before(doc, before)
   let result = new Result(doc, output)
 
   let leftStart = 0
   if (joinLeft) {
-    let joinSource = source.content[range.from - 1]
+    let joinSource = source.content[pos.offset - 1]
     outerNode.content = joinSource.content.concat(outerNode.content)
     leftStart = joinSource.content.length
   }
-  let prefix = range.path.concat(range.from - (joinLeft ? 1 : 0)), suffix
+  let prefix = pos.path.concat(pos.offset - (joinLeft ? 1 : 0)), suffix
   for (let i = 0; i < connAround.length; i++) {
     prefix.push(leftStart)
     leftStart = 0
   }
   if (!connInside.length) {
-    result.chunk(new Pos(range.path, range.from), range.to - range.from, new Pos(prefix, leftStart))
+    result.chunk(pos, end.offset - pos.offset, new Pos(prefix, leftStart))
   } else {
     suffix = []
     for (let i = 1; i < connInside.length; i++) suffix.push(0)
   }
 
-  for (let pos = range.from; pos < range.to; pos++) {
-    let newChild = source.content[pos]
+  for (let i = pos.offset; i < end.offset; i++) {
+    let newChild = source.content[i]
     for (let i = connInside.length - 1; i >= 0; i--)
       newChild = new Node(connInside[i], [newChild])
     newNode.push(newChild)
     if (suffix) {
-      let path = range.path.concat(pos)
-      result.chunk(new Pos(range.path, pos), 1,
-                   new Pos(prefix.concat(leftStart + pos - range.from).concat(suffix), 0))
+      let path = pos.path.concat(i)
+      result.chunk(new Pos(pos.path, i), 1,
+                   new Pos(prefix.concat(leftStart + i - pos.offset).concat(suffix), 0))
     }
   }
 
   if (joinRight) {
-    let joinSource = source.content[range.to]
-    result.chunk(new Pos(range.path.concat(range.to), 0), joinSource.content.length,
-                 new Pos(range.path.concat(range.from - (joinLeft ? 1 : 0)), outerNode.content.length))
+    let joinSource = source.content[end.offset]
+    result.chunk(new Pos(pos.path.concat(end.offset), 0), joinSource.content.length,
+                 new Pos(pos.path.concat(pos.offset - (joinLeft ? 1 : 0)), outerNode.content.length))
     outerNode.pushFrom(joinSource)
   }
 
-  output.path(range.path).push(outerNode)
+  output.path(pos.path).push(outerNode)
 
-  glue(output, range.path.length, slice.after(doc, after), after, {result: result})
+  glue(output, pos.path.length, slice.after(doc, after), after, {result: result})
   return result
 }
 
 defineTransform("wrap", {
   apply: wrap,
   invert(result, params) {
-    return {name: "lift", pos: result.map(params.pos), end: params.end && result.map(params.end)}
+    return liftRange(result.doc, resolvePos(result.doc, result.map(params.pos), result.posInfo),
+                     resolvePos(result.doc, result.map(params.end), result.endInfo))
   }
 })
