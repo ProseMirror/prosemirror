@@ -14,6 +14,7 @@ import "./test-block"
 import "./test-inline"
 import "./test-dom"
 import "./test-collab"
+import "./test-trans"
 
 for (let name in tests) {
   if (filter && name.indexOf(filter) == -1) continue
