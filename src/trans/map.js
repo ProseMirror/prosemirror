@@ -7,11 +7,13 @@ export class Chunk {
   }
 }
 
+const empty = []
+
 export class PosMap {
-  constructor() {
-    this.moved = []
-    this.deleted = []
-    this.inserted = []
+  constructor(moved, deleted, inserted) {
+    this.moved = moved || empty
+    this.deleted = deleted || empty
+    this.inserted = inserted || empty
   }
 
   map(pos, offset) {
