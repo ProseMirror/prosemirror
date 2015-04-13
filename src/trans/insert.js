@@ -1,12 +1,12 @@
 import {Pos, Node, inline} from "../model"
 
 import {defineTransform, Result, Step} from "./transform"
-import {PosMap, Chunk} from "./map"
+import {PosMap, Range} from "./map"
 import {copyTo} from "./tree"
 
 function applyInsert(doc, pos, nodes, keepStyle) {
   let copy = copyTo(doc, pos.path)
-  let target = copy.path(pos.path)
+  let target = copy.path(pos.path), oldSize = target.maxOffset
   let offset = pos.offset
   let isInline = target.type.contains == "inline"
   if (isInline) {
@@ -19,7 +19,12 @@ function applyInsert(doc, pos, nodes, keepStyle) {
     inline.stitchTextNodes(target, offset + nodes.length)
     inline.stitchTextNodes(target, offset)
   }
-  return new Result(doc, copy, new PosMap(null, null, [new Chunk(pos, target.length)]))
+
+  let sizeDiff = target.maxOffset - oldSize
+  let map = new PosMap([new Range(pos, oldSize - pos.offset, new Pos(pos.path, pos.offset + sizeDiff), true)],
+                       null,
+                       [new Range(pos, sizeDiff)])
+  return new Result(doc, copy, map)
 }
 
 defineTransform("insert", {

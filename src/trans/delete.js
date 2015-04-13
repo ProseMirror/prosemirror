@@ -1,7 +1,7 @@
 import {Pos, inline} from "../model"
 
 import {defineTransform, Result, Step} from "./transform"
-import {PosMap, Chunk} from "./map"
+import {PosMap, Range} from "./map"
 import {copyTo, isRange, rangesBetween} from "./tree"
 
 defineTransform("delete", {
@@ -9,7 +9,7 @@ defineTransform("delete", {
     let from = data.from, to = data.to
     if (!isRange(from, to)) return null
     let copy = copyTo(doc, from.path)
-    let target = copy.path(from.path)
+    let target = copy.path(from.path), oldSize = target.maxOffset
     if (target.type.contains == "inline") {
       let start = inline.splitInlineAt(target, from.offset).offset
       let end = inline.splitInlineAt(target, to.offset).offset
@@ -18,7 +18,9 @@ defineTransform("delete", {
     } else {
       target.content.splice(from.offset, to.offset - from.offset)
     }
-    return new Result(doc, copy, new PosMap(null, [new Chunk(from, to.offset - from.offset)]))
+    let map = new PosMap([new Range(to, oldSize - to.offset, from)],
+                         [new Range(from, to.offset - from.offset)])
+    return new Result(doc, copy, map)
   }
 })
 

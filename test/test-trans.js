@@ -1,5 +1,5 @@
 import {style, Node} from "../src/model"
-import {addStyle, removeStyle, insert, del as del_, applyTransform} from "../src/trans"
+import {addStyle, removeStyle, insert, insertText, del as del_, applyTransform} from "../src/trans"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
@@ -8,16 +8,23 @@ import tests from "./tests"
 import {cmpNode, cmpStr} from "./cmp"
 
 export function testTransform(doc, expect, steps) {
-  let orig = doc.toString(), result = doc
-  for (let i = 0; i < steps.length; i++)
-    result = applyTransform(result, steps[i]).doc
-  cmpNode(result, expect)
+  let orig = doc.toString(), out = doc, results = []
+  for (let i = 0; i < steps.length; i++) {
+    let result = applyTransform(out, steps[i])
+    out = result.doc
+    results.push(result)
+  }
+  cmpNode(out, expect)
   cmpStr(doc, orig, "immutable")
-/*  for (let pos in expect.tag) {
-    let offset, mapped = result.map(doc.tag[pos], p => offset = p)
-    cmpStr(mapped, expect.tag[pos], pos)
-    cmpStr(result.mapBack(mapped, offset), doc.tag[pos], pos + " back")
-  }*/
+  for (let pos in expect.tag) {
+    let val = doc.tag[pos], offset = []
+    for (let i = 0; i < results.length; i++)
+      ({pos: val, offset: offset[i]} = results[i].map._map(val))
+    cmpStr(val, expect.tag[pos], pos)
+    for (let i = results.length - 1; i >= 0; i--)
+      val = results[i].map._map(val, true, offset[i]).pos
+    cmpStr(val, doc.tag[pos], pos + " back")
+  }
 }
 
 function add(name, doc, expect, style) {
@@ -98,11 +105,11 @@ ins("break",
     new Node.Inline("hard_break"))
 ins("simple",
     doc(p("one"), "<a>", p("two<2>")),
-    doc(p("one"), p(), p("<a>two<2>")),
+    doc(p("one"), p(), "<a>", p("two<2>")),
     new Node("paragraph"))
 ins("two",
     doc(p("one"), "<a>", p("two<2>")),
-    doc(p("one"), p("hi"), hr, p("<a>two<2>")),
+    doc(p("one"), p("hi"), hr, "<a>", p("two<2>")),
     [new Node("paragraph", [new Node.text("hi")]),
      new Node("horizontal_rule")])
 ins("end_of_blockquote",
@@ -111,21 +118,64 @@ ins("end_of_blockquote",
     new Node("paragraph"))
 ins("start_of_blockquote",
     doc(blockquote("<a>", p("he<1>y")), p("after<2>")),
-    doc(blockquote(p(), p("<a>he<1>y")), p("after<2>")),
+    doc(blockquote(p(), "<a>", p("he<1>y")), p("after<2>")),
     new Node("paragraph"))
 
 function del(name, doc, expect) {
-  tests["insert__" + name] = () => {
+  tests["delete__" + name] = () => {
     testTransform(doc, expect, del_(doc, doc.tag.a, doc.tag.b))
   }
 }
 
 del("simple",
     doc(p("<1>one"), "<a>", p("tw<2>o"), "<b>", p("<3>three")),
-    doc(p("<1>one"), p("<2><3>three")))
+    doc(p("<1>one"), "<a><2>", p("<3>three")))
 del("only_child",
     doc(blockquote("<a>", p("hi"), "<b>"), p("x")),
     doc(blockquote(), p("x")))
 del("outside_path",
     doc(blockquote(p("a"), "<a>", p("b"), "<b>"), p("c<1>")),
     doc(blockquote(p("a")), p("c<1>")))
+
+function txt(name, doc, expect, text) {
+  tests["insertText__" + name] = () => {
+    testTransform(doc, expect, insertText(doc.tag.a, text))
+  }
+}
+
+txt("inherit_style",
+    doc(p(em("he<a>lo"))),
+    doc(p(em("hello"))),
+    "l")
+txt("simple",
+    doc(p("hello<a>")),
+    doc(p("hello world<a>")),
+    " world")
+txt("simple_inside",
+    doc(p("he<a>llo")),
+    doc(p("hej<a>llo")),
+     "j")
+txt("left_associative",
+    doc(p(em("hello<a>"), " world<after>")),
+    doc(p(em("hello big"), " world<after>")),
+    " big")
+txt("paths",
+    doc(p("<1>before"), p("<2>here<a>"), p("after<3>")),
+    doc(p("<1>before"), p("<2>here!<a>"), p("after<3>")),
+    "!")
+txt("at_start",
+    doc(p("<a>one")),
+    doc(p("two <a>one")),
+    "two ")
+txt("after br",
+    doc(p("hello", br, "<a>you")),
+    doc(p("hello", br, "...you")),
+    "...")
+txt("after_br_nojoin",
+    doc(p("hello", br, em("<a>you"))),
+    doc(p("hello", br, "...<a>", em("you"))),
+    "...")
+txt("before_br",
+    doc(p("<a>", br, "ok")),
+    doc(p("ay", br, "ok")),
+    "ay")
