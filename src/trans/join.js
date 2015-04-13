@@ -1,7 +1,7 @@
 import {Pos, Node, inline} from "../model"
 
 import {defineTransform, Result, Step} from "./transform"
-import {isRange, copyTo} from "./tree"
+import {copyTo} from "./tree"
 import {PosMap, Range, SinglePos} from "./map"
 
 defineTransform("join", {
@@ -11,7 +11,7 @@ defineTransform("join", {
     if (data.from.offset < before.maxOffset || data.to.offset > 0) return null
     let pFrom = data.from.path, pTo = data.to.path
     let last = pFrom.length - 1, offset = pFrom[last] + 1
-    if (pFrom.length != pTo.length || offset != pTo[last]) return null
+    if (pFrom.length != pTo.length || pFrom.length == 0 || offset != pTo[last]) return null
     for (let i = 0; i < last; i++) if (pFrom[i] != pTo[i]) return null
 
     let targetPath = pFrom.slice(0, last)

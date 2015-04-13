@@ -1,6 +1,6 @@
 import {style, Node} from "../src/model"
 import {addStyle, removeStyle, insert, insertText,
-        join as join_, del as del_, applyTransform} from "../src/trans"
+        join as join_, del as del_, split as split_, applyTransform} from "../src/trans"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
@@ -202,3 +202,41 @@ join("list_item",
 join("inline",
      doc(p("foo"), "<a>", p("bar")),
      doc(p("foo<a>bar")))
+
+function split(name, doc, expect, args) {
+  tests["split__" + name] = () => {
+    testTransform(doc, expect, split_(doc.tag.a, args && args.depth, args && args.node))
+  }
+}
+
+split("simple",
+      doc(p("foo<a>bar")),
+      doc(p("foo"), p("<a>bar")))
+split("before_and_after",
+      doc(p("<1>a"), p("<2>foo<a>bar<3>"), p("<4>b")),
+      doc(p("<1>a"), p("<2>foo"), p("<a>bar<3>"), p("<4>b")))
+split("deeper",
+      doc(blockquote(blockquote(p("foo<a>bar"))), p("after<1>")),
+      doc(blockquote(blockquote(p("foo")), blockquote(p("<a>bar"))), p("after<1>")),
+      {depth: 2})
+split("and_deeper",
+      doc(blockquote(blockquote(p("foo<a>bar"))), p("after<1>")),
+      doc(blockquote(blockquote(p("foo"))), blockquote(blockquote(p("<a>bar"))), p("after<1>")),
+      {depth: 3})
+split("at_end",
+      doc(blockquote(p("hi<a>"))),
+      doc(blockquote(p("hi"), p("<a>"))))
+split("at_start",
+      doc(blockquote(p("<a>hi"))),
+      doc(blockquote(p(), p("<a>hi"))))
+split("list_paragraph",
+      doc(ol(li(p("one<1>")), li(p("two<a>three")), li(p("four<2>")))),
+      doc(ol(li(p("one<1>")), li(p("two"), p("<a>three")), li(p("four<2>")))))
+split("list_item",
+      doc(ol(li(p("one<1>")), li(p("two<a>three")), li(p("four<2>")))),
+      doc(ol(li(p("one<1>")), li(p("two")), li(p("<a>three")), li(p("four<2>")))),
+      {depth: 2})
+split("change_type",
+      doc(h1("hell<a>o!")),
+      doc(h1("hell"), p("<a>o!")),
+      {node: new Node("paragraph")})
