@@ -1,5 +1,6 @@
 import {style, Node} from "../src/model"
-import {addStyle, removeStyle, insert, insertText, del as del_, applyTransform} from "../src/trans"
+import {addStyle, removeStyle, insert, insertText,
+        join as join_, del as del_, applyTransform} from "../src/trans"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
@@ -179,3 +180,25 @@ txt("before_br",
     doc(p("<a>", br, "ok")),
     doc(p("ay", br, "ok")),
     "ay")
+
+function join(name, doc, expect) {
+  tests["join__" + name] = () => {
+    testTransform(doc, expect, join_(doc, doc.tag.a))
+  }
+}
+
+join("simple",
+     doc(blockquote(p("<before>a")), "<a>", blockquote(p("b")), p("after<after>")),
+     doc(blockquote(p("<before>a"), "<a>", p("b")), p("after<after>")))
+join("deeper",
+     doc(blockquote(blockquote(p("a"), p("b<before>")), "<a>", blockquote(p("c"), p("d<after>")))),
+     doc(blockquote(blockquote(p("a"), p("b<before>"), "<a>", p("c"), p("d<after>")))))
+join("lists",
+     doc(ol(li(p("one")), li(p("two"))), "<a>", ol(li(p("three")))),
+     doc(ol(li(p("one")), li(p("two")), "<a>", li(p("three")))))
+join("list_item",
+     doc(ol(li(p("one")), li(p("two")), "<a>", li(p("three")))),
+     doc(ol(li(p("one")), li(p("two"), "<a>", p("three")))))
+join("inline",
+     doc(p("foo"), "<a>", p("bar")),
+     doc(p("foo<a>bar")))

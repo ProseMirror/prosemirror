@@ -1,7 +1,7 @@
 import {nullMap} from "./map"
 
 export class Step {
-  constructor(name, from, to, param) {
+  constructor(name, from, to, param = null) {
     this.name = name
     this.from = from
     this.to = to

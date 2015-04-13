@@ -27,7 +27,7 @@ defineTransform("delete", {
 export function del(doc, from, to) {
   let steps = []
   rangesBetween(doc, from, to, function(path, start, end) {
-    steps.push(new Step("delete", new Pos(path, start), new Pos(path, end)))
+    steps.unshift(new Step("delete", new Pos(path, start), new Pos(path, end)))
   })
   return steps
 }

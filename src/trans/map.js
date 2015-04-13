@@ -14,7 +14,7 @@ export class Range {
 }
 
 export class SinglePos {
-  constuctor(pos, before, after) {
+  constructor(pos, before, after) {
     this.pos = pos
     this.before = before
     this.after = after
