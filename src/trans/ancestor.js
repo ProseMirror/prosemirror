@@ -1,10 +1,11 @@
 import {Pos, Node, inline} from "../model"
 
 import {defineTransform, Result, Step} from "./transform"
-import {isFlatRange, copyTo, selectedSiblings} from "./tree"
+import {isFlatRange, copyTo, selectedSiblings, blocksBetween, isPlainText} from "./tree"
 import {PosMap, Range, SinglePos} from "./map"
 import {split} from "./split"
 import {join} from "./join"
+import {clearMarkup} from "./style"
 
 defineTransform("ancestor", {
   apply(doc, data) {
@@ -23,8 +24,10 @@ defineTransform("ancestor", {
     let parent = copy.path(toParent), inner = copy.path(from.path)
     let parentSize = parent.content.length
     if (wrappers.length) {
+      let lastWrapper = wrappers[wrappers.length - 1]
       if (parent.type.contains != wrappers[0].type.type ||
-          wrappers[wrappers.length - 1].type.contains != inner.type.contains)
+          lastWrapper.type.contains != inner.type.contains ||
+          lastWrapper.type == Node.types.code_block && !isPlainText(inner))
         return null
       let node = null
       for (let i = wrappers.length - 1; i >= 0; i--)
@@ -139,6 +142,14 @@ export function wrap(doc, from, to, node) {
   return result
 }
 
-export function setBlockType(doc, from, to, node) {
-  // FIXME
+export function setBlockType(doc, from, to, wrapNode) {
+  let result = []
+  blocksBetween(doc, from, to || from, (node, path) => {
+    path = path.slice()
+    if (wrapNode.type == Node.types.code_block && !isPlainText(node))
+      result = result.concat(clearMarkup(doc, new Pos(path, 0), new Pos(path, node.size)))
+    result.push(new Step("ancestor", new Pos(path, 0), new Pos(path, node.size),
+                         {depth: 1, wrappers: [wrapNode]}))
+  })
+  return result
 }

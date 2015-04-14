@@ -2,11 +2,12 @@ import {style, Node} from "../model"
 
 import {defineTransform, Result, Step} from "./transform"
 import {nullMap} from "./map"
-import {copyInline, copyStructure, findRanges} from "./tree"
+import {copyInline, copyStructure, findRanges, forSpansBetween} from "./tree"
 
 defineTransform("addStyle", {
   apply(doc, data) {
     return new Result(doc, copyStructure(doc, data.from, data.to, (node, from, to) => {
+      if (node.type == Node.types.code_block) return node
       return copyInline(node, from, to, node => {
         return new Node.Inline(node.type, style.add(node.styles, data.param),
                                node.text, node.attrs)
@@ -46,4 +47,16 @@ export function removeStyle(doc, from, to, st) {
     else
       return span.styles.length > 0
   }).map(range => new Step("removeStyle", range.from, range.to, st))
+}
+
+export function clearMarkup(doc, from, to) {
+  let steps = []
+  forSpansBetween(doc, from, to, (span, path, start, end) => {
+    if (span.type != Node.types.text) {
+      path = path.slice()
+      steps.unshift(new Step("delete", new Pos(path, start), new Pos(path, end)))
+    }
+  })
+  steps.unshift(new Step("removeStyle", from, to, null))
+  return steps
 }

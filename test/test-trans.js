@@ -1,7 +1,7 @@
 import {style, Node} from "../src/model"
 import {addStyle, removeStyle, insert, insertText, wrap as wrap_,
         join as join_, del as del_, split as split_, lift as lift_,
-        applyTransform} from "../src/trans"
+        setBlockType, applyTransform} from "../src/trans"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
@@ -315,3 +315,30 @@ wrap("bullet_list",
      doc(p("x"), p("yyyy<a>y"), p("z")),
      doc(p("x"), ul(li(p("yyyy<a>y"))), p("z")),
      new Node("bullet_list"))
+
+function type(name, doc, expect, node) {
+  tests["setType__" + name] = () => {
+    testTransform(doc, expect, setBlockType(doc, doc.tag.a, doc.tag.b, node))
+  }
+}
+
+type("simple",
+     doc(p("am<a> i")),
+     doc(h2("am i")),
+     new Node("heading", null, {level: 2}))
+type("multiple",
+     doc(h1("<a>hello"), p("there"), p("<b>you"), p("end")),
+     doc(pre("hello"), pre("there"), pre("you"), p("end")),
+     new Node("code_block"))
+type("inside",
+     doc(blockquote(p("one<a>"), p("two<b>"))),
+     doc(blockquote(h1("one<a>"), h1("two<b>"))),
+     new Node("heading", null, {level: 1}))
+type("clear_markup",
+     doc(p("hello<a> ", em("world"))),
+     doc(pre("hello world")),
+     new Node("code_block"))
+type("only_clear_for_code_block",
+     doc(p("hello<a> ", em("world"))),
+     doc(h1("hello<a> ", em("world"))),
+     new Node("heading", null, {level: 1}))

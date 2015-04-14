@@ -10,6 +10,9 @@ function applyInsert(doc, pos, nodes, keepStyle) {
   let offset = pos.offset
   let isInline = target.type.contains == "inline"
   if (isInline) {
+    if (target.type == Node.types.code_block &&
+        (nodes.length > 1 || nodes[0].type != Node.types.text || nodes[0].styles.length))
+      return null
     let split = inline.splitInlineAt(target, pos.offset)
     offset = split.offset
     if (keepStyle) nodes = nodes.map(n => new Node.Inline(n.type, split.styles, n.text, n.attrs))

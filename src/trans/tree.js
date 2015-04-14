@@ -1,4 +1,4 @@
-import {Pos, inline} from "../model"
+import {Node, Pos, inline} from "../model"
 
 export function copyStructure(node, from, to, f, depth = 0) {
   if (node.type.contains == "inline") {
@@ -169,4 +169,30 @@ export function selectedSiblings(doc, from, to) {
       return {path: from.path.slice(0, i), from: left, to: right + (toEnd ? 0 : 1)}
     node = node.content[left]
   }
+}
+
+export function blocksBetween(doc, from, to, f) {
+  let path = []
+  function scan(node, from, to) {
+    if (node.type.contains == "inline") {
+      f(node, path)
+    } else {
+      let fromMore = from && from.path.length > path.length
+      let toMore = to && to.path.length > path.length
+      let start = !from ? 0 : fromMore ? from.path[path.length] : from.offset
+      let end = !to ? node.content.length : toMore ? to.path[path.length] + 1 : to.offset
+      for (let i = start; i < end; i++) {
+        path.push(i)
+        scan(node.content[i], fromMore && i == 0 ? from : null, toMore && i == end - 1 ? to : null)
+        path.pop()
+      }
+    }
+  }
+  scan(doc, from, to)
+}
+
+export function isPlainText(node) {
+  if (node.content.length == 0) return true
+  let child = node.content[0]
+  return node.content.length == 1 && child.type == Node.types.text && child.styles.length == 0
 }
