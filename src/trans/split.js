@@ -23,6 +23,9 @@ defineTransform("split", {
                           new Range(new Pos(parentPath, offset + 1), parent.content.length - 2 - offset,
                                     new Pos(parentPath, offset + 2))])
     return new Result(doc, copy, map)
+  },
+  invert(result, data) {
+    return new Step("join", data.from, result.map.map(data.from))
   }
 })
 

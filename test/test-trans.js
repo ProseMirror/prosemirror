@@ -1,7 +1,7 @@
 import {style, Node} from "../src/model"
 import {addStyle, removeStyle, insert, insertText, wrap as wrap_,
         join as join_, del as del_, split as split_, lift as lift_,
-        setBlockType, applyTransform} from "../src/trans"
+        setBlockType, applyTransform, invertTransform} from "../src/trans"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
@@ -10,12 +10,13 @@ import tests from "./tests"
 import {cmpNode, cmpStr} from "./cmp"
 
 export function testTransform(doc, expect, steps) {
-  let orig = doc.toString(), out = doc, results = []
+  let orig = doc.toString(), out = doc, results = [], inverted = []
   for (let i = 0; i < steps.length; i++) {
     let result = applyTransform(out, steps[i])
     if (result) {
       out = result.doc
       results.push(result)
+      inverted.push(invertTransform(result, steps[i]))
     }
   }
   cmpNode(out, expect)
@@ -29,6 +30,11 @@ export function testTransform(doc, expect, steps) {
       val = results[i].map._map(val, true, offset[i]).pos
     cmpStr(val, doc.tag[pos], pos + " back")
   }
+  for (let i = inverted.length - 1; i >= 0; i--) {
+    let result = applyTransform(out, inverted[i])
+    out = result.doc
+  }
+  cmpNode(out, doc, "inverted")
 }
 
 function add(name, doc, expect, style) {
@@ -275,8 +281,11 @@ lift("from_list",
      doc(ul(li(p("one")), li(p("two<a>")), li(p("three")))),
      doc(ul(li(p("one"))), p("two<a>"), ul(li(p("three")))))
 lift("multiple_from_list",
-     doc(ul(li(p("one<a>")), li(p("two<b>")), li(p("three<after>")))),
-     doc(p("one<a>"), p("two<b>"), ul(li(p("three<after>")))))
+     doc(ul("<1>", li(p("one<a>")), li(p("two<b>")), li(p("three<after>")))),
+     doc("<1>", p("one<a>"), p("two<b>"), ul(li(p("three<after>")))))
+lift("end_of_list",
+     doc(ul(li(p("a")), li(p("b<a>")), "<1>")),
+     doc(ul(li(p("a"))), p("b<a>"), "<1>"))
 lift("multiple_from_list_with_two_items",
      doc(ul(li(p("one<a>"), p("<half>half")), li(p("two<b>")), li(p("three<after>")))),
      doc(p("one<a>"), p("<half>half"), p("two<b>"), ul(li(p("three<after>")))))

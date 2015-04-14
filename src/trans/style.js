@@ -15,13 +15,35 @@ defineTransform("addStyle", {
     }))
   },
   invert(result, data) {
-    return new Step("removeStyle", result.map.map(data.from), result.map.map(data.to), data.style)
+    return new Step("removeStyle", data.from, result.map.map(data.to), data.param)
   }
 })
 
 export function addStyle(doc, from, to, st) {
-  return findRanges(doc, from, to, span => !style.contains(span.styles, st))
-    .map(range => new Step("addStyle", range.from, range.to, st))
+  let removed = [], added = [], removing = null, adding = null
+  forSpansBetween(doc, from, to, (span, path, start, end) => {
+    let styles = span.styles, rm
+    if (style.contains(span.styles, st)) {
+      adding = removing = null
+    } else {
+      path = path.slice()
+      if (rm = style.containsType(span.styles, st.type)) {
+        if (removing && style.same(removing.param, rm)) {
+          removing.to = new Pos(path, end)
+        } else {
+          removing = new Step("removeStyle", new Pos(path, start), new Pos(path, end), rm)
+          removed.push(removing)
+        }
+      }
+      if (adding) {
+        adding.to = new Pos(path, end)
+      } else {
+        adding = new Step("addStyle", new Pos(path, start), new Pos(path, end), st)
+        added.push(adding)
+      }
+    }
+  })
+  return removed.concat(added)
 }
 
 defineTransform("removeStyle", {
@@ -34,11 +56,11 @@ defineTransform("removeStyle", {
     }))
   },
   invert(result, data) {
-    return new Step("addStyle", result.map.map(data.from), result.map.map(data.to), data.style)
+    return new Step("addStyle", data.from, result.map.map(data.to), data.param)
   }
 })
 
-export function removeStyle(doc, from, to, st) {
+export function removeStyle(doc, from, to, st = null) {
   let matched = [], step = 0
   forSpansBetween(doc, from, to, (span, path, start, end) => {
     step++
@@ -79,5 +101,5 @@ export function clearMarkup(doc, from, to) {
       steps.unshift(new Step("delete", new Pos(path, start), new Pos(path, end)))
     }
   })
-  return removeStyle(doc, from, to, null).concat(steps)
+  return removeStyle(doc, from, to).concat(steps)
 }

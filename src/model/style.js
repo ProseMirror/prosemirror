@@ -54,12 +54,12 @@ export function same(a, b) {
 
 export function contains(set, style) {
   for (let i = 0; i < set.length; i++)
-    if (same(set[i], style)) return set[i]
+    if (same(set[i], style)) return true
   return false
 }
 
 export function containsType(set, type) {
   for (let i = 0; i < set.length; i++)
-    if (set[i].type == type) return true
+    if (set[i].type == type) return set[i]
   return false
 }

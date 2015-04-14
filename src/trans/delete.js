@@ -13,7 +13,7 @@ defineTransform("delete", {
     if (target.type.contains == "inline") {
       let start = inline.splitInlineAt(target, from.offset).offset
       let end = inline.splitInlineAt(target, to.offset).offset
-      target.content.splice(start, end)
+      target.content.splice(start, end - start)
       inline.stitchTextNodes(target, start)
     } else {
       target.content.splice(from.offset, to.offset - from.offset)
@@ -21,6 +21,11 @@ defineTransform("delete", {
     let map = new PosMap([new Range(to, oldSize - to.offset, from)],
                          [new Range(from, to.offset - from.offset)])
     return new Result(doc, copy, map)
+  },
+  invert(result, data) {
+    let from = data.from
+    let parent = result.before.path(from.path)
+    return new Step("insert", from, null, parent.content.slice(from.offset, data.to.offset))
   }
 })
 

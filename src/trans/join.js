@@ -26,6 +26,9 @@ defineTransform("join", {
                           new Range(new Pos(targetPath, offset + 1), oldSize - offset - 1, new Pos(targetPath, offset))],
                          [new SinglePos(new Pos(targetPath, offset), data.from, data.from)])
     return new Result(doc, copy, map)
+  },
+  invert: function(result, data) {
+    return new Step("split", data.from)
   }
 })
 

@@ -42,6 +42,7 @@ defineTransform("ancestor", {
     for (let i = 0; i < wrappers.length; i++) toInner.push(i ? 0 : start)
     let startOfInner = new Pos(toInner, wrappers.length ? 0 : start)
     let deleted = null
+    let insertedSize = wrappers.length ? 1 : to.offset - from.offset
     if (depth > 1) {
       deleted = []
       let path = from.path, off = from.offset
@@ -49,15 +50,25 @@ defineTransform("ancestor", {
         off = path[path.length - 1]
         path = path.slice(0, path.length - 1)
         deleted.push(new SinglePos(new Pos(path, off), new Pos(toParent, start), startOfInner),
-                     new SinglePos(new Pos(path, off + 1), new Pos(toParent, end), new Pos(toInner, to.offset - from.offset)))
+                     new SinglePos(new Pos(path, off + insertedSize),
+                                   new Pos(toInner, to.offset - from.offset), new Pos(toParent, start + insertedSize)))
       }
     }
     let moved = [new Range(from, to.offset - from.offset, startOfInner)]
-    let insertedSize = wrappers.length ? 1 : to.offset - from.offset
     if (end - start != insertedSize)
       moved.push(new Range(new Pos(toParent, end), parentSize - end,
                            new Pos(toParent, start + insertedSize)))
     return new Result(doc, copy, new PosMap(moved, deleted))
+  },
+  invert(result, data) {
+    let wrappers = []
+    if (data.param.depth) for (let i = 0; i < data.param.depth; i++) {
+      let parent = result.before.path(data.from.path.slice(0, data.from.path.length - i))
+      wrappers.unshift(parent.copy())
+    }
+    return new Step("ancestor", result.map.map(data.from), result.map.map(data.to),
+                    {depth: data.param.wrappers ? data.param.wrappers.length : 0,
+                     wrappers: wrappers})
   }
 })
 

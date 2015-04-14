@@ -19,6 +19,10 @@ export function applyTransform(doc, transform) {
   return transforms[transform.name].apply(doc, transform)
 }
 
+export function invertTransform(result, step) {
+  return transforms[step.name].invert(result, step)
+}
+
 export class Result {
   constructor(before, after = before, map = nullMap) {
     this.before = before

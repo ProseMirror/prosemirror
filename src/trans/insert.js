@@ -29,6 +29,9 @@ defineTransform("insert", {
                          null,
                          [new Range(pos, sizeDiff)])
     return new Result(doc, copy, map)
+  },
+  invert(result, data) {
+    return new Step("delete", data.from, result.map.map(data.from))
   }
 })
 

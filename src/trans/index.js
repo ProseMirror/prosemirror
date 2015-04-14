@@ -1,4 +1,4 @@
-export {Result, Step, defineTransform, applyTransform} from "./transform"
+export {Result, Step, defineTransform, applyTransform, invertTransform} from "./transform"
 export {PosMap, Range, nullMap} from "./map"
 
 export {addStyle, removeStyle} from "./style"
