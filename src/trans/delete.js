@@ -2,12 +2,12 @@ import {Pos, inline} from "../model"
 
 import {defineTransform, Result, Step} from "./transform"
 import {PosMap, Range} from "./map"
-import {copyTo, isRange, rangesBetween} from "./tree"
+import {copyTo, isFlatRange, rangesBetween} from "./tree"
 
 defineTransform("delete", {
   apply(doc, data) {
     let from = data.from, to = data.to
-    if (!isRange(from, to)) return null
+    if (!isFlatRange(from, to)) return null
     let copy = copyTo(doc, from.path)
     let target = copy.path(from.path), oldSize = target.maxOffset
     if (target.type.contains == "inline") {

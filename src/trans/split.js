@@ -17,7 +17,7 @@ defineTransform("split", {
       splitAt = inline.splitInlineAt(target, pos.offset).offset
     let after = (data.param || target).copy(target.content.slice(splitAt))
     target.content.length = splitAt
-    parent.content.splice(offset + 1, after)
+    parent.content.splice(offset + 1, 0, after)
     
     let map = new PosMap([new Range(pos, targetSize - pos.offset, new Pos(parentPath.concat(offset + 1), 0), true),
                           new Range(new Pos(parentPath, offset + 1), parent.content.length - 2 - offset,
@@ -28,6 +28,7 @@ defineTransform("split", {
 
 export function split(pos, depth = 1, nodeAfter = null) {
   let steps = []
+  if (depth == 0) return steps
   for (let i = 0;; i++) {
     steps.push(new Step("split", pos, null, nodeAfter))
     if (i == depth - 1) return steps

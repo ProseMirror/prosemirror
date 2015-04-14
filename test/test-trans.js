@@ -1,6 +1,7 @@
 import {style, Node} from "../src/model"
-import {addStyle, removeStyle, insert, insertText,
-        join as join_, del as del_, split as split_, applyTransform} from "../src/trans"
+import {addStyle, removeStyle, insert, insertText, wrap as wrap_,
+        join as join_, del as del_, split as split_, lift as lift_,
+        applyTransform} from "../src/trans"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
@@ -12,8 +13,10 @@ export function testTransform(doc, expect, steps) {
   let orig = doc.toString(), out = doc, results = []
   for (let i = 0; i < steps.length; i++) {
     let result = applyTransform(out, steps[i])
-    out = result.doc
-    results.push(result)
+    if (result) {
+      out = result.doc
+      results.push(result)
+    }
   }
   cmpNode(out, expect)
   cmpStr(doc, orig, "immutable")
@@ -240,3 +243,75 @@ split("change_type",
       doc(h1("hell<a>o!")),
       doc(h1("hell"), p("<a>o!")),
       {node: new Node("paragraph")})
+
+function lift(name, doc, expect) {
+  tests["lift__" + name] = () => {
+    testTransform(doc, expect, lift_(doc, doc.tag.a, doc.tag.b))
+  }
+}
+
+lift("simple_between",
+     doc(blockquote(p("<before>one"), p("<a>two"), p("<after>three"))),
+     doc(blockquote(p("<before>one")), p("<a>two"), blockquote(p("<after>three"))))
+lift("simple_at_front",
+     doc(blockquote(p("<a>two"), p("<after>three"))),
+     doc(p("<a>two"), blockquote(p("<after>three"))))
+lift("simple_at_end",
+     doc(blockquote(p("<before>one"), p("<a>two"))),
+     doc(blockquote(p("<before>one")), p("<a>two")))
+lift("simple_alone",
+     doc(blockquote(p("<a>t<in>wo"))),
+     doc(p("<a>t<in>wo")))
+lift("multiple",
+     doc(blockquote(blockquote(p("on<a>e"), p("tw<b>o")), p("three"))),
+     doc(blockquote(p("on<a>e"), p("tw<b>o"), p("three"))))
+lift("multiple_lopsided",
+     doc(p("start"), blockquote(blockquote(p("a"), p("<a>b")), p("<b>c"))),
+     doc(p("start"), blockquote(p("a"), p("<a>b")), p("<b>c")))
+lift("deeper",
+     doc(blockquote(blockquote(p("<1>one"), p("<a>two"), p("<3>three"), p("<b>four"), p("<5>five")))),
+     doc(blockquote(blockquote(p("<1>one")), p("<a>two"), p("<3>three"), p("<b>four"), blockquote(p("<5>five")))))
+lift("from_list",
+     doc(ul(li(p("one")), li(p("two<a>")), li(p("three")))),
+     doc(ul(li(p("one"))), p("two<a>"), ul(li(p("three")))))
+lift("multiple_from_list",
+     doc(ul(li(p("one<a>")), li(p("two<b>")), li(p("three<after>")))),
+     doc(p("one<a>"), p("two<b>"), ul(li(p("three<after>")))))
+lift("multiple_from_list_with_two_items",
+     doc(ul(li(p("one<a>"), p("<half>half")), li(p("two<b>")), li(p("three<after>")))),
+     doc(p("one<a>"), p("<half>half"), p("two<b>"), ul(li(p("three<after>")))))
+
+function wrap(name, doc, expect, node) {
+  tests["wrap__" + name] = () => {
+    testTransform(doc, expect, wrap_(doc, doc.tag.a, doc.tag.b, node))
+  }
+}
+
+wrap("simple",
+     doc(p("one"), p("<a>two"), p("three")),
+     doc(p("one"), blockquote(p("<a>two")), p("three")),
+     new Node("blockquote"))
+wrap("two",
+     doc(p("one<1>"), p("<a>two"), p("<b>three"), p("four<4>")),
+     doc(p("one<1>"), blockquote(p("<a>two"), p("three")), p("four<4>")),
+     new Node("blockquote"))
+wrap("list",
+     doc(p("<a>one"), p("<b>two")),
+     doc(ol(li(p("<a>one")), li(p("<b>two")))),
+     new Node("ordered_list"))
+wrap("nested_list",
+     doc(ol(li(p("<1>one")), li(p("<a>two"), p("<b>three")), li(p("<4>four")))),
+     doc(ol(li(p("<1>one")), li(ol(li(p("<a>two")), li(p("<b>three")))), li(p("<4>four")))),
+     new Node("ordered_list"))
+wrap("not_possible",
+     doc(p("hi<a>")),
+     doc(p("hi<a>")),
+     new Node("horizontal_rule"))
+wrap("include_parent",
+     doc(blockquote(p("<1>one"), p("two<a>")), p("three<b>")),
+     doc(blockquote(blockquote(p("<1>one"), p("two<a>")), p("three<b>"))),
+     new Node("blockquote"))
+wrap("bullet_list",
+     doc(p("x"), p("yyyy<a>y"), p("z")),
+     doc(p("x"), ul(li(p("yyyy<a>y"))), p("z")),
+     new Node("bullet_list"))
