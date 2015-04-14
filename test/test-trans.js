@@ -143,7 +143,7 @@ del("outside_path",
 
 function txt(name, doc, expect, text) {
   tests["insertText__" + name] = () => {
-    testTransform(doc, expect, insertText(doc.tag.a, text))
+    testTransform(doc, expect, insertText(doc, doc.tag.a, text))
   }
 }
 
