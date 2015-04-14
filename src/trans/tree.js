@@ -85,19 +85,22 @@ export function forSpansBetween(doc, from, to, f) {
   scan(doc, from, to)
 }
 
-export function findRanges(doc, from, to, pred) {
-  let openFrom = null, openTo = null, found = []
+export function findRanges(doc, from, to, id) {
+  let openFrom = null, openTo = null, found = [], curID = null
   forSpansBetween(doc, from, to, (span, path, start, end) => {
-    if (pred(span)) {
+    let spanID = id(span)
+    if (openFrom && spanID != curID) {
+      found.push({from: openFrom, to: openTo, id: curID})
+      openFrom = openTo = null
+      curID = spanID
+    }
+    if (spanID) {
       path = path.slice()
       if (!openFrom) openFrom = new Pos(path, start)
       openTo = new Pos(path, end)
-    } else if (openFrom) {
-      found.push({from: openFrom, to: openTo})
-      openFrom = openTo = null
     }
   })
-  if (openFrom) found.push({from: openFrom, to: openTo})
+  if (openFrom) found.push({from: openFrom, to: openTo, id: curID})
   return found
 }
 

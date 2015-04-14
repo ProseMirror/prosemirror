@@ -54,7 +54,7 @@ export function same(a, b) {
 
 export function contains(set, style) {
   for (let i = 0; i < set.length; i++)
-    if (same(set[i], style)) return true
+    if (same(set[i], style)) return set[i]
   return false
 }
 
