@@ -20,7 +20,7 @@ function fromText(text) {
 function toText(doc) {
   let out = ""
   function explore(node) {
-    if (node.type.contains == "inline") {
+    if (node.type.block) {
       let text = ""
       for (let i = 0; i < node.content.length; i++) {
         let child = node.content[i]

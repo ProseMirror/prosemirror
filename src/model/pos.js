@@ -69,7 +69,7 @@ export default class Pos {
 }
 
 function findLeft(node, path) {
-  if (node.type.contains == "inline")
+  if (node.type.block)
     return new Pos(path, 0)
   for (let i = 0; i < node.content.length; i++) {
     path.push(i)
@@ -80,7 +80,7 @@ function findLeft(node, path) {
 }
 
 function findAfter(node, pos, path) {
-  if (node.type.contains == "inline")
+  if (node.type.block)
     return pos
   let atEnd = path.length == pos.path.length
   let start = atEnd ? pos.offset : pos.path[path.length]
@@ -97,7 +97,7 @@ Pos.after = function(node, pos) { return findAfter(node, pos, []) }
 Pos.start = function(node) { return findLeft(node, []) }
 
 function findRight(node, path) {
-  if (node.type.contains == "inline")
+  if (node.type.block)
     return new Pos(path, node.size)
   for (let i = node.content.length - 1; i >= 0; i--) {
     path.push(i)
@@ -108,7 +108,7 @@ function findRight(node, path) {
 }
 
 function findBefore(node, pos, path) {
-  if (node.type.contains == "inline") return pos
+  if (node.type.block) return pos
   let atEnd = pos.path.length == path.length
   let end = atEnd ? pos.offset - 1 : pos.path[path.length]
   for (let i = end; i >= 0; i--) {

@@ -45,7 +45,7 @@ export function inlineStylesAt(doc, pos) {
 
 export function rangeHasInlineStyle(doc, from, to, type) {
   function scan(node, from, to, type, depth) {
-    if (node.type.contains == "inline") {
+    if (node.type.block) {
       let start = from ? from.offset : 0
       let end = to ? to.offset : 1e5
       for (let i = 0, offset = 0; i < node.content.length; i++) {

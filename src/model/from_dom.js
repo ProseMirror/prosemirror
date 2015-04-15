@@ -32,8 +32,8 @@ class Context {
   addDOM(dom) {
     if (dom.nodeType == 3) {
       let value = dom.nodeValue
-      let top = this.top, inline = top.type.contains == "inline"
-      if (/\S/.test(value) || inline) {
+      let top = this.top, block = top.type.block
+      if (/\S/.test(value) || block) {
         value = value.replace(/\s+/g, " ")
         if (/^\s/.test(value) && top.content.length && /\s$/.test(top.content[top.content.length - 1].text))
           value = value.slice(1)

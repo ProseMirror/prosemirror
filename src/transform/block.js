@@ -6,7 +6,7 @@ import {sameArray} from "./util"
 
 export function selectedSiblings(doc, from, to) {
   for (let i = 0, node = doc;; i++) {
-    if (node.type.contains == "inline")
+    if (node.type.block)
       return {path: from.path.slice(0, i - 1), from: from.path[i - 1], to: from.path[i - 1] + 1}
     let fromEnd = i == from.path.length, toEnd = i == to.path.length
     let left = fromEnd ? from.offset : from.path[i]

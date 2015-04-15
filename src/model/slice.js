@@ -82,7 +82,7 @@ export function between(node, from, to, collapse = true, depth = 0) {
     return node.copy([inner])
   } else {
     var copy = node.copy()
-    if (depth == from.path.length && depth == to.path.length && node.type.contains == "inline") {
+    if (depth == from.path.length && depth == to.path.length && node.type.block) {
       copyInlineBetween(node, from.offset, to.offset, copy)
     } else {
       let start

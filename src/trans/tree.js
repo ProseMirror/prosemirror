@@ -1,7 +1,7 @@
 import {Node, Pos, inline} from "../model"
 
 export function copyStructure(node, from, to, f, depth = 0) {
-  if (node.type.contains == "inline") {
+  if (node.type.block) {
     return f(node, from, to)
   } else {
     let copy = node.copy()
@@ -63,7 +63,7 @@ export function copyInline(node, from, to, f) {
 export function forSpansBetween(doc, from, to, f) {
   let path = []
   function scan(node, from, to) {
-    if (node.type.contains == "inline") {
+    if (node.type.block) {
       let startOffset = from ? from.offset : 0
       let endOffset = to ? to.offset : node.size
       for (let i = 0, offset = 0; offset < endOffset; i++) {
@@ -160,7 +160,7 @@ export function rangesBetween(doc, from, to, f) {
 
 export function selectedSiblings(doc, from, to) {
   for (let i = 0, node = doc;; i++) {
-    if (node.type.contains == "inline")
+    if (node.type.block)
       return {path: from.path.slice(0, i - 1), from: from.path[i - 1], to: from.path[i - 1] + 1}
     let fromEnd = i == from.path.length, toEnd = i == to.path.length
     let left = fromEnd ? from.offset : from.path[i]
@@ -174,7 +174,7 @@ export function selectedSiblings(doc, from, to) {
 export function blocksBetween(doc, from, to, f) {
   let path = []
   function scan(node, from, to) {
-    if (node.type.contains == "inline") {
+    if (node.type.block) {
       f(node, path)
     } else {
       let fromMore = from && from.path.length > path.length

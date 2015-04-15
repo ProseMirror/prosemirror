@@ -50,7 +50,7 @@ function wrapAs(doc, path, node) {
 function findChangeStart(orig, origPath, origOffset, origEndOffset,
                          updated, updatedPath) {
   let changeOffset = null
-  let inline = orig.type.contains == "inline"
+  let block = orig.type.block
   for (let i = 0, offset = 0;; i++) {
     if (i == updated.content.length) {
       if (i < origEndOffset) changeOffset = offset
@@ -64,7 +64,7 @@ function findChangeStart(orig, origPath, origOffset, origEndOffset,
       if (!origChild.sameMarkup(updatedChild)) {
         changeOffset = offset
         break
-      } else if (inline) {
+      } else if (block) {
         if (!style.sameSet(origChild.styles, updatedChild.styles)) {
           changeOffset = offset
           break
@@ -85,16 +85,16 @@ function findChangeStart(orig, origPath, origOffset, origEndOffset,
     }
   }
   if (changeOffset != null)
-    return {orig: new Pos(origPath, origOffset + changeOffset, inline),
-            updated: new Pos(updatedPath, changeOffset, inline)}
+    return {orig: new Pos(origPath, origOffset + changeOffset),
+            updated: new Pos(updatedPath, changeOffset)}
 }
 
 function findChangeEnd(orig, origPath, origOffset,
                        updated, updatedPath) {
   let changeOffset = null
-  let inline = orig.type.contains == "inline"
+  let block = orig.type.block
   let lenDiff = origOffset - updated.content.length
-  let totalUpdatedOffset = inline ? updated.size : updated.content.length
+  let totalUpdatedOffset = block ? updated.size : updated.content.length
   for (let i = updated.content.length - 1, offset = totalUpdatedOffset;; i--) {
     if (i < 0) {
       if (lenDiff) changeOffset = offset
@@ -108,7 +108,7 @@ function findChangeEnd(orig, origPath, origOffset,
       if (!origChild.sameMarkup(updatedChild)) {
         changeOffset = offset
         break
-      } else if (inline) {
+      } else if (block) {
         if (!style.sameSet(origChild.styles, updatedChild.styles)) {
           changeOffset = offset
           break
@@ -130,9 +130,8 @@ function findChangeEnd(orig, origPath, origOffset,
     }
   }
   if (changeOffset != null) {
-    let totalOrigOffset = inline ? orig.size : orig.content.length
-    let resultOrigOffset = totalOrigOffset - (totalUpdatedOffset - changeOffset)
-    return {orig: new Pos(origPath, resultOrigOffset, inline),
-            updated: new Pos(updatedPath, changeOffset, inline)}
+    let resultOrigOffset = orig.maxOffset - (totalUpdatedOffset - changeOffset)
+    return {orig: new Pos(origPath, resultOrigOffset),
+            updated: new Pos(updatedPath, changeOffset)}
   }
 }

@@ -13,7 +13,7 @@ defineTransform("split", {
     let offset = pos.path[last], parent = copy.path(parentPath)
     let target = parent.content[offset], targetSize = target.maxOffset
     let splitAt = pos.offset
-    if (target.type.contains == "inline")
+    if (target.type.block)
       splitAt = inline.splitInlineAt(target, pos.offset).offset
     let after = (data.param || target).copy(target.content.slice(splitAt))
     target.content.length = splitAt

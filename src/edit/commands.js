@@ -212,11 +212,12 @@ commands.makeParagraph = pm => setType(pm, "paragraph")
 commands.makeCodeBlock = pm => setType(pm, "code_block")
 
 function insertOpaqueBlock(pm, type, attrs) {
+  type = Node.types[type]
   pm.scrollIntoView()
   let sel = pm.selection
   if (!sel.empty) return false
   let parent = pm.doc.path(sel.head.path)
-  if (parent.type.type != "block") return false
+  if (parent.type.type != type.type) return false
   if (sel.head.offset) {
     pm.apply(splitAt(pm.doc, sel.head))
     sel = pm.selection

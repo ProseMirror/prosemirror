@@ -50,7 +50,7 @@ export default class Node {
   }
 
   get maxOffset() {
-    return this.type.contains == "inline" ? this.size : this.content.length
+    return this.type.block ? this.size : this.content.length
   }
 
   get textContent() {
@@ -161,16 +161,16 @@ class NodeType {
 }
 
 const nodeTypes = Node.types = {
-  doc: new NodeType({type: "doc", contains: "block"}),
-  paragraph: new NodeType({type: "block", contains: "inline"}),
-  blockquote: new NodeType({type: "block", contains: "block"}),
-  heading: new NodeType({type: "block", contains: "inline"}),
-  bullet_list: new NodeType({type: "block", contains: "list_item", defaultAttrs: {bullet: "*", tight: true}}),
-  ordered_list: new NodeType({type: "block", contains: "list_item", defaultAttrs: {order: 1, tight: true}}),
-  list_item: new NodeType({type: "list_item", contains: "block"}),
-  html_block: new NodeType({type: "block", defaultAttrs: false}),
-  code_block: new NodeType({type: "block", contains: "inline", defaultAttrs: {params: null}, plainText: true}),
-  horizontal_rule: new NodeType({type: "block"}),
+  doc: new NodeType({type: "doc", contains: "element"}),
+  paragraph: new NodeType({type: "element", contains: "inline"}),
+  blockquote: new NodeType({type: "element", contains: "element"}),
+  heading: new NodeType({type: "element", contains: "inline"}),
+  bullet_list: new NodeType({type: "element", contains: "list_item", defaultAttrs: {bullet: "*", tight: true}}),
+  ordered_list: new NodeType({type: "element", contains: "list_item", defaultAttrs: {order: 1, tight: true}}),
+  list_item: new NodeType({type: "list_item", contains: "element"}),
+  html_block: new NodeType({type: "element", defaultAttrs: false}),
+  code_block: new NodeType({type: "element", contains: "inline", defaultAttrs: {params: null}, plainText: true}),
+  horizontal_rule: new NodeType({type: "element"}),
   text: new NodeType({type: "inline"}),
   image: new NodeType({type: "inline", defaultAttrs: false}),
   hard_break: new NodeType({type: "inline"}),

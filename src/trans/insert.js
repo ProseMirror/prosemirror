@@ -10,8 +10,8 @@ defineTransform("insert", {
     let copy = copyTo(doc, pos.path)
     let target = copy.path(pos.path), oldSize = target.maxOffset
     let offset = pos.offset
-    let isInline = target.type.contains == "inline"
-    if (isInline) {
+    let block = target.type.block
+    if (block) {
       if (target.type.plainText &&
           (nodes.length > 1 || nodes[0].type != Node.types.text || nodes[0].styles.length))
         return null
@@ -19,7 +19,7 @@ defineTransform("insert", {
       offset = split.offset
     }
     for (let i = nodes.length - 1; i >= 0; i--) target.content.splice(offset, 0, nodes[i])
-    if (isInline) {
+    if (block) {
       inline.stitchTextNodes(target, offset + nodes.length)
       inline.stitchTextNodes(target, offset)
     }

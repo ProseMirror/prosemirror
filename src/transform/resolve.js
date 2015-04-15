@@ -6,7 +6,7 @@ function findNodeFrom(doc, type, attrs, pos, dir) {
   function search(node, onPos) {
     if (attrs ? Node.compareMarkup(type, node.type, attrs, node.attrs) : type == node.type)
       return path
-    if (node.type.contains == "inline")
+    if (node.type.block)
       return onPos ? null : false
 
     let n = onPos ? pos.path[path.length] : dir > 0 ? 0 : node.content.length - 1
@@ -79,7 +79,7 @@ export function describeTarget(doc, path, from) {
 
 export function describePos(doc, goal, from) {
   let parent = doc.path(goal.path)
-  if (parent.type.contains == "inline") return {pos: goal, info: null}
+  if (parent.type.block) return {pos: goal, info: null}
 
   let targetInfo, pos, side
   if (!parent.content.length || (goal.offset == 0 && from == "left") ||

@@ -23,9 +23,9 @@ function nodesRight(doc, depth) {
 function compatibleTypes(a, aDepth, b, bDepth, options) {
   if (a.contains != b.contains) return false
   if (options.liberal)
-    return a.contains == "block" || a.contains == "inline" || a == b
+    return a.contains == "element" || a.block || a == b
   else
-    return a.contains == "inline" || a == b && aDepth == bDepth
+    return a.block || a == b && aDepth == bDepth
 }
 
 // FIXME kill styles in code blocks
@@ -70,7 +70,7 @@ export function glue(left, leftDepth, right, rightBorder, options = {}) {
           options.onChunk(rightBorder, cur.maxOffset, newStart)
       }
 
-      if (node.type.contains == "inline") {
+      if (node.type.block) {
         let start = target.content.length
         if (options.inheritStyles) {
           let styles = inline.inlineStylesAt(target, new Pos([], target.size))
