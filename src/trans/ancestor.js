@@ -27,7 +27,7 @@ defineTransform("ancestor", {
       let lastWrapper = wrappers[wrappers.length - 1]
       if (parent.type.contains != wrappers[0].type.type ||
           lastWrapper.type.contains != inner.type.contains ||
-          lastWrapper.type == Node.types.code_block && !isPlainText(inner))
+          lastWrapper.type.plainText && !isPlainText(inner))
         return null
       let node = null
       for (let i = wrappers.length - 1; i >= 0; i--)
@@ -157,7 +157,7 @@ export function setBlockType(doc, from, to, wrapNode) {
   let result = []
   blocksBetween(doc, from, to || from, (node, path) => {
     path = path.slice()
-    if (wrapNode.type == Node.types.code_block && !isPlainText(node))
+    if (wrapNode.type.plainText && !isPlainText(node))
       result = result.concat(clearMarkup(doc, new Pos(path, 0), new Pos(path, node.size)))
     result.push(new Step("ancestor", new Pos(path, 0), new Pos(path, node.size),
                          {depth: 1, wrappers: [wrapNode]}))

@@ -55,17 +55,17 @@ class InlineTooltip {
     }, 100)
   }
 
-  inCodeBlock(sel) {
+  inPlainText(sel) {
     let start = this.pm.doc.path(sel.from.path)
     let end = this.pm.doc.path(sel.to.path)
-    return start.type == Node.types.code_block && end.type == Node.types.code_block
+    return start.type.plainText && end.type.plainText
   }
 
   update() {
     let sel = this.pm.selection, link
     if (!this.pm.hasFocus())
       this.tooltip.close()
-    else if (!sel.empty && !this.inCodeBlock(sel))
+    else if (!sel.empty && !this.inPlainText(sel))
       openMenu(this.tooltip, this.items, pm, topCenterOfSelection())
     else if (this.showLinks && (link = this.linkUnderCursor()))
       this.showLink(link, this.pm.coordsAtPos(sel.head))

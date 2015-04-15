@@ -64,7 +64,7 @@ function copyInline(node, from, to, f) {
 defineTransform("addStyle", {
   apply(doc, params) {
     let copy = copyStructure(doc, params.pos, params.end || params.pos, (node, from, to) => {
-      if (node.type == Node.types.code_block) return node
+      if (node.type.plainText) return node
       return copyInline(node, from, to, node => {
         return new Node.Inline(node.type, style.add(node.styles, params.style),
                                node.text, node.attrs)
@@ -119,7 +119,7 @@ defineTransform("setType", {
         copy.type = Node.types[params.type]
         copy.attrs = params.attrs || copy.type.defaultAttrs
       }
-      if (copy.type == Node.types.code_block) inline.clearMarkup(copy)
+      if (copy.type.plainText) inline.clearMarkup(copy)
       return copy
     })
     return flatTransform(doc, copy)

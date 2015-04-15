@@ -92,17 +92,17 @@ class InputRules {
 
 function getContext(doc, pos) {
   let parent = doc.path(pos.path)
-  let isCode = parent.type == Node.types.code_block
+  let isPlain = parent.type.plainText
   let textBefore = ""
   for (let offset = 0, i = 0; offset < pos.offset;) {
     let child = parent.content[i++], size = child.size
     textBefore += offset + size > pos.offset ? child.text.slice(0, pos.offset - offset) : child.text
     if (offset + size >= pos.offset) {
       if (style.contains(child.styles, style.code))
-        isCode = true
+        isPlain = true
       break
     }
     offset += size
   }
-  return {textBefore, isCode}
+  return {textBefore, isPlain}
 }

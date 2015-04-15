@@ -7,7 +7,7 @@ import {copyInline, copyStructure, findRanges, forSpansBetween} from "./tree"
 defineTransform("addStyle", {
   apply(doc, data) {
     return new Result(doc, copyStructure(doc, data.from, data.to, (node, from, to) => {
-      if (node.type == Node.types.code_block) return node
+      if (node.type.plainText) return node
       return copyInline(node, from, to, node => {
         return new Node.Inline(node.type, style.add(node.styles, data.param),
                                node.text, node.attrs)

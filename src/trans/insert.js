@@ -12,7 +12,7 @@ defineTransform("insert", {
     let offset = pos.offset
     let isInline = target.type.contains == "inline"
     if (isInline) {
-      if (target.type == Node.types.code_block &&
+      if (target.type.plainText &&
           (nodes.length > 1 || nodes[0].type != Node.types.text || nodes[0].styles.length))
         return null
       let split = inline.splitInlineAt(target, pos.offset)

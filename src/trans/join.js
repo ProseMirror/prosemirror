@@ -8,7 +8,8 @@ defineTransform("join", {
   apply(doc, data) {
     let before = doc.path(data.from.path)
     let after = doc.path(data.to.path)
-    if (data.from.offset < before.maxOffset || data.to.offset > 0) return null
+    if (data.from.offset < before.maxOffset || data.to.offset > 0 ||
+        before.type.contains != after.type.contains) return null
     let pFrom = data.from.path, pTo = data.to.path
     let last = pFrom.length - 1, offset = pFrom[last] + 1
     if (pFrom.length != pTo.length || pFrom.length == 0 || offset != pTo[last]) return null
