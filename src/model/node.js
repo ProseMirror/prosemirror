@@ -149,30 +149,32 @@ Node.text = (text, styles) => new InlineNode(nodeTypes.text, styles, text)
 const nullAttrs = Node.nullAttrs = {}
 
 class NodeType {
-  constructor(type, contains, attrs = nullAttrs, defaultAttrs = null) {
-    this.name = ""
-    this.type = type
-    this.contains = contains
-    this.attrs = attrs
-    this.defaultAttrs = defaultAttrs || (attrs == nullAttrs && nullAttrs)
+  constructor(options) {
+    this.name = options.name
+    this.type = options.type
+    this.contains = options.contains
+    this.block = this.contains == "inline"
+    this.defaultAttrs = options.defaultAttrs
+    if (this.defaultAttrs == null) this.defaultAttrs = nullAttrs
+    this.plainText = !!options.plainText
   }
 }
 
 const nodeTypes = Node.types = {
-  doc: new NodeType("doc", "block"),
-  paragraph: new NodeType("block", "inline"),
-  blockquote: new NodeType("block", "block"),
-  heading: new NodeType("block", "inline", {level: null}),
-  bullet_list: new NodeType("block", "list_item", {bullet: "str", tight: "bool"}, {bullet: "*", tight: true}),
-  ordered_list: new NodeType("block", "list_item", {order: "num", tight: "bool"}, {order: 1, tight: true}),
-  list_item: new NodeType("list_item", "block"),
-  html_block: new NodeType("block", null, {html: "str"}),
-  code_block: new NodeType("block", "inline", {params: "str"}, {params: null}),
-  horizontal_rule: new NodeType("block", null),
-  text: new NodeType("inline", null),
-  image: new NodeType("inline", null, {src: "str", title: "str", alt: "str"}),
-  hard_break: new NodeType("inline", null),
-  html_tag: new NodeType("inline", null, {html: "str"})
+  doc: new NodeType({type: "doc", contains: "block"}),
+  paragraph: new NodeType({type: "block", contains: "inline"}),
+  blockquote: new NodeType({type: "block", contains: "block"}),
+  heading: new NodeType({type: "block", contains: "inline"}),
+  bullet_list: new NodeType({type: "block", contains: "list_item", defaultAttrs: {bullet: "*", tight: true}}),
+  ordered_list: new NodeType({type: "block", contains: "list_item", defaultAttrs: {order: 1, tight: true}}),
+  list_item: new NodeType({type: "list_item", contains: "block"}),
+  html_block: new NodeType({type: "block", defaultAttrs: false}),
+  code_block: new NodeType({type: "block", contains: "inline", defaultAttrs: {params: null}, plainText: true}),
+  horizontal_rule: new NodeType({type: "block"}),
+  text: new NodeType({type: "inline"}),
+  image: new NodeType({type: "inline", defaultAttrs: false}),
+  hard_break: new NodeType({type: "inline"}),
+  html_tag: new NodeType({type: "inline", defaultAttrs: false})
 }
 
 for (let name in nodeTypes) nodeTypes[name].name = name
