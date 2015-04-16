@@ -4,7 +4,7 @@ import {applyTransform, invertTransform} from "../src/transform"
 
 export function cmpNode(a, b, comment) {
   function raise(msg, path) {
-    throw new Failure(msg + " at " + path + " in " + a + " vs " + b + (comment ? " (" + comment + ")" : ""))
+    throw new Failure(msg + " at " + path + "\n in " + a + "\n vs " + b + (comment ? " (" + comment + ")" : ""))
   }
   function inner(a, b, path) {
     if (a.type != b.type) raise("types differ", path)

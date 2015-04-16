@@ -2,6 +2,7 @@ import {Pos, Node, inline, slice} from "../model"
 
 import {Step} from "./transform"
 import {del} from "./delete"
+import {split} from "./split"
 
 function samePathDepth(a, b) {
   for (let i = 0;; i++)
@@ -13,7 +14,7 @@ class Frontier {
   constructor(doc, from, to) {
     this.doc = doc
     this.left = this.buildLeft(from)
-    this.right = this.buildRight(from, to)
+    this.right = this.buildRight(to)
     let same = samePathDepth(from, to)
     this.bottom = new Pos(from.path.slice(0, same),
                           same == from.path.length ? from.offset : from.path[same] + 1)
@@ -23,15 +24,33 @@ class Frontier {
     let frontier = []
     for (let i = 0, node = this.doc;; i++) {
       let last = i == pos.path.length
-      let n = last ? pos.offset : pos.path[i]
-      frontier.push({node: node, pos: new Pos(pos.path.slice(0, i), n)})
+      let n = last ? pos.offset : pos.path[i] + 1
+      frontier.push({node, pos: new Pos(pos.path.slice(0, i), n)})
       if (last) return frontier
-      node = node.content[n]
+      node = node.content[n - 1]
     }
   }
 
-  buildRight(from, to) {
-    // FIXME
+  buildRight(pos) {
+    let nodes = []
+    for (let i = 0, node = this.doc;; i++) {
+      let last = i == pos.path.length
+      let n = last ? pos.offset : pos.path[i] + 1
+      nodes.push({node, from: n, atEnd: n == node.maxOffset})
+      if (last) return nodes
+      node = node.content[n - 1]
+    }
+  }
+
+  rightPos(depth) {
+    let pos = this.bottom
+    for (let i = this.botDepth; i < depth; i++)
+      pos = new Pos(pos.path.concat(pos.offset), 0)
+    return pos
+  }
+
+  get botDepth() {
+    return this.bottom.path.length
   }
 }
 
@@ -46,26 +65,31 @@ function nodesLeft(doc, depth) {
 
 function matchInsertedContent(frontier, open, same) {
   let matches = [], searchLeft = frontier.left.length - 1, searchRight = open.length - 1
-  if (open[searchRight].type.block &&
+  let inner = open[searchRight]
+  if (inner.type.block &&
       frontier.left[searchLeft].node.type.block) {
-    matches.push({source: searchRight, target: searchLeft})
+    matches.push({source: searchRight, target: searchLeft, nodes: inner.content, size: inner.size})
     searchLeft--
-    searchRight--
+    open[--searchRight].content.shift()
   }
   for (;;) {
-    let type = open[searchRight].type, found = null
+    let node = open[searchRight], type = node.type, found = null
     let outside = searchRight <= same
     for (let i = searchLeft; i >= 0; i--) {
       let left = frontier.left[i].node
-      if (outside ? left.type.contains == type.contains : left.node.type == type) {
+      if (outside ? left.type.contains == type.contains : left.type == type) {
         found = i
         break
       }
     }
-    if (found != null) {
-      matches.push({source: searchRight, target: found})
+    if (found != null && node.content.length) {
+      matches.push({source: searchRight, target: found,
+                    nodes: node.content, size: node.content.length})
       searchLeft = found - 1
+    }
+    if (found != null || node.content.length == 0) {
       if (outside) break
+      open[searchRight - 1].content.shift()
     }
     searchRight--
   }
@@ -76,123 +100,103 @@ function pushAll(target, elts) {
   for (let i = 0; i < elts.length; i++) target.push(elts[i])
 }
 
+
 function addInsertedContent(frontier, steps, source, start, end) {
   let remainder = slice.between(source, start, end)
   let nodes = nodesLeft(remainder, start.path.length)
   let sameInner = samePathDepth(start, end)
   let matches = matchInsertedContent(frontier, nodes, sameInner)
 
-  let deletedTo = start.path.length
   for (let i = 0; i < matches.length; i++) {
     let match = matches[i]
-    let target = frontier.left[match.target], node = nodes[match.source]
-    if (match.target < frontier.bottom.length) {
-      pushAll(steps, split(target.pos, frontier.bottom.length - match.target))
-      frontier.bottom = frontier.bottom.shorten(match.target, 1)
+    let pos = frontier.left[match.target].pos
+    if (match.target < frontier.botDepth) {
+      pushAll(steps, split(frontier.bottom, frontier.botDepth - match.target))
+      pos = frontier.bottom = frontier.bottom.shorten(match.target, 1)
     }
-
-    for (; deletedTo > match.source; deletedTo--)
-      if (nodes[deletedTo].content.length == 0) nodes[deletedTo - 1].content.shift()
-    if (node.content.length)
-      steps.push(new Step("insert", target.pos, null, node.content))
-    if (match.source) nodes[match.source - 1].content.shift()
-    deletedTo = match.source - 1
-    if (match.target == frontier.bottom.length)
-      frontier.bottom = frontier.bottom.shift(node.maxOffset)
+    steps.push(new Step("insert", pos, null, match.nodes))
+    if (match.target == frontier.botDepth)
+      frontier.bottom = frontier.bottom.shift(match.size)
   }
+
+  let lastMatch = matches[matches.length - 1]
+  let right = end
+  let cutAbove = matches.length > 1 ? matches[matches.length - 2].source : 1e5
+  if (sameInner > cutAbove) right = right.shorten(cutAbove, 1)
+
+  frontier.left.length = frontier.botDepth + 1
+  for (let i = lastMatch.source + 1, node = nodes[lastMatch.source]; i <= right.path.length; i++) {
+    let last = i == right.path.length
+    let n = last ? right.offset : right.path[i]
+    frontier.left.push({node, pos: new Pos(right.path.slice(0, i), n).extend(frontier.bottom)})
+    if (last) break
+    node = node.content[n]
+  }
+}
+
+function joinFrontier(frontier, steps, upto) {
+  for (let i = frontier.botDepth + 1; i < upto; i++) {
+    let left = frontier.left[i].pos, last = left.path.length - 1
+    let right = new Pos(left.path.slice(0, last).concat(left.path[last] + 1), 0)
+    steps.push(new Step("join", left, right))
+  }
+}
+
+function moveTextAcross(frontier, steps) {
+  let depth = frontier.right.length
+  let textStart = frontier.rightPos(depth - 1)
+  let info = frontier.right[frontier.right.length - 1]
+  let textEnd = textStart.shift(info.node.maxOffset - info.from)
+  pushAll(steps, split(textEnd, depth - frontier.botDepth - 1))
+  let stack = []
+  for (let i = frontier.botDepth + 1; i < frontier.left.length; i++) {
+    if (stack.length > 0 || i >= frontier.right.path ||
+        !frontier.left[i].node.sameMarkup(frontier.right[i].node))
+      stack.push(frontier.left[i].node.copy())
+  }
+  steps.push(new Step("ancestor", textStart, textEnd,
+                      {depth: frontier.right.length - (frontier.left.length - stack.length),
+                       wrappers: stack}))
+
+  joinFrontier(frontier, steps, frontier.left.length)
+  frontier.left.pop()
+  frontier.right.pop()
 }
 
 export function replace(doc, from, to, source = null, start = null, end = null) {
   let steps = del(doc, from, to)
   let frontier = new Frontier(doc, from, to)
-  if (source && start.cmp(end) < 0) {
+
+  // If there's a source to replace the range with, insert it,
+  // updating the frontier's bottom and left side to reflect the
+  // inserted content.
+  if (source && start.cmp(end) < 0)
     addInsertedContent(frontier, steps, source, start, end)
+
+  // Figure out which nodes along the frontier can be joined
+  let joinTo = frontier.botDepth
+  while (joinTo < frontier.left.length - 1 && joinTo < frontier.right.length - 1 &&
+         frontier.left[joinTo + 1].node.sameMarkup(frontier.right[joinTo + 1]))
+    ++joinTo
+
+  // If there's inline content at the left and right of the frontier,
+  // move it from the right to the left so that the blocks are joined
+  if (joinTo < frontier.right.length - 1 &&
+      frontier.left[frontier.left.length - 1].node.type.block &&
+      frontier.right[frontier.right.length - 1].node.type.block &&
+      !frontier.right[frontier.right.length - 1].atEnd)
+    moveTextAcross(frontier, steps)
+
+  // And which pieces are the cut are empty, and may be deleted
+  let delAt = frontier.right.length
+  while (delAt > joinTo && frontier.right[delAt - 1].atEnd) --delAt
+
+  if (delAt < frontier.right.length) {
+    let delPos = frontier.rightPos(delAt - 1)
+    steps.push(new Step("delete", delPos, delPos.shift(1)))
   }
+  joinFrontier(frontier, steps, joinTo + 1)
+
+//  for (let i = 0; i < steps.length; i++) console.log(steps[i])
   return steps
 }
-
-
-/* 
-Concept of a 'cut' in the document -- the nodes that were involved in
-deletion, on both sides, along with their new positions.
-
-Tracking positions after the cut is probably easiest by using relative
-offsets. The gap ends somewhere, and we simply have a number of level
-associated with node, offset pairs. Confusingly, levels above are also
-in the document, and the offset has to point either after those, or
-before them. Before is probably better, but note that the current
-document might have more content in them.
-
-Inserting a source document is probably the hard part.
-
-Completely decouple the code from that which handles glueing the
-remaining part. They are essentially different.
-
- - Sections that can be glued onto the open part are inserts.
-
- - Do we allow it to grow the cut? (Escaping beyond the common
-   ancestor.)
-
-   - Must at least be able to escape from inline parent, or we can't
-     insert any blocks
-
-   - Also want to be able to join interesting node (lists, quotes) to
-     equivalent parents at the insert context, so that you can use
-     copy/paste to move strings of list items around.
-
-   - So yes, but maybe only in limited circumstances.
-
- - Need a clean, understandable algorithm for finding places
-
-   - If inline on both sides, inline block is merged
-
-   - Next, look for interesting nodes that match, from inside to
-     outside. ('interesting' flag on nodes?)
-
-   - Finally, find a place for the leftover nodes. Nearest block
-     context above lowest matched node.
-
-Implement piecemeal:
-
- - Remove only
- - Add inline junk
- - Add leftover
- - Match interesting
- - Add inline after to
- - Stitch after to
-
-Frontier data structure can be used to do the inserting.
-
-When inserting below the cut (due to matches), do we split or simply
-insert, leaving the original structure intact? Nodes above the
-inserted content must definitely be split, to preserve ordering. This
-moves the root of the cut, but does not change the node stack there.
-Should such split nodes still be rejoined?
-
-A(B(p("a") || p("b"))) + A(p("c")) = A(B(p("a")), p("c"), B(p("b")))
-
-So, if content is inserted in between, joining is out. But if that
-content ends in (open) nodes of a matching type, *that* should be
-joined. So do update the frontier from the last inserted chunk. The
-open depth there is slightly tricky, since it depends on how much of
-the end path lies in that chunk (has not been put into another chunk).
-This can be computed by taking the sameDepth of the two paths, and
-decreasing the open depth when chunks whithin that sameDepth are
-moved.
-
-When matching pieces, ignore empty elements (everything below
-sameDepth).
-
-Then we have a root, a left frontier, and a right frontier stack.
-Start from bottom, and join matching pieces. Except if top pieces
-don't match automatically, and are both inline. In that case, first
-split off the inline stuff at the right, ancestor it to the same level
-as the one of the left, and recursively join. This is needed to keep
-pos identities. Result should be insignificant for everything except
-the inner stuff, so joining can go ahead without further complication.
-
-Scan from top of right stack (minus potentially joined inline content)
-for empty nodes (allows content, has none, not counting empty cut
-nodes above). Delete outer empty node, if present.
-
-*/

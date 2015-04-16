@@ -19,7 +19,7 @@ defineTransform("split", {
     target.content.length = splitAt
     parent.content.splice(offset + 1, 0, after)
     
-    let map = new PosMap([new Range(pos, targetSize - pos.offset, new Pos(parentPath.concat(offset + 1), 0), true),
+    let map = new PosMap([new Range(pos, targetSize - pos.offset, new Pos(parentPath.concat(offset + 1), 0), "insert"),
                           new Range(new Pos(parentPath, offset + 1), parent.content.length - 2 - offset,
                                     new Pos(parentPath, offset + 2))])
     return new Result(doc, copy, map)

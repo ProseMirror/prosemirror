@@ -8,6 +8,10 @@ export default class Pos {
     return this.path.join("/") + ":" + this.offset
   }
 
+  get depth() {
+    return this.path.length
+  }
+
   static cmp(pathA, offsetA, pathB, offsetB) {
     let lenA = pathA.length, lenB = pathB.length;
     for (var i = 0, end = Math.min(lenA, lenB); i < end; i++) {

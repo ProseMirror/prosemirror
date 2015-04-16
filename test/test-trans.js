@@ -27,7 +27,7 @@ export function testTransform(doc, expect, steps) {
       ({pos: val, offset: offset[i]} = results[i].map._map(val))
     cmpStr(val, expect.tag[pos], pos)
     for (let i = results.length - 1; i >= 0; i--)
-      val = results[i].map._map(val, true, offset[i]).pos
+      val = results[i].map._map(val, true, offset[i], -1).pos
     cmpStr(val, doc.tag[pos], pos + " back")
   }
   for (let i = inverted.length - 1; i >= 0; i--) {
@@ -363,3 +363,23 @@ repl("add_text",
      doc(p("hell<a>o y<b>ou")),
      doc(p("<a>i k<b>")),
      doc(p("helli k<a><b>ou")))
+repl("add_paragraph",
+     doc(p("hello<a>you")),
+     doc("<a>", p("there"), "<b>"),
+     doc(p("hello"), p("there"), p("<a>you")))
+repl("match_list",
+     doc(ol(li(p("one<a>")), li(p("three")))),
+     doc(ol(li(p("<a>half")), li(p("two")), "<b>")),
+     doc(ol(li(p("onehalf")), li(p("two")), li(p("three")))))
+repl("merge_block",
+     doc(p("a<a>"), p("b"), p("<b>c")),
+     null,
+     doc(p("a<a><b>c")))
+repl("move_text_down",
+     doc(h1("wo<a>ah"), blockquote(p("ah<b>ha"))),
+     null,
+     doc(h1("wo<a><b>ha")))
+repl("move_text_up",
+     doc(blockquote(p("foo<a>bar")), p("middle"), h1("quux<b>baz")),
+     null,
+     doc(blockquote(p("foo<a><b>baz"))))

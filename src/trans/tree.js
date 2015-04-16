@@ -94,16 +94,16 @@ export function isFlatRange(from, to) {
 export function rangesBetween(doc, from, to, f) {
   function scanAfter(node, depth) {
     if (depth == from.path.length) {
-      if (from.offset != node.maxOffset) f(from.path, from.offset, node.maxOffset)
+      if (from.offset < node.maxOffset) f(from.path, from.offset, node.maxOffset)
     } else {
       let start = from.path[depth]
       scanAfter(node.content[start], depth + 1)
-      if (start + 1 != node.content.length) f(from.path.slice(0, depth), start + 1, node.content.length)
+      if (start + 1 < node.content.length) f(from.path.slice(0, depth), start + 1, node.content.length)
     }
   }
-  function scanBefore(node) {
+  function scanBefore(node, depth) {
     if (depth == to.path.length) {
-      if (from.offset != 0) f(from.path, 0, to.offset)
+      if (to.offset > 0) f(to.path, 0, to.offset)
     } else {
       let end = to.path[depth]
       if (end != 0) f(to.path.slice(0, depth), 0, end)
@@ -112,18 +112,14 @@ export function rangesBetween(doc, from, to, f) {
   }
   function scan(node, depth) {
     let endFrom = from.path.length == depth, endTo = to.path.length == depth
-    if (endFrom && endTo) {
-      if (from.offset != to.offset) f(from.path, from.offset, to.offset)
-    } else if (endFrom) {
-      let end = to.path[depth]
-      if (from.offset != end) f(from.path.slice(0, depth), from.offset, end)
-      scanBefore(node.content[end], depth + 1)
-    } else if (endTo) {
-      let start = from.path[depth]
-      scanAfter(node.content[start], depth + 1)
-      if (start + 1 != to.offset) f(from.path.slice(0, depth), start + 1, to.offset)
+    let start = endFrom ? from.offset : from.path[depth] + 1
+    let end = endTo ? to.offset : to.path[depth]
+    if (!endFrom && !endTo && end == start - 1) {
+      scan(node.content[end], depth + 1)
     } else {
-      scan(node.content[from.path[depth]], depth + 1)
+      if (!endFrom) scanAfter(node.content[start - 1], depth + 1)
+      if (end > start) f(from.path.slice(0, depth), start, end)
+      if (!endTo) scanBefore(node.content[end], depth + 1)
     }
   }
   scan(doc, 0)

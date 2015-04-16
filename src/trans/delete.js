@@ -18,7 +18,7 @@ defineTransform("delete", {
     } else {
       target.content.splice(from.offset, to.offset - from.offset)
     }
-    let map = new PosMap([new Range(to, oldSize - to.offset, from)],
+    let map = new PosMap([new Range(to, oldSize - to.offset, from, "delete")],
                          [new Range(from, to.offset - from.offset)])
     return new Result(doc, copy, map)
   },

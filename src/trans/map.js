@@ -1,11 +1,11 @@
 import {Pos} from "../model"
 
 export class Range {
-  constructor(start, size, dest = null, afterInsert = false) {
+  constructor(start, size, dest = null, after = null) {
     this.start = start
     this.size = size
     this.dest = dest
-    this.afterInsert = afterInsert
+    this.after = after
   }
 
   get end() {
@@ -62,7 +62,8 @@ export class PosMap {
       let chunk = this.moved[i]
       let start = back ? chunk.dest : chunk.start
       let cmp = pos.cmp(start)
-      if ((chunk.afterInsert && bias < 0 ? cmp >= 0 : cmp >= 0) &&
+      let includeStart = bias >= 0 || chunk.after != (back ? "delete" : "insert")
+      if ((includeStart ? cmp >= 0 : cmp > 0) &&
           Pos.cmp(pos.path, pos.offset, start.path, start.offset + chunk.size) <= 0) {
         let dest = back ? chunk.start : chunk.dest
         let depth = start.path.length, outPos

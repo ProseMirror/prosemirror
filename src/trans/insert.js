@@ -25,7 +25,7 @@ defineTransform("insert", {
     }
 
     let sizeDiff = target.maxOffset - oldSize
-    let map = new PosMap([new Range(pos, oldSize - pos.offset, new Pos(pos.path, pos.offset + sizeDiff), true)],
+    let map = new PosMap([new Range(pos, oldSize - pos.offset, new Pos(pos.path, pos.offset + sizeDiff), "insert")],
                          null,
                          [new Range(pos, sizeDiff)])
     return new Result(doc, copy, map)
