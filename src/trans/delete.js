@@ -25,7 +25,7 @@ defineTransform("delete", {
   invert(result, data) {
     let from = data.from
     let parent = result.before.path(from.path)
-    return new Step("insert", from, null, parent.content.slice(from.offset, data.to.offset))
+    return new Step("insert", from, null, parent.slice(from.offset, data.to.offset))
   }
 })
 

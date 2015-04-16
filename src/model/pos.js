@@ -39,6 +39,10 @@ export default class Pos {
     return Pos.shorten(this.path, to, offset)
   }
 
+  shift(by) {
+    return new Pos(this.path, this.offset + by)
+  }
+
   offsetAt(pos, offset) {
     let path = this.path.slice()
     path[pos] += offset

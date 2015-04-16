@@ -22,41 +22,12 @@ export function copyStructure(node, from, to, f, depth = 0) {
   }
 }
 
-function addInline(node, child) {
-  node.push(child)
-  inline.stitchTextNodes(node, node.content.length - 1)
-}
-
 export function copyInline(node, from, to, f) {
-  let copy = node.copy()
   let start = from ? from.offset : 0
   let end = to ? to.offset : node.size
-  for (let ch = 0, i = 0; i < node.content.length; i++) {
-    let child = node.content[i], size = child.size
-    if (ch < start) {
-      if (ch + size <= start) {
-        copy.push(child)
-      } else {
-        copy.push(child.slice(0, start - ch))
-        if (ch + size <= end) {
-          addInline(copy, f(child.slice(start - ch)))
-        } else {
-          addInline(copy, f(child.slice(start - ch, end - ch)))
-          addInline(copy, child.slice(end - ch))
-        }
-      }
-    } else if (ch < end) {
-      if (ch + size <= end) {
-        addInline(copy, f(child))
-      } else {
-        addInline(copy, f(child.slice(0, end - ch)))
-        addInline(copy, child.slice(end - ch))
-      }
-    } else {
-      addInline(copy, child)
-    }
-    ch += size
-  }
+  let copy = node.copy(node.slice(0, start).concat(node.slice(start, end).map(f)).concat(node.slice(end)))
+  for (let i = copy.content.length - 1; i > 0; i--)
+    inline.stitchTextNodes(copy, i)
   return copy
 }
 

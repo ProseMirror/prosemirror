@@ -1,7 +1,7 @@
 import {style, Node} from "../src/model"
 import {addStyle, removeStyle, insert, insertText, wrap as wrap_,
         join as join_, del as del_, split as split_, lift as lift_,
-        setBlockType, applyTransform, invertTransform} from "../src/trans"
+        replace, setBlockType, applyTransform, invertTransform} from "../src/trans"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
@@ -351,3 +351,15 @@ type("only_clear_for_code_block",
      doc(p("hello<a> ", em("world"))),
      doc(h1("hello<a> ", em("world"))),
      new Node("heading", null, {level: 1}))
+
+function repl(name, doc, source, expect) {
+  tests["replace__" + name] = () => {
+    testTransform(doc, expect, replace(doc, doc.tag.a, doc.tag.b || doc.tag.a,
+                                       source, source && source.tag.a, source && source.tag.b))
+  }
+}
+
+repl("add_text",
+     doc(p("hell<a>o y<b>ou")),
+     doc(p("<a>i k<b>")),
+     doc(p("helli k<a><b>ou")))

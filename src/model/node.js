@@ -36,6 +36,20 @@ export default class Node {
       this.push(other.content[i])
   }
 
+  slice(from, to = this.maxOffset) {
+    if (from == to) return []
+    if (!this.type.block) return this.content.slice(from, to)
+    let result = []
+    for (let i = 0, offset = 0;; i++) {
+      let child = this.content[i], size = child.size, end = offset + size
+      if (offset + size > from)
+        result.push(offset >= from && end <= to ? child : child.slice(Math.max(0, from - offset),
+                                                                      Math.min(size, to - offset)))
+      if (end >= to) return result
+      offset = end
+    }
+  }
+
   remove(child) {
     let found = this.content.indexOf(child)
     if (found == -1) throw new Error("Child not found")
