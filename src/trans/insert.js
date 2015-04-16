@@ -1,7 +1,7 @@
 import {Pos, Node, inline} from "../model"
 
 import {defineTransform, Result, Step} from "./transform"
-import {PosMap, Range} from "./map"
+import {PosMap, MovedRange, CollapsedRange} from "./map"
 import {copyTo} from "./tree"
 
 defineTransform("insert", {
@@ -25,9 +25,9 @@ defineTransform("insert", {
     }
 
     let sizeDiff = target.maxOffset - oldSize
-    let map = new PosMap([new Range(pos, oldSize - pos.offset, new Pos(pos.path, pos.offset + sizeDiff), "insert")],
+    let map = new PosMap([new MovedRange(pos, oldSize - pos.offset, new Pos(pos.path, pos.offset + sizeDiff))],
                          null,
-                         [new Range(pos, sizeDiff)])
+                         [new CollapsedRange(pos, pos.shift(sizeDiff), pos)])
     return new Result(doc, copy, map)
   },
   invert(result, data) {

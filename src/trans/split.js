@@ -2,7 +2,7 @@ import {Pos, Node, inline} from "../model"
 
 import {defineTransform, Result, Step} from "./transform"
 import {copyTo} from "./tree"
-import {PosMap, Range} from "./map"
+import {PosMap, MovedRange, CollapsedRange} from "./map"
 
 defineTransform("split", {
   apply(doc, data) {
@@ -18,10 +18,13 @@ defineTransform("split", {
     let after = (data.param || target).copy(target.content.slice(splitAt))
     target.content.length = splitAt
     parent.content.splice(offset + 1, 0, after)
-    
-    let map = new PosMap([new Range(pos, targetSize - pos.offset, new Pos(parentPath.concat(offset + 1), 0), "insert"),
-                          new Range(new Pos(parentPath, offset + 1), parent.content.length - 2 - offset,
-                                    new Pos(parentPath, offset + 2))])
+
+    let dest = new Pos(parentPath.concat(offset + 1), 0)
+    let map = new PosMap([new MovedRange(pos, targetSize - pos.offset, dest),
+                          new MovedRange(new Pos(parentPath, offset + 1), parent.content.length - 2 - offset,
+                                         new Pos(parentPath, offset + 2))],
+                         null,
+                         [new CollapsedRange(pos, dest, pos)])
     return new Result(doc, copy, map)
   },
   invert(result, data) {

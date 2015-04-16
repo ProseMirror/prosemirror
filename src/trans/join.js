@@ -2,7 +2,7 @@ import {Pos, Node, inline} from "../model"
 
 import {defineTransform, Result, Step} from "./transform"
 import {copyTo} from "./tree"
-import {PosMap, Range, SinglePos} from "./map"
+import {PosMap, MovedRange, CollapsedRange} from "./map"
 
 defineTransform("join", {
   apply(doc, data) {
@@ -23,9 +23,10 @@ defineTransform("join", {
       inline.stitchTextNodes(joined, before.content.length)
     target.content.splice(offset - 1, 2, joined)
 
-    let map = new PosMap([new Range(data.to, after.maxOffset, data.from, "delete"),
-                          new Range(new Pos(targetPath, offset + 1), oldSize - offset - 1, new Pos(targetPath, offset))],
-                         [new SinglePos(new Pos(targetPath, offset), data.from, data.from)])
+    let vanished = new Pos(targetPath, offset)
+    let map = new PosMap([new MovedRange(data.to, after.maxOffset, data.from, "delete"),
+                          new MovedRange(new Pos(targetPath, offset + 1), oldSize - offset - 1, new Pos(targetPath, offset))],
+                         [new CollapsedRange(vanished, vanished, data.from)])
     return new Result(doc, copy, map)
   },
   invert: function(result, data) {

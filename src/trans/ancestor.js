@@ -2,7 +2,7 @@ import {Pos, Node, inline} from "../model"
 
 import {defineTransform, Result, Step} from "./transform"
 import {isFlatRange, copyTo, selectedSiblings, blocksBetween, isPlainText} from "./tree"
-import {PosMap, Range, SinglePos} from "./map"
+import {PosMap, MovedRange, CollapsedRange} from "./map"
 import {split} from "./split"
 import {join} from "./join"
 import {clearMarkup} from "./style"
@@ -41,24 +41,24 @@ defineTransform("ancestor", {
     let toInner = toParent.slice()
     for (let i = 0; i < wrappers.length; i++) toInner.push(i ? 0 : start)
     let startOfInner = new Pos(toInner, wrappers.length ? 0 : start)
-    let deleted = null
+    let deleted = null, inserted = null
     let insertedSize = wrappers.length ? 1 : to.offset - from.offset
-    if (depth > 1) {
-      deleted = []
-      let path = from.path, off = from.offset
-      for (let i = 0; i < depth - 1; i++) {
-        off = path[path.length - 1]
-        path = path.slice(0, path.length - 1)
-        deleted.push(new SinglePos(new Pos(path, off), new Pos(toParent, start), startOfInner),
-                     new SinglePos(new Pos(path, off + insertedSize),
-                                   new Pos(toInner, to.offset - from.offset), new Pos(toParent, start + insertedSize)))
-      }
+    if (depth > 1 || wrappers.length > 1) {
+      let posBefore = new Pos(toParent, start)
+      let posAfter1 = new Pos(toParent, end), posAfter2 = new Pos(toParent, start + insertedSize)
+      let endOfInner = new Pos(toInner, startOfInner.offset + insertedSize)
+      if (depth > 1)
+        deleted = [new CollapsedRange(posBefore, from, posBefore, startOfInner),
+                   new CollapsedRange(to, posAfter1, endOfInner, posAfter2)]
+      if (wrappers.length > 1)
+        inserted = [new CollapsedRange(posBefore, startOfInner, posBefore, from),
+                    new CollapsedRange(endOfInner, posAfter2, to, posAfter1)]
     }
-    let moved = [new Range(from, to.offset - from.offset, startOfInner)]
+    let moved = [new MovedRange(from, to.offset - from.offset, startOfInner)]
     if (end - start != insertedSize)
-      moved.push(new Range(new Pos(toParent, end), parentSize - end,
-                           new Pos(toParent, start + insertedSize)))
-    return new Result(doc, copy, new PosMap(moved, deleted))
+      moved.push(new MovedRange(new Pos(toParent, end), parentSize - end,
+                                new Pos(toParent, start + insertedSize)))
+    return new Result(doc, copy, new PosMap(moved, deleted, inserted))
   },
   invert(result, data) {
     let wrappers = []

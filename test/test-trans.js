@@ -32,6 +32,7 @@ export function testTransform(doc, expect, steps) {
   }
   for (let i = inverted.length - 1; i >= 0; i--) {
     let result = applyTransform(out, inverted[i])
+    if (!result) console.log("failed to apply", inverted[i], "to " + out)
     out = result.doc
   }
   cmpNode(out, doc, "inverted")

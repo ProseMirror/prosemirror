@@ -1,7 +1,7 @@
 import {Pos, inline} from "../model"
 
 import {defineTransform, Result, Step} from "./transform"
-import {PosMap, Range} from "./map"
+import {PosMap, MovedRange, CollapsedRange} from "./map"
 import {copyTo, isFlatRange, rangesBetween} from "./tree"
 
 defineTransform("delete", {
@@ -18,8 +18,8 @@ defineTransform("delete", {
     } else {
       target.content.splice(from.offset, to.offset - from.offset)
     }
-    let map = new PosMap([new Range(to, oldSize - to.offset, from, "delete")],
-                         [new Range(from, to.offset - from.offset)])
+    let map = new PosMap([new MovedRange(to, oldSize - to.offset, from)],
+                         [new CollapsedRange(from, to, from)])
     return new Result(doc, copy, map)
   },
   invert(result, data) {

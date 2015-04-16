@@ -1,11 +1,10 @@
 import {Pos} from "../model"
 
-export class Range {
+export class MovedRange {
   constructor(start, size, dest = null, after = null) {
     this.start = start
     this.size = size
     this.dest = dest
-    this.after = after
   }
 
   get end() {
@@ -13,16 +12,29 @@ export class Range {
   }
 }
 
-export class SinglePos {
-  constructor(pos, before, after) {
-    this.pos = pos
-    this.before = before
-    this.after = after
+export class CollapsedRange {
+  constructor(from, to, refLeft, refRight = refLeft) {
+    this.from = from
+    this.to = to
+    this.refLeft = refLeft
+    this.refRight = refRight
+  }
+
+  get base() {
+    return this.from.path.length <= this.to.path.length ? this.from : this.to
   }
 }
 
 const empty = []
 const nullOffset = new Pos(empty, 0)
+
+class MapResult {
+  constructor(pos, offset = null, deleted = false) {
+    this.pos = pos
+    this.offset = offset
+    this.deleted = deleted
+  }
+}
 
 export class PosMap {
   constructor(moved, deleted, inserted) {
@@ -32,56 +44,48 @@ export class PosMap {
   }
 
   _map(pos, back = false, offset = null, bias = 1) {
-    if (offset) {
-      let start = (back ? this.deleted : this.inserted)[offset.chunkID]
-      return {pos: (start instanceof Range ? start.start : start.pos).extend(offset.offset),
-              offset: null,
-              deleted: false}
-    }
+    let inserted = back ? this.deleted : this.inserted
+    if (offset)
+      return new MapResult(inserted[offset.rangeID].base.extend(offset.offset))
 
     let deleted = (back ? this.inserted : this.deleted)
     for (let i = 0; i < deleted.length; i++) {
-      let chunk = deleted[i]
-      if (chunk instanceof SinglePos) {
-        if (pos.cmp(chunk.pos) == 0)
-          return {pos: (bias < 0 && chunk.before) || chunk.after || chunk.before,
-                  offset: {chunkID: i, offset: nullOffset},
-                  deleted: true}
-      } else {
-        let front = pos.cmp(chunk.start)
-        if (front < 0) continue
-        let back = Pos.cmp(pos.path, pos.offset, chunk.start.path, chunk.start.offset + chunk.size)
-        if (back > 0) continue
-        return {pos: chunk.start,
-                offset: {chunkID: i, offset: pos.baseOn(chunk.start)},
-                deleted: !!(front || back)}
-      }
+      let range = deleted[i], front, back
+      if ((front = pos.cmp(range.from)) >= 0 &&
+          (back = pos.cmp(range.to)) <= 0)
+        return new MapResult(bias < 0 ? range.refLeft : range.refRight,
+                             {rangeID: i, offset: pos.baseOn(range.base)},
+                             !!(front || back))
+    }
+
+    for (let i = 0; i < inserted.length; i++) {
+      let range = inserted[i]
+      if (pos.cmp(range.refLeft) == 0 ||
+          (range.refLeft != range.refRight && pos.cmp(range.refRight) == 0))
+        return new MapResult(bias < 0 ? range.from : range.to)
     }
 
     for (let i = 0; i < this.moved.length; i++) {
-      let chunk = this.moved[i]
-      let start = back ? chunk.dest : chunk.start
-      let cmp = pos.cmp(start)
-      let includeStart = bias >= 0 || chunk.after != (back ? "delete" : "insert")
-      if ((includeStart ? cmp >= 0 : cmp > 0) &&
-          Pos.cmp(pos.path, pos.offset, start.path, start.offset + chunk.size) <= 0) {
-        let dest = back ? chunk.start : chunk.dest
+      let range = this.moved[i]
+      let start = back ? range.dest : range.start
+      if (pos.cmp(start) >= 0 &&
+          Pos.cmp(pos.path, pos.offset, start.path, start.offset + range.size) <= 0) {
+        let dest = back ? range.start : range.dest
         let depth = start.path.length, outPos
         if (pos.path.length > depth) {
           let offset = dest.offset + (pos.path[depth] - start.offset)
-          outPos = new Pos(dest.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset)
+          return new MapResult(new Pos(dest.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset))
         } else {
-          outPos = new Pos(dest.path, dest.offset + (pos.offset - start.offset))
+          return new MapResult(new Pos(dest.path, dest.offset + (pos.offset - start.offset)))
         }
-        return {pos: outPos, offset: null, deleted: false}
       }
     }
 
-    return {pos: pos, offset: null, deleted: false}
+    return new MapResult(pos)
   }
 
-  map(pos) {
-    return this._map(pos, false, null, 1).pos
+  map(pos, bias = 1) {
+    return this._map(pos, false, null, bias).pos
   }
 }
 
