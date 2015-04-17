@@ -12,6 +12,13 @@ export class MovedRange {
   }
 }
 
+function isBelow(base, pos) {
+  if (pos.path.length < base.path.length) return false
+  for (let i = 0; i < base.path.length; i++)
+    if (base.path[i] != pos.path[i]) return false
+  return true
+}
+
 export class CollapsedRange {
   constructor(from, to, refLeft, refRight = refLeft) {
     this.from = from
@@ -20,8 +27,39 @@ export class CollapsedRange {
     this.refRight = refRight
   }
 
-  get base() {
-    return this.from.path.length <= this.to.path.length ? this.from : this.to
+  getOffset(pos) {
+    let base = this.from, side = -1
+    if (!isBelow(base, pos)) {
+      if (isBelow(this.to, pos)) {
+        ;[base, side] = [this.to, 1]
+      } else {
+        // We assume this is a join (or inverted split) producing a
+        // deleted range around a single 'gap', since that is, unless
+        // something broke, the only transform that generates deleted
+        // ranges without at least one side below all its content.
+        // Return a special marker value. Other cases are not handled.
+        if (pos.offset != base.path[pos.path.length] + 1 ||
+            pos.path.length != base.path.length - 1)
+          throw new Error("Unsupported base/pos relation between " + pos + " and " + base)
+        return {side: 0, pos: null}
+      }
+    }
+
+    if (pos.path.length > base.path.length) {
+      let path = [pos.path[base.path.length] - base.offset]
+      for (let i = base.path.length + 1; i < pos.path.length; i++)
+        path.push(pos.path[i])
+      return {side, pos: new Pos(path, pos.offset)}
+    } else {
+      return {side, pos: new Pos([], pos.offset - base.offset)}
+    }
+  }
+
+  fromOffset(offset) {
+    if (offset.side == 0)
+      return this.from.shorten(null, 1)
+    else
+      return (offset.side < 0 ? this.from : this.to).extend(offset.pos)
   }
 }
 
@@ -46,7 +84,7 @@ export class PosMap {
   _map(pos, back = false, offset = null, bias = 1) {
     let inserted = back ? this.deleted : this.inserted
     if (offset)
-      return new MapResult(inserted[offset.rangeID].base.extend(offset.offset))
+      return new MapResult(inserted[offset.rangeID].fromOffset(offset.offset))
 
     let deleted = (back ? this.inserted : this.deleted)
     for (let i = 0; i < deleted.length; i++) {
@@ -54,7 +92,7 @@ export class PosMap {
       if ((front = pos.cmp(range.from)) >= 0 &&
           (back = pos.cmp(range.to)) <= 0)
         return new MapResult(bias < 0 ? range.refLeft : range.refRight,
-                             {rangeID: i, offset: pos.baseOn(range.base)},
+                             {rangeID: i, offset: range.getOffset(pos)},
                              !!(front || back))
     }
 

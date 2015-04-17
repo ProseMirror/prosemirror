@@ -62,17 +62,6 @@ export default class Pos {
     return new Pos(path, pos.offset + add)
   }
 
-  baseOn(base) {
-    if (this.path.length > base.path.length) {
-      let path = [this.path[base.path.length] - base.offset]
-      for (let i = base.path.length + 1; i < this.path.length; i++)
-        path.push(this.path[i])
-      return new Pos(path, this.offset)
-    } else {
-      return new Pos([], this.offset - base.offset)
-    }
-  }
-
   static fromJSON(json) { return new Pos(json.path, json.offset) }
 }
 

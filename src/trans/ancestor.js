@@ -46,7 +46,7 @@ defineTransform("ancestor", {
     if (depth > 1 || wrappers.length > 1) {
       let posBefore = new Pos(toParent, start)
       let posAfter1 = new Pos(toParent, end), posAfter2 = new Pos(toParent, start + insertedSize)
-      let endOfInner = new Pos(toInner, startOfInner.offset + insertedSize)
+      let endOfInner = new Pos(toInner, startOfInner.offset + (to.offset - from.offset))
       if (depth > 1)
         deleted = [new CollapsedRange(posBefore, from, posBefore, startOfInner),
                    new CollapsedRange(to, posAfter1, endOfInner, posAfter2)]
@@ -66,7 +66,7 @@ defineTransform("ancestor", {
       let parent = result.before.path(data.from.path.slice(0, data.from.path.length - i))
       wrappers.unshift(parent.copy())
     }
-    return new Step("ancestor", result.map.map(data.from), result.map.map(data.to),
+    return new Step("ancestor", result.map.map(data.from), result.map.map(data.to, -1),
                     {depth: data.param.wrappers ? data.param.wrappers.length : 0,
                      wrappers: wrappers})
   }

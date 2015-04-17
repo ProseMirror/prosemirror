@@ -23,10 +23,9 @@ defineTransform("join", {
       inline.stitchTextNodes(joined, before.content.length)
     target.content.splice(offset - 1, 2, joined)
 
-    let vanished = new Pos(targetPath, offset)
     let map = new PosMap([new MovedRange(data.to, after.maxOffset, data.from, "delete"),
                           new MovedRange(new Pos(targetPath, offset + 1), oldSize - offset - 1, new Pos(targetPath, offset))],
-                         [new CollapsedRange(vanished, vanished, data.from)])
+                         [new CollapsedRange(data.from, data.to, data.from)])
     return new Result(doc, copy, map)
   },
   invert: function(result, data) {
