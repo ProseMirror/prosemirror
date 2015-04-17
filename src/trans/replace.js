@@ -66,7 +66,7 @@ function nodesLeft(doc, depth) {
 function matchInsertedContent(frontier, open, same) {
   let matches = [], searchLeft = frontier.left.length - 1, searchRight = open.length - 1
   let inner = open[searchRight]
-  if (inner.type.block &&
+  if (inner.type.block && inner.size &&
       frontier.left[searchLeft].node.type.block) {
     matches.push({source: searchRight, target: searchLeft, nodes: inner.content, size: inner.size})
     searchLeft--
@@ -120,17 +120,16 @@ function addInsertedContent(frontier, steps, source, start, end) {
   }
 
   let lastMatch = matches[matches.length - 1]
-  let right = end
-  let cutAbove = matches.length > 1 ? matches[matches.length - 2].source : 1e5
-  if (sameInner > cutAbove) right = right.shorten(cutAbove, 1)
+  let depth = end.path.length
+  if (matches.length > 1) depth = Math.min(depth, matches[matches.length - 2].source)
 
   frontier.left.length = frontier.botDepth + 1
-  for (let i = lastMatch.source + 1, node = nodes[lastMatch.source]; i <= right.path.length; i++) {
-    let last = i == right.path.length
-    let n = last ? right.offset : right.path[i]
-    frontier.left.push({node, pos: new Pos(right.path.slice(0, i), n).extend(frontier.bottom)})
-    if (last) break
-    node = node.content[n]
+  let ref = frontier.bottom
+  for (let i = lastMatch.source + 1, node = nodes[lastMatch.source + 1]; i <= depth; i++) {
+    let newRef = new Pos(ref.path.concat(ref.offset - 1), node.maxOffset)
+    frontier.left.push({node, pos: newRef})
+    node = node.content[newRef.offset]
+    ref = newRef
   }
 }
 
@@ -176,7 +175,7 @@ export function replace(doc, from, to, source = null, start = null, end = null) 
   // Figure out which nodes along the frontier can be joined
   let joinTo = frontier.botDepth
   while (joinTo < frontier.left.length - 1 && joinTo < frontier.right.length - 1 &&
-         frontier.left[joinTo + 1].node.sameMarkup(frontier.right[joinTo + 1]))
+         frontier.left[joinTo + 1].node.sameMarkup(frontier.right[joinTo + 1].node))
     ++joinTo
 
   // If there's inline content at the left and right of the frontier,

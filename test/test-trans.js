@@ -23,8 +23,11 @@ export function testTransform(doc, expect, steps) {
   cmpStr(doc, orig, "immutable")
   for (let pos in expect.tag) {
     let val = doc.tag[pos], offset = []
-    for (let i = 0; i < results.length; i++)
+//    console.log("mapping forward " + val + " in " + doc)
+    for (let i = 0; i < results.length; i++) {
       ({pos: val, offset: offset[i]} = results[i].map._map(val))
+//      console.log("=> " + val + " in " + results[i].doc)
+    }
     cmpStr(val, expect.tag[pos], pos)
     for (let i = results.length - 1; i >= 0; i--)
       val = results[i].map._map(val, true, offset[i], -1).pos
@@ -384,3 +387,55 @@ repl("move_text_up",
      doc(blockquote(p("foo<a>bar")), p("middle"), h1("quux<b>baz")),
      null,
      doc(blockquote(p("foo<a><b>baz"))))
+repl("stitch_deep",
+     doc(blockquote(ul(li(p("a")), li(p("b<a>")), li(p("c")), li(p("<b>d")), li(p("e"))))),
+     null,
+     doc(blockquote(ul(li(p("a")), li(p("b<a><b>d")), li(p("e"))))))
+repl("simple",
+     doc(p("he<before>llo<a> w<after>orld")),
+     doc(p("<a> big<b>")),
+     doc(p("he<before>llo big w<after>orld")))
+repl("insert_paragraph_open_edges",
+     doc(p("one<a>two")),
+     doc(p("a<a>"), p("hello"), p("<b>b")),
+     doc(p("one"), p("hello"), p("<a>two")))
+repl("overwrite_paragraph",
+     doc(p("one<a>"), p("t<inside>wo"), p("<b>three<end>")),
+     doc(p("a<a>"), p("TWO"), p("<b>b")),
+     doc(p("one"), p("TWO"), p("<a>three<end>")))
+repl("stitch",
+     doc(p("foo ", em("bar<a>baz"), "<b> quux")),
+     doc(p("foo ", em("xy<a>zzy"), " foo<b>")),
+     doc(p("foo ", em("barzzy"), " foo quux")))
+repl("break",
+     doc(p("foo<a>b<inside>b<b>bar")),
+     doc(p("<a>", br, "<b>")),
+     doc(p("foo", br, "<inside>bar")))
+repl("cut_different_block",
+     doc(h1("hell<a>o"), p("by<b>e")),
+     null,
+     doc(h1("helle")))
+repl("restore_list",
+     doc(h1("hell<a>o"), p("by<b>e")),
+     doc(ol(li(p("on<a>e")), li(p("tw<b>o")))),
+     doc(h1("helle"), ol(li(p("twe")))))
+repl("in_empty_block",
+     doc(p("a"), p("<a>"), p("b")),
+     doc(p("x<a>y<b>z")),
+     doc(p("a"), p("y<a>"), p("b")))
+repl("dont_shift_everything",
+     doc(p("one<a>"), p("two"), p("three")),
+     doc(p("outside<a>"), blockquote(p("inside<b>"))),
+     doc(p("one"), blockquote(p("inside")), p("two"), p("three")))
+repl("del_selection",
+     doc(p("some <a>te<b>xt")),
+     null,
+     doc(p("some <a><b>xt")))
+repl("lopsided",
+     doc(blockquote(p("b<a>c"), p("d<b>e"), p("f"))),
+     doc(blockquote(p("x<a>y")), p("z<b>")),
+     doc(blockquote(p("by")), p("z<a><b>e"), blockquote(p("f"))))
+repl("deep_insert",
+     doc(blockquote(blockquote(p("one"), p("tw<a>o"), p("t<b>hree<3>"), p("four<4>")))),
+     doc(ol(li(p("hello<a>world")), li(p("bye"))), p("ne<b>xt")),
+     doc(blockquote(blockquote(p("one"), p("twworld")), ol(li(p("bye"))), p("ne<a><b>hree<3>"), blockquote(p("four<4>")))))
