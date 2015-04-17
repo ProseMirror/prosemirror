@@ -66,7 +66,7 @@ export class CollapsedRange {
 const empty = []
 const nullOffset = new Pos(empty, 0)
 
-class MapResult {
+export class MapResult {
   constructor(pos, offset = null, deleted = false) {
     this.pos = pos
     this.offset = offset
@@ -81,7 +81,8 @@ export class PosMap {
     this.inserted = inserted || empty
   }
 
-  _map(pos, back = false, offset = null, bias = 1) {
+  map(pos, bias = 0, back = false, offset = null) {
+    if (!bias) bias = back ? -1 : 1
     let inserted = back ? this.deleted : this.inserted
     if (offset)
       return new MapResult(inserted[offset.rangeID].fromOffset(offset.offset))
@@ -122,8 +123,8 @@ export class PosMap {
     return new MapResult(pos)
   }
 
-  map(pos, bias = 1) {
-    return this._map(pos, false, null, bias).pos
+  mapSimple(pos, bias = 0, back = false) {
+    return this.map(pos, bias, back, null).pos
   }
 }
 

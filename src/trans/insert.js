@@ -31,13 +31,13 @@ defineStep("insert", {
     return new Result(doc, copy, map)
   },
   invert(result, data) {
-    return new Step("delete", data.from, result.map.map(data.from))
+    return new Step("delete", data.from, result.map.mapSimple(data.from))
   }
 })
 
 Transform.prototype.insert = function(pos, nodes) {
   if (!Array.isArray(nodes)) nodes = [nodes]
-  this.addStep("insert", pos, null, nodes)
+  this.step("insert", pos, null, nodes)
   return this
 }
 
@@ -45,7 +45,7 @@ Transform.prototype.insertInline = function(pos, nodes) {
   if (!Array.isArray(nodes)) nodes = [nodes]
   let styles = inline.inlineStylesAt(this.doc, pos)
   let nodes = nodes.map(n => new Node.Inline(n.type, styles, n.text, n.attrs))
-  this.addStep("insert", pos, null, nodes)
+  this.step("insert", pos, null, nodes)
   return this
 }
 

@@ -28,14 +28,14 @@ defineStep("split", {
     return new Result(doc, copy, map)
   },
   invert(result, data) {
-    return new Step("join", data.from, result.map.map(data.from))
+    return new Step("join", data.from, result.map.mapSimple(data.from))
   }
 })
 
 Transform.prototype.split = function(pos, depth = 1, nodeAfter = null) {
   if (depth == 0) return this
   for (let i = 0;; i++) {
-    this.addStep("split", pos, null, nodeAfter)
+    this.step("split", pos, null, nodeAfter)
     if (i == depth - 1) return this
     nodeAfter = null
     pos = pos.shorten(null, 1)

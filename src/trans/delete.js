@@ -30,9 +30,10 @@ defineStep("delete", {
 })
 
 Transform.prototype.delete = function(from, to) {
-  let pos = this.steps.length
+  let steps = []
   rangesBetween(this.doc, from, to, (path, start, end) => {
-    this.steps.splice(pos, 0, new Step("delete", new Pos(path, start), new Pos(path, end)))
+    steps.unshift(new Step("delete", new Pos(path, start), new Pos(path, end)))
   })
+  steps.forEach(s => this.step(s))
   return this
 }

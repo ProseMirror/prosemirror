@@ -7,37 +7,16 @@ import Failure from "./failure"
 import {defTest} from "./tests"
 import {cmpNode, cmpStr} from "./cmp"
 
-export function testTransform(doc, expect, steps) {
-  steps = steps.steps
-  let orig = doc.toString(), out = doc, results = [], inverted = []
-  for (let i = 0; i < steps.length; i++) {
-    let result = applyStep(out, steps[i])
-    if (result) {
-      out = result.doc
-      results.push(result)
-      inverted.push(invertStep(result, steps[i]))
-    }
+export function testTransform(doc, expect, tr) {
+  cmpNode(tr.doc, expect)
+  let inverted = tr.invert()
+  cmpNode(inverted.doc, doc, "inverted")
+  for (let tag in expect.tag) {
+    let result = tr.map(doc.tag[tag], null, false, true)
+    cmpStr(result.pos, expect.tag[tag], tag)
+    cmpStr(tr.map(result.pos, null, true, result.offset).pos,
+           doc.tag[tag], tag + " back")
   }
-  cmpNode(out, expect)
-  cmpStr(doc, orig, "immutable")
-  for (let pos in expect.tag) {
-    let val = doc.tag[pos], offset = []
-//    console.log("mapping forward " + val + " in " + doc)
-    for (let i = 0; i < results.length; i++) {
-      ({pos: val, offset: offset[i]} = results[i].map._map(val))
-//      console.log("=> " + val + " in " + results[i].doc)
-    }
-    cmpStr(val, expect.tag[pos], pos)
-    for (let i = results.length - 1; i >= 0; i--)
-      val = results[i].map._map(val, true, offset[i], -1).pos
-    cmpStr(val, doc.tag[pos], pos + " back")
-  }
-  for (let i = inverted.length - 1; i >= 0; i--) {
-    let result = applyStep(out, inverted[i])
-    if (!result) console.log("failed to apply", inverted[i], "to " + out)
-    out = result.doc
-  }
-  cmpNode(out, doc, "inverted")
 }
 
 function add(name, doc, expect, style) {

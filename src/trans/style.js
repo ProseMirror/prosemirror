@@ -15,7 +15,7 @@ defineStep("addStyle", {
     }))
   },
   invert(result, data) {
-    return new Step("removeStyle", data.from, result.map.map(data.to), data.param)
+    return new Step("removeStyle", data.from, result.map.mapSimple(data.to), data.param)
   }
 })
 
@@ -44,7 +44,8 @@ Transform.prototype.addStyle = function(from, to, st) {
       }
     }
   })
-  this.steps = this.steps.concat(removed).concat(added)
+  removed.forEach(s => this.step(s))
+  added.forEach(s => this.step(s))
   return this
 }
 
@@ -58,7 +59,7 @@ defineStep("removeStyle", {
     }))
   },
   invert(result, data) {
-    return new Step("addStyle", data.from, result.map.map(data.to), data.param)
+    return new Step("addStyle", data.from, result.map.mapSimple(data.to), data.param)
   }
 })
 
@@ -92,7 +93,7 @@ Transform.prototype.removeStyle = function(from, to, st = null) {
       }
     }
   })
-  matched.forEach(m => this.addStep("removeStyle", m.from, m.to, m.style))
+  matched.forEach(m => this.step("removeStyle", m.from, m.to, m.style))
   return this
 }
 
@@ -105,6 +106,6 @@ Transform.prototype.clearMarkup = function(from, to) {
     }
   })
   this.removeStyle(from.to)
-  this.steps = this.steps.concat(steps)
+  steps.forEach(s => this.step(s))
   return this
 }

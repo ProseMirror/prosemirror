@@ -109,7 +109,7 @@ function addInsertedContent(frontier, tr, source, start, end) {
       tr.split(frontier.bottom, frontier.botDepth - match.target)
       pos = frontier.bottom = frontier.bottom.shorten(match.target, 1)
     }
-    tr.addStep("insert", pos, null, match.nodes)
+    tr.step("insert", pos, null, match.nodes)
     if (match.target == frontier.botDepth)
       frontier.bottom = frontier.bottom.shift(match.size)
   }
@@ -132,7 +132,7 @@ function joinFrontier(frontier, tr, upto) {
   for (let i = frontier.botDepth + 1; i < upto; i++) {
     let left = frontier.left[i].pos, last = left.path.length - 1
     let right = new Pos(left.path.slice(0, last).concat(left.path[last] + 1), 0)
-    tr.addStep("join", left, right)
+    tr.step("join", left, right)
   }
 }
 
@@ -148,9 +148,9 @@ function moveTextAcross(frontier, tr) {
         !frontier.left[i].node.sameMarkup(frontier.right[i].node))
       stack.push(frontier.left[i].node.copy())
   }
-  tr.addStep("ancestor", textStart, textEnd,
-             {depth: frontier.right.length - (frontier.left.length - stack.length),
-              wrappers: stack})
+  tr.step("ancestor", textStart, textEnd,
+          {depth: frontier.right.length - (frontier.left.length - stack.length),
+           wrappers: stack})
 
   joinFrontier(frontier, tr, frontier.left.length)
   frontier.left.pop()
@@ -187,7 +187,7 @@ Transform.prototype.replace = function(from, to, source = null, start = null, en
 
   if (delAt < frontier.right.length) {
     let delPos = frontier.rightPos(delAt - 1)
-    this.addStep("delete", delPos, delPos.shift(1))
+    this.step("delete", delPos, delPos.shift(1))
   }
   joinFrontier(frontier, this, joinTo + 1)
 
