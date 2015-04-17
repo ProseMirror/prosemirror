@@ -4,7 +4,7 @@ let fail = 0, ran = 0
 
 let filter = process.argv[2]
 
-import tests from "./tests"
+import {tests} from "./tests"
 
 import "./test-pos"
 import "./test-parse"

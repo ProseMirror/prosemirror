@@ -1,10 +1,10 @@
 import {Pos, inline} from "../model"
 
-import {defineTransform, Result, Step} from "./transform"
+import {defineStep, Result, Step, Transform} from "./transform"
 import {PosMap, MovedRange, CollapsedRange} from "./map"
 import {copyTo, isFlatRange, rangesBetween} from "./tree"
 
-defineTransform("delete", {
+defineStep("delete", {
   apply(doc, data) {
     let from = data.from, to = data.to
     if (!isFlatRange(from, to)) return null
@@ -29,10 +29,10 @@ defineTransform("delete", {
   }
 })
 
-export function del(doc, from, to) {
-  let steps = []
-  rangesBetween(doc, from, to, function(path, start, end) {
-    steps.unshift(new Step("delete", new Pos(path, start), new Pos(path, end)))
+Transform.prototype.delete = function(from, to) {
+  let pos = this.steps.length
+  rangesBetween(this.doc, from, to, (path, start, end) => {
+    this.steps.splice(pos, 0, new Step("delete", new Pos(path, start), new Pos(path, end)))
   })
-  return steps
+  return this
 }

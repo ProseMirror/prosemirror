@@ -1,6 +1,6 @@
 import {Pos, Node, inline, slice} from "../model"
 
-import {Step} from "./transform"
+import {Transform} from "./transform"
 import {del} from "./delete"
 import {split} from "./split"
 
@@ -96,12 +96,7 @@ function matchInsertedContent(frontier, open, same) {
   return matches
 }
 
-function pushAll(target, elts) {
-  for (let i = 0; i < elts.length; i++) target.push(elts[i])
-}
-
-
-function addInsertedContent(frontier, steps, source, start, end) {
+function addInsertedContent(frontier, tr, source, start, end) {
   let remainder = slice.between(source, start, end)
   let nodes = nodesLeft(remainder, start.path.length)
   let sameInner = samePathDepth(start, end)
@@ -111,10 +106,10 @@ function addInsertedContent(frontier, steps, source, start, end) {
     let match = matches[i]
     let pos = frontier.left[match.target].pos
     if (match.target < frontier.botDepth) {
-      pushAll(steps, split(frontier.bottom, frontier.botDepth - match.target))
+      tr.split(frontier.bottom, frontier.botDepth - match.target)
       pos = frontier.bottom = frontier.bottom.shorten(match.target, 1)
     }
-    steps.push(new Step("insert", pos, null, match.nodes))
+    tr.addStep("insert", pos, null, match.nodes)
     if (match.target == frontier.botDepth)
       frontier.bottom = frontier.bottom.shift(match.size)
   }
@@ -133,44 +128,44 @@ function addInsertedContent(frontier, steps, source, start, end) {
   }
 }
 
-function joinFrontier(frontier, steps, upto) {
+function joinFrontier(frontier, tr, upto) {
   for (let i = frontier.botDepth + 1; i < upto; i++) {
     let left = frontier.left[i].pos, last = left.path.length - 1
     let right = new Pos(left.path.slice(0, last).concat(left.path[last] + 1), 0)
-    steps.push(new Step("join", left, right))
+    tr.addStep("join", left, right)
   }
 }
 
-function moveTextAcross(frontier, steps) {
+function moveTextAcross(frontier, tr) {
   let depth = frontier.right.length
   let textStart = frontier.rightPos(depth - 1)
   let info = frontier.right[frontier.right.length - 1]
   let textEnd = textStart.shift(info.node.maxOffset - info.from)
-  pushAll(steps, split(textEnd, depth - frontier.botDepth - 1))
+  tr.split(textEnd, depth - frontier.botDepth - 1)
   let stack = []
   for (let i = frontier.botDepth + 1; i < frontier.left.length; i++) {
     if (stack.length > 0 || i >= frontier.right.path ||
         !frontier.left[i].node.sameMarkup(frontier.right[i].node))
       stack.push(frontier.left[i].node.copy())
   }
-  steps.push(new Step("ancestor", textStart, textEnd,
-                      {depth: frontier.right.length - (frontier.left.length - stack.length),
-                       wrappers: stack}))
+  tr.addStep("ancestor", textStart, textEnd,
+             {depth: frontier.right.length - (frontier.left.length - stack.length),
+              wrappers: stack})
 
-  joinFrontier(frontier, steps, frontier.left.length)
+  joinFrontier(frontier, tr, frontier.left.length)
   frontier.left.pop()
   frontier.right.pop()
 }
 
-export function replace(doc, from, to, source = null, start = null, end = null) {
-  let steps = del(doc, from, to)
-  let frontier = new Frontier(doc, from, to)
+Transform.prototype.replace = function(from, to, source = null, start = null, end = null) {
+  let frontier = new Frontier(this.doc, from, to)
+  this.delete(from, to)
 
   // If there's a source to replace the range with, insert it,
   // updating the frontier's bottom and left side to reflect the
   // inserted content.
   if (source && start.cmp(end) < 0)
-    addInsertedContent(frontier, steps, source, start, end)
+    addInsertedContent(frontier, this, source, start, end)
 
   // Figure out which nodes along the frontier can be joined
   let joinTo = frontier.botDepth
@@ -184,7 +179,7 @@ export function replace(doc, from, to, source = null, start = null, end = null) 
       frontier.left[frontier.left.length - 1].node.type.block &&
       frontier.right[frontier.right.length - 1].node.type.block &&
       !frontier.right[frontier.right.length - 1].atEnd)
-    moveTextAcross(frontier, steps)
+    moveTextAcross(frontier, this)
 
   // And which pieces are the cut are empty, and may be deleted
   let delAt = frontier.right.length
@@ -192,10 +187,9 @@ export function replace(doc, from, to, source = null, start = null, end = null) 
 
   if (delAt < frontier.right.length) {
     let delPos = frontier.rightPos(delAt - 1)
-    steps.push(new Step("delete", delPos, delPos.shift(1)))
+    this.addStep("delete", delPos, delPos.shift(1))
   }
-  joinFrontier(frontier, steps, joinTo + 1)
+  joinFrontier(frontier, this, joinTo + 1)
 
-//  for (let i = 0; i < steps.length; i++) console.log(steps[i])
-  return steps
+  return this
 }

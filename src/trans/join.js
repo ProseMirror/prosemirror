@@ -1,10 +1,10 @@
 import {Pos, Node, inline} from "../model"
 
-import {defineTransform, Result, Step} from "./transform"
+import {defineStep, Result, Step, Transform} from "./transform"
 import {copyTo} from "./tree"
 import {PosMap, MovedRange, CollapsedRange} from "./map"
 
-defineTransform("join", {
+defineStep("join", {
   apply(doc, data) {
     let before = doc.path(data.from.path)
     let after = doc.path(data.to.path)
@@ -33,9 +33,10 @@ defineTransform("join", {
   }
 })
 
-export function join(doc, at) {
-  let parent = doc.path(at.path)
+Transform.prototype.join = function(at) {
+  let parent = this.doc.path(at.path)
   if (at.offset == 0 || at.offset == parent.content.length) return []
-  return [new Step("join", new Pos(at.path.concat(at.offset - 1), parent.content[at.offset - 1].maxOffset),
-                   new Pos(at.path.concat(at.offset), 0))]
+  this.addStep("join", new Pos(at.path.concat(at.offset - 1), parent.content[at.offset - 1].maxOffset),
+               new Pos(at.path.concat(at.offset), 0))
+  return this
 }

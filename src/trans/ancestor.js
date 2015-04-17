@@ -1,13 +1,10 @@
 import {Pos, Node, inline} from "../model"
 
-import {defineTransform, Result, Step} from "./transform"
+import {defineStep, Result, Step, Transform} from "./transform"
 import {isFlatRange, copyTo, selectedSiblings, blocksBetween, isPlainText} from "./tree"
 import {PosMap, MovedRange, CollapsedRange} from "./map"
-import {split} from "./split"
-import {join} from "./join"
-import {clearMarkup} from "./style"
 
-defineTransform("ancestor", {
+defineStep("ancestor", {
   apply(doc, data) {
     let from = data.from, to = data.to
     if (!isFlatRange(from, to)) return null
@@ -96,14 +93,15 @@ function canBeLifted(doc, range) {
   }
 }
 
-export function lift(doc, from, to) {
-  let range = selectedSiblings(doc, from, to || from)
-  let found = canBeLifted(doc, range)
-  let result = [], depth = range.path.length - found.path.length
-  if (!found) return result
+Transform.prototype.lift = function(from, to) {
+  let range = selectedSiblings(this.doc, from, to || from)
+  let found = canBeLifted(this.doc, range)
+  let depth = range.path.length - found.path.length
+  if (!found) return this
+
   for (let d = 0, pos = new Pos(range.path, range.to);; d++) {
-    if (pos.offset < doc.path(pos.path).content.length) {
-      result = result.concat(split(pos, depth - d))
+    if (pos.offset < this.doc.path(pos.path).content.length) {
+      this.split(pos, depth)
       break
     }
     if (d == depth - 1) break
@@ -111,7 +109,7 @@ export function lift(doc, from, to) {
   }
   for (let d = 0, pos = new Pos(range.path, range.from);; d++) {
     if (pos.offset > 0) {
-      result = result.concat(split(pos, depth - d))
+      this.split(pos, depth - d)
       let cut = range.path.length - depth, path = pos.path.slice(0, cut).concat(pos.path[cut] + 1)
       for (let i = 0; i < d; i++) path.push(0)
       range = {path: path, from: 0, to: range.to - range.from}
@@ -122,45 +120,44 @@ export function lift(doc, from, to) {
   }
   if (found.unwrap) {
     for (let i = range.to - 1; i > range.from; i--)
-      result = result.concat(join(doc, new Pos(range.path, i)))
-    let node = doc.path(range.path), size = 0
+      this.join(new Pos(range.path, i))
+    let node = this.doc.path(range.path), size = 0
     for (let i = range.from; i < range.to; i++)
       size += node.content[i].content.length
     range = {path: range.path.concat(range.from), from: 0, to: size}
     ++depth
   }
-  result.push(new Step("ancestor", new Pos(range.path, range.from),
-                       new Pos(range.path, range.to), {depth: depth}))
-  return result
+  this.addStep("ancestor", new Pos(range.path, range.from),
+               new Pos(range.path, range.to), {depth: depth})
+  return this
 }
 
-export function wrap(doc, from, to, node) {
-  let range = selectedSiblings(doc, from, to || from)
-  let parent = doc.path(range.path)
+Transform.prototype.wrap = function(from, to, node) {
+  let range = selectedSiblings(this.doc, from, to || from)
+  let parent = this.doc.path(range.path)
   let around = Node.findConnection(parent.type, node.type)
   let inside = Node.findConnection(node.type, parent.content[range.from].type)
-  if (!around || !inside) return []
+  if (!around || !inside) return this
   let wrappers = around.map(t => new Node(t)).concat(node).concat(inside.map(t => new Node(t)))
-  let result = [new Step("ancestor", new Pos(range.path, range.from), new Pos(range.path, range.to),
-                         {wrappers: wrappers})]
+  this.addStep("ancestor", new Pos(range.path, range.from), new Pos(range.path, range.to),
+               {wrappers: wrappers})
   if (inside.length) {
     let toInner = range.path.slice()
     for (let i = around.length + inside.length + 1; i > 0; i--)
       toInner.push(0)
     for (let i = range.to - 1 - range.from; i > 0; i--)
-      result = result.concat(split(new Pos(toInner, i), inside.length))
+      this.split(new Pos(toInner, i), inside.length)
   }
-  return result
+  return this
 }
 
-export function setBlockType(doc, from, to, wrapNode) {
-  let result = []
-  blocksBetween(doc, from, to || from, (node, path) => {
+Transform.prototype.setBlockType = function(from, to, wrapNode) {
+  blocksBetween(this.doc, from, to || from, (node, path) => {
     path = path.slice()
     if (wrapNode.type.plainText && !isPlainText(node))
-      result = result.concat(clearMarkup(doc, new Pos(path, 0), new Pos(path, node.size)))
-    result.push(new Step("ancestor", new Pos(path, 0), new Pos(path, node.size),
-                         {depth: 1, wrappers: [wrapNode]}))
+      this.clearMarkup(new Pos(path, 0), new Pos(path, node.size))
+    this.addStep("ancestor", new Pos(path, 0), new Pos(path, node.size),
+                 {depth: 1, wrappers: [wrapNode]})
   })
-  return result
+  return this
 }

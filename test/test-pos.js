@@ -1,7 +1,7 @@
 import {Pos} from "../src/model"
 
 import Failure from "./failure"
-import tests from "./tests"
+import {defTest} from "./tests"
 
 function p(...args) {
   let offset = args.pop()
@@ -12,14 +12,14 @@ function sn(n) { return n == 0 ? 0 : n < 0 ? -1 : 1 }
 
 let id = 0
 function cmp(a, b, expected) {
-  tests["pos_cmp_" + (id++)] = () => {
+  defTest("pos_cmp_" + (id++), () => {
     let result = sn(a.cmp(b))
     if (result != expected)
       throw new Failure("Positions " + a + " and " + b + " should compare as " + expected + " but yield " + result)
     let inverse = sn(b.cmp(a))
     if (inverse != -expected)
       throw new Failure("Positions " + b + " and " + a + " should compare as " + -expected + " but yield " + inverse + " (flipped)")
-  }
+  })
 }
 
 cmp(p(0, 0), p(0, 0), 0)

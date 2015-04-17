@@ -5,11 +5,11 @@ import {insertText, insertNode, removeNode, joinNodes, splitAt,
 import {doc, h1, blockquote, p, li, ol, ul, em, a, br} from "./build"
 
 import Failure from "./failure"
-import tests from "./tests"
+import {defTest} from "./tests"
 import {testTransform} from "./cmp"
 
 function t(name, base, spec, expect) {
-  tests["replace_" + name] = function() {
+  defTest("replace_" + name, () => {
     let text = null
     let params
     if (spec == "~") {
@@ -29,7 +29,7 @@ function t(name, base, spec, expect) {
       params = insertNode(base, base.tag.a, {node: spec})
     }
     testTransform(base, expect, params)
-  }
+  })
 }
 
 t("simple",

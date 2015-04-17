@@ -1,20 +1,20 @@
 import {doc, p, li, ul, em, a} from "./build"
 
 import Failure from "./failure"
-import tests from "./tests"
+import {defTest} from "./tests"
 import {cmpNode} from "./cmp"
 
 import {slice} from "../src/model"
 
 function t(name, doc, expect) {
-  tests["slice_" + name] = function() {
+  defTest("slice_" + name, () => {
     if (doc.tag.a && doc.tag.b)
       cmpNode(slice.between(doc, doc.tag.a, doc.tag.b), expect)
     else if (doc.tag.a)
       cmpNode(slice.before(doc, doc.tag.a), expect)
     else
       cmpNode(slice.after(doc, doc.tag.b), expect)
-  }
+  })
 }
 
 t("before",

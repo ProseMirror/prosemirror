@@ -1,7 +1,7 @@
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 import Failure from "./failure"
 import {cmpNode} from "./cmp"
-import tests from "./tests"
+import {defTest} from "./tests"
 
 import xmlDOM from "xmldom"
 
@@ -19,7 +19,7 @@ function domText(dom) {
 }
 
 function t(name, doc, dom) {
-  tests["dom_" + name] = function() {
+  defTest("dom_" + name, () => {
     let derivedDOM = domFor("")
     derivedDOM.documentElement.appendChild(toDOM(doc, {document: derivedDOM}))
     let declaredDOM = domFor(dom)
@@ -30,7 +30,7 @@ function t(name, doc, dom) {
       throw new Failure("DOM text mismatch: " + derivedText + " vs " + declaredText)
 
     cmpNode(doc, fromDOM(derivedDOM.documentElement))
-  }
+  })
 }
 
 t("simple",
@@ -78,9 +78,7 @@ t("code_block",
   "<blockquote><pre><code>some code</code></pre></blockquote><p>and</p>")
 
 function recover(name, html, doc) {
-  tests["dom_recover_" + name] = function() {
-    cmpNode(fromDOM(domFor(html)), doc)
-  }
+  defTest("dom_recover_" + name, () => cmpNode(fromDOM(domFor(html)), doc))
 }
 
 recover("list",

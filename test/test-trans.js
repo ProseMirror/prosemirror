@@ -1,22 +1,21 @@
 import {style, Node} from "../src/model"
-import {addStyle, removeStyle, insert, insertText, wrap as wrap_,
-        join as join_, del as del_, split as split_, lift as lift_,
-        replace, setBlockType, applyTransform, invertTransform} from "../src/trans"
+import {T, applyStep, invertStep} from "../src/trans"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
 import Failure from "./failure"
-import tests from "./tests"
+import {defTest} from "./tests"
 import {cmpNode, cmpStr} from "./cmp"
 
 export function testTransform(doc, expect, steps) {
+  steps = steps.steps
   let orig = doc.toString(), out = doc, results = [], inverted = []
   for (let i = 0; i < steps.length; i++) {
-    let result = applyTransform(out, steps[i])
+    let result = applyStep(out, steps[i])
     if (result) {
       out = result.doc
       results.push(result)
-      inverted.push(invertTransform(result, steps[i]))
+      inverted.push(invertStep(result, steps[i]))
     }
   }
   cmpNode(out, expect)
@@ -34,7 +33,7 @@ export function testTransform(doc, expect, steps) {
     cmpStr(val, doc.tag[pos], pos + " back")
   }
   for (let i = inverted.length - 1; i >= 0; i--) {
-    let result = applyTransform(out, inverted[i])
+    let result = applyStep(out, inverted[i])
     if (!result) console.log("failed to apply", inverted[i], "to " + out)
     out = result.doc
   }
@@ -42,9 +41,9 @@ export function testTransform(doc, expect, steps) {
 }
 
 function add(name, doc, expect, style) {
-  tests["addStyle__" + name] = () => {
-    testTransform(doc, expect, addStyle(doc, doc.tag.a, doc.tag.b, style))
-  }
+  defTest("addStyle__" + name, () => {
+    testTransform(doc, expect, T(doc).addStyle(doc.tag.a, doc.tag.b, style))
+  })
 }
 
 add("simple",
@@ -73,9 +72,9 @@ add("across_blocks",
     style.em)
 
 function rem(name, doc, expect, style) {
-  tests["removeStyle__" + name] = () => {
-    testTransform(doc, expect, removeStyle(doc, doc.tag.a, doc.tag.b, style))
-  }
+  defTest("removeStyle__" + name, () => {
+    testTransform(doc, expect, T(doc).removeStyle(doc.tag.a, doc.tag.b, style))
+  })
 }
 
 rem("gap",
@@ -108,9 +107,9 @@ rem("all",
     null)
 
 function ins(name, doc, expect, nodes) {
-  tests["insert__" + name] = () => {
-    testTransform(doc, expect, insert(doc.tag.a, nodes))
-  }
+  defTest("insert__" + name, () => {
+    testTransform(doc, expect, T(doc).insert(doc.tag.a, nodes))
+  })
 }
 
 ins("break",
@@ -136,9 +135,9 @@ ins("start_of_blockquote",
     new Node("paragraph"))
 
 function del(name, doc, expect) {
-  tests["delete__" + name] = () => {
-    testTransform(doc, expect, del_(doc, doc.tag.a, doc.tag.b))
-  }
+  defTest("delete__" + name, () => {
+    testTransform(doc, expect, T(doc).delete(doc.tag.a, doc.tag.b))
+  })
 }
 
 del("simple",
@@ -152,9 +151,9 @@ del("outside_path",
     doc(blockquote(p("a")), p("c<1>")))
 
 function txt(name, doc, expect, text) {
-  tests["insertText__" + name] = () => {
-    testTransform(doc, expect, insertText(doc, doc.tag.a, text))
-  }
+  defTest("insertText__" + name, () => {
+    testTransform(doc, expect, T(doc).insertText(doc.tag.a, text))
+  })
 }
 
 txt("inherit_style",
@@ -195,9 +194,9 @@ txt("before_br",
     "ay")
 
 function join(name, doc, expect) {
-  tests["join__" + name] = () => {
-    testTransform(doc, expect, join_(doc, doc.tag.a))
-  }
+  defTest("join__" + name, () => {
+    testTransform(doc, expect, T(doc).join(doc.tag.a))
+  })
 }
 
 join("simple",
@@ -217,9 +216,9 @@ join("inline",
      doc(p("foo<a>bar")))
 
 function split(name, doc, expect, args) {
-  tests["split__" + name] = () => {
-    testTransform(doc, expect, split_(doc.tag.a, args && args.depth, args && args.node))
-  }
+  defTest("split__" + name, () => {
+    testTransform(doc, expect, T(doc).split(doc.tag.a, args && args.depth, args && args.node))
+  })
 }
 
 split("simple",
@@ -255,9 +254,9 @@ split("change_type",
       {node: new Node("paragraph")})
 
 function lift(name, doc, expect) {
-  tests["lift__" + name] = () => {
-    testTransform(doc, expect, lift_(doc, doc.tag.a, doc.tag.b))
-  }
+  defTest("lift__" + name, () => {
+    testTransform(doc, expect, T(doc).lift(doc.tag.a, doc.tag.b))
+  })
 }
 
 lift("simple_between",
@@ -295,9 +294,9 @@ lift("multiple_from_list_with_two_items",
      doc(p("one<a>"), p("<half>half"), p("two<b>"), ul(li(p("three<after>")))))
 
 function wrap(name, doc, expect, node) {
-  tests["wrap__" + name] = () => {
-    testTransform(doc, expect, wrap_(doc, doc.tag.a, doc.tag.b, node))
-  }
+  defTest("wrap__" + name, () => {
+    testTransform(doc, expect, T(doc).wrap(doc.tag.a, doc.tag.b, node))
+  })
 }
 
 wrap("simple",
@@ -330,9 +329,9 @@ wrap("bullet_list",
      new Node("bullet_list"))
 
 function type(name, doc, expect, node) {
-  tests["setType__" + name] = () => {
-    testTransform(doc, expect, setBlockType(doc, doc.tag.a, doc.tag.b, node))
-  }
+  defTest("setType__" + name, () => {
+    testTransform(doc, expect, T(doc).setBlockType(doc.tag.a, doc.tag.b, node))
+  })
 }
 
 type("simple",
@@ -357,10 +356,10 @@ type("only_clear_for_code_block",
      new Node("heading", null, {level: 1}))
 
 function repl(name, doc, source, expect) {
-  tests["replace__" + name] = () => {
-    testTransform(doc, expect, replace(doc, doc.tag.a, doc.tag.b || doc.tag.a,
-                                       source, source && source.tag.a, source && source.tag.b))
-  }
+  defTest("replace__" + name, () => {
+    testTransform(doc, expect, T(doc).replace(doc.tag.a, doc.tag.b || doc.tag.a,
+                                              source, source && source.tag.a, source && source.tag.b))
+  })
 }
 
 repl("add_text",

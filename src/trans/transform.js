@@ -9,18 +9,18 @@ export class Step {
   }
 }
 
-const transforms = Object.create(null)
+const steps = Object.create(null)
 
-export function defineTransform(name, impl) { transforms[name] = impl }
+export function defineStep(name, impl) { steps[name] = impl }
 
-export function applyTransform(doc, transform) {
-  if (!(transform.name in transforms))
+export function applyStep(doc, step) {
+  if (!(step.name in steps))
     throw new Error("Undefined transform " + transform.name)
-  return transforms[transform.name].apply(doc, transform)
+  return steps[step.name].apply(doc, step)
 }
 
-export function invertTransform(result, step) {
-  return transforms[step.name].invert(result, step)
+export function invertStep(result, step) {
+  return steps[step.name].invert(result, step)
 }
 
 export class Result {
@@ -30,3 +30,16 @@ export class Result {
     this.map = map
   }
 }
+
+export class Transform {
+  constructor(doc) {
+    this.doc = doc
+    this.steps = []
+  }
+
+  addStep(name, from, to, param) {
+    this.steps.push(new Step(name, from, to, param))
+  }
+}
+
+export function T(doc) { return new Transform(doc) }

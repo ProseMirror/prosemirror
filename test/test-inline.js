@@ -4,17 +4,17 @@ import {addStyle, removeStyle, setBlockType} from "../src/transform"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br} from "./build"
 
 import Failure from "./failure"
-import tests from "./tests"
+import {defTest} from "./tests"
 import {testTransform} from "./cmp"
 
 function t(op, name, doc, expect, params) {
-  tests[op + "_" + name] = function() {
+  defTest(op + "_" + name, () => {
     if (op == "setType")
       params = setBlockType(doc.tag.a, doc.tag.b || doc.tag.a, params.type, params.attrs)
     else
       params = (op == "addStyle" ? addStyle : removeStyle)(doc.tag.a, doc.tag.b, params.style)
     testTransform(doc, expect, params)
-  }
+  })
 }
 
 t("addStyle", "simple",
@@ -93,10 +93,10 @@ t("setType", "only_clear_for_code_block",
   {type: "heading", attrs: {level: 1}})
 
 function has(name, doc, st, result) {
-  tests["has_" + name] = function() {
+  defTest("has_" + name, function() {
     if (style.contains(inline.inlineStylesAt(doc, doc.tag.a), st) != result)
       throw new Failure("hasStyle(" + doc + ", " + doc.tag.a + ", " + st.type + ") returned " + !result)
-  }
+  })
 }
 
 has("simple",

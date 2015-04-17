@@ -1,10 +1,10 @@
 import {Pos, Node, inline} from "../model"
 
-import {defineTransform, Result, Step} from "./transform"
+import {defineStep, Result, Step, Transform} from "./transform"
 import {copyTo} from "./tree"
 import {PosMap, MovedRange, CollapsedRange} from "./map"
 
-defineTransform("split", {
+defineStep("split", {
   apply(doc, data) {
     let pos = data.from
     if (pos.path.length == 0) return null
@@ -32,12 +32,11 @@ defineTransform("split", {
   }
 })
 
-export function split(pos, depth = 1, nodeAfter = null) {
-  let steps = []
-  if (depth == 0) return steps
+Transform.prototype.split = function(pos, depth = 1, nodeAfter = null) {
+  if (depth == 0) return this
   for (let i = 0;; i++) {
-    steps.push(new Step("split", pos, null, nodeAfter))
-    if (i == depth - 1) return steps
+    this.addStep("split", pos, null, nodeAfter)
+    if (i == depth - 1) return this
     nodeAfter = null
     pos = pos.shorten(null, 1)
   }

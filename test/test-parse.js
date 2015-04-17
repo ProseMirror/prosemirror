@@ -1,15 +1,15 @@
 import {doc, blockquote, hr2, pre, pre2, h1, h2, p, li, ol, ul, uldash, em, strong, code, a, a2, br, img} from "./build"
 import {cmpNode, cmpStr} from "./cmp"
-import tests from "./tests"
+import {defTest} from "./tests"
 
 import fromText from "../src/markdown/from_text"
 import toText from "../src/markdown/to_text"
 
 function t(name, text, doc) {
-  tests["parse_" + name] = function() {
+  defTest("parse_" + name, () => {
     cmpNode(fromText(text), doc)
     cmpStr(toText(doc), text)
-  }
+  })
 }
 
 t("paragraph",

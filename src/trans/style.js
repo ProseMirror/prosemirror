@@ -1,10 +1,10 @@
 import {style, Node, Pos} from "../model"
 
-import {defineTransform, Result, Step} from "./transform"
+import {defineStep, Result, Step, Transform} from "./transform"
 import {nullMap} from "./map"
 import {copyInline, copyStructure, findRanges, forSpansBetween} from "./tree"
 
-defineTransform("addStyle", {
+defineStep("addStyle", {
   apply(doc, data) {
     return new Result(doc, copyStructure(doc, data.from, data.to, (node, from, to) => {
       if (node.type.plainText) return node
@@ -19,9 +19,10 @@ defineTransform("addStyle", {
   }
 })
 
-export function addStyle(doc, from, to, st) {
+
+Transform.prototype.addStyle = function(from, to, st) {
   let removed = [], added = [], removing = null, adding = null
-  forSpansBetween(doc, from, to, (span, path, start, end) => {
+  forSpansBetween(this.doc, from, to, (span, path, start, end) => {
     let styles = span.styles, rm
     if (style.contains(span.styles, st)) {
       adding = removing = null
@@ -43,10 +44,11 @@ export function addStyle(doc, from, to, st) {
       }
     }
   })
-  return removed.concat(added)
+  this.steps = this.steps.concat(removed).concat(added)
+  return this
 }
 
-defineTransform("removeStyle", {
+defineStep("removeStyle", {
   apply(doc, data) {
     return new Result(doc, copyStructure(doc, data.from, data.to, (node, from, to) => {
       return copyInline(node, from, to, node => {
@@ -60,9 +62,9 @@ defineTransform("removeStyle", {
   }
 })
 
-export function removeStyle(doc, from, to, st = null) {
+Transform.prototype.removeStyle = function(from, to, st = null) {
   let matched = [], step = 0
-  forSpansBetween(doc, from, to, (span, path, start, end) => {
+  forSpansBetween(this.doc, from, to, (span, path, start, end) => {
     step++
     let toRemove = null
     if (typeof st == "string") {
@@ -90,16 +92,19 @@ export function removeStyle(doc, from, to, st = null) {
       }
     }
   })
-  return matched.map(m => new Step("removeStyle", m.from, m.to, m.style))
+  matched.forEach(m => this.addStep("removeStyle", m.from, m.to, m.style))
+  return this
 }
 
-export function clearMarkup(doc, from, to) {
+Transform.prototype.clearMarkup = function(from, to) {
   let steps = []
-  forSpansBetween(doc, from, to, (span, path, start, end) => {
+  forSpansBetween(this.doc, from, to, (span, path, start, end) => {
     if (span.type != Node.types.text) {
       path = path.slice()
       steps.unshift(new Step("delete", new Pos(path, start), new Pos(path, end)))
     }
   })
-  return removeStyle(doc, from, to).concat(steps)
+  this.removeStyle(from.to)
+  this.steps = this.steps.concat(steps)
+  return this
 }

@@ -1,13 +1,13 @@
 import {doc, blockquote, h1, p, li, ol, ul, em, a, br} from "./build"
 
-import tests from "./tests"
+import {defTest} from "./tests"
 import {testTransform} from "./cmp"
 
 import {Node, Pos} from "../src/model"
 import {wrapRange, liftRange, describeTarget, describePos} from "../src/transform"
 
 function t(op, name, doc, expect, params) {
-  tests[op + "_" + name] = function() {
+  defTest(op + "_" + name, () => {
     if (!params) params = {}
     params.name = op
     if (op == "lift")
@@ -15,7 +15,7 @@ function t(op, name, doc, expect, params) {
     else if (op == "wrap")
       params = wrapRange(doc, doc.tag.a, doc.tag.b || doc.tag.a, params.type, params.attrs, params.join)
     testTransform(doc, expect, params)
-  }
+  })
 }
 
 t("lift", "simple_between",

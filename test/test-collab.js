@@ -2,16 +2,16 @@ import {Transition, VersionStore} from "../src/collab/versions"
 import {mergeChangeSets, mapPosition, rebaseChanges} from "../src/collab/rebase"
 import {nullID, xorIDs, randomID} from "../src/collab/id"
 import {Pos, style} from "../src/model"
-import {applyTransform, insertText, wrapRange, remove, joinNodes,
+import {applyStep, insertText, wrapRange, remove, joinNodes,
         addStyle, removeStyle, replace, insertNode} from "../src/transform"
 
 import {doc, blockquote, h1, p, li, ol, ul, em, a, br} from "./build"
 import Failure from "./failure"
-import tests from "./tests"
+import {defTest} from "./tests"
 import {cmpNode, cmpStr} from "./cmp"
 
 function merge(name, known, add, expect) {
-  tests["merge_changes_" + name] = function() {
+  defTest("merge_changes_" + name, () => {
     function parse(str) {
       return str.split(" ").map(s => { let m = s.match(/([a-z]+)(\d+)/); return {clientID: m[1], id: m[2]} })
     }
@@ -21,7 +21,7 @@ function merge(name, known, add, expect) {
     let result = flat(mergeChangeSets(parse(known), parse(add)))
     if (result != expect)
       throw new Failure("Expected " + expect + " got " + result)
-  }
+  })
 }
 
 merge("simple",
@@ -83,7 +83,7 @@ function runRebase(startDoc, clients, result) {
     let changes = transforms.map(params => {
       let tID = randomID()
       params = params(doc)
-      let result = applyTransform(doc, params)
+      let result = applyStep(doc, params)
       let tr = new Transition(tID, id, clientID, params, result)
       id = xorIDs(id, tID)
       store.storeVersion(id, tr.baseID, result.doc)
@@ -113,7 +113,7 @@ function runRebase(startDoc, clients, result) {
 
 function rebase(name, startDoc, ...clients) {
   let result = clients.pop()
-  tests["rebase_" + name] = () => runRebase(startDoc, clients, result)
+  defTest("rebase_" + name, () => runRebase(startDoc, clients, result))
 }
 
 function permute(array) {
@@ -129,9 +129,9 @@ function permute(array) {
 
 function rebase$(name, startDoc, ...clients) {
   let result = clients.pop()
-  tests["rebase_" + name] = () => {
+  defTest("rebase_" + name, () => {
     permute(clients).forEach(clients => runRebase(startDoc, clients, result))
-  }
+  })
 }
 
 rebase$("type_simple",
@@ -145,12 +145,6 @@ rebase$("type_simple_multiple",
         [text("1", "X"), text("1", "Y"), text("1", "Z")],
         [text("2", "U"), text("2", "V")],
         doc(p("hXYZ<1>ellUV<2>o")))
-
-rebase$("type_simple",
-        doc(p("h<1>ell<2>o")),
-        [text("2", "Y")],
-        [text("1", "X")],
-        doc(p("hX<1>ellY<2>o")))
 
 rebase$("type_three",
         doc(p("h<1>ell<2>o th<3>ere")),

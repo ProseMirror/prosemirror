@@ -1,10 +1,10 @@
 import {Pos, Node, inline} from "../model"
 
-import {defineTransform, Result, Step} from "./transform"
+import {defineStep, Result, Step, Transform} from "./transform"
 import {PosMap, MovedRange, CollapsedRange} from "./map"
 import {copyTo} from "./tree"
 
-defineTransform("insert", {
+defineStep("insert", {
   apply(doc, data) {
     let pos = data.from, nodes = data.param
     let copy = copyTo(doc, pos.path)
@@ -35,18 +35,20 @@ defineTransform("insert", {
   }
 })
 
-export function insert(pos, nodes) {
+Transform.prototype.insert = function(pos, nodes) {
   if (!Array.isArray(nodes)) nodes = [nodes]
-  return [new Step("insert", pos, null, nodes)]
+  this.addStep("insert", pos, null, nodes)
+  return this
 }
 
-export function insertInline(doc, pos, nodes) {
+Transform.prototype.insertInline = function(pos, nodes) {
   if (!Array.isArray(nodes)) nodes = [nodes]
-  let styles = inline.inlineStylesAt(doc, pos)
+  let styles = inline.inlineStylesAt(this.doc, pos)
   let nodes = nodes.map(n => new Node.Inline(n.type, styles, n.text, n.attrs))
-  return [new Step("insert", pos, null, nodes)]
+  this.addStep("insert", pos, null, nodes)
+  return this
 }
 
-export function insertText(doc, pos, text) {
-  return insertInline(doc, pos, Node.text(text))
+Transform.prototype.insertText = function(pos, text) {
+  return this.insertInline(pos, Node.text(text))
 }
