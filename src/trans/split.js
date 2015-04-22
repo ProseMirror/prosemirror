@@ -4,11 +4,9 @@ import {defineStep, Result, Step, Transform} from "./transform"
 import {copyTo} from "./tree"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 
-// FIXME use pos rather than from field in step object
-
 defineStep("split", {
   apply(doc, data) {
-    let pos = data.from
+    let pos = data.pos
     if (pos.path.length == 0) return null
     let copy = copyTo(doc, pos.path)
     let last = pos.path.length - 1, parentPath = pos.path.slice(0, last)
@@ -29,14 +27,14 @@ defineStep("split", {
     return new Result(doc, copy, map)
   },
   invert(result, data) {
-    return new Step("join", data.from, result.map.mapSimple(data.from))
+    return new Step("join", data.pos, result.map.mapSimple(data.pos))
   }
 })
 
 Transform.prototype.split = function(pos, depth = 1, nodeAfter = null) {
   if (depth == 0) return this
   for (let i = 0;; i++) {
-    this.step("split", pos, null, null, nodeAfter)
+    this.step("split", null, null, pos, nodeAfter)
     if (i == depth - 1) return this
     nodeAfter = null
     pos = pos.shorten(null, 1)
