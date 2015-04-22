@@ -1,8 +1,8 @@
-import {Node, Pos, inline} from "../model"
+import {Pos, inline, slice} from "../model"
 
 import {defineStep, Result, Step, Transform} from "./transform"
 import {PosMap, MovedRange, CollapsedRange} from "./map"
-import {slice} from "../model"
+import {copyTo} from "./tree"
 
 function samePathDepth(a, b) {
   for (let i = 0;; i++)
@@ -20,44 +20,43 @@ function sizeBefore(node, at) {
   }
 }
 
-export function doReplace(doc, from, to, root, repl) {
-  // FIXME replace with a copyTo and inline code
-  function fill(node, depth) {
-    let copy = node.copy()
-    if (depth < root.length) {
-      copy.pushFrom(node)
-      let n = root[depth]
-      copy.content[n] = fill(copy.content[n], depth + 1)
-    } else {
-      let fromEnd = depth == from.path.length
-      let start = fromEnd ? from.offset : from.path[depth]
-      copy.pushNodes(node.slice(0, start))
-      if (!fromEnd) {
-        copy.push(slice.before(node.content[start], from, depth + 1))
-        ++start
-      } else {
-        start = copy.content.length
-      }
-      // FIXME verify that these fit here
-      copy.pushNodes(repl.nodes)
-      let end
-      if (depth == to.path.length) {
-        end = to.offset
-      } else {
-        let n = to.path[depth]
-        copy.push(slice.after(node.content[n], to, depth + 1))
-        end = n + 1
-      }
-      copy.pushNodes(node.slice(end))
+export function replace(doc, from, to, root, repl) {
+  let origParent = doc.path(root)
+  if (repl.nodes.length && repl.nodes[0].type.type != origParent.type.contains)
+    return null
 
-      let rightEdge = start + repl.nodes.length, startLen = copy.content.length
-      if (repl.nodes.length)
-        mendLeft(copy, start, depth, repl.openLeft)
-      mendRight(copy, rightEdge + (copy.content.length - startLen), root,
-                repl.nodes.length ? repl.openRight : from.path.length - depth)
-    }
-    return copy
+  let copy = copyTo(doc, root)
+  let parent = copy.path(root)
+  parent.content.length = 0
+  let depth = root.length
+
+  let fromEnd = depth == from.path.length
+  let start = fromEnd ? from.offset : from.path[depth]
+  parent.pushNodes(origParent.slice(0, start))
+  if (!fromEnd) {
+    parent.push(slice.before(origParent.content[start], from, depth + 1))
+    ++start
+  } else {
+    start = parent.content.length
   }
+  parent.pushNodes(repl.nodes)
+  let end
+  if (depth == to.path.length) {
+    end = to.offset
+  } else {
+    let n = to.path[depth]
+    parent.push(slice.after(origParent.content[n], to, depth + 1))
+    end = n + 1
+  }
+  parent.pushNodes(origParent.slice(end))
+
+  var moved = []
+
+  let rightEdge = start + repl.nodes.length, startLen = parent.content.length
+  if (repl.nodes.length)
+    mendLeft(parent, start, depth, repl.openLeft)
+  mendRight(parent, rightEdge + (parent.content.length - startLen), root,
+            repl.nodes.length ? repl.openRight : from.path.length - depth)
 
   function mendLeft(node, at, depth, open) {
     if (node.type.block)
@@ -74,7 +73,6 @@ export function doReplace(doc, from, to, root, repl) {
     }
   }
 
-  var moved = []
   function addMoved(start, size, dest) {
     if (start.cmp(dest))
       moved.push(new MovedRange(start, size, dest))
@@ -100,7 +98,7 @@ export function doReplace(doc, from, to, root, repl) {
     }
   }
 
-  return {doc: fill(doc, 0), moved}
+  return {doc: copy, moved}
 }
 
 const nullRepl = {nodes: [], openLeft: 0, openRight: 0}
@@ -113,7 +111,8 @@ defineStep("replace", {
     for (let i = 0; i < root.length; i++)
       if (data.from.path[i] != root[i] || data.to.path[i] != root[i]) return null
 
-    let {doc: out, moved} = doReplace(doc, data.from, data.to, root, data.param || nullRepl)
+    let {doc: out, moved} = replace(doc, data.from, data.to, root, data.param || nullRepl)
+    if (!out) return null
     let end = moved.length ? moved[moved.length - 1].dest : data.to
     let collapsed = new CollapsedRange(data.from, data.to, data.from, end)
     return new Result(doc, out, new PosMap(moved, [collapsed]))

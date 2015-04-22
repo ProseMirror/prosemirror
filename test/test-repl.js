@@ -1,4 +1,4 @@
-import {doReplace} from "../src/trans/replace"
+import {replace} from "../src/trans/replace"
 import {MovedRange} from "../src/trans/map"
 import {slice, Pos} from "../src/model"
 
@@ -9,7 +9,7 @@ import {defTest} from "./tests"
 import {cmpNode, cmpStr} from "./cmp"
 
 function test(name, doc, insert, expected, moved) {
-  defTest("doReplace_" + name, () => {
+  defTest("replace_inner_" + name, () => {
     let sliced = slice.between(insert, insert.tag.a, insert.tag.b)
     let repl
     for (let left = insert.tag.a, right = insert.tag.b, i = 0, node = sliced;; i++) {
@@ -20,7 +20,7 @@ function test(name, doc, insert, expected, moved) {
       }
       node = node.content[left.path[i]]
     }
-    let result = doReplace(doc, doc.tag.a, doc.tag.b, doc.tag.root.path, repl)
+    let result = replace(doc, doc.tag.a, doc.tag.b, doc.tag.root.path, repl)
     cmpNode(result.doc, expected)
     if (moved) {
       if (moved.length != result.moved.length)
