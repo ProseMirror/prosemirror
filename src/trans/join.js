@@ -23,7 +23,7 @@ defineStep("join", {
       inline.stitchTextNodes(joined, before.content.length)
     target.content.splice(offset - 1, 2, joined)
 
-    let map = new PosMap([new MovedRange(data.to, after.maxOffset, data.from, "delete"),
+    let map = new PosMap([new MovedRange(data.to, after.maxOffset, data.from),
                           new MovedRange(new Pos(targetPath, offset + 1), oldSize - offset - 1, new Pos(targetPath, offset))],
                          [new ReplacedRange(data.from, data.to, data.from, data.from, data.to.shorten())])
     return new Result(doc, copy, map)

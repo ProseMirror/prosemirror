@@ -1,7 +1,7 @@
 import {Pos} from "../model"
 
 export class MovedRange {
-  constructor(start, size, dest = null, after = null) {
+  constructor(start, size, dest = null) {
     this.start = start
     this.size = size
     this.dest = dest

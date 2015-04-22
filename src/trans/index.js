@@ -1,7 +1,5 @@
 export {Result, Step, applyStep, invertStep, Transform, T} from "./transform"
 import "./style"
-import "./delete"
-import "./insert"
 import "./join"
 import "./split"
 import "./ancestor"

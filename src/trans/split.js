@@ -4,6 +4,8 @@ import {defineStep, Result, Step, Transform} from "./transform"
 import {copyTo} from "./tree"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 
+// FIXME use pos rather than from field in step object
+
 defineStep("split", {
   apply(doc, data) {
     let pos = data.from

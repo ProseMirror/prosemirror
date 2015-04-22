@@ -102,7 +102,7 @@ Transform.prototype.clearMarkup = function(from, to) {
   forSpansBetween(this.doc, from, to, (span, path, start, end) => {
     if (span.type != Node.types.text) {
       path = path.slice()
-      steps.unshift(new Step("delete", new Pos(path, start), new Pos(path, end)))
+      steps.unshift(new Step("replace", new Pos(path, start), new Pos(path, end)))
     }
   })
   this.removeStyle(from.to)

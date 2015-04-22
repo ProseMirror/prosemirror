@@ -1,4 +1,4 @@
-import {Pos, inline, slice} from "../model"
+import {Pos, Node, inline, slice} from "../model"
 
 import {defineStep, Result, Step, Transform} from "./transform"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
@@ -118,12 +118,13 @@ defineStep("replace", {
     return new Result(doc, out, new PosMap(moved, [replaced]))
   },
   invert(result, data) {
-    let root = data.pos.path
+    let depth = data.pos.path.length
     let between = slice.between(result.before, data.from, data.to, false)
-    return new Step("replace", data.from, result.map.mapSimple(data.to), data.from.shorten(root.length), {
-      nodes: between.path(root).content,
-      openLeft: data.from.path.length - root.length,
-      openRight: data.to.path.length - root.length
+    for (let i = 0; i < depth; i++) between = between.content[0]
+    return new Step("replace", data.from, result.map.mapSimple(data.to), data.from.shorten(depth), {
+      nodes: between.content,
+      openLeft: data.from.path.length - depth,
+      openRight: data.to.path.length - depth
     })
   }
 })
@@ -236,4 +237,21 @@ Transform.prototype.replace = function(from, to, source, start, end) {
     moveText(this, result.doc, before, after)
   }
   return this
+}
+
+Transform.prototype.insert = function(pos, nodes) {
+  if (!Array.isArray(nodes)) nodes = [nodes]
+  this.step("replace", pos, pos, pos, {nodes: nodes, openLeft: 0, openRight: 0})
+  return this
+}
+
+Transform.prototype.insertInline = function(pos, nodes) {
+  if (!Array.isArray(nodes)) nodes = [nodes]
+  let styles = inline.inlineStylesAt(this.doc, pos)
+  let nodes = nodes.map(n => new Node.Inline(n.type, styles, n.text, n.attrs))
+  return this.insert(pos, nodes)
+}
+
+Transform.prototype.insertText = function(pos, text) {
+  return this.insertInline(pos, Node.text(text))
 }
