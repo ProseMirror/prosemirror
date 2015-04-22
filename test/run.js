@@ -8,15 +8,13 @@ import {tests} from "./tests"
 
 import "./test-pos"
 import "./test-parse"
-import "./test-slice"
-import "./test-replace"
-import "./test-style"
-import "./test-block"
-import "./test-inline"
 import "./test-dom"
+import "./test-slice"
+import "./test-style"
+import "./test-inline"
 import "./test-collab"
+import "./test-replace"
 import "./test-trans"
-import "./test-repl"
 
 for (let name in tests) {
   if (filter && name.indexOf(filter) == -1) continue

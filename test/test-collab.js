@@ -224,3 +224,4 @@ rebase("double_insert",
        [addNode("1", "paragraph")],
        [addNode("1", "paragraph")],
        doc(p("a"), p(), p(), p("<1>b")))
+
