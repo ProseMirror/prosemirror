@@ -2,7 +2,7 @@ import {Pos, Node, inline} from "../model"
 
 import {defineStep, Result, Step, Transform} from "./transform"
 import {copyTo} from "./tree"
-import {PosMap, MovedRange, CollapsedRange} from "./map"
+import {PosMap, MovedRange, ReplacedRange} from "./map"
 
 defineStep("split", {
   apply(doc, data) {
@@ -23,8 +23,7 @@ defineStep("split", {
     let map = new PosMap([new MovedRange(pos, targetSize - pos.offset, dest),
                           new MovedRange(new Pos(parentPath, offset + 1), parent.content.length - 2 - offset,
                                          new Pos(parentPath, offset + 2))],
-                         null,
-                         [new CollapsedRange(pos, dest, pos)])
+                         [new ReplacedRange(pos, pos, pos, dest, pos, pos.shorten(null, 1))])
     return new Result(doc, copy, map)
   },
   invert(result, data) {

@@ -40,6 +40,7 @@ export default class Pos {
   }
 
   shorten(to = null, offset = 0) {
+    if (to == this.path.length) return this
     return Pos.shorten(this.path, to, offset)
   }
 

@@ -1,7 +1,7 @@
 import {Pos, inline} from "../model"
 
 import {defineStep, Result, Step, Transform} from "./transform"
-import {PosMap, MovedRange, CollapsedRange} from "./map"
+import {PosMap, MovedRange, ReplacedRange} from "./map"
 import {copyTo, isFlatRange, rangesBetween} from "./tree"
 
 // FIXME supersede by replace?
@@ -21,7 +21,7 @@ defineStep("delete", {
       target.content.splice(from.offset, to.offset - from.offset)
     }
     let map = new PosMap([new MovedRange(to, oldSize - to.offset, from)],
-                         [new CollapsedRange(from, to, from)])
+                         [new ReplacedRange(from, to, from, from)])
     return new Result(doc, copy, map)
   },
   invert(result, data) {

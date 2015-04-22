@@ -2,7 +2,7 @@ import {Pos, Node, inline} from "../model"
 
 import {defineStep, Result, Step, Transform} from "./transform"
 import {isFlatRange, copyTo, selectedSiblings, blocksBetween, isPlainText} from "./tree"
-import {PosMap, MovedRange, CollapsedRange} from "./map"
+import {PosMap, MovedRange, ReplacedRange} from "./map"
 
 defineStep("ancestor", {
   apply(doc, data) {
@@ -38,24 +38,20 @@ defineStep("ancestor", {
     let toInner = toParent.slice()
     for (let i = 0; i < wrappers.length; i++) toInner.push(i ? 0 : start)
     let startOfInner = new Pos(toInner, wrappers.length ? 0 : start)
-    let deleted = null, inserted = null
+    let replaced = null
     let insertedSize = wrappers.length ? 1 : to.offset - from.offset
     if (depth > 1 || wrappers.length > 1) {
       let posBefore = new Pos(toParent, start)
       let posAfter1 = new Pos(toParent, end), posAfter2 = new Pos(toParent, start + insertedSize)
       let endOfInner = new Pos(toInner, startOfInner.offset + (to.offset - from.offset))
-      if (depth > 1)
-        deleted = [new CollapsedRange(posBefore, from, posBefore, startOfInner),
-                   new CollapsedRange(to, posAfter1, endOfInner, posAfter2)]
-      if (wrappers.length > 1)
-        inserted = [new CollapsedRange(posBefore, startOfInner, posBefore, from),
-                    new CollapsedRange(endOfInner, posAfter2, to, posAfter1)]
+      replaced = [new ReplacedRange(posBefore, from, posBefore, startOfInner),
+                  new ReplacedRange(to, posAfter1, endOfInner, posAfter2, posAfter1, posAfter2)]
     }
     let moved = [new MovedRange(from, to.offset - from.offset, startOfInner)]
     if (end - start != insertedSize)
       moved.push(new MovedRange(new Pos(toParent, end), parentSize - end,
                                 new Pos(toParent, start + insertedSize)))
-    return new Result(doc, copy, new PosMap(moved, deleted, inserted))
+    return new Result(doc, copy, new PosMap(moved, replaced))
   },
   invert(result, data) {
     let wrappers = []

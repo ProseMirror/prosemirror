@@ -12,54 +12,18 @@ export class MovedRange {
   }
 }
 
-function isBelow(base, pos) {
-  if (pos.path.length < base.path.length) return false
-  for (let i = 0; i < base.path.length; i++)
-    if (base.path[i] != pos.path[i]) return false
-  return true
-}
-
-export class CollapsedRange {
-  constructor(from, to, refLeft, refRight = refLeft) {
+class Side {
+  constructor(from, to, ref) {
     this.from = from
     this.to = to
-    this.refLeft = refLeft
-    this.refRight = refRight
+    this.ref = ref
   }
+}
 
-  getOffset(pos) {
-    let base = this.from, side = -1
-    if (!isBelow(base, pos)) {
-      if (isBelow(this.to, pos)) {
-        ;[base, side] = [this.to, 1]
-      } else {
-        // We assume this is a join (or inverted split) producing a
-        // deleted range around a single 'gap', since that is, unless
-        // something broke, the only transform that generates deleted
-        // ranges without at least one side below all its content.
-        // Return a special marker value. Other cases are not handled.
-        if (pos.offset != base.path[pos.path.length] + 1 ||
-            pos.path.length != base.path.length - 1)
-          throw new Error("Unsupported base/pos relation between " + pos + " and " + base)
-        return {side: 0, pos: null}
-      }
-    }
-
-    if (pos.path.length > base.path.length) {
-      let path = [pos.path[base.path.length] - base.offset]
-      for (let i = base.path.length + 1; i < pos.path.length; i++)
-        path.push(pos.path[i])
-      return {side, pos: new Pos(path, pos.offset)}
-    } else {
-      return {side, pos: new Pos([], pos.offset - base.offset)}
-    }
-  }
-
-  fromOffset(offset) {
-    if (offset.side == 0)
-      return this.from.shorten(null, 1)
-    else
-      return (offset.side < 0 ? this.from : this.to).extend(offset.pos)
+export class ReplacedRange {
+  constructor(from, to, newFrom, newTo, ref = from, newRef = newFrom) {
+    this.before = new Side(from, to, ref)
+    this.after = new Side(newFrom, newTo, newRef)
   }
 }
 
@@ -74,34 +38,40 @@ export class MapResult {
   }
 }
 
+function offsetFrom(base, pos) {
+  if (pos.path.length > base.path.length) {
+    let path = [pos.path[base.path.length] - base.offset]
+    for (let i = base.path.length + 1; i < pos.path.length; i++)
+      path.push(pos.path[i])
+    return new Pos(path, pos.offset)
+  } else {
+    return new Pos([], pos.offset - base.offset)
+  }
+}
+
 export class PosMap {
-  constructor(moved, deleted, inserted) {
+  constructor(moved, replaced) {
     this.moved = moved || empty
-    this.deleted = deleted || empty
-    this.inserted = inserted || empty
+    this.replaced = replaced || empty
   }
 
   map(pos, bias = 0, back = false, offset = null) {
     if (!bias) bias = back ? -1 : 1
-    let inserted = back ? this.deleted : this.inserted
+
+    let repl = this.replaced
     if (offset)
-      return new MapResult(inserted[offset.rangeID].fromOffset(offset.offset))
+      return new MapResult(repl[offset.rangeID][back ? "before" : "after"].ref.extend(offset.offset))
 
-    let deleted = (back ? this.inserted : this.deleted)
-    for (let i = 0; i < deleted.length; i++) {
-      let range = deleted[i], front, back
-      if ((front = pos.cmp(range.from)) >= 0 &&
-          (back = pos.cmp(range.to)) <= 0)
-        return new MapResult(bias < 0 ? range.refLeft : range.refRight,
-                             {rangeID: i, offset: range.getOffset(pos)},
-                             !!(front || back))
-    }
-
-    for (let i = 0; i < inserted.length; i++) {
-      let range = inserted[i]
-      if (pos.cmp(range.refLeft) == 0 ||
-          (range.refLeft != range.refRight && pos.cmp(range.refRight) == 0))
-        return new MapResult(bias < 0 ? range.from : range.to)
+    for (let i = 0; i < repl.length; i++) {
+      let range = repl[i], side = back ? range.after : range.before
+      let left, right
+      if ((left = pos.cmp(side.from)) >= 0 &&
+          (right = pos.cmp(side.to)) <= 0) {
+        let other = back ? range.before : range.after
+        return new MapResult(bias < 0 ? other.from : other.to,
+                             {rangeID: i, offset: offsetFrom(side.ref, pos)},
+                             !!(left || right))
+      }
     }
 
     for (let i = 0; i < this.moved.length; i++) {

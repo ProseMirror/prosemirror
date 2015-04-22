@@ -1,7 +1,7 @@
 import {Pos, Node, inline} from "../model"
 
 import {defineStep, Result, Step, Transform} from "./transform"
-import {PosMap, MovedRange, CollapsedRange} from "./map"
+import {PosMap, MovedRange, ReplacedRange} from "./map"
 import {copyTo} from "./tree"
 
 // FIXME supersede by replace?
@@ -28,8 +28,7 @@ defineStep("insert", {
 
     let sizeDiff = target.maxOffset - oldSize
     let map = new PosMap([new MovedRange(pos, oldSize - pos.offset, new Pos(pos.path, pos.offset + sizeDiff))],
-                         null,
-                         [new CollapsedRange(pos, pos.shift(sizeDiff), pos)])
+                         [new ReplacedRange(pos, pos, pos, pos.shift(sizeDiff))])
     return new Result(doc, copy, map)
   },
   invert(result, data) {

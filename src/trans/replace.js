@@ -1,7 +1,7 @@
 import {Pos, inline, slice} from "../model"
 
 import {defineStep, Result, Step, Transform} from "./transform"
-import {PosMap, MovedRange, CollapsedRange} from "./map"
+import {PosMap, MovedRange, ReplacedRange} from "./map"
 import {copyTo} from "./tree"
 
 function samePathDepth(a, b) {
@@ -114,8 +114,8 @@ defineStep("replace", {
     let {doc: out, moved} = replace(doc, data.from, data.to, root, data.param || nullRepl)
     if (!out) return null
     let end = moved.length ? moved[moved.length - 1].dest : data.to
-    let collapsed = new CollapsedRange(data.from, data.to, data.from, end)
-    return new Result(doc, out, new PosMap(moved, [collapsed]))
+    let replaced = new ReplacedRange(data.from, data.to, data.from, end, data.pos, data.pos)
+    return new Result(doc, out, new PosMap(moved, [replaced]))
   },
   invert(result, data) {
     let root = data.pos.path

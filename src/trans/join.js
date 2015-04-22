@@ -2,7 +2,7 @@ import {Pos, Node, inline} from "../model"
 
 import {defineStep, Result, Step, Transform} from "./transform"
 import {copyTo} from "./tree"
-import {PosMap, MovedRange, CollapsedRange} from "./map"
+import {PosMap, MovedRange, ReplacedRange} from "./map"
 
 defineStep("join", {
   apply(doc, data) {
@@ -25,7 +25,7 @@ defineStep("join", {
 
     let map = new PosMap([new MovedRange(data.to, after.maxOffset, data.from, "delete"),
                           new MovedRange(new Pos(targetPath, offset + 1), oldSize - offset - 1, new Pos(targetPath, offset))],
-                         [new CollapsedRange(data.from, data.to, data.from)])
+                         [new ReplacedRange(data.from, data.to, data.from, data.from, data.to.shorten())])
     return new Result(doc, copy, map)
   },
   invert: function(result, data) {
