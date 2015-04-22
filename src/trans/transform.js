@@ -58,16 +58,16 @@ export class Transform {
     return inverted
   }
 
-  map(pos, bias = 0, back = false, offsets = null) {
+  map(pos, bias = 0, back = false, offsets = null, from = null) {
     let storeOffsets = offsets === true && []
     let hasOffsets = !storeOffsets && offsets
     let deleted = false
-    for (let i = back ? this.steps.length - 1 : 0;
+    for (let i = from != null ? from : back ? this.steps.length - 1 : 0;
          back ? i >= 0 : i < this.steps.length;
          back ? i-- : i++) {
       let mapped = this.results[i].map.map(pos, bias, back, hasOffsets && hasOffsets[i])
       if (mapped.deleted) deleted = true
-      if (storeOffsets) storeOffsets.push(mapped.offset)
+      if (storeOffsets) storeOffsets[i] = mapped.offset
       pos = mapped.pos
     }
     return new MapResult(pos, storeOffsets, deleted)

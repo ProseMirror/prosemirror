@@ -70,7 +70,7 @@ export class PosMap {
         let other = back ? range.before : range.after
         return new MapResult(bias < 0 ? other.from : other.to,
                              {rangeID: i, offset: offsetFrom(side.ref, pos)},
-                             !!(left || right))
+                             !!(left && right))
       }
     }
 

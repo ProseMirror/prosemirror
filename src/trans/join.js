@@ -36,7 +36,7 @@ defineStep("join", {
 
 Transform.prototype.join = function(at) {
   let parent = this.doc.path(at.path)
-  if (at.offset == 0 || at.offset == parent.content.length) return []
+  if (at.offset == 0 || at.offset == parent.content.length) return this
   this.step("join", new Pos(at.path.concat(at.offset - 1), parent.content[at.offset - 1].maxOffset),
             new Pos(at.path.concat(at.offset), 0))
   return this

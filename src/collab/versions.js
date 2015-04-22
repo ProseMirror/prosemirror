@@ -1,12 +1,11 @@
 import {xorIDs} from "./id"
 
 export class Transition {
-  constructor(id, baseID, clientID, params, result) {
+  constructor(id, baseID, clientID, transform) {
     this.id = id
     this.baseID = baseID
     this.clientID = clientID
-    this.params = params
-    this.result = result
+    this.transform = transform
   }
 }
 

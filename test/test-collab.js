@@ -1,9 +1,8 @@
 import {Transition, VersionStore} from "../src/collab/versions"
 import {mergeChangeSets, mapPosition, rebaseChanges} from "../src/collab/rebase"
 import {nullID, xorIDs, randomID} from "../src/collab/id"
-import {Pos, style} from "../src/model"
-import {applyStep, insertText, wrapRange, remove, joinNodes,
-        addStyle, removeStyle, replace, insertNode} from "../src/transform"
+import {Pos, Node, style} from "../src/model"
+import {T} from "../src/trans"
 
 import {doc, blockquote, h1, p, li, ol, ul, em, a, br} from "./build"
 import Failure from "./failure"
@@ -49,53 +48,52 @@ function asPos(doc, val) {
 }
 
 function text(pos, text) {
-  return doc => insertText(asPos(doc, pos), text)
+  return tr => tr.insertText(asPos(tr.doc, pos), text)
 }
 function wrap(from, to, type, attrs) {
-  return doc => wrapRange(doc, asPos(doc, from), asPos(doc, to), type, attrs)
+  return tr => tr.wrap(asPos(tr.doc, from), asPos(tr.doc, to), new Node(type, null, attrs))
 }
 function rm(from, to) {
-  return doc => remove(doc, asPos(doc, from), asPos(doc, to))
+  return tr => tr.delete(asPos(tr.doc, from), asPos(tr.doc, to))
 }
 function join(pos) {
-  return doc => joinNodes(doc, asPos(doc, pos))
+  return tr => tr.join(asPos(tr.doc, pos))
 }
 function addSt(from, to, st) {
-  return doc => addStyle(asPos(doc, from), asPos(doc, to), st)
+  return tr => tr.addStyle(asPos(tr.doc, from), asPos(tr.doc, to), st)
 }
 function rmSt(from, to, st) {
-  return doc => removeStyle(asPos(doc, from), asPos(doc, to), st)
+  return tr => tr.removeStyle(asPos(tr.doc, from), asPos(tr.doc, to), st)
 }
 function repl(from, to, source, start, end) {
-  return doc => replace(doc, asPos(doc, from), asPos(doc, to), source, start, end)
+  return tr => tr.replace(asPos(tr.doc, from), asPos(tr.doc, to), source, start, end)
 }
 function addNode(pos, type, attrs) {
-  return doc => insertNode(doc, asPos(doc, pos), {type: type, attrs: attrs})
+  return tr => tr.insert(asPos(tr.doc, pos), new Node(type, null, attrs))
 }
 
 function runRebase(startDoc, clients, result) {
   let store = new VersionStore
   store.storeVersion(nullID, null, startDoc)
-  let allChanges = []
-  clients.forEach((transforms, clientID) => {
+  let allTransitions = []
+  clients.forEach((changes, clientID) => {
     let doc = startDoc, id = nullID
     let tags = doc.tag
-    let changes = transforms.map(params => {
+    let transitions = changes.map(change => {
       let tID = randomID()
-      params = params(doc)
-      let result = applyStep(doc, params)
-      let tr = new Transition(tID, id, clientID, params, result)
+      let transform = change(T(doc))
+      let transition = new Transition(tID, id, clientID, transform)
       id = xorIDs(id, tID)
-      store.storeVersion(id, tr.baseID, result.doc)
-      store.storeTransition(tr)
-      doc = result.doc
-      tags = doc.tag = mapObj(tags, (_, value) => result.map(value))
-      return tr
+      store.storeVersion(id, transition.baseID, transform.doc)
+      store.storeTransition(transition)
+      doc = transform.doc
+      tags = doc.tag = mapObj(tags, (_, value) => transform.mapSimple(value))
+      return transition
     })
-    allChanges = mergeChangeSets(allChanges, changes)
+    allTransitions = mergeChangeSets(allTransitions, transitions)
   })
 
-  let rebased = rebaseChanges(nullID, allChanges, store)
+  let rebased = rebaseChanges(nullID, allTransitions, store)
   cmpNode(rebased.doc, result)
   for (let tag in startDoc.tag) {
     let mapped = mapPosition([], rebased.forward, startDoc.tag[tag])
@@ -172,10 +170,10 @@ rebase("delete_twice",
        doc(p("hello<1><3>!")))
 
 rebase$("join",
-        doc(ul(li(p("one")), li(p("<1>tw<2>o")))),
+        doc(ul(li(p("one")), "<1>", li(p("tw<2>o")))),
         [text("2", "A")],
         [join("1")],
-        doc(ul(li(p("one"), p("<1>twA<2>o")))))
+        doc(ul(li(p("one"), p("twA<2>o")))))
 
 rebase$("style",
         doc(p("hello <1>wo<2>rld<3>")),
@@ -184,10 +182,10 @@ rebase$("style",
         doc(p("hello <1>", em("wo_<2>rld<3>"))))
 
 rebase("style_unstyle",
-       doc(p("hello <1>world<2>")),
+       doc(p(em("<1>hello"), " world<2>")),
        [addSt("1", "2", style.em)],
        [rmSt("1", "2", style.em)],
-       doc(p("hello <1>world<2>")))
+       doc(p("<1>hello", em(" world<2>"))))
 
 rebase("unstyle_style",
        doc(p("hello ", em("<1>world<2>"))),
