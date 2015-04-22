@@ -1,10 +1,11 @@
 import {MapResult, nullMap} from "./map"
 
 export class Step {
-  constructor(name, from, to, param = null) {
+  constructor(name, from, to, pos, param = null) {
     this.name = name
     this.from = from
     this.to = to
+    this.pos = pos
     this.param = param
   }
 }
@@ -38,15 +39,16 @@ export class Transform {
     this.results = []
   }
 
-  step(step, from, to, param) {
+  step(step, from, to, pos, param) {
     if (typeof step == "string")
-      step = new Step(step, from, to, param)
+      step = new Step(step, from, to, pos, param)
     let result = applyStep(this.doc, step)
     if (result) {
       this.steps.push(step)
       this.results.push(result)
       this.doc = result.doc
     }
+    return result
   }
 
   invert() {

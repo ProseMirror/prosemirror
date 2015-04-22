@@ -88,7 +88,7 @@ export function isFlatRange(from, to) {
   if (from.path.length != to.path.length) return false
   for (let i = 0; i < from.path.length; i++)
     if (from.path[i] != to.path[i]) return false
-  return from.offset < to.offset
+  return from.offset <= to.offset
 }
 
 export function rangesBetween(doc, from, to, f) {

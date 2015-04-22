@@ -36,6 +36,10 @@ export default class Node {
       this.push(other.content[i])
   }
 
+  pushNodes(array) {
+    for (let i = 0; i < array.length; i++) this.push(array[i])
+  }
+
   slice(from, to = this.maxOffset) {
     if (from == to) return []
     if (!this.type.block) return this.content.slice(from, to)
@@ -77,6 +81,16 @@ export default class Node {
   path(path) {
     for (var i = 0, node = this; i < path.length; node = node.content[path[i]], i++) {}
     return node
+  }
+
+  pathNodes(path) {
+    let nodes = []
+    for (var i = 0, node = this;; i++) {
+      nodes.push(node)
+      if (i == path.length) break
+      node = node.content[path[i]]
+    }
+    return nodes
   }
 
   static compareMarkup(typeA, typeB, attrsA, attrsB) {

@@ -4,6 +4,8 @@ import {defineStep, Result, Step, Transform} from "./transform"
 import {PosMap, MovedRange, CollapsedRange} from "./map"
 import {copyTo, isFlatRange, rangesBetween} from "./tree"
 
+// FIXME supersede by replace?
+
 defineStep("delete", {
   apply(doc, data) {
     let from = data.from, to = data.to
@@ -25,15 +27,15 @@ defineStep("delete", {
   invert(result, data) {
     let from = data.from
     let parent = result.before.path(from.path)
-    return new Step("insert", from, null, parent.slice(from.offset, data.to.offset))
+    return new Step("insert", from, null, null, parent.slice(from.offset, data.to.offset))
   }
 })
 
-Transform.prototype.delete = function(from, to) {
+/*Transform.prototype.delete = function(from, to) {
   let steps = []
   rangesBetween(this.doc, from, to, (path, start, end) => {
     steps.unshift(new Step("delete", new Pos(path, start), new Pos(path, end)))
   })
   steps.forEach(s => this.step(s))
   return this
-}
+}*/

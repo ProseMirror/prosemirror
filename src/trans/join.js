@@ -29,7 +29,8 @@ defineStep("join", {
     return new Result(doc, copy, map)
   },
   invert: function(result, data) {
-    return new Step("split", data.from)
+    return new Step("split", data.from, null, null,
+                    result.before.path(data.to.path).copy())
   }
 })
 

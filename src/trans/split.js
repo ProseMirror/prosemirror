@@ -35,7 +35,7 @@ defineStep("split", {
 Transform.prototype.split = function(pos, depth = 1, nodeAfter = null) {
   if (depth == 0) return this
   for (let i = 0;; i++) {
-    this.step("split", pos, null, nodeAfter)
+    this.step("split", pos, null, null, nodeAfter)
     if (i == depth - 1) return this
     nodeAfter = null
     pos = pos.shorten(null, 1)

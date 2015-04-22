@@ -1,5 +1,5 @@
 import {style, Node} from "../src/model"
-import {T, applyStep, invertStep} from "../src/trans"
+import {T} from "../src/trans"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
@@ -336,8 +336,10 @@ type("only_clear_for_code_block",
 
 function repl(name, doc, source, expect) {
   defTest("replace__" + name, () => {
-    testTransform(doc, expect, T(doc).replace(doc.tag.a, doc.tag.b || doc.tag.a,
-                                              source, source && source.tag.a, source && source.tag.b))
+    let tr = source ? T(doc).replace(doc.tag.a, doc.tag.b || doc.tag.a,
+                                     source, source && source.tag.a, source && source.tag.b)
+                    : T(doc).delete(doc.tag.a, doc.tag.b)
+    testTransform(doc, expect, tr)
   })
 }
 
@@ -349,10 +351,14 @@ repl("add_paragraph",
      doc(p("hello<a>you")),
      doc("<a>", p("there"), "<b>"),
      doc(p("hello"), p("there"), p("<a>you")))
+repl("join_text",
+     doc(h1("he<a>llo"), p("arg<b>!")),
+     doc(p("1<a>2<b>3")),
+     doc(h1("he2!")))
 repl("match_list",
      doc(ol(li(p("one<a>")), li(p("three")))),
      doc(ol(li(p("<a>half")), li(p("two")), "<b>")),
-     doc(ol(li(p("onehalf")), li(p("two")), li(p("three")))))
+     doc(ol(li(p("onehalf")), li(p("two")), li(p()), li(p("three")))))
 repl("merge_block",
      doc(p("a<a>"), p("b"), p("<b>c")),
      null,
@@ -416,4 +422,4 @@ repl("lopsided",
 repl("deep_insert",
      doc(blockquote(blockquote(p("one"), p("tw<a>o"), p("t<b>hree<3>"), p("four<4>")))),
      doc(ol(li(p("hello<a>world")), li(p("bye"))), p("ne<b>xt")),
-     doc(blockquote(blockquote(p("one"), p("twworld")), ol(li(p("bye"))), p("ne<a><b>hree<3>"), blockquote(p("four<4>")))))
+     doc(blockquote(blockquote(p("one"), p("twworld"), ol(li(p("bye"))), p("ne<a><b>hree<3>"), p("four<4>")))))

@@ -63,7 +63,9 @@ defineStep("ancestor", {
       let parent = result.before.path(data.from.path.slice(0, data.from.path.length - i))
       wrappers.unshift(parent.copy())
     }
-    return new Step("ancestor", result.map.mapSimple(data.from), result.map.mapSimple(data.to, -1),
+    let newFrom = result.map.mapSimple(data.from)
+    let newTo = data.from.cmp(data.to) ? result.map.mapSimple(data.to, -1) : newFrom
+    return new Step("ancestor", newFrom, newTo, null,
                     {depth: data.param.wrappers ? data.param.wrappers.length : 0,
                      wrappers: wrappers})
   }
@@ -129,7 +131,7 @@ Transform.prototype.lift = function(from, to) {
     ++depth
   }
   this.step("ancestor", new Pos(range.path, range.from),
-            new Pos(range.path, range.to), {depth: depth})
+            new Pos(range.path, range.to), null, {depth: depth})
   return this
 }
 
@@ -141,7 +143,7 @@ Transform.prototype.wrap = function(from, to, node) {
   if (!around || !inside) return this
   let wrappers = around.map(t => new Node(t)).concat(node).concat(inside.map(t => new Node(t)))
   this.step("ancestor", new Pos(range.path, range.from), new Pos(range.path, range.to),
-            {wrappers: wrappers})
+            null, {wrappers: wrappers})
   if (inside.length) {
     let toInner = range.path.slice()
     for (let i = around.length + inside.length + 1; i > 0; i--)
@@ -158,7 +160,7 @@ Transform.prototype.setBlockType = function(from, to, wrapNode) {
     if (wrapNode.type.plainText && !isPlainText(node))
       this.clearMarkup(new Pos(path, 0), new Pos(path, node.size))
     this.step("ancestor", new Pos(path, 0), new Pos(path, node.size),
-              {depth: 1, wrappers: [wrapNode]})
+              null, {depth: 1, wrappers: [wrapNode]})
   })
   return this
 }

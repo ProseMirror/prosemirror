@@ -1,8 +1,8 @@
-import {Pos, Node, inline, slice} from "../model"
+import {Node, Pos, inline} from "../model"
 
-import {Transform} from "./transform"
-import {del} from "./delete"
-import {split} from "./split"
+import {defineStep, Result, Step, Transform} from "./transform"
+import {PosMap, MovedRange, CollapsedRange} from "./map"
+import {slice} from "../model"
 
 function samePathDepth(a, b) {
   for (let i = 0;; i++)
@@ -10,186 +10,231 @@ function samePathDepth(a, b) {
       return i
 }
 
-class Frontier {
-  constructor(doc, from, to) {
-    this.doc = doc
-    this.left = this.buildLeft(from)
-    this.right = this.buildRight(to)
-    let same = samePathDepth(from, to)
-    this.bottom = new Pos(from.path.slice(0, same),
-                          same == from.path.length ? from.offset : from.path[same] + 1)
-  }
-
-  buildLeft(pos) {
-    let frontier = []
-    for (let i = 0, node = this.doc;; i++) {
-      let last = i == pos.path.length
-      let n = last ? pos.offset : pos.path[i] + 1
-      frontier.push({node, pos: new Pos(pos.path.slice(0, i), n)})
-      if (last) return frontier
-      node = node.content[n - 1]
-    }
-  }
-
-  buildRight(pos) {
-    let nodes = []
-    for (let i = 0, node = this.doc;; i++) {
-      let last = i == pos.path.length
-      let n = last ? pos.offset : pos.path[i] + 1
-      nodes.push({node, from: n, atEnd: n == node.maxOffset})
-      if (last) return nodes
-      node = node.content[n - 1]
-    }
-  }
-
-  rightPos(depth) {
-    let pos = this.bottom
-    for (let i = this.botDepth; i < depth; i++)
-      pos = new Pos(pos.path.concat(pos.offset), 0)
-    return pos
-  }
-
-  get botDepth() {
-    return this.bottom.path.length
+function sizeBefore(node, at) {
+  if (node.type.block) {
+    let size = 0
+    for (let i = 0; i < at; i++) size += node.content[i].size
+    return size
+  } else {
+    return at
   }
 }
 
-function nodesLeft(doc, depth) {
-  let nodes = []
-  for (let node = doc, i = 0;; i++) {
-    nodes.push(node)
-    if (i == depth) return nodes
-    node = node.content[0]
+export function doReplace(doc, from, to, root, repl) {
+  // FIXME replace with a copyTo and inline code
+  function fill(node, depth) {
+    let copy = node.copy()
+    if (depth < root.length) {
+      copy.pushFrom(node)
+      let n = root[depth]
+      copy.content[n] = fill(copy.content[n], depth + 1)
+    } else {
+      let fromEnd = depth == from.path.length
+      let start = fromEnd ? from.offset : from.path[depth]
+      copy.pushNodes(node.slice(0, start))
+      if (!fromEnd) {
+        copy.push(slice.before(node.content[start], from, depth + 1))
+        ++start
+      } else {
+        start = copy.content.length
+      }
+      // FIXME verify that these fit here
+      copy.pushNodes(repl.nodes)
+      let end
+      if (depth == to.path.length) {
+        end = to.offset
+      } else {
+        let n = to.path[depth]
+        copy.push(slice.after(node.content[n], to, depth + 1))
+        end = n + 1
+      }
+      copy.pushNodes(node.slice(end))
+
+      let rightEdge = start + repl.nodes.length, startLen = copy.content.length
+      if (repl.nodes.length)
+        mendLeft(copy, start, depth, repl.openLeft)
+      mendRight(copy, rightEdge + (copy.content.length - startLen), root,
+                repl.nodes.length ? repl.openRight : from.path.length - depth)
+    }
+    return copy
   }
+
+  function mendLeft(node, at, depth, open) {
+    if (node.type.block)
+      return inline.stitchTextNodes(node, at)
+
+    if (open == 0 || depth == from.path.length) return
+
+    let before = node.content[at - 1], after = node.content[at]
+    if (before.sameMarkup(after)) {
+      let oldSize = before.content.length
+      before.pushFrom(after)
+      node.content.splice(at, 1)
+      mendLeft(before, oldSize, depth + 1, open - 1)
+    }
+  }
+
+  var moved = []
+  function addMoved(start, size, dest) {
+    if (start.cmp(dest))
+      moved.push(new MovedRange(start, size, dest))
+  }
+
+  function mendRight(node, at, path, open) {
+    let toEnd = path.length == to.path.length
+    let after = node.content[at], before
+
+    let sBefore = toEnd ? sizeBefore(node, at) : at + 1
+    let movedStart = toEnd ? to : to.shorten(path.length, 1)
+    let movedSize = node.maxOffset - sBefore
+
+    if (!toEnd && open > 0 && (before = node.content[at - 1]).sameMarkup(after)) {
+      after.content = before.content.concat(after.content)
+      node.content.splice(at - 1, 1)
+      addMoved(movedStart, movedSize, new Pos(path, sBefore - 1))
+      mendRight(after, before.content.length, path.concat(at - 1), open - 1)
+    } else {
+      if (node.type.block) inline.stitchTextNodes(node, at)
+      addMoved(movedStart, movedSize, new Pos(path, sBefore))
+      if (!toEnd) mendRight(after, 0, path.concat(at), 0)
+    }
+  }
+
+  return {doc: fill(doc, 0), moved}
 }
 
-function matchInsertedContent(frontier, open, same) {
-  let matches = [], searchLeft = frontier.left.length - 1, searchRight = open.length - 1
-  let inner = open[searchRight]
-  if (inner.type.block && inner.size &&
-      frontier.left[searchLeft].node.type.block) {
-    matches.push({source: searchRight, target: searchLeft, nodes: inner.content, size: inner.size})
-    searchLeft--
-    open[--searchRight].content.shift()
+const nullRepl = {nodes: [], openLeft: 0, openRight: 0}
+
+defineStep("replace", {
+  apply(doc, data) {
+    let root = data.pos.path
+    if (data.from.path.length < root.length || data.to.path.length < root.length)
+      return null
+    for (let i = 0; i < root.length; i++)
+      if (data.from.path[i] != root[i] || data.to.path[i] != root[i]) return null
+
+    let {doc: out, moved} = doReplace(doc, data.from, data.to, root, data.param || nullRepl)
+    let end = moved.length ? moved[moved.length - 1].dest : data.to
+    let collapsed = new CollapsedRange(data.from, data.to, data.from, end)
+    return new Result(doc, out, new PosMap(moved, [collapsed]))
+  },
+  invert(result, data) {
+    let root = data.pos.path
+    let between = slice.between(result.before, data.from, data.to, false)
+    return new Step("replace", data.from, result.map.mapSimple(data.to), data.from.shorten(root.length), {
+      nodes: between.path(root).content,
+      openLeft: data.from.path.length - root.length,
+      openRight: data.to.path.length - root.length
+    })
   }
+})
+
+function buildInserted(nodesLeft, source, start, end) {
+  let sliced = slice.between(source, start, end, false)
+  let nodesRight = []
+  for (let node = sliced, i = 0; i <= start.path.length; i++, node = node.content[0])
+    nodesRight.push(node)
+  let same = samePathDepth(start, end)
+  let searchLeft = nodesLeft.length - 1, searchRight = nodesRight.length - 1
+  let result = null
+
+  let inner = nodesRight[searchRight]
+  if (inner.type.block && inner.size && nodesLeft[searchLeft].type.block) {
+    result = nodesLeft[searchLeft--].copy(inner.content)
+    nodesRight[--searchRight].content.shift()
+  }
+
   for (;;) {
-    let node = open[searchRight], type = node.type, found = null
+    let node = nodesRight[searchRight], type = node.type, matched = null
     let outside = searchRight <= same
     for (let i = searchLeft; i >= 0; i--) {
-      let left = frontier.left[i].node
+      let left = nodesLeft[i]
       if (outside ? left.type.contains == type.contains : left.type == type) {
-        found = i
+        matched = i
         break
       }
     }
-    if (found != null && node.content.length) {
-      matches.push({source: searchRight, target: found,
-                    nodes: node.content, size: node.content.length})
-      searchLeft = found - 1
+    if (matched != null) {
+      if (!result) {
+        result = nodesLeft[matched].copy(node.content)
+        searchLeft = matched - 1
+      } else {
+        while (searchLeft >= matched)
+          result = nodesLeft[searchLeft--].copy([result])
+        result.pushFrom(node)
+      }
     }
-    if (found != null || node.content.length == 0) {
+    if (matched != null || node.content.length == 0) {
       if (outside) break
-      open[searchRight - 1].content.shift()
+      if (searchRight) nodesRight[searchRight - 1].content.shift()
     }
     searchRight--
   }
-  return matches
+
+  let repl = {nodes: result ? result.content : [],
+              openLeft: start.path.length - searchRight,
+              openRight: end.path.length - searchRight}
+  return {repl, depth: searchLeft + 1}
 }
 
-function addInsertedContent(frontier, tr, source, start, end) {
-  let remainder = slice.between(source, start, end)
-  let nodes = nodesLeft(remainder, start.path.length)
-  let sameInner = samePathDepth(start, end)
-  let matches = matchInsertedContent(frontier, nodes, sameInner)
+function moveText(tr, doc, before, after) {
+  let root = samePathDepth(before, after)
+  let cutAt = after.shorten(null, 1)
+  while (cutAt.path.length > root && doc.path(cutAt.path).content.length == 1)
+    cutAt = cutAt.shorten(null, 1)
+  tr.split(cutAt, cutAt.path.length - root)
+  let start = after, end = new Pos(start.path, doc.path(start.path).maxOffset)
+  let parent = doc.path(start.path.slice(0, root))
+  let wanted = parent.pathNodes(before.path.slice(root))
+  let existing = parent.pathNodes(start.path.slice(root))
+  while (wanted.length && existing.length && wanted[0].sameMarkup(existing[0])) {
+    wanted.shift()
+    existing.shift()
+  }
+  if (existing.length || wanted.length)
+    tr.step("ancestor", start, end, null, {depth: existing.length, wrappers: wanted})
+  for (let i = root; i < before.path.length; i++)
+    tr.join(before.shorten(i, 1))
+}
 
-  for (let i = 0; i < matches.length; i++) {
-    let match = matches[i]
-    let pos = frontier.left[match.target].pos
-    if (match.target < frontier.botDepth) {
-      tr.split(frontier.bottom, frontier.botDepth - match.target)
-      pos = frontier.bottom = frontier.bottom.shorten(match.target, 1)
+Transform.prototype.delete = function(from, to) {
+  this.replace(from, to)
+  return this
+}
+
+Transform.prototype.replace = function(from, to, source, start, end) {
+  let repl, depth, doc = this.doc
+  if (source) {
+    ;({repl, depth}) = buildInserted(doc.pathNodes(from.path), source, start, end)
+  } else {
+    repl = nullRepl
+    depth = samePathDepth(from, to)
+  }
+  let root = from.shorten(depth)
+  let result = this.step("replace", from, to, root, repl)
+
+  // If no text nodes before or after end of replacement, don't glue text
+  if (!doc.path(to.path).type.block) return this
+  if (!(repl.nodes.length ? source.path(end.path).type.block : doc.path(from.path).type.block)) return this
+
+  let nodesAfter = doc.path(root.path).pathNodes(to.path.slice(depth)).slice(1)
+  let nodesBefore
+  if (repl.nodes.length) {
+    let inserted = repl.nodes
+    nodesBefore = []
+    for (let i = 0; i < repl.openRight; i++) {
+      let last = inserted[inserted.length - 1]
+      nodesBefore.push(last)
+      inserted = last.content
     }
-    tr.step("insert", pos, null, match.nodes)
-    if (match.target == frontier.botDepth)
-      frontier.bottom = frontier.bottom.shift(match.size)
+  } else {
+    nodesBefore = doc.path(root.path).pathNodes(from.path.slice(depth)).slice(1)
   }
-
-  let lastMatch = matches[matches.length - 1]
-  let depth = end.path.length
-  if (matches.length > 1) depth = Math.min(depth, matches[matches.length - 2].source)
-
-  frontier.left.length = frontier.botDepth + 1
-  let ref = frontier.bottom
-  for (let i = lastMatch.source + 1, node = nodes[lastMatch.source + 1]; i <= depth; i++) {
-    let newRef = new Pos(ref.path.concat(ref.offset - 1), node.maxOffset)
-    frontier.left.push({node, pos: newRef})
-    node = node.content[newRef.offset]
-    ref = newRef
+  if (nodesAfter.length != nodesBefore.length ||
+      !nodesAfter.every((n, i) => n.sameMarkup(nodesBefore[i]))) {
+    let after = result.map.mapSimple(to)
+    let before = Pos.before(result.doc, after.shorten(null, 0))
+    moveText(this, result.doc, before, after)
   }
-}
-
-function joinFrontier(frontier, tr, upto) {
-  for (let i = frontier.botDepth + 1; i < upto; i++) {
-    let left = frontier.left[i].pos, last = left.path.length - 1
-    let right = new Pos(left.path.slice(0, last).concat(left.path[last] + 1), 0)
-    tr.step("join", left, right)
-  }
-}
-
-function moveTextAcross(frontier, tr) {
-  let depth = frontier.right.length
-  let textStart = frontier.rightPos(depth - 1)
-  let info = frontier.right[frontier.right.length - 1]
-  let textEnd = textStart.shift(info.node.maxOffset - info.from)
-  tr.split(textEnd, depth - frontier.botDepth - 1)
-  let stack = []
-  for (let i = frontier.botDepth + 1; i < frontier.left.length; i++) {
-    if (stack.length > 0 || i >= frontier.right.path ||
-        !frontier.left[i].node.sameMarkup(frontier.right[i].node))
-      stack.push(frontier.left[i].node.copy())
-  }
-  tr.step("ancestor", textStart, textEnd,
-          {depth: frontier.right.length - (frontier.left.length - stack.length),
-           wrappers: stack})
-
-  joinFrontier(frontier, tr, frontier.left.length)
-  frontier.left.pop()
-  frontier.right.pop()
-}
-
-Transform.prototype.replace = function(from, to, source = null, start = null, end = null) {
-  let frontier = new Frontier(this.doc, from, to)
-  this.delete(from, to)
-
-  // If there's a source to replace the range with, insert it,
-  // updating the frontier's bottom and left side to reflect the
-  // inserted content.
-  if (source && start.cmp(end) < 0)
-    addInsertedContent(frontier, this, source, start, end)
-
-  // Figure out which nodes along the frontier can be joined
-  let joinTo = frontier.botDepth
-  while (joinTo < frontier.left.length - 1 && joinTo < frontier.right.length - 1 &&
-         frontier.left[joinTo + 1].node.sameMarkup(frontier.right[joinTo + 1].node))
-    ++joinTo
-
-  // If there's inline content at the left and right of the frontier,
-  // move it from the right to the left so that the blocks are joined
-  if (joinTo < frontier.right.length - 1 &&
-      frontier.left[frontier.left.length - 1].node.type.block &&
-      frontier.right[frontier.right.length - 1].node.type.block &&
-      !frontier.right[frontier.right.length - 1].atEnd)
-    moveTextAcross(frontier, this)
-
-  // And which pieces are the cut are empty, and may be deleted
-  let delAt = frontier.right.length
-  while (delAt > joinTo && frontier.right[delAt - 1].atEnd) --delAt
-
-  if (delAt < frontier.right.length) {
-    let delPos = frontier.rightPos(delAt - 1)
-    this.step("delete", delPos, delPos.shift(1))
-  }
-  joinFrontier(frontier, this, joinTo + 1)
-
   return this
 }

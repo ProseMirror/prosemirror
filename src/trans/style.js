@@ -15,7 +15,7 @@ defineStep("addStyle", {
     }))
   },
   invert(result, data) {
-    return new Step("removeStyle", data.from, result.map.mapSimple(data.to), data.param)
+    return new Step("removeStyle", data.from, result.map.mapSimple(data.to), null, data.param)
   }
 })
 
@@ -32,14 +32,14 @@ Transform.prototype.addStyle = function(from, to, st) {
         if (removing && style.same(removing.param, rm)) {
           removing.to = new Pos(path, end)
         } else {
-          removing = new Step("removeStyle", new Pos(path, start), new Pos(path, end), rm)
+          removing = new Step("removeStyle", new Pos(path, start), new Pos(path, end), null, rm)
           removed.push(removing)
         }
       }
       if (adding) {
         adding.to = new Pos(path, end)
       } else {
-        adding = new Step("addStyle", new Pos(path, start), new Pos(path, end), st)
+        adding = new Step("addStyle", new Pos(path, start), new Pos(path, end), null, st)
         added.push(adding)
       }
     }
@@ -59,7 +59,7 @@ defineStep("removeStyle", {
     }))
   },
   invert(result, data) {
-    return new Step("addStyle", data.from, result.map.mapSimple(data.to), data.param)
+    return new Step("addStyle", data.from, result.map.mapSimple(data.to), null, data.param)
   }
 })
 
@@ -93,7 +93,7 @@ Transform.prototype.removeStyle = function(from, to, st = null) {
       }
     }
   })
-  matched.forEach(m => this.step("removeStyle", m.from, m.to, m.style))
+  matched.forEach(m => this.step("removeStyle", m.from, m.to, null, m.style))
   return this
 }
 

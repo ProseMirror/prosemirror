@@ -4,6 +4,8 @@ import {defineStep, Result, Step, Transform} from "./transform"
 import {PosMap, MovedRange, CollapsedRange} from "./map"
 import {copyTo} from "./tree"
 
+// FIXME supersede by replace?
+
 defineStep("insert", {
   apply(doc, data) {
     let pos = data.from, nodes = data.param
@@ -37,7 +39,7 @@ defineStep("insert", {
 
 Transform.prototype.insert = function(pos, nodes) {
   if (!Array.isArray(nodes)) nodes = [nodes]
-  this.step("insert", pos, null, nodes)
+  this.step("insert", pos, null, null, nodes)
   return this
 }
 
@@ -45,7 +47,7 @@ Transform.prototype.insertInline = function(pos, nodes) {
   if (!Array.isArray(nodes)) nodes = [nodes]
   let styles = inline.inlineStylesAt(this.doc, pos)
   let nodes = nodes.map(n => new Node.Inline(n.type, styles, n.text, n.attrs))
-  this.step("insert", pos, null, nodes)
+  this.step("insert", pos, null, null, nodes)
   return this
 }
 
