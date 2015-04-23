@@ -206,12 +206,17 @@ Transform.prototype.delete = function(from, to) {
 }
 
 Transform.prototype.replace = function(from, to, source, start, end) {
-  let repl, depth, doc = this.doc
+  let repl, depth, doc = this.doc, maxDepth = samePathDepth(from, to)
   if (source) {
     ;({repl, depth}) = buildInserted(doc.pathNodes(from.path), source, start, end)
+    while (depth > maxDepth) {
+      repl = {nodes: [doc.path(from.path.slice(0, depth)).copy(repl.nodes)],
+              openLeft: repl.openLeft + 1, openRight: repl.openRight + 1}
+      depth--
+    }
   } else {
     repl = nullRepl
-    depth = samePathDepth(from, to)
+    depth = maxDepth
   }
   let root = from.shorten(depth)
   let result = this.step("replace", from, to, root, repl)

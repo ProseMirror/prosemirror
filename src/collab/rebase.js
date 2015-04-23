@@ -48,7 +48,7 @@ function mapTransform(back, forward, transform) {
 
   let allDeleted
   function map(pos, bias) {
-    let local = transform.map(pos, -bias, true, true, result.length)
+    let local = transform.map(pos, -bias, true, true, result.length - 1)
     let other = mapPosition(back, forward, local.pos, bias)
     let end = result.map(other.pos, bias, false, local.offsets)
     if (!other.deleted && !end.deleted) allDeleted = false

@@ -175,11 +175,11 @@ rebase$("join",
         [join("1")],
         doc(ul(li(p("one"), p("twA<2>o")))))
 
-rebase$("style",
-        doc(p("hello <1>wo<2>rld<3>")),
-        [addSt("1", "3", style.em)],
-        [text("2", "_")],
-        doc(p("hello <1>", em("wo_<2>rld<3>"))))
+rebase("style",
+       doc(p("hello <1>wo<2>rld<3>")),
+       [addSt("1", "3", style.em)],
+       [text("2", "_")],
+       doc(p("hello <1>", em("wo"), "_<2>", em("rld<3>"))))
 
 rebase("style_unstyle",
        doc(p(em("<1>hello"), " world<2>")),
@@ -188,10 +188,10 @@ rebase("style_unstyle",
        doc(p("<1>hello", em(" world<2>"))))
 
 rebase("unstyle_style",
-       doc(p("hello ", em("<1>world<2>"))),
+       doc(p("<1>hello ", em("world<2>"))),
        [rmSt("1", "2", style.em)],
        [addSt("1", "2", style.em)],
-       doc(p("hello ", em("<1>world<2>"))))
+       doc(p(em("<1>hello "), "world<2>")))
 
 rebase("replace_nested",
        doc(p("b<before>efore"), blockquote(ul(li(p("o<1>ne")), li(p("t<2>wo")), li(p("thr<3>ee")))), p("a<after>fter")),
@@ -209,17 +209,17 @@ rebase("double_remove",
        doc(p("a"), "<1>", p("b"), "<2>", p("c")),
        [rm("1", "2")],
        [rm("1", "2")],
-       doc(p("a"), p("<1><2>c")))
+       doc(p("a"), "<1><2>", p("c")))
 
 rebase$("edit_in_removed",
         doc(p("a"), "<1>", p("b<2>"), "<3>", p("c")),
         [rm("1", "3")],
         [text("2", "ay")],
-        doc(p("a"), p("<1><3>c")))
+        doc(p("a"), "<1><3>", p("c")))
 
 rebase("double_insert",
        doc(p("a"), "<1>", p("b")),
        [addNode("1", "paragraph")],
        [addNode("1", "paragraph")],
-       doc(p("a"), p(), p(), p("<1>b")))
+       doc(p("a"), p(), p(), "<1>", p("b")))
 
