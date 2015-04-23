@@ -1,114 +1,81 @@
-import {Pos, Node} from "../model"
+import {MapResult, nullMap} from "./map"
 
-export class Chunk {
-  constructor(start, size) {
-    this.start = start
-    this.size = size
-  }
-}
-
-export class MovedChunk extends Chunk {
-  constructor(start, size, dest) {
-    super(start, size)
-    this.dest = dest
-  }
-}
-
-export class Collapsed {
-  constructor(from, to, ref) {
+export class Step {
+  constructor(name, from, to, pos, param = null) {
+    this.name = name
     this.from = from
     this.to = to
-    this.ref = ref
-    this.chunks = []
-  }
-  chunk(start, size) {
-    this.chunks.push(new Chunk(start, size))
+    this.pos = pos
+    this.param = param
   }
 }
 
-function findInChunks(pos, chunks, back) {
-  for (let i = 0; i < chunks.length; i++) {
-    let chunk = chunks[i], start = back ? chunk.dest : chunk.start
-    if (pos.cmp(start) >= 0 &&
-        Pos.cmp(pos.path, pos.offset, start.path, start.offset + chunk.size) <= 0)
-      return i
-  }
+const steps = Object.create(null)
+
+export function defineStep(name, impl) { steps[name] = impl }
+
+export function applyStep(doc, step) {
+  if (!(step.name in steps))
+    throw new Error("Undefined transform " + transform.name)
+  return steps[step.name].apply(doc, step)
+}
+
+export function invertStep(result, step) {
+  return steps[step.name].invert(result, step)
 }
 
 export class Result {
-  constructor(before, after) {
+  constructor(before, after = before, map = nullMap) {
     this.before = before
     this.doc = after
-    this.chunks = []
-    this.inserted = this.deleted = null
+    this.map = map
+  }
+}
+
+export class Transform {
+  constructor(doc) {
+    this.before = this.doc = doc
+    this.steps = []
+    this.results = []
   }
 
-  chunk(before, size, after) {
-    if (before.cmp(after))
-      this.chunks.push(new MovedChunk(before, size, after))
-  }
-
-  mapDir(pos, back, offset) {
-    let deleted = (back ? this.inserted : this.deleted)
-    let inserted = (back ? this.deleted : this.inserted)
-
-    if (offset && offset.chunkID != null && inserted)
-      return inserted.chunks[offset.chunkID].start.extend(offset.offset)
-
-    if (deleted) {
-      let front = pos.cmp(deleted.from), back = pos.cmp(deleted.to)
-      if (front >= 0 && back <= 0) {
-        if (offset) {
-          let found = findInChunks(pos, deleted.chunks, false)
-          if (found == null) throw new Error("Deleted chunks don't cover deleted area")
-          offset({chunkID: found,
-                  offset: pos.baseOn(deleted.chunks[found].start),
-                  inside: !!(front && back)})
-        }
-        return deleted.ref
-      }
+  step(step, from, to, pos, param) {
+    if (typeof step == "string")
+      step = new Step(step, from, to, pos, param)
+    let result = applyStep(this.doc, step)
+    if (result) {
+      this.steps.push(step)
+      this.results.push(result)
+      this.doc = result.doc
     }
-
-    let found = findInChunks(pos, this.chunks, back)
-    if (found == null) return pos
-
-    let chunk = this.chunks[found]
-    let start = back ? chunk.dest : chunk.start, dest = back ? chunk.start : chunk.dest
-    let depth = start.path.length
-    if (pos.path.length > depth) {
-      let offset = dest.offset + (pos.path[depth] - start.offset)
-      return new Pos(dest.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset)
-    } else {
-      return new Pos(dest.path, dest.offset + (pos.offset - start.offset))
-    }
+    return result
   }
 
-  map(pos, offset = null) { return this.mapDir(pos, false, offset) }
-  mapBack(pos, offset = null) { return this.mapDir(pos, true, offset) }
+  invert() {
+    let inverted = new Transform(this.doc)
+    for (let i = this.steps.length - 1; i >= 0; i--)
+      inverted.step(invertStep(this.results[i], this.steps[i]))
+    return inverted
+  }
+
+  map(pos, bias = 0, back = false, offsets = null, from = null) {
+    let storeOffsets = offsets === true && []
+    let hasOffsets = !storeOffsets && offsets
+    let deleted = false
+    for (let i = from != null ? from : back ? this.steps.length - 1 : 0;
+         back ? i >= 0 : i < this.steps.length;
+         back ? i-- : i++) {
+      let mapped = this.results[i].map.map(pos, bias, back, hasOffsets && hasOffsets[i])
+      if (mapped.deleted) deleted = true
+      if (storeOffsets) storeOffsets[i] = mapped.offset
+      pos = mapped.pos
+    }
+    return new MapResult(pos, storeOffsets, deleted)
+  }
+
+  mapSimple(pos, bias = 0, back = false) {
+    return this.map(pos, bias, back).pos
+  }
 }
 
-const transforms = Object.create(null)
-
-export function defineTransform(name, impl) {
-  transforms[name] = impl
-}
-
-defineTransform("null", {
-  apply(doc) { return flatTransform(doc) },
-  invert(_, params) { return params }
-})
-
-export function applyTransform(doc, params) {
-  let impl = transforms[params.name]
-  if (!impl) throw new Error("Undefined transform " + params.name)
-  return impl.apply(doc, params)
-}
-
-export function invertTransform(result, params) {
-  if (result.doc == result.before) return {name: "null"}
-  return transforms[params.name].invert(result, params)
-}
-
-export function flatTransform(doc, result) {
-  return new Result(doc, result || doc)
-}
+export function Tr(doc) { return new Transform(doc) }

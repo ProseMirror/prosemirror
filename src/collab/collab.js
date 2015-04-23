@@ -1,7 +1,7 @@
 import {defineOption, Range} from "../edit"
-import {applyTransform} from "../transform"
+import {Tr} from "../transform"
 import {randomID, xorIDs, nullID} from "./id"
-import {paramsToJSON, paramsFromJSON} from "./json"
+import {stepsToJSON, stepsFromJSON} from "./json"
 import {mergeChangeSets, rebaseChanges, mapPosition} from "./rebase"
 import {Transition, VersionStore} from "./versions"
 
@@ -30,17 +30,17 @@ class Collab {
     this.store = new VersionStore
     this.store.storeVersion(this.versionID, null, pm.doc)
 
-    pm.on("transform", (params, result) => {
+    pm.on("transform", transform => {
       let id = randomID()
       this.toSend.push({
         base: this.versionID,
         id: id,
         by: this.clientID,
-        params: paramsToJSON(params)
+        steps: stepsToJSON(transform.steps)
       })
       let newID = xorIDs(this.versionID, id)
-      this.store.storeVersion(newID, this.versionID, result.doc)
-      let change = new Transition(id, this.versionID, this.clientID, params, result)
+      this.store.storeVersion(newID, this.versionID, transform.doc)
+      let change = new Transition(id, this.versionID, this.clientID, transform)
       this.store.storeTransition(change)
       this.versionID = newID
 
@@ -74,12 +74,12 @@ class Collab {
     // Pump changes into our version store
     for (let i = 0; i < data.length; i++) {
       let json = data[i]
-      let params = paramsFromJSON(json.params)
-      let result = applyTransform(this.store.getVersion(json.base), params)
-      let tr = new Transition(json.id, json.base, json.by, params, result)
+      let transform = Tr(this.store.getVersion(json.base))
+      stepsFromJSON(json.steps).forEach(s => transform.step(s))
+      let tr = new Transition(json.id, json.base, json.by, transform)
       newTransitions.push(tr)
       let newID = xorIDs(json.base, tr.id)
-      this.store.storeVersion(newID, json.base, result.doc)
+      this.store.storeVersion(newID, json.base, transform.doc)
       this.store.storeTransition(tr)
     }
 

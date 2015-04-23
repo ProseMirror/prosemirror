@@ -117,6 +117,10 @@ export default class Node {
     else
       return new Node(json.type, maybeEmpty(json.content.map(n => Node.fromJSON(n))), maybeNull(json.attrs))
   }
+
+  static text(text, styles) {
+    return new InlineNode(nodeTypes.text, styles, text)
+  }
 }
 
 Node.empty = [] // Reused empty array for collections that are guaranteed to remain empty
@@ -171,8 +175,6 @@ class InlineNode extends Node {
 }
 
 Node.Inline = InlineNode
-
-Node.text = (text, styles) => new InlineNode(nodeTypes.text, styles, text)
 
 const nullAttrs = Node.nullAttrs = {}
 

@@ -34,6 +34,18 @@ defineStep("join", {
   }
 })
 
+export function joinPoint(doc, pos) {
+  let joinDepth = -1
+  for (let i = 0, parent = doc; i <= pos.path.length; i++) {
+    let index = i == pos.path.length ? pos.offset : pos.path[i]
+    let type = parent.content[index].type
+    if (index > 0 && parent.content[index - 1].type == type && type.contains != "inline")
+      joinDepth = i
+    parent = parent.content[index]
+  }
+  if (joinDepth > -1) return pos.shorten(joinDepth)
+}
+
 Transform.prototype.join = function(at) {
   let parent = this.doc.path(at.path)
   if (at.offset == 0 || at.offset == parent.content.length) return this

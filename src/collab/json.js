@@ -1,27 +1,39 @@
 import {Pos, Node} from "../model"
+import {Step} from "../transform"
 
-// FIXME minimize (slice) source documents in "replace" queries
+export function stepsToJSON(steps) {
+  return steps.map(step => ({
+    name: step.name,
+    from: step.from,
+    to: step.to,
+    pos: step.pos,
+    param: objectToJSON(step.param)
+  }))
+}
 
-export function paramsToJSON(params) {
+function objectToJSON(obj) {
+  if (!obj || typeof obj != "object") return obj
+  if (Array.isArray(obj)) return obj.map(objectToJSON)
+  if (obj.toJSON) return obj.toJSON()
   let result = {}
-  for (let prop in params) {
-    let value = params[prop]
-    if (value == null) continue
-    if (value.toJSON) value = value.toJSON()
-    result[prop] = value
-  }
+  for (let prop in obj) result[prop] = objectToJSON(obj[prop])
   return result
 }
 
-export function paramsFromJSON(json) {
+export function stepsFromJSON(json) {
+  return json.map(step => new Step(
+    step.name,
+    step.from && Pos.fromJSON(step.from),
+    step.to && Pos.fromJSON(step.to),
+    step.pos && Pos.fromJSON(step.pos),
+    objectFromJSON(step.param)))
+}
+
+function objectFromJSON(json) {
+  if (!json || typeof json != "object") return json
+  if (Array.isArray(json)) return json.map(objectFromJSON)
+  if (json.attrs && json.content) return Node.fromJSON(json)
   let result = {}
-  for (let prop in json) {
-    let value = json[prop]
-    if (value.attrs && value.content)
-      value = Node.fromJSON(value)
-    else if (value.path && value.offset != null)
-      value = Pos.fromJSON(value)
-    result[prop] = value
-  }
+  for (let prop in json) result[prop] = objectFromJSON(json[prop])
   return result
 }

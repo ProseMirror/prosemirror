@@ -1,6 +1,5 @@
 import {Pos} from "../model"
 import {defineOption} from "../edit"
-import {wrapRange, joinNodes, remove, setBlockType} from "../transform"
 import {Rule, addInputRules, removeInputRules} from "./inputrules"
 
 defineOption("autoInput", false, function(pm, val, old) {
@@ -40,14 +39,14 @@ function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
   let parentOffset = pos.path[pos.path.length - 1]
   let sibling = parentOffset > 0 && pm.doc.path(pos.shorten()).content[parentOffset - 1]
   let join = sibling.type.name == type && (!predicate || predicate(sibling))
-  pm.apply(wrapRange(pm.doc, pos, pos, type, attrs))
-  pos = pm.selection.head
-  pm.apply(remove(pm.doc, new Pos(pos.path, 0), pos))
-  if (join) pm.apply(joinNodes(pm.doc, pm.selection.head))
+  let tr = pm.tr.wrap(pos, pos, new Node(type, attrs))
+  let delPos = tr.mapSimple(pos)
+  tr.delete(new Pos(delPos.path, 0), delPos)
+  if (join) tr.join(tr.mapSimple(pos, -1))
+  pm.apply(tr)
 }
 
 function setAs(pm, pos, type, attrs) {
-  pm.apply(setBlockType(pos, null, type, attrs))
-  pos = pm.selection.head
-  pm.apply(remove(pm.doc, new Pos(pos.path, 0), pos))
+  pm.apply(pm.tr.setType(pos, pos, new Node(type, attrs))
+                .delete(new Pos(pos.path, 0), pos))
 }

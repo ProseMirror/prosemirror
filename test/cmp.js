@@ -1,6 +1,5 @@
 import Failure from "./failure"
 import {style, inline} from "../src/model"
-import {applyTransform, invertTransform} from "../src/transform"
 
 export function cmpNode(a, b, comment) {
   function raise(msg, path) {
@@ -32,19 +31,4 @@ export function cmpStr(a, b, comment) {
   let as = a.toString(), bs = b.toString()
   if (as != bs)
     throw new Failure("expected " + bs + ", got " + as + (comment ? " (" + comment + ")" : ""))
-}
-
-export function testTransform(doc, expect, params) {
-  let orig = doc.toString()
-  let result = applyTransform(doc, params)
-  let inverse = invertTransform(result, params)
-  cmpNode(result.doc, expect)
-  cmpStr(doc, orig, "immutable")
-  for (let pos in expect.tag) {
-    let offset, mapped = result.map(doc.tag[pos], p => offset = p)
-    cmpStr(mapped, expect.tag[pos], pos)
-    cmpStr(result.mapBack(mapped, offset), doc.tag[pos], pos + " back")
-  }
-  let invertedResult = applyTransform(result.doc, inverse)
-  cmpNode(invertedResult.doc, doc, "inverse")
 }

@@ -2,7 +2,7 @@ import {Transition, VersionStore} from "../src/collab/versions"
 import {mergeChangeSets, mapPosition, rebaseChanges} from "../src/collab/rebase"
 import {nullID, xorIDs, randomID} from "../src/collab/id"
 import {Pos, Node, style} from "../src/model"
-import {T} from "../src/trans"
+import {Tr} from "../src/transform"
 
 import {doc, blockquote, h1, p, li, ol, ul, em, a, br} from "./build"
 import Failure from "./failure"
@@ -81,7 +81,7 @@ function runRebase(startDoc, clients, result) {
     let tags = doc.tag
     let transitions = changes.map(change => {
       let tID = randomID()
-      let transform = change(T(doc))
+      let transform = change(Tr(doc))
       let transition = new Transition(tID, id, clientID, transform)
       id = xorIDs(id, tID)
       store.storeVersion(id, transition.baseID, transform.doc)
@@ -222,4 +222,3 @@ rebase("double_insert",
        [addNode("1", "paragraph")],
        [addNode("1", "paragraph")],
        doc(p("a"), p(), p(), "<1>", p("b")))
-

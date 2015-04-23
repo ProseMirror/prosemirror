@@ -1,309 +1,266 @@
-import {Pos, Node, style, inline, slice} from "../model"
-import {Collapsed, defineTransform, Result, flatTransform} from "./transform"
-import {resolvePos, describePos} from "./resolve"
+import {Pos, Node, inline, slice} from "../model"
 
-function nodesLeft(doc, depth) {
-  let nodes = []
-  for (let node = doc, i = 0;; i++) {
-    nodes.push(node)
-    if (i == depth) return nodes
-    node = node.content[0]
+import {defineStep, Result, Step, Transform} from "./transform"
+import {PosMap, MovedRange, ReplacedRange} from "./map"
+import {copyTo} from "./tree"
+
+function samePathDepth(a, b) {
+  for (let i = 0;; i++)
+    if (i == a.path.length || i == b.path.length || a.path[i] != b.path[i])
+      return i
+}
+
+function sizeBefore(node, at) {
+  if (node.type.block) {
+    let size = 0
+    for (let i = 0; i < at; i++) size += node.content[i].size
+    return size
+  } else {
+    return at
   }
 }
 
-function nodesRight(doc, depth) {
-  let nodes = []
-  for (let node = doc, i = 0;; i++) {
-    nodes.push(node)
-    if (i == depth) return nodes
-    node = node.content[node.content.length - 1]
+export function replace(doc, from, to, root, repl) {
+  let origParent = doc.path(root)
+  if (repl.nodes.length && repl.nodes[0].type.type != origParent.type.contains)
+    return null
+
+  let copy = copyTo(doc, root)
+  let parent = copy.path(root)
+  parent.content.length = 0
+  let depth = root.length
+
+  let fromEnd = depth == from.path.length
+  let start = fromEnd ? from.offset : from.path[depth]
+  parent.pushNodes(origParent.slice(0, start))
+  if (!fromEnd) {
+    parent.push(slice.before(origParent.content[start], from, depth + 1))
+    ++start
+  } else {
+    start = parent.content.length
   }
-}
+  parent.pushNodes(repl.nodes)
+  let end
+  if (depth == to.path.length) {
+    end = to.offset
+  } else {
+    let n = to.path[depth]
+    parent.push(slice.after(origParent.content[n], to, depth + 1))
+    end = n + 1
+  }
+  parent.pushNodes(origParent.slice(end))
 
-function compatibleTypes(a, aDepth, b, bDepth, options) {
-  if (a.contains != b.contains) return false
-  if (options.liberal)
-    return a.contains == "element" || a.block || a == b
-  else
-    return a.block || a == b && aDepth == bDepth
-}
+  var moved = []
 
-// FIXME kill styles in code blocks
+  let rightEdge = start + repl.nodes.length, startLen = parent.content.length
+  if (repl.nodes.length)
+    mendLeft(parent, start, depth, repl.openLeft)
+  mendRight(parent, rightEdge + (parent.content.length - startLen), root,
+            repl.nodes.length ? repl.openRight : from.path.length - depth)
 
-export function glue(left, leftDepth, right, rightBorder, options = {}) {
-  let rightDepth = rightBorder.path.length
-  let cutDepth = 0
-  let leftNodes = nodesRight(left, leftDepth)
-  let rightNodes = nodesLeft(right, rightDepth)
+  function mendLeft(node, at, depth, open) {
+    if (node.type.block)
+      return inline.stitchTextNodes(node, at)
 
-  for (let iLeft = leftNodes.length - 1,
-           iRight = rightNodes.length - 1; iRight >= 0; iRight--) {
-    let node = rightNodes[iRight]
-    let found, target
-    for (let i = iLeft; i >= 0; i--) {
-      target = leftNodes[i]
-      if (compatibleTypes(node.type, iRight, target.type, i, options) && (i > 0 || iRight == 0)) {
-        found = i
-        break
-      }
+    if (open == 0 || depth == from.path.length) return
+
+    let before = node.content[at - 1], after = node.content[at]
+    if (before.sameMarkup(after)) {
+      let oldSize = before.content.length
+      before.pushFrom(after)
+      node.content.splice(at, 1)
+      mendLeft(before, oldSize, depth + 1, open - 1)
     }
-    if (found == null && node.content.length == 0) {
-      if (iRight) rightNodes[iRight - 1].remove(node)
-      continue
-    }
-    if (found != null) {
-      if (options.result || options.onChunk) for (let depth = cutDepth; depth >= 0; depth--) {
-        while (rightBorder.path.length > iRight + depth) rightBorder = rightBorder.shorten(null, 1)
-        if (depth && rightBorder.offset == 0) continue
+  }
 
-        let cur = node
-        for (let i = 0; i < depth; i++) cur = cur.content[0]
-        let newStart = posRight(left, found)
-        if (depth) {
-          newStart.path.push(newStart.offset)
-          for (let i = 1; i < depth; i++) newStart.path.push(0)
-          newStart.offset = 0
-        }
-        if (options.result)
-          options.result.chunk(rightBorder, cur.maxOffset, newStart)
-        if (options.onChunk)
-          options.onChunk(rightBorder, cur.maxOffset, newStart)
-      }
+  function addMoved(start, size, dest) {
+    if (start.cmp(dest))
+      moved.push(new MovedRange(start, size, dest))
+  }
 
-      if (node.type.block) {
-        let start = target.content.length
-        if (options.inheritStyles) {
-          let styles = inline.inlineStylesAt(target, new Pos([], target.size))
-          for (let i = 0; i < node.content.length; i++) {
-            let child = node.content[i]
-            target.push(new Node.Inline(child.type, styles, child.text, child.attrs))
-          }
-        } else {
-          target.pushFrom(node)
-        }
-        inline.stitchTextNodes(target, start)
-      } else {
-        target.pushFrom(node)
-      }
+  function mendRight(node, at, path, open) {
+    let toEnd = path.length == to.path.length
+    let after = node.content[at], before
 
-      iLeft = found - 1
-      cutDepth = 0
-      if (iRight) rightNodes[iRight - 1].remove(node)
+    let sBefore = toEnd ? sizeBefore(node, at) : at + 1
+    let movedStart = toEnd ? to : to.shorten(path.length, 1)
+    let movedSize = node.maxOffset - sBefore
+
+    if (!toEnd && open > 0 && (before = node.content[at - 1]).sameMarkup(after)) {
+      after.content = before.content.concat(after.content)
+      node.content.splice(at - 1, 1)
+      addMoved(movedStart, movedSize, new Pos(path, sBefore - 1))
+      mendRight(after, before.content.length, path.concat(at - 1), open - 1)
     } else {
-      ++cutDepth
+      if (node.type.block) inline.stitchTextNodes(node, at)
+      addMoved(movedStart, movedSize, new Pos(path, sBefore))
+      if (!toEnd) mendRight(after, 0, path.concat(at), 0)
     }
   }
+
+  return {doc: copy, moved}
 }
 
-function posRight(node, depth) {
-  let path = []
-  for (let i = 0; i < depth; i++) {
-    let offset = node.content.length - 1
-    path.push(offset)
-    node = node.content[offset]
-  }
-  return new Pos(path, node.maxOffset)
-}
+const nullRepl = {nodes: [], openLeft: 0, openRight: 0}
 
-function addDeletedChunksAfter(del, node, pos, depth) {
-  if (depth == pos.path.length) {
-    del.chunk(pos, node.maxOffset - pos.offset)
-  } else {
-    let n = pos.path[depth]
-    addDeletedChunksAfter(del, node.content[n], pos, depth + 1)
-    let size = node.content.length - n - 1
-    if (size)
-      del.chunk(new Pos(pos.path.slice(0, depth), n + 1), size)
-  }
-}
+defineStep("replace", {
+  apply(doc, data) {
+    let root = data.pos.path
+    if (data.from.path.length < root.length || data.to.path.length < root.length)
+      return null
+    for (let i = 0; i < root.length; i++)
+      if (data.from.path[i] != root[i] || data.to.path[i] != root[i]) return null
 
-function addDeletedChunksBefore(del, node, pos, depth) {
-  if (depth == pos.path.length) {
-    del.chunk(new Pos(pos.path, 0), pos.offset)
-  } else {
-    let n = pos.path[depth]
-    if (n) del.chunk(new Pos(pos.path.slice(0, depth), 0), n)
-    addDeletedChunksBefore(del, node.content[n], pos, depth + 1)
-  }    
-}
-
-function addDeletedChunks(del, node, from, to, depth = 0) {
-  var fromEnd = depth == from.path.length, toEnd = depth == to.path.length
-  if (!fromEnd && !toEnd && from.path[depth] == to.path[depth]) {
-    addDeletedChunks(del, node.content[from.path[depth]], from, to, depth + 1)
-  } else if (fromEnd && toEnd) {
-    del.chunk(from, to.offset - from.offset)
-  } else {
-    let start = from.offset
-    if (!fromEnd) {
-      start = from.path[depth] + 1
-      addDeletedChunksAfter(del, node.content[start - 1], from, depth + 1)
-    }
-    let end = toEnd ? to.offset : to.path[depth]
-    if (end != start)
-      del.chunk(new Pos(from.path.slice(0, depth), start), end - start)
-    if (!toEnd)
-      addDeletedChunksBefore(del, node.content[end], to, depth + 1)
-  }
-}
-
-function replace(doc, params) {
-  let from = resolvePos(doc, params.pos, params.posInfo)
-  let to = params.end ? resolvePos(doc, params.end, params.endInfo) : from
-  if (!from || !to || (!params.source && !from.cmp(to))) return flatTransform(doc)
-
-  let output = slice.before(doc, from)
-  let result = new Result(doc, output)
-  let right = slice.after(doc, to)
-  let depthAfter
-
-  if (params.source) {
-    let start = params.from, end = params.to
-    let middle = slice.between(params.source, start, end, false)
-
-    let middleChunks = []
-    glue(output, from.path.length, middle, start, {
-      onChunk: (before, size, after) => {
-        middleChunks.push({before: before, size: size, after: after})
-      },
-      liberal: true,
-      inheritStyles: params.inheritStyles
+    let {doc: out, moved} = replace(doc, data.from, data.to, root, data.param || nullRepl)
+    if (!out) return null
+    let end = moved.length ? moved[moved.length - 1].dest : data.to
+    let replaced = new ReplacedRange(data.from, data.to, data.from, end, data.pos, data.pos)
+    return new Result(doc, out, new PosMap(moved, [replaced]))
+  },
+  invert(result, data) {
+    let depth = data.pos.path.length
+    let between = slice.between(result.before, data.from, data.to, false)
+    for (let i = 0; i < depth; i++) between = between.content[0]
+    return new Step("replace", data.from, result.map.mapSimple(data.to), data.from.shorten(depth), {
+      nodes: between.content,
+      openLeft: data.from.path.length - depth,
+      openRight: data.to.path.length - depth
     })
-    depthAfter = end.path.length
-    result.inserted = new Collapsed(from, null, Pos.after(doc, to))
-    for (let i = 0; i < middleChunks.length; i++) {
-      let chunk = middleChunks[i]
-      let start = chunk.after, size = chunk.size
-      if (i == middleChunks.length - 1) {
-        depthAfter += chunk.after.path.length - chunk.before.path.length
-        for (let depth = chunk.before.path.length + 1; depth <= end.path.length; depth++) {
-          result.inserted.chunk(start, size - 1)
-          start = new Pos(start.path.concat(start.offset + size - 1), 0)
-          size = depth == end.path.length ? end.offset : end.path[depth]
-        }
-      }
-      result.inserted.chunk(start, size)
-    }
-    result.inserted.to = Pos.end(output) // FIXME is this robust?
-  } else {
-    depthAfter = from.path.length
-  }
-
-  let deletedEnd = posRight(output, depthAfter)
-  glue(output, depthAfter, right, to, {result: result})
-  result.deleted = new Collapsed(from, to, Pos.after(output, deletedEnd))
-  addDeletedChunks(result.deleted, doc, from, to)
-
-  return result
-}
-
-defineTransform("replace", {
-  apply: replace,
-  invert(result, params) {
-    let {from, to} = result.inserted ||
-        {from: resolvePos(result.before, params.pos, params.posInfo), to: null}
-    return replace_(result.doc, from, to,
-                    result.before, result.deleted.from, result.deleted.to)
   }
 })
 
-function addPositions(doc, params, pos, end, from) {
-  ;({pos: params.pos, info: params.posInfo}) = describePos(doc, pos, from || "right")
-  if (end) {
-    ;({pos: params.end, info: params.endInfo}) = describePos(doc, end, from || "left")
+function buildInserted(nodesLeft, source, start, end) {
+  let sliced = slice.between(source, start, end, false)
+  let nodesRight = []
+  for (let node = sliced, i = 0; i <= start.path.length; i++, node = node.content[0])
+    nodesRight.push(node)
+  let same = samePathDepth(start, end)
+  let searchLeft = nodesLeft.length - 1, searchRight = nodesRight.length - 1
+  let result = null
+
+  let inner = nodesRight[searchRight]
+  if (inner.type.block && inner.size && nodesLeft[searchLeft].type.block) {
+    result = nodesLeft[searchLeft--].copy(inner.content)
+    nodesRight[--searchRight].content.shift()
   }
-  return params
-}
 
-export function insertNode(doc, pos, options, node) {
-  let node = node || options && options.node
-  if (!node) {
-    let type = Node.types[options.type]
-    if (type.type == "inline")
-      node = new Node.Inline(type, options.styles, null, options.attrs)
-    else
-      node = new Node(type, null, options.attrs)
-  }
-  let inline = node.type.type == "inline"
-  let size = inline ? node.size : 1
-  let wrap = Node.findConnection(Node.types.doc, node.type)
-  let path = []
-  for (let i = wrap.length - 1; i >= 0; i--) {
-    node = new Node(wrap[i], [node])
-    path.push(0)
-  }
-  let params = {name: "replace", source: new Node("doc", [node]),
-                from: new Pos(path, 0), to: new Pos(path, size)}
-  if (!options || !options.styles && inline)
-    params.inheritStyles = true
-  if (doc) {
-    addPositions(doc, params, pos, options && options.end)
-  } else {
-    ;[params.pos, params.end] = [pos, options && options.end]
-  }
-  return params
-}
-
-export function insertText(pos, text, options) {
-  return insertNode(options && options.doc, pos, options,
-                    new Node.text(text, options && options.styles))
-}
-
-export function remove(doc, pos, end, options) {
-  return addPositions(doc, {name: "replace"}, pos, end, options && options.from)
-}
-
-export function removeNode(doc, path, options) {
-  let before = Pos.shorten(path), after = Pos.shorten(path, null, 1)
-  return addPositions(doc, {name: "replace"}, before, after, options && options.from)
-}
-
-function joinPoint(doc, pos, allowInline) {
-  let joinDepth = -1
-  for (let i = 0, parent = doc; i <= pos.path.length; i++) {
-    let index = i == pos.path.length ? pos.offset : pos.path[i]
-    let type = parent.content[index].type
-    if (index > 0 && parent.content[index - 1].type == type &&
-        (allowInline || type.contains != "inline"))
-      joinDepth = i
-    parent = parent.content[index]
-  }
-  if (joinDepth > -1)
-    return joinDepth == pos.path.length ? pos : pos.shorten(joinDepth)
-}
-
-export function joinNodes(doc, pos, options) {
-  let point = joinPoint(doc, pos, options && options.allowInline)
-  if (!point) return null
-  let leftPath = point.path.concat(point.offset - 1)
-  let left = new Pos(leftPath, doc.path(leftPath).maxOffset)
-  let right = new Pos(point.path.concat(point.offset), 0)
-  return remove(doc, left, right)
-}
-
-export function splitAt(doc, pos, options) {
-  let depth = options && options.depth || 1
-  let left = null, right = null
-  let leftPath = [], rightPath = []
-  for (let i = 0; i < depth; i++) {
-    let node = doc.path(pos.path.slice(0, pos.path.length - i))
-    left = node.copy(left && [left])
-    right = node.copy(right && [right])
-    leftPath.push(0)
-    rightPath.push(rightPath.length ? 0 : 1)
-  }
-  let wrap
-  for (let i = pos.path.length - depth; i >= 0; i--) {
-    wrap = doc.path(pos.path.slice(0, i)).copy(wrap ? [wrap] : [left, right])
-    if (i) {
-      leftPath.unshift(0)
-      rightPath.unshift(0)
+  for (;;) {
+    let node = nodesRight[searchRight], type = node.type, matched = null
+    let outside = searchRight <= same
+    for (let i = searchLeft; i >= 0; i--) {
+      let left = nodesLeft[i]
+      if (outside ? left.type.contains == type.contains : left.type == type) {
+        matched = i
+        break
+      }
     }
+    if (matched != null) {
+      if (!result) {
+        result = nodesLeft[matched].copy(node.content)
+        searchLeft = matched - 1
+      } else {
+        while (searchLeft >= matched)
+          result = nodesLeft[searchLeft--].copy([result])
+        result.pushFrom(node)
+      }
+    }
+    if (matched != null || node.content.length == 0) {
+      if (outside) break
+      if (searchRight) nodesRight[searchRight - 1].content.shift()
+    }
+    searchRight--
   }
-  let params = {name: "replace", source: wrap, from: new Pos(leftPath, 0), to: new Pos(rightPath, 0)}
-  return addPositions(doc, params, pos)
+
+  let repl = {nodes: result ? result.content : [],
+              openLeft: start.path.length - searchRight,
+              openRight: end.path.length - searchRight}
+  return {repl, depth: searchLeft + 1}
 }
 
-export function replace_(doc, from, to, source, start, end) {
-  return addPositions(doc, {name: "replace", source: source, from: start, to: end}, from, to)
+function moveText(tr, doc, before, after) {
+  let root = samePathDepth(before, after)
+  let cutAt = after.shorten(null, 1)
+  while (cutAt.path.length > root && doc.path(cutAt.path).content.length == 1)
+    cutAt = cutAt.shorten(null, 1)
+  tr.split(cutAt, cutAt.path.length - root)
+  let start = after, end = new Pos(start.path, doc.path(start.path).maxOffset)
+  let parent = doc.path(start.path.slice(0, root))
+  let wanted = parent.pathNodes(before.path.slice(root))
+  let existing = parent.pathNodes(start.path.slice(root))
+  while (wanted.length && existing.length && wanted[0].sameMarkup(existing[0])) {
+    wanted.shift()
+    existing.shift()
+  }
+  if (existing.length || wanted.length)
+    tr.step("ancestor", start, end, null, {
+      depth: existing.length,
+      wrappers: wanted.map(n => n.copy())
+    })
+  for (let i = root; i < before.path.length; i++)
+    tr.join(before.shorten(i, 1))
+}
+
+Transform.prototype.delete = function(from, to) {
+  this.replace(from, to)
+  return this
+}
+
+Transform.prototype.replace = function(from, to, source, start, end) {
+  let repl, depth, doc = this.doc, maxDepth = samePathDepth(from, to)
+  if (source) {
+    ;({repl, depth}) = buildInserted(doc.pathNodes(from.path), source, start, end)
+    while (depth > maxDepth) {
+      repl = {nodes: [doc.path(from.path.slice(0, depth)).copy(repl.nodes)],
+              openLeft: repl.openLeft + 1, openRight: repl.openRight + 1}
+      depth--
+    }
+  } else {
+    repl = nullRepl
+    depth = maxDepth
+  }
+  let root = from.shorten(depth)
+  let result = this.step("replace", from, to, root, repl)
+
+  // If no text nodes before or after end of replacement, don't glue text
+  if (!doc.path(to.path).type.block) return this
+  if (!(repl.nodes.length ? source.path(end.path).type.block : doc.path(from.path).type.block)) return this
+
+  let nodesAfter = doc.path(root.path).pathNodes(to.path.slice(depth)).slice(1)
+  let nodesBefore
+  if (repl.nodes.length) {
+    let inserted = repl.nodes
+    nodesBefore = []
+    for (let i = 0; i < repl.openRight; i++) {
+      let last = inserted[inserted.length - 1]
+      nodesBefore.push(last)
+      inserted = last.content
+    }
+  } else {
+    nodesBefore = doc.path(root.path).pathNodes(from.path.slice(depth)).slice(1)
+  }
+  if (nodesAfter.length != nodesBefore.length ||
+      !nodesAfter.every((n, i) => n.sameMarkup(nodesBefore[i]))) {
+    let after = result.map.mapSimple(to)
+    let before = Pos.before(result.doc, after.shorten(null, 0))
+    moveText(this, result.doc, before, after)
+  }
+  return this
+}
+
+Transform.prototype.insert = function(pos, nodes, end = pos) {
+  if (!Array.isArray(nodes)) nodes = [nodes]
+  this.step("replace", pos, end, pos.shorten(samePathDepth(pos, end), 1),
+            {nodes: nodes, openLeft: 0, openRight: 0})
+  return this
+}
+
+Transform.prototype.insertInline = function(pos, nodes, end = pos) {
+  if (!Array.isArray(nodes)) nodes = [nodes]
+  let styles = inline.inlineStylesAt(this.doc, pos)
+  nodes = nodes.map(n => new Node.Inline(n.type, styles, n.text, n.attrs))
+  return this.insert(pos, nodes, end)
+}
+
+Transform.prototype.insertText = function(pos, text, end = pos) {
+  return this.insertInline(pos, Node.text(text), end)
 }

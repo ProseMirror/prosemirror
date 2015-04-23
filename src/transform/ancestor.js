@@ -91,11 +91,17 @@ function canBeLifted(doc, range) {
   }
 }
 
+export function canLift(doc, from, to) {
+  let range = selectedSiblings(doc, from, to || from)
+  let found = canBeLifted(doc, range)
+  if (found) return {found, range}
+}
+
 Transform.prototype.lift = function(from, to) {
-  let range = selectedSiblings(this.doc, from, to || from)
-  let found = canBeLifted(this.doc, range)
+  let can = canLift(this.doc, from, to)
+  if (!can) return this
+  let {found, range} = can
   let depth = range.path.length - found.path.length
-  if (!found) return this
   let rangeNode = found.unwrap && this.doc.path(range.path)
 
   for (let d = 0, pos = new Pos(range.path, range.to);; d++) {
@@ -131,12 +137,18 @@ Transform.prototype.lift = function(from, to) {
   return this
 }
 
-Transform.prototype.wrap = function(from, to, node) {
-  let range = selectedSiblings(this.doc, from, to || from)
-  let parent = this.doc.path(range.path)
+export function canWrap(doc, from, to, node) {
+  let range = selectedSiblings(doc, from, to || from)
+  let parent = doc.path(range.path)
   let around = Node.findConnection(parent.type, node.type)
   let inside = Node.findConnection(node.type, parent.content[range.from].type)
-  if (!around || !inside) return this
+  if (around && inside) return {range, around, inside}
+}
+
+Transform.prototype.wrap = function(from, to, node) {
+  let can = canWrap(this.doc, from, to, node)
+  if (!can) return this
+  let {range, around, inside} = can
   let wrappers = around.map(t => new Node(t)).concat(node).concat(inside.map(t => new Node(t)))
   this.step("ancestor", new Pos(range.path, range.from), new Pos(range.path, range.to),
             null, {wrappers: wrappers})

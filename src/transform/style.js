@@ -1,136 +1,111 @@
-import {style, Node, inline, slice} from "../model"
-import {defineTransform, flatTransform} from "./transform"
+import {style, Node, Pos} from "../model"
 
-function copyStructure(node, from, to, f, depth = 0) {
-  if (node.type.contains == "inline") {
-    return f(node, from, to)
-  } else {
-    let copy = node.copy()
-    if (node.content.length == 0) return copy
-    let start = from ? from.path[depth] : 0
-    let end = to ? to.path[depth] : node.content.length - 1
-    copy.pushFrom(node, 0, start)
-    if (start == end) {
-      copy.push(copyStructure(node.content[start], from, to, f, depth + 1))
-    } else {
-      copy.push(copyStructure(node.content[start], from, null, f, depth + 1))
-      for (let i = start + 1; i < end; i++)
-        copy.push(copyStructure(node.content[i], null, null, f, depth + 1))
-      copy.push(copyStructure(node.content[end], null, to, f, depth + 1))
-    }
-    copy.pushFrom(node, end + 1)
-    return copy
-  }
-}
+import {defineStep, Result, Step, Transform} from "./transform"
+import {nullMap} from "./map"
+import {copyInline, copyStructure, forSpansBetween} from "./tree"
 
-function addInline(node, child) {
-  node.push(child)
-  inline.stitchTextNodes(node, node.content.length - 1)
-}
-
-function copyInline(node, from, to, f) {
-  let copy = node.copy()
-  let start = from ? from.offset : 0
-  let end = to ? to.offset : node.size
-  for (let ch = 0, i = 0; i < node.content.length; i++) {
-    let child = node.content[i], size = child.size
-    if (ch < start) {
-      if (ch + size <= start) {
-        copy.push(child)
-      } else {
-        copy.push(child.slice(0, start - ch))
-        if (ch + size <= end) {
-          addInline(copy, f(child.slice(start - ch)))
-        } else {
-          addInline(copy, f(child.slice(start - ch, end - ch)))
-          addInline(copy, child.slice(end - ch))
-        }
-      }
-    } else if (ch < end) {
-      if (ch + size <= end) {
-        addInline(copy, f(child))
-      } else {
-        addInline(copy, f(child.slice(0, end - ch)))
-        addInline(copy, child.slice(end - ch))
-      }
-    } else {
-      addInline(copy, child)
-    }
-    ch += size
-  }
-  return copy
-}
-
-defineTransform("addStyle", {
-  apply(doc, params) {
-    let copy = copyStructure(doc, params.pos, params.end || params.pos, (node, from, to) => {
+defineStep("addStyle", {
+  apply(doc, data) {
+    return new Result(doc, copyStructure(doc, data.from, data.to, (node, from, to) => {
       if (node.type.plainText) return node
       return copyInline(node, from, to, node => {
-        return new Node.Inline(node.type, style.add(node.styles, params.style),
+        return new Node.Inline(node.type, style.add(node.styles, data.param),
                                node.text, node.attrs)
       })
-    })
-    return flatTransform(doc, copy)
+    }))
   },
-  invert(result, params) {
-    return {name: "replace", pos: result.map(params.pos), end: result.map(params.end),
-            source: result.before, from: params.pos, to: params.end}
+  invert(result, data) {
+    return new Step("removeStyle", data.from, result.map.mapSimple(data.to), null, data.param)
   }
 })
 
-export function addStyle(from, to, style) {
-  return {name: "addStyle", pos: from, end: to, style}
+
+Transform.prototype.addStyle = function(from, to, st) {
+  let removed = [], added = [], removing = null, adding = null
+  forSpansBetween(this.doc, from, to, (span, path, start, end) => {
+    let styles = span.styles, rm
+    if (style.contains(span.styles, st)) {
+      adding = removing = null
+    } else {
+      path = path.slice()
+      if (rm = style.containsType(span.styles, st.type)) {
+        if (removing && style.same(removing.param, rm)) {
+          removing.to = new Pos(path, end)
+        } else {
+          removing = new Step("removeStyle", new Pos(path, start), new Pos(path, end), null, rm)
+          removed.push(removing)
+        }
+      }
+      if (adding) {
+        adding.to = new Pos(path, end)
+      } else {
+        adding = new Step("addStyle", new Pos(path, start), new Pos(path, end), null, st)
+        added.push(adding)
+      }
+    }
+  })
+  removed.forEach(s => this.step(s))
+  added.forEach(s => this.step(s))
+  return this
 }
 
-defineTransform("removeStyle", {
-  apply(doc, params) {
-    let copy = copyStructure(doc, params.pos, params.end || params.pos, (node, from, to) => {
+defineStep("removeStyle", {
+  apply(doc, data) {
+    return new Result(doc, copyStructure(doc, data.from, data.to, (node, from, to) => {
       return copyInline(node, from, to, node => {
-        let styles = node.styles
-        if (typeof params.style == "string")
-          styles = style.removeType(styles, params.style)
-        else if (params.style)
-          styles = style.remove(styles, params.style)
-        else
-          styles = Node.empty
+        let styles = style.remove(node.styles, data.param)
         return new Node.Inline(node.type, styles, node.text, node.attrs)
       })
-    })
-    return flatTransform(doc, copy)
+    }))
   },
-  invert(result, params) {
-    return {name: "replace", pos: result.map(params.pos), end: result.map(params.end),
-            source: result.before, from: params.pos, to: params.end}
+  invert(result, data) {
+    return new Step("addStyle", data.from, result.map.mapSimple(data.to), null, data.param)
   }
 })
 
-export function removeStyle(from, to, style) {
-  return {name: "removeStyle", pos: from, end: to, style}
+Transform.prototype.removeStyle = function(from, to, st = null) {
+  let matched = [], step = 0
+  forSpansBetween(this.doc, from, to, (span, path, start, end) => {
+    step++
+    let toRemove = null
+    if (typeof st == "string") {
+      let found = style.containsType(span.styles, st)
+      if (found) toRemove = [found]
+    } else if (st) {
+      if (style.contains(span.styles, st)) toRemove = [st]
+    } else {
+      toRemove = span.styles
+    }
+    if (toRemove && toRemove.length) {
+      path = path.slice()
+      for (let i = 0; i < toRemove.length; i++) {
+        let rm = toRemove[i], found
+        for (let j = 0; j < matched.length; j++) {
+          let m = matched[j]
+          if (m.step == step - 1 && style.same(rm, matched[j].style)) found = m
+        }
+        if (found) {
+          found.to = new Pos(path, end)
+          found.step = step
+        } else {
+          matched.push({style: rm, from: new Pos(path, start), to: new Pos(path, end), step: step})
+        }
+      }
+    }
+  })
+  matched.forEach(m => this.step("removeStyle", m.from, m.to, null, m.style))
+  return this
 }
 
-defineTransform("setType", {
-  apply(doc, params) {
-    let copy = copyStructure(doc, params.pos, params.end || params.pos, node => {
-      let copy = node.copy(node.content)
-      if (params.node) {
-        copy.type = params.node.type
-        copy.attrs = params.node.attrs
-      } else {
-        copy.type = Node.types[params.type]
-        copy.attrs = params.attrs || copy.type.defaultAttrs
-      }
-      if (copy.type.plainText) inline.clearMarkup(copy)
-      return copy
-    })
-    return flatTransform(doc, copy)
-  },
-  invert(result, params) {
-    let oldNode = result.before.path(params.pos.path)
-    return {name: "setType", pos: result.map(params.pos), end: params.end && result.map(params.end),
-            type: oldNode.type.name, attrs: oldNode.attrs}
-  }
-})
-
-export function setBlockType(from, to, type, attrs) {
-  return {name: "setType", pos: from, end: to, type: type, attrs: attrs}
+Transform.prototype.clearMarkup = function(from, to) {
+  let steps = []
+  forSpansBetween(this.doc, from, to, (span, path, start, end) => {
+    if (span.type != Node.types.text) {
+      path = path.slice()
+      steps.unshift(new Step("replace", new Pos(path, start), new Pos(path, end)))
+    }
+  })
+  this.removeStyle(from.to)
+  steps.forEach(s => this.step(s))
+  return this
 }

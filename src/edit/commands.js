@@ -1,6 +1,4 @@
 import {Node, Pos, style, inline} from "../model"
-import {splitAt, joinNodes, liftRange, wrapRange, remove, setBlockType,
-        insertText, insertNode, removeNode} from "../transform"
 
 const commands = Object.create(null)
 
@@ -21,20 +19,20 @@ export function execCommand(pm, name) {
   return false
 }
 
-function clearSelection(pm) {
-  let sel = pm.selection
-  if (!sel.empty)
-    pm.apply(remove(pm.doc, sel.from, sel.to))
-  return sel.from
+function clearSel(pm) {
+  let sel = pm.selection, tr = pm.tr
+  if (!sel.empty) tr.delete(sel.from, sel.to)
+  return tr
 }
 
 commands.insertHardBreak = pm => {
   pm.scrollIntoView()
-  let pos = clearSelection(pm)
+  let tr = clearSel(pm), pos = pm.selection.from
   if (pm.doc.path(pos.path).type == Node.types.code_block)
-    return pm.apply(insertText(pos, "\n"))
+    tr.insertText(pos, "\n")
   else
-    return pm.apply(insertNode(pm.doc, pos, {type: "hard_break"}))
+    tr.insert(pos, new Node("hard_break"))
+  return pm.apply(tr)
 }
 
 commands.setStrong = pm => pm.setInlineStyle(style.strong, true)
@@ -56,7 +54,7 @@ function blockBefore(pos) {
   }
 }
 
-function delBlockBackward(pm, pos) {
+function delBlockBackward(pm, tr, pos) {
   if (pos.path.length == 1) { // Top level block, join with block above
     let iBefore = Pos.before(pm.doc, new Pos([], pos.path[0]))
     let bBefore = blockBefore(pos)
@@ -65,11 +63,9 @@ function delBlockBackward(pm, pos) {
       else iBefore = null
     }
     if (iBefore)
-      pm.apply(remove(pm.doc, iBefore, pos))
+      tr.delete(iBefore, pos)
     else if (bBefore)
-      pm.apply(removeNode(pm.doc, bBefore, {from: "right"}))
-    else
-      return false
+      tr.delete(bBefore.shift(-1), bBefore)
   } else {
     let last = pos.path.length - 1
     let parent = pm.doc.path(pos.path.slice(0, last))
@@ -79,12 +75,10 @@ function delBlockBackward(pm, pos) {
     // Join with the one above
     if (parent.type == Node.types.list_item &&
         offset == 0 && pos.path[last - 1] > 0)
-      return pm.apply(joinNodes(pm.doc, pos))
+      tr.join(pos)
     // Any other nested block, lift up
-    else if (range = liftRange(pm.doc, pos, pos))
-      return pm.apply(range)
     else
-      return false
+      tr.lift(pos, pos)
   }
 }
 
@@ -92,13 +86,15 @@ function delBlockBackward(pm, pos) {
 
 commands.delBackward = pm => {
   pm.scrollIntoView()
-  let sel = pm.selection, head = sel.head
+
+  let tr = pm.tr, sel = pm.selection, from = sel.from
   if (!sel.empty)
-    clearSelection(pm)
-  else if (sel.head.offset)
-    return pm.apply(remove(pm.doc, new Pos(head.path, head.offset - 1), head))
+    tr.delete(from, sel.to)
+  else if (from.offset)
+    tr.delete(from.shift(-1))
   else
-    return delBlockBackward(pm, head)
+    delBlockBackward(pm, tr, head)
+  return pm.apply(tr)
 }
 
 function blockAfter(doc, pos) {
@@ -113,7 +109,7 @@ function blockAfter(doc, pos) {
   }
 }
 
-function delBlockForward(pm, pos) {
+function delBlockForward(pm, tr, pos) {
   let lst = pos.path.length - 1
   let iAfter = Pos.after(pm.doc, new Pos(pos.path.slice(0, lst), pos.path[lst] + 1))
   let bAfter = blockAfter(pm.doc, pos)
@@ -122,22 +118,21 @@ function delBlockForward(pm, pos) {
     else iAfter = null
   }
   if (iAfter)
-    pm.apply(remove(pm.doc, pos, iAfter))
+    tr.delete(pos, iAfter)
   else if (bAfter)
-    pm.apply(removeNode(pm.doc, bAfter, {from: "left"}))
-  else
-    return false
+    tr.delete(bAfter, bAfter.shift(1))
 }
 
 commands.delForward = pm => {
   pm.scrollIntoView()
-  let sel = pm.selection, head = sel.head
+  let tr = pm.tr, sel = pm.selection, from = sel.from
   if (!sel.empty)
-    clearSelection(pm)
+    tr.delete(from, sel.to)
   else if (head.offset < pm.doc.path(head.path).size)
-    return pm.apply(remove(pm.doc, head, new Pos(head.path, head.offset + 1)))
+    tr.delete(head, head.shift(1))
   else
-    return delBlockForward(pm, head)
+    delBlockForward(pm, tr, head)
+  return pm.apply(tr)
 }
 
 function scrollAnd(pm, value) {
@@ -149,28 +144,20 @@ commands.undo = pm => scrollAnd(pm, pm.history.undo())
 commands.redo = pm => scrollAnd(pm, pm.history.redo())
 
 commands.join = pm => {
-  let join = joinNodes(pm.doc, pm.selection.head)
-  if (join) {
-    pm.scrollIntoView()
-    pm.apply(join)
-  }
+  return pm.apply(pm.tr.join(pm.selection.head))
 }
 
 commands.lift = pm => {
   let sel = pm.selection
-  let range = liftRange(pm.doc, sel.from, sel.to)
-  if (range) {
-    pm.scrollIntoView()
-    return pm.apply(range)
-  } else {
-    return false
-  }
+  let result = pm.apply(pm.tr.lift(sel.from, sel.to))
+  if (result !== false) pm.scrollIntoView()
+  return result
 }
 
 function wrap(pm, type) {
   let sel = pm.selection
   pm.scrollIntoView()
-  return pm.apply(wrapRange(pm.doc, sel.from, sel.to, type))
+  return pm.apply(pm.tr.wrap(sel.from, sel.to, new Node(type)))
 }
 
 commands.wrapBulletList = pm => wrap(pm, "bullet_list")
@@ -180,25 +167,27 @@ commands.wrapBlockquote = pm => wrap(pm, "blockquote")
 commands.endBlock = pm => {
   pm.scrollIntoView()
   let head = clearSelection(pm)
-  let block = pm.doc.path(head.path), range
+  let block = pm.doc.path(head.path)
+  let tr = pm.tr
   if (head.path.length > 1 && block.content.length == 0 &&
-      (range = liftRange(pm.doc, head, head))) {
-    return pm.apply(range)
+      tr.lift(head, head).steps.length) {
+    // Lift
   } else if (block.type == Node.types.code_block && head.offset < block.size) {
-    return pm.apply(insertText(head, "\n"))
+    tr.insertText(head, "\n")
   } else {
     let end = head.path.length - 1
     let isList = head.path.length > 1 && head.path[end] == 0 &&
         pm.doc.path(head.path.slice(0, end)).type == Node.types.list_item
-    let type = head.offset == block.size ? "paragraph" : null
-    return pm.apply(splitAt(pm.doc, head, isList ? 2 : 1, type))
+    let type = head.offset == block.size ? new Node("paragraph") : null
+    tr.split(head, isList ? 2 : 1, type)
   }
+  return pm.apply(tr)
 }
 
 function setType(pm, type, attrs) {
   let sel = pm.selection
   pm.scrollIntoView()
-  return pm.apply(setBlockType(sel.from, sel.to, type, attrs))
+  return pm.apply(pm.tr.setType(sel.from, sel.to, new Node(type, null, attrs)))
 }
 
 commands.makeH1 = pm => setType(pm, "heading", {level: 1})
@@ -218,11 +207,12 @@ function insertOpaqueBlock(pm, type, attrs) {
   if (!sel.empty) return false
   let parent = pm.doc.path(sel.head.path)
   if (parent.type.type != type.type) return false
+  let tr = pm.tr, off = 0
   if (sel.head.offset) {
-    pm.apply(splitAt(pm.doc, sel.head))
-    sel = pm.selection
+    tr.split(sel.head)
+    off = 1
   }
-  pm.apply(insertNode(pm.doc, sel.head.shorten(), {type: type, attrs: attrs}))
+  return pm.apply(tr.insert(sel.head.shorten(null, off), new Node(type, null, attrs)))
 }
 
 commands.insertRule = pm => insertOpaqueBlock(pm, "horizontal_rule")

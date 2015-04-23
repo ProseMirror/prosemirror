@@ -56,22 +56,6 @@ export function forSpansBetween(doc, from, to, f) {
   scan(doc, from, to)
 }
 
-export function findRanges(doc, from, to, pred) {
-  let openFrom = null, openTo = null, found = []
-  forSpansBetween(doc, from, to, (span, path, start, end) => {
-    if (pred(span)) {
-      path = path.slice()
-      if (!openFrom) openFrom = new Pos(path, start)
-      openTo = new Pos(path, end)
-    } else if (openFrom) {
-      found.push({from: openFrom, to: openTo})
-      openFrom = openTo = null
-    }
-  })
-  if (openFrom) found.push({from: openFrom, to: openTo})
-  return found
-}
-
 export function copyTo(node, path, depth = 0) {
   if (depth == path.length)
     return node.copy(node.content.slice())
@@ -89,40 +73,6 @@ export function isFlatRange(from, to) {
   for (let i = 0; i < from.path.length; i++)
     if (from.path[i] != to.path[i]) return false
   return from.offset <= to.offset
-}
-
-export function rangesBetween(doc, from, to, f) {
-  function scanAfter(node, depth) {
-    if (depth == from.path.length) {
-      if (from.offset < node.maxOffset) f(from.path, from.offset, node.maxOffset)
-    } else {
-      let start = from.path[depth]
-      scanAfter(node.content[start], depth + 1)
-      if (start + 1 < node.content.length) f(from.path.slice(0, depth), start + 1, node.content.length)
-    }
-  }
-  function scanBefore(node, depth) {
-    if (depth == to.path.length) {
-      if (to.offset > 0) f(to.path, 0, to.offset)
-    } else {
-      let end = to.path[depth]
-      if (end != 0) f(to.path.slice(0, depth), 0, end)
-      scanBefore(node.content[end], depth + 1)
-    }
-  }
-  function scan(node, depth) {
-    let endFrom = from.path.length == depth, endTo = to.path.length == depth
-    let start = endFrom ? from.offset : from.path[depth] + 1
-    let end = endTo ? to.offset : to.path[depth]
-    if (!endFrom && !endTo && end == start - 1) {
-      scan(node.content[end], depth + 1)
-    } else {
-      if (!endFrom) scanAfter(node.content[start - 1], depth + 1)
-      if (end > start) f(from.path.slice(0, depth), start, end)
-      if (!endTo) scanBefore(node.content[end], depth + 1)
-    }
-  }
-  scan(doc, 0)
 }
 
 export function selectedSiblings(doc, from, to) {

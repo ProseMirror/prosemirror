@@ -1,5 +1,5 @@
-import {replace} from "../src/trans/replace"
-import {MovedRange} from "../src/trans/map"
+import {replace} from "../src/transform/replace"
+import {MovedRange} from "../src/transform/map"
 import {slice, Pos} from "../src/model"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"

@@ -1,6 +1,5 @@
 import {style, inline, Node} from "../model"
-import {splitAt, joinNodes, liftRange, wrapRange, insertNode,
-        addStyle, removeStyle, setBlockType, remove} from "../transform"
+import {canLift, canWrap, T} from "../transform"
 import {elt} from "../edit/dom"
 
 export class Item {
@@ -18,12 +17,11 @@ export class LiftItem extends Item {
   }
   select(pm) {
     let sel = pm.selection
-    return liftRange(pm.doc, sel.from, sel.to)
+    return canLift(pm.doc, sel.from, sel.to)
   }
   apply(pm) {
     let sel = pm.selection
-    let range = liftRange(pm.doc, sel.from, sel.to)
-    pm.apply(range)
+    pm.apply(pm.tr.lift(sel.from, sel.to))
   }
 }
 
@@ -32,11 +30,10 @@ export class JoinItem extends Item {
     super(icon, title || "Join with above block")
   }
   select(pm) {
-    return joinNodes(pm.doc, pm.selection.head)
+    return joinPoint(pm.doc, pm.selection.head)
   }
   apply(pm) {
-    let point = joinNodes(pm.doc, pm.selection.head)
-    if (point) pm.apply(point)
+    pm.apply(pm.tr.join(joinPoint(pm.doc, pm.selection.head)))
   }
 }
 
@@ -57,7 +54,7 @@ export class BlockTypeItem extends Item {
   }
   apply(pm) {
     let sel = pm.selection
-    pm.apply(setBlockType(sel.from, sel.to, this.type, this.attrs))
+    pm.apply(pm.tr.setType(sel.from, sel.to, new Node(this.type, null, this.attrs)))
   }
 }
 
@@ -72,12 +69,12 @@ export class InsertBlockItem extends Item {
     return sel.empty && pm.doc.path(sel.head.path).type.type == Node.types[this.type].type
   }
   apply(pm) {
-    let sel = pm.selection
+    let sel = pm.selection, tr = pm.tr, off = 0
     if (sel.head.offset) {
-      pm.apply(splitAt(pm.doc, sel.head))
-      sel = pm.selection
+      tr.split(sel.head)
+      off = 1
     }
-    pm.apply(insertNode(pm.doc, sel.head.shorten(), {type: this.type, attrs: this.attrs}))
+    pm.apply(tr.insert(sel.head.shorten(off), new Node(this.type, null, this.attrs)))
   }
 }
 
@@ -88,7 +85,7 @@ export class WrapItem extends Item {
   }
   apply(pm) {
     let sel = pm.selection
-    pm.apply(wrapRange(pm.doc, sel.from, sel.to, this.type))
+    pm.apply(pm.tr.wrap(sel.from, sel.to, new Node(this.type)))
   }
 }
 
@@ -105,11 +102,11 @@ export class InlineStyleItem extends Item {
   apply(pm) {
     let sel = pm.selection
     if (this.active(pm))
-      pm.apply(removeStyle(sel.from, sel.to, this.style.type))
+      pm.apply(pm.tr.removeStyle(sel.from, sel.to, this.style.type))
     else if (this.dialog)
       return this.dialog
     else
-      pm.apply(addStyle(sel.from, sel.to, this.style))
+      pm.apply(pm.tr.addStyle(sel.from, sel.to, this.style))
   }
 }
 
@@ -150,7 +147,7 @@ export class LinkDialog extends Dialog {
     let elts = form.elements
     if (!elts.href.value) return
     let sel = pm.selection
-    pm.apply(addStyle(sel.from, sel.to, style.link(elts.href.value, elts.title.value)))
+    pm.apply(pm.tr.addStyle(sel.from, sel.to, style.link(elts.href.value, elts.title.value)))
   }
 }
 
@@ -169,9 +166,9 @@ export class ImageDialog extends Dialog {
   apply(form, pm) {
     let elts = form.elements
     if (!elts.src.value) return
-    let sel = pm.selection
-    pm.apply(remove(pm.doc, sel.from, sel.to))
+    let sel = pm.selection, tr = pm.tr
+    tr.delete(sel.from, sel.to)
     let attrs = {src: elts.src.value, alt: elts.alt.value, title: elts.title.value}
-    pm.apply(insertNode(pm.doc, sel.from, {type: "image", attrs: attrs}))
+    pm.apply(tr.insert(sel.from, new Node("image", null, attrs)))
   }
 }

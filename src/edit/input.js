@@ -1,5 +1,4 @@
-import {fromDOM, toDOM, Pos, Node} from "../model"
-import {insertText, remove, replace} from "../transform"
+import {fromDOM, toDOM, Pos, Node, inline} from "../model"
 
 import * as keys from "./keys"
 import {mac, addClass, rmClass} from "./dom"
@@ -102,7 +101,8 @@ handlers.keydown = (pm, e) => {
 
 function inputText(pm, range, text) {
   if (range.empty && !text) return false
-  pm.apply(insertText(range.from, text, {end: range.to, styles: pm.input.storedInlineStyles}))
+  let styles = pm.input.storedInlineStyles || inline.inlineStylesAt(pm.doc, range.from)
+  pm.apply(pm.tr.insert(range.from, Node.text(text, styles), range.to))
   pm.signal("textInput", text)
   pm.scrollIntoView()
 }
@@ -169,7 +169,7 @@ handlers.copy = handlers.cut = (pm, e) => {
     e.clipboardData.setData("text/html", lastCopied.html)
     e.clipboardData.setData("text/plain", lastCopied.text)
     if (e.type == "cut" && !sel.empty)
-      pm.apply(remove(pm.doc, sel.from, sel.to))
+      pm.apply(pm.tr.delete(sel.from, sel.to))
   }
 }
 
@@ -192,8 +192,7 @@ handlers.paste = (pm, e) => {
     } else {
       doc = (text.fromMarkdown || text.fromText)(txt)
     }
-    pm.apply(replace(pm.doc, sel.from, sel.to,
-                     doc, from || Pos.start(doc), to || Pos.end(doc)))
+    pm.apply(pm.tr.replace(sel.from, sel.to, doc, from || Pos.start(doc), to || Pos.end(doc)))
     pm.scrollIntoView()
   }
 }
@@ -229,14 +228,15 @@ handlers.drop = (pm, e) => {
   if (doc) {
     e.preventDefault()
     let insertPos = pm.posAtCoords({left: e.clientX, top: e.clientY})
+    let tr = pm.tr
     if (pm.input.draggingFrom && !e.ctrlKey) {
       let sel = pm.selection
-      let result = pm.apply(remove(pm.doc, sel.from, sel.to))
-      insertPos = result.map(insertPos)
+      tr.delete(sel.from, sel.to)
+      insertPos = tr.mapSimple(insertPos)
     }
-    let result = pm.apply(replace(pm.doc, insertPos, null,
-                                  doc, Pos.start(doc), Pos.end(doc)))
-    pm.setSelection(new Range(insertPos, result.map(insertPos)))
+    tr.replace(insertPos, insertPos, doc, Pos.start(doc), Pos.end(doc))
+    pm.apply(tr)
+    pm.setSelection(new Range(insertPos, tr.map(insertPos)))
     pm.focus()
   }
 }

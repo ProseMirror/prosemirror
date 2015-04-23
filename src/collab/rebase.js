@@ -1,6 +1,6 @@
 import {xorIDs} from "./id"
 import {Transition} from "./versions"
-import {T, Step} from "../trans"
+import {Tr, Step} from "../transform"
 
 export function mergeChangeSets(old, nw) {
   let result = []
@@ -44,7 +44,7 @@ function maxPos(a, b) {
 
 function mapTransform(back, forward, transform) {
   if (!forward.length && !back.length) return transform
-  let result = T(forward.length ? forward[forward.length - 1].transform.doc : back[0].transform.before)
+  let result = Tr(forward.length ? forward[forward.length - 1].transform.doc : back[0].transform.before)
 
   let allDeleted
   function map(pos, bias) {

@@ -1,7 +1,7 @@
 import "./editor.css"
 
 import {inline, style, slice, Node, Pos} from "../model"
-import {applyTransform, addStyle, removeStyle} from "../transform"
+import {Tr} from "../transform"
 
 import {parseOptions, initOptions} from "./options"
 import {Selection, Range, posAtCoords, coordsAtPos, scrollIntoView, hasFocus} from "./selection"
@@ -54,17 +54,18 @@ export default class ProseMirror {
     return text.toText(this.selectedDoc)
   }
 
-  apply(params) {
+  apply(transform) {
+    if (transform.doc == this.doc) return false
+
     let sel = this.selection
-    let result = applyTransform(this.doc, params)
-    if (result.doc != this.doc) {
-      this.update(result.doc,
-                  new Range(result.map(sel.anchor), result.map(sel.head)))
-      this.signal("transform", params, result)
-      return result
-    }
-    return false
+    this.update(transform.doc,
+                new Range(transform.mapSimple(sel.anchor),
+                          transform.mapSimple(sel.head)))
+    this.signal("transform", transform)
+    return transform
   }
+
+  get tr() { return Tr(this.doc) }
 
   update(doc, sel) {
     this.history.mark()
@@ -147,7 +148,7 @@ export default class ProseMirror {
     if (!range) range = this.selection
     if (!range.empty) {
       if (to == null) to = !inline.rangeHasInlineStyle(this.doc, range.from, range.to, st.type)
-      this.apply((to ? addStyle : removeStyle)(range.from, range.to, st))
+      this.apply(this.tr[to ? "addStyle" : "removeStyle"](range.from, range.to, st))
     } else if (!this.doc.path(range.head.path).type.plainText && range == this.selection) {
       let styles = this.input.storedInlineStyle || inline.inlineStylesAt(this.doc, range.head)
       if (to == null) to = !style.contains(styles, st)
