@@ -1,6 +1,7 @@
 export {Result, Step, applyStep, invertStep, Transform, Tr} from "./transform"
 export {canLift, canWrap} from "./ancestor"
 export {joinPoint} from "./join"
+export {MapResult, mapThrough} from "./map"
 import "./style"
 import "./split"
 import "./replace"

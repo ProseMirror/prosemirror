@@ -93,7 +93,7 @@ commands.delBackward = pm => {
   else if (from.offset)
     tr.delete(from.shift(-1))
   else
-    delBlockBackward(pm, tr, head)
+    delBlockBackward(pm, tr, from)
   return pm.apply(tr)
 }
 
@@ -128,10 +128,10 @@ commands.delForward = pm => {
   let tr = pm.tr, sel = pm.selection, from = sel.from
   if (!sel.empty)
     tr.delete(from, sel.to)
-  else if (head.offset < pm.doc.path(head.path).size)
-    tr.delete(head, head.shift(1))
+  else if (from.offset < pm.doc.path(from.path).size)
+    tr.delete(from, from.shift(1))
   else
-    delBlockForward(pm, tr, head)
+    delBlockForward(pm, tr, from)
   return pm.apply(tr)
 }
 
