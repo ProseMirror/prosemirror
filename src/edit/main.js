@@ -36,6 +36,7 @@ export default class ProseMirror {
 
     this.sel = new Selection(this)
     this.input = new Input(this)
+    this.storeInverses = false
 
     initOptions(this)
   }
@@ -65,7 +66,7 @@ export default class ProseMirror {
     return transform
   }
 
-  get tr() { return Tr(this.doc) }
+  get tr() { return Tr(this.doc, this.storeInverses) }
 
   update(doc, sel) {
     this.history.mark()

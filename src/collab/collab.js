@@ -9,8 +9,8 @@ defineOption("collab", false, (pm, value, _, isInit) => {
   if (!isInit) throw new Error("Can't enable/disable collaboration in a running editor")
   if (!value) return
 
-  pm.history = new CollabHistory(pm)
   pm.mod.collab = new Collab(pm, value)
+  pm.history = new CollabHistory(pm, pm.mod.collab)
 })
 
 class Collab {
@@ -21,10 +21,11 @@ class Collab {
     this.options = options
     this.channel = options.channel
     this.clientID = options.clientID || randomID()
-    this.versionID = options.rootID || nullID
+    this.versionID = this.confirmedID = options.rootID || nullID
     this.debounce = null
 
     this.toSend = []
+    this.unconfirmed = []
     this.sending = false
 
     this.store = new VersionStore
@@ -48,6 +49,7 @@ class Collab {
         window.clearTimeout(this.debounce)
         this.debounce = window.setTimeout(() => this.send(), 1000)
       }
+      this.pm.history.storeTime(id, Date.now())
     })
 
     this.channel.register(this.clientID, this)
@@ -84,7 +86,7 @@ class Collab {
     }
 
     let knownChanges = this.store.transitionsBetween(baseID, this.versionID)
-    let changes = mergeChangeSets(knownChanges, newTransitions)
+    let changes = this.unconfirmed = mergeChangeSets(knownChanges, newTransitions)
     let rebased = rebaseChanges(baseID, changes, this.store)
     let sel = this.pm.selection
     let newRange = new Range(mapPosition(knownChanges, rebased.forward, sel.anchor).pos,
@@ -95,19 +97,84 @@ class Collab {
   }
 
   confirm(id) {
+    let cID = this.confirmedID;
+    while (cID != id)
+      cID = xorIDs(cID, this.unconfirmed.shift().id)
+    this.confirmedID = id
+    this.pm.history.confirm(id)
     this.store.cleanUp(id)
   }
 }
 
-// FIXME implement
+class LocalChange {
+  constructor(id, params) {
+    this.id = id
+    this.params = params
+  }
+}
+
+class ForeignChange {
+  constructor(map) {
+    this.map = map
+  }
+}
+
 class CollabHistory {
-  constructor(pm) {
+  constructor(pm, collab) {
     this.pm = pm
+    this.collab = collab
+
+    this.times = Object.create(null)
+    this.done = []
+    this.undone = []
+    this.baseVersion = collab.versionID
   }
 
   mark() {}
 
-  undo() {}
+  storeTime(id, time) {
+    this.times[id] = time
+  }
 
-  redo() {}
+  confirm(id) {
+    // FIXME
+  }
+
+  fullDone() {
+    let unconfirmed = this.collab.unconfirmed
+    if (unconfirmed.length == 0) return this.done
+    let done = this.done.slice()
+    for (let i = 0; i < unconfirmed.length; i++) {
+      let tr = unconfirmed[i]
+      if (tr.clientID == this.collab.clientID)
+        done.push(new LocalChange(tr.id, tr.params))
+      else if (last)
+        done.push(new ForeignChange(tr.result))
+    }
+    return done
+  }
+
+  undo() {
+    let maxPause = this.pm.options.historyEventDelay
+    let done = this.fullDone()
+
+    let end = done.length, last
+    while (end && (done[end - 1] instanceof ForeignChange)) --end
+    if (!end) return false
+    let start = end, time = null
+    for (let i = start - 1; i > 0; --i) {
+      let next = done[i]
+      if (next instanceof LocalChange) {
+        let nextTime = this.times[next.id]
+        if (time != null && time - maxPause > nextTime) break
+        time = nextTime
+        start = i
+      }
+    }
+  }
+
+  redo() {
+    // Check whether no new changes have been done locally since undone was filled
+    // FIXME
+  }
 }

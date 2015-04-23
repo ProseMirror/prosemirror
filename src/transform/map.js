@@ -98,4 +98,19 @@ export class PosMap {
   }
 }
 
+export function mapThrough(maps, pos, bias = 0, back = false, offsets = null) {
+  let storeOffsets = offsets === true && []
+  let hasOffsets = !storeOffsets && offsets
+  let deleted = false
+  for (let i = back ? maps.length - 1 : 0;
+       back ? i >= 0 : i < maps.length;
+       back ? i-- : i++) {
+    let mapped = maps[i].map(pos, bias, back, hasOffsets && hasOffsets[i])
+    if (mapped.deleted) deleted = true
+    if (storeOffsets) storeOffsets[i] = mapped.offset
+    pos = mapped.pos
+  }
+  return new MapResult(pos, storeOffsets, deleted)
+}
+
 export const nullMap = new PosMap

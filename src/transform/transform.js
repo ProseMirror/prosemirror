@@ -1,4 +1,4 @@
-import {MapResult, nullMap} from "./map"
+import {mapThrough, nullMap} from "./map"
 
 export class Step {
   constructor(name, from, to, pos, param = null) {
@@ -33,10 +33,11 @@ export class Result {
 }
 
 export class Transform {
-  constructor(doc) {
+  constructor(doc, storeInverses) {
     this.before = this.doc = doc
     this.steps = []
-    this.results = []
+    this.maps = []
+    this.inverted = storeInverses && []
   }
 
   step(step, from, to, pos, param) {
@@ -45,32 +46,23 @@ export class Transform {
     let result = applyStep(this.doc, step)
     if (result) {
       this.steps.push(step)
-      this.results.push(result)
+      this.maps.push(result.map)
+      if (this.inverted) this.inverted.unshift(invertStep(result, step))
       this.doc = result.doc
     }
     return result
   }
 
   invert() {
-    let inverted = new Transform(this.doc)
-    for (let i = this.steps.length - 1; i >= 0; i--)
-      inverted.step(invertStep(this.results[i], this.steps[i]))
+    let inverted = Tr(this.doc)
+    this.inverted.forEach(s => inverted.step(s))
     return inverted
   }
 
   map(pos, bias = 0, back = false, offsets = null, from = null) {
-    let storeOffsets = offsets === true && []
-    let hasOffsets = !storeOffsets && offsets
-    let deleted = false
-    for (let i = from != null ? from : back ? this.steps.length - 1 : 0;
-         back ? i >= 0 : i < this.steps.length;
-         back ? i-- : i++) {
-      let mapped = this.results[i].map.map(pos, bias, back, hasOffsets && hasOffsets[i])
-      if (mapped.deleted) deleted = true
-      if (storeOffsets) storeOffsets[i] = mapped.offset
-      pos = mapped.pos
-    }
-    return new MapResult(pos, storeOffsets, deleted)
+    let maps = this.maps
+    if (from != null) maps = back ? maps.slice(0, from) : maps.slice(from)
+    return mapThrough(maps, pos, bias, back, offsets)
   }
 
   mapSimple(pos, bias = 0, back = false) {
@@ -78,4 +70,4 @@ export class Transform {
   }
 }
 
-export function Tr(doc) { return new Transform(doc) }
+export function Tr(doc, storeInverses) { return new Transform(doc, storeInverses) }
