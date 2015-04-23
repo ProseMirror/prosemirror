@@ -38,25 +38,38 @@ export function mapPosition(back, forward, pos, bias) {
   return {pos, deleted}
 }
 
+function maxPos(a, b) {
+  return a.cmp(b) > 0 ? a : b
+}
+
 function mapTransform(back, forward, transform) {
   if (!forward.length && !back.length) return transform
   let result = T(forward.length ? forward[forward.length - 1].transform.doc : back[0].transform.before)
-  function map(pos, bias) {
-    if (pos == null) return {pos: pos, deleted: true}
 
+  let allDeleted
+  function map(pos, bias) {
     let local = transform.map(pos, -bias, true, true, result.length)
     let other = mapPosition(back, forward, local.pos, bias)
     let end = result.map(other.pos, bias, false, local.offsets)
-    return {pos: end.pos, deleted: other.deleted || end.deleted}
+    if (!other.deleted && !end.deleted) allDeleted = false
+    return end.pos
   }
 
   for (let i = 0; i < transform.steps.length; i++) {
     let step = transform.steps[i]
-    let from = map(step.from, 1)
-    let to = map(step.to, -1)
-    let pos = map(step.pos, 1)
-    if (!from.deleted || !to.deleted || !pos.deleted)
-      result.step(step.name, from.pos, to.pos, pos.pos, step.param)
+    allDeleted = true
+    let from = null, to = null, pos = null
+    if (step.from) from = map(step.from, 1)
+    if (step.to) {
+      if (step.to.cmp(step.from) == 0) to = from
+      else to = maxPos(map(step.to, -1), from)
+    }
+    if (step.pos) {
+      if (from && step.pos.cmp(step.from) == 0) pos = from
+      else if (to && step.pos.cmp(step.to) == 0) pos = to
+      else pos = map(step.pos, 1)
+    }
+    if (!allDeleted) result.step(step.name, from, to, pos, step.param)
   }
   return result
 }
