@@ -1,4 +1,4 @@
-import {randomID, xorIDs, rotateIDLeft, rotateIDRight, childID, parentID, nullID} from "../src/collab/id"
+import {randomID, xorIDs, rotateIDLeft, rotateIDRight, childID, parentID, changeID, nullID} from "../src/collab/id"
 
 import Failure from "./failure"
 import {defTest} from "./tests"
@@ -31,4 +31,5 @@ defTest("id_parent", () => {
   let parent = randomID(), change = randomID()
   let child = childID(parent, change)
   assert(parentID(child, change) == parent, "child invertable")
+  assert(changeID(child, parent) == change, "recover change id")
 })

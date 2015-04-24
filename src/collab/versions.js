@@ -1,4 +1,4 @@
-import {xorIDs} from "./id"
+import {childID, parentID, changeID} from "./id"
 
 export class Transition {
   constructor(id, baseID, clientID, transform) {
@@ -8,7 +8,7 @@ export class Transition {
     this.transform = transform
   }
 
-  get endID() { xorIDs(this.id, this.baseID) }
+  get endID() { childID(this.id, this.baseID) }
 }
 
 function find(array, id) {
@@ -37,7 +37,7 @@ export class VersionStore {
   }
 
   getBackTransition(newID, changeID) {
-    return this.getTransition(xorIDs(newID, changeID), changeID)
+    return this.getTransition(parentID(newID, changeID), changeID)
   }
 
   versionsAfter(baseID) {
@@ -48,7 +48,7 @@ export class VersionStore {
       obj[next] = true
       let transitions = this.versions[next].children
       if (transitions) for (let i = 0; i < transitions.length; i++)
-        found.push(xorIDs(next, transitions[i].id))
+        found.push(childID(next, transitions[i].id))
     }
     return obj
   }
@@ -63,7 +63,7 @@ export class VersionStore {
     let trs = [], id = newID, parent = this.versions[id].parent
     while (id != oldID) {
       let version = this.versions[parent]
-      trs.unshift(find(version.children, xorIDs(id, parent)))
+      trs.unshift(find(version.children, changeID(id, parent)))
       id = parent
       parent = version.parent
     }

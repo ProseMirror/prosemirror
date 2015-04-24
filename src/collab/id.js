@@ -33,12 +33,18 @@ export function rotateIDRight(id) {
   return (id - bit * bit47) * 2 + bit
 }
 
+
+// The rotation is done so that 
 export function childID(parent, change) {
   return rotateIDLeft(xorIDs(parent, change))
 }
 
 export function parentID(child, change) {
   return xorIDs(rotateIDRight(child), change)
+}
+
+export function changeID(child, parent) {
+  return xorIDs(rotateIDRight(child), parent)
 }
 
 export const nullID = 0

@@ -1,4 +1,4 @@
-import {xorIDs} from "./id"
+import {childID} from "./id"
 import {Transition} from "./versions"
 import {Tr, Step, MapResult} from "../transform"
 
@@ -98,7 +98,7 @@ export function rebaseChanges(baseID, transitions, store) {
     let tr = transitions[i]
     let back = store.transitionsBetween(baseID, tr.baseID)
     let mapped = mapTransform(back, forward, tr.transform)
-    let nextID = xorIDs(id, tr.id)
+    let nextID = childID(id, tr.id)
     store.storeVersion(nextID, id, mapped.doc)
     let newTr = new Transition(tr.id, id, tr.clientID, mapped)
     store.storeTransition(newTr)

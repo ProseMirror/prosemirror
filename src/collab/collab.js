@@ -1,6 +1,6 @@
 import {defineOption, Range} from "../edit"
 import {Tr} from "../transform"
-import {randomID, xorIDs, nullID} from "./id"
+import {randomID, childID, nullID} from "./id"
 import {stepsToJSON, stepsFromJSON} from "./json"
 import {mergeChangeSets, rebaseChanges, mapPosition} from "./rebase"
 import {Transition, VersionStore} from "./versions"
@@ -39,7 +39,7 @@ class Collab {
         by: this.clientID,
         steps: stepsToJSON(transform.steps)
       })
-      let newID = xorIDs(this.versionID, id)
+      let newID = childID(this.versionID, id)
       this.store.storeVersion(newID, this.versionID, transform.doc)
       let transition = new Transition(id, this.versionID, this.clientID, transform)
       this.store.storeTransition(transition)
@@ -81,7 +81,7 @@ class Collab {
       stepsFromJSON(json.steps).forEach(s => transform.step(s))
       let tr = new Transition(json.id, json.base, json.by, transform)
       newTransitions.push(tr)
-      let newID = xorIDs(json.base, tr.id)
+      let newID = childID(json.base, tr.id)
       this.store.storeVersion(newID, json.base, transform.doc)
       this.store.storeTransition(tr)
     }

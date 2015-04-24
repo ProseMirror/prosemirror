@@ -1,6 +1,6 @@
 import {Tr, mapThrough} from "../transform"
 
-import {xorIDs} from "./id"
+import {childID} from "./id"
 import {mapStep} from "./rebase"
 
 class Change {
@@ -155,7 +155,7 @@ export class CollabHistory {
 
     for (let i = transitions.length - 1; i >= 0; i--) {
       let {transform, baseID, id} = transitions[i]
-      let endID = xorIDs(baseID, id)
+      let endID = childID(baseID, id)
       maps = this.mapsBetween(history, endID, mapsTo).concat(maps)
 
       let steps = transform.invertedSteps(), newTransform = Tr(doc)
