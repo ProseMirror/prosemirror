@@ -47,6 +47,6 @@ function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
 }
 
 function setAs(pm, pos, type, attrs) {
-  pm.apply(pm.tr.setType(pos, pos, new Node(type, attrs))
+  pm.apply(pm.tr.setBlockType(pos, pos, new Node(type, attrs))
                 .delete(new Pos(pos.path, 0), pos))
 }

@@ -1,5 +1,5 @@
 import {style, inline, Node} from "../model"
-import {canLift, canWrap, T} from "../transform"
+import {canLift, canWrap, joinPoint, T} from "../transform"
 import {elt} from "../edit/dom"
 
 export class Item {
@@ -54,7 +54,7 @@ export class BlockTypeItem extends Item {
   }
   apply(pm) {
     let sel = pm.selection
-    pm.apply(pm.tr.setType(sel.from, sel.to, new Node(this.type, null, this.attrs)))
+    pm.apply(pm.tr.setBlockType(sel.from, sel.to, new Node(this.type, null, this.attrs)))
   }
 }
 

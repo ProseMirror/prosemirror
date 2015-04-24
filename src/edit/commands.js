@@ -187,7 +187,7 @@ commands.endBlock = pm => {
 function setType(pm, type, attrs) {
   let sel = pm.selection
   pm.scrollIntoView()
-  return pm.apply(pm.tr.setType(sel.from, sel.to, new Node(type, null, attrs)))
+  return pm.apply(pm.tr.setBlockType(sel.from, sel.to, new Node(type, null, attrs)))
 }
 
 commands.makeH1 = pm => setType(pm, "heading", {level: 1})
