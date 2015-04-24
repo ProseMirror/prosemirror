@@ -33,20 +33,25 @@ export class CollabHistory {
     let now = Date.now()
     if (now > this.lastAddedAt + this.pm.options.historyEventDelay) {
       this.done.push([tr])
-      // FIXME enforce options.historyDepth
+      if (this.done.length > this.pm.options.historyDepth) {
+        this.done.splice(0, this.done.length - options.historyDepth)
+        this.shortenHistory()
+      }
     } else {
       this.done[this.done.length - 1].push(tr)
     }
     this.undone.length = 0
+
     this.lastAddedAt = now
+    this.mustShortenHistory = false
   }
 
   rebasedTransitions(trs) {
     outer: for (let i = 0; i < trs.length; i++) {
       let tr = trs[i]
-      for (let j = 0; j < this.undone.length; j++) {
+      for (let j = this.undone.length - 1; j >= 0; j--) {
         let undone = this.undone[j]
-        for (let k = 0; k < undone.length; k++)
+        for (let k = undone.length - 1; k >= 0; k--)
           if (undone[k].id == tr.id) { undone[k] = tr; continue outer }
       }
       for (let j = this.done.length - 1; j >= 0; j--) {
@@ -99,40 +104,86 @@ export class CollabHistory {
     let transitions = source.pop()
     let history = this.fullHistory()
 
-    let tr = this.pm.tr
-    let maps = [], mapsTo = this.collab.versionID
+    let ported = this.portEvent(transitions)
+
+    let contra = this.captureTransitions = []
+    for (let i = 0; i < ported.length; i++)
+      this.pm.apply(ported[i])
+    this.captureTransitions = null
+
+    if (contra.length) dest.push(contra)
+    else this.unredo(un)
+  }
+
+  undo() { this.unredo(true) }
+
+  redo() { this.unredo(false) }
+
+  shortenHistory() {
+    if (!this.done.length && !this.undone.length) {
+      this.history.length = 0
+    } else {
+      let oldest = this.done.length ? this.done[0][0].baseID : this.undone[0][0].baseID
+      if (!this.collab.store.knows(oldest)) for (let i = 0;; i++) {
+        if (this.history[i].id == oldest) {
+          this.history.splice(0, i)
+          break
+        }
+      }
+    }
+  }
+
+  portEventFrom(array) {
+    for (let i = 0; i < array.length; i++) {
+      let event = array[i], last = event[event.length - 1]
+      // If this ends before the current confirmed version, it can be ported
+      if (!this.collab.store.knows(last.endID)) {
+        array[i] = this.portEvent(event, this.history, this.collab.versionID)
+        return true
+      }
+    }
+  }
+
+  portEvent(transitions, history, versionID) {
+    let maps = [], mapsTo = versionID
+    let doc = this.collab.store.getVersion(versionID)
+    let result = []
 
     function mapPos(pos, bias) {
       return mapThrough(maps, pos, bias)
     }
-
-    let contra = []
-    this.captureTransitions = contra
 
     for (let i = transitions.length - 1; i >= 0; i--) {
       let {transform, baseID, id} = transitions[i]
       let endID = xorIDs(baseID, id)
       maps = this.mapsBetween(history, endID, mapsTo).concat(maps)
 
-      let steps = transform.invertedSteps(), result = this.pm.tr
+      let steps = transform.invertedSteps(), newTransform = Tr(doc)
       for (let j = 0; j < steps.length; j++) {
-        let mapped = mapStep(steps[j], mapPos), startLen = result.maps.length
+        let mapped = mapStep(steps[j], mapPos), startLen = newTransform.maps.length
         if (mapped) {
-          result.step(mapped)
-          if (result.maps.length != startLen)
-            maps.push(result.maps[startLen])
+          newTransform.step(mapped)
+          if (newTransform.maps.length != startLen)
+            maps.push(newTransform.maps[startLen])
         }
         maps.unshift(transform.maps[transform.maps.length - 1 - j])
       }
       mapsTo = baseID
-      this.pm.apply(result)
+      result.push(new Transition(id, baseID, this.collab.clientID, newTransform))
+      doc = newTransform.doc
     }
-
-    this.captureTransitions = null
-    if (contra.length) dest.push(contra)
+    return result
   }
 
-  undo() { this.unredo(true) }
-
-  redo() { this.unredo(false) }
+  compressData() {
+    // FIXME avoid recompressing the same events all the time
+    if (this.history.length > 25 &&
+        (compressEventFrom(this.done) || compressEventFrom(this.undone))) {
+      this.mustShortenHistory = true
+      return true
+    } else {
+      if (this.mustShortenHistory) this.shortenHistory()
+      return false
+    }
+  }
 }

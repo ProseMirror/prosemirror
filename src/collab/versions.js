@@ -7,6 +7,8 @@ export class Transition {
     this.clientID = clientID
     this.transform = transform
   }
+
+  get endID() { xorIDs(this.id, this.baseID) }
 }
 
 function find(array, id) {
@@ -66,5 +68,9 @@ export class VersionStore {
       parent = version.parent
     }
     return trs
+  }
+
+  knows(id) {
+    return id in this.versions
   }
 }

@@ -14,6 +14,7 @@ import "./test-style"
 import "./test-collab"
 import "./test-replace"
 import "./test-trans"
+import "./test-id"
 
 for (let name in tests) {
   if (filter && name.indexOf(filter) == -1) continue
