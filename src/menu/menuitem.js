@@ -169,6 +169,6 @@ export class ImageDialog extends Dialog {
     let sel = pm.selection, tr = pm.tr
     tr.delete(sel.from, sel.to)
     let attrs = {src: elts.src.value, alt: elts.alt.value, title: elts.title.value}
-    pm.apply(tr.insert(sel.from, new Node("image", null, attrs)))
+    pm.apply(tr.insertInline(sel.from, new Node.Inline("image", null, null, attrs)))
   }
 }
