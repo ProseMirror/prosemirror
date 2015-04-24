@@ -33,11 +33,10 @@ export class Result {
 }
 
 export class Transform {
-  constructor(doc, storeInverses) {
+  constructor(doc) {
     this.before = this.doc = doc
     this.steps = []
     this.maps = []
-    this.inverted = storeInverses && []
   }
 
   step(step, from, to, pos, param) {
@@ -47,16 +46,22 @@ export class Transform {
     if (result) {
       this.steps.push(step)
       this.maps.push(result.map)
-      if (this.inverted) this.inverted.unshift(invertStep(result, step))
       this.doc = result.doc
     }
     return result
   }
 
   invert() {
-    let inverted = Tr(this.doc)
-    this.inverted.forEach(s => inverted.step(s))
-    return inverted
+    let doc = this.before, inverted = []
+    for (let i = 0; i < this.steps.length; i++) {
+      let result = applyStep(doc, this.steps[i])
+      inverted.push(invertStep(result, this.steps[i]))
+      doc = result.doc
+    }
+    let out = Tr(this.doc)
+    for (let i = inverted.length - 1; i >= 0; i--)
+      out.step(inverted[i])
+    return out
   }
 
   map(pos, bias = 0, back = false, offsets = null, from = null) {
@@ -70,4 +75,4 @@ export class Transform {
   }
 }
 
-export function Tr(doc, storeInverses) { return new Transform(doc, storeInverses) }
+export function Tr(doc) { return new Transform(doc) }

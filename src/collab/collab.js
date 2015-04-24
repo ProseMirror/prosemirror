@@ -12,7 +12,6 @@ defineOption("collab", false, (pm, value, _, isInit) => {
 
   pm.mod.collab = new Collab(pm, value)
   pm.history = new CollabHistory(pm, pm.mod.collab)
-  pm.storeInverses = true
 })
 
 class Collab {

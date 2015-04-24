@@ -21,7 +21,7 @@ export function testTransform(doc, expect, tr) {
 
 function add(name, doc, expect, style) {
   defTest("addStyle_" + name, () => {
-    testTransform(doc, expect, Tr(doc, true).addStyle(doc.tag.a, doc.tag.b, style))
+    testTransform(doc, expect, Tr(doc).addStyle(doc.tag.a, doc.tag.b, style))
   })
 }
 
@@ -52,7 +52,7 @@ add("across_blocks",
 
 function rem(name, doc, expect, style) {
   defTest("removeStyle_" + name, () => {
-    testTransform(doc, expect, Tr(doc, true).removeStyle(doc.tag.a, doc.tag.b, style))
+    testTransform(doc, expect, Tr(doc).removeStyle(doc.tag.a, doc.tag.b, style))
   })
 }
 
@@ -87,7 +87,7 @@ rem("all",
 
 function ins(name, doc, expect, nodes) {
   defTest("insert_" + name, () => {
-    testTransform(doc, expect, Tr(doc, true).insert(doc.tag.a, nodes))
+    testTransform(doc, expect, Tr(doc).insert(doc.tag.a, nodes))
   })
 }
 
@@ -115,7 +115,7 @@ ins("start_of_blockquote",
 
 function del(name, doc, expect) {
   defTest("delete_" + name, () => {
-    testTransform(doc, expect, Tr(doc, true).delete(doc.tag.a, doc.tag.b))
+    testTransform(doc, expect, Tr(doc).delete(doc.tag.a, doc.tag.b))
   })
 }
 
@@ -131,7 +131,7 @@ del("outside_path",
 
 function txt(name, doc, expect, text) {
   defTest("insertText_" + name, () => {
-    testTransform(doc, expect, Tr(doc, true).insertText(doc.tag.a, text))
+    testTransform(doc, expect, Tr(doc).insertText(doc.tag.a, text))
   })
 }
 
@@ -174,7 +174,7 @@ txt("before_br",
 
 function join(name, doc, expect) {
   defTest("join_" + name, () => {
-    testTransform(doc, expect, Tr(doc, true).join(doc.tag.a))
+    testTransform(doc, expect, Tr(doc).join(doc.tag.a))
   })
 }
 
@@ -196,7 +196,7 @@ join("inline",
 
 function split(name, doc, expect, args) {
   defTest("split_" + name, () => {
-    testTransform(doc, expect, Tr(doc, true).split(doc.tag.a, args && args.depth, args && args.node))
+    testTransform(doc, expect, Tr(doc).split(doc.tag.a, args && args.depth, args && args.node))
   })
 }
 
@@ -234,7 +234,7 @@ split("change_type",
 
 function lift(name, doc, expect) {
   defTest("lift_" + name, () => {
-    testTransform(doc, expect, Tr(doc, true).lift(doc.tag.a, doc.tag.b))
+    testTransform(doc, expect, Tr(doc).lift(doc.tag.a, doc.tag.b))
   })
 }
 
@@ -274,7 +274,7 @@ lift("multiple_from_list_with_two_items",
 
 function wrap(name, doc, expect, node) {
   defTest("wrap_" + name, () => {
-    testTransform(doc, expect, Tr(doc, true).wrap(doc.tag.a, doc.tag.b, node))
+    testTransform(doc, expect, Tr(doc).wrap(doc.tag.a, doc.tag.b, node))
   })
 }
 
@@ -309,7 +309,7 @@ wrap("bullet_list",
 
 function type(name, doc, expect, node) {
   defTest("setType_" + name, () => {
-    testTransform(doc, expect, Tr(doc, true).setBlockType(doc.tag.a, doc.tag.b, node))
+    testTransform(doc, expect, Tr(doc).setBlockType(doc.tag.a, doc.tag.b, node))
   })
 }
 
@@ -336,9 +336,9 @@ type("only_clear_for_code_block",
 
 function repl(name, doc, source, expect) {
   defTest("replace_" + name, () => {
-    let tr = source ? Tr(doc, true).replace(doc.tag.a, doc.tag.b || doc.tag.a,
+    let tr = source ? Tr(doc).replace(doc.tag.a, doc.tag.b || doc.tag.a,
                                             source, source && source.tag.a, source && source.tag.b)
-                    : Tr(doc, true).delete(doc.tag.a, doc.tag.b)
+                    : Tr(doc).delete(doc.tag.a, doc.tag.b)
     testTransform(doc, expect, tr)
   })
 }
