@@ -50,7 +50,7 @@ commands.toggleCode = pm => pm.setInlineStyle(style.code, null)
 function blockBefore(pos) {
   for (let i = pos.path.length - 1; i >= 0; i--) {
     let offset = pos.path[i] - 1
-    if (offset >= 0) return pos.path.slice(0, i).concat(offset)
+    if (offset >= 0) return new Pos(pos.path.slice(0, i), offset)
   }
 }
 
@@ -59,13 +59,13 @@ function delBlockBackward(pm, tr, pos) {
     let iBefore = Pos.before(pm.doc, new Pos([], pos.path[0]))
     let bBefore = blockBefore(pos)
     if (iBefore && bBefore) {
-      if (iBefore.cmp(Pos.shorten(bBefore)) > 0) bBefore = null
+      if (iBefore.cmp(bBefore) > 0) bBefore = null
       else iBefore = null
     }
     if (iBefore)
       tr.delete(iBefore, pos)
     else if (bBefore)
-      tr.delete(bBefore.shift(-1), bBefore)
+      tr.delete(bBefore, bBefore.shift(1))
   } else {
     let last = pos.path.length - 1
     let parent = pm.doc.path(pos.path.slice(0, last))
@@ -91,7 +91,7 @@ commands.delBackward = pm => {
   if (!sel.empty)
     tr.delete(from, sel.to)
   else if (from.offset)
-    tr.delete(from.shift(-1))
+    tr.delete(from.shift(-1), from)
   else
     delBlockBackward(pm, tr, from)
   return pm.apply(tr)
@@ -105,7 +105,7 @@ function blockAfter(doc, pos) {
     path = path.slice(0, end)
     let node = doc.path(path)
     if (offset < node.content.length)
-      return path.concat(offset)
+      return new Pos(path, offset)
   }
 }
 
@@ -114,7 +114,7 @@ function delBlockForward(pm, tr, pos) {
   let iAfter = Pos.after(pm.doc, new Pos(pos.path.slice(0, lst), pos.path[lst] + 1))
   let bAfter = blockAfter(pm.doc, pos)
   if (iAfter && bAfter) {
-    if (iAfter.cmp(Pos.shorten(bAfter)) < 0) bAfter = null
+    if (iAfter.cmp(bAfter) < 0) bAfter = null
     else iAfter = null
   }
   if (iAfter)
