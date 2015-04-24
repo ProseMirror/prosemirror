@@ -199,10 +199,10 @@ class History {
     let now = Date.now()
     if (now > this.lastAddedAt + this.pm.options.historyEventDelay) {
       this.done.push(pm.markState(true))
-      this.undone.length = 0
       while (this.done.length > this.pm.options.historyDepth)
         this.done.shift()
     }
+    this.undone.length = 0
     this.lastAddedAt = now
   }
 

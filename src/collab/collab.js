@@ -41,8 +41,8 @@ class Collab {
       })
       let newID = xorIDs(this.versionID, id)
       this.store.storeVersion(newID, this.versionID, transform.doc)
-      let change = new Transition(id, this.versionID, this.clientID, transform)
-      this.store.storeTransition(change)
+      let transition = new Transition(id, this.versionID, this.clientID, transform)
+      this.store.storeTransition(transition)
       this.versionID = newID
 
       if (options.autoSend !== false) {
@@ -50,7 +50,7 @@ class Collab {
         this.debounce = window.setTimeout(() => this.send(), 1000)
       }
 
-      this.pm.history.markID(id)
+      this.pm.history.markTransition(transition)
     })
 
     this.channel.register(this.clientID, this)
@@ -90,9 +90,10 @@ class Collab {
     let changes = mergeChangeSets(knownChanges, newTransitions)
     let rebased = rebaseChanges(baseID, changes, this.store)
     let sel = this.pm.selection
-    let newRange = new Range(mapPosition(knownChanges, rebased.forward, sel.anchor).pos,
-                             mapPosition(knownChanges, rebased.forward, sel.head).pos)
+    let newRange = new Range(mapPosition(knownChanges, rebased.transitions, sel.anchor).pos,
+                             mapPosition(knownChanges, rebased.transitions, sel.head).pos)
     this.pm.updateInner(rebased.doc, newRange)
+    this.pm.history.rebasedTransitions(rebased.transitions)
 
     return this.versionID = rebased.id
   }
@@ -102,9 +103,8 @@ class Collab {
   }
 
   confirm(id) {
-    return // FIXME for history testing
+    this.pm.history.confirm(this.store.transitionsBetween(this.confirmedID, id))
     this.confirmedID = id
-    this.pm.history.confirm(id)
     this.store.cleanUp(id)
   }
 }

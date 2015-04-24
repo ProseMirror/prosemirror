@@ -51,16 +51,19 @@ export class Transform {
     return result
   }
 
-  invert() {
+  invertedSteps() {
     let doc = this.before, inverted = []
     for (let i = 0; i < this.steps.length; i++) {
       let result = applyStep(doc, this.steps[i])
-      inverted.push(invertStep(result, this.steps[i]))
+      inverted.unshift(invertStep(result, this.steps[i]))
       doc = result.doc
     }
-    let out = Tr(this.doc)
-    for (let i = inverted.length - 1; i >= 0; i--)
-      out.step(inverted[i])
+    return inverted
+  }
+
+  invert() {
+    let steps = this.invertedSteps(), out = Tr(this.doc)
+    for (let i = 0; i < steps.length; i++) out.step(steps[i])
     return out
   }
 

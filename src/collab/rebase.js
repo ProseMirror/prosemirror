@@ -106,5 +106,5 @@ export function rebaseChanges(baseID, transitions, store) {
     id = nextID
     doc = mapped.doc
   }
-  return {id: id, doc: doc, forward: forward}
+  return {id, doc, transitions: forward}
 }
