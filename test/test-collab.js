@@ -1,6 +1,6 @@
 import {Transition, VersionStore} from "../src/collab/versions"
 import {mergeChangeSets, mapPosition, rebaseChanges} from "../src/collab/rebase"
-import {nullID, xorIDs, randomID} from "../src/collab/id"
+import {nullID, childID, randomID} from "../src/collab/id"
 import {Pos, Node, style} from "../src/model"
 import {Tr} from "../src/transform"
 
@@ -77,24 +77,30 @@ function runRebase(startDoc, clients, result) {
   store.storeVersion(nullID, null, startDoc)
   let allTransitions = []
   clients.forEach((changes, clientID) => {
-    let doc = startDoc, id = nullID
+    let doc = startDoc, docID = nullID
     let tags = doc.tag
-    let transitions = changes.map(change => {
-      let tID = randomID()
+    let localTransitions = []
+    changes.forEach(change => {
       let transform = change(Tr(doc))
-      let transition = new Transition(tID, id, clientID, transform)
-      id = xorIDs(id, tID)
-      store.storeVersion(id, transition.baseID, transform.doc)
-      store.storeTransition(transition)
+      for (let i = 0; i < transform.steps.length; i++) {
+        let stepID = randomID()
+        let newDocID = childID(docID, stepID)
+        store.storeVersion(newDocID, docID, transform.docs[i + 1])
+        let transition = new Transition(stepID, docID, clientID,
+                                        transform.steps[i], transform.maps[i])
+        store.storeTransition(transition)
+        localTransitions.push(transition)
+        docID = newDocID
+      }
       doc = transform.doc
-      tags = doc.tag = mapObj(tags, (_, value) => transform.mapSimple(value))
-      return transition
+      tags = doc.tag = mapObj(tags, (_, value) => transform.maps.reduce((pos, m) => m.map(pos).pos, value))
     })
-    allTransitions = mergeChangeSets(allTransitions, transitions)
+    allTransitions = mergeChangeSets(allTransitions, localTransitions)
   })
 
   let rebased = rebaseChanges(nullID, allTransitions, store)
   cmpNode(rebased.doc, result)
+  return // FIXME
   for (let tag in startDoc.tag) {
     let mapped = mapPosition([], rebased.forward, startDoc.tag[tag])
     let expected = result.tag[tag]

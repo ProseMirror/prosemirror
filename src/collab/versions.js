@@ -1,11 +1,12 @@
 import {childID, parentID, changeID} from "./id"
 
 export class Transition {
-  constructor(id, baseID, clientID, transform) {
+  constructor(id, baseID, clientID, step, map) {
     this.id = id
     this.baseID = baseID
     this.clientID = clientID
-    this.transform = transform
+    this.step = step
+    this.map = map
   }
 
   get endID() { childID(this.id, this.baseID) }

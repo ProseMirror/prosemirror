@@ -33,10 +33,17 @@ export class TransformResult {
 
 export class Transform {
   constructor(doc) {
-    this.doc = doc
-    this.docs = []
+    this.docs = [doc]
     this.steps = []
     this.maps = []
+  }
+
+  get doc() {
+    return this.docs[this.docs.length - 1]
+  }
+
+  get before() {
+    return this.docs[0]
   }
 
   step(step, from, to, pos, param) {
@@ -46,8 +53,7 @@ export class Transform {
     if (result) {
       this.steps.push(step)
       this.maps.push(result.map)
-      this.docs.push(this.doc)
-      this.doc = result.doc
+      this.docs.push(result.doc)
     }
     return result
   }
