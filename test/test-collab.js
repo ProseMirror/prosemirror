@@ -1,5 +1,5 @@
 import {Transition, VersionStore} from "../src/collab/versions"
-import {mergeChangeSets, mapPosition, rebaseChanges} from "../src/collab/rebase"
+import {mergeTransitionSets, mapPosition, rebaseTransitions} from "../src/collab/rebase"
 import {nullID, childID, randomID} from "../src/collab/id"
 import {Pos, Node, style} from "../src/model"
 import {Tr} from "../src/transform"
@@ -17,7 +17,7 @@ function merge(name, known, add, expect) {
     function flat(lst) {
       return lst.map(c => c.clientID + c.id).join(" ")
     }
-    let result = flat(mergeChangeSets(parse(known), parse(add)))
+    let result = flat(mergeTransitionSets(parse(known), parse(add)))
     if (result != expect)
       throw new Failure("Expected " + expect + " got " + result)
   })
@@ -95,10 +95,10 @@ function runRebase(startDoc, clients, result) {
       doc = transform.doc
       tags = doc.tag = mapObj(tags, (_, value) => transform.maps.reduce((pos, m) => m.map(pos).pos, value))
     })
-    allTransitions = mergeChangeSets(allTransitions, localTransitions)
+    allTransitions = mergeTransitionSets(allTransitions, localTransitions)
   })
 
-  let rebased = rebaseChanges(nullID, allTransitions, store)
+  let rebased = rebaseTransitions(nullID, allTransitions, store)
   cmpNode(rebased.doc, result)
   return // FIXME
   for (let tag in startDoc.tag) {

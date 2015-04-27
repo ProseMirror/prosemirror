@@ -1,5 +1,6 @@
 import {style, Node} from "../src/model"
-import {Tr, Remapping, invertStep} from "../src/transform"
+import {Tr, invertStep} from "../src/transform"
+import {Remapping} from "../src/collab/rebase"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
@@ -19,11 +20,9 @@ function testMapping(maps, pos, newPos, label) {
   maps.forEach(m => mapped = m.map(mapped, 1).pos)
   cmpStr(mapped, newPos, label)
   
-  let remap = new Remapping
-  for (let i = 0; i < maps.length; i++) { 
-    remap.back(maps[i])
-    remap.forward(maps[i], i)
-  }
+  let ident = {}
+  for (let i = 0; i < maps.length; i++) ident[i] = i
+  let remap = new Remapping(maps, maps, ident)
   cmpStr(remap.map(newPos, 1).pos, newPos, label + " back")
 }
 

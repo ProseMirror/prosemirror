@@ -93,55 +93,6 @@ export class PosMap {
 
     return new MapResult(pos)
   }
-
-  mapSimple(pos, bias = 0, back = false) {
-    return this.map(pos, bias, back, null).pos
-  }
-}
-
-export class Remapping {
-  constructor() {
-    this._back = []
-    this._forward = []
-    this.corresponds = Object.create(null)
-  }
-
-  back(map) {
-    this._back.push(map)
-    return this._back.length - 1
-  }
-
-  forward(map, correspondsTo) {
-    this._forward.push(map)
-    if (correspondsTo != null)
-      this.corresponds[correspondsTo] = this._forward.length - 1
-  }
-
-  map(pos, bias) {
-    let deleted = false, start = 0
-
-    for (let i = this._back.length - 1; i >= 0; i--) {
-      let result = this._back[i].map(pos, -bias, true)
-      if (result.recover) {
-        let corr = this.corresponds[i]
-        if (corr != null) {
-          start = corr + 1
-          pos = this._forward[corr].recover(result.recover)
-          break
-        }
-      }
-      if (result.deleted) deleted = true
-      pos = result.pos
-    }
-
-    for (let i = start; i < this._forward.length; i++) {
-      let result = this._forward[i].map(pos, bias)
-      if (result.deleted) deleted = true
-      pos = result.pos
-    }
-
-    return new MapResult(pos, deleted)
-  }
 }
 
 export const nullMap = new PosMap

@@ -57,6 +57,12 @@ export class Transform {
     }
     return result
   }
+
+  map(pos, bias = 0) {
+    for (let i = 0; i < this.maps.length; i++)
+      pos = this.maps[i].map(pos, bias).pos
+    return pos
+  }
 }
 
 export function Tr(doc) { return new Transform(doc) }

@@ -1,14 +1,14 @@
 import {Pos, Node} from "../model"
 import {Step} from "../transform"
 
-export function stepsToJSON(steps) {
-  return steps.map(step => ({
+export function stepToJSON(step) {
+  return {
     name: step.name,
     from: step.from,
     to: step.to,
     pos: step.pos,
     param: objectToJSON(step.param)
-  }))
+  }
 }
 
 function objectToJSON(obj) {
@@ -20,13 +20,13 @@ function objectToJSON(obj) {
   return result
 }
 
-export function stepsFromJSON(json) {
-  return json.map(step => new Step(
+export function stepFromJSON(step) {
+  return new Step(
     step.name,
     step.from && Pos.fromJSON(step.from),
     step.to && Pos.fromJSON(step.to),
     step.pos && Pos.fromJSON(step.pos),
-    objectFromJSON(step.param)))
+    objectFromJSON(step.param))
 }
 
 function objectFromJSON(json) {

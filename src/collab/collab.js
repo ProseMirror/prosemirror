@@ -1,8 +1,8 @@
 import {defineOption, Range} from "../edit"
-import {Tr} from "../transform"
+import {applyStep} from "../transform"
 import {randomID, childID, nullID} from "./id"
-import {stepsToJSON, stepsFromJSON} from "./json"
-import {mergeChangeSets, rebaseChanges, mapPosition} from "./rebase"
+import {stepToJSON, stepFromJSON} from "./json"
+import {mergeTransitionSets, rebaseTransitions} from "./rebase"
 import {Transition, VersionStore} from "./versions"
 import {CollabHistory} from "./history"
 
@@ -32,25 +32,24 @@ class Collab {
     this.store.storeVersion(this.versionID, null, pm.doc)
 
     pm.on("transform", transform => {
-      let id = randomID()
-      this.toSend.push({
-        base: this.versionID,
-        id: id,
-        by: this.clientID,
-        steps: stepsToJSON(transform.steps)
-      })
-      let newID = childID(this.versionID, id)
-      this.store.storeVersion(newID, this.versionID, transform.doc)
-      let transition = new Transition(id, this.versionID, this.clientID, transform)
-      this.store.storeTransition(transition)
-      this.versionID = newID
-
+      for (let i = 0; i < transform.steps.length; i++) {
+        let id = randomID(), step = transform.steps[i]
+        this.toSend.push({
+          base: this.versionID,
+          id: id,
+          by: this.clientID,
+          step: stepToJSON(step)
+        })
+        let newID = childID(this.versionID, id)
+        this.store.storeVersion(newID, this.versionID, transform.docs[i + 1])
+        let transition = new Transition(id, this.versionID, this.clientID, step, transform.maps[i])
+        this.store.storeTransition(transition)
+        this.versionID = newID
+      }
       if (options.autoSend !== false) {
         window.clearTimeout(this.debounce)
         this.debounce = window.setTimeout(() => this.send(), 1000)
       }
-
-      this.pm.history.markTransition(transition)
     })
 
     this.channel.register(this.clientID, this)
@@ -77,33 +76,32 @@ class Collab {
     // Pump changes into our version store
     for (let i = 0; i < data.length; i++) {
       let json = data[i]
-      let transform = Tr(this.store.getVersion(json.base))
-      stepsFromJSON(json.steps).forEach(s => transform.step(s))
-      let tr = new Transition(json.id, json.base, json.by, transform)
+      let base = this.store.getVersion(json.base)
+      let step = stepFromJSON(json.step)
+      let result = applyStep(base, step)
+      let newID = childID(json.base, json.id)
+      this.store.storeVersion(newID, json.base, result.doc)
+      let tr = new Transition(json.id, json.base, json.by, step, result.map)
       newTransitions.push(tr)
-      let newID = childID(json.base, tr.id)
-      this.store.storeVersion(newID, json.base, transform.doc)
       this.store.storeTransition(tr)
     }
 
-    let knownChanges = this.store.transitionsBetween(baseID, this.versionID)
-    let changes = mergeChangeSets(knownChanges, newTransitions)
-    let rebased = rebaseChanges(baseID, changes, this.store)
+    let knownTransitions = this.store.transitionsBetween(baseID, this.versionID)
+    let transitions = mergeTransitionSets(knownTransitions, newTransitions)
+    let rebased = rebaseTransitions(baseID, transitions, this.store)
     let sel = this.pm.selection
-    let newRange = new Range(mapPosition(knownChanges, rebased.transitions, sel.anchor).pos,
-                             mapPosition(knownChanges, rebased.transitions, sel.head).pos)
+    
+    let newRange = new Range(rebased.map.map(sel.anchor).pos, rebased.map.map(sel.head).pos)
     this.pm.updateInner(rebased.doc, newRange)
-    this.pm.history.rebasedTransitions(rebased.transitions)
 
     return this.versionID = rebased.id
   }
 
-  unconfirmedChanges() {
+  unconfirmedTransitions() {
     return this.store.transitionsBetween(this.confirmedID, this.versionID)
   }
 
   confirm(id) {
-    this.pm.history.confirm(this.store.transitionsBetween(this.confirmedID, id))
     this.confirmedID = id
     this.store.cleanUp(id)
   }

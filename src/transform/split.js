@@ -27,7 +27,7 @@ defineStep("split", {
     return new TransformResult(copy, map)
   },
   invert(step, _oldDoc, map) {
-    return new Step("join", step.pos, map.mapSimple(step.pos))
+    return new Step("join", step.pos, map.map(step.pos).pos)
   }
 })
 

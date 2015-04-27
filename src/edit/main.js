@@ -59,8 +59,7 @@ export default class ProseMirror {
 
     let sel = this.selection
     this.update(transform.doc,
-                new Range(transform.mapSimple(sel.anchor),
-                          transform.mapSimple(sel.head)))
+                new Range(transform.map(sel.anchor), transform.map(sel.head)))
     this.signal("transform", transform)
     return transform
   }

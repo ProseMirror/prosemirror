@@ -15,7 +15,7 @@ defineStep("addStyle", {
     }))
   },
   invert(step, _oldDoc, map) {
-    return new Step("removeStyle", step.from, map.mapSimple(step.to), null, step.param)
+    return new Step("removeStyle", step.from, map.map(step.to).pos, null, step.param)
   }
 })
 
@@ -59,7 +59,7 @@ defineStep("removeStyle", {
     }))
   },
   invert(step, _oldDoc, map) {
-    return new Step("addStyle", step.from, map.mapSimple(step.to), null, step.param)
+    return new Step("addStyle", step.from, map.map(step.to).pos, null, step.param)
   }
 })
 

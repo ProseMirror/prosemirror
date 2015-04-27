@@ -232,7 +232,7 @@ handlers.drop = (pm, e) => {
     if (pm.input.draggingFrom && !e.ctrlKey) {
       let sel = pm.selection
       tr.delete(sel.from, sel.to)
-      insertPos = tr.mapSimple(insertPos)
+      insertPos = tr.map(insertPos).pos
     }
     tr.replace(insertPos, insertPos, doc, Pos.start(doc), Pos.end(doc))
     pm.apply(tr)

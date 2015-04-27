@@ -59,8 +59,8 @@ defineStep("ancestor", {
       let parent = oldDoc.path(step.from.path.slice(0, step.from.path.length - i))
       wrappers.unshift(parent.copy())
     }
-    let newFrom = map.mapSimple(step.from)
-    let newTo = step.from.cmp(step.to) ? map.mapSimple(step.to, -1) : newFrom
+    let newFrom = map.map(step.from).pos
+    let newTo = step.from.cmp(step.to) ? map.map(step.to, -1).pos : newFrom
     return new Step("ancestor", newFrom, newTo, null,
                     {depth: step.param.wrappers ? step.param.wrappers.length : 0,
                      wrappers: wrappers})

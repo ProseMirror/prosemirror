@@ -121,7 +121,7 @@ defineStep("replace", {
     let depth = step.pos.path.length
     let between = slice.between(oldDoc, step.from, step.to, false)
     for (let i = 0; i < depth; i++) between = between.content[0]
-    return new Step("replace", step.from, map.mapSimple(step.to), step.from.shorten(depth), {
+    return new Step("replace", step.from, map.map(step.to).pos, step.from.shorten(depth), {
       nodes: between.content,
       openLeft: step.from.path.length - depth,
       openRight: step.to.path.length - depth
@@ -240,7 +240,7 @@ Transform.prototype.replace = function(from, to, source, start, end) {
   }
   if (nodesAfter.length != nodesBefore.length ||
       !nodesAfter.every((n, i) => n.sameMarkup(nodesBefore[i]))) {
-    let after = result.map.mapSimple(to)
+    let after = result.map.map(to).pos
     let before = Pos.before(result.doc, after.shorten(null, 0))
     moveText(this, result.doc, before, after)
   }

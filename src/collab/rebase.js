@@ -1,8 +1,8 @@
 import {childID} from "./id"
 import {Transition} from "./versions"
-import {Tr, Step, MapResult, Remapping, applyStep} from "../transform"
+import {Tr, Step, MapResult, applyStep} from "../transform"
 
-export function mergeChangeSets(old, nw) {
+export function mergeTransitionSets(old, nw) {
   let result = []
   let iOld = 0, iNew = 0
   for (;;) {
@@ -19,21 +19,60 @@ export function mergeChangeSets(old, nw) {
   }
 }
 
-function findIndex(id, transitions) {
-  for (let i = 0; i < transitions.length; i++)
-    if (transitions[i].id == id) return i
+export class Remapping {
+  constructor(back, forward, corresponds) {
+    this._back = back
+    this._forward = forward
+    this.corresponds = corresponds || {}
+  }
+
+  map(pos, bias) {
+    let deleted = false, start = 0
+
+    for (let i = this._back.length - 1; i >= 0; i--) {
+      let result = this._back[i].map(pos, -bias, true)
+      if (result.recover) {
+        let corr = this.corresponds[i]
+        if (corr != null) {
+          start = corr + 1
+          pos = this._forward[corr].recover(result.recover)
+          break
+        }
+      }
+      if (result.deleted) deleted = true
+      pos = result.pos
+    }
+
+    for (let i = start; i < this._forward.length; i++) {
+      let result = this._forward[i].map(pos, bias)
+      if (result.deleted) deleted = true
+      pos = result.pos
+    }
+
+    return new MapResult(pos, deleted)
+  }
 }
 
-export function rebaseChanges(baseID, transitions, store) {
+// FIXME this is repeating quite a lot of work. Optimize the case
+// where subsequent ops already followed each other (and we can simply
+// add a single entry to the previous object)
+
+function remapping(back, forward) {
+  let corresponding = Object.create(null)
+  for (let i = 0; i < back.length; i++)
+    for (let j = 0; j < forward.length; j++)
+      if (back[i].id == forward[j].id) corresponding[i] = j
+  return new Remapping(back.map(t => t.map), forward.map(t => t.map),
+                       corresponding)
+}
+
+export function rebaseTransitions(baseID, transitions, store) {
   let id = baseID
   let forward = [], doc = store.getVersion(baseID)
 
   for (let i = 0; i < transitions.length; i++) {
     let tr = transitions[i]
-    let remap = new Remapping
-    let back = store.transitionsBetween(baseID, tr.baseID)
-    back.forEach(tr => remap.back(tr.map))
-    forward.forEach(tr => remap.forward(tr.map, findIndex(tr.id, back)))
+    let remap = remapping(store.transitionsBetween(baseID, tr.baseID), forward)
     let mapped = mapStep(tr.step, remap)
     if (!mapped) continue
     let result = applyStep(doc, mapped)
@@ -45,7 +84,7 @@ export function rebaseChanges(baseID, transitions, store) {
     id = nextID
     doc = result.doc
   }
-  return {id, doc, transitions: forward}
+  return {id, doc, transitions: forward, map: remapping(store.transitionsBetween(baseID, id), forward)}
 }
 
 function maxPos(a, b) {

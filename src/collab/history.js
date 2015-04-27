@@ -1,4 +1,4 @@
-import {Tr, mapThrough} from "../transform"
+import {Tr, mapThrough, MapResult} from "../transform"
 
 import {childID} from "./id"
 import {mapStep} from "./rebase"
@@ -104,7 +104,7 @@ export class CollabHistory {
     let transitions = source.pop()
     let history = this.fullHistory()
 
-    let ported = this.portEvent(transitions)
+    let ported = this.portEvent(transitions, history, this.collab.versionID)
 
     let contra = this.captureTransitions = []
     for (let i = 0; i < ported.length; i++)
@@ -138,6 +138,7 @@ export class CollabHistory {
       let event = array[i], last = event[event.length - 1]
       // If this ends before the current confirmed version, it can be ported
       if (!this.collab.store.knows(last.endID)) {
+        // FIXME this returns a transform, not a transition
         array[i] = this.portEvent(event, this.history, this.collab.versionID)
         return true
       }
@@ -149,28 +150,26 @@ export class CollabHistory {
     let doc = this.collab.store.getVersion(versionID)
     let result = []
 
-    function mapPos(pos, bias) {
-      return mapThrough(maps, pos, bias)
-    }
-
     for (let i = transitions.length - 1; i >= 0; i--) {
       let {transform, baseID, id} = transitions[i]
       let endID = childID(baseID, id)
       maps = this.mapsBetween(history, endID, mapsTo).concat(maps)
 
-      let steps = transform.invertedSteps(), newTransform = Tr(doc)
-      for (let j = 0; j < steps.length; j++) {
-        let mapped = mapStep(steps[j], mapPos), startLen = newTransform.maps.length
-        if (mapped) {
-          newTransform.step(mapped)
-          if (newTransform.maps.length != startLen)
-            maps.push(newTransform.maps[startLen])
-        }
-        maps.unshift(transform.maps[transform.maps.length - 1 - j])
+      let steps = transform.invertedSteps(), newTransform = Tr(doc), j = 0
+      function mapPos(pos, bias) {
+        let start = transform.map(pos, bias, false, true, j)
+        let throughMaps = mapThrough(maps, start.pos, bias)
+        let end = newTransform.map(throughMaps.pos, -bias, false, start.offsets)
+        return new MapResult(end.pos, null, throughMaps.deleted || end.deleted)
       }
-      mapsTo = baseID
-      result.push(new Transition(id, baseID, this.collab.clientID, newTransform))
+
+      for (; j < steps.length; j++) {
+        let mapped = mapStep(steps[j], mapPos)
+        if (mapped) newTransform.step(mapped)
+      }
+      result.push(newTransform)
       doc = newTransform.doc
+      mapsTo = baseID
     }
     return result
   }
