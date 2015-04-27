@@ -1,5 +1,5 @@
 import {style, Node} from "../src/model"
-import {Tr} from "../src/transform"
+import {Tr, Remapping, invertStep} from "../src/transform"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
@@ -7,16 +7,33 @@ import Failure from "./failure"
 import {defTest} from "./tests"
 import {cmpNode, cmpStr} from "./cmp"
 
-export function testTransform(doc, expect, tr) {
-  cmpNode(tr.doc, expect)
-  let inverted = tr.invert()
-  cmpNode(inverted.doc, doc, "inverted")
-  for (let tag in expect.tag) {
-    let result = tr.map(doc.tag[tag], null, false, true)
-    cmpStr(result.pos, expect.tag[tag], tag)
-    cmpStr(tr.map(result.pos, null, true, result.offset).pos,
-           doc.tag[tag], tag + " back")
+function invert(transform) {
+  let doc = transform.doc, out = Tr(doc)
+  for (let i = transform.steps.length - 1; i >= 0; i--)
+    out.step(invertStep(transform.steps[i], transform.docs[i], transform.maps[i]))
+  return out
+}
+
+function testMapping(maps, pos, newPos, label) {
+  let mapped = pos
+  maps.forEach(m => mapped = m.map(mapped, 1).pos)
+  cmpStr(mapped, newPos, label)
+  
+  let remap = new Remapping
+  for (let i = 0; i < maps.length; i++) { 
+    remap.back(maps[i])
+    remap.forward(maps[i], i)
   }
+  cmpStr(remap.map(newPos, 1).pos, newPos, label + " back")
+}
+
+function testTransform(doc, expect, tr) {
+  cmpNode(tr.doc, expect)
+  let inverted = invert(tr)
+  cmpNode(inverted.doc, doc, "inverted")
+
+  for (let tag in expect.tag)
+    testMapping(tr.maps, doc.tag[tag], expect.tag[tag], tag)
 }
 
 function add(name, doc, expect, style) {

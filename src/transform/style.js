@@ -1,21 +1,21 @@
 import {style, Node, Pos} from "../model"
 
-import {defineStep, Result, Step, Transform} from "./transform"
+import {defineStep, TransformResult, Step, Transform} from "./transform"
 import {nullMap} from "./map"
 import {copyInline, copyStructure, forSpansBetween} from "./tree"
 
 defineStep("addStyle", {
-  apply(doc, data) {
-    return new Result(doc, copyStructure(doc, data.from, data.to, (node, from, to) => {
+  apply(doc, step) {
+    return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       if (node.type.plainText) return node
       return copyInline(node, from, to, node => {
-        return new Node.Inline(node.type, style.add(node.styles, data.param),
+        return new Node.Inline(node.type, style.add(node.styles, step.param),
                                node.text, node.attrs)
       })
     }))
   },
-  invert(result, data) {
-    return new Step("removeStyle", data.from, result.map.mapSimple(data.to), null, data.param)
+  invert(step, _oldDoc, map) {
+    return new Step("removeStyle", step.from, map.mapSimple(step.to), null, step.param)
   }
 })
 
@@ -50,16 +50,16 @@ Transform.prototype.addStyle = function(from, to, st) {
 }
 
 defineStep("removeStyle", {
-  apply(doc, data) {
-    return new Result(doc, copyStructure(doc, data.from, data.to, (node, from, to) => {
+  apply(doc, step) {
+    return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       return copyInline(node, from, to, node => {
-        let styles = style.remove(node.styles, data.param)
+        let styles = style.remove(node.styles, step.param)
         return new Node.Inline(node.type, styles, node.text, node.attrs)
       })
     }))
   },
-  invert(result, data) {
-    return new Step("addStyle", data.from, result.map.mapSimple(data.to), null, data.param)
+  invert(step, _oldDoc, map) {
+    return new Step("addStyle", step.from, map.mapSimple(step.to), null, step.param)
   }
 })
 

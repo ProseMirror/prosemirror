@@ -1,16 +1,16 @@
 import {Pos, Node, inline} from "../model"
 
-import {defineStep, Result, Step, Transform} from "./transform"
+import {defineStep, TransformResult, Step, Transform} from "./transform"
 import {copyTo} from "./tree"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 
 defineStep("join", {
-  apply(doc, data) {
-    let before = doc.path(data.from.path)
-    let after = doc.path(data.to.path)
-    if (data.from.offset < before.maxOffset || data.to.offset > 0 ||
+  apply(doc, step) {
+    let before = doc.path(step.from.path)
+    let after = doc.path(step.to.path)
+    if (step.from.offset < before.maxOffset || step.to.offset > 0 ||
         before.type.contains != after.type.contains) return null
-    let pFrom = data.from.path, pTo = data.to.path
+    let pFrom = step.from.path, pTo = step.to.path
     let last = pFrom.length - 1, offset = pFrom[last] + 1
     if (pFrom.length != pTo.length || pFrom.length == 0 || offset != pTo[last]) return null
     for (let i = 0; i < last; i++) if (pFrom[i] != pTo[i]) return null
@@ -23,14 +23,13 @@ defineStep("join", {
       inline.stitchTextNodes(joined, before.content.length)
     target.content.splice(offset - 1, 2, joined)
 
-    let map = new PosMap([new MovedRange(data.to, after.maxOffset, data.from),
+    let map = new PosMap([new MovedRange(step.to, after.maxOffset, step.from),
                           new MovedRange(new Pos(targetPath, offset + 1), oldSize - offset - 1, new Pos(targetPath, offset))],
-                         [new ReplacedRange(data.from, data.to, data.from, data.from, data.to.shorten())])
-    return new Result(doc, copy, map)
+                         [new ReplacedRange(step.from, step.to, step.from, step.from, step.to.shorten())])
+    return new TransformResult(copy, map)
   },
-  invert: function(result, data) {
-    return new Step("split", null, null, data.from,
-                    result.before.path(data.to.path).copy())
+  invert(step, oldDoc) {
+    return new Step("split", null, null, step.from, oldDoc.path(step.to.path).copy())
   }
 })
 

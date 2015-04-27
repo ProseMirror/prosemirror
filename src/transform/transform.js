@@ -20,21 +20,21 @@ export function applyStep(doc, step) {
   return steps[step.name].apply(doc, step)
 }
 
-export function invertStep(result, step) {
-  return steps[step.name].invert(result, step)
+export function invertStep(step, oldDoc, map) {
+  return steps[step.name].invert(step, oldDoc, map)
 }
 
-export class Result {
-  constructor(before, after = before, map = nullMap) {
-    this.before = before
-    this.doc = after
+export class TransformResult {
+  constructor(doc, map = nullMap) {
+    this.doc = doc
     this.map = map
   }
 }
 
 export class Transform {
   constructor(doc) {
-    this.before = this.doc = doc
+    this.doc = doc
+    this.docs = []
     this.steps = []
     this.maps = []
   }
@@ -46,35 +46,10 @@ export class Transform {
     if (result) {
       this.steps.push(step)
       this.maps.push(result.map)
+      this.docs.push(this.doc)
       this.doc = result.doc
     }
     return result
-  }
-
-  invertedSteps() {
-    let doc = this.before, inverted = []
-    for (let i = 0; i < this.steps.length; i++) {
-      let result = applyStep(doc, this.steps[i])
-      inverted.unshift(invertStep(result, this.steps[i]))
-      doc = result.doc
-    }
-    return inverted
-  }
-
-  invert() {
-    let steps = this.invertedSteps(), out = Tr(this.doc)
-    for (let i = 0; i < steps.length; i++) out.step(steps[i])
-    return out
-  }
-
-  map(pos, bias = 0, back = false, offsets = null, from = null) {
-    let maps = this.maps
-    if (from != null) maps = back ? maps.slice(0, from) : maps.slice(from)
-    return mapThrough(maps, pos, bias, back, offsets)
-  }
-
-  mapSimple(pos, bias = 0, back = false) {
-    return this.map(pos, bias, back).pos
   }
 }
 

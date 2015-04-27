@@ -1,15 +1,15 @@
 import {Pos, Node, inline} from "../model"
 
-import {defineStep, Result, Step, Transform} from "./transform"
+import {defineStep, TransformResult, Step, Transform} from "./transform"
 import {isFlatRange, copyTo, selectedSiblings, blocksBetween, isPlainText} from "./tree"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 
 defineStep("ancestor", {
-  apply(doc, data) {
-    let from = data.from, to = data.to
+  apply(doc, step) {
+    let from = step.from, to = step.to
     if (!isFlatRange(from, to)) return null
     let toParent = from.path, start = from.offset, end = to.offset
-    let depth = data.param.depth || 0, wrappers = data.param.wrappers || Node.empty
+    let depth = step.param.depth || 0, wrappers = step.param.wrappers || Node.empty
     if (!depth && wrappers.length == 0) return null
     for (let i = 0; i < depth; i++) {
       if (start > 0 || end < doc.path(toParent).maxOffset || toParent.length == 0) return null
@@ -51,18 +51,18 @@ defineStep("ancestor", {
     if (end - start != insertedSize)
       moved.push(new MovedRange(new Pos(toParent, end), parentSize - end,
                                 new Pos(toParent, start + insertedSize)))
-    return new Result(doc, copy, new PosMap(moved, replaced))
+    return new TransformResult(copy, new PosMap(moved, replaced))
   },
-  invert(result, data) {
+  invert(step, oldDoc, map) {
     let wrappers = []
-    if (data.param.depth) for (let i = 0; i < data.param.depth; i++) {
-      let parent = result.before.path(data.from.path.slice(0, data.from.path.length - i))
+    if (step.param.depth) for (let i = 0; i < step.param.depth; i++) {
+      let parent = oldDoc.path(step.from.path.slice(0, step.from.path.length - i))
       wrappers.unshift(parent.copy())
     }
-    let newFrom = result.map.mapSimple(data.from)
-    let newTo = data.from.cmp(data.to) ? result.map.mapSimple(data.to, -1) : newFrom
+    let newFrom = map.mapSimple(step.from)
+    let newTo = step.from.cmp(step.to) ? map.mapSimple(step.to, -1) : newFrom
     return new Step("ancestor", newFrom, newTo, null,
-                    {depth: data.param.wrappers ? data.param.wrappers.length : 0,
+                    {depth: step.param.wrappers ? step.param.wrappers.length : 0,
                      wrappers: wrappers})
   }
 })

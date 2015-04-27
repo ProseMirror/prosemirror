@@ -31,10 +31,10 @@ const empty = []
 const nullOffset = new Pos(empty, 0)
 
 export class MapResult {
-  constructor(pos, offset = null, deleted = false) {
+  constructor(pos, deleted = false, recover = null) {
     this.pos = pos
-    this.offset = offset
     this.deleted = deleted
+    this.recover = recover
   }
 }
 
@@ -55,22 +55,23 @@ export class PosMap {
     this.replaced = replaced || empty
   }
 
-  map(pos, bias = 0, back = false, offset = null) {
+  recover(offset, back = false) {
+    let range = this.replaced[offset.rangeID]
+    return (back ? range.before : range.after).ref.extend(offset.offset)
+  }
+
+  map(pos, bias = 0, back = false) {
     if (!bias) bias = back ? -1 : 1
 
-    let repl = this.replaced
-    if (offset)
-      return new MapResult(repl[offset.rangeID][back ? "before" : "after"].ref.extend(offset.offset))
-
-    for (let i = 0; i < repl.length; i++) {
-      let range = repl[i], side = back ? range.after : range.before
+    for (let i = 0; i < this.replaced.length; i++) {
+      let range = this.replaced[i], side = back ? range.after : range.before
       let left, right
       if ((left = pos.cmp(side.from)) >= 0 &&
           (right = pos.cmp(side.to)) <= 0) {
         let other = back ? range.before : range.after
         return new MapResult(bias < 0 ? other.from : other.to,
-                             {rangeID: i, offset: offsetFrom(side.ref, pos)},
-                             !!(left && right))
+                             !!(left && right),
+                             {rangeID: i, offset: offsetFrom(side.ref, pos)})
       }
     }
 
@@ -98,19 +99,49 @@ export class PosMap {
   }
 }
 
-export function mapThrough(maps, pos, bias = 0, back = false, offsets = null) {
-  let storeOffsets = offsets === true && []
-  let hasOffsets = !storeOffsets && offsets
-  let deleted = false
-  for (let i = back ? maps.length - 1 : 0;
-       back ? i >= 0 : i < maps.length;
-       back ? i-- : i++) {
-    let mapped = maps[i].map(pos, bias, back, hasOffsets && hasOffsets[i])
-    if (mapped.deleted) deleted = true
-    if (storeOffsets) storeOffsets[i] = mapped.offset
-    pos = mapped.pos
+export class Remapping {
+  constructor() {
+    this._back = []
+    this._forward = []
+    this.corresponds = Object.create(null)
   }
-  return new MapResult(pos, storeOffsets, deleted)
+
+  back(map) {
+    this._back.push(map)
+    return this._back.length - 1
+  }
+
+  forward(map, correspondsTo) {
+    this._forward.push(map)
+    if (correspondsTo != null)
+      this.corresponds[correspondsTo] = this._forward.length - 1
+  }
+
+  map(pos, bias) {
+    let deleted = false, start = 0
+
+    for (let i = this._back.length - 1; i >= 0; i--) {
+      let result = this._back[i].map(pos, -bias, true)
+      if (result.recover) {
+        let corr = this.corresponds[i]
+        if (corr != null) {
+          start = corr + 1
+          pos = this._forward[corr].recover(result.recover)
+          break
+        }
+      }
+      if (result.deleted) deleted = true
+      pos = result.pos
+    }
+
+    for (let i = start; i < this._forward.length; i++) {
+      let result = this._forward[i].map(pos, bias)
+      if (result.deleted) deleted = true
+      pos = result.pos
+    }
+
+    return new MapResult(pos, deleted)
+  }
 }
 
 export const nullMap = new PosMap

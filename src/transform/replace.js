@@ -1,6 +1,6 @@
 import {Pos, Node, inline, slice} from "../model"
 
-import {defineStep, Result, Step, Transform} from "./transform"
+import {defineStep, TransformResult, Step, Transform} from "./transform"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 import {copyTo} from "./tree"
 
@@ -104,27 +104,27 @@ export function replace(doc, from, to, root, repl) {
 const nullRepl = {nodes: [], openLeft: 0, openRight: 0}
 
 defineStep("replace", {
-  apply(doc, data) {
-    let root = data.pos.path
-    if (data.from.path.length < root.length || data.to.path.length < root.length)
+  apply(doc, step) {
+    let root = step.pos.path
+    if (step.from.path.length < root.length || step.to.path.length < root.length)
       return null
     for (let i = 0; i < root.length; i++)
-      if (data.from.path[i] != root[i] || data.to.path[i] != root[i]) return null
+      if (step.from.path[i] != root[i] || step.to.path[i] != root[i]) return null
 
-    let {doc: out, moved} = replace(doc, data.from, data.to, root, data.param || nullRepl)
+    let {doc: out, moved} = replace(doc, step.from, step.to, root, step.param || nullRepl)
     if (!out) return null
-    let end = moved.length ? moved[moved.length - 1].dest : data.to
-    let replaced = new ReplacedRange(data.from, data.to, data.from, end, data.pos, data.pos)
-    return new Result(doc, out, new PosMap(moved, [replaced]))
+    let end = moved.length ? moved[moved.length - 1].dest : step.to
+    let replaced = new ReplacedRange(step.from, step.to, step.from, end, step.pos, step.pos)
+    return new TransformResult(out, new PosMap(moved, [replaced]))
   },
-  invert(result, data) {
-    let depth = data.pos.path.length
-    let between = slice.between(result.before, data.from, data.to, false)
+  invert(step, oldDoc, map) {
+    let depth = step.pos.path.length
+    let between = slice.between(oldDoc, step.from, step.to, false)
     for (let i = 0; i < depth; i++) between = between.content[0]
-    return new Step("replace", data.from, result.map.mapSimple(data.to), data.from.shorten(depth), {
+    return new Step("replace", step.from, map.mapSimple(step.to), step.from.shorten(depth), {
       nodes: between.content,
-      openLeft: data.from.path.length - depth,
-      openRight: data.to.path.length - depth
+      openLeft: step.from.path.length - depth,
+      openRight: step.to.path.length - depth
     })
   }
 })
