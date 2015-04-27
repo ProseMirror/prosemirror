@@ -2,7 +2,7 @@ import {defineOption, Range} from "../edit"
 import {applyStep} from "../transform"
 import {randomID, childID, nullID} from "./id"
 import {stepToJSON, stepFromJSON} from "./json"
-import {mergeTransitionSets, rebaseTransitions} from "./rebase"
+import {mergeTransitionSets, rebaseTransitions, remapping} from "./rebase"
 import {Transition, VersionStore} from "./versions"
 import {CollabHistory} from "./history"
 
@@ -90,8 +90,9 @@ class Collab {
     let transitions = mergeTransitionSets(knownTransitions, newTransitions)
     let rebased = rebaseTransitions(baseID, transitions, this.store)
     let sel = this.pm.selection
-    
-    let newRange = new Range(rebased.map.map(sel.anchor).pos, rebased.map.map(sel.head).pos)
+
+    let posMap = remapping(this.store, baseID, this.versionID, rebased.transitions)
+    let newRange = new Range(posMap.map(sel.anchor).pos, posMap.map(sel.head).pos)
     this.pm.updateInner(rebased.doc, newRange)
 
     return this.versionID = rebased.id

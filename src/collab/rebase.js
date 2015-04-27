@@ -57,7 +57,8 @@ export class Remapping {
 // where subsequent ops already followed each other (and we can simply
 // add a single entry to the previous object)
 
-function remapping(back, forward) {
+export function remapping(store, baseID, startID, forward) {
+  let back = store.transitionsBetween(baseID, startID)
   let corresponding = Object.create(null)
   for (let i = 0; i < back.length; i++)
     for (let j = 0; j < forward.length; j++)
@@ -72,7 +73,7 @@ export function rebaseTransitions(baseID, transitions, store) {
 
   for (let i = 0; i < transitions.length; i++) {
     let tr = transitions[i]
-    let remap = remapping(store.transitionsBetween(baseID, tr.baseID), forward)
+    let remap = remapping(store, baseID, tr.baseID, forward)
     let mapped = mapStep(tr.step, remap)
     if (!mapped) continue
     let result = applyStep(doc, mapped)
@@ -84,7 +85,7 @@ export function rebaseTransitions(baseID, transitions, store) {
     id = nextID
     doc = result.doc
   }
-  return {id, doc, transitions: forward, map: remapping(store.transitionsBetween(baseID, id), forward)}
+  return {id, doc, transitions: forward}
 }
 
 function maxPos(a, b) {
