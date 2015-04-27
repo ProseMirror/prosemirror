@@ -81,8 +81,8 @@ export class PosMap {
       if (pos.cmp(start) >= 0 &&
           Pos.cmp(pos.path, pos.offset, start.path, start.offset + range.size) <= 0) {
         let dest = back ? range.start : range.dest
-        let depth = start.path.length, outPos
-        if (pos.path.length > depth) {
+        let depth = start.depth, outPos
+        if (pos.depth > depth) {
           let offset = dest.offset + (pos.path[depth] - start.offset)
           return new MapResult(new Pos(dest.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset))
         } else {

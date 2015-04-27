@@ -8,7 +8,7 @@ export function applyDOMChange(pm) {
   let {from, to} = pm.sel.range
   for (let i = 0, path = [];; i++) {
     let fromOffset = from.path[i], toOffset = to.path[i]
-    if (fromOffset == toOffset && i < from.path.length - 1) {
+    if (fromOffset == toOffset && i < from.depth - 1) {
       dom = findByPath(dom, fromOffset)
       node = node.content[fromOffset]
       path.push(fromOffset)

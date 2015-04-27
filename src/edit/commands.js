@@ -55,7 +55,7 @@ function blockBefore(pos) {
 }
 
 function delBlockBackward(pm, tr, pos) {
-  if (pos.path.length == 1) { // Top level block, join with block above
+  if (pos.depth == 1) { // Top level block, join with block above
     let iBefore = Pos.before(pm.doc, new Pos([], pos.path[0]))
     let bBefore = blockBefore(pos)
     if (iBefore && bBefore) {
@@ -67,7 +67,7 @@ function delBlockBackward(pm, tr, pos) {
     else if (bBefore)
       tr.delete(bBefore, bBefore.shift(1))
   } else {
-    let last = pos.path.length - 1
+    let last = pos.depth - 1
     let parent = pm.doc.path(pos.path.slice(0, last))
     let offset = pos.path[last]
     let range
@@ -110,7 +110,7 @@ function blockAfter(doc, pos) {
 }
 
 function delBlockForward(pm, tr, pos) {
-  let lst = pos.path.length - 1
+  let lst = pos.depth - 1
   let iAfter = Pos.after(pm.doc, new Pos(pos.path.slice(0, lst), pos.path[lst] + 1))
   let bAfter = blockAfter(pm.doc, pos)
   if (iAfter && bAfter) {
@@ -169,14 +169,14 @@ commands.endBlock = pm => {
   let head = clearSelection(pm)
   let block = pm.doc.path(head.path)
   let tr = pm.tr
-  if (head.path.length > 1 && block.content.length == 0 &&
+  if (head.depth > 1 && block.content.length == 0 &&
       tr.lift(head, head).steps.length) {
     // Lift
   } else if (block.type == Node.types.code_block && head.offset < block.size) {
     tr.insertText(head, "\n")
   } else {
-    let end = head.path.length - 1
-    let isList = head.path.length > 1 && head.path[end] == 0 &&
+    let end = head.depth - 1
+    let isList = end > 0 && head.path[end] == 0 &&
         pm.doc.path(head.path.slice(0, end)).type == Node.types.list_item
     let type = head.offset == block.size ? new Node("paragraph") : null
     tr.split(head, isList ? 2 : 1, type)

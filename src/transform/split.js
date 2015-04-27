@@ -7,9 +7,9 @@ import {PosMap, MovedRange, ReplacedRange} from "./map"
 defineStep("split", {
   apply(doc, step) {
     let pos = step.pos
-    if (pos.path.length == 0) return null
+    if (pos.depth == 0) return null
     let copy = copyTo(doc, pos.path)
-    let last = pos.path.length - 1, parentPath = pos.path.slice(0, last)
+    let last = pos.depth - 1, parentPath = pos.path.slice(0, last)
     let offset = pos.path[last], parent = copy.path(parentPath)
     let target = parent.content[offset], targetSize = target.maxOffset
     let splitAt = pos.offset

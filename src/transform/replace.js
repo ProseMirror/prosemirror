@@ -30,7 +30,7 @@ export function replace(doc, from, to, root, repl) {
   parent.content.length = 0
   let depth = root.length
 
-  let fromEnd = depth == from.path.length
+  let fromEnd = depth == from.depth
   let start = fromEnd ? from.offset : from.path[depth]
   parent.pushNodes(origParent.slice(0, start))
   if (!fromEnd) {
@@ -41,7 +41,7 @@ export function replace(doc, from, to, root, repl) {
   }
   parent.pushNodes(repl.nodes)
   let end
-  if (depth == to.path.length) {
+  if (depth == to.depth) {
     end = to.offset
   } else {
     let n = to.path[depth]
@@ -56,13 +56,13 @@ export function replace(doc, from, to, root, repl) {
   if (repl.nodes.length)
     mendLeft(parent, start, depth, repl.openLeft)
   mendRight(parent, rightEdge + (parent.content.length - startLen), root,
-            repl.nodes.length ? repl.openRight : from.path.length - depth)
+            repl.nodes.length ? repl.openRight : from.depth - depth)
 
   function mendLeft(node, at, depth, open) {
     if (node.type.block)
       return inline.stitchTextNodes(node, at)
 
-    if (open == 0 || depth == from.path.length) return
+    if (open == 0 || depth == from.depth) return
 
     let before = node.content[at - 1], after = node.content[at]
     if (before.sameMarkup(after)) {
@@ -79,7 +79,7 @@ export function replace(doc, from, to, root, repl) {
   }
 
   function mendRight(node, at, path, open) {
-    let toEnd = path.length == to.path.length
+    let toEnd = path.length == to.depth
     let after = node.content[at], before
 
     let sBefore = toEnd ? sizeBefore(node, at) : at + 1
@@ -106,7 +106,7 @@ const nullRepl = {nodes: [], openLeft: 0, openRight: 0}
 defineStep("replace", {
   apply(doc, step) {
     let root = step.pos.path
-    if (step.from.path.length < root.length || step.to.path.length < root.length)
+    if (step.from.depth < root.length || step.to.depth < root.length)
       return null
     for (let i = 0; i < root.length; i++)
       if (step.from.path[i] != root[i] || step.to.path[i] != root[i]) return null
@@ -118,13 +118,13 @@ defineStep("replace", {
     return new TransformResult(out, new PosMap(moved, [replaced]))
   },
   invert(step, oldDoc, map) {
-    let depth = step.pos.path.length
+    let depth = step.pos.depth
     let between = slice.between(oldDoc, step.from, step.to, false)
     for (let i = 0; i < depth; i++) between = between.content[0]
     return new Step("replace", step.from, map.map(step.to).pos, step.from.shorten(depth), {
       nodes: between.content,
-      openLeft: step.from.path.length - depth,
-      openRight: step.to.path.length - depth
+      openLeft: step.from.depth - depth,
+      openRight: step.to.depth - depth
     })
   }
 })
@@ -172,8 +172,8 @@ function buildInserted(nodesLeft, source, start, end) {
   }
 
   let repl = {nodes: result ? result.content : [],
-              openLeft: start.path.length - searchRight,
-              openRight: end.path.length - searchRight}
+              openLeft: start.depth - searchRight,
+              openRight: end.depth - searchRight}
   return {repl, depth: searchLeft + 1}
 }
 

@@ -45,7 +45,7 @@ function copyInlineBetween(node, from, to, copy) {
 
 export function before(node, pos, depth = 0) {
   let copy = node.copy()
-  if (depth < pos.path.length) {
+  if (depth < pos.depth) {
     let n = pos.path[depth]
     copy.pushFrom(node, 0, n)
     copy.push(before(node.content[n], pos, depth + 1))
@@ -59,7 +59,7 @@ export function before(node, pos, depth = 0) {
 
 export function after(node, pos, depth = 0) {
   let copy = node.copy()
-  if (depth < pos.path.length) {
+  if (depth < pos.depth) {
     let n = pos.path[depth]
     copy.push(after(node.content[n], pos, depth + 1))
     copy.pushFrom(node, n + 1)
@@ -72,7 +72,7 @@ export function after(node, pos, depth = 0) {
 }
 
 export function between(node, from, to, collapse = true, depth = 0) {
-  if (depth < from.path.length && depth < to.path.length &&
+  if (depth < from.depth && depth < to.depth &&
       from.path[depth] == to.path[depth]) {
     var inner = between(node.content[from.path[depth]], from, to, collapse, depth + 1)
     if (!collapse) return node.copy([inner])
@@ -82,19 +82,19 @@ export function between(node, from, to, collapse = true, depth = 0) {
     return node.copy([inner])
   } else {
     var copy = node.copy()
-    if (depth == from.path.length && depth == to.path.length && node.type.block) {
+    if (depth == from.depth && depth == to.depth && node.type.block) {
       copyInlineBetween(node, from.offset, to.offset, copy)
     } else {
       let start
-      if (depth < from.path.length) {
+      if (depth < from.depth) {
         start = from.path[depth] + 1
         copy.push(after(node.content[start - 1], from, depth + 1))
       } else {
         start = from.offset;
       }
-      let end = depth < to.path.length ? to.path[depth] : to.offset
+      let end = depth < to.depth ? to.path[depth] : to.offset
       copy.pushFrom(node, start, end)
-      if (depth < to.path.length)
+      if (depth < to.depth)
         copy.push(before(node.content[end], to, depth + 1))
     }
     return copy
