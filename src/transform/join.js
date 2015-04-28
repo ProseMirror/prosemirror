@@ -38,7 +38,7 @@ export function joinPoint(doc, pos) {
   for (let i = 0, parent = doc; i < pos.path.length; i++) {
     let index = pos.path[i]
     let type = parent.content[index].type
-    if (index > 0 && parent.content[index - 1].type == type)
+    if (index > 0 && parent.content[index - 1].type == type && !type.block)
       joinDepth = i
     parent = parent.content[index]
   }
@@ -47,7 +47,7 @@ export function joinPoint(doc, pos) {
 
 Transform.prototype.join = function(at) {
   let parent = this.doc.path(at.path)
-  if (at.offset == 0 || at.offset == parent.content.length) return this
+  if (at.offset == 0 || at.offset == parent.content.length || parent.type.block) return this
   this.step("join", new Pos(at.path.concat(at.offset - 1), parent.content[at.offset - 1].maxOffset),
             new Pos(at.path.concat(at.offset), 0))
   return this

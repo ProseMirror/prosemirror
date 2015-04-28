@@ -12,41 +12,62 @@ let dummy = document.createElement("div")
 dummy.innerHTML = te.value
 let doc = fromDOM(dummy)
 
-let channel = {
-  editors: [],
-  version: 0,
+function makeChannel() {
+  return {
+    editors: [],
+    version: 0,
 
-  register(editor) {
-    this.editors.push(editor)
-  },
+    register(editor) {
+      this.editors.push(editor)
+    },
 
-  send(self, version, changes, callback) {
-    setTimeout(() => { // Artificial delay
-      if (version == this.version) {
-        this.version += changes.length
-        callback(null, true)
-        for (let i = 0; i < this.editors.length; i++)
-          if (this.editors[i] != self) this.editors[i].receive(changes)
-      } else {
-        callback(null, false)
-      }
-    }, 1000)
+    send(self, version, changes, callback) {
+      setTimeout(() => { // Artificial delay
+        if (version == this.version) {
+          this.version += changes.length
+          callback(null, true)
+          for (let i = 0; i < this.editors.length; i++)
+            if (this.editors[i] != self) this.editors[i].receive(changes)
+        } else {
+          callback(null, false)
+        }
+      }, 300)
+    }
   }
 }
 
-function makeEditor(where) {
+function makeEditor(where, collab) {
   return new ProseMirror({
     place: document.querySelector(where),
     autoInput: true,
     inlineTooltip: true,
     menu: {followCursor: true},
     doc: doc,
-    collab: {channel: channel}
+    collab: collab
   })
 }
 
-let left = window.pm = makeEditor(".left")
-let right = window.pm2 = makeEditor(".right")
+window.pm = window.pm2 = null
+function createCollab() {
+  let collab = {channel: makeChannel()}
+  pm = makeEditor(".left", collab)
+  pm2 = makeEditor(".right", collab)
+}
+createCollab()
 
-/*left.apply({name: "replace", pos: new Pos([1], 0), end: new Pos([1], 20)})
-right.apply({name: "replace", pos: new Pos([1], 10), text: "hi"})*/
+let collab = true
+let button = document.querySelector("#switch")
+button.addEventListener("click", () => {
+  pm.wrapper.parentNode.removeChild(pm.wrapper)
+  let text
+  if (collab) {
+    pm2.wrapper.parentNode.removeChild(pm2.wrapper)
+    pm = makeEditor(".full", false)
+    text = "try collaborative editor"
+  } else {
+    createCollab()
+    text = "try single editor"
+  }
+  button.textContent = text
+  collab = !collab
+})

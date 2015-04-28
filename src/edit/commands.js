@@ -1,4 +1,5 @@
 import {Node, Pos, style, inline} from "../model"
+import {joinPoint} from "../transform"
 
 const commands = Object.create(null)
 
@@ -144,7 +145,9 @@ commands.undo = pm => scrollAnd(pm, pm.history.undo())
 commands.redo = pm => scrollAnd(pm, pm.history.redo())
 
 commands.join = pm => {
-  return pm.apply(pm.tr.join(pm.selection.head))
+  let point = joinPoint(pm.doc, pm.selection.head)
+  if (!point) return false
+  return pm.apply(pm.tr.join(point))
 }
 
 commands.lift = pm => {
