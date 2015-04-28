@@ -11,6 +11,7 @@
     }
   ],
   "dependencies": {
+    "babel": "^5.1.13",
     "babelify": "^6.0.2",
     "cssify": "^0.7.0",
     "markdown-it": "^3.0.0",
