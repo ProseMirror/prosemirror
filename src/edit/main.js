@@ -130,17 +130,16 @@ export default class ProseMirror {
     this.input.unextendCommand(name, priority, f)
   }
 
-  markState(includeSelection) {
-    return {doc: this.doc, sel: includeSelection && this.selection}
+  markState() {
+    return this.history.markState()
   }
 
   isInState(state) {
-    return state.doc == this.doc && (!state.sel || state.sel == this.selection)
+    return this.history.isInState(state)
   }
 
   backToState(state) {
-    if (!state.sel) throw new Error("Can only return to a state that includes selection")
-    this.update(state.doc, state.sel)
+    return this.history.backToState(state)
   }
 
   setInlineStyle(st, to, range) {
@@ -189,6 +188,7 @@ class State {
 class History {
   constructor(pm) {
     this.pm = pm
+    this.version = this.stateID = this.stateIDCounter = 0
     this.done = []
     this.undone = []
     this.lastAddedAt = 0
@@ -196,8 +196,10 @@ class History {
 
   mark() {
     let now = Date.now()
+    this.version++
+    this.stateID = ++this.stateIDCounter
     if (now > this.lastAddedAt + this.pm.options.historyEventDelay) {
-      this.done.push(pm.markState(true))
+      this.done.push(this.markState())
       while (this.done.length > this.pm.options.historyDepth)
         this.done.shift()
     }
@@ -211,9 +213,34 @@ class History {
   move(from, to) {
     var state = from.pop();
     if (state) {
-      to.push(pm.markState(true))
+      to.push(pm.markState())
       this.pm.updateInner(state.doc, state.sel)
+      this.version = state.version
+      this.stateID = state.stateID
       this.lastAddedAt = 0
+    }
+  }
+
+  markState() {
+    return {doc: this.pm.doc,
+            sel: this.pm.selection,
+            version: this.version,
+            stateID: this.stateID}
+  }
+
+  isInState(state) {
+    return state.stateID == this.stateID
+  }
+
+  backToState(state) {
+    // FIXME also fires when current state isn't descendant of given state
+    // (Must check stateID somehow, but this isn't stored in history for every ID)
+    if (this.version > state.version) {
+      this.pm.update(state.doc, state.sel)
+      while (this.done.length && this.done[this.done.length - 1].version > state.version)
+        this.done.pop()
+      this.undone.length = 0
+      return true
     }
   }
 }

@@ -33,10 +33,6 @@ export class Input {
     pm.on("selectionChange", () => this.storedStyles = null)
   }
 
-  storeInlineStyle(styles) {
-    this.storedStyles = styles
-  }
-
   extendCommand(name, priority, f) {
     let obj = this.commandExtensions[name] ||
         (this.commandExtensions[name] = {low: [], normal: [], high: []})

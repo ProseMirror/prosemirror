@@ -3,7 +3,8 @@ import {Tr, invertStep} from "../transform"
 import {mapStep, Remapping} from "./rebase"
 
 class Change {
-  constructor(version, data) {
+  constructor(stateID, version, data) {
+    this.stateID = stateID
     this.version = version
     this.data = data
     this.inverted = null
@@ -19,6 +20,8 @@ export class CollabHistory {
     this.mapStartVersion = collab.version
 
     this.done = []
+    this.localStepCount = this.foreignStepCount = 0
+    this.stateID = this.stateIDCounter = 0
     this.undone = []
     this.lastAddedAt = 0
     this.captureChanges = null
@@ -27,7 +30,7 @@ export class CollabHistory {
   mark() {}
 
   markStep(offset, data) {
-    let ch = new Change(-offset, data)
+    let ch = new Change(this.stateID, -offset, data)
     if (this.captureChanges) {
       this.captureChanges.push(ch)
       return
@@ -44,6 +47,8 @@ export class CollabHistory {
       this.done[this.done.length - 1].push(ch)
     }
     this.undone.length = 0
+    this.localStepCount++
+    this.stateID = ++this.stateIDCounter
 
     this.lastAddedAt = now
   }
@@ -85,6 +90,8 @@ export class CollabHistory {
       change.data = unconfirmed[offset]
     })
     for (let i = 0; i < maps.length; i++) this.maps.push(maps[i])
+    this.stateID = ++this.stateIDCounter
+    this.foreignStepCount += maps.length
   }
 
   mapChanges(changes) {
@@ -112,12 +119,9 @@ export class CollabHistory {
     return tr
   }
 
-  unredo(un) {
-    let source = un ? this.done : this.undone
-    let dest = un ? this.undone : this.done
-
-    if (!source.length) return false
-    let changes = source.pop()
+  move(from, to) {
+    if (!from.length) return false
+    let changes = from.pop()
 
     let transform = this.mapChanges(changes)
 
@@ -125,13 +129,21 @@ export class CollabHistory {
     this.pm.apply(transform)
     this.captureChanges = null
 
-    if (contra.length) dest.push(contra)
-    else this.unredo(un)
+    this.lastAddedAt = 0
+    if (!contra.length) this.move(from, to)
+    else if (to) to.push(contra)
+
+    this.stateID = changes[0].stateID
+    return changes.length
   }
 
-  undo() { this.unredo(true) }
+  undo() {
+    this.localStepCount -= this.move(this.done, this.undone)
+  }
 
-  redo() { this.unredo(false) }
+  redo() {
+    this.localStepCount += this.move(this.undone, this.done)
+  }
 
   discardMaps() {
     let doneOldest = this.done.length ? this.done[0][0].version : this.collab.version
@@ -144,6 +156,40 @@ export class CollabHistory {
       this.maps.splice(0, oldest - this.mapStartVersion)
       this.mapStartVersion = oldest
     }
+  }
+
+  markState() {
+    return {stateID: this.stateID, local: this.localStepCount, foreign: this.foreignStepCount}
+  }
+
+  isInState(state) {
+    return this.foreignStepCount == state.foreign &&
+      this.localStepCount == state.local &&
+      this.stateID == state.stateID
+  }
+
+  backToState(state) {
+    let over = this.localStepCount - state.local
+    if (over <= 0) return
+
+    let set = [], done = this.done.slice()
+    while (over > 0 && done.length) {
+      let tip = done.pop()
+      if (tip.length > over) {
+        done.push(tip.slice(0, tip.length - over))
+        tip = tip.slice(tip.length - over)
+      }
+      over -= tip.length
+      set = tip.concat(set)
+    }
+    if (set[0].stateID != state.stateID) return
+
+    this.done = done
+    this.move([set])
+    this.undone.length = 0
+    this.localStepCount = state.local
+
+    return true
   }
 
   // FIXME add a mechanism to save memory on .maps by proactively

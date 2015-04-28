@@ -28,13 +28,15 @@ class InputRules {
   constructor(pm) {
     this.pm = pm
     this.rules = []
-    this.afterState = this.beforeState = null
+    this.cancelState = null
 
+    pm.on("selectionChange", this.onSelChange = () => this.cancelState = null)
     pm.on("textInput", this.onTextInput = this.onTextInput.bind(this))
     pm.extendCommand("delBackward", "high", this.delBackward = this.delBackward.bind(this))
   }
 
   unregister() {
+    pm.off("selectionChange", this.onSelChange)
     pm.off("textInput", this.onTextInput)
     pm.unextendCommand("delBackward", "high", this.delBackward)
   }
@@ -52,7 +54,6 @@ class InputRules {
 
   onTextInput(text) {
     let pos = this.pm.selection.head
-    this.afterState = this.beforeState = null
 
     let textBefore, isCode
     let lastCh = text[text.length - 1]
@@ -65,7 +66,7 @@ class InputRules {
         if (isCode) return
       }
       if (match = rule.match.exec(textBefore)) {
-        this.beforeState = this.pm.markState(true)
+        let state = this.pm.markState()
         if (typeof rule.handler == "string") {
           let offset = pos.offset - (match[1] || match[0]).length
           let start = new Pos(pos.path, offset)
@@ -73,16 +74,16 @@ class InputRules {
         } else {
           rule.handler(this.pm, match, pos)
         }
-        this.afterState = this.pm.markState(true)
+        this.cancelState = state
         return
       }
     }
   }
 
   delBackward() {
-    if (this.afterState && this.pm.isInState(this.afterState)) {
-      this.pm.backToState(this.beforeState)
-      this.afterState = this.beforeState = null
+    if (this.cancelState) {
+      this.pm.backToState(this.cancelState)
+      this.cancelState = null
     } else {
       return false
     }
