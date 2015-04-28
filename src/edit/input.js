@@ -24,23 +24,17 @@ export class Input {
     this.commandExtensions = Object.create(null)
 
     this.storedStyles = null
-    this.storedStylesAt = null
 
     for (let event in handlers) {
       let handler = handlers[event]
       pm.content.addEventListener(event, (e) => handler(pm, e))
     }
-  }
 
-  get storedInlineStyles() {
-    if (this.storedStyles && !this.pm.isInState(this.storedStylesAt))
-      this.storedStyles = null
-    return this.storedStyles
+    pm.on("selectionChange", () => this.storedStyles = null)
   }
 
   storeInlineStyle(styles) {
     this.storedStyles = styles
-    this.storedStylesAt = this.pm.markState(true)
   }
 
   extendCommand(name, priority, f) {
@@ -101,7 +95,7 @@ handlers.keydown = (pm, e) => {
 
 function inputText(pm, range, text) {
   if (range.empty && !text) return false
-  let styles = pm.input.storedInlineStyles || inline.inlineStylesAt(pm.doc, range.from)
+  let styles = pm.input.storedStyles || inline.inlineStylesAt(pm.doc, range.from)
   pm.apply(pm.tr.insert(range.from, Node.text(text, styles), range.to))
   pm.signal("textInput", text)
   pm.scrollIntoView()

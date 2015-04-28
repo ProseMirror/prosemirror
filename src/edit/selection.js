@@ -16,8 +16,8 @@ export class Selection {
         range.anchor.cmp(this.range.anchor)) {
       this.pm.ensureOperation()
       this.range = range
-      this.pm.signal("selectionChange")
     }
+    this.pm.signal("selectionChange")
   }
 
   poll(force) {
