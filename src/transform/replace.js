@@ -219,6 +219,7 @@ Transform.prototype.replace = function(from, to, source, start, end) {
     depth = maxDepth
   }
   let root = from.shorten(depth)
+  // FIXME omit when a no-op (no content between from and to, no nodes in repl)
   let result = this.step("replace", from, to, root, repl)
 
   // If no text nodes before or after end of replacement, don't glue text

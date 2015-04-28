@@ -439,3 +439,7 @@ repl("deep_insert",
      doc(blockquote(blockquote(p("one"), p("tw<a>o"), p("t<b>hree<3>"), p("four<4>")))),
      doc(ol(li(p("hello<a>world")), li(p("bye"))), p("ne<b>xt")),
      doc(blockquote(blockquote(p("one"), p("twworld"), ol(li(p("bye"))), p("ne<a><b>hree<3>"), p("four<4>")))))
+repl("join_inequal",
+     doc(h1("hello<a>"), p("<b>you<1>")),
+     null,
+     doc(h1("hello<a><b>you<1>")))

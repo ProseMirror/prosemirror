@@ -1,41 +1,41 @@
-import {childID} from "./id"
-import {Transition} from "./versions"
-import {Tr, Step, MapResult, applyStep} from "../transform"
+import {Step, MapResult, applyStep} from "../transform"
 
-export function mergeTransitionSets(old, nw) {
-  let result = []
-  let iOld = 0, iNew = 0
-  for (;;) {
-    if (iOld == old.length) return result.concat(nw.slice(iNew))
-    if (iNew == nw.length) return result.concat(old.slice(iOld))
-    let eOld = old[iOld], eNew = nw[iNew]
-    if (eOld.clientID > eNew.clientID) {
-      result.push(eNew)
-      ++iNew
-    } else {
-      result.push(eOld)
-      ++iOld
+export function rebaseChanges(doc, forward, changes) {
+  let remap = new Remapping([], forward.slice())
+  let rebased = []
+  for (let i = 0; i < changes.length; i++) {
+    let change = changes[i]
+    let step = mapStep(change.step, remap)
+    let result = step && applyStep(doc, step)
+    if (result) {
+      doc = result.doc
+
+      remap.corresponds[remap.back.length] = remap.forward.length
+      remap.forward.push(result.map)
+      rebased.push({step: step, map: result.map, doc: result.doc})
     }
+    remap.back.push(change.map)
   }
+  return {doc, changes: rebased, mapping: remap}
 }
 
 export class Remapping {
   constructor(back, forward, corresponds) {
-    this._back = back
-    this._forward = forward
-    this.corresponds = corresponds || {}
+    this.back = back
+    this.forward = forward
+    this.corresponds = corresponds || Object.create(null)
   }
 
   map(pos, bias) {
     let deleted = false, start = 0
 
-    for (let i = this._back.length - 1; i >= 0; i--) {
-      let result = this._back[i].map(pos, -bias, true)
+    for (let i = this.back.length - 1; i >= 0; i--) {
+      let result = this.back[i].map(pos, -bias, true)
       if (result.recover) {
         let corr = this.corresponds[i]
         if (corr != null) {
           start = corr + 1
-          pos = this._forward[corr].recover(result.recover)
+          pos = this.forward[corr].recover(result.recover)
           break
         }
       }
@@ -43,49 +43,14 @@ export class Remapping {
       pos = result.pos
     }
 
-    for (let i = start; i < this._forward.length; i++) {
-      let result = this._forward[i].map(pos, bias)
+    for (let i = start; i < this.forward.length; i++) {
+      let result = this.forward[i].map(pos, bias)
       if (result.deleted) deleted = true
       pos = result.pos
     }
 
     return new MapResult(pos, deleted)
   }
-}
-
-// FIXME this is repeating quite a lot of work. Optimize the case
-// where subsequent ops already followed each other (and we can simply
-// add a single entry to the previous object)
-
-export function remapping(store, baseID, startID, forward) {
-  let back = store.transitionsBetween(baseID, startID)
-  let corresponding = Object.create(null)
-  for (let i = 0; i < back.length; i++)
-    for (let j = 0; j < forward.length; j++)
-      if (back[i].id == forward[j].id) corresponding[i] = j
-  return new Remapping(back.map(t => t.map), forward.map(t => t.map),
-                       corresponding)
-}
-
-export function rebaseTransitions(baseID, transitions, store) {
-  let id = baseID
-  let forward = [], doc = store.getVersion(baseID)
-
-  for (let i = 0; i < transitions.length; i++) {
-    let tr = transitions[i]
-    let remap = remapping(store, baseID, tr.baseID, forward)
-    let mapped = mapStep(tr.step, remap)
-    if (!mapped) continue
-    let result = applyStep(doc, mapped)
-    let nextID = childID(id, tr.id)
-    store.storeVersion(nextID, id, result.doc)
-    let newTr = new Transition(tr.id, id, tr.clientID, mapped, result.map)
-    store.storeTransition(newTr)
-    forward.push(newTr)
-    id = nextID
-    doc = result.doc
-  }
-  return {id, doc, transitions: forward}
 }
 
 function maxPos(a, b) {

@@ -1,6 +1,5 @@
 import {Tr, mapThrough, MapResult} from "../transform"
 
-import {childID} from "./id"
 import {mapStep} from "./rebase"
 
 class Change {

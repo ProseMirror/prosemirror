@@ -1,6 +1,4 @@
-import {Transition, VersionStore} from "../src/collab/versions"
-import {mergeTransitionSets, mapPosition, rebaseTransitions} from "../src/collab/rebase"
-import {nullID, childID, randomID} from "../src/collab/id"
+import {rebaseChanges} from "../src/collab/rebase"
 import {Pos, Node, style} from "../src/model"
 import {Tr} from "../src/transform"
 
@@ -9,30 +7,9 @@ import Failure from "./failure"
 import {defTest} from "./tests"
 import {cmpNode, cmpStr} from "./cmp"
 
-function merge(name, known, add, expect) {
-  defTest("merge_changes_" + name, () => {
-    function parse(str) {
-      return str.split(" ").map(s => { let m = s.match(/([a-z]+)(\d+)/); return {clientID: m[1], id: m[2]} })
-    }
-    function flat(lst) {
-      return lst.map(c => c.clientID + c.id).join(" ")
-    }
-    let result = flat(mergeTransitionSets(parse(known), parse(add)))
-    if (result != expect)
-      throw new Failure("Expected " + expect + " got " + result)
-  })
-}
-
-merge("simple",
-      "b1 b2", "a1 a2", "a1 a2 b1 b2")
-merge("keep",
-      "a1 a2", "b1 b2", "a1 a2 b1 b2")
-merge("same_source",
-      "a1 a2 a3 b1 b2", "a4 a5", "a1 a2 a3 a4 a5 b1 b2")
-
 function mapObj(obj, f) {
   let result = {}
-  for (let prop in obj) result[prop] = f(prop, obj[prop])
+  for (let prop in obj) result[prop] = f(obj[prop])
   return result
 }
 
@@ -72,52 +49,54 @@ function addNode(pos, type, attrs) {
   return tr => tr.insert(asPos(tr.doc, pos), new Node(type, null, attrs))
 }
 
-function runRebase(startDoc, clients, result) {
-  let store = new VersionStore
-  store.storeVersion(nullID, null, startDoc)
-  let allTransitions = []
-  clients.forEach((changes, clientID) => {
-    let doc = startDoc, docID = nullID
-    let tags = doc.tag
-    let localTransitions = []
-    changes.forEach(change => {
-      let transform = change(Tr(doc))
-      for (let i = 0; i < transform.steps.length; i++) {
-        let stepID = randomID()
-        let newDocID = childID(docID, stepID)
-        store.storeVersion(newDocID, docID, transform.docs[i + 1])
-        let transition = new Transition(stepID, docID, clientID,
-                                        transform.steps[i], transform.maps[i])
-        store.storeTransition(transition)
-        localTransitions.push(transition)
-        docID = newDocID
-      }
+function buildChanges(startDoc, clients) {
+  return clients.map(transforms => {
+    let doc = startDoc, tags = doc.tag
+    let changes = []
+    transforms.forEach(input => {
+      let transform = input(Tr(doc))
+      for (let i = 0; i < transform.steps.length; i++)
+        changes.push({step: transform.steps[i], map: transform.maps[i], doc: transform.docs[i + 1]})
       doc = transform.doc
-      tags = doc.tag = mapObj(tags, (_, value) => transform.maps.reduce((pos, m) => m.map(pos).pos, value))
+      tags = doc.tag = mapObj(tags, value => transform.maps.reduce((pos, m) => m.map(pos).pos, value))
     })
-    allTransitions = mergeTransitionSets(allTransitions, localTransitions)
+    return changes
   })
+}
 
-  let rebased = rebaseTransitions(nullID, allTransitions, store)
-  cmpNode(rebased.doc, result)
-  return // FIXME
+function runRebase(startDoc, clientChanges, result) {
+  let doc = startDoc, maps = []
+  for (let i = 0; i < clientChanges.length; i++) {
+    let result = rebaseChanges(doc, maps, clientChanges[i])
+    maps = maps.concat(result.changes.map(c => c.map))
+    doc = result.doc
+  }
+  
+  cmpNode(doc, result)
+
   for (let tag in startDoc.tag) {
-    let mapped = mapPosition([], rebased.forward, startDoc.tag[tag])
+    let mapped = startDoc.tag[tag], deleted = false
+    for (let i = 0; i < maps.length; i++) {
+      let result = maps[i].map(mapped, 1)
+      if (result.deleted) deleted = true
+      mapped = result.pos
+    }
+
     let expected = result.tag[tag]
-    if (mapped.deleted) {
+    if (deleted) {
       if (expected)
         throw new Failure("Tag " + tag + " was unexpectedly deleted")
     } else {
       if (!expected)
         throw new Failure("Tag " + tag + " is not actually deleted")
-      cmpStr(mapped.pos, expected, tag)
+      cmpStr(mapped, expected, tag)
     }
   }
 }
 
 function rebase(name, startDoc, ...clients) {
   let result = clients.pop()
-  defTest("rebase_" + name, () => runRebase(startDoc, clients, result))
+  defTest("rebase_" + name, () => runRebase(startDoc, buildChanges(startDoc, clients), result))
 }
 
 function permute(array) {
@@ -134,7 +113,8 @@ function permute(array) {
 function rebase$(name, startDoc, ...clients) {
   let result = clients.pop()
   defTest("rebase_" + name, () => {
-    permute(clients).forEach(clients => runRebase(startDoc, clients, result))
+    let clientChanges = buildChanges(startDoc, clients)
+    permute(clientChanges).forEach(clientChanges => runRebase(startDoc, clientChanges, result))
   })
 }
 

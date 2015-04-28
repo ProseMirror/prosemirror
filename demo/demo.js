@@ -4,7 +4,6 @@ import "../src/inputrules/autoinput"
 import "../src/menu/inlinetooltip"
 import "../src/menu/menu"
 import "../src/collab/collab"
-import {xorIDs, nullID} from "../src/collab/id"
 
 let te = document.querySelector("#content")
 te.style.display = "none"
@@ -14,40 +13,27 @@ dummy.innerHTML = te.value
 let doc = fromDOM(dummy)
 
 let channel = {
-  editors: Object.create(null),
+  editors: [],
+  version: 0,
 
-  register(id, editor) {
-    this.editors[id] = {editor: editor, version: nullID}
+  register(editor) {
+    this.editors.push(editor)
   },
 
-  send(id, changes, version, callback) {
-    let source = this.editors[id]
-    source.version = version
-    for (let editorID in this.editors) {
-      if (editorID != id) {
-        let obj = this.editors[editorID]
-        obj.version = obj.editor.receive(changes)
+  send(self, version, changes, callback) {
+    setTimeout(() => { // Artificial delay
+      if (version == this.version) {
+        this.version += changes.length
+        callback(null, true)
+        for (let i = 0; i < this.editors.length; i++)
+          if (this.editors[i] != self) this.editors[i].receive(changes)
+      } else {
+        callback(null, false)
       }
-    }
-    setTimeout(() => {
-      callback()
-      this.maybeConfirm()
-    }, 20)
-  },
-
-  maybeConfirm() {
-    let version = null, same = true
-    for (let id in this.editors) {
-      let obj = this.editors[id]
-      if (version == null) version = obj.version
-      else if (version != obj.version) same = false
-    }
-    if (same) for (let id in this.editors)
-      this.editors[id].editor.confirm(version)
+    }, 1000)
   }
 }
 
-let clientID = 1;
 function makeEditor(where) {
   return new ProseMirror({
     place: document.querySelector(where),
@@ -55,7 +41,7 @@ function makeEditor(where) {
     inlineTooltip: true,
     menu: {followCursor: true},
     doc: doc,
-    collab: {channel: channel, clientID: String(clientID++)}
+    collab: {channel: channel}
   })
 }
 
