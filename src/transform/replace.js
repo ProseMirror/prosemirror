@@ -2,7 +2,7 @@ import {Pos, Node, inline, slice} from "../model"
 
 import {defineStep, TransformResult, Step, Transform} from "./transform"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
-import {copyTo} from "./tree"
+import {copyTo, contentBetween} from "./tree"
 
 function samePathDepth(a, b) {
   for (let i = 0;; i++)
@@ -218,9 +218,12 @@ Transform.prototype.replace = function(from, to, source, start, end) {
     repl = nullRepl
     depth = maxDepth
   }
-  let root = from.shorten(depth)
-  // FIXME omit when a no-op (no content between from and to, no nodes in repl)
-  let result = this.step("replace", from, to, root, repl)
+  let root = from.shorten(depth), docAfter = doc, after = to
+  if (repl.nodes.length || contentBetween(doc, from, to)) {
+    let result = this.step("replace", from, to, root, repl)
+    docAfter = result.doc
+    after = result.map.map(to).pos
+  }
 
   // If no text nodes before or after end of replacement, don't glue text
   if (!doc.path(to.path).type.block) return this
@@ -241,9 +244,8 @@ Transform.prototype.replace = function(from, to, source, start, end) {
   }
   if (nodesAfter.length != nodesBefore.length ||
       !nodesAfter.every((n, i) => n.sameMarkup(nodesBefore[i]))) {
-    let after = result.map.map(to).pos
-    let before = Pos.before(result.doc, after.shorten(null, 0))
-    moveText(this, result.doc, before, after)
+    let before = Pos.before(docAfter, after.shorten(null, 0))
+    moveText(this, docAfter, before, after)
   }
   return this
 }

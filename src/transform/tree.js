@@ -113,3 +113,36 @@ export function isPlainText(node) {
   let child = node.content[0]
   return node.content.length == 1 && child.type == Node.types.text && child.styles.length == 0
 }
+
+export function contentBetween(doc, from, to) {
+  for (let depth = 0, node = doc;; depth++) {
+    let fromEnd = depth == from.depth, toEnd = depth == to.depth
+    if (fromEnd || toEnd || from.path[depth] != to.path[depth]) {
+      let gapStart, gapEnd
+      if (fromEnd) {
+        gapStart = from.offset
+      } else {
+        gapStart = from.path[depth] + 1
+        for (let i = depth + 1, n = node.content[gapStart - 1]; i <= from.path.length; i++) {
+          if (i == from.path.length) {
+            if (from.offset < n.maxOffset) return true
+          } else {
+            if (from.path[i] + 1 < n.maxOffset) return true
+            n = n.content[from.path[i]]
+          }
+        }
+      }
+      if (toEnd) {
+        gapEnd = to.offset
+      } else {
+        gapEnd = to.path[depth]
+        for (let i = depth + 1; i <= to.path.length; i++) {
+          if ((i == to.path.length ? to.offset : to.path[i]) > 0) return true
+        }
+      }
+      return gapStart != gapEnd
+    } else {
+      node = node.content[from.path[depth]]
+    }
+  }
+}
