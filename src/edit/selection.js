@@ -205,9 +205,9 @@ function DOMFromPos(parent, pos) {
   let inner = leaf(found.node)
   if (inner.nodeType == 3)
     return {node: inner, offset: found.offset}
-  let parent = found.node.parentNode
-  let offset = Array.prototype.indexOf.call(parent.childNodes, found.node) + (found.offset ? 1 : 0)
-  return {node: parent, offset: offset}
+  let parentNode = found.node.parentNode
+  let offset = Array.prototype.indexOf.call(parentNode.childNodes, found.node) + (found.offset ? 1 : 0)
+  return {node: parentNode, offset: offset}
 }
 
 export function hasFocus(pm) {

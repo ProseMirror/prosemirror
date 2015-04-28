@@ -70,8 +70,8 @@ export function rangeHasInlineStyle(doc, from, to, type) {
   return scan(doc, from, to, type, 0)
 }
 
-export function splitInlineAt(parent, offset) {
-  let {node, offset, innerOffset} = inlineNodeAtOrBefore(parent, offset)
+export function splitInlineAt(parent, offset_) {
+  let {node, offset, innerOffset} = inlineNodeAtOrBefore(parent, offset_)
   if (innerOffset && innerOffset != node.size) {
     parent.content.splice(offset, 1, node.slice(0, innerOffset), node.slice(innerOffset))
     offset += 1

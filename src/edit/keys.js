@@ -33,8 +33,8 @@ export function isModifierKey(value) {
   return name == "Ctrl" || name == "Alt" || name == "Shift" || name == "Mod"
 }
 
-function normalizeKeyName(name) {
-  let parts = name.split(/-(?!$)/), name = parts[parts.length - 1]
+function normalizeKeyName(fullName) {
+  let parts = fullName.split(/-(?!$)/), name = parts[parts.length - 1]
   let alt, ctrl, shift, cmd
   for (let i = 0; i < parts.length - 1; i++) {
     let mod = parts[i]

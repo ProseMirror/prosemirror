@@ -174,7 +174,7 @@ handlers.paste = (pm, e) => {
     e.preventDefault()
     let doc, from, to
     if (lastCopied && (lastCopied.html == html || lastCopied.text == txt)) {
-      ({doc, from, to}) = lastCopied
+      ({doc, from, to} = lastCopied)
     } else if (html) {
       let elt = document.createElement("div")
       elt.innerHTML = html
