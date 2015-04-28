@@ -56,7 +56,7 @@ function buildChanges(startDoc, clients) {
     transforms.forEach(input => {
       let transform = input(Tr(doc))
       for (let i = 0; i < transform.steps.length; i++)
-        changes.push({step: transform.steps[i], map: transform.maps[i], doc: transform.docs[i + 1]})
+        changes.push({step: transform.steps[i], map: transform.maps[i]})
       doc = transform.doc
       tags = doc.tag = mapObj(tags, value => transform.maps.reduce((pos, m) => m.map(pos).pos, value))
     })

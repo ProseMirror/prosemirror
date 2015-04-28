@@ -166,9 +166,9 @@ commands.wrapBlockquote = pm => wrap(pm, "blockquote")
 
 commands.endBlock = pm => {
   pm.scrollIntoView()
-  let head = clearSelection(pm)
+  let tr = clearSel(pm)
+  let head = pm.selection.head
   let block = pm.doc.path(head.path)
-  let tr = pm.tr
   if (head.depth > 1 && block.content.length == 0 &&
       tr.lift(head, head).steps.length) {
     // Lift

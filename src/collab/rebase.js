@@ -8,11 +8,11 @@ export function rebaseChanges(doc, forward, changes) {
     let step = mapStep(change.step, remap)
     let result = step && applyStep(doc, step)
     if (result) {
+      rebased.push({step: step, map: result.map, doc})
       doc = result.doc
 
       remap.corresponds[remap.back.length] = remap.forward.length
       remap.forward.push(result.map)
-      rebased.push({step: step, map: result.map, doc: result.doc})
     }
     remap.back.push(change.map)
   }
@@ -20,17 +20,18 @@ export function rebaseChanges(doc, forward, changes) {
 }
 
 export class Remapping {
-  constructor(back, forward, corresponds) {
+  constructor(back, forward, corresponds, mapBack = true) {
     this.back = back
     this.forward = forward
     this.corresponds = corresponds || Object.create(null)
+    this.mapBack = mapBack
   }
 
   map(pos, bias) {
     let deleted = false, start = 0
 
     for (let i = this.back.length - 1; i >= 0; i--) {
-      let result = this.back[i].map(pos, -bias, true)
+      let result = this.back[i].map(pos, bias * (this.mapBack ? -1 : 1), this.mapBack)
       if (result.recover) {
         let corr = this.corresponds[i]
         if (corr != null) {

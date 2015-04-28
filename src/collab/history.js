@@ -1,11 +1,12 @@
-import {Tr, mapThrough, MapResult} from "../transform"
+import {Tr, invertStep} from "../transform"
 
-import {mapStep} from "./rebase"
+import {mapStep, Remapping} from "./rebase"
 
 class Change {
-  constructor(id, maps) {
-    this.id = id
-    this.maps = maps
+  constructor(version, data) {
+    this.version = version
+    this.data = data
+    this.inverted = null
   }
 }
 
@@ -14,85 +15,101 @@ export class CollabHistory {
     this.pm = pm
     this.collab = collab
 
-    this.history = []
+    this.maps = []
+    this.mapStartVersion = collab.version
+
     this.done = []
     this.undone = []
     this.lastAddedAt = 0
-    this.captureTransitions = null
+    this.captureChanges = null
   }
 
   mark() {}
 
-  markTransition(tr) {
-    if (this.captureTransitions) {
-      this.captureTransitions.push(tr)
+  markStep(offset, data) {
+    let ch = new Change(-offset, data)
+    if (this.captureChanges) {
+      this.captureChanges.push(ch)
       return
     }
 
     let now = Date.now()
     if (now > this.lastAddedAt + this.pm.options.historyEventDelay) {
-      this.done.push([tr])
+      this.done.push([ch])
       if (this.done.length > this.pm.options.historyDepth) {
         this.done.splice(0, this.done.length - options.historyDepth)
-        this.shortenHistory()
+        this.discardMaps()
       }
     } else {
-      this.done[this.done.length - 1].push(tr)
+      this.done[this.done.length - 1].push(ch)
     }
     this.undone.length = 0
 
     this.lastAddedAt = now
-    this.mustShortenHistory = false
   }
 
-  rebasedTransitions(trs) {
-    outer: for (let i = 0; i < trs.length; i++) {
-      let tr = trs[i]
-      for (let j = this.undone.length - 1; j >= 0; j--) {
-        let undone = this.undone[j]
-        for (let k = undone.length - 1; k >= 0; k--)
-          if (undone[k].id == tr.id) { undone[k] = tr; continue outer }
-      }
-      for (let j = this.done.length - 1; j >= 0; j--) {
-        let done = this.done[j]
-        for (let k = done.length - 1; k >= 0; k--)
-          if (done[k].id == tr.id) { done[k] = tr; continue outer }
+  forUnconfirmedChangesIn(array, f) {
+    for (let i = array.length - 1; i >= 0; i--) {
+      let set = array[i]
+      for (let j = set.length - 1; j >= 0; j--) {
+        let ch = set[j]
+        if (ch.version >= 0) return
+        if (f(ch) === false) set.splice(j, 1)
       }
     }
   }
 
-  confirm(transitions) {
-    for (let i = 0; i < transitions.length; i++)
-      this.history.push(new Change(transitions[i].baseID, transitions[i].transform.maps))
+  forUnconfirmedChanges(f) {
+    this.forUnconfirmedChangesIn(this.done, f)
+    this.forUnconfirmedChangesIn(this.undone, f)
   }
 
-  fullHistory() {
-    let unconfirmed = this.collab.unconfirmedChanges()
-    if (unconfirmed.length == 0) return this.history
-    let history = this.history.slice()
-    for (let i = 0; i < unconfirmed.length; i++)
-      history.push(new Change(unconfirmed[i].baseID, unconfirmed[i].transform.maps))
-    return history
+  markConfirmed(version, amount) {
+    this.forUnconfirmedChanges(change => {
+      if (-change.version <= amount) {
+        change.version = version - change.version
+        change.inverted = invertStep(change.data.step, change.data.doc, change.data.map)
+        change.data = null
+      } else {
+        change.version += amount
+      }
+    })
+    for (let i = 0; i < amount; i++)
+      this.maps.push(this.collab.unconfirmed[i].map)
   }
 
-  mapsBetween(history, fromID, toID) {
-    let result = []
-    if (fromID == toID) return result
-    let i = history.length - 1
-    if (toID != this.collab.versionID) for (;; i--) {
-      let change = history[i]
-      if (change.id == toID) { i--; break }
-      if (i == 0) throw new Error("Failed to find end id " + toID + " in history")
+  markForeignChanges(maps, unconfirmed) {
+    this.forUnconfirmedChanges(change => {
+      let offset = -change.version + 1
+      if (offset >= unconfirmed.length) return false
+      change.data = unconfirmed[offset]
+    })
+    for (let i = 0; i < maps.length; i++) this.maps.push(maps[i])
+  }
+
+  mapChanges(changes) {
+    let remap = new Remapping([], [], null, false)
+    let uptoVersion = this.collab.version
+    let tr = Tr(this.pm.doc)
+
+    for (let i = changes.length - 1; i >= 0; i--) {
+      let change = changes[i], result
+      if (change.version < 0) {
+        let step = invertStep(change.data.step, change.data.doc, change.data.map)
+        result = tr.step(mapStep(step, remap))
+        remap.back.push(change.data.map)
+      } else {
+        while (uptoVersion > change.version)
+          remap.back.push(this.maps[--uptoVersion - this.mapStartVersion])
+        result = tr.step(mapStep(change.inverted, remap))
+        remap.back.push(this.maps[--uptoVersion - this.mapStartVersion])
+      }
+      if (result) {
+        remap.corresponds[remap.back.length - 1] = remap.forward.length
+        remap.forward.push(result.map)
+      }
     }
-    for (;; i--) {
-      let change = history[i]
-      for (let j = change.maps.length - 1; j >= 0; j--)
-        result.push(change.maps[j])
-      if (change.id == fromID) break
-      if (i == 0) throw new Error("Failed to find start ID " + fromID + " in history")
-    }
-    result.reverse()
-    return result
+    return tr
   }
 
   unredo(un) {
@@ -100,15 +117,13 @@ export class CollabHistory {
     let dest = un ? this.undone : this.done
 
     if (!source.length) return false
-    let transitions = source.pop()
-    let history = this.fullHistory()
+    let changes = source.pop()
 
-    let ported = this.portEvent(transitions, history, this.collab.versionID)
+    let transform = this.mapChanges(changes)
 
-    let contra = this.captureTransitions = []
-    for (let i = 0; i < ported.length; i++)
-      this.pm.apply(ported[i])
-    this.captureTransitions = null
+    let contra = this.captureChanges = []
+    this.pm.apply(transform)
+    this.captureChanges = null
 
     if (contra.length) dest.push(contra)
     else this.unredo(un)
@@ -118,70 +133,19 @@ export class CollabHistory {
 
   redo() { this.unredo(false) }
 
-  shortenHistory() {
-    if (!this.done.length && !this.undone.length) {
-      this.history.length = 0
-    } else {
-      let oldest = this.done.length ? this.done[0][0].baseID : this.undone[0][0].baseID
-      if (!this.collab.store.knows(oldest)) for (let i = 0;; i++) {
-        if (this.history[i].id == oldest) {
-          this.history.splice(0, i)
-          break
-        }
-      }
+  discardMaps() {
+    let doneOldest = this.done.length ? this.done[0][0].version : this.collab.version
+    if (doneOldest < 0) doneOldest = this.collab.version
+    let undoneOldest = this.undone.length ? this.undone[0][0].version : this.collab.version
+    if (undoneOldest < 0) undoneOldest = this.collab.version
+    let oldest = Math.min(undoneOldest, doneOldest)
+
+    if (this.mapStartVersion < oldest) {
+      this.maps.splice(0, oldest - this.mapStartVersion)
+      this.mapStartVersion = oldest
     }
   }
 
-  portEventFrom(array) {
-    for (let i = 0; i < array.length; i++) {
-      let event = array[i], last = event[event.length - 1]
-      // If this ends before the current confirmed version, it can be ported
-      if (!this.collab.store.knows(last.endID)) {
-        // FIXME this returns a transform, not a transition
-        array[i] = this.portEvent(event, this.history, this.collab.versionID)
-        return true
-      }
-    }
-  }
-
-  portEvent(transitions, history, versionID) {
-    let maps = [], mapsTo = versionID
-    let doc = this.collab.store.getVersion(versionID)
-    let result = []
-
-    for (let i = transitions.length - 1; i >= 0; i--) {
-      let {transform, baseID, id} = transitions[i]
-      let endID = childID(baseID, id)
-      maps = this.mapsBetween(history, endID, mapsTo).concat(maps)
-
-      let steps = transform.invertedSteps(), newTransform = Tr(doc), j = 0
-      function mapPos(pos, bias) {
-        let start = transform.map(pos, bias, false, true, j)
-        let throughMaps = mapThrough(maps, start.pos, bias)
-        let end = newTransform.map(throughMaps.pos, -bias, false, start.offsets)
-        return new MapResult(end.pos, null, throughMaps.deleted || end.deleted)
-      }
-
-      for (; j < steps.length; j++) {
-        let mapped = mapStep(steps[j], mapPos)
-        if (mapped) newTransform.step(mapped)
-      }
-      result.push(newTransform)
-      doc = newTransform.doc
-      mapsTo = baseID
-    }
-    return result
-  }
-
-  compressData() {
-    // FIXME avoid recompressing the same events all the time
-    if (this.history.length > 25 &&
-        (compressEventFrom(this.done) || compressEventFrom(this.undone))) {
-      this.mustShortenHistory = true
-      return true
-    } else {
-      if (this.mustShortenHistory) this.shortenHistory()
-      return false
-    }
-  }
+  // FIXME add a mechanism to save memory on .maps by proactively
+  // mapping changes in the history forward and discarding maps
 }
