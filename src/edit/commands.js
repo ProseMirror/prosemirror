@@ -76,7 +76,7 @@ function delBlockBackward(pm, tr, pos) {
     // Join with the one above
     if (parent.type == Node.types.list_item &&
         offset == 0 && pos.path[last - 1] > 0)
-      tr.join(pos)
+      tr.join(joinPoint(pm.doc, pos))
     // Any other nested block, lift up
     else
       tr.lift(pos, pos)
