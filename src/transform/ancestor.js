@@ -116,7 +116,7 @@ Transform.prototype.lift = function(from, to) {
     if (pos.offset > 0) {
       this.split(pos, depth - d)
       let cut = range.path.length - depth, path = pos.path.slice(0, cut).concat(pos.path[cut] + 1)
-      for (let i = 0; i <= d; i++) path.push(0)
+      while (path.length < range.path.length) path.push(0)
       range = {path: path, from: 0, to: range.to - range.from}
       break
     }
