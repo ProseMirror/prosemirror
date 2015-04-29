@@ -1,4 +1,4 @@
-import {Pos} from "../model"
+import {Pos, Node} from "../model"
 import {defineOption} from "../edit"
 import {Rule, addInputRules, removeInputRules} from "./inputrules"
 
@@ -38,15 +38,15 @@ export var rules = [
 function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
   let parentOffset = pos.path[pos.path.length - 1]
   let sibling = parentOffset > 0 && pm.doc.path(pos.shorten()).content[parentOffset - 1]
-  let join = sibling.type.name == type && (!predicate || predicate(sibling))
-  let tr = pm.tr.wrap(pos, pos, new Node(type, attrs))
-  let delPos = tr.map(pos).pos
+  let join = sibling && sibling.type.name == type && (!predicate || predicate(sibling))
+  let tr = pm.tr.wrap(pos, pos, new Node(type, null, attrs))
+  let delPos = tr.map(pos)
   tr.delete(new Pos(delPos.path, 0), delPos)
-  if (join) tr.join(tr.map(pos, -1).pos)
+  if (join) tr.join(tr.map(pos, -1))
   pm.apply(tr)
 }
 
 function setAs(pm, pos, type, attrs) {
-  pm.apply(pm.tr.setBlockType(pos, pos, new Node(type, attrs))
+  pm.apply(pm.tr.setBlockType(pos, pos, new Node(type, null, attrs))
                 .delete(new Pos(pos.path, 0), pos))
 }
