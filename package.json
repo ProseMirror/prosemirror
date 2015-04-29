@@ -11,14 +11,14 @@
     }
   ],
   "dependencies": {
+    "markdown-it": "^3.0.0"
+  },
+  "devDependencies": {
+    "xmldom": "^0.1.0",
     "babel": "^5.1.13",
     "babelify": "^6.0.2",
     "cssify": "^0.7.0",
-    "markdown-it": "^3.0.0",
     "watchify": "^3.2.0"
-  },
-  "devDependencies": {
-    "xmldom": "^0.1.0"
   },
   "scripts": {
     "test": "node test/run.js",
