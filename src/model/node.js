@@ -1,5 +1,5 @@
 export default class Node {
-  constructor(type, content, attrs = null) {
+  constructor(type, attrs = null, content) {
     if (typeof type == "string") {
       let found = nodeTypes[type]
       if (!found) throw new Error("Unknown node type: " + type)
@@ -22,7 +22,7 @@ export default class Node {
   }
 
   copy(content = null) {
-    return new Node(this.type, content, this.attrs)
+    return new Node(this.type, this.attrs, content)
   }
 
   push(child) {
@@ -113,13 +113,13 @@ export default class Node {
 
   static fromJSON(json) {
     if (json.styles)
-      return new InlineNode(json.type, maybeEmpty(json.styles), json.text, maybeNull(json.attrs))
+      return new InlineNode(json.type, maybeNull(json.attrs), maybeEmpty(json.styles), json.text)
     else
-      return new Node(json.type, maybeEmpty(json.content.map(n => Node.fromJSON(n))), maybeNull(json.attrs))
+      return new Node(json.type, maybeNull(json.attrs), maybeEmpty(json.content.map(n => Node.fromJSON(n))))
   }
 
   static text(text, styles) {
-    return new InlineNode(nodeTypes.text, styles, text)
+    return new InlineNode(nodeTypes.text, null, styles, text)
   }
 }
 
@@ -133,8 +133,8 @@ function maybeNull(obj) {
 function maybeEmpty(arr) { return arr.length ? arr : Node.empty }
 
 class InlineNode extends Node {
-  constructor(type, styles, text, attrs = null) {
-    super(type, null, attrs)
+  constructor(type, attrs, styles, text) {
+    super(type, attrs)
     this.text = text == null ? "×" : text
     this.styles = styles || Node.empty
   }
@@ -151,7 +151,7 @@ class InlineNode extends Node {
   }
 
   slice(from, to = this.text.length) {
-    return new InlineNode(this.type, this.styles, this.text.slice(from, to), this.attrs)
+    return new InlineNode(this.type, this.attrs, this.styles, this.text.slice(from, to))
   }
 
   copy() {

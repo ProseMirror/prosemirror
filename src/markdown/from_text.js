@@ -38,7 +38,7 @@ const tokens = Object.create(null)
 // atomic tokens.
 
 function addNode(state, type, attrs = null) {
-  let node = new Node(type, null, attrs)
+  let node = new Node(type, attrs)
   state.push(node)
   return node
 }
@@ -64,7 +64,7 @@ function closeInline(state, rm) {
 }
 
 function addInline(state, type, text = null, attrs = null) {
-  let node = new Node.Inline(type, state.styles, text, attrs)
+  let node = new Node.Inline(type, attrs, state.styles, text)
   state.push(node)
   return node
 }

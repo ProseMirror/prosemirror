@@ -18,7 +18,7 @@ defineStep("join", {
     let targetPath = pFrom.slice(0, last)
     let copy = copyTo(doc, targetPath)
     let target = copy.path(targetPath), oldSize = target.content.length
-    let joined = new Node(before.type, before.content.concat(after.content), before.attrs)
+    let joined = new Node(before.type, before.attrs, before.content.concat(after.content))
     if (joined.type.block)
       inline.stitchTextNodes(joined, before.content.length)
     target.content.splice(offset - 1, 2, joined)

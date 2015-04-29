@@ -190,7 +190,7 @@ commands.endBlock = pm => {
 function setType(pm, type, attrs) {
   let sel = pm.selection
   pm.scrollIntoView()
-  return pm.apply(pm.tr.setBlockType(sel.from, sel.to, new Node(type, null, attrs)))
+  return pm.apply(pm.tr.setBlockType(sel.from, sel.to, new Node(type, attrs)))
 }
 
 commands.makeH1 = pm => setType(pm, "heading", {level: 1})
@@ -215,7 +215,7 @@ function insertOpaqueBlock(pm, type, attrs) {
     tr.split(sel.head)
     off = 1
   }
-  return pm.apply(tr.insert(sel.head.shorten(null, off), new Node(type, null, attrs)))
+  return pm.apply(tr.insert(sel.head.shorten(null, off), new Node(type, attrs)))
 }
 
 commands.insertRule = pm => insertOpaqueBlock(pm, "horizontal_rule")

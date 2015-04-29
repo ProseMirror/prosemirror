@@ -54,7 +54,7 @@ export class BlockTypeItem extends Item {
   }
   apply(pm) {
     let sel = pm.selection
-    pm.apply(pm.tr.setBlockType(sel.from, sel.to, new Node(this.type, null, this.attrs)))
+    pm.apply(pm.tr.setBlockType(sel.from, sel.to, new Node(this.type, this.attrs)))
   }
 }
 
@@ -74,7 +74,7 @@ export class InsertBlockItem extends Item {
       tr.split(sel.head)
       off = 1
     }
-    pm.apply(tr.insert(sel.head.shorten(off), new Node(this.type, null, this.attrs)))
+    pm.apply(tr.insert(sel.head.shorten(off), new Node(this.type, this.attrs)))
   }
 }
 
@@ -169,6 +169,6 @@ export class ImageDialog extends Dialog {
     let sel = pm.selection, tr = pm.tr
     tr.delete(sel.from, sel.to)
     let attrs = {src: elts.src.value, alt: elts.alt.value, title: elts.title.value}
-    pm.apply(tr.insertInline(sel.from, new Node.Inline("image", null, null, attrs)))
+    pm.apply(tr.insertInline(sel.from, new Node.Inline("image", attrs, null, null)))
   }
 }

@@ -9,8 +9,7 @@ defineStep("addStyle", {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       if (node.type.plainText) return node
       return copyInline(node, from, to, node => {
-        return new Node.Inline(node.type, style.add(node.styles, step.param),
-                               node.text, node.attrs)
+        return new Node.Inline(node.type, node.attrs, style.add(node.styles, step.param), node.text)
       })
     }))
   },
@@ -54,7 +53,7 @@ defineStep("removeStyle", {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       return copyInline(node, from, to, node => {
         let styles = style.remove(node.styles, step.param)
-        return new Node.Inline(node.type, styles, node.text, node.attrs)
+        return new Node.Inline(node.type, node.attrs, styles, node.text)
       })
     }))
   },

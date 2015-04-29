@@ -44,9 +44,9 @@ class Context {
     } else if (dom.hasAttribute("pm-html")) {
       let type = dom.getAttribute("pm-html")
       if (type == "html_tag")
-        this.insert(new Node.Inline("html_tag", this.styles, null, {html: dom.innerHTML}))
+        this.insert(new Node.Inline("html_tag", {html: dom.innerHTML}, this.styles))
       else
-        this.insert(new Node("html_block", null, {html: dom.innerHTML}))
+        this.insert(new Node("html_block", {html: dom.innerHTML}))
     } else {
       let name = dom.nodeName.toLowerCase()
       if (name in tags) {
@@ -142,7 +142,7 @@ tags.p = wrapAs("paragraph")
 tags.blockquote = wrapAs("blockquote")
 
 for (var i = 1; i <= 6; i++) (function(attrs) {
-  tags["h" + i] = (dom, context) => wrap(dom, context, new Node("heading", null, attrs))
+  tags["h" + i] = (dom, context) => wrap(dom, context, new Node("heading", attrs))
 })({level: i})
 
 tags.hr = (_, context) => context.insert(new Node("horizontal_rule"))
@@ -156,25 +156,25 @@ tags.pre = (dom, context) => {
   } else {
     params = null
   }
-  context.insert(new Node("code_block", [Node.text(dom.textContent)], {params: params}))
+  context.insert(new Node("code_block", {params: params}, [Node.text(dom.textContent)]))
 }
 
 tags.ul = (dom, context) => {
   let cls = dom.getAttribute("class")
   let attrs = {bullet: /bullet_dash/.test(cls) ? "-" : /bullet_plus/.test(cls) ? "+" : "*",
                tight: /\btight\b/.test(dom.getAttribute("class"))}
-  wrap(dom, context, new Node("bullet_list", null, attrs))
+  wrap(dom, context, new Node("bullet_list", attrs))
 }
 
 tags.ol = (dom, context) => {
   let attrs = {order: dom.getAttribute("start") || 1,
                tight: /\btight\b/.test(dom.getAttribute("class"))}
-  wrap(dom, context, new Node("ordered_list", null, attrs))
+  wrap(dom, context, new Node("ordered_list", attrs))
 }
 
 tags.li = wrapAs("list_item")
 
-tags.br = (_, context) => context.insert(new Node.Inline("hard_break", context.styles))
+tags.br = (_, context) => context.insert(new Node.Inline("hard_break", null, context.styles))
 
 tags.a = (dom, context) => inline(dom, context, style.link(dom.getAttribute("href"), dom.getAttribute("title")))
 
@@ -188,5 +188,5 @@ tags.img = (dom, context) => {
   let attrs = {src: dom.getAttribute("src"),
                title: dom.getAttribute("title") || null,
                alt: dom.getAttribute("alt") || null}
-  context.insert(new Node.Inline("image", null, null, attrs))
+  context.insert(new Node.Inline("image", attrs))
 }

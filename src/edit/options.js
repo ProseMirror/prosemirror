@@ -13,7 +13,7 @@ class Option {
 const options = {
   __proto__: null,
 
-  doc: new Option(new Node("doc", [new Node("paragraph")]), function(pm, value) {
+  doc: new Option(new Node("doc", null, [new Node("paragraph")]), function(pm, value) {
     pm.update(value)
   }, false),
 

@@ -78,7 +78,7 @@ export function between(node, from, to, collapse = true, depth = 0) {
     if (!collapse) return node.copy([inner])
     if (node.type.name != "doc") return inner
     var conn = Node.findConnection(node.type, inner.type)
-    for (let i = conn.length - 1; i >= 0; i--) inner = new Node(conn[i], [inner])
+    for (let i = conn.length - 1; i >= 0; i--) inner = new Node(conn[i], null, [inner])
     return node.copy([inner])
   } else {
     var copy = node.copy()

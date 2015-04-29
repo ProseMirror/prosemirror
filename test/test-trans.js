@@ -118,7 +118,7 @@ ins("simple",
 ins("two",
     doc(p("one"), "<a>", p("two<2>")),
     doc(p("one"), p("hi"), hr, "<a>", p("two<2>")),
-    [new Node("paragraph", [new Node.text("hi")]),
+    [new Node("paragraph", null, [new Node.text("hi")]),
      new Node("horizontal_rule")])
 ins("end_of_blockquote",
     doc(blockquote(p("he<before>y"), "<a>"), p("after<after>")),
@@ -332,7 +332,7 @@ function type(name, doc, expect, node) {
 type("simple",
      doc(p("am<a> i")),
      doc(h2("am i")),
-     new Node("heading", null, {level: 2}))
+     new Node("heading", {level: 2}))
 type("multiple",
      doc(h1("<a>hello"), p("there"), p("<b>you"), p("end")),
      doc(pre("hello"), pre("there"), pre("you"), p("end")),
@@ -340,7 +340,7 @@ type("multiple",
 type("inside",
      doc(blockquote(p("one<a>"), p("two<b>"))),
      doc(blockquote(h1("one<a>"), h1("two<b>"))),
-     new Node("heading", null, {level: 1}))
+     new Node("heading", {level: 1}))
 type("clear_markup",
      doc(p("hello<a> ", em("world"))),
      doc(pre("hello world")),
@@ -348,7 +348,7 @@ type("clear_markup",
 type("only_clear_for_code_block",
      doc(p("hello<a> ", em("world"))),
      doc(h1("hello<a> ", em("world"))),
-     new Node("heading", null, {level: 1}))
+     new Node("heading", {level: 1}))
 
 function repl(name, doc, source, expect) {
   defTest("replace_" + name, () => {

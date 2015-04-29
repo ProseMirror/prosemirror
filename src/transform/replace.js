@@ -260,7 +260,7 @@ Transform.prototype.insert = function(pos, nodes, end = pos) {
 Transform.prototype.insertInline = function(pos, nodes, end = pos) {
   if (!Array.isArray(nodes)) nodes = [nodes]
   let styles = inline.inlineStylesAt(this.doc, pos)
-  nodes = nodes.map(n => new Node.Inline(n.type, styles, n.text, n.attrs))
+  nodes = nodes.map(n => new Node.Inline(n.type, n.attrs, styles, n.text))
   return this.insert(pos, nodes, end)
 }
 

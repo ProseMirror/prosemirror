@@ -36,11 +36,11 @@ function parseDoc(value, target, path) {
   } else if (value.type == "insert") {
     let type = Node.types[value.style]
     if (type.type == "inline")
-      target.push(new Node.Inline(type, styles, value.text, value.attrs))
+      target.push(new Node.Inline(type, value.attrs, styles, value.text))
     else
-      target.push(new Node(type, value.content, value.attrs))
+      target.push(new Node(type, value.attrs, value.content))
   } else {
-    let node = new Node(value.style, null, value.attrs)
+    let node = new Node(value.style, value.attrs)
     let nodePath = path.concat(target.maxOffset)
     styles = []
     for (let i = 0; i < value.content.length; i++)
