@@ -39,12 +39,12 @@ export class Selection {
     }
   }
 
-  toDOM(force) {
+  toDOM(force, takeFocus) {
     let sel = window.getSelection()
-    if (!hasFocus(this.pm) ||
-        !force &&
-        sel.anchorNode == this.lastAnchorNode && sel.anchorOffset == this.lastAnchorOffset &&
-        sel.focusNode == this.lastHeadNode && sel.focusOffset == this.lastHeadOffset)
+    if ((!hasFocus(this.pm) && !takeFocus) ||
+        (!force &&
+         sel.anchorNode == this.lastAnchorNode && sel.anchorOffset == this.lastAnchorOffset &&
+         sel.focusNode == this.lastHeadNode && sel.focusOffset == this.lastHeadOffset))
       return
 
     let range = document.createRange()

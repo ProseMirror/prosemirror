@@ -89,7 +89,7 @@ export default class ProseMirror {
   ensureOperation() {
     if (this.operation) return
     if (!this.input.suppressPolling) this.sel.poll()
-    this.operation = {doc: this.doc, sel: this.sel.range, scrollIntoView: false}
+    this.operation = {doc: this.doc, sel: this.sel.range, scrollIntoView: false, focus: false}
     dom.requestAnimationFrame(() => this.endOp())
   }
 
@@ -101,7 +101,7 @@ export default class ProseMirror {
     if (docChanged)
       redraw(this.content, this.doc, op.doc)
     if (docChanged || op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head))
-      this.sel.toDOM(docChanged)
+      this.sel.toDOM(docChanged, op.focus)
     if (op.scrollIntoView !== false)
       scrollIntoView(this, op.scrollIntoView)
     this.signal("draw")
@@ -155,8 +155,12 @@ export default class ProseMirror {
   }
 
   focus() {
-    this.content.focus()
-    if (!this.operation) this.sel.toDOM()
+    if (this.operation) {
+      this.operation.focus = true
+    } else {
+      this.content.focus()
+      this.sel.toDOM()
+    }
   }
 
   hasFocus() {

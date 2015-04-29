@@ -21,7 +21,7 @@
     "watchify": "^3.2.0"
   },
   "scripts": {
-    "test": "node test/run.js",
+    "test": "node test/start.js",
     "demo": "watchify -d --outfile demo/demo-built.js -t babelify -t cssify demo/demo.js"
   }
 }

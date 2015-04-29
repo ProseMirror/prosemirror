@@ -2,6 +2,8 @@ import {elt} from "./dom"
 
 import {toDOM} from "../model"
 
+// FIXME ensure scroll position doesn't jump due to momentarily removed nodes
+
 const nonEditable = {html_block: true, html_tag: true, horizontal_rule: true}
 
 const options = {
