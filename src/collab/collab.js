@@ -32,7 +32,7 @@ class Collab {
         let step = transform.steps[i]
         let data = {step, map: transform.maps[i], doc: transform.docs[i]}
         this.unconfirmed.push(data)
-        this.pm.history.markStep(this.unconfirmed.length, data)
+        this.pm.history.markStep(this.version + this.unconfirmed.length)
       }
       this.send()
     })
@@ -42,11 +42,11 @@ class Collab {
 
   send() {
     if (!this.outOfSync && !this.sending && this.unconfirmed.length > 0) {
-      let sending = this.unconfirmed.map(c => stepToJSON(c.step))
+      let amount = this.unconfirmed.length
       let startVersion = this.version
       let startDoc = this.pm.doc
       this.sending = true
-      this.channel.send(this, this.version, sending, (err, ok) => {
+      this.channel.send(this, this.version, this.unconfirmed.map(c => stepToJSON(c.step)), (err, ok) => {
         this.sending = false
         if (err) {
           // FIXME error handling
@@ -58,9 +58,9 @@ class Collab {
           // Stop trying to send until a sync comes in
           return
         } else {
-          this.pm.history.markConfirmed(this.version, sending.length)
-          this.unconfirmed = this.unconfirmed.slice(sending.length)
-          this.version += sending.length
+          this.pm.history.markConfirmed(this.version, this.unconfirmed.slice(0, amount))
+          this.unconfirmed = this.unconfirmed.slice(amount)
+          this.version += amount
           this.versionDoc = startDoc
         }
         this.send()
@@ -84,7 +84,7 @@ class Collab {
     let sel = this.pm.selection
     this.pm.updateInner(rebased.doc, new Range(rebased.mapping.map(sel.from).pos,
                                                rebased.mapping.map(sel.to).pos))
-    this.pm.history.markForeignChanges(maps, this.unconfirmed)
+    this.pm.history.markForeignChanges(maps)
 
     if (this.outOfSync) {
       this.outOfSync = false

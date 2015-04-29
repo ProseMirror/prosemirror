@@ -6,7 +6,6 @@ class Change {
   constructor(stateID, version, data) {
     this.stateID = stateID
     this.version = version
-    this.data = data
     this.inverted = null
   }
 }
@@ -29,8 +28,8 @@ export class CollabHistory {
 
   mark() {}
 
-  markStep(offset, data) {
-    let ch = new Change(this.stateID, -offset, data)
+  markStep(version) {
+    let ch = new Change(this.stateID, version)
     if (this.captureChanges) {
       this.captureChanges.push(ch)
       return
@@ -54,12 +53,13 @@ export class CollabHistory {
   }
 
   forUnconfirmedChangesIn(array, f) {
+    let curVersion = this.collab.version
     for (let i = array.length - 1; i >= 0; i--) {
       let set = array[i]
       for (let j = set.length - 1; j >= 0; j--) {
         let ch = set[j]
-        if (ch.version >= 0) return
-        if (f(ch) === false) set.splice(j, 1)
+        if (ch.version <= curVersion) return
+        f(ch)
       }
     }
   }
@@ -69,26 +69,19 @@ export class CollabHistory {
     this.forUnconfirmedChangesIn(this.undone, f)
   }
 
-  markConfirmed(version, amount) {
+  markConfirmed(version, data) {
     this.forUnconfirmedChanges(change => {
-      if (-change.version <= amount) {
-        change.version = version - change.version
-        change.inverted = invertStep(change.data.step, change.data.doc, change.data.map)
-        change.data = null
-      } else {
-        change.version += amount
+      let ahead = change.version - version
+      if (ahead <= data.length) {
+        let thisChange = data[ahead - 1]
+        change.inverted = invertStep(thisChange.step, thisChange.doc, thisChange.map)
       }
     })
-    for (let i = 0; i < amount; i++)
-      this.maps.push(this.collab.unconfirmed[i].map)
+    for (let i = 0; i < data.length; i++) this.maps.push(data[i].map)
   }
 
-  markForeignChanges(maps, unconfirmed) {
-    this.forUnconfirmedChanges(change => {
-      let offset = -change.version + 1
-      if (offset >= unconfirmed.length) return false
-      change.data = unconfirmed[offset]
-    })
+  markForeignChanges(maps) {
+    this.forUnconfirmedChanges(change => change.version += maps.length)
     for (let i = 0; i < maps.length; i++) this.maps.push(maps[i])
     this.stateID = ++this.stateIDCounter
     this.foreignStepCount += maps.length
@@ -101,8 +94,10 @@ export class CollabHistory {
 
     for (let i = changes.length - 1; i >= 0; i--) {
       let change = changes[i], result
-      if (change.version < 0) {
-        let step = invertStep(change.data.step, change.data.doc, change.data.map)
+      let ahead = change.version - this.collab.version
+      if (ahead > 0) {
+        let data = this.collab.unconfirmed[ahead - 1]
+        let step = invertStep(data.step, data.doc, data.map)
         result = tr.step(mapStep(step, remap))
         remap.back.push(change.data.map)
       } else {
