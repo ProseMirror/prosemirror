@@ -53,21 +53,28 @@ function createCollab() {
   pm = makeEditor(".left", collab)
   pm2 = makeEditor(".right", collab)
 }
-createCollab()
 
-let collab = true
+let collab = document.location.hash != "#single"
 let button = document.querySelector("#switch")
-button.addEventListener("click", () => {
-  pm.wrapper.parentNode.removeChild(pm.wrapper)
-  let text
+function choose(collab) {
+  if (pm) { pm.wrapper.parentNode.removeChild(pm.wrapper); pm = null }
+  if (pm2) { pm2.wrapper.parentNode.removeChild(pm2.wrapper); pm2 = null }
+
   if (collab) {
-    pm2.wrapper.parentNode.removeChild(pm2.wrapper)
-    pm = makeEditor(".full", false)
-    text = "try collaborative editor"
-  } else {
     createCollab()
-    text = "try single editor"
+    button.textContent = "try single editor"
+    document.location.hash = "#collab"
+  } else {    
+    pm = makeEditor(".full", false)
+    button.textContent = "try collaborative editor"
+    document.location.hash = "#single"
   }
-  button.textContent = text
-  collab = !collab
+}
+button.addEventListener("click", () => choose(collab = !collab))
+
+choose(collab)
+
+addEventListener("hashchange", () => {
+  let newVal = document.location.hash != "#single"
+  if (newVal != collab) choose(collab = newVal)
 })
