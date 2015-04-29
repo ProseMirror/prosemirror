@@ -165,7 +165,7 @@ export class CollabHistory {
 
   backToState(state) {
     let over = this.localStepCount - state.local
-    if (over <= 0) return
+    if (over <= 0) return false
 
     let set = [], done = this.done.slice()
     while (over > 0 && done.length) {
@@ -177,7 +177,7 @@ export class CollabHistory {
       over -= tip.length
       set = tip.concat(set)
     }
-    if (set[0].stateID != state.stateID) return
+    if (set[0].stateID != state.stateID) return false
 
     this.done = done
     this.move([set])

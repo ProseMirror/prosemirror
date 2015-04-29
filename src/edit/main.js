@@ -188,21 +188,21 @@ class State {
 class History {
   constructor(pm) {
     this.pm = pm
-    this.version = this.stateID = this.stateIDCounter = 0
+    this.version = 0
     this.done = []
     this.undone = []
     this.lastAddedAt = 0
+    this.nextID = 0
   }
 
   mark() {
     let now = Date.now()
-    this.version++
-    this.stateID = ++this.stateIDCounter
     if (now > this.lastAddedAt + this.pm.options.historyEventDelay) {
       this.done.push(this.markState())
       while (this.done.length > this.pm.options.historyDepth)
         this.done.shift()
     }
+    this.version++
     this.undone.length = 0
     this.lastAddedAt = now
   }
@@ -213,35 +213,39 @@ class History {
   move(from, to) {
     var state = from.pop();
     if (state) {
-      to.push(pm.markState())
+      to.push(this.markState(state.id))
       this.pm.updateInner(state.doc, state.sel)
       this.version = state.version
-      this.stateID = state.stateID
       this.lastAddedAt = 0
     }
   }
 
-  markState() {
+  markState(id) {
     return {doc: this.pm.doc,
             sel: this.pm.selection,
             version: this.version,
-            stateID: this.stateID}
+            after: this.done.length ? this.done[this.done.length - 1].id : 0,
+            id: id || ++this.nextID}
   }
 
   isInState(state) {
-    return state.stateID == this.stateID
+    return this.version == state.version &&
+      (state.after ? this.done[this.done.length - 1].id == state.after : this.done.length == 0)
   }
 
   backToState(state) {
-    // FIXME also fires when current state isn't descendant of given state
-    // (Must check stateID somehow, but this isn't stored in history for every ID)
-    if (this.version > state.version) {
-      this.pm.update(state.doc, state.sel)
-      while (this.done.length && this.done[this.done.length - 1].version > state.version)
-        this.done.pop()
-      this.undone.length = 0
-      return true
+    if (state.after) {
+      let found = -1
+      for (let i = this.done.length - 1; i >= 0; i--)
+        if (this.done[i].id == state.after) { found = i; break }
+      if (found == -1) return false
+      this.done.length = found + 1
+    } else {
+      this.done.length = 0
     }
+    this.undone.length = 0
+    this.pm.update(state.doc, state.sel)
+    return true
   }
 }
 
