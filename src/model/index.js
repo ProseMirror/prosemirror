@@ -9,3 +9,5 @@ import * as slice from "./slice"
 import * as inline from "./inline"
 
 export {Node, Pos, style, fromDOM, toDOM, inline, slice}
+
+export {findDiffStart, findDiffEnd} from "./diff"
