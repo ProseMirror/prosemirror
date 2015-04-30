@@ -136,6 +136,7 @@ function applyComposition(pm, info) {
 handlers.input = (pm) => {
   if (pm.input.composeActive) return
   pm.input.suppressPolling = true
+  console.log("input event: reading dom change")
   applyDOMChange(pm)
   pm.input.suppressPolling = false
   pm.sel.poll(true)

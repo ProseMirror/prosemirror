@@ -80,6 +80,8 @@ export function normalizeKeymap(keymap) {
   return result
 }
 
+// FIXME distinguish between 'handler declined' and 'no handler' (so that keys we want to handle are always preventDefault-ed)
+
 export function lookupKey(key, map, handle, context) {
   let found = map.call ? map.call(null, key, context) : map[key]
   if (found === false) return "nothing"

@@ -89,7 +89,7 @@ export default class ProseMirror {
   ensureOperation() {
     if (this.operation) return
     if (!this.input.suppressPolling) this.sel.poll()
-    this.operation = {doc: this.doc, sel: this.sel.range, scrollIntoView: false, focus: false}
+    this.operation = new Operation(this)
     dom.requestAnimationFrame(() => this.endOp())
   }
 
@@ -98,8 +98,10 @@ export default class ProseMirror {
     if (!op) return
     this.operation = null
     let docChanged = op.doc != this.doc
-    if (docChanged)
-      redraw(this.content, this.doc, op.doc)
+    if (docChanged) {
+      if (op.fullRedraw) draw(this.content, this.doc)
+      else redraw(this.content, this.doc, op.doc)
+    }
     if (docChanged || op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head))
       this.sel.toDOM(docChanged, op.focus)
     if (op.scrollIntoView !== false)
@@ -185,8 +187,14 @@ export default class ProseMirror {
 
 eventMixin(ProseMirror)
 
-class State {
-  constructor(doc, sel) { this.doc = doc; this.sel = sel }
+class Operation {
+  constructor(pm) {
+    this.doc = pm.doc
+    this.sel = pm.sel.range
+    this.scrollIntoView = false
+    this.focus = false
+    this.fullRedraw = false
+  }
 }
 
 class History {
