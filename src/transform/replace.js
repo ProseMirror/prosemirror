@@ -2,7 +2,7 @@ import {Pos, Node, inline, slice} from "../model"
 
 import {defineStep, TransformResult, Step, Transform} from "./transform"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
-import {copyTo, contentBetween} from "./tree"
+import {copyTo, replaceHasEffect} from "./tree"
 
 function samePathDepth(a, b) {
   for (let i = 0;; i++)
@@ -201,8 +201,7 @@ function moveText(tr, doc, before, after) {
 }
 
 Transform.prototype.delete = function(from, to) {
-  this.replace(from, to)
-  return this
+  return this.replace(from, to)
 }
 
 Transform.prototype.replace = function(from, to, source, start, end) {
@@ -219,7 +218,7 @@ Transform.prototype.replace = function(from, to, source, start, end) {
     depth = maxDepth
   }
   let root = from.shorten(depth), docAfter = doc, after = to
-  if (repl.nodes.length || contentBetween(doc, from, to)) {
+  if (repl.nodes.length || replaceHasEffect(doc, from, to)) {
     let result = this.step("replace", from, to, root, repl)
     docAfter = result.doc
     after = result.map.map(to).pos

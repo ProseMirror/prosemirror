@@ -114,7 +114,17 @@ export function isPlainText(node) {
   return node.content.length == 1 && child.type == Node.types.text && child.styles.length == 0
 }
 
-export function contentBetween(doc, from, to) {
+function canBeJoined(node, offset, depth) {
+  let left = node.content[offset - 1], right = node.content[offset]
+  for (let i = 0;; i++) {
+    if (left.sameMarkup(right)) return true
+    if (i == depth) return false
+    left = left.content[left.content.length - 1]
+    right = right.content[0]
+  }
+}
+
+export function replaceHasEffect(doc, from, to) {
   for (let depth = 0, node = doc;; depth++) {
     let fromEnd = depth == from.depth, toEnd = depth == to.depth
     if (fromEnd || toEnd || from.path[depth] != to.path[depth]) {
@@ -140,7 +150,8 @@ export function contentBetween(doc, from, to) {
           if ((i == to.path.length ? to.offset : to.path[i]) > 0) return true
         }
       }
-      return gapStart != gapEnd
+      if (gapStart != gapEnd) return true
+      return canBeJoined(node, gapStart, Math.min(from.depth, to.depth) - depth)
     } else {
       node = node.content[from.path[depth]]
     }
