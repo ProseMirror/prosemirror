@@ -157,12 +157,8 @@ export default class ProseMirror {
   }
 
   focus() {
-    if (this.operation) {
-      this.operation.focus = true
-    } else {
-      this.content.focus()
-      this.sel.toDOM()
-    }
+    if (this.operation) this.operation.focus = true
+    else this.sel.toDOM(false, true)
   }
 
   hasFocus() {
