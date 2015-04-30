@@ -115,9 +115,10 @@ function delBlockForward(pm, tr, pos) {
   let iAfter = Pos.after(pm.doc, new Pos(pos.path.slice(0, lst), pos.path[lst] + 1))
   let bAfter = blockAfter(pm.doc, pos)
   if (iAfter && bAfter) {
-    if (iAfter.cmp(bAfter) < 0) bAfter = null
+    if (iAfter.cmp(bAfter.shift(1)) < 0) bAfter = null
     else iAfter = null
   }
+
   if (iAfter)
     tr.delete(pos, iAfter)
   else if (bAfter)
