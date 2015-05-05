@@ -65,10 +65,13 @@ function delBlockBackward(pm, tr, pos) {
       if (iBefore.cmp(bBefore) > 0) bBefore = null
       else iBefore = null
     }
-    if (iBefore)
+    if (iBefore) {
       tr.delete(iBefore, pos)
-    else if (bBefore)
+      let joinable = joinPoint(tr.doc, tr.map(pos), 1)
+      if (joinable) tr.join(joinable)
+    } else if (bBefore) {
       tr.delete(bBefore, bBefore.shift(1))
+    }
   } else {
     let last = pos.depth - 1
     let parent = pm.doc.path(pos.path.slice(0, last))
@@ -120,8 +123,6 @@ function delBackward(pm, by) {
   return pm.apply(tr)
 }
 
-// FIXME maybe make deleting inside of a list join items rather than escape to top?
-
 commands.delBackward = pm => delBackward(pm, "char")
 
 commands.delWordBackward = pm => delBackward(pm, "word")
@@ -147,10 +148,13 @@ function delBlockForward(pm, tr, pos) {
     else iAfter = null
   }
 
-  if (iAfter)
+  if (iAfter) {
     tr.delete(pos, iAfter)
-  else if (bAfter)
+    let joinable = joinPoint(tr.doc, tr.map(pos), 1)
+    if (joinable) tr.join(joinable)
+  } else if (bAfter) {
     tr.delete(bAfter, bAfter.shift(1))
+  }
 }
 
 function moveForward(parent, offset, by) {

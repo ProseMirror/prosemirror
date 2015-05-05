@@ -33,16 +33,18 @@ defineStep("join", {
   }
 })
 
-export function joinPoint(doc, pos) {
+export function joinPoint(doc, pos, dir = -1) {
   let joinDepth = -1
   for (let i = 0, parent = doc; i < pos.path.length; i++) {
     let index = pos.path[i]
     let type = parent.content[index].type
-    if (index > 0 && parent.content[index - 1].type == type && !type.block)
+    if (!type.block &&
+        dir == -1 ? (index > 0 && parent.content[index - 1].type == type)
+                  : (index < parent.content.length - 1 && parent.content[index + 1].type == type))
       joinDepth = i
     parent = parent.content[index]
   }
-  if (joinDepth > -1) return pos.shorten(joinDepth)
+  if (joinDepth > -1) return pos.shorten(joinDepth, dir == -1 ? 0 : 1)
 }
 
 Transform.prototype.join = function(at) {
