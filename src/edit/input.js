@@ -1,4 +1,4 @@
-import {fromDOM, toDOM, Pos, Node, inline} from "../model"
+import {fromDOM, toDOM, Pos, Node, inline, slice} from "../model"
 
 import * as keys from "./keys"
 import {mac, addClass, rmClass} from "./dom"
@@ -16,6 +16,7 @@ export class Input {
 
     this.keySeq = null
     this.composing = null
+    this.shiftKey = false
     this.composeActive = 0
 
     this.draggingFrom = false
@@ -87,8 +88,13 @@ function dispatchKey(pm, name, e) {
 }
 
 handlers.keydown = (pm, e) => {
+  if (e.keyCode == 16) pm.input.shiftKey = true
   let name = keys.keyName(e)
   if (name) dispatchKey(pm, name, e)
+}
+
+handlers.keyup = (pm, e) => {
+  if (e.keyCode == 16) pm.input.shiftKey = false
 }
 
 function inputText(pm, range, text) {
@@ -166,17 +172,19 @@ handlers.copy = handlers.cut = (pm, e) => {
   }
 }
 
-// FIXME support markup-less form of paste when shift is held
-
 handlers.paste = (pm, e) => {
   if (!e.clipboardData) return
   let sel = pm.selection
-  let html = e.clipboardData.getData("text/html")
   let txt = e.clipboardData.getData("text/plain")
+  let html = e.clipboardData.getData("text/html")
   if (html || txt) {
     e.preventDefault()
     let doc, from, to
-    if (lastCopied && (lastCopied.html == html || lastCopied.text == txt)) {
+    if (pm.input.shiftKey && txt) {
+      let paragraphs = txt.split(/[\r\n]+/)
+      let styles = inline.inlineStylesAt(pm.doc, sel.from)
+      doc = new Node("doc", null, paragraphs.map(s => new Node("paragraph", null, [Node.text(s, styles)])))
+    } else if (lastCopied && (lastCopied.html == html || lastCopied.text == txt)) {
       ({doc, from, to} = lastCopied)
     } else if (html) {
       let elt = document.createElement("div")
