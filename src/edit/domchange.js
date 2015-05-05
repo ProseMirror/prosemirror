@@ -3,10 +3,50 @@ import {T} from "../transform"
 
 import {findByPath} from "./selection"
 
-// FIXME maybe find some heuristic to avoid parsing the whole DOM?
+function isAtEnd(node, pos, depth) {
+  for (let i = depth || 0; i < pos.path.length; i++) {
+    let n = pos.path[depth]
+    if (n < node.content.length - 1) return false
+    node = node.content[n]
+  }
+  return pos.offset == node.maxOffset
+}
+function isAtStart(pos, depth) {
+  if (pos.offset > 0) return false
+  for (let i = depth || 0; i < pos.path.length; i++)
+    if (pos.path[depth] > 0) return false
+  return true
+}
+
+function parseNearSelection(pm) {
+  let dom = pm.content, node = pm.doc
+  let from = pm.selection.from, to = pm.selection.to
+  for (let depth = 0;; depth++) {
+    let toNode = node.content[to.path[depth]]
+    let fromStart = isAtStart(from, depth + 1)
+    let toEnd = isAtEnd(toNode, to, depth + 1)
+    if (fromStart || toEnd || from.path[depth] != to.path[depth] || toNode.type.block) {
+      let startOffset = depth == from.depth ? from.offset : from.path[depth]
+      if (fromStart && startOffset > 0) startOffset--
+      let endOffset = depth == to.depth ? to.offset : to.path[depth] + 1
+      if (toEnd && endOffset < node.content.length - 1) endOffset++
+      let parsed = fromDOM(dom, {topNode: node.copy(), from: startOffset, to: dom.childNodes.length - (node.content.length - endOffset)})
+      parsed.content = node.content.slice(0, startOffset).concat(parsed.content).concat(node.content.slice(endOffset))
+      for (let i = depth - 1; i >= 0; i--) {
+        let wrap = pm.doc.path(from.path.slice(0, i))
+        let copy = wrap.copy(wrap.content.slice())
+        copy.content[from.path[i]] = parsed
+        parsed = copy
+      }
+      return parsed
+    }
+    node = toNode
+    dom = findByPath(dom, from.path[depth], false)
+  }
+}
 
 export function applyDOMChange(pm) {
-  let updated = fromDOM(pm.content)
+  let updated = parseNearSelection(pm)
   let changeStart = findDiffStart(pm.doc, updated)
   if (changeStart) {
     let changeEnd = findDiffEndConstrained(pm.doc, updated, changeStart)
