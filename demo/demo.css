@@ -14,3 +14,7 @@ textarea {
   width: 50%;
   float: left;
 }
+
+.full {
+  max-width: 50em;
+}
