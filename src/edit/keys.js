@@ -87,7 +87,7 @@ export function lookupKey(key, map, handle, context) {
   if (found != null && handle(found)) return "handled"
 
   if (map.fallthrough) {
-    if (Array.isArray(map.fallthrough))
+    if (!Array.isArray(map.fallthrough))
       return lookupKey(key, map.fallthrough, handle, context)
     for (let i = 0; i < map.fallthrough.length; i++) {
       let result = lookupKey(key, map.fallthrough[i], handle, context)

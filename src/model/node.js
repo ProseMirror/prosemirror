@@ -14,7 +14,6 @@ export default class Node {
   }
 
   toString() {
-    // FIXME join adjacent inline styles when possible
     if (this.type.contains)
       return this.type.name + "(" + this.content.join(", ") + ")"
     else

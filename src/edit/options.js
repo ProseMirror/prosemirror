@@ -1,4 +1,4 @@
-import defaultKeymap from "./defaultkeymap"
+import {defaultKeymap} from "./defaultkeymap"
 import {Range} from "./selection"
 import {Node, Pos} from "../model"
 

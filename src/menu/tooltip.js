@@ -85,7 +85,6 @@ export class Tooltip {
     if (this.dir == "above") {
       let tipLeft = Math.max(0, Math.min(left - size.width / 2, window.innerWidth - size.width))
       this.dom.style.left = (tipLeft - around.left) + "px"
-      // FIXME do something if top < 0
       let tipTop = top - around.top - margin - this.pointerHeight - size.height
       this.pointer.style.left = (left - around.left - this.pointerWidth / 2) + "px"
 
