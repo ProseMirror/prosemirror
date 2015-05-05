@@ -111,8 +111,9 @@ defineStep("replace", {
     for (let i = 0; i < root.length; i++)
       if (step.from.path[i] != root[i] || step.to.path[i] != root[i]) return null
 
-    let {doc: out, moved} = replace(doc, step.from, step.to, root, step.param || nullRepl)
-    if (!out) return null
+    let result = replace(doc, step.from, step.to, root, step.param || nullRepl)
+    if (!result) return null
+    let {doc: out, moved} = result
     let end = moved.length ? moved[moved.length - 1].dest : step.to
     let replaced = new ReplacedRange(step.from, step.to, step.from, end, step.pos, step.pos)
     return new TransformResult(out, new PosMap(moved, [replaced]))

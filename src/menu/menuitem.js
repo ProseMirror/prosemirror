@@ -74,7 +74,7 @@ export class InsertBlockItem extends Item {
       tr.split(sel.head)
       off = 1
     }
-    pm.apply(tr.insert(sel.head.shorten(off), new Node(this.type, this.attrs)))
+    pm.apply(tr.insert(sel.head.shorten(null, off), new Node(this.type, this.attrs)))
   }
 }
 
