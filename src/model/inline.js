@@ -28,7 +28,7 @@ export function clearMarkup(node) {
   }
 }
 
-function inlineNodeAtOrBefore(parent, offset) {
+export function inlineNodeAtOrBefore(parent, offset) {
   for (let i = 0; i < parent.content.length; i++) {
     let child = parent.content[i]
     offset -= child.size

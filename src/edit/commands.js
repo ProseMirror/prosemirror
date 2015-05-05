@@ -1,6 +1,8 @@
 import {Node, Pos, style, inline} from "../model"
 import {joinPoint} from "../transform"
 
+import {charCategory} from "./char"
+
 const commands = Object.create(null)
 
 export function registerCommand(name, func) {
@@ -83,20 +85,46 @@ function delBlockBackward(pm, tr, pos) {
   }
 }
 
-// FIXME maybe make deleting inside of a list join items rather than escape to top?
+function moveBackward(parent, offset, by) {
+  if (by == "char") return offset - 1
+  if (by == "word") {
+    let {offset: nodeOffset, innerOffset} = inline.inlineNodeAtOrBefore(parent, offset)
+    let cat = null, counted = 0
+    for (; nodeOffset >= 0; nodeOffset--, innerOffset = null) {
+      let child = parent.content[nodeOffset], size = child.size
+      if (child.type != Node.types.text) return cat ? offset : offset - 1
 
-commands.delBackward = pm => {
+      for (let i = innerOffset == null ? size : innerOffset; i > 0; i--) {
+        let nextCharCat = charCategory(child.text.charAt(i - 1))
+        if (cat == null || counted == 1 && cat == "space") cat = nextCharCat
+        else if (cat != nextCharCat) return offset
+        offset--
+        counted++
+      }
+    }
+    return offset
+  }
+  throw new Error("Unknown motion unit: " + by)
+}
+
+function delBackward(pm, by) {
   pm.scrollIntoView()
 
   let tr = pm.tr, sel = pm.selection, from = sel.from
   if (!sel.empty)
     tr.delete(from, sel.to)
-  else if (from.offset)
-    tr.delete(from.shift(-1), from)
-  else
+  else if (from.offset == 0)
     delBlockBackward(pm, tr, from)
+  else
+    tr.delete(new Pos(from.path, moveBackward(pm.doc.path(from.path), from.offset, by)), from)
   return pm.apply(tr)
 }
+
+// FIXME maybe make deleting inside of a list join items rather than escape to top?
+
+commands.delBackward = pm => delBackward(pm, "char")
+
+commands.delWordBackward = pm => delBackward(pm, "word")
 
 function blockAfter(doc, pos) {
   let path = pos.path
@@ -125,17 +153,46 @@ function delBlockForward(pm, tr, pos) {
     tr.delete(bAfter, bAfter.shift(1))
 }
 
-commands.delForward = pm => {
+function moveForward(parent, offset, by) {
+  if (by == "char") return offset + 1
+  if (by == "word") {
+    let {offset: nodeOffset, innerOffset} = inline.inlineNodeAtOrBefore(parent, offset)
+    let cat = null, counted = 0
+    for (; nodeOffset < parent.content.length; nodeOffset++, innerOffset = 0) {
+      let child = parent.content[nodeOffset], size = child.size
+      if (child.type != Node.types.text) return cat ? offset : offset + 1
+
+      for (let i = innerOffset; i < size; i++) {
+        let nextCharCat = charCategory(child.text.charAt(i))
+        if (cat == null || counted == 1 && cat == "space") cat = nextCharCat
+        else if (cat != nextCharCat) return offset
+        offset++
+        counted++
+      }
+    }
+    return offset
+  }
+  throw new Error("Unknown motion unit: " + by)
+}
+
+function delForward(pm, by) {
   pm.scrollIntoView()
   let tr = pm.tr, sel = pm.selection, from = sel.from
-  if (!sel.empty)
+  if (!sel.empty) {
     tr.delete(from, sel.to)
-  else if (from.offset < pm.doc.path(from.path).size)
-    tr.delete(from, from.shift(1))
-  else
-    delBlockForward(pm, tr, from)
+  } else {
+    let parent = pm.doc.path(from.path)
+    if (from.offset == parent.size)
+      delBlockForward(pm, tr, from)
+    else
+      tr.delete(from, new Pos(from.path, moveForward(parent, from.offset, by)))
+  }
   return pm.apply(tr)
 }
+
+commands.delForward = pm => delForward(pm, "char")
+
+commands.delWordForward = pm => delForward(pm, "word")
 
 function scrollAnd(pm, value) {
   pm.scrollIntoView()

@@ -8,6 +8,8 @@ export default normalizeKeymap({
   "Ctrl-`": "toggleCode",
   "Backspace": "delBackward",
   "Delete": "delForward",
+  "Ctrl-Backspace": "delWordBackward",
+  "Ctrl-Delete": "delWordForward",
   "Ctrl-Z": "undo",
   "Ctrl-Y": "redo",
   "Shift-Ctrl-Z": "redo",
@@ -27,5 +29,4 @@ export default normalizeKeymap({
   "Ctrl-Space": "insertRule"
 })
 
-// FIXME ctrl-backspace, ctrl-delete
 // FIXME mac-style bindings
