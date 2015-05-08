@@ -1,23 +1,14 @@
 import Failure from "./failure"
+import "./all"
+
+import {tests, filter} from "./tests"
 
 let fail = 0, ran = 0
 
-let filter = process.argv[2]
-
-import {tests} from "./tests"
-
-import "./test-pos"
-import "./test-diff"
-import "./test-parse"
-import "./test-dom"
-import "./test-slice"
-import "./test-style"
-import "./test-collab"
-import "./test-replace"
-import "./test-trans"
+let filters = process.argv.slice(2)
 
 for (let name in tests) {
-  if (filter && name.indexOf(filter) == -1) continue
+  if (!filter(name, filters)) continue
   ++ran
   try {
     tests[name]()
