@@ -13,6 +13,7 @@ export function tempEditor(options) {
 
 export function namespace(space, defaults) {
   return (name, f, options) => {
+    if (!options) options = {}
     if (defaults) for (let opt in defaults)
       if (!options.hasOwnProperty(opt)) options[opt] = defaults[opt]
     defTest(space + "_" + name, () => f(tempEditor(options)))

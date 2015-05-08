@@ -117,12 +117,12 @@ export default class ProseMirror {
   getOption(name) { return this.options[name] }
 
   addKeymap(map, bottom) {
-    this.keymaps[bottom ? "push" : "unshift"](map)
+    this.input.keymaps[bottom ? "push" : "unshift"](map)
   }
 
   removeKeymap(map) {
-    let maps = this.keymaps
-    for (let i = 0; i < maps.length; ++i) if (maps[i] == map || maps[i].name == map) {
+    let maps = this.input.keymaps
+    for (let i = 0; i < maps.length; ++i) if (maps[i] == map || maps[i].options.name == map) {
       maps.splice(i, 1)
       return true
     }

@@ -47,3 +47,8 @@ export function lt(a, b, comment) {
   if (a >= b)
     throw new Failure("expected " + a + " < " + b + (comment ? " (" + comment + ")" : ""))
 }
+
+export function is(condition, comment) {
+  if (!condition)
+    throw new Failure("assertion failed" + (comment ? " (" + comment + ")" : ""))
+}
