@@ -54,3 +54,10 @@ export function initOptions(pm) {
       desc.update(pm, pm.options[opt], null, true)
   }
 }
+
+export function setOption(pm, name, value) {
+  let old = pm.options[name]
+  pm.options[name] = value
+  let desc = options[name]
+  if (desc.update) desc.update(pm, value, name, false)
+}

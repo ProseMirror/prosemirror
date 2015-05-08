@@ -3,7 +3,7 @@ import "./editor.css"
 import {inline, style, slice, Node, Pos} from "../model"
 import {Tr} from "../transform"
 
-import {parseOptions, initOptions} from "./options"
+import {parseOptions, initOptions, setOption} from "./options"
 import {Selection, Range, posAtCoords, coordsAtPos, scrollIntoView, hasFocus} from "./selection"
 import * as dom from "./dom"
 import {draw, redraw} from "./draw"
@@ -82,7 +82,10 @@ export default class ProseMirror {
     this.signal("change")
   }
 
-  setSelection(range) {
+  setSelection(rangeOrAnchor, head) {
+    let range = rangeOrAnchor
+    if (!(range instanceof Range))
+      range = new Range(rangeOrAnchor, head || rangeOrAnchor)
     this.sel.set(range)
   }
 
@@ -109,6 +112,9 @@ export default class ProseMirror {
       scrollIntoView(this, op.scrollIntoView)
     this.signal("draw")
   }
+
+  setOption(name, value) { setOption(this, name, value) }
+  getOption(name) { return this.options[name] }
 
   addKeymap(map, bottom) {
     this.keymaps[bottom ? "push" : "unshift"](map)
