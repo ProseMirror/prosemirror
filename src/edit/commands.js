@@ -34,7 +34,7 @@ commands.insertHardBreak = pm => {
   if (pm.doc.path(pos.path).type == Node.types.code_block)
     tr.insertText(pos, "\n")
   else
-    tr.insert(pos, new Node("hard_break"))
+    tr.insert(pos, new Node.Inline("hard_break"))
   return pm.apply(tr)
 }
 
@@ -231,20 +231,20 @@ commands.wrapBlockquote = pm => wrap(pm, "blockquote")
 
 commands.endBlock = pm => {
   pm.scrollIntoView()
+  let pos = pm.selection.from
   let tr = clearSel(pm)
-  let head = pm.selection.head
-  let block = pm.doc.path(head.path)
-  if (head.depth > 1 && block.content.length == 0 &&
-      tr.lift(head, head).steps.length) {
+  let block = pm.doc.path(pos.path)
+  if (pos.depth > 1 && block.content.length == 0 &&
+      tr.lift(pos).steps.length) {
     // Lift
-  } else if (block.type == Node.types.code_block && head.offset < block.size) {
-    tr.insertText(head, "\n")
+  } else if (block.type == Node.types.code_block && pos.offset < block.size) {
+    tr.insertText(pos, "\n")
   } else {
-    let end = head.depth - 1
-    let isList = end > 0 && head.path[end] == 0 &&
-        pm.doc.path(head.path.slice(0, end)).type == Node.types.list_item
-    let type = head.offset == block.size ? new Node("paragraph") : null
-    tr.split(head, isList ? 2 : 1, type)
+    let end = pos.depth - 1
+    let isList = end > 0 && pos.path[end] == 0 &&
+        pm.doc.path(pos.path.slice(0, end)).type == Node.types.list_item
+    let type = pos.offset == block.size ? new Node("paragraph") : null
+    tr.split(pos, isList ? 2 : 1, type)
   }
   return pm.apply(tr)
 }
@@ -268,16 +268,16 @@ commands.makeCodeBlock = pm => setType(pm, "code_block")
 function insertOpaqueBlock(pm, type, attrs) {
   type = Node.types[type]
   pm.scrollIntoView()
-  let sel = pm.selection
-  if (!sel.empty) return false
-  let parent = pm.doc.path(sel.head.path)
+  let pos = pm.selection.from
+  let tr = clearSel(pm)
+  let parent = tr.doc.path(pos.path)
   if (parent.type.type != type.type) return false
-  let tr = pm.tr, off = 0
-  if (sel.head.offset) {
-    tr.split(sel.head)
+  let off = 0
+  if (pos.offset) {
+    tr.split(pos)
     off = 1
   }
-  return pm.apply(tr.insert(sel.head.shorten(null, off), new Node(type, attrs)))
+  return pm.apply(tr.insert(pos.shorten(null, off), new Node(type, attrs)))
 }
 
 commands.insertRule = pm => insertOpaqueBlock(pm, "horizontal_rule")

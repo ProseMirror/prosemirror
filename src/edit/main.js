@@ -95,8 +95,9 @@ export default class ProseMirror {
 
   endOp() {
     let op = this.operation
-    if (!op) return
+    if (!op || !document.body.contains(this.wrapper)) return
     this.operation = null
+
     let docChanged = op.doc != this.doc
     if (docChanged) {
       if (op.fullRedraw) draw(this.content, this.doc)

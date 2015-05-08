@@ -97,7 +97,7 @@ export function canLift(doc, from, to) {
   if (found) return {found, range}
 }
 
-Transform.prototype.lift = function(from, to) {
+Transform.prototype.lift = function(from, to = from) {
   let can = canLift(this.doc, from, to)
   if (!can) return this
   let {found, range} = can
@@ -154,8 +154,8 @@ Transform.prototype.wrap = function(from, to, node) {
             null, {wrappers: wrappers})
   if (inside.length) {
     let toInner = range.path.slice()
-    for (let i = around.length + inside.length + 1; i > 0; i--)
-      toInner.push(0)
+    for (let i = 0; i < around.length + inside.length + 1; i++)
+      toInner.push(i ? 0 : range.from)
     for (let i = range.to - 1 - range.from; i > 0; i--)
       this.split(new Pos(toInner, i), inside.length)
   }
