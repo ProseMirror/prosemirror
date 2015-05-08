@@ -2,7 +2,6 @@ import {namespace} from "./def"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "../build"
 import {cmp, gt, cmpStr} from "../cmp"
 
-import {Range} from "../../src/edit/selection"
 import {Pos} from "../../src/model"
 
 const test = namespace("selection")

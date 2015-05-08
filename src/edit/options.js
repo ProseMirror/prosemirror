@@ -1,6 +1,8 @@
+import {Node, Pos} from "../model"
+
 import {defaultKeymap} from "./defaultkeymap"
 import {Range} from "./selection"
-import {Node, Pos} from "../model"
+import {Keymap} from "./keys"
 
 class Option {
   constructor(defaultValue, update, updateOnInit) {
@@ -21,7 +23,7 @@ const options = {
 
   keymap: new Option(defaultKeymap),
 
-  extraKeymap: new Option(Object.create(null)),
+  extraKeymap: new Option(new Keymap),
 
   historyDepth: new Option(50),
 

@@ -48,7 +48,7 @@ export class Input {
   }
 }
 
-function dispatchKey(pm, name, e) {
+export function dispatchKey(pm, name, e) {
   let seq = pm.input.keySeq
   if (seq) {
     if (keys.isModifierKey(name)) return true

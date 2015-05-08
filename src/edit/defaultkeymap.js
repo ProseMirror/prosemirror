@@ -1,9 +1,9 @@
-import {normalizeKeymap} from "./keys"
+import {Keymap} from "./keys"
 import {mac} from "./dom"
 
 const mod = mac ? "Cmd-" : "Ctrl-"
 
-export const defaultKeymap = {
+export const defaultKeymap = new Keymap({
   "Enter": "endBlock",
   [mod + "Enter"]: "insertHardBreak",
   "Backspace": "delBackward",
@@ -30,13 +30,15 @@ export const defaultKeymap = {
   [mod + "P"]: "makeParagraph",
   [mod + "\\"]: "makeCodeBlock",
   [mod + "Space"]: "insertRule"
-}
+})
 
-let map = defaultKeymap
+function add(key, val) { defaultKeymap.addBinding(key, val) }
 
 if (mac) {
-  map["Ctrl-D"] = "delForward"
-  map["Ctrl-H"] = "delBackward"
-  map["Ctrl-Alt-Backspace"] = map["Alt-D"] = map["Alt-Delete"] = "delWordForward"
-  map["Alt-Backspace"] = "delWordBackward"
+  add("Ctrl-D", "delForward")
+  add("Ctrl-H", "delBackward")
+  add("Ctrl-Alt-Backspace", "delWordForward")
+  add("Alt-D", "delWordForward")
+  add("Alt-Delete", "delWordForward")
+  add("Alt-Backspace", "delWordBackward")
 }

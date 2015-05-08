@@ -51,16 +51,15 @@ function normalizeKeyName(fullName) {
   return name
 }
 
-export function normalizeKeymap(keymap) {
-  let result = {};
-  for (let keyname in keymap) if (keymap.hasOwnProperty(keyname)) {
-    let value = keymap[keyname]
-    if (value == "...") continue
-    if (/^(name|fallthrough|(de|at)tach)$/.test(keyname)) {
-      result[keyname] = value
-      continue
-    }
+export class Keymap {
+  constructor(keys, options) {
+    this.options = options || {}
+    this.bindings = Object.create(null)
+    if (keys) for (let keyname in keys) if (Object.prototype.hasOwnProperty.call(keys, keyname))
+      this.addBinding(keyname, keys[keyname])
+  }
 
+  addBinding(keyname, value) {
     let keys = keyname.split(" ").map(normalizeKeyName)
     for (let i = 0; i < keys.length; i++) {
       let val, name
@@ -71,26 +70,44 @@ export function normalizeKeymap(keymap) {
         name = keys.slice(0, i + 1).join(" ")
         val = "..."
       }
-      let prev = result[name]
-      if (!prev) result[name] = val
-      else if (prev != val)
-        throw new Error("Inconsistent bindings for " + name)
+      let prev = this.bindings[name]
+      if (!prev) this.bindings[name] = val
+      else if (prev != val) throw new Error("Inconsistent bindings for " + name)
     }
   }
-  return result
+
+  removeBinding(keyname) {
+    let keys = keyname.split(" ").map(normalizeKeyName)
+    for (let i = keys.length - 1; i >= 0; i--) {
+      let name = keys.slice(0, i).join(" ")
+      let val = this.bindings[name]
+      if (val == "..." && !this.unusedMulti(name))
+        break
+      else if (val)
+        delete this.bindings[name]
+    }
+  }
+
+  unusedMulti(name) {
+    for (let binding in this.bindings)
+      if (binding.length > name && binding.indexOf(name) == 0 && binding.charAt(name.length) == " ")
+        return false
+    return true
+  }
 }
 
 export function lookupKey(key, map, handle, context) {
-  let found = map.call ? map.call(null, key, context) : map[key]
+  let found = map.options.call ? map.options.call(key, context) : map.bindings[key]
   if (found === false) return "nothing"
   if (found === "...") return "multi"
   if (found != null && handle(found)) return "handled"
 
-  if (map.fallthrough) {
-    if (!Array.isArray(map.fallthrough))
-      return lookupKey(key, map.fallthrough, handle, context)
-    for (let i = 0; i < map.fallthrough.length; i++) {
-      let result = lookupKey(key, map.fallthrough[i], handle, context)
+  let fall = map.options.fallthrough
+  if (fall) {
+    if (!Array.isArray(fall))
+      return lookupKey(key, fall, handle, context)
+    for (let i = 0; i < fall.length; i++) {
+      let result = lookupKey(key, fall[i], handle, context)
       if (result) return result
     }
   }
