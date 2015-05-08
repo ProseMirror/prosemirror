@@ -100,7 +100,7 @@ export function blocksBetween(doc, from, to, f) {
       let end = !to ? node.content.length : toMore ? to.path[path.length] + 1 : to.offset
       for (let i = start; i < end; i++) {
         path.push(i)
-        scan(node.content[i], fromMore && i == 0 ? from : null, toMore && i == end - 1 ? to : null)
+        scan(node.content[i], fromMore && i == start ? from : null, toMore && i == end - 1 ? to : null)
         path.pop()
       }
     }
