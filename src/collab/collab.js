@@ -29,8 +29,7 @@ class Collab {
 
     pm.on("transform", transform => {
       for (let i = 0; i < transform.steps.length; i++) {
-        let step = transform.steps[i]
-        let data = {step, map: transform.maps[i], doc: transform.docs[i]}
+        let data = {step: transform.steps[i], map: transform.maps[i], doc: transform.docs[i]}
         this.unconfirmed.push(data)
         this.pm.history.markStep(this.version + this.unconfirmed.length)
       }
