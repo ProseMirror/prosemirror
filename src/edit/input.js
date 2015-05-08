@@ -100,7 +100,9 @@ handlers.keyup = (pm, e) => {
 function inputText(pm, range, text) {
   if (range.empty && !text) return false
   let styles = pm.input.storedStyles || inline.inlineStylesAt(pm.doc, range.from)
-  pm.apply(pm.tr.insert(range.from, Node.text(text, styles), range.to))
+  let tr = pm.tr
+  if (!range.empty) tr.delete(range.from, range.to)
+  pm.apply(tr.insert(range.from, Node.text(text, styles)))
   pm.signal("textInput", text)
   pm.scrollIntoView()
 }

@@ -70,7 +70,7 @@ class InputRules {
         if (typeof rule.handler == "string") {
           let offset = pos.offset - (match[1] || match[0]).length
           let start = new Pos(pos.path, offset)
-          this.pm.apply(pm.tr.insertText(start, rule.handler, pos))
+          this.pm.apply(pm.tr.delete(start, pos).insertText(start, rule.handler))
         } else {
           rule.handler(this.pm, match, pos)
         }

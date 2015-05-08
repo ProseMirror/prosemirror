@@ -250,20 +250,20 @@ Transform.prototype.replace = function(from, to, source, start, end) {
   return this
 }
 
-Transform.prototype.insert = function(pos, nodes, end = pos) {
+Transform.prototype.insert = function(pos, nodes) {
   if (!Array.isArray(nodes)) nodes = [nodes]
-  this.step("replace", pos, end, pos.shorten(samePathDepth(pos, end), 1),
+  this.step("replace", pos, pos, pos,
             {nodes: nodes, openLeft: 0, openRight: 0})
   return this
 }
 
-Transform.prototype.insertInline = function(pos, nodes, end = pos) {
+Transform.prototype.insertInline = function(pos, nodes) {
   if (!Array.isArray(nodes)) nodes = [nodes]
   let styles = inline.inlineStylesAt(this.doc, pos)
   nodes = nodes.map(n => new Node.Inline(n.type, n.attrs, styles, n.text))
-  return this.insert(pos, nodes, end)
+  return this.insert(pos, nodes)
 }
 
-Transform.prototype.insertText = function(pos, text, end = pos) {
-  return this.insertInline(pos, Node.text(text), end)
+Transform.prototype.insertText = function(pos, text) {
+  return this.insertInline(pos, Node.text(text))
 }
