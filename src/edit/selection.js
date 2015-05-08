@@ -11,13 +11,14 @@ export class Selection {
     pm.content.addEventListener("focus", () => this.receivedFocus())
   }
 
-  set(range) {
-    if (range.head.cmp(this.range.head) ||
-        range.anchor.cmp(this.range.anchor)) {
+  set(range, forceEvent) {
+    let changed = range.head.cmp(this.range.head) || range.anchor.cmp(this.range.anchor)
+    if (changed) {
       this.pm.ensureOperation()
       this.range = range
+      this.lastAnchorNode = null
     }
-    this.pm.signal("selectionChange")
+    if (changed || forceEvent) this.pm.signal("selectionChange")
   }
 
   poll(force) {
@@ -216,7 +217,7 @@ export function hasFocus(pm) {
 }
 
 export function posAtCoords(pm, coords) {
-  let element = document.elementFromPoint(coords.left, coords.top)
+  let element = document.elementFromPoint(coords.left, coords.top + 1)
   if (!pm.content.contains(element)) return Pos.start(pm.doc)
 
   let offset
@@ -290,7 +291,7 @@ function offsetInTextNode(text, coords) {
   let len = text.nodeValue.length
   let range = document.createRange()
   let rects = []
-  for (let i = 0; i < len - 1; i++) {
+  for (let i = 0; i < len; i++) {
     range.setEnd(text, i + 1)
     range.setStart(text, i)
     rects.push(range.getBoundingClientRect())

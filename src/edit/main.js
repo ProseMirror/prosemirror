@@ -78,7 +78,7 @@ export default class ProseMirror {
   updateInner(doc, sel) {
     this.ensureOperation()
     this.doc = doc
-    this.setSelection(sel)
+    this.sel.set(sel, true)
     this.signal("change")
   }
 

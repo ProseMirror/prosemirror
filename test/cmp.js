@@ -32,3 +32,18 @@ export function cmpStr(a, b, comment) {
   if (as != bs)
     throw new Failure("expected " + bs + ", got " + as + (comment ? " (" + comment + ")" : ""))
 }
+
+export function cmp(a, b, comment) {
+  if (a !== b)
+    throw new Failure("expected " + b + ", got " + a + (comment ? " (" + comment + ")" : ""))
+}
+
+export function gt(a, b, comment) {
+  if (a <= b)
+    throw new Failure("expected " + a + " > " + b + (comment ? " (" + comment + ")" : ""))
+}
+
+export function lt(a, b, comment) {
+  if (a >= b)
+    throw new Failure("expected " + a + " < " + b + (comment ? " (" + comment + ")" : ""))
+}
