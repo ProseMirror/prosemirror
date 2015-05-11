@@ -61,5 +61,5 @@ export function setOption(pm, name, value) {
   let old = pm.options[name]
   pm.options[name] = value
   let desc = options[name]
-  if (desc.update) desc.update(pm, value, name, false)
+  if (desc.update) desc.update(pm, value, old, false)
 }
