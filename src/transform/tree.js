@@ -157,3 +157,9 @@ export function replaceHasEffect(doc, from, to) {
     }
   }
 }
+
+export function samePathDepth(a, b) {
+  for (let i = 0;; i++)
+    if (i == a.path.length || i == b.path.length || a.path[i] != b.path[i])
+      return i
+}

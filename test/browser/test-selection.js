@@ -6,7 +6,7 @@ import {Pos} from "../../src/model"
 
 const test = namespace("selection")
 
-function findTextNode(node, text) {
+export function findTextNode(node, text) {
   if (node.nodeType == 3) {
     if (node.nodeValue == text) return node
   } else if (node.nodeType == 1) {

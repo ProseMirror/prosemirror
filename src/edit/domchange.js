@@ -1,5 +1,6 @@
 import {fromDOM, Node, Pos, findDiffStart, findDiffEnd} from "../model"
 import {T} from "../transform"
+import {samePathDepth} from "../transform/tree"
 
 import {findByPath} from "./selection"
 
@@ -58,20 +59,19 @@ export function applyDOMChange(pm) {
   }
 }
 
-function offsetBy(first, second, paths) {
-  for (let i = 0; i < first.path.length; i++) {
-    let diff = second.path[i] - first.path[i]
-    if (diff)
-      return {a: paths.a.offsetAt(i, diff), b: paths.b.offsetAt(i, diff)}
-  }
-  let diff = second.offset - first.offset
-  return {a: paths.a.shift(diff), b: paths.b.shift(diff)}
+function offsetBy(first, second, pos) {
+  let same = samePathDepth(first, second)
+  let firstEnd = same == first.depth, secondEnd = same == second.depth
+  let off = (secondEnd ? second.offset : second.path[same]) - (firstEnd ? first.offset : first.path[same])
+  let shorter = firstEnd ? pos.shift(off) : pos.shorten(same, off)
+  if (secondEnd) return shorter
+  else return shorter.extend(new Pos(second.path.slice(same), second.offset))
 }
 
 function findDiffEndConstrained(a, b, start) {
   let end = findDiffEnd(a, b)
   if (!end) return end
-  if (end.a.cmp(start.a) < 0) return offsetBy(end.a, start.a, end)
-  if (end.b.cmp(start.b) < 0) return offsetBy(end.b, start.b, end)
+  if (end.a.cmp(start.a) < 0) return {a: start.a, b: offsetBy(end.a, start.a, end.b)}
+  if (end.b.cmp(start.b) < 0) return {a: offsetBy(end.b, start.b, end.a), b: start.b}
   return end
 }

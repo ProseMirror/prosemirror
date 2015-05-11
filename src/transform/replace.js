@@ -2,13 +2,7 @@ import {Pos, Node, inline, slice} from "../model"
 
 import {defineStep, TransformResult, Step, Transform} from "./transform"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
-import {copyTo, replaceHasEffect} from "./tree"
-
-function samePathDepth(a, b) {
-  for (let i = 0;; i++)
-    if (i == a.path.length || i == b.path.length || a.path[i] != b.path[i])
-      return i
-}
+import {copyTo, replaceHasEffect, samePathDepth} from "./tree"
 
 function sizeBefore(node, at) {
   if (node.type.block) {

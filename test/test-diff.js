@@ -105,3 +105,8 @@ end("at_end",
     doc(p("b")),
     doc(h1("b")),
     P(1))
+
+end("similar_start",
+    doc(p("hello")),
+    doc(p("hey"), p("hello")),
+    P(0))

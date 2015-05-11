@@ -8,7 +8,10 @@ export function tempEditor(options) {
   if (tempPM) space.removeChild(tempPM.wrapper)
   if (!options) options = {}
   options.place = space
-  return tempPM = new ProseMirror(options)
+  tempPM = new ProseMirror(options)
+  if (options.doc && options.doc.tag && options.doc.tag.a)
+    tempPM.setSelection(options.doc.tag.a, options.doc.tag.b)
+  return tempPM
 }
 
 export function namespace(space, defaults) {
