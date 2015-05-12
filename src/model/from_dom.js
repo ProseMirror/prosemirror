@@ -141,9 +141,10 @@ tags.p = wrapAs("paragraph")
 
 tags.blockquote = wrapAs("blockquote")
 
-for (var i = 1; i <= 6; i++) (function(attrs) {
+for (var i = 1; i <= 6; i++) {
+  let attrs = {level: i}
   tags["h" + i] = (dom, context) => wrap(dom, context, new Node("heading", attrs))
-})({level: i})
+}
 
 tags.hr = (_, context) => context.insert(new Node("horizontal_rule"))
 

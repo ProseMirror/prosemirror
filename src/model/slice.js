@@ -89,7 +89,7 @@ export function between(node, from, to, collapse = true, depth = 0) {
         start = from.path[depth] + 1
         copy.push(after(node.content[start - 1], from, depth + 1))
       } else {
-        start = from.offset;
+        start = from.offset
       }
       let end = depth < to.depth ? to.path[depth] : to.offset
       copy.pushFrom(node, start, end)

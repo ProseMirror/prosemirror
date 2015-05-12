@@ -18,7 +18,7 @@ for (let i = 65; i <= 90; i++) names[i] = String.fromCharCode(i)
 for (let i = 1; i <= 12; i++) names[i + 111] = names[i + 63235] = "F" + i
 
 export function keyName(event, noShift) {
-  let base = names[event.keyCode], name = base;
+  let base = names[event.keyCode], name = base
   if (name == null || event.altGraphKey) return false
 
   if (event.altKey && base != "Alt") name = "Alt-" + name

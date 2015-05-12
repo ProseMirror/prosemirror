@@ -13,7 +13,7 @@ export default class Pos {
   }
 
   static cmp(pathA, offsetA, pathB, offsetB) {
-    let lenA = pathA.length, lenB = pathB.length;
+    let lenA = pathA.length, lenB = pathB.length
     for (var i = 0, end = Math.min(lenA, lenB); i < end; i++) {
       var diff = pathA[i] - pathB[i]
       if (diff != 0) return diff

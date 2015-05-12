@@ -62,7 +62,7 @@ class InputRules {
       let rule = this.rules[i], match
       if (rule.lastChar && rule.lastChar != lastCh) continue
       if (textBefore == null) {
-        ({textBefore, isCode} = getContext(this.pm.doc, pos))
+        ;({textBefore, isCode} = getContext(this.pm.doc, pos))
         if (isCode) return
       }
       if (match = rule.match.exec(textBefore)) {
