@@ -1,7 +1,6 @@
 import {style, Node, Pos} from "../model"
 
 import {defineStep, TransformResult, Step, Transform} from "./transform"
-import {nullMap} from "./map"
 import {copyInline, copyStructure, forSpansBetween} from "./tree"
 
 defineStep("addStyle", {
@@ -22,12 +21,12 @@ defineStep("addStyle", {
 Transform.prototype.addStyle = function(from, to, st) {
   let removed = [], added = [], removing = null, adding = null
   forSpansBetween(this.doc, from, to, (span, path, start, end) => {
-    let styles = span.styles, rm
     if (style.contains(span.styles, st)) {
       adding = removing = null
     } else {
       path = path.slice()
-      if (rm = style.containsType(span.styles, st.type)) {
+      let rm = style.containsType(span.styles, st.type)
+      if (rm) {
         if (removing && style.same(removing.param, rm)) {
           removing.to = new Pos(path, end)
         } else {

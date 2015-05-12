@@ -131,3 +131,17 @@ test("coords_round_trip", pm => {
   doc: doc(p("one"), blockquote(p("two"), p("three")))
 })
 
+test("follow_change", pm => {
+  pm.apply(pm.tr.insertText(P(0, 0), "xy"))
+  cmpStr(pm.selection.head, P(0, 2))
+  cmpStr(pm.selection.anchor, P(0, 2))
+  pm.apply(pm.tr.insertText(P(0, 0), "zq"))
+  cmpStr(pm.selection.head, P(0, 4))
+  cmpStr(pm.selection.anchor, P(0, 4))
+  pm.apply(pm.tr.insertText(P(0, 6), "uv"))
+  cmpStr(pm.selection.head, P(0, 4))
+  cmpStr(pm.selection.anchor, P(0, 4))
+}, {
+  doc: doc(p("hi"))
+})
+

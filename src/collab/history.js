@@ -3,7 +3,7 @@ import {Tr, invertStep} from "../transform"
 import {mapStep, Remapping} from "./rebase"
 
 class Change {
-  constructor(stateID, version, data) {
+  constructor(stateID, version) {
     this.stateID = stateID
     this.version = version
     this.inverted = null
@@ -39,7 +39,7 @@ export class CollabHistory {
     if (now > this.lastAddedAt + this.pm.options.historyEventDelay) {
       this.done.push([ch])
       if (this.done.length > this.pm.options.historyDepth) {
-        this.done.splice(0, this.done.length - options.historyDepth)
+        this.done.splice(0, this.done.length - this.pm.options.historyDepth)
         this.discardMaps()
       }
     } else {

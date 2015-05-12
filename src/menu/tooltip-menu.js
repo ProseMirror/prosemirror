@@ -1,5 +1,4 @@
 import {elt} from "../edit/dom"
-import {Tooltip} from "./tooltip"
 import {Dialog} from "./menuitem"
 
 import "./tooltip-menu.css"

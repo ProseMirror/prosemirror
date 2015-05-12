@@ -1,9 +1,9 @@
 import {defineOption} from "../edit"
 import {elt} from "../edit/dom"
-import {Tooltip} from "./tooltip"
 import {resolvePath} from "../edit/selection"
+
+import {Tooltip} from "./tooltip"
 import {openMenu, forceFontLoad} from "./tooltip-menu"
-import {Node} from "../model"
 
 import "./menu.css"
 import "./icons.css"
@@ -65,8 +65,8 @@ class Menu {
     this.hamburger.parentNode.removeChild(this.hamburger)
     this.tooltip.detach()
 
-    pm.off("selectionChange", this.updateFunc)
-    pm.off("change", this.updateFunc)
+    this.pm.off("selectionChange", this.updateFunc)
+    this.pm.off("change", this.updateFunc)
   }
 
   updated() {

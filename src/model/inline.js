@@ -1,8 +1,6 @@
 // Primitive operations on inline content
 
 import Node from "./node"
-import Pos from "./pos"
-import * as slice from "./slice"
 import * as style from "./style"
 
 export function stitchTextNodes(node, at) {

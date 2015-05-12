@@ -10,7 +10,7 @@ text.toMarkdown = toText
 text.fromMarkdown = fromText
 
 Object.defineProperty(ProseMirror.prototype, "markdownValue", {
-  get() { return toText(this.doc) }
+  get() { return toText(this.doc) },
   set(text) { this.update(fromText(text)) }
 })
 

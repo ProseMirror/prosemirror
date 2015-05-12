@@ -1,5 +1,5 @@
 import {style, inline, Node} from "../model"
-import {canLift, canWrap, joinPoint, T} from "../transform"
+import {canLift, canWrap, joinPoint} from "../transform"
 import {elt} from "../edit/dom"
 
 export class Item {
@@ -83,6 +83,9 @@ export class WrapItem extends Item {
     super(icon, title)
     this.type = type
   }
+  select(pm) {
+    return canWrap(pm.doc, pm.selection.from, pm.selection.to, new Node(this.type))
+  }
   apply(pm) {
     let sel = pm.selection
     pm.apply(pm.tr.wrap(sel.from, sel.to, new Node(this.type)))
@@ -114,7 +117,7 @@ export class ImageItem extends Item {
   constructor(icon, title) {
     super(icon, title || "Insert image")
   }
-  apply(pm) { return new ImageDialog }
+  apply() { return new ImageDialog }
 }
 
 export class Dialog {

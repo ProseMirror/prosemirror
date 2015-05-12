@@ -76,7 +76,6 @@ function delBlockBackward(pm, tr, pos) {
     let last = pos.depth - 1
     let parent = pm.doc.path(pos.path.slice(0, last))
     let offset = pos.path[last]
-    let range
     // Top of list item below other list item
     // Join with the one above
     if (parent.type == Node.types.list_item &&

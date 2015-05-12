@@ -1,4 +1,4 @@
-import {fromDOM, toDOM, Pos, Node, inline, slice} from "../model"
+import {fromDOM, toDOM, Pos, Node, inline} from "../model"
 
 import * as keys from "./keys"
 import {mac, addClass, rmClass} from "./dom"
@@ -146,7 +146,6 @@ function applyComposition(pm, info) {
 handlers.input = (pm) => {
   if (pm.input.composeActive) return
   pm.input.suppressPolling = true
-  console.log("input event: reading dom change")
   applyDOMChange(pm)
   pm.input.suppressPolling = false
   pm.sel.poll(true)
@@ -203,7 +202,6 @@ handlers.paste = (pm, e) => {
 handlers.dragstart = (pm, e) => {
   if (!e.dataTransfer) return
 
-  let sel = pm.selection
   let elt = document.createElement("div")
   let fragment = pm.selectedDoc
   elt.appendChild(toDOM(fragment, {document: document}))

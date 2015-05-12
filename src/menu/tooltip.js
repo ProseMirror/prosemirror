@@ -35,11 +35,11 @@ export class Tooltip {
   detach() {
     this.dom.parentNode.removeChild(this.dom)
     this.pointer.parentNode.removeChild(this.pointer)
-    pm.off("change", this.updateFunc)
-    pm.off("resize", this.closeFunc)
-    pm.off("blur", this.closeFunc)
-    pm.wrapper.removeEventListener("mousedown", this.mouseFunc)
-    pm.content.removeEventListener("dragover", this.dragFunc)
+    this.pm.off("change", this.updateFunc)
+    this.pm.off("resize", this.closeFunc)
+    this.pm.off("blur", this.closeFunc)
+    this.pm.wrapper.removeEventListener("mousedown", this.mouseFunc)
+    this.pm.content.removeEventListener("dragover", this.dragFunc)
   }
 
   getSize(type, node) {

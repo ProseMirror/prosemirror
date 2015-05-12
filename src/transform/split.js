@@ -1,4 +1,4 @@
-import {Pos, Node, inline} from "../model"
+import {Pos, inline} from "../model"
 
 import {defineStep, TransformResult, Step, Transform} from "./transform"
 import {copyTo} from "./tree"

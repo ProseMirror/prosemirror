@@ -90,7 +90,7 @@ function tokInlineSpan(name, getStyle) {
     styleObj = getStyle instanceof Function ? getStyle(state, tok) : getStyle
     openInline(state, styleObj)
   }
-  tokens[name + "_close"] = (state, tok) => {
+  tokens[name + "_close"] = (state) => {
     closeInline(state, styleObj)
   }
 }
@@ -152,9 +152,9 @@ tokens.image = (state, tok) => {
                                    alt: tok.children[0] && tok.children[0].content || null})
 }
 
-tokens.hardbreak = (state, tok) => addInline(state, "hard_break")
+tokens.hardbreak = (state) => addInline(state, "hard_break")
 
-tokens.softbreak = (state, tok) => addText(state, "\n")
+tokens.softbreak = (state) => addText(state, "\n")
 
 tokens.text = (state, tok) => addText(state, tok.content)
 

@@ -115,7 +115,7 @@ render.code_block = (node, options) => {
 
 render.heading = (node, options) => wrap(node, options, "h" + node.attrs.level)
 
-render.horizontal_rule = node => elt("hr")
+render.horizontal_rule = _node => elt("hr")
 
 render.bullet_list = (node, options) => {
   let dom = wrap(node, options, "ul")
@@ -155,7 +155,7 @@ render.image = node => {
   return dom
 }
 
-render.hard_break = node => elt("br")
+render.hard_break = _node => elt("br")
 
 render.html_tag = node => {
   let dom = elt("span")

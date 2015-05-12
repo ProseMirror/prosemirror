@@ -1,5 +1,5 @@
 import {defineOption} from "../edit"
-import {style, inline, Node} from "../model"
+import {style, inline} from "../model"
 import {elt} from "../edit/dom"
 import {Tooltip} from "./tooltip"
 import {InlineStyleItem, ImageItem, LinkDialog} from "./menuitem"
@@ -42,9 +42,9 @@ class InlineTooltip {
 
   detach() {
     this.tooltip.detach()
-    
-    pm.off("selectionChange", this.updateFunc)
-    pm.off("change", this.updateFunc)
+
+    this.pm.off("selectionChange", this.updateFunc)
+    this.pm.off("change", this.updateFunc)
   }
 
   scheduleUpdate() {
@@ -66,7 +66,7 @@ class InlineTooltip {
     if (!this.pm.hasFocus())
       this.tooltip.close()
     else if (!sel.empty && !this.inPlainText(sel))
-      openMenu(this.tooltip, this.items, pm, topCenterOfSelection())
+      openMenu(this.tooltip, this.items, this.pm, topCenterOfSelection())
     else if (this.showLinks && (link = this.linkUnderCursor()))
       this.showLink(link, this.pm.coordsAtPos(sel.head))
     else
@@ -75,7 +75,6 @@ class InlineTooltip {
 
   linkUnderCursor() {
     let styles = inline.inlineStylesAt(this.pm.doc, this.pm.selection.head)
-    if (!styles) console.log("none at " + this.pm.doc + " under " + this.pm.selection.head)
     return styles.reduce((found, st) => found || (st.type == "link" && st), null)
   }
 

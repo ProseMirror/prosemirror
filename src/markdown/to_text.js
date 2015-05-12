@@ -90,18 +90,18 @@ class State {
   renderInline(nodes) {
     let stack = []
     for (let i = 0; i <= nodes.length; i++) {
-      let node = nodes[i], same = 0
+      let node = nodes[i]
       let styles = node ? node.styles.slice() : []
       if (stack.length && stack[stack.length - 1].type == "code" &&
           (!styles.length || styles[styles.length - 1].type != "code")) {
         this.text("`", false)
         stack.pop()
       }
-      for (let i = 0; i < stack.length; i++) {
-        let cur = stack[i], found = false
-        for (let j = 0; j < styles.length; j++) {
-          if (style.same(stack[i], styles[j])) {
-            styles.splice(j, 1)
+      for (let j = 0; j < stack.length; j++) {
+        let cur = stack[j], found = false
+        for (let k = 0; k < styles.length; k++) {
+          if (style.same(stack[j], styles[k])) {
+            styles.splice(k, 1)
             found = true
             break
           }
@@ -109,11 +109,11 @@ class State {
         if (!found) {
           let closer = close_style[cur.type]
           this.text(typeof closer != "string" ? closer(cur) : closer, false)
-          stack.splice(i--, 1)
+          stack.splice(j--, 1)
         }
       }
-      for (let i = 0; i < styles.length; i++) {
-        let cur = styles[i]
+      for (let j = 0; j < styles.length; j++) {
+        let cur = styles[j]
         stack.push(cur)
         this.text(open_style[cur.type], false)
       }

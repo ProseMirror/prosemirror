@@ -1,7 +1,6 @@
-import {Node, Pos} from "../model"
+import {Node} from "../model"
 
 import {defaultKeymap} from "./defaultkeymap"
-import {Range} from "./selection"
 import {Keymap} from "./keys"
 
 class Option {
@@ -27,7 +26,7 @@ const options = {
 
   historyDepth: new Option(50),
 
-  historyEventDelay: new Option(500),
+  historyEventDelay: new Option(500)
 }
 
 export function defineOption(name, defaultValue, update, updateOnInit) {

@@ -1,4 +1,4 @@
-import {Node, Pos, style} from "../model"
+import {Pos, style} from "../model"
 
 export function addInputRules(pm, rules) {
   if (!pm.mod.interpretInput)
@@ -36,9 +36,9 @@ class InputRules {
   }
 
   unregister() {
-    pm.off("selectionChange", this.onSelChange)
-    pm.off("textInput", this.onTextInput)
-    pm.unextendCommand("delBackward", "high", this.delBackward)
+    this.pm.off("selectionChange", this.onSelChange)
+    this.pm.off("textInput", this.onTextInput)
+    this.pm.unextendCommand("delBackward", "high", this.delBackward)
   }
 
   addRules(rules) {
@@ -57,7 +57,7 @@ class InputRules {
 
     let textBefore, isCode
     let lastCh = text[text.length - 1]
-    
+
     for (let i = 0; i < this.rules.length; i++) {
       let rule = this.rules[i], match
       if (rule.lastChar && rule.lastChar != lastCh) continue
@@ -70,7 +70,7 @@ class InputRules {
         if (typeof rule.handler == "string") {
           let offset = pos.offset - (match[1] || match[0]).length
           let start = new Pos(pos.path, offset)
-          this.pm.apply(pm.tr.delete(start, pos).insertText(start, rule.handler))
+          this.pm.apply(this.pm.tr.delete(start, pos).insertText(start, rule.handler))
         } else {
           rule.handler(this.pm, match, pos)
         }

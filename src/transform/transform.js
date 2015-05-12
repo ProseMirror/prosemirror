@@ -1,4 +1,4 @@
-import {mapThrough, nullMap} from "./map"
+import {nullMap} from "./map"
 
 export class Step {
   constructor(name, from, to, pos, param = null) {
@@ -16,7 +16,7 @@ export function defineStep(name, impl) { steps[name] = impl }
 
 export function applyStep(doc, step) {
   if (!(step.name in steps))
-    throw new Error("Undefined transform " + transform.name)
+    throw new Error("Undefined transform " + step.name)
   return steps[step.name].apply(doc, step)
 }
 

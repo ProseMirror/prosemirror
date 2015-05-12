@@ -1,4 +1,4 @@
-import {Node, Pos, inline} from "../model"
+import {Node, inline} from "../model"
 
 export function copyStructure(node, from, to, f, depth = 0) {
   if (node.type.block) {

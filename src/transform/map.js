@@ -28,7 +28,6 @@ export class ReplacedRange {
 }
 
 const empty = []
-const nullOffset = new Pos(empty, 0)
 
 export class MapResult {
   constructor(pos, deleted = false, recover = null) {
@@ -81,7 +80,7 @@ export class PosMap {
       if (pos.cmp(start) >= 0 &&
           Pos.cmp(pos.path, pos.offset, start.path, start.offset + range.size) <= 0) {
         let dest = back ? range.start : range.dest
-        let depth = start.depth, outPos
+        let depth = start.depth
         if (pos.depth > depth) {
           let offset = dest.offset + (pos.path[depth] - start.offset)
           return new MapResult(new Pos(dest.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset))

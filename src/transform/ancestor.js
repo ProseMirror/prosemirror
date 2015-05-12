@@ -1,4 +1,4 @@
-import {Pos, Node, inline} from "../model"
+import {Pos, Node} from "../model"
 
 import {defineStep, TransformResult, Step, Transform} from "./transform"
 import {isFlatRange, copyTo, selectedSiblings, blocksBetween, isPlainText} from "./tree"

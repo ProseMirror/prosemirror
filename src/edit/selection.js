@@ -1,5 +1,4 @@
 import {Pos} from "../model"
-import {elt} from "./dom"
 
 export class Selection {
   constructor(pm) {
@@ -68,7 +67,6 @@ export class Selection {
   }
 
   receivedFocus() {
-    let content = this.pm.content
     let poll = () => {
       if (document.activeElement == this.pm.content) {
         if (!this.pm.operation) this.poll()
@@ -117,7 +115,7 @@ function posFromDOM(pm, node, domOffset, force) {
     throw new Error("Fetching a position from an outdated DOM structure")
 
   let path = [], inText = false, offset = null, inline = false, prev
-  
+
   if (node.nodeType == 3) {
     inText = true
     prev = node

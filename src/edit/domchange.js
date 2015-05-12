@@ -1,5 +1,4 @@
-import {fromDOM, Node, Pos, findDiffStart, findDiffEnd} from "../model"
-import {T} from "../transform"
+import {fromDOM, Pos, findDiffStart, findDiffEnd} from "../model"
 import {samePathDepth} from "../transform/tree"
 
 import {findByPath} from "./selection"
