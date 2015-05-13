@@ -56,8 +56,11 @@ function renderNode(node, options, offset) {
 }
 
 function renderNodesInto(nodes, where, options) {
-  for (let i = 0; i < nodes.length; i++)
+  for (let i = 0; i < nodes.length; i++) {
+    if (options.path) options.path.push(i)
     where.appendChild(renderNode(nodes[i], options, i))
+    if (options.path) options.path.pop()
+  }
 }
 
 function renderInlineContent(nodes, where, options) {

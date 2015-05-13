@@ -11,6 +11,8 @@ import {Input} from "./input"
 import {eventMixin} from "./event"
 import text from "./text"
 import {execCommand} from "./commands"
+import {Map} from "./map"
+import {RangeStore, MarkedRange} from "./range"
 
 export default class ProseMirror {
   constructor(opts) {
@@ -27,7 +29,8 @@ export default class ProseMirror {
 
     this.doc = opts.doc
 
-    draw(this.content, this.doc)
+    this.ranges = new RangeStore(this)
+    draw(this, this.doc)
     this.content.contentEditable = true
 
     this.mod = Object.create(null)
@@ -90,10 +93,11 @@ export default class ProseMirror {
   }
 
   ensureOperation() {
-    if (this.operation) return
+    if (this.operation) return this.operation
     if (!this.input.suppressPolling) this.sel.poll()
     this.operation = new Operation(this)
     dom.requestAnimationFrame(() => this.endOp())
+    return this.operation
   }
 
   endOp() {
@@ -101,10 +105,10 @@ export default class ProseMirror {
     if (!op || !document.body.contains(this.wrapper)) return
     this.operation = null
 
-    let docChanged = op.doc != this.doc
+    let docChanged = op.doc != this.doc || op.dirty.size
     if (docChanged) {
-      if (op.fullRedraw) draw(this.content, this.doc)
-      else redraw(this.content, this.doc, op.doc)
+      if (op.fullRedraw) draw(this, this.doc)
+      else redraw(this, op.dirty, this.doc, op.doc)
     }
     if (docChanged || op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head))
       this.sel.toDOM(docChanged, op.focus)
@@ -126,6 +130,10 @@ export default class ProseMirror {
       maps.splice(i, 1)
       return true
     }
+  }
+
+  markRange(from, to, options) {
+    this.ranges.addRange(new MarkedRange(from, to, options))
   }
 
   extendCommand(name, priority, f) {
@@ -197,6 +205,7 @@ class Operation {
     this.scrollIntoView = false
     this.focus = false
     this.fullRedraw = false
+    this.dirty = new Map
   }
 }
 

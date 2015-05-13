@@ -40,3 +40,7 @@
   border-left: 3px solid #eee;
   margin-left: 0; margin-right: 0;
 }
+
+.ProseMirror-content pre {
+  white-space: pre-wrap;
+}

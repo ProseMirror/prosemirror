@@ -18,3 +18,7 @@ textarea {
 .full {
   max-width: 50em;
 }
+
+.marked {
+  background: #ff6
+}

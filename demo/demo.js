@@ -78,3 +78,8 @@ addEventListener("hashchange", () => {
   let newVal = document.location.hash != "#single"
   if (newVal != collab) choose(collab = newVal)
 })
+
+document.querySelector("#mark").addEventListener("mousedown", e => {
+  pm.markRange(pm.selection.from, pm.selection.to, {className: "marked"})
+  e.preventDefault()
+})

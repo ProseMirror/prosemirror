@@ -137,6 +137,8 @@ function posFromDOM(pm, node, domOffset, force) {
       else
         offset = domOffset ? +to : +from
       inline = true
+    } else if (inText && (tag = cur.getAttribute("pm-inline-offset"))) {
+      domOffset += +tag
     }
   }
   if (offset == null) offset = scanOffset(prev, node)
@@ -192,18 +194,31 @@ function findByOffset(node, offset) {
   return search(node)
 }
 
-function leaf(node) {
-  while (node.firstChild) node = node.firstChild
-  return node
+function leafAt(node, offset) {
+  for (;;) {
+    let child = node.firstChild
+    if (!child) return {node, offset}
+    if (child.nodeType != 1) return {node: child, offset}
+    if (child.hasAttribute("pm-inline-offset")) {
+      let nodeOffset = 0
+      for (;;) {
+        let nextSib = child.nextSibling, nextOffset
+        if (!nextSib || (nextOffset = +nextSib.getAttribute("pm-inline-offset")) >= offset) break
+        child = nextSib
+        nodeOffset = nextOffset
+      }
+      offset -= nodeOffset
+    }
+    node = child
+  }
 }
 
 function DOMFromPos(parent, pos) {
   let node = resolvePath(parent, pos.path)
   let found = findByOffset(node, pos.offset)
   if (!found) return {node: node, offset: 0}
-  let inner = leaf(found.node)
-  if (inner.nodeType == 3)
-    return {node: inner, offset: found.offset}
+  let inner = leafAt(found.node, found.offset)
+  if (inner) return inner;
   let parentNode = found.node.parentNode
   let offset = Array.prototype.indexOf.call(parentNode.childNodes, found.node) + (found.offset ? 1 : 0)
   return {node: parentNode, offset: offset}
