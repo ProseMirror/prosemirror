@@ -61,6 +61,7 @@ export default class ProseMirror {
     if (transform.doc == this.doc) return false
 
     let sel = this.selection
+    this.ranges.transform(transform)
     this.update(transform.doc,
                 new Range(transform.map(sel.anchor), transform.map(sel.head)))
     this.signal("transform", transform)

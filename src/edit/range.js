@@ -1,3 +1,5 @@
+import {signal} from "./event"
+
 export class MarkedRange {
   constructor(from, to, options) {
     this.options = options || {}
@@ -22,6 +24,22 @@ export class RangeStore {
     if (found > -1) {
       this.ranges.splice(found, 1)
       this.markDisplayDirty(range)
+      signal(range, "removed")
+    }
+  }
+
+  transform(transform) {
+    for (let i = 0; i < this.ranges.length; i++) {
+      let range = this.ranges[i]
+      range.from = transform.map(range.from, range.options.inclusiveLeft ? -1 : 1)
+      range.to = transform.map(range.to, range.options.inclusiveRight ? 1 : -1)
+      let diff = range.from.cmp(range.to)
+      if (range.options.clearWhenEmpty !== false && diff >= 0) {
+        this.removeRange(range)
+        i--
+      } else if (diff > 0) {
+        range.to = range.from
+      }
     }
   }
 
