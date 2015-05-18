@@ -1,13 +1,14 @@
 import "./editor.css"
 
 import {inline, style, slice, Pos} from "../model"
-import {Tr} from "../transform"
+import {Transform} from "../transform"
 
 import {parseOptions, initOptions, setOption} from "./options"
 import {Selection, Range, posAtCoords, coordsAtPos, scrollIntoView, hasFocus} from "./selection"
 import * as dom from "./dom"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
+import {History} from "./history"
 import {eventMixin} from "./event"
 import text from "./text"
 import {execCommand} from "./commands"
@@ -57,21 +58,20 @@ export default class ProseMirror {
     return text.toText(this.selectedDoc)
   }
 
-  apply(transform) {
+  apply(transform, options = nullOptions) {
     if (transform.doc == this.doc) return false
 
     let sel = this.selection
     this.ranges.transform(transform)
     this.update(transform.doc,
                 new Range(transform.map(sel.anchor), transform.map(sel.head)))
-    this.signal("transform", transform)
+    this.signal("transform", transform, options)
     return transform
   }
 
-  get tr() { return Tr(this.doc) }
+  get tr() { return new Transform(this.doc) }
 
   update(doc, sel) {
-    this.history.mark()
     if (!sel) {
       let start = Pos.start(doc)
       sel = new Range(start, start)
@@ -148,18 +148,6 @@ export default class ProseMirror {
     this.input.unextendCommand(name, priority, f)
   }
 
-  markState() {
-    return this.history.markState()
-  }
-
-  isInState(state) {
-    return this.history.isInState(state)
-  }
-
-  backToState(state) {
-    return this.history.backToState(state)
-  }
-
   setInlineStyle(st, to, range) {
     if (!range) range = this.selection
     if (!range.empty) {
@@ -197,6 +185,8 @@ export default class ProseMirror {
   execCommand(name) { execCommand(this, name) }
 }
 
+const nullOptions = {}
+
 eventMixin(ProseMirror)
 
 class Operation {
@@ -207,70 +197,6 @@ class Operation {
     this.focus = false
     this.fullRedraw = false
     this.dirty = new Map
-  }
-}
-
-class History {
-  constructor(pm) {
-    this.pm = pm
-    this.version = 0
-    this.done = []
-    this.undone = []
-    this.lastAddedAt = 0
-    this.nextID = 0
-  }
-
-  mark() {
-    let now = Date.now()
-    if (now > this.lastAddedAt + this.pm.options.historyEventDelay) {
-      this.done.push(this.markState())
-      while (this.done.length > this.pm.options.historyDepth)
-        this.done.shift()
-    }
-    this.version++
-    this.undone.length = 0
-    this.lastAddedAt = now
-  }
-
-  undo() { this.move(this.done, this.undone) }
-  redo() { this.move(this.undone, this.done) }
-
-  move(from, to) {
-    var state = from.pop();
-    if (state) {
-      to.push(this.markState(state.id))
-      this.pm.updateInner(state.doc, state.sel)
-      this.version = state.version
-      this.lastAddedAt = 0
-    }
-  }
-
-  markState(id) {
-    return {doc: this.pm.doc,
-            sel: this.pm.selection,
-            version: this.version,
-            after: this.done.length ? this.done[this.done.length - 1].id : 0,
-            id: id || ++this.nextID}
-  }
-
-  isInState(state) {
-    return this.version == state.version &&
-      (state.after ? this.done[this.done.length - 1].id == state.after : this.done.length == 0)
-  }
-
-  backToState(state) {
-    if (state.after) {
-      let found = -1
-      for (let i = this.done.length - 1; i >= 0; i--)
-        if (this.done[i].id == state.after) { found = i; break }
-      if (found == -1) return false
-      this.done.length = found + 1
-    } else {
-      this.done.length = 0
-    }
-    this.undone.length = 0
-    this.pm.update(state.doc, state.sel)
-    return true
   }
 }
 

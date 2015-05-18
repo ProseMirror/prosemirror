@@ -1,6 +1,6 @@
 import {rebaseChanges} from "../src/collab/rebase"
 import {Pos, Node, style} from "../src/model"
-import {Tr} from "../src/transform"
+import {Transform} from "../src/transform"
 
 import {doc, blockquote, h1, p, li, ol, ul, em, a, br} from "./build"
 import Failure from "./failure"
@@ -54,7 +54,7 @@ function buildChanges(startDoc, clients) {
     let doc = startDoc, tags = doc.tag
     let changes = []
     transforms.forEach(input => {
-      let transform = input(Tr(doc))
+      let transform = input(new Transform(doc))
       for (let i = 0; i < transform.steps.length; i++)
         changes.push({step: transform.steps[i], map: transform.maps[i]})
       doc = transform.doc

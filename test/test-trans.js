@@ -1,12 +1,13 @@
 import {style, Node} from "../src/model"
-import {Tr, invertStep} from "../src/transform"
-import {Remapping} from "../src/collab/rebase"
+import {Transform, invertStep, Remapping} from "../src/transform"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
 import Failure from "./failure"
 import {defTest} from "./tests"
 import {cmpNode, cmpStr} from "./cmp"
+
+function Tr(doc) { return new Transform(doc) }
 
 function invert(transform) {
   let doc = transform.doc, out = Tr(doc)

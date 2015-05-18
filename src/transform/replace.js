@@ -1,6 +1,7 @@
 import {Pos, Node, inline, slice} from "../model"
 
-import {defineStep, TransformResult, Step, Transform} from "./transform"
+import {TransformResult, Transform} from "./transform"
+import {defineStep, Step} from "./step"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 import {copyTo, replaceHasEffect, samePathDepth} from "./tree"
 
@@ -99,17 +100,22 @@ const nullRepl = {nodes: [], openLeft: 0, openRight: 0}
 
 defineStep("replace", {
   apply(doc, step) {
-    let root = step.pos.path
-    if (step.from.depth < root.length || step.to.depth < root.length)
-      return null
-    for (let i = 0; i < root.length; i++)
-      if (step.from.path[i] != root[i] || step.to.path[i] != root[i]) return null
+    let rootPos = step.pos, root = rootPos.path
+    let validRoot = step.from.depth >= root.length && step.to.depth >= root.length
+    for (let i = 0; validRoot && i < root.length; i++)
+      if (step.from.path[i] != root[i] || step.to.path[i] != root[i]) validRoot = false
 
-    let result = replace(doc, step.from, step.to, root, step.param || nullRepl)
+    let repl = step.param || nullRepl
+    if (!validRoot) {
+      if (repl.nodes.length) return null
+      rootPos = step.from.shorten(samePathDepth(step.from, step.to), 1)
+    }
+
+    let result = replace(doc, step.from, step.to, rootPos.path, step.param || nullRepl)
     if (!result) return null
     let {doc: out, moved} = result
     let end = moved.length ? moved[moved.length - 1].dest : step.to
-    let replaced = new ReplacedRange(step.from, step.to, step.from, end, step.pos, step.pos)
+    let replaced = new ReplacedRange(step.from, step.to, step.from, end, rootPos, rootPos)
     return new TransformResult(out, new PosMap(moved, [replaced]))
   },
   invert(step, oldDoc, map) {

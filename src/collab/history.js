@@ -1,6 +1,4 @@
-import {Tr, invertStep} from "../transform"
-
-import {mapStep, Remapping} from "./rebase"
+import {Transform, invertStep, mapStep, Remapping} from "../transform"
 
 class Change {
   constructor(stateID, version) {
@@ -90,7 +88,7 @@ export class CollabHistory {
   mapChanges(changes) {
     let remap = new Remapping([], [], null, false)
     let uptoVersion = this.collab.version
-    let tr = Tr(this.pm.doc)
+    let tr = new Transform(this.pm.doc)
 
     for (let i = changes.length - 1; i >= 0; i--) {
       let change = changes[i], result

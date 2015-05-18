@@ -1,6 +1,7 @@
 import {style, Node, Pos} from "../model"
 
-import {defineStep, TransformResult, Step, Transform} from "./transform"
+import {TransformResult, Transform} from "./transform"
+import {defineStep, Step} from "./step"
 import {copyInline, copyStructure, forSpansBetween} from "./tree"
 
 defineStep("addStyle", {
