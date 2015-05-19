@@ -8,103 +8,134 @@ class InvertedStep {
   }
 }
 
-export class History {
-  constructor(pm) {
-    this.pm = pm
-
-    this.maps = []
+class Branch {
+  constructor(maxDepth) {
+    this.maxDepth = maxDepth
     this.version = 0
-
-    this.done = []
-    this.undone = []
-
-    this.lastAddedAt = 0
-    this.capture = null
-
-    pm.on("transform", (transform, options) => this.recordTransform(transform, options))
+    this.maps = []
+    this.events = []
   }
 
-  recordTransform(transform, options) {
-    if (options.addToHistory == false) {
-      for (let i = 0; i < transform.maps.length; i++)
-        this.maps.push(transform.maps[i])
-      this.version += transform.steps.length
-      return
-    }
+  clear() {
+    this.version = this.maps.length = this.events.length = 0
+  }
 
-    let now = Date.now(), target
-    if (this.capture) {
-      target = this.capture
-    } else if (now > this.lastAddedAt + this.pm.options.historyEventDelay) {
-      this.done.push(target = [])
-      while (this.done.length > this.pm.options.historyDepth)
-        this.done.shift()
-    } else {
-      target = this.done[this.done.length - 1]
-    }
+  newEvent() {
+    this.events.push([])
+    while (this.events.length > this.maxDepth)
+      this.events.shift()
+  }
 
-    for (let i = 0; i < transform.steps.length; i++) {
-      this.maps.push(transform.maps[i])
+  addMap(map) {
+    if (this.events.length && this.events[0].length) {
+      this.maps.push(map)
       this.version++
-      let inverted = invertStep(transform.steps[i], transform.docs[i], transform.maps[i])
-      target.push(new InvertedStep(inverted, this.version))
-    }
-    if (!this.capture) {
-      this.undone.length = 0
-      this.lastAddedAt = now
     }
   }
 
-  undo() { this.move(this.done, this.undone) }
-  redo() { this.move(this.undone, this.done) }
-
-  move(from, to) {
-    if (!from.length) return false
-    let steps = from.pop()
-
-    let {transform, synced} = this.mapStepsToCurrentVersion(steps)
-    this.version -= synced
-    this.maps.length -= synced
-
-    let contra = this.capture = []
-    this.pm.apply(transform)
-    this.capture = null
-
-    if (!contra.length) return this.move(from, to)
-
-    to.push(contra)
-    this.lastAddedAt = 0
-
-    return true
+  addStep(step, map, id) {
+    this.addMap(map)
+    this.events[this.events.length - 1].push(new InvertedStep(step, this.version, id))
   }
 
-  mapStepsToCurrentVersion(steps) {
-    let remap = new Remapping([], [], null, false)
+  popEvent(doc) {
+    let event = this.events.pop()
+    if (!event) return null
+
     let uptoVersion = this.version, uptoIndex = this.maps.length
-    let tr = new Transform(this.pm.doc)
+    let remap
+    let tr = new Transform(doc)
 
-    let synced = true, syncedSteps = 0
-    for (let i = steps.length - 1; i >= 0; i--) {
-      let invertedStep = steps[i], step = invertedStep.step
-      if (!synced || invertedStep.version != uptoVersion) {
-        synced = false
+    for (let i = event.length - 1; i >= 0; i--) {
+      let invertedStep = event[i], step = invertedStep.step
+      if (remap || invertedStep.version != uptoVersion) {
+        if (!remap) remap = new Remapping([], [], null, false)
         while (uptoVersion > invertedStep.version) {
           remap.back.push(this.maps[--uptoIndex])
           uptoVersion--
         }
         step = mapStep(step, remap)
+        let result = step && tr.step(step)
+
+        remap.back.push(this.maps[uptoIndex - 1])
+        if (result) {
+          remap.forward.push(result.map)
+          remap.corresponds[remap.back.length - 1] = remap.forward.length - 1
+          this.maps.push(result.map)
+          this.version++
+        }
       } else {
-        this.syncedSteps++
+        this.version--
+        this.maps.pop()
+        tr.step(step)
       }
-      let result = step && tr.step(step)
-      remap.back.push(this.maps[--uptoIndex])
-      uptoVersion--
-      if (result) {
-        remap.forward.push(result.map)
-        remap.corresponds[remap.back.length - 1] = remap.forward.length - 1
-      }
+      --uptoIndex
+      --uptoVersion
     }
-    return {transform: tr, synced: syncedSteps}
+    return tr
+  }
+}
+
+export class History {
+  constructor(pm) {
+    this.pm = pm
+
+    this.done = new Branch(pm.options.historyDepth)
+    this.undone = new Branch(pm.options.historyDepth)
+    this.id = 0
+
+    this.lastAddedAt = 0
+    this.ignoreTransform = false
+
+    pm.on("transform", (transform, options) => this.recordTransform(transform, options))
+  }
+
+  recordTransform(transform, options) {
+    if (this.ignoreTransform) return
+
+    if (options.addToHistory == false) {
+      for (let i = 0; i < transform.maps.length; i++) {
+        let map = transform.maps[i]
+        this.done.addMap(map)
+        this.undone.addMap(map)
+      }
+      return
+    }
+
+    this.undone.clear()
+    let now = Date.now(), target
+    if (now > this.lastAddedAt + this.pm.options.historyEventDelay)
+      this.done.newEvent()
+
+    this.addTransform(this.done, transform)
+    this.lastAddedAt = now
+  }
+
+  addTransform(target, transform) {
+    for (let i = 0; i < transform.steps.length; i++) {
+      let inverted = invertStep(transform.steps[i], transform.docs[i], transform.maps[i])
+      target.addStep(inverted, transform.maps[i], this.id++)
+    }
+  }
+
+  undo() { return this.move(this.done, this.undone) }
+  redo() { return this.move(this.undone, this.done) }
+
+  move(from, to) {
+    let transform = from.popEvent(this.pm.doc)
+    if (!transform) return false
+
+    this.ignoreTransform = true
+    this.pm.apply(transform)
+    this.ignoreTransform = false
+
+    if (!transform.steps.length) return this.move(from, to)
+
+    to.newEvent()
+    this.addTransform(to, transform)
+    this.lastAddedAt = 0
+
+    return true
   }
 
   // FIXME add a mechanism to save memory on .maps by proactively
