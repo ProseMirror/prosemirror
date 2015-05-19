@@ -1,10 +1,9 @@
 import {Transform, invertStep, mapStep, Remapping} from "../transform"
 
 class InvertedStep {
-  constructor(step, version, id) {
+  constructor(step, version) {
     this.step = step
     this.version = version
-    this.id = id
   }
 }
 
@@ -17,28 +16,40 @@ class Branch {
   }
 
   clear() {
-    this.version = this.maps.length = this.events.length = 0
+    this.maps.length = this.events.length = 0
   }
 
   newEvent() {
     this.events.push([])
+    // FIXME clean up unneeded maps
     while (this.events.length > this.maxDepth)
       this.events.shift()
   }
 
   addMap(map) {
-    if (this.events.length && this.events[0].length) {
+    if (!this.empty()) {
       this.maps.push(map)
       this.version++
     }
   }
 
-  addStep(step, map, id) {
-    this.addMap(map)
-    this.events[this.events.length - 1].push(new InvertedStep(step, this.version, id))
+  empty() {
+    return this.events.length == 0
   }
 
-  popEvent(doc) {
+  addStep(step, map) {
+    this.addMap(map)
+    this.events[this.events.length - 1].push(new InvertedStep(step, this.version))
+  }
+
+  addTransform(transform) {
+    for (let i = 0; i < transform.steps.length; i++) {
+      let inverted = invertStep(transform.steps[i], transform.docs[i], transform.maps[i])
+      this.addStep(inverted, transform.maps[i])
+    }
+  }
+
+  popEvent(doc, allowCollapsing) {
     let event = this.events.pop()
     if (!event) return null
 
@@ -48,7 +59,7 @@ class Branch {
 
     for (let i = event.length - 1; i >= 0; i--) {
       let invertedStep = event[i], step = invertedStep.step
-      if (remap || invertedStep.version != uptoVersion) {
+      if (remap || !allowCollapsing || invertedStep.version != uptoVersion) {
         if (!remap) remap = new Remapping([], [], null, false)
         while (uptoVersion > invertedStep.version) {
           remap.back.push(this.maps[--uptoIndex])
@@ -56,13 +67,17 @@ class Branch {
         }
         step = mapStep(step, remap)
         let result = step && tr.step(step)
-
-        remap.back.push(this.maps[uptoIndex - 1])
         if (result) {
-          remap.forward.push(result.map)
-          remap.corresponds[remap.back.length - 1] = remap.forward.length - 1
           this.maps.push(result.map)
           this.version++
+        }
+
+        if (i > 0) {
+          remap.back.push(this.maps[uptoIndex - 1])
+          if (result) {
+            remap.forward.push(result.map)
+            remap.corresponds[remap.back.length - 1] = remap.forward.length - 1
+          }
         }
       } else {
         this.version--
@@ -82,10 +97,11 @@ export class History {
 
     this.done = new Branch(pm.options.historyDepth)
     this.undone = new Branch(pm.options.historyDepth)
-    this.id = 0
 
     this.lastAddedAt = 0
     this.ignoreTransform = false
+
+    this.allowCollapsing = true
 
     pm.on("transform", (transform, options) => this.recordTransform(transform, options))
   }
@@ -107,22 +123,15 @@ export class History {
     if (now > this.lastAddedAt + this.pm.options.historyEventDelay)
       this.done.newEvent()
 
-    this.addTransform(this.done, transform)
+    this.done.addTransform(transform)
     this.lastAddedAt = now
-  }
-
-  addTransform(target, transform) {
-    for (let i = 0; i < transform.steps.length; i++) {
-      let inverted = invertStep(transform.steps[i], transform.docs[i], transform.maps[i])
-      target.addStep(inverted, transform.maps[i], this.id++)
-    }
   }
 
   undo() { return this.move(this.done, this.undone) }
   redo() { return this.move(this.undone, this.done) }
 
   move(from, to) {
-    let transform = from.popEvent(this.pm.doc)
+    let transform = from.popEvent(this.pm.doc, this.allowCollapsing)
     if (!transform) return false
 
     this.ignoreTransform = true
@@ -132,7 +141,7 @@ export class History {
     if (!transform.steps.length) return this.move(from, to)
 
     to.newEvent()
-    this.addTransform(to, transform)
+    to.addTransform(transform)
     this.lastAddedAt = 0
 
     return true

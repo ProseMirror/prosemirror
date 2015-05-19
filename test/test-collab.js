@@ -1,4 +1,4 @@
-import {rebaseChanges} from "../src/collab/rebase"
+import {rebaseSteps} from "../src/collab/collab"
 import {Pos, Node, style} from "../src/model"
 import {Transform} from "../src/transform"
 

@@ -79,6 +79,18 @@ test("overlapping", pm => {
   cmpNode(pm.doc, doc(p()))
 })
 
+test("overlapping_no_collapse", pm => {
+  pm.history.allowCollapsing = false
+  type(pm, "hello")
+  cut(pm)
+  pm.apply(pm.tr.delete(P(0, 0), P(0, 5)))
+  cmpNode(pm.doc, doc(p()))
+  pm.execCommand("undo")
+  cmpNode(pm.doc, doc(p("hello")))
+  pm.execCommand("undo")
+  cmpNode(pm.doc, doc(p()))
+})
+
 test("overlapping_unsynced_delete", pm => {
   type(pm, "hi")
   cut(pm)
