@@ -62,14 +62,8 @@ export class Keymap {
   addBinding(keyname, value) {
     let keys = keyname.split(" ").map(normalizeKeyName)
     for (let i = 0; i < keys.length; i++) {
-      let val, name
-      if (i == keys.length - 1) {
-        name = keyname
-        val = value
-      } else {
-        name = keys.slice(0, i + 1).join(" ")
-        val = "..."
-      }
+      let name = keys.slice(0, i + 1).join(" ")
+      let val = i == keys.length - 1 ? value : "..."
       let prev = this.bindings[name]
       if (!prev) this.bindings[name] = val
       else if (prev != val) throw new Error("Inconsistent bindings for " + name)
