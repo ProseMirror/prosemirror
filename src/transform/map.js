@@ -50,81 +50,112 @@ function offsetFrom(base, pos) {
   }
 }
 
+function mapThrough(map, pos, bias, back) {
+  if (!bias) bias = back ? -1 : 1
+
+  for (let i = 0; i < map.replaced.length; i++) {
+    let range = map.replaced[i], side = back ? range.after : range.before
+    let left, right
+    if ((left = pos.cmp(side.from)) >= 0 &&
+        (right = pos.cmp(side.to)) <= 0) {
+      let other = back ? range.before : range.after
+      return new MapResult(bias < 0 ? other.from : other.to,
+                           !!(left && right),
+                           {rangeID: i, offset: offsetFrom(side.ref, pos)})
+    }
+  }
+
+  for (let i = 0; i < map.moved.length; i++) {
+    let range = map.moved[i]
+    let start = back ? range.dest : range.start
+    if (pos.cmp(start) >= 0 &&
+        Pos.cmp(pos.path, pos.offset, start.path, start.offset + range.size) <= 0) {
+      let dest = back ? range.start : range.dest
+      let depth = start.depth
+      if (pos.depth > depth) {
+        let offset = dest.offset + (pos.path[depth] - start.offset)
+        return new MapResult(new Pos(dest.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset))
+      } else {
+        return new MapResult(new Pos(dest.path, dest.offset + (pos.offset - start.offset)))
+      }
+    }
+  }
+
+  return new MapResult(pos)
+}
+
 export class PosMap {
   constructor(moved, replaced) {
     this.moved = moved || empty
     this.replaced = replaced || empty
   }
 
-  recover(offset, back = false) {
-    let range = this.replaced[offset.rangeID]
-    return (back ? range.before : range.after).ref.extend(offset.offset)
+  recover(offset) {
+    return this.replaced[offset.rangeID].after.ref.extend(offset.offset)
   }
 
-  map(pos, bias = 0, back = false) {
-    if (!bias) bias = back ? -1 : 1
-
-    for (let i = 0; i < this.replaced.length; i++) {
-      let range = this.replaced[i], side = back ? range.after : range.before
-      let left, right
-      if ((left = pos.cmp(side.from)) >= 0 &&
-          (right = pos.cmp(side.to)) <= 0) {
-        let other = back ? range.before : range.after
-        return new MapResult(bias < 0 ? other.from : other.to,
-                             !!(left && right),
-                             {rangeID: i, offset: offsetFrom(side.ref, pos)})
-      }
-    }
-
-    for (let i = 0; i < this.moved.length; i++) {
-      let range = this.moved[i]
-      let start = back ? range.dest : range.start
-      if (pos.cmp(start) >= 0 &&
-          Pos.cmp(pos.path, pos.offset, start.path, start.offset + range.size) <= 0) {
-        let dest = back ? range.start : range.dest
-        let depth = start.depth
-        if (pos.depth > depth) {
-          let offset = dest.offset + (pos.path[depth] - start.offset)
-          return new MapResult(new Pos(dest.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset))
-        } else {
-          return new MapResult(new Pos(dest.path, dest.offset + (pos.offset - start.offset)))
-        }
-      }
-    }
-
-    return new MapResult(pos)
+  map(pos, bias = 0) {
+    return mapThrough(this, pos, bias, false)
   }
+
+  invert() { return new InvertedPosMap(this) }
+}
+
+class InvertedPosMap {
+  constructor(map) { this.inner = map }
+
+  recover(offset) {
+    return this.map.replaced[offset.rangeID].before.ref.extend(offset.offset)
+  }
+
+  map(pos, bias = 0) {
+    return mapThrough(this.inner, pos, -bias, true)
+  }
+
+  invert() { return this.inner }
 }
 
 export const nullMap = new PosMap
 
 export class Remapping {
-  constructor(back, forward, corresponds, mapBack = true) {
-    this.back = back
-    this.forward = forward
-    this.corresponds = corresponds || Object.create(null)
-    this.mapBack = mapBack
+  constructor(head = [], tail = [], corresponds = Object.create(null)) {
+    this.head = head
+    this.tail = tail
+    this.corresponds = corresponds
+  }
+
+  addToFront(map, corr) {
+    this.head.push(map)
+    let id = -this.head.length
+    if (corr != null) this.corresponds[id] = corr
+    return id
+  }
+
+  addToBack(map, corr) {
+    this.tail.push(map)
+    let id = this.tail.length - 1
+    if (corr != null) this.corresponds[corr] = id
+    return id
+  }
+
+  get(id) {
+    return id < 0 ? this.head[-id - 1] : this.tail[id]
   }
 
   map(pos, bias) {
-    let deleted = false, start = 0
+    let deleted = false
 
-    for (let i = this.back.length - 1; i >= 0; i--) {
-      let result = this.back[i].map(pos, bias * (this.mapBack ? -1 : 1), this.mapBack)
+    for (let i = -this.head.length; i < this.tail.length; i++) {
+      let map = this.get(i)
+      let result = map.map(pos, bias)
       if (result.recover) {
         let corr = this.corresponds[i]
         if (corr != null) {
-          start = corr + 1
-          pos = this.forward[corr].recover(result.recover)
-          break
+          i = corr
+          pos = this.get(corr).recover(result.recover)
+          continue
         }
       }
-      if (result.deleted) deleted = true
-      pos = result.pos
-    }
-
-    for (let i = start; i < this.forward.length; i++) {
-      let result = this.forward[i].map(pos, bias)
       if (result.deleted) deleted = true
       pos = result.pos
     }
@@ -140,6 +171,7 @@ function maxPos(a, b) {
 export function mapStep(step, remapping) {
   let allDeleted = true
   let from = null, to = null, pos = null
+
   if (step.from) {
     let result = remapping.map(step.from, 1)
     from = result.pos

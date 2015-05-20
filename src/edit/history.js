@@ -60,9 +60,9 @@ class Branch {
     for (let i = event.length - 1; i >= 0; i--) {
       let invertedStep = event[i], step = invertedStep.step
       if (remap || !allowCollapsing || invertedStep.version != uptoVersion) {
-        if (!remap) remap = new Remapping([], [], null, false)
+        if (!remap) remap = new Remapping
         while (uptoVersion > invertedStep.version) {
-          remap.back.push(this.maps[--uptoIndex])
+          remap.addToFront(this.maps[--uptoIndex])
           uptoVersion--
         }
         step = mapStep(step, remap)
@@ -73,11 +73,8 @@ class Branch {
         }
 
         if (i > 0) {
-          remap.back.push(this.maps[uptoIndex - 1])
-          if (result) {
-            remap.forward.push(result.map)
-            remap.corresponds[remap.back.length - 1] = remap.forward.length - 1
-          }
+          let corrID = remap.addToFront(this.maps[uptoIndex - 1])
+          if (result) remap.addToBack(result.map, corrID)
         }
       } else {
         this.version--

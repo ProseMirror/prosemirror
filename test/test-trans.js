@@ -22,8 +22,8 @@ function testMapping(maps, pos, newPos, label) {
   cmpStr(mapped, newPos, label)
   
   let ident = {}
-  for (let i = 0; i < maps.length; i++) ident[i] = i
-  let remap = new Remapping(maps, maps, ident)
+  for (let i = 0; i < maps.length; i++) ident[-i - 1] = i
+  let remap = new Remapping(maps.map(x => x.invert()), maps, ident)
   cmpStr(remap.map(newPos, 1).pos, newPos, label + " back")
 }
 

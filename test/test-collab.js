@@ -67,11 +67,11 @@ function buildChanges(startDoc, clients) {
 function runRebase(startDoc, clientChanges, result) {
   let doc = startDoc, maps = []
   for (let i = 0; i < clientChanges.length; i++) {
-    let result = rebaseChanges(doc, maps, clientChanges[i])
-    maps = maps.concat(result.changes.map(c => c.map))
+    let result = rebaseSteps(doc, maps, clientChanges[i])
+    maps = maps.concat(result.data.map(c => c.map))
     doc = result.doc
   }
-  
+
   cmpNode(doc, result)
 
   for (let tag in startDoc.tag) {

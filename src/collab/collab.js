@@ -68,7 +68,7 @@ class Collab {
       doc = result.doc
       return result.map
     })
-    let rebased = rebaseChanges(doc, maps, this.unconfirmed)
+    let rebased = rebaseSteps(doc, maps, this.unconfirmed)
     let oldUnconfirmed = this.unconfirmed
     this.unconfirmed = rebased.data
     this.version += steps.length
@@ -89,19 +89,18 @@ class Collab {
 
 export function rebaseSteps(doc, forward, stepData) {
   let remap = new Remapping([], forward.slice())
+  let rebased = [], inverted = []
   for (let i = 0; i < stepData.length; i++) {
     let data = stepData[i]
     let step = mapStep(data.step, remap)
     let result = step && applyStep(doc, step)
+    let corrID = remap.addToFront(data.map.invert())
     if (result) {
       rebased.push({step: step, map: result.map, id: data.id})
       inverted.push({step: invertStep(step, doc, result.map), map: result.map, id: data.id})
       doc = result.doc
-
-      remap.corresponds[remap.back.length] = remap.forward.length
-      remap.forward.push(result.map)
+      remap.addToBack(result.map, corrID)
     }
-    remap.back.push(data.map)
   }
   return {doc, data: rebased, inverted, mapping: remap}
 }
