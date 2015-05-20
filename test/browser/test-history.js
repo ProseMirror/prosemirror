@@ -63,9 +63,9 @@ test("unsynced_complex", pm => {
   cmpNode(pm.doc, doc(p(".."), p("..hello!")))
   pm.apply(pm.tr.split(P(0, 1)), {addToHistory: false})
   pm.execCommand("undo")
-  cmpNode(pm.doc, doc(p("hello")))
+  cmpNode(pm.doc, doc(p("."), p("...hello")))
   pm.execCommand("undo")
-  cmpNode(pm.doc, doc(p()))
+  cmpNode(pm.doc, doc(p("."), p("...")))
 })
 
 test("overlapping", pm => {

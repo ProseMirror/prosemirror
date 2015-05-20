@@ -12,11 +12,15 @@ class Branch {
     this.maxDepth = maxDepth
     this.version = 0
     this.maps = []
+    this.corresponds = Object.create(null)
     this.events = []
   }
 
   clear() {
-    this.maps.length = this.events.length = 0
+    if (this.events.length) {
+      this.maps.length = this.events.length = 0
+      this.corresponds = Object.create(null)
+    }
   }
 
   newEvent() {
@@ -54,35 +58,43 @@ class Branch {
     if (!event) return null
 
     let uptoVersion = this.version, uptoIndex = this.maps.length
-    let remap
+    let remap, seenCorr = Object.create(null)
     let tr = new Transform(doc)
+
+    const nextMap = () => {
+      let found = this.corresponds[uptoVersion]
+      let id = remap.addToFront(this.maps[--uptoIndex], seenCorr[uptoVersion])
+      --uptoVersion
+      if (found != null) seenCorr[found] = id
+      return id
+    }
 
     for (let i = event.length - 1; i >= 0; i--) {
       let invertedStep = event[i], step = invertedStep.step
       if (remap || !allowCollapsing || invertedStep.version != uptoVersion) {
         if (!remap) remap = new Remapping
-        while (uptoVersion > invertedStep.version) {
-          remap.addToFront(this.maps[--uptoIndex])
-          uptoVersion--
-        }
+        while (uptoVersion > invertedStep.version) nextMap()
+
         step = mapStep(step, remap)
         let result = step && tr.step(step)
         if (result) {
           this.maps.push(result.map)
           this.version++
+          this.corresponds[this.version] = invertedStep.version
         }
 
         if (i > 0) {
-          let corrID = remap.addToFront(this.maps[uptoIndex - 1])
+          let corrID = nextMap()
           if (result) remap.addToBack(result.map, corrID)
         }
       } else {
         this.version--
+        delete this.corresponds[this.version]
         this.maps.pop()
         tr.step(step)
+        --uptoIndex
+        --uptoVersion
       }
-      --uptoIndex
-      --uptoVersion
     }
     return tr
   }

@@ -101,15 +101,11 @@ const nullRepl = {nodes: [], openLeft: 0, openRight: 0}
 defineStep("replace", {
   apply(doc, step) {
     let rootPos = step.pos, root = rootPos.path
-    let validRoot = step.from.depth >= root.length && step.to.depth >= root.length
-    for (let i = 0; validRoot && i < root.length; i++)
-      if (step.from.path[i] != root[i] || step.to.path[i] != root[i]) validRoot = false
-
-    let repl = step.param || nullRepl
-    if (!validRoot) {
-      if (repl.nodes.length) return null
-      rootPos = step.from.shorten(samePathDepth(step.from, step.to), 1)
-    }
+    if (step.from.depth < root.length || step.to.depth < root.length)
+      return null
+    for (let i = 0; i < root.length; i++)
+      if (step.from.path[i] != root[i] || step.to.path[i] != root[i])
+        return null
 
     let result = replace(doc, step.from, step.to, rootPos.path, step.param || nullRepl)
     if (!result) return null
