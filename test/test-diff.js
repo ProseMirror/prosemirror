@@ -1,9 +1,9 @@
-import {findDiffStart, findDiffEnd, Pos} from "../src/model"
+import {findDiffStart, findDiffEnd} from "../src/model"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
 import {defTest} from "./tests"
-import {cmpStr} from "./cmp"
+import {cmpStr, P} from "./cmp"
 import Failure from "./failure"
 
 function t(name, type, a, b, pos) {
@@ -20,11 +20,6 @@ function t(name, type, a, b, pos) {
 
 function sta(name, a, b, pos) { t(name, "start", a, b, pos) }
 function end(name, a, b, pos) { t(name, "end", a, b, pos) }
-
-function P(...args) {
-  let off = args.pop()
-  return new Pos(args, off)
-}
 
 sta("none",
     doc(p("a", em("b")), p("hello"), blockquote(h1("bye"))),

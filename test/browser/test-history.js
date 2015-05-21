@@ -1,16 +1,12 @@
 import {namespace} from "./def"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "../build"
-import {cmp, cmpNode} from "../cmp"
-
-import {Pos} from "../../src/model"
+import {cmp, cmpNode, P} from "../cmp"
 
 const test = namespace("history")
 
 function type(pm, text) { pm.apply(pm.tr.insertText(pm.selection.head, text)) }
 
 function cut(pm) { pm.history.lastAddedAt = 0 }
-
-function P(...args) { return new Pos(args, args.pop()) }
 
 test("undo", pm => {
   type(pm, "a")

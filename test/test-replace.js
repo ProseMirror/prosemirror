@@ -1,12 +1,12 @@
 import {replace} from "../src/transform/replace"
 import {MovedRange} from "../src/transform/map"
-import {slice, Pos} from "../src/model"
+import {slice} from "../src/model"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
 import Failure from "./failure"
 import {defTest} from "./tests"
-import {cmpNode, cmpStr} from "./cmp"
+import {cmpNode, cmpStr, P} from "./cmp"
 
 function test(name, doc, insert, expected, moved) {
   defTest("replace_inner_" + name, () => {
@@ -33,11 +33,6 @@ function test(name, doc, insert, expected, moved) {
       }
     }
   })
-}
-
-function P(...args) {
-  let off = args.pop()
-  return new Pos(args, off)
 }
 
 test("delete_join",

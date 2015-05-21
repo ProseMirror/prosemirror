@@ -67,8 +67,8 @@ function buildChanges(startDoc, clients) {
 function runRebase(startDoc, clientChanges, result) {
   let doc = startDoc, maps = []
   for (let i = 0; i < clientChanges.length; i++) {
-    let result = rebaseSteps(doc, maps, clientChanges[i])
-    maps = maps.concat(result.data.map(c => c.map))
+    let result = rebaseSteps(doc, maps, clientChanges[i].map(c => c.step), clientChanges[i].map(c => c.map))
+    maps = maps.concat(result.transform.maps)
     doc = result.doc
   }
 

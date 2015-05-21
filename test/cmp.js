@@ -1,5 +1,5 @@
 import Failure from "./failure"
-import {style, inline} from "../src/model"
+import {style, inline, Pos} from "../src/model"
 
 export function cmpNode(a, b, comment) {
   function raise(msg, path) {
@@ -52,3 +52,5 @@ export function is(condition, comment) {
   if (!condition)
     throw new Failure("assertion failed" + (comment ? " (" + comment + ")" : ""))
 }
+
+export function P(...args) { return new Pos(args, args.pop()) }

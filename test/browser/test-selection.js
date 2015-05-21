@@ -1,8 +1,6 @@
 import {namespace} from "./def"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "../build"
-import {cmp, gt, cmpStr} from "../cmp"
-
-import {Pos} from "../../src/model"
+import {cmp, gt, cmpStr, P} from "../cmp"
 
 const test = namespace("selection")
 
@@ -25,8 +23,6 @@ function setSel(node, offset) {
   sel.removeAllRanges()
   sel.addRange(range)
 }
-
-function P(...args) { return new Pos(args, args.pop()) }
 
 test("read", pm => {
   function test(node, offset, expected) {

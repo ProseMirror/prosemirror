@@ -98,6 +98,35 @@ class Branch {
     }
     return tr
   }
+
+  rebase(newMaps, rebasedTransform, positions) {
+    let startVersion = this.version - positions.length
+
+    // Update and clean up the events
+    out: for (let i = this.events.length - 1; i >= 0; i--) {
+      let event = this.events[i]
+      for (let j = event.length - 1; j >= 0; j--) {
+        let step = event[j]
+        if (step.version <= startVersion) break out
+        let off = positions[step.version - startVersion - 1]
+        if (off == -1) {
+          event.splice(j--, 1)
+        } else {
+          let inv = invertStep(rebasedTransform.steps[off], rebasedTransform.docs[off],
+                               rebasedTransform.maps[off])
+          event[j] = new InvertedStep(inv, startVersion + newMaps.length + off + 1)
+        }
+      }
+    }
+
+    // Sync the array of maps
+    if (this.maps.length > positions.length)
+      this.maps = this.maps.slice(0, startVersion).concat(newMaps).concat(rebasedTransform.maps)
+    else
+      this.maps = rebasedTransform.maps
+
+    this.version = startVersion + newMaps.length + rebasedTransform.maps.length
+  }
 }
 
 export class History {
@@ -154,6 +183,11 @@ export class History {
     this.lastAddedAt = 0
 
     return true
+  }
+
+  rebase(newMaps, rebasedTransform, positions) {
+    this.done.rebase(newMaps, rebasedTransform, positions)
+    this.undone.rebase(newMaps, rebasedTransform, positions)
   }
 
   // FIXME add a mechanism to save memory on .maps by proactively

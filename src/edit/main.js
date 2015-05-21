@@ -87,6 +87,7 @@ export default class ProseMirror {
   }
 
   setSelection(rangeOrAnchor, head) {
+    // FIXME verify that the given positions are valid
     let range = rangeOrAnchor
     if (!(range instanceof Range))
       range = new Range(rangeOrAnchor, head || rangeOrAnchor)

@@ -1,17 +1,23 @@
 import {defTest} from "../tests"
 import ProseMirror from "../../src/edit/main"
 
-let tempPM = null
+let tempPMs = null
+
+export function tempEditors(options) {
+  let space = document.querySelector("#workspace")
+  if (tempPMs) tempPMs.forEach(pm => space.removeChild(pm.wrapper))
+  return tempPMs = options.map(options => {
+    if (!options) options = {}
+    options.place = space
+    let pm = new ProseMirror(options)
+    if (options.doc && options.doc.tag && options.doc.tag.a)
+      pm.setSelection(options.doc.tag.a, options.doc.tag.b)
+    return pm
+  })
+}
 
 export function tempEditor(options) {
-  let space = document.querySelector("#workspace")
-  if (tempPM) space.removeChild(tempPM.wrapper)
-  if (!options) options = {}
-  options.place = space
-  tempPM = new ProseMirror(options)
-  if (options.doc && options.doc.tag && options.doc.tag.a)
-    tempPM.setSelection(options.doc.tag.a, options.doc.tag.b)
-  return tempPM
+  return tempEditors([options])[0]
 }
 
 export function namespace(space, defaults) {

@@ -1,5 +1,5 @@
 import {defineOption, Range} from "../edit"
-import {applyStep, mapStep, invertStep, Remapping} from "../transform"
+import {applyStep, mapStep, invertStep, Remapping, Transform} from "../transform"
 import {stepToJSON, stepFromJSON} from "./json"
 
 defineOption("collab", false, (pm, value, _, isInit) => {
@@ -21,30 +21,31 @@ class Collab {
     this.version = options.version || 0
     this.versionDoc = pm.doc
 
-    this.unconfirmed = []
+    this.unconfirmedSteps = []
+    this.unconfirmedMaps = []
     this.outOfSync = false
     this.sending = false
 
     pm.on("transform", transform => {
-      let hist = this.pm.history, endID = hist.id
+      let hist = this.pm.history
       for (let i = 0; i < transform.steps.length; i++) {
-        let id = endID - (transform.steps.length - i)
-        this.unconfirmed.push({step: transform.steps[i], map: transform.maps[i], id})
+        this.unconfirmedSteps.push(transform.steps[i])
+        this.unconfirmedMaps.push(transform.maps[i])
       }
       this.send()
     })
 
-    this.channel.register(this)
+    this.channel.listen(steps => this.receive(steps))
   }
 
   send() {
-    if (this.outOfSync || this.sending || this.unconfirmed.length == 0) return
+    if (this.outOfSync || this.sending || this.unconfirmedSteps.length == 0) return
 
-    let amount = this.unconfirmed.length
+    let amount = this.unconfirmedSteps.length
     let startVersion = this.version
     let startDoc = this.pm.doc
     this.sending = true
-    this.channel.send(this, this.version, this.unconfirmed.map(c => stepToJSON(c.step)), (err, ok) => {
+    this.channel.send(this.version, this.unconfirmedSteps.map(stepToJSON), (err, ok) => {
       this.sending = false
       if (err) {
         // FIXME error handling
@@ -52,7 +53,8 @@ class Collab {
         if (startVersion == this.version)
           this.outOfSync = true
       } else {
-        this.unconfirmed = this.unconfirmed.slice(amount)
+        this.unconfirmedSteps.splice(0, amount)
+        this.unconfirmedMaps.splice(0, amount)
         this.version += amount
         this.versionDoc = startDoc
       }
@@ -61,6 +63,7 @@ class Collab {
   }
 
   receive(steps) {
+    // FIXME use a simpler, cheaper approach when no unconfirmed changes are present
     let doc = this.versionDoc
     let maps = steps.map(json => {
       let step = stepFromJSON(json)
@@ -68,17 +71,18 @@ class Collab {
       doc = result.doc
       return result.map
     })
-    let rebased = rebaseSteps(doc, maps, this.unconfirmed)
-    let oldUnconfirmed = this.unconfirmed
-    this.unconfirmed = rebased.data
     this.version += steps.length
     this.versionDoc = doc
+
+    let rebased = rebaseSteps(doc, maps, this.unconfirmedSteps, this.unconfirmedMaps)
+    this.unconfirmedSteps = rebased.transform.steps
+    this.unconfirmedMaps = rebased.transform.maps
 
     let sel = this.pm.selection
     // FIXME also map ranges. Add API to set doc and map tracked positions through map
     this.pm.updateInner(rebased.doc, new Range(rebased.mapping.map(sel.from).pos,
                                                rebased.mapping.map(sel.to).pos))
-    this.pm.history.rebase(maps, rebased.inverted, unconfirmed)
+    this.pm.history.rebase(maps, rebased.transform, rebased.positions)
 
     if (this.outOfSync) {
       this.outOfSync = false
@@ -87,20 +91,21 @@ class Collab {
   }
 }
 
-export function rebaseSteps(doc, forward, stepData) {
+export function rebaseSteps(doc, forward, steps, maps) {
   let remap = new Remapping([], forward.slice())
-  let rebased = [], inverted = []
-  for (let i = 0; i < stepData.length; i++) {
-    let data = stepData[i]
-    let step = mapStep(data.step, remap)
-    let result = step && applyStep(doc, step)
-    let corrID = remap.addToFront(data.map.invert())
+  let transform = new Transform(doc)
+  let positions = []
+
+  for (let i = 0; i < steps.length; i++) {
+    let step = mapStep(steps[i], remap)
+    let result = step && transform.step(step)
+    let corrID = remap.addToFront(maps[i].invert())
     if (result) {
-      rebased.push({step: step, map: result.map, id: data.id})
-      inverted.push({step: invertStep(step, doc, result.map), map: result.map, id: data.id})
-      doc = result.doc
       remap.addToBack(result.map, corrID)
+      positions.push(transform.steps.length - 1)
+    } else {
+      positions.push(-1)
     }
   }
-  return {doc, data: rebased, inverted, mapping: remap}
+  return {doc: transform.doc, transform, mapping: remap, positions}
 }
