@@ -12,6 +12,10 @@ export class MovedRange {
   get end() {
     return new Pos(this.start.path, this.start.offset + this.size)
   }
+
+  toString() {
+    return "[moved " + this.start + "+" + this.size + " to " + this.dest + "]"
+  }
 }
 
 class Side {
@@ -26,6 +30,10 @@ export class ReplacedRange {
   constructor(from, to, newFrom, newTo, ref = from, newRef = newFrom) {
     this.before = new Side(from, to, ref)
     this.after = new Side(newFrom, newTo, newRef)
+  }
+
+  toString() {
+    return "[replaced " + this.before.from + "-" + this.before.to + " with " + this.after.from + "-" + this.after.to + "]"
   }
 }
 
@@ -99,6 +107,8 @@ export class PosMap {
   }
 
   invert() { return new InvertedPosMap(this) }
+
+  toString() { return this.moved.concat(this.replaced).join(" ") }
 }
 
 class InvertedPosMap {
@@ -113,6 +123,8 @@ class InvertedPosMap {
   }
 
   invert() { return this.inner }
+
+  toString() { return "-" + this.inner }
 }
 
 export const nullMap = new PosMap
