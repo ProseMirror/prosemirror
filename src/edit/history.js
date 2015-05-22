@@ -1,4 +1,4 @@
-import {Transform, invertStep, mapStep, Remapping} from "../transform"
+import {Transform, invertStep, mapStep, Remapping, applyStep} from "../transform"
 
 class InvertedStep {
   constructor(step, version) {
@@ -7,19 +7,46 @@ class InvertedStep {
   }
 }
 
+class BranchRemapping {
+  constructor(branch) {
+    this.branch = branch
+    this.remap = new Remapping
+    this.version = branch.version
+    this.mirrorBuffer = Object.create(null)
+  }
+
+  moveToVersion(version) {
+    while (this.version > version) this.addNextMap()
+  }
+
+  addNextMap() {
+    let found = this.branch.mirror[this.version]
+    let mapOffset = this.branch.maps.length - (this.branch.version - this.version) - 1
+    let id = this.remap.addToFront(this.branch.maps[mapOffset], this.mirrorBuffer[this.version])
+    --this.version
+    if (found != null) this.mirrorBuffer[found] = id
+    return id
+  }
+
+  movePastStep(result) {
+    let id = this.addNextMap()
+    if (result) this.remap.addToBack(result.map, id)
+  }
+}
+
 class Branch {
   constructor(maxDepth) {
     this.maxDepth = maxDepth
     this.version = 0
     this.maps = []
-    this.corresponds = Object.create(null)
+    this.mirror = Object.create(null)
     this.events = []
   }
 
   clear() {
     if (this.events.length) {
       this.maps.length = this.events.length = 0
-      this.corresponds = Object.create(null)
+      this.mirror = Object.create(null)
     }
   }
 
@@ -57,43 +84,30 @@ class Branch {
     let event = this.events.pop()
     if (!event) return null
 
-    let uptoVersion = this.version, uptoIndex = this.maps.length
-    let remap, seenCorr = Object.create(null)
+    let remap = new BranchRemapping(this), collapsing = allowCollapsing
     let tr = new Transform(doc)
-
-    const nextMap = () => {
-      let found = this.corresponds[uptoVersion]
-      let id = remap.addToFront(this.maps[--uptoIndex], seenCorr[uptoVersion])
-      --uptoVersion
-      if (found != null) seenCorr[found] = id
-      return id
-    }
 
     for (let i = event.length - 1; i >= 0; i--) {
       let invertedStep = event[i], step = invertedStep.step
-      if (remap || !allowCollapsing || invertedStep.version != uptoVersion) {
-        if (!remap) remap = new Remapping
-        while (uptoVersion > invertedStep.version) nextMap()
+      if (!collapsing || invertedStep.version != remap.version) {
+        collapsing = false
+        remap.moveToVersion(invertedStep.version)
 
-        step = mapStep(step, remap)
+        step = mapStep(step, remap.remap)
         let result = step && tr.step(step)
         if (result) {
           this.maps.push(result.map)
           this.version++
-          this.corresponds[this.version] = invertedStep.version
+          this.mirror[this.version] = invertedStep.version
         }
 
-        if (i > 0) {
-          let corrID = nextMap()
-          if (result) remap.addToBack(result.map, corrID)
-        }
+        if (i > 0) remap.movePastStep(result)
       } else {
         this.version--
-        delete this.corresponds[this.version]
+        delete this.mirror[this.version]
         this.maps.pop()
         tr.step(step)
-        --uptoIndex
-        --uptoVersion
+        --remap.version
       }
     }
     return tr
