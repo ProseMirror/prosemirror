@@ -135,3 +135,19 @@ test("ping_pong_unsynced", pm => {
     cmpNode(pm.doc, re ? doc(p("yyytopzzz"), p("zero one twoxxx three")) : doc(p("yyyzzz"), p("xxx")))
   }
 })
+
+test("compressable", pm => {
+  type(pm, "XY")
+  pm.setSelection(P(0, 1))
+  cut(pm)
+  type(pm, "one")
+  type(pm, "two")
+  type(pm, "three")
+  pm.apply(pm.tr.insertText(P(0, 13), "!"), {addToHistory: false})
+  pm.history.done.compress(pm.doc) // FIXME
+  cmpNode(pm.doc, doc(p("XonetwothreeY!")))
+  pm.execCommand("undo")
+  cmpNode(pm.doc, doc(p("XY!")))
+  pm.execCommand("redo")
+  cmpNode(pm.doc, doc(p("XonetwothreeY!")))
+})

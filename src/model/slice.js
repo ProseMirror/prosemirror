@@ -28,6 +28,8 @@ function copyInlineFrom(node, offset, copy) {
 }
 
 function copyInlineBetween(node, from, to, copy) {
+  if (from == to) return
+
   for (let pos = 0, i = 0; pos < to; i++) {
     var chunk = node.content[i], size = chunk.text.length
     if (pos < from) {
@@ -35,7 +37,7 @@ function copyInlineBetween(node, from, to, copy) {
         copy.push(chunk.slice(from - pos, Math.min(to - pos, size)))
     } else if (pos + size <= to) {
       copy.push(chunk)
-    } else {
+    } else if (pos < to) {
       copy.push(chunk.slice(0, to - pos))
     }
     pos += size

@@ -1,4 +1,5 @@
-import {Transform, invertStep, mapStep, Remapping, applyStep} from "../transform"
+import {Pos} from "../model"
+import {Transform, Step, invertStep, mapStep, Remapping, applyStep} from "../transform"
 
 class InvertedStep {
   constructor(step, version) {
@@ -32,6 +33,17 @@ class BranchRemapping {
     let id = this.addNextMap()
     if (result) this.remap.addToBack(result.map, id)
   }
+}
+
+function isDelStep(step) {
+  return step.name == "replace" && step.from.offset < step.to.offset &&
+    Pos.samePath(step.from.path, step.to.path) && step.param.nodes.length == 0
+}
+
+function extendDelStep(start, step) {
+  if (!isDelStep(step) || start.from.cmp(step.to) != 0) return null
+  return new Step("replace", step.from, start.to, step.pos,
+                  {nodes: [], openLeft: 0, openRight: 0})
 }
 
 class Branch {
@@ -151,9 +163,20 @@ class Branch {
     for (let i = this.events.length - 1; i >= 0; i--) {
       let event = this.events[i], outEvent = []
       for (let j = event.length - 1; j >= 0; j--) {
-        let step = event[j]
-        remap.moveToVersion(step.version)
-        let mappedStep = mapStep(step.step, remap.remap)
+        let data = event[j], step = data.step
+        remap.moveToVersion(data.version)
+
+        if (isDelStep(step)) {
+          while (j > 0) {
+            let next = event[j - 1]
+            let extend = next.version == data.version - 1 && extendDelStep(step, next.step)
+            if (!extend) break
+            step = extend
+            j--
+            remap.addNextMap()
+          }
+        }
+        let mappedStep = mapStep(step, remap.remap)
         let result = mappedStep && applyStep(doc, mappedStep)
         if (result) {
           doc = result.doc
