@@ -15,6 +15,7 @@ export function defineStep(name, impl) { steps[name] = impl }
 export function applyStep(doc, step) {
   if (!(step.name in steps))
     throw new Error("Undefined transform " + step.name)
+
   return steps[step.name].apply(doc, step)
 }
 

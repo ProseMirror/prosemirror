@@ -43,8 +43,8 @@ class Branch {
     this.events = []
   }
 
-  clear() {
-    if (this.events.length) {
+  clear(force) {
+    if (force || !this.empty()) {
       this.maps.length = this.events.length = 0
       this.mirror = Object.create(null)
     }
@@ -61,6 +61,7 @@ class Branch {
     if (!this.empty()) {
       this.maps.push(map)
       this.version++
+      return true
     }
   }
 
@@ -95,11 +96,8 @@ class Branch {
 
         step = mapStep(step, remap.remap)
         let result = step && tr.step(step)
-        if (result) {
-          this.maps.push(result.map)
-          this.version++
+        if (result && this.addMap(result.map))
           this.mirror[this.version] = invertedStep.version
-        }
 
         if (i > 0) remap.movePastStep(result)
       } else {
@@ -110,10 +108,13 @@ class Branch {
         --remap.version
       }
     }
+    if (this.empty()) this.clear(true)
     return tr
   }
 
   rebase(newMaps, rebasedTransform, positions) {
+    if (this.empty()) return
+
     let startVersion = this.version - positions.length
 
     // Update and clean up the events
@@ -135,11 +136,43 @@ class Branch {
 
     // Sync the array of maps
     if (this.maps.length > positions.length)
-      this.maps = this.maps.slice(0, startVersion).concat(newMaps).concat(rebasedTransform.maps)
+      this.maps = this.maps.slice(0, this.maps.length - positions.length).concat(newMaps).concat(rebasedTransform.maps)
     else
-      this.maps = rebasedTransform.maps
+      this.maps = rebasedTransform.maps.slice()
 
     this.version = startVersion + newMaps.length + rebasedTransform.maps.length
+  }
+
+  compress(doc) {
+    let remap = new BranchRemapping(this)
+
+    let events = [], maps = [], version = this.version
+
+    for (let i = this.events.length - 1; i >= 0; i--) {
+      let event = this.events[i], outEvent = []
+      for (let j = event.length - 1; j >= 0; j--) {
+        let step = event[j]
+        remap.moveToVersion(step.version)
+        let mappedStep = mapStep(step.step, remap.remap)
+        let result = mappedStep && applyStep(doc, mappedStep)
+        if (result) {
+          doc = result.doc
+          maps.push(result.map.invert())
+          outEvent.push(new InvertedStep(mappedStep, version))
+          version--
+        }
+        remap.movePastStep(result)
+      }
+      if (outEvent.length) {
+        outEvent.reverse()
+        events.push(outEvent)
+      }
+    }
+    events.reverse()
+    maps.reverse()
+    this.maps = maps
+    this.events = events
+    this.mirror = Object.create(null)
   }
 }
 

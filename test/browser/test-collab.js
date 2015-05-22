@@ -55,11 +55,9 @@ function cut(pm) { pm.history.lastAddedAt = 0 }
 // Kludge to prevent an editor from sending its changes for a moment
 function delay(pm, f) {
   pm.mod.collab.sending = true
-  try { f() }
-  finally {
-    pm.mod.collab.sending = false
-    pm.mod.collab.send()
-  }
+  f()
+  pm.mod.collab.sending = false
+  pm.mod.collab.send()
 }
 
 function conv(...args) {

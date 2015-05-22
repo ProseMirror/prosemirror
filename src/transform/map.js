@@ -58,9 +58,7 @@ function offsetFrom(base, pos) {
   }
 }
 
-function mapThrough(map, pos, bias, back) {
-  if (!bias) bias = back ? -1 : 1
-
+function mapThrough(map, pos, bias = 1, back) {
   for (let i = 0; i < map.replaced.length; i++) {
     let range = map.replaced[i], side = back ? range.after : range.before
     let left, right
@@ -102,7 +100,7 @@ export class PosMap {
     return this.replaced[offset.rangeID].after.ref.extend(offset.offset)
   }
 
-  map(pos, bias = 0) {
+  map(pos, bias) {
     return mapThrough(this, pos, bias, false)
   }
 
@@ -115,11 +113,11 @@ class InvertedPosMap {
   constructor(map) { this.inner = map }
 
   recover(offset) {
-    return this.map.replaced[offset.rangeID].before.ref.extend(offset.offset)
+    return this.inner.replaced[offset.rangeID].before.ref.extend(offset.offset)
   }
 
-  map(pos, bias = 0) {
-    return mapThrough(this.inner, pos, -bias, true)
+  map(pos, bias) {
+    return mapThrough(this.inner, pos, bias, true)
   }
 
   invert() { return this.inner }
@@ -130,23 +128,23 @@ class InvertedPosMap {
 export const nullMap = new PosMap
 
 export class Remapping {
-  constructor(head = [], tail = [], corresponds = Object.create(null)) {
+  constructor(head = [], tail = [], mirror = Object.create(null)) {
     this.head = head
     this.tail = tail
-    this.corresponds = corresponds
+    this.mirror = mirror
   }
 
   addToFront(map, corr) {
     this.head.push(map)
     let id = -this.head.length
-    if (corr != null) this.corresponds[id] = corr
+    if (corr != null) this.mirror[id] = corr
     return id
   }
 
   addToBack(map, corr) {
     this.tail.push(map)
     let id = this.tail.length - 1
-    if (corr != null) this.corresponds[corr] = id
+    if (corr != null) this.mirror[corr] = id
     return id
   }
 
@@ -161,7 +159,7 @@ export class Remapping {
       let map = this.get(i)
       let result = map.map(pos, bias)
       if (result.recover) {
-        let corr = this.corresponds[i]
+        let corr = this.mirror[i]
         if (corr != null) {
           i = corr
           pos = this.get(corr).recover(result.recover)

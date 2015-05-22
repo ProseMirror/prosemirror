@@ -27,7 +27,6 @@ class Collab {
     this.sending = false
 
     pm.on("transform", transform => {
-      let hist = this.pm.history
       for (let i = 0; i < transform.steps.length; i++) {
         this.unconfirmedSteps.push(transform.steps[i])
         this.unconfirmedMaps.push(transform.maps[i])
@@ -75,8 +74,8 @@ class Collab {
     this.versionDoc = doc
 
     let rebased = rebaseSteps(doc, maps, this.unconfirmedSteps, this.unconfirmedMaps)
-    this.unconfirmedSteps = rebased.transform.steps
-    this.unconfirmedMaps = rebased.transform.maps
+    this.unconfirmedSteps = rebased.transform.steps.slice()
+    this.unconfirmedMaps = rebased.transform.maps.slice()
 
     let sel = this.pm.selection
     // FIXME also map ranges. Add API to set doc and map tracked positions through map
@@ -99,9 +98,9 @@ export function rebaseSteps(doc, forward, steps, maps) {
   for (let i = 0; i < steps.length; i++) {
     let step = mapStep(steps[i], remap)
     let result = step && transform.step(step)
-    let corrID = remap.addToFront(maps[i].invert())
+    let id = remap.addToFront(maps[i].invert())
     if (result) {
-      remap.addToBack(result.map, corrID)
+      remap.addToBack(result.map, id)
       positions.push(transform.steps.length - 1)
     } else {
       positions.push(-1)
