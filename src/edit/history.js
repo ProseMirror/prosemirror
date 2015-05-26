@@ -35,6 +35,84 @@ class BranchRemapping {
   }
 }
 
+const workTime = 100, pauseTime = 150
+
+class CompressionWorker {
+  constructor(doc, branch, callback) {
+    this.branch = branch
+    this.callback = callback
+    this.remap = new BranchRemapping(branch)
+
+    this.doc = doc
+    this.events = []
+    this.maps = []
+    this.version = this.startVersion = branch.version
+
+    this.i = branch.events.length
+    this.timeout = null
+    this.aborted = false
+
+    this.work()
+  }
+
+  work() {
+    if (this.aborted) return
+
+    let endTime = Date.now() + workTime
+
+    for (;;) {
+      if (this.i == 0) return this.finish()
+      let event = this.branch.events[--this.i], outEvent = []
+      for (let j = event.length - 1; j >= 0; j--) {
+        let data = event[j], step = data.step
+        this.remap.moveToVersion(data.version)
+
+        if (isDelStep(step)) {
+          while (j > 0) {
+            let next = event[j - 1]
+            let extend = next.version == data.version - 1 && extendDelStep(step, next.step)
+            if (!extend) break
+            step = extend
+            j--
+            this.remap.addNextMap()
+          }
+        }
+        let mappedStep = mapStep(step, this.remap.remap)
+        let result = mappedStep && applyStep(this.doc, mappedStep)
+        if (result) {
+          this.doc = result.doc
+          this.maps.push(result.map.invert())
+          outEvent.push(new InvertedStep(mappedStep, this.version))
+          this.version--
+        }
+        this.remap.movePastStep(result)
+      }
+      if (outEvent.length) {
+        outEvent.reverse()
+        this.events.push(outEvent)
+      }
+      if (Date.now() > endTime) {
+        this.timeout = window.setTimeout(() => this.work(), pauseTime)
+        return
+      }
+    }
+  }
+
+  finish() {
+    if (this.aborted) return
+
+    this.events.reverse()
+    this.maps.reverse()
+    this.callback(this.maps.concat(this.branch.maps.slice(this.branch.maps.length - (this.branch.version - this.startVersion))),
+                  this.events)
+  }
+
+  abort() {
+    this.aborted = true
+    window.clearTimeout(this.timeout)
+  }
+}
+
 function isDelStep(step) {
   return step.name == "replace" && step.from.offset < step.to.offset &&
     Pos.samePath(step.from.path, step.to.path) && step.param.nodes.length == 0
@@ -46,23 +124,32 @@ function extendDelStep(start, step) {
                   {nodes: [], openLeft: 0, openRight: 0})
 }
 
+const compressStepCount = 200
+
 class Branch {
   constructor(maxDepth) {
     this.maxDepth = maxDepth
     this.version = 0
+
     this.maps = []
     this.mirror = Object.create(null)
     this.events = []
+
+    this.stepsSinceCompress = 0
+    this.compressing = null
+    this.compressTimeout = null
   }
 
   clear(force) {
     if (force || !this.empty()) {
-      this.maps.length = this.events.length = 0
+      this.maps.length = this.events.length = this.stepsSinceCompress = 0
       this.mirror = Object.create(null)
+      this.abortCompression()
     }
   }
 
   newEvent() {
+    this.abortCompression()
     this.events.push([])
     // FIXME clean up unneeded maps
     while (this.events.length > this.maxDepth)
@@ -73,6 +160,7 @@ class Branch {
     if (!this.empty()) {
       this.maps.push(map)
       this.version++
+      this.stepsSinceCompress++
       return true
     }
   }
@@ -87,6 +175,7 @@ class Branch {
   }
 
   addTransform(transform) {
+    this.abortCompression()
     for (let i = 0; i < transform.steps.length; i++) {
       let inverted = invertStep(transform.steps[i], transform.docs[i], transform.maps[i])
       this.addStep(inverted, transform.maps[i])
@@ -94,6 +183,7 @@ class Branch {
   }
 
   popEvent(doc, allowCollapsing) {
+    this.abortCompression()
     let event = this.events.pop()
     if (!event) return null
 
@@ -124,8 +214,9 @@ class Branch {
     return tr
   }
 
-  rebase(newMaps, rebasedTransform, positions) {
+  rebased(newMaps, rebasedTransform, positions) {
     if (this.empty()) return
+    this.abortCompression()
 
     let startVersion = this.version - positions.length
 
@@ -153,51 +244,33 @@ class Branch {
       this.maps = rebasedTransform.maps.slice()
 
     this.version = startVersion + newMaps.length + rebasedTransform.maps.length
+
+    this.stepsSinceCompress += newMaps.length + rebasedTransform.steps.length - positions.length
   }
 
-  compress(doc) {
-    let remap = new BranchRemapping(this)
-
-    let events = [], maps = [], version = this.version
-
-    for (let i = this.events.length - 1; i >= 0; i--) {
-      let event = this.events[i], outEvent = []
-      for (let j = event.length - 1; j >= 0; j--) {
-        let data = event[j], step = data.step
-        remap.moveToVersion(data.version)
-
-        if (isDelStep(step)) {
-          while (j > 0) {
-            let next = event[j - 1]
-            let extend = next.version == data.version - 1 && extendDelStep(step, next.step)
-            if (!extend) break
-            step = extend
-            j--
-            remap.addNextMap()
-          }
-        }
-        let mappedStep = mapStep(step, remap.remap)
-        let result = mappedStep && applyStep(doc, mappedStep)
-        if (result) {
-          doc = result.doc
-          maps.push(result.map.invert())
-          outEvent.push(new InvertedStep(mappedStep, version))
-          version--
-        }
-        remap.movePastStep(result)
-      }
-      if (outEvent.length) {
-        outEvent.reverse()
-        events.push(outEvent)
-      }
+  abortCompression() {
+    if (this.compressing) {
+      this.compressing.abort()
+      this.compressing = null
     }
-    events.reverse()
-    maps.reverse()
-    this.maps = maps
-    this.events = events
-    this.mirror = Object.create(null)
+  }
+
+  needsCompression() {
+    return this.stepsSinceCompress > compressStepCount && !this.compressing
+  }
+
+  startCompression(doc) {
+    this.compressing = new CompressionWorker(doc, this, (maps, events) => {
+      this.maps = maps
+      this.events = events
+      this.mirror = Object.create(null)
+      this.compressing = null
+      this.stepsSinceCompress = 0
+    })
   }
 }
+
+const compressDelay = 750
 
 export class History {
   constructor(pm) {
@@ -223,16 +296,16 @@ export class History {
         this.done.addMap(map)
         this.undone.addMap(map)
       }
-      return
+    } else {
+      this.undone.clear()
+      let now = Date.now(), target
+      if (now > this.lastAddedAt + this.pm.options.historyEventDelay)
+        this.done.newEvent()
+
+      this.done.addTransform(transform)
+      this.lastAddedAt = now
     }
-
-    this.undone.clear()
-    let now = Date.now(), target
-    if (now > this.lastAddedAt + this.pm.options.historyEventDelay)
-      this.done.newEvent()
-
-    this.done.addTransform(transform)
-    this.lastAddedAt = now
+    this.maybeScheduleCompression()
   }
 
   undo() { return this.move(this.done, this.undone) }
@@ -255,11 +328,23 @@ export class History {
     return true
   }
 
-  rebase(newMaps, rebasedTransform, positions) {
-    this.done.rebase(newMaps, rebasedTransform, positions)
-    this.undone.rebase(newMaps, rebasedTransform, positions)
+  rebased(newMaps, rebasedTransform, positions) {
+    this.done.rebased(newMaps, rebasedTransform, positions)
+    this.undone.rebased(newMaps, rebasedTransform, positions)
+    this.maybeScheduleCompression()
   }
 
-  // FIXME add a mechanism to save memory on .maps by proactively
-  // mapping changes in the history forward and discarding maps
+  maybeScheduleCompression() {
+    this.maybeScheduleCompressionForBranch(this.done)
+    this.maybeScheduleCompressionForBranch(this.undone)
+  }
+
+  maybeScheduleCompressionForBranch(branch) {
+    window.clearTimeout(branch.compressTimeout)
+    if (branch.needsCompression())
+      branch.compressTimeout = window.setTimeout(() => {
+        if (branch.needsCompression())
+          branch.startCompression(this.pm.doc)
+      }, compressDelay)
+  }
 }

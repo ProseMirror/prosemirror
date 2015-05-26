@@ -144,7 +144,7 @@ test("compressable", pm => {
   type(pm, "two")
   type(pm, "three")
   pm.apply(pm.tr.insertText(P(0, 13), "!"), {addToHistory: false})
-  pm.history.done.compress(pm.doc) // FIXME
+  pm.history.done.startCompression(pm.doc)
   cmpNode(pm.doc, doc(p("XonetwothreeY!")))
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p("XY!")))

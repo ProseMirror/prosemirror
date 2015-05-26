@@ -81,7 +81,7 @@ class Collab {
     // FIXME also map ranges. Add API to set doc and map tracked positions through map
     this.pm.updateInner(rebased.doc, new Range(rebased.mapping.map(sel.from).pos,
                                                rebased.mapping.map(sel.to).pos))
-    this.pm.history.rebase(maps, rebased.transform, rebased.positions)
+    this.pm.history.rebased(maps, rebased.transform, rebased.positions)
 
     if (this.outOfSync) {
       this.outOfSync = false
