@@ -51,8 +51,6 @@ class CompressionWorker {
     this.i = branch.events.length
     this.timeout = null
     this.aborted = false
-
-    this.work()
   }
 
   work() {
@@ -64,20 +62,29 @@ class CompressionWorker {
       if (this.i == 0) return this.finish()
       let event = this.branch.events[--this.i], outEvent = []
       for (let j = event.length - 1; j >= 0; j--) {
-        let data = event[j], step = data.step
-        this.remap.moveToVersion(data.version)
+        let {version: stepVersion, step} = event[j]
+        this.remap.moveToVersion(stepVersion)
 
-        if (isDelStep(step)) {
+        let mappedStep = mapStep(step, this.remap.remap)
+        if (mappedStep && isDelStep(step)) {
+          let extra = 0, start = step.from
           while (j > 0) {
             let next = event[j - 1]
-            let extend = next.version == data.version - 1 && extendDelStep(step, next.step)
-            if (!extend) break
-            step = extend
+            if (next.version != stepVersion - 1 || !isDelStep(next.step) ||
+                start.cmp(next.step.to))
+              break
+            extra += next.step.to.offset - next.step.from.offset
+            start = next.step.from
+            stepVersion--
             j--
             this.remap.addNextMap()
           }
+          if (extra > 0) {
+            let start = mappedStep.from.shift(-extra)
+            mappedStep = new Step("replace", start, mappedStep.to, start,
+                                  {nodes: [], openLeft: 0, openRight: 0})
+          }
         }
-        let mappedStep = mapStep(step, this.remap.remap)
         let result = mappedStep && applyStep(this.doc, mappedStep)
         if (result) {
           this.doc = result.doc
@@ -118,13 +125,7 @@ function isDelStep(step) {
     Pos.samePath(step.from.path, step.to.path) && step.param.nodes.length == 0
 }
 
-function extendDelStep(start, step) {
-  if (!isDelStep(step) || start.from.cmp(step.to) != 0) return null
-  return new Step("replace", step.from, start.to, step.pos,
-                  {nodes: [], openLeft: 0, openRight: 0})
-}
-
-const compressStepCount = 200
+const compressStepCount = 150
 
 class Branch {
   constructor(maxDepth) {
