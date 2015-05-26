@@ -183,7 +183,7 @@ class Branch {
     }
   }
 
-  popEvent(doc, allowCollapsing) {
+  popEvent(doc, allowCollapsing, nSteps) {
     this.abortCompression()
     let event = this.events.pop()
     if (!event) return null
@@ -191,7 +191,8 @@ class Branch {
     let remap = new BranchRemapping(this), collapsing = allowCollapsing
     let tr = new Transform(doc)
 
-    for (let i = event.length - 1; i >= 0; i--) {
+    let stop = nSteps == null ? 0 : Math.max(0, event.length - nSteps)
+    for (let i = event.length - 1; i >= stop; i--) {
       let invertedStep = event[i], step = invertedStep.step
       if (!collapsing || invertedStep.version != remap.version) {
         collapsing = false
@@ -211,6 +212,7 @@ class Branch {
         --remap.version
       }
     }
+    if (stop > 0) this.events.push(event.slice(0, stop))
     if (this.empty()) this.clear(true)
     return tr
   }
@@ -268,6 +270,7 @@ class Branch {
       this.compressing = null
       this.stepsSinceCompress = 0
     })
+    this.compressing.work()
   }
 }
 
@@ -309,21 +312,35 @@ export class History {
     this.maybeScheduleCompression()
   }
 
-  undo() { return this.move(this.done, this.undone) }
-  redo() { return this.move(this.undone, this.done) }
+  undo() { return this.shift(this.done, this.undone) }
+  redo() { return this.shift(this.undone, this.done) }
 
-  move(from, to) {
-    let transform = from.popEvent(this.pm.doc, this.allowCollapsing)
+  recordStepPos() {
+    let event = this.done.events[this.done.events.length - 1]
+    return {event, length: event.length}
+  }
+  stepBack(pos) {
+    let array = this.done.events, current = array[array.length - 1]
+    if (current == pos.event)
+      this.shift(this.done, null, current.length - pos.length)
+    else if (array[array.length - 2] == pos.event)
+      this.shift(this.done, null)
+  }
+
+  shift(from, to, n) {
+    let transform = from.popEvent(this.pm.doc, this.allowCollapsing, n)
     if (!transform) return false
 
     this.ignoreTransform = true
     this.pm.apply(transform)
     this.ignoreTransform = false
 
-    if (!transform.steps.length) return this.move(from, to)
+    if (!transform.steps.length) return this.shift(from, to)
 
-    to.newEvent()
-    to.addTransform(transform)
+    if (to) {
+      to.newEvent()
+      to.addTransform(transform)
+    }
     this.lastAddedAt = 0
 
     return true

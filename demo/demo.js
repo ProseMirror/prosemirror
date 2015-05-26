@@ -12,26 +12,31 @@ let dummy = document.createElement("div")
 dummy.innerHTML = te.value
 let doc = fromDOM(dummy)
 
-function makeChannel() {
-  return {
-    editors: [],
-    version: 0,
+class DummyServer {
+  constructor() {
+    this.version = 0
+    this.channels = []
+  }
 
-    register(editor) {
-      this.editors.push(editor)
-    },
+  channel() {
+    let server = this
+    let ch = {
+      listening: null,
+      listen(f) { this.listening = f },
+      send(version, steps, cb) { server.send(ch, version, steps, cb) }
+    }
+    this.channels.push(ch)
+    return ch
+  }
 
-    send(self, version, changes, callback) {
-      setTimeout(() => { // Artificial delay
-        if (version == this.version) {
-          this.version += changes.length
-          callback(null, true)
-          for (let i = 0; i < this.editors.length; i++)
-            if (this.editors[i] != self) this.editors[i].receive(changes)
-        } else {
-          callback(null, false)
-        }
-      }, 300)
+  send(channel, version, steps, callback) {
+    if (version == this.version) {
+      this.version += steps.length
+      callback(null, true)
+      for (let i = 0; i < this.channels.length; i++)
+        if (this.channels[i] != channel) this.channels[i].listening(steps)
+    } else {
+      callback(null, false)
     }
   }
 }
@@ -49,9 +54,9 @@ function makeEditor(where, collab) {
 
 window.pm = window.pm2 = null
 function createCollab() {
-  let collab = {channel: makeChannel()}
-  pm = makeEditor(".left", collab)
-  pm2 = makeEditor(".right", collab)
+  let server = new DummyServer
+  pm = makeEditor(".left", {channel: server.channel()})
+  pm2 = makeEditor(".right", {channel: server.channel()})
 }
 
 let collab = document.location.hash != "#single"
