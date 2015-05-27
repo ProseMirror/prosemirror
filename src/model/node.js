@@ -82,6 +82,19 @@ export default class Node {
     return node
   }
 
+  isValidPos(pos, requireInBlock) {
+    for (let i = 0, node = this;; i++) {
+      if (i == pos.path.length) {
+        if (requireInBlock && !node.type.block) return false
+        return pos.offset <= node.maxOffset
+      } else {
+        let n = pos.path[i]
+        if (n >= node.content.length || node.type.block) return false
+        node = node.content[n]
+      }
+    }
+  }
+
   pathNodes(path) {
     let nodes = []
     for (var i = 0, node = this;; i++) {

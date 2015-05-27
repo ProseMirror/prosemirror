@@ -86,11 +86,17 @@ export default class ProseMirror {
     this.signal("change")
   }
 
+  checkPos(pos, block) {
+    if (!this.doc.isValidPos(pos, block))
+      throw new Error("Position " + pos + " is not valid in current document")
+  }
+
   setSelection(rangeOrAnchor, head) {
-    // FIXME verify that the given positions are valid
     let range = rangeOrAnchor
     if (!(range instanceof Range))
       range = new Range(rangeOrAnchor, head || rangeOrAnchor)
+    this.checkPos(range.head, true)
+    this.checkPos(range.anchor, true)
     this.sel.set(range)
   }
 
@@ -135,6 +141,8 @@ export default class ProseMirror {
   }
 
   markRange(from, to, options) {
+    this.checkPos(from)
+    this.checkPos(to)
     this.ranges.addRange(new MarkedRange(from, to, options))
   }
 
@@ -175,10 +183,12 @@ export default class ProseMirror {
   }
 
   coordsAtPos(pos) {
+    this.checkPos(pos)
     return coordsAtPos(this, pos)
   }
 
   scrollIntoView(pos = null) {
+    if (pos) this.checkPos(pos)
     this.ensureOperation()
     this.operation.scrollIntoView = pos
   }

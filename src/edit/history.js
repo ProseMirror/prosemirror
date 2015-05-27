@@ -154,7 +154,6 @@ class Branch {
   newEvent() {
     this.abortCompression()
     this.events.push([])
-    // FIXME clean up unneeded maps
     while (this.events.length > this.maxDepth)
       this.events.shift()
   }
