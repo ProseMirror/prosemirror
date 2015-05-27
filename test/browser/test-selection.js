@@ -28,7 +28,7 @@ test("read", pm => {
   function test(node, offset, expected) {
     setSel(node, offset)
     cmpStr(pm.selection.head, expected)
-    pm.endOp()
+    pm.flush()
   }
   let one = findTextNode(pm.content, "one")
   let two = findTextNode(pm.content, "two")
@@ -63,7 +63,7 @@ function getSel() {
 test("set", pm => {
   function test(pos, node, offset) {
     pm.setSelection(pos)
-    pm.endOp()
+    pm.flush()
     let sel = getSel()
     cmp(sel.node, node, pos)
     cmp(sel.offset, offset, pos)

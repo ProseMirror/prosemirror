@@ -61,23 +61,23 @@ test("stay_when_empty", pm => {
 
 test("add_class", pm => {
   let range = pm.markRange(P(0, 1), P(0, 4), {className: "foo"})
-  pm.endOp()
+  pm.flush()
   cmp(pm.content.querySelector(".foo").textContent, "ell")
   pm.removeRange(range)
-  pm.endOp()
+  pm.flush()
   cmp(pm.content.querySelector(".foo"), null)
 })
 
 
 test("add_class_multi_block", pm => {
   let range = pm.markRange(P(0, 1), P(1, 1, 0, 4), {className: "foo"})
-  pm.endOp()
+  pm.flush()
   let found = pm.content.querySelectorAll(".foo")
   cmp(found.length, 3)
   cmp(found[0].textContent, "ne")
   cmp(found[1].textContent, "two")
   cmp(found[2].textContent, "thre")
   pm.removeRange(range)
-  pm.endOp()
+  pm.flush()
   cmp(pm.content.querySelector(".foo"), null)
 }, {doc: doc(p("one"), ul(li(p("two")), li(p("three"))))})

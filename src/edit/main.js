@@ -34,6 +34,7 @@ export default class ProseMirror {
 
     this.mod = Object.create(null)
     this.operation = null
+    this.flushScheduled = false
 
     this.sel = new Selection(this)
     this.input = new Input(this)
@@ -111,11 +112,17 @@ export default class ProseMirror {
     if (this.operation) return this.operation
     if (!this.input.suppressPolling) this.sel.poll()
     this.operation = new Operation(this)
-    dom.requestAnimationFrame(() => this.endOp())
+    if (!this.flushScheduled) {
+      dom.requestAnimationFrame(() => {
+        this.flush()
+        this.flushScheduled = false
+      })
+      this.flushScheduled = true
+    }
     return this.operation
   }
 
-  endOp() {
+  flush() {
     let op = this.operation
     if (!op || !document.body.contains(this.wrapper)) return
     this.operation = null
