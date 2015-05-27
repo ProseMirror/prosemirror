@@ -79,13 +79,13 @@ export function redraw(pm, dirty, doc, prev) {
 
   function scan(dom, node, prev) {
     let status = [], inPrev = [], inNode = []
-    for (let i = 0, j = 0; i < node.content.length && j < prev.content.length; i++) {
-      let dirtyStatus = dirty.get(node.content[i])
+    for (let i = 0, j = 0; i < prev.content.length && j < node.content.length; i++) {
+      let cur = prev.content[i], dirtyStatus = dirty.get(cur)
       status.push(dirtyStatus)
-      let matching = dirtyStatus ? -1 : prev.content.indexOf(node.content[i], j)
+      let matching = dirtyStatus ? -1 : node.content.indexOf(cur, j)
       if (matching > -1) {
-        inNode[matching] = i
-        inPrev[i] = matching
+        inNode[i] = matching
+        inPrev[matching] = i
         j = matching + 1
       }
     }
@@ -100,7 +100,7 @@ export function redraw(pm, dirty, doc, prev) {
         domPos = deleteNextNodes(dom, domPos, found - j)
         j = found
       } else if (!block && j < prev.content.length && inNode[j] == null &&
-                 status[i] != 2 && child.sameMarkup(prev.content[j])) {
+                 status[j] != 2 && child.sameMarkup(prev.content[j])) {
         path.push(i)
         scan(domPos, child, prev.content[j])
         path.pop()
