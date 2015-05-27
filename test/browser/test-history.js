@@ -151,3 +151,10 @@ test("compressable", pm => {
   pm.execCommand("redo")
   cmpNode(pm.doc, doc(p("XonetwothreeY!")))
 })
+
+test("setDocResets", pm => {
+  type(pm, "hello")
+  pm.setDoc(doc(p("aah")))
+  cmp(pm.history.undo(), false)
+  cmpNode(pm.doc, doc(p("aah")))
+}, {doc: doc(p("okay"))})

@@ -1,4 +1,4 @@
-import {signal} from "./event"
+import {eventMixin} from "./event"
 
 export class MarkedRange {
   constructor(from, to, options) {
@@ -6,7 +6,14 @@ export class MarkedRange {
     this.from = from
     this.to = to
   }
+
+  clear() {
+    this.signal("removed", this.from)
+    this.from = this.to = null
+  }
 }
+
+eventMixin(MarkedRange)
 
 export class RangeStore {
   constructor(pm) {
@@ -24,7 +31,7 @@ export class RangeStore {
     if (found > -1) {
       this.ranges.splice(found, 1)
       this.markDisplayDirty(range)
-      signal(range, "removed")
+      range.clear()
     }
   }
 

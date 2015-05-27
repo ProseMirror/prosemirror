@@ -150,7 +150,13 @@ export default class ProseMirror {
   markRange(from, to, options) {
     this.checkPos(from)
     this.checkPos(to)
-    this.ranges.addRange(new MarkedRange(from, to, options))
+    let range = new MarkedRange(from, to, options)
+    this.ranges.addRange(range)
+    return range
+  }
+
+  removeRange(range) {
+    this.ranges.removeRange(range)
   }
 
   extendCommand(name, priority, f) {
