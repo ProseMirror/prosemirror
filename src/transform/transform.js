@@ -1,5 +1,5 @@
 import {Step, applyStep} from "./step"
-import {nullMap} from "./map"
+import {nullMap, MapResult} from "./map"
 
 export class TransformResult {
   constructor(doc, map = nullMap) {
@@ -35,9 +35,13 @@ export class Transform {
     return result
   }
 
-  map(pos, bias = 0) {
-    for (let i = 0; i < this.maps.length; i++)
-      pos = this.maps[i].map(pos, bias).pos
-    return pos
+  map(pos, bias) {
+    let deleted = false
+    for (let i = 0; i < this.maps.length; i++) {
+      let result = this.maps[i].map(pos, bias)
+      pos = result.pos
+      if (result.deleted) deleted = true
+    }
+    return new MapResult(pos, deleted)
   }
 }

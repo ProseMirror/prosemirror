@@ -28,15 +28,12 @@ export default class ProseMirror {
     else if (opts.place)
       opts.place(this.wrapper)
 
-    this.doc = opts.doc
-
-    this.ranges = new RangeStore(this)
+    this.setDocInner(opts.doc)
     draw(this, this.doc)
     this.content.contentEditable = true
 
     this.mod = Object.create(null)
     this.operation = null
-    this.history = new History(this)
 
     this.sel = new Selection(this)
     this.input = new Input(this)
@@ -62,27 +59,37 @@ export default class ProseMirror {
     if (transform.doc == this.doc) return false
 
     let sel = this.selection
-    this.ranges.transform(transform)
-    this.update(transform.doc,
-                new Range(transform.map(sel.anchor), transform.map(sel.head)))
+    this.updateDoc(transform.doc, transform)
     this.signal("transform", transform, options)
     return transform
   }
 
   get tr() { return new Transform(this.doc) }
 
-  update(doc, sel) {
+  setDocInner(doc, sel) {
+    this.doc = doc
+    this.ranges = new RangeStore(this)
+    this.history = new History(this)
+  }
+
+  setDoc(doc, sel) {
     if (!sel) {
       let start = Pos.start(doc)
       sel = new Range(start, start)
     }
-    this.updateInner(doc, sel)
+    this.signal("beforeSetDoc", doc, sel)
+    this.setDocInner(doc, sel)
+    this.sel.set(sel, true)
+    this.signal("setDoc", doc, sel)
   }
 
-  updateInner(doc, sel) {
+  updateDoc(doc, mapping) {
     this.ensureOperation()
+    this.ranges.transform(mapping)
     this.doc = doc
-    this.sel.set(sel, true)
+    let range = this.sel.range
+    this.sel.set(new Range(mapping.map(range.anchor).pos,
+                           mapping.map(range.head).pos), true)
     this.signal("change")
   }
 

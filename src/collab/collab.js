@@ -33,6 +33,9 @@ class Collab {
       }
       this.send()
     })
+    pm.on("beforeSetDoc", () => {
+      throw new Error("setDoc is not supported on a collaborative editor")
+    })
 
     this.channel.listen(steps => this.receive(steps))
   }
@@ -62,7 +65,6 @@ class Collab {
   }
 
   receive(steps) {
-    // FIXME use a simpler, cheaper approach when no unconfirmed changes are present
     let doc = this.versionDoc
     let maps = steps.map(json => {
       let step = stepFromJSON(json)
@@ -78,9 +80,7 @@ class Collab {
     this.unconfirmedMaps = rebased.transform.maps.slice()
 
     let sel = this.pm.selection
-    // FIXME also map ranges. Add API to set doc and map tracked positions through map
-    this.pm.updateInner(rebased.doc, new Range(rebased.mapping.map(sel.from).pos,
-                                               rebased.mapping.map(sel.to).pos))
+    this.pm.updateDoc(rebased.doc, rebased.mapping)
     this.pm.history.rebased(maps, rebased.transform, rebased.positions)
 
     if (this.outOfSync) {

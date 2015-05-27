@@ -40,9 +40,9 @@ function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
   let sibling = parentOffset > 0 && pm.doc.path(pos.shorten()).content[parentOffset - 1]
   let join = sibling && sibling.type.name == type && (!predicate || predicate(sibling))
   let tr = pm.tr.wrap(pos, pos, new Node(type, attrs))
-  let delPos = tr.map(pos)
+  let delPos = tr.map(pos).pos
   tr.delete(new Pos(delPos.path, 0), delPos)
-  if (join) tr.join(tr.map(pos, -1))
+  if (join) tr.join(tr.map(pos, -1).pos)
   pm.apply(tr)
 }
 

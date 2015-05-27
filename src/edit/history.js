@@ -336,8 +336,9 @@ export class History {
   redo() { return this.shift(this.undone, this.done) }
 
   shift(from, to) {
-    let {transform, ids} = from.popEvent(this.pm.doc, this.allowCollapsing)
-    if (!transform) return false
+    let event = from.popEvent(this.pm.doc, this.allowCollapsing)
+    if (!event) return false
+    let {transform, ids} = event
 
     this.ignoreTransform = true
     this.pm.apply(transform)

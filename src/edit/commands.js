@@ -67,7 +67,7 @@ function delBlockBackward(pm, tr, pos) {
     }
     if (iBefore) {
       tr.delete(iBefore, pos)
-      let joinable = joinPoint(tr.doc, tr.map(pos), 1)
+      let joinable = joinPoint(tr.doc, tr.map(pos).pos, 1)
       if (joinable) tr.join(joinable)
     } else if (bBefore) {
       tr.delete(bBefore, bBefore.shift(1))
@@ -149,7 +149,7 @@ function delBlockForward(pm, tr, pos) {
 
   if (iAfter) {
     tr.delete(pos, iAfter)
-    let joinable = joinPoint(tr.doc, tr.map(pos), 1)
+    let joinable = joinPoint(tr.doc, tr.map(pos).pos, 1)
     if (joinable) tr.join(joinable)
   } else if (bAfter) {
     tr.delete(bAfter, bAfter.shift(1))

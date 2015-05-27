@@ -15,7 +15,7 @@ const options = {
   __proto__: null,
 
   doc: new Option(new Node("doc", null, [new Node("paragraph")]), function(pm, value) {
-    pm.update(value)
+    pm.setDoc(value)
   }, false),
 
   place: new Option(null),

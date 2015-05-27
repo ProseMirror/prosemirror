@@ -28,11 +28,11 @@ export class RangeStore {
     }
   }
 
-  transform(transform) {
+  transform(mapping) {
     for (let i = 0; i < this.ranges.length; i++) {
       let range = this.ranges[i]
-      range.from = transform.map(range.from, range.options.inclusiveLeft ? -1 : 1)
-      range.to = transform.map(range.to, range.options.inclusiveRight ? 1 : -1)
+      range.from = mapping.map(range.from, range.options.inclusiveLeft ? -1 : 1).pos
+      range.to = mapping.map(range.to, range.options.inclusiveRight ? 1 : -1).pos
       let diff = range.from.cmp(range.to)
       if (range.options.clearWhenEmpty !== false && diff >= 0) {
         this.removeRange(range)
