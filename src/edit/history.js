@@ -1,10 +1,13 @@
 import {Pos} from "../model"
 import {Transform, Step, invertStep, mapStep, Remapping, applyStep} from "../transform"
 
+let nextID = 1
+
 class InvertedStep {
-  constructor(step, version) {
+  constructor(step, version, id) {
     this.step = step
     this.version = version
+    this.id = id || nextID++
   }
 }
 
@@ -62,7 +65,7 @@ class CompressionWorker {
       if (this.i == 0) return this.finish()
       let event = this.branch.events[--this.i], outEvent = []
       for (let j = event.length - 1; j >= 0; j--) {
-        let {version: stepVersion, step} = event[j]
+        let {step, version: stepVersion, id: stepID} = event[j]
         this.remap.moveToVersion(stepVersion)
 
         let mappedStep = mapStep(step, this.remap.remap)
@@ -89,7 +92,7 @@ class CompressionWorker {
         if (result) {
           this.doc = result.doc
           this.maps.push(result.map.invert())
-          outEvent.push(new InvertedStep(mappedStep, this.version))
+          outEvent.push(new InvertedStep(mappedStep, this.version, stepID))
           this.version--
         }
         this.remap.movePastStep(result)
@@ -170,16 +173,16 @@ class Branch {
     return this.events.length == 0
   }
 
-  addStep(step, map) {
+  addStep(step, map, id) {
     this.addMap(map)
-    this.events[this.events.length - 1].push(new InvertedStep(step, this.version))
+    this.events[this.events.length - 1].push(new InvertedStep(step, this.version, id))
   }
 
-  addTransform(transform) {
+  addTransform(transform, ids) {
     this.abortCompression()
     for (let i = 0; i < transform.steps.length; i++) {
       let inverted = invertStep(transform.steps[i], transform.docs[i], transform.maps[i])
-      this.addStep(inverted, transform.maps[i])
+      this.addStep(inverted, transform.maps[i], ids && ids[i])
     }
   }
 
@@ -190,6 +193,7 @@ class Branch {
 
     let remap = new BranchRemapping(this), collapsing = allowCollapsing
     let tr = new Transform(doc)
+    let ids = []
 
     for (let i = event.length - 1; i >= 0; i--) {
       let invertedStep = event[i], step = invertedStep.step
@@ -199,8 +203,11 @@ class Branch {
 
         step = mapStep(step, remap.remap)
         let result = step && tr.step(step)
-        if (result && this.addMap(result.map))
-          this.mirror[this.version] = invertedStep.version
+        if (result) {
+          ids.push(invertedStep.id)
+          if (this.addMap(result.map))
+            this.mirror[this.version] = invertedStep.version
+        }
 
         if (i > 0) remap.movePastStep(result)
       } else {
@@ -208,11 +215,12 @@ class Branch {
         delete this.mirror[this.version]
         this.maps.pop()
         tr.step(step)
+        ids.push(invertedStep.id)
         --remap.version
       }
     }
     if (this.empty()) this.clear(true)
-    return tr
+    return {transform: tr, ids}
   }
 
   rebased(newMaps, rebasedTransform, positions) {
@@ -233,7 +241,7 @@ class Branch {
         } else {
           let inv = invertStep(rebasedTransform.steps[off], rebasedTransform.docs[off],
                                rebasedTransform.maps[off])
-          event[j] = new InvertedStep(inv, startVersion + newMaps.length + off + 1)
+          event[j] = new InvertedStep(inv, startVersion + newMaps.length + off + 1, step.id)
         }
       }
     }
@@ -314,7 +322,7 @@ export class History {
   redo() { return this.shift(this.undone, this.done) }
 
   shift(from, to) {
-    let transform = from.popEvent(this.pm.doc, this.allowCollapsing)
+    let {transform, ids} = from.popEvent(this.pm.doc, this.allowCollapsing)
     if (!transform) return false
 
     this.ignoreTransform = true
@@ -325,7 +333,7 @@ export class History {
 
     if (to) {
       to.newEvent()
-      to.addTransform(transform)
+      to.addTransform(transform, ids)
     }
     this.lastAddedAt = 0
 
