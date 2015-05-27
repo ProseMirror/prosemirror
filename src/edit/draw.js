@@ -94,6 +94,7 @@ export function redraw(pm, dirty, doc, prev) {
     let block = node.type.block
     for (let i = 0, offset = 0; i < node.content.length; i++) {
       let child = node.content[i]
+      if (!block) path.push(i)
       let found = inPrev[i]
       let nodeLeft = true
       if (found > -1) {
@@ -101,9 +102,7 @@ export function redraw(pm, dirty, doc, prev) {
         j = found
       } else if (!block && j < prev.content.length && inNode[j] == null &&
                  status[j] != 2 && child.sameMarkup(prev.content[j])) {
-        path.push(i)
         scan(domPos, child, prev.content[j])
-        path.pop()
       } else {
         dom.insertBefore(toDOM.renderNode(child, options(path, ranges), block ? offset : i), domPos)
         nodeLeft = false
@@ -117,6 +116,7 @@ export function redraw(pm, dirty, doc, prev) {
         j++
       }
       if (block) offset += child.size
+      else path.pop()
     }
     deleteNextNodes(dom, domPos, prev.content.length - j)
   }
