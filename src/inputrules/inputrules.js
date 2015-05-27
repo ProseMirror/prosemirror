@@ -28,9 +28,9 @@ class InputRules {
   constructor(pm) {
     this.pm = pm
     this.rules = []
-    this.cancelPos = null
+    this.cancelVersion = null
 
-    pm.on("selectionChange", this.onSelChange = () => this.cancelPos = null)
+    pm.on("selectionChange", this.onSelChange = () => this.cancelVersion = null)
     pm.on("textInput", this.onTextInput = this.onTextInput.bind(this))
     pm.extendCommand("delBackward", "high", this.delBackward = this.delBackward.bind(this))
   }
@@ -66,7 +66,7 @@ class InputRules {
         if (isCode) return
       }
       if (match = rule.match.exec(textBefore)) {
-        let startPos = this.pm.history.recordStepPos()
+        let startVersion = this.pm.history.getVersion()
         if (typeof rule.handler == "string") {
           let offset = pos.offset - (match[1] || match[0]).length
           let start = new Pos(pos.path, offset)
@@ -74,16 +74,16 @@ class InputRules {
         } else {
           rule.handler(this.pm, match, pos)
         }
-        this.cancelPos = startPos
+        this.cancelVersion = startVersion
         return
       }
     }
   }
 
   delBackward() {
-    if (this.cancelPos) {
-      this.pm.history.stepBack(this.cancelPos)
-      this.cancelPos = null
+    if (this.cancelVersion) {
+      this.pm.history.backToVersion(this.cancelVersion)
+      this.cancelVersion = null
     } else {
       return false
     }

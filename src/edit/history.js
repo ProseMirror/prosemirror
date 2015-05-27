@@ -1,13 +1,11 @@
 import {Pos} from "../model"
 import {Transform, Step, invertStep, mapStep, Remapping, applyStep} from "../transform"
 
-let nextID = 1
-
 class InvertedStep {
   constructor(step, version, id) {
     this.step = step
     this.version = version
-    this.id = id || nextID++
+    this.id = id
   }
 }
 
@@ -134,6 +132,7 @@ class Branch {
   constructor(maxDepth) {
     this.maxDepth = maxDepth
     this.version = 0
+    this.nextStepID = 1
 
     this.maps = []
     this.mirror = Object.create(null)
@@ -175,6 +174,7 @@ class Branch {
 
   addStep(step, map, id) {
     this.addMap(map)
+    if (id == null) id = this.nextStepID++
     this.events[this.events.length - 1].push(new InvertedStep(step, this.version, id))
   }
 
@@ -221,6 +221,21 @@ class Branch {
     }
     if (this.empty()) this.clear(true)
     return {transform: tr, ids}
+  }
+
+  getVersion() {
+    return {id: this.nextStepID, version: this.version}
+  }
+
+  findVersion(version) {
+    for (let i = this.events.length - 1; i >= 0; i--) {
+      let event = this.events[i]
+      for (let j = event.length - 1; j >= 0; j--) {
+        let step = event[j]
+        if (step.id == version.id) return {event: i, step: j}
+        else if (step.id < version.id) return {event: i, step: j + 1}
+      }
+    }
   }
 
   rebased(newMaps, rebasedTransform, positions) {
@@ -338,6 +353,20 @@ export class History {
     this.lastAddedAt = 0
 
     return true
+  }
+
+  getVersion() { return this.done.getVersion() }
+
+  backToVersion(version) {
+    let found = this.done.findVersion(version)
+    if (!found) return false
+    let event = this.done.events[found.event]
+    let combined = this.done.events.slice(found.event + 1)
+        .reduce((comb, arr) => comb.concat(arr), event.slice(found.step))
+    this.done.events.length = found.event + ((event.length = found.step) ? 1 : 0)
+    this.done.events.push(combined)
+
+    this.shift(this.done)
   }
 
   rebased(newMaps, rebasedTransform, positions) {
