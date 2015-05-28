@@ -2,7 +2,6 @@
   "name": "prosemirror",
   "version": "0.0.1",
   "description": "Well-defined WYSIWYG editor",
-  "main": "src/index.js",
   "maintainers": [
     {
       "name": "Marijn Haverbeke",
@@ -23,6 +22,7 @@
   "scripts": {
     "test": "node test/start.js",
     "demo": "watchify -d --outfile demo/demo-built.js -t babelify -t cssify demo/demo.js",
-    "browsertests": "watchify -d --outfile demo/test-built.js -t babelify -t cssify demo/test.js"
+    "browsertests": "watchify -d --outfile demo/test-built.js -t babelify -t cssify demo/test.js",
+    "dist": "node_modules/.bin/babel -d dist src"
   }
 }
