@@ -3,7 +3,7 @@ import {Pos, Node, fromDOM, toDOM} from "../src/model"
 import "../src/inputrules/autoinput"
 import "../src/menu/inlinetooltip"
 import "../src/menu/menu"
-import "../src/collab/collab"
+import "../src/collab"
 
 let te = document.querySelector("#content")
 te.style.display = "none"
