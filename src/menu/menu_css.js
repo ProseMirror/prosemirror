@@ -1,3 +1,7 @@
+import insertCSS from "insert-css"
+
+insertCSS(`
+
 .ProseMirror-menu-button {
   display: none;
   position: absolute;
@@ -26,3 +30,5 @@
 .ProseMirror-menu-button:hover div {
   background: #333;
 }
+
+`)

@@ -5,8 +5,8 @@ import {resolvePath} from "../edit/selection"
 import {Tooltip} from "./tooltip"
 import {openMenu, forceFontLoad} from "./tooltip-menu"
 
-import "./menu.css"
-import "./icons.css"
+import "./menu_css"
+import "./icons_css"
 
 const classPrefix = "ProseMirror-menu"
 

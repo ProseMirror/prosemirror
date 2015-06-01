@@ -5,7 +5,7 @@ import {Tooltip} from "./tooltip"
 import {InlineStyleItem, ImageItem, LinkDialog} from "./menuitem"
 import {openMenu, forceFontLoad} from "./tooltip-menu"
 
-import "./inlinetooltip.css"
+import "./inlinetooltip_css"
 
 const classPrefix = "ProseMirror-inlinetooltip"
 

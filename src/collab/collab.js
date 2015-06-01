@@ -47,11 +47,9 @@ class Collab {
     let startVersion = this.version
     let startDoc = this.pm.doc
     this.sending = true
-    this.channel.send(this.version, this.unconfirmedSteps.map(stepToJSON), (err, ok) => {
+    this.channel.send(this.version, this.unconfirmedSteps.map(stepToJSON), ok => {
       this.sending = false
-      if (err) {
-        // FIXME error handling
-      } else if (!ok) {
+      if (!ok) {
         if (startVersion == this.version)
           this.outOfSync = true
       } else {

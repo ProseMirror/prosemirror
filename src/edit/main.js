@@ -1,4 +1,4 @@
-import "./editor.css"
+import "./css"
 
 import {inline, style, slice, Pos} from "../model"
 import {Transform} from "../transform"

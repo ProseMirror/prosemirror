@@ -1,3 +1,7 @@
+import insertCSS from "insert-css"
+
+insertCSS(`
+
 .ProseMirror-tooltip-menu {
   padding: 0;
   margin: 0 -4px;
@@ -19,3 +23,5 @@
   background: #666;
   border-radius: 4px;
 }
+
+`)

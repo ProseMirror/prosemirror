@@ -1,3 +1,7 @@
+import insertCSS from "insert-css"
+
+insertCSS(`
+
 .ProseMirror-icon {
   width: 1em;
   display: inline-block;
@@ -8,21 +12,21 @@
   text-align: center;
 }
 
-.ProseMirror-icon-minus:before { content: "\e60e" }
-.ProseMirror-icon-plus:before { content: "\e600" }
-.ProseMirror-icon-indent:before { content: "\e60b" }
-.ProseMirror-icon-arrow-up:before { content: "\e602" }
-.ProseMirror-icon-header:before { content: "\e601" }
-.ProseMirror-icon-quote-left:before { content: "\e60d" }
-.ProseMirror-icon-list-ol:before { content: "\e603" }
-.ProseMirror-icon-list-ul:before { content: "\e604" }
-.ProseMirror-icon-dedent:before { content: "\e60c" }
-.ProseMirror-icon-paragraph:before { content: "\e605" }
-.ProseMirror-icon-image:before { content: "\e606" }
-.ProseMirror-icon-bold:before { content: "\e607" }
-.ProseMirror-icon-chain:before { content: "\e608" }
-.ProseMirror-icon-code:before { content: "\e609" }
-.ProseMirror-icon-italic:before { content: "\e60a" }
+.ProseMirror-icon-minus:before { content: "\\e60e" }
+.ProseMirror-icon-plus:before { content: "\\e600" }
+.ProseMirror-icon-indent:before { content: "\\e60b" }
+.ProseMirror-icon-arrow-up:before { content: "\\e602" }
+.ProseMirror-icon-header:before { content: "\\e601" }
+.ProseMirror-icon-quote-left:before { content: "\\e60d" }
+.ProseMirror-icon-list-ol:before { content: "\\e603" }
+.ProseMirror-icon-list-ul:before { content: "\\e604" }
+.ProseMirror-icon-dedent:before { content: "\\e60c" }
+.ProseMirror-icon-paragraph:before { content: "\\e605" }
+.ProseMirror-icon-image:before { content: "\\e606" }
+.ProseMirror-icon-bold:before { content: "\\e607" }
+.ProseMirror-icon-chain:before { content: "\\e608" }
+.ProseMirror-icon-code:before { content: "\\e609" }
+.ProseMirror-icon-italic:before { content: "\\e60a" }
 .ProseMirror-icon-1:before { content: "1" }
 .ProseMirror-icon-2:before { content: "2" }
 .ProseMirror-icon-3:before { content: "3" }
@@ -38,3 +42,5 @@
   font-weight: normal;
   font-style: normal;
 }
+
+`)

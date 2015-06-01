@@ -23,11 +23,11 @@ class DummyServer {
   send(channel, version, steps, callback) {
     if (version == this.version) {
       this.version += steps.length
-      callback(null, true)
+      callback(true)
       for (let i = 0; i < this.channels.length; i++)
         if (this.channels[i] != channel) this.channels[i].listening(steps)
     } else {
-      callback(null, false)
+      callback(false)
     }
   }
 }

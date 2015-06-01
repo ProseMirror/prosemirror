@@ -1,7 +1,7 @@
 import {elt} from "../edit/dom"
 import {Dialog} from "./menuitem"
 
-import "./tooltip-menu.css"
+import "./tooltip-menu_css"
 const prefix = "ProseMirror-tooltip-menu"
 
 export function openMenu(tooltip, items, pm, where) {

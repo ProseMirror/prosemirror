@@ -1,5 +1,5 @@
 import {elt} from "../edit/dom"
-import "./tooltip.css"
+import "./tooltip_css"
 
 const prefix = "ProseMirror-tooltip"
 

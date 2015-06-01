@@ -1,3 +1,7 @@
+import insertCSS from "insert-css"
+
+insertCSS(`
+
 .ProseMirror-tooltip {
   position: absolute;
   display: none;
@@ -62,3 +66,5 @@
 .ProseMirror-tooltip input[type="text"] {
   padding: 0 4px;
 }
+
+`)

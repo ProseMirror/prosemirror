@@ -1,3 +1,7 @@
+import insertCSS from "insert-css"
+
+insertCSS(`
+
 .ProseMirror {
   border: 1px solid silver;
   position: relative;
@@ -44,3 +48,5 @@
 .ProseMirror-content pre {
   white-space: pre-wrap;
 }
+
+`)
