@@ -38,7 +38,7 @@ export function parseOptions(obj) {
   let given = obj ? [obj].concat(obj.use || []) : []
   outer: for (let opt in options) {
     for (let i = 0; i < given.length; i++) {
-      if (Object.prototype.hasOwnProperty.call(given[i], opt)) {
+      if (opt in given[i]) {
         result[opt] = given[i][opt]
         continue outer
       }
