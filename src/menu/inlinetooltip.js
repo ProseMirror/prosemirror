@@ -4,6 +4,7 @@ import {elt} from "../edit/dom"
 import {Tooltip} from "./tooltip"
 import {InlineStyleItem, ImageItem, LinkDialog} from "./menuitem"
 import {openMenu, forceFontLoad} from "./tooltip-menu"
+import {MenuDefinition} from "./define"
 
 import "./inlinetooltip_css"
 
@@ -16,18 +17,18 @@ defineOption("inlineTooltip", false, function(pm, value) {
     pm.mod.inlineTooltip = new InlineTooltip(pm, value)
 })
 
-export const defaultItems = [
-  new InlineStyleItem("bold", "Strong text", style.strong),
-  new InlineStyleItem("italic", "Emphasized text", style.em),
-  new InlineStyleItem("chain", "Hyperlink", "link", new LinkDialog),
-  new ImageItem("image"),
-  new InlineStyleItem("code", "Code font", style.code)
-]
+export const items = new MenuDefinition
+
+items.addItem(new InlineStyleItem("bold", "Strong text", style.strong))
+items.addItem(new InlineStyleItem("italic", "Emphasized text", style.em))
+items.addItem(new InlineStyleItem("chain", "Hyperlink", "link", new LinkDialog))
+items.addItem(new ImageItem("image"))
+items.addItem(new InlineStyleItem("code", "Code font", style.code))
 
 class InlineTooltip {
   constructor(pm, config) {
     this.pm = pm
-    this.items = (config && config.items) || defaultItems
+    this.items = (config && config.items) || items.getItems(pm)
     this.showLinks = config ? config.showLinks !== false : true
     this.pending = null
 
