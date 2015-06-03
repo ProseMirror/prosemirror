@@ -8,30 +8,35 @@ import {tempEditors} from "./def"
 class DummyServer {
   constructor() {
     this.version = 0
-    this.channels = []
+    this.pms = []
   }
 
-  channel() {
-    let server = this
-    let ch = {
-      listening: null,
-      listen(f) { this.listening = f },
-      send(version, steps, cb) { server.send(ch, version, steps, cb) }
-    }
-    this.channels.push(ch)
-    return ch
+  attach(pm) {
+    pm.mod.collab.on("mustSend", () => this.mustSend(pm))
+    this.pms.push(pm)
   }
 
-  send(channel, version, steps, callback) {
-    if (version == this.version) {
-      this.version += steps.length
-      callback(true)
-      for (let i = 0; i < this.channels.length; i++)
-        if (this.channels[i] != channel) this.channels[i].listening(steps)
-    } else {
-      callback(false)
-    }
+  mustSend(pm) {
+    if (pm.mod.collab.frozen) return
+    let toSend = pm.mod.collab.sendableSteps()
+    this.send(pm, toSend.version, toSend.steps)
+    pm.mod.collab.confirmSteps(toSend)
   }
+
+  send(pm, version, steps) {
+    this.version += steps.length
+    for (let i = 0; i < this.pms.length; i++)
+      if (this.pms[i] != pm) this.pms[i].mod.collab.receive(steps)
+  }
+}
+
+// Kludge to prevent an editor from sending its changes for a moment
+function delay(pm, f) {
+  pm.mod.collab.frozen = true
+  f()
+  pm.mod.collab.frozen = false
+  if (pm.mod.collab.hasSendableSteps())
+    pm.mod.collab.signal("mustSend")
 }
 
 function test(name, f, options, n) {
@@ -39,11 +44,12 @@ function test(name, f, options, n) {
     let server = new DummyServer
     let optArray = []
     for (let i = 0; i < (n || 2); i++) {
-      let copy = {collab: {channel: server.channel()}}
+      let copy = {collab: {version: server.version}}
       for (var prop in options) copy[prop] = options[prop]
       optArray.push(copy)
     }
     let pms = tempEditors(optArray)
+    pms.forEach(pm => server.attach(pm))
     f.apply(null, pms)
   })
 }
@@ -53,14 +59,6 @@ function type(pm, text, pos) {
 }
 
 function cut(pm) { pm.history.lastAddedAt = 0 }
-
-// Kludge to prevent an editor from sending its changes for a moment
-function delay(pm, f) {
-  pm.mod.collab.sending = true
-  f()
-  pm.mod.collab.sending = false
-  pm.mod.collab.send()
-}
 
 function conv(...args) {
   let d = args.pop()
