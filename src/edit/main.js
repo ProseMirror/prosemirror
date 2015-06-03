@@ -79,6 +79,7 @@ export default class ProseMirror {
       sel = new Range(start, start)
     }
     this.signal("beforeSetDoc", doc, sel)
+    this.ensureOperation()
     this.setDocInner(doc, sel)
     this.sel.set(sel, true)
     this.signal("setDoc", doc, sel)
