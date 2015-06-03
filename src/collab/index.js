@@ -2,11 +2,14 @@ import {defineOption, eventMixin} from "../edit"
 import {applyStep, mapStep, invertStep, Remapping, Transform, Step} from "../transform"
 
 defineOption("collab", false, (pm, value, _, isInit) => {
-  if (!isInit) throw new Error("Can't enable/disable collaboration in a running editor")
-  if (!value) return
+  if (pm.mod.collab) {
+    pm.mod.collab.detach()
+    pm.mod.collab = null
+  }
 
-  pm.mod.collab = new Collab(pm, value)
-  pm.history.allowCollapsing = false
+  if (value) {
+    pm.mod.collab = new Collab(pm, value)
+  }
 })
 
 class Collab {
@@ -20,16 +23,23 @@ class Collab {
     this.unconfirmedSteps = []
     this.unconfirmedMaps = []
 
-    pm.on("transform", transform => {
+    pm.on("transform", this.onTransform = transform => {
       for (let i = 0; i < transform.steps.length; i++) {
         this.unconfirmedSteps.push(transform.steps[i])
         this.unconfirmedMaps.push(transform.maps[i])
       }
       this.signal("mustSend")
     })
-    pm.on("beforeSetDoc", () => {
+    pm.on("beforeSetDoc", this.onSetDoc = () => {
       throw new Error("setDoc is not supported on a collaborative editor")
     })
+    pm.history.allowCollapsing = false
+  }
+
+  detach() {
+    this.pm.off("transform", this.onTransform)
+    this.pm.off("beforeSetDoc", this.onSetDoc)
+    this.pm.history.allowCollapsing = true
   }
 
   hasSendableSteps() {
