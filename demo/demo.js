@@ -15,29 +15,24 @@ let doc = fromDOM(dummy)
 class DummyServer {
   constructor() {
     this.version = 0
-    this.channels = []
+    this.pms = []
   }
 
-  channel() {
-    let server = this
-    let ch = {
-      listening: null,
-      listen(f) { this.listening = f },
-      send(version, steps, cb) { server.send(ch, version, steps, cb) }
-    }
-    this.channels.push(ch)
-    return ch
+  attach(pm) {
+    pm.mod.collab.on("mustSend", () => this.mustSend(pm))
+    this.pms.push(pm)
   }
 
-  send(channel, version, steps, callback) {
-    if (version == this.version) {
-      this.version += steps.length
-      callback(true)
-      for (let i = 0; i < this.channels.length; i++)
-        if (this.channels[i] != channel) this.channels[i].listening(steps)
-    } else {
-      callback(false)
-    }
+  mustSend(pm) {
+    let toSend = pm.mod.collab.sendableSteps()
+    this.send(pm, toSend.version, toSend.steps)
+    pm.mod.collab.confirmSteps(toSend)
+  }
+
+  send(pm, version, steps) {
+    this.version += steps.length
+    for (let i = 0; i < this.pms.length; i++)
+      if (this.pms[i] != pm) this.pms[i].mod.collab.receive(steps)
   }
 }
 
@@ -55,8 +50,10 @@ function makeEditor(where, collab) {
 window.pm = window.pm2 = null
 function createCollab() {
   let server = new DummyServer
-  pm = makeEditor(".left", {channel: server.channel()})
-  pm2 = makeEditor(".right", {channel: server.channel()})
+  pm = makeEditor(".left", {version: server.version})
+  server.attach(pm)
+  pm2 = makeEditor(".right", {version: server.version})
+  server.attach(pm2)
 }
 
 let collab = document.location.hash != "#single"
