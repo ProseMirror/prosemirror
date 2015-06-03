@@ -74,7 +74,7 @@ export class Selection {
         this.polling = setTimeout(poll, 50)
       }
     }
-    poll()
+    this.polling = setTimeout(poll, 20)
   }
 }
 

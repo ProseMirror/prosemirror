@@ -109,13 +109,14 @@ export default class ProseMirror {
   }
 
   ensureOperation() {
-    if (this.operation) return this.operation
-    if (!this.input.suppressPolling) this.sel.poll()
-    this.operation = new Operation(this)
+    if (!this.operation) {
+      if (!this.input.suppressPolling) this.sel.poll()
+      this.operation = new Operation(this)
+    }
     if (!this.flushScheduled) {
       dom.requestAnimationFrame(() => {
-        this.flush()
         this.flushScheduled = false
+        this.flush()
       })
       this.flushScheduled = true
     }
@@ -136,7 +137,7 @@ export default class ProseMirror {
       this.sel.toDOM(docChanged, op.focus)
     if (op.scrollIntoView !== false)
       scrollIntoView(this, op.scrollIntoView)
-    this.signal("draw")
+    if (docChanged) this.signal("draw")
   }
 
   setOption(name, value) { setOption(this, name, value) }
