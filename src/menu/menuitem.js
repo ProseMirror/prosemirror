@@ -40,7 +40,7 @@ export class JoinItem extends Item {
 export class SubmenuItem extends Item {
   constructor(icon, title, submenu) {
     super(icon, title)
-    this.submenu = submenu
+    this.submenu = submenu || []
   }
   select(pm) { return this.submenu.some(i => i.select(pm)) }
   apply(pm) { return this.submenu.filter(i => i.select(pm)) }

@@ -4,6 +4,7 @@ import {resolvePath} from "../edit/selection"
 
 import {Tooltip} from "./tooltip"
 import {openMenu, forceFontLoad} from "./tooltip-menu"
+import {MenuDefinition} from "./define"
 
 import "./menu_css"
 import "./icons_css"
@@ -19,28 +20,28 @@ defineOption("menu", false, function(pm, value) {
 
 import {SubmenuItem, BlockTypeItem, LiftItem, WrapItem, InsertBlockItem, JoinItem, ImageItem} from "./menuitem"
 
-const headingItems = []
-for (let i = 1; i <= 6; i++)
-  headingItems.push(new BlockTypeItem("" + i, "Heading " + i, "heading", {level: i}))
+export const items = new MenuDefinition
 
-export const defaultItems = [
-  new SubmenuItem("paragraph", "Paragraph type", [
-    new SubmenuItem("header", "Heading", headingItems),
-    new BlockTypeItem("paragraph", "Normal paragraph", "paragraph"),
-    new BlockTypeItem("code", "Code block", "code_block")
-  ]),
-  new LiftItem("dedent"),
-  new SubmenuItem("indent", "Wrap block", [
-    new WrapItem("list-ol", "Wrap in ordered list", "ordered_list"),
-    new WrapItem("list-ul", "Wrap in bullet list", "bullet_list"),
-    new WrapItem("quote-left", "Wrap in blockquote", "blockquote")
-  ]),
-  new SubmenuItem("plus", "Insert", [
-    new InsertBlockItem("minus", "Horizontal rule", "horizontal_rule"),
-    new ImageItem("image")
-  ]),
-  new JoinItem("arrow-up")
-]
+items.addSub("paragraph", {icon: "paragraph", title: "Paragraph type"})
+items.addSub("heading", {icon: "header", title: "Heading", parent: "paragraph"})
+for (let i = 1; i <= 6; i++)
+  items.addItem(new BlockTypeItem("" + i, "Heading " + i, "heading", {level: i}),
+                {submenu: "heading"})
+items.addItem(new BlockTypeItem("paragraph", "Normal paragraph", "paragraph"), {submenu: "paragraph"})
+items.addItem(new BlockTypeItem("code", "Code block", "code_block"), {submenu: "paragraph"})
+
+items.addItem(new LiftItem("dedent"))
+
+items.addSub("wrap", {icon: "indent", title: "Wrap block"})
+items.addItem(new WrapItem("list-ol", "Wrap in ordered list", "ordered_list"), {submenu: "wrap"})
+items.addItem(new WrapItem("list-ul", "Wrap in bullet list", "bullet_list"), {submenu: "wrap"})
+items.addItem(new WrapItem("quote-left", "Wrap in blockquote", "blockquote"), {submenu: "wrap"})
+
+items.addSub("insert", {icon: "plus", title: "Insert", collapsible: true})
+items.addItem(new InsertBlockItem("minus", "Horizontal rule", "horizontal_rule"), {submenu: "insert"})
+items.addItem(new ImageItem("image"), {submenu: "insert"})
+
+items.addItem(new JoinItem("arrow-up"))
 
 class Menu {
   constructor(pm, config) {
@@ -55,7 +56,7 @@ class Menu {
     pm.on("change", this.updateFunc)
     this.scheduled = null
 
-    this.menuItems = config && config.items || defaultItems
+    this.menuItems = config && config.items || items.getItems(pm)
     this.followCursor = config && config.followCursor
 
     forceFontLoad(pm)

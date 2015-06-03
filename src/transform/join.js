@@ -40,8 +40,8 @@ export function joinPoint(doc, pos, dir = -1) {
     let index = pos.path[i]
     let type = parent.content[index].type
     if (!type.block &&
-        dir == -1 ? (index > 0 && parent.content[index - 1].type == type)
-                  : (index < parent.content.length - 1 && parent.content[index + 1].type == type))
+        (dir == -1 ? (index > 0 && parent.content[index - 1].type == type)
+                   : (index < parent.content.length - 1 && parent.content[index + 1].type == type)))
       joinDepth = i
     parent = parent.content[index]
   }
