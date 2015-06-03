@@ -53,12 +53,15 @@ function showDialog(tooltip, dialog, pm) {
     pm.focus()
   }
 
-  let form = dialog.buildForm(pm)
-  form.addEventListener("submit", e => {
-    e.preventDefault()
+  function submit() {
     let result = dialog.apply(form, pm)
     finish()
     chainResult(tooltip, result, pm)
+  }
+  let form = dialog.buildForm(pm, submit)
+  form.addEventListener("submit", e => {
+    e.preventDefault()
+    submit()
   })
   form.addEventListener("keydown", e => {
     if (e.keyCode == 27) {
