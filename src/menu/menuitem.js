@@ -126,7 +126,7 @@ export class Dialog {
   }
 
   focus(form) {
-    let input = form.querySelector("input")
+    let input = form.querySelector("input, textarea")
     if (input) input.focus()
   }
 
