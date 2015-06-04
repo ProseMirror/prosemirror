@@ -1,6 +1,7 @@
 import {defineOption} from "../edit"
 import {elt} from "../edit/dom"
 import {resolvePath} from "../edit/selection"
+import {Debounced} from "../util/debounce"
 
 import {Tooltip} from "./tooltip"
 import {openMenu, forceFontLoad} from "./tooltip-menu"
@@ -52,9 +53,9 @@ class Menu {
                                                 elt("div"), elt("div"), elt("div")))
     this.hamburger.addEventListener("mousedown", e => { e.preventDefault(); e.stopPropagation(); this.openMenu() })
 
+    this.debounced = new Debounced(pm, 100, () => this.alignButton())
     pm.on("selectionChange", this.updateFunc = () => this.updated())
     pm.on("change", this.updateFunc)
-    this.scheduled = null
 
     this.menuItems = config && config.items || items.getItems()
     this.followCursor = config && config.followCursor
@@ -63,6 +64,7 @@ class Menu {
   }
 
   detach() {
+    this.debounced.clear()
     this.hamburger.parentNode.removeChild(this.hamburger)
     this.tooltip.detach()
 
@@ -72,8 +74,7 @@ class Menu {
 
   updated() {
     this.tooltip.close()
-    if (this.followCursor)
-      this.pm.whenFlushed(() => this.alignButton())
+    this.debounced.trigger()
   }
 
   openMenu() {

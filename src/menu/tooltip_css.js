@@ -43,6 +43,12 @@ insertCSS(`
   border-top: 6px solid #333;
 }
 
+.ProseMirror-tooltip-pointer-below {
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid #333;
+}
+
 .ProseMirror-tooltip-pointer-right {
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;

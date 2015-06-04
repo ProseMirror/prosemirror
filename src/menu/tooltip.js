@@ -43,11 +43,12 @@ export class Tooltip {
   }
 
   getSize(type, node) {
-    let known = this.knownSizes[type]
+    let known = type && this.knownSizes[type]
     if (!known) {
       let wrap = this.pm.wrapper.appendChild(elt("div", {class: prefix}, node))
       wrap.style.display = "block"
-      known = this.knownSizes[type] = {width: wrap.offsetWidth, height: wrap.offsetHeight}
+      known = {width: wrap.offsetWidth, height: wrap.offsetHeight}
+      if (type) this.knownSizes[type] = known
       wrap.parentNode.removeChild(wrap)
     }
     return known
@@ -82,14 +83,19 @@ export class Tooltip {
     this.dom.style.height = size.height + "px"
 
     const margin = 5
-    if (this.dir == "above") {
+    if (this.dir == "above" || this.dir == "below") {
       let tipLeft = Math.max(0, Math.min(left - size.width / 2, window.innerWidth - size.width))
       this.dom.style.left = (tipLeft - around.left) + "px"
-      let tipTop = top - around.top - margin - this.pointerHeight - size.height
       this.pointer.style.left = (left - around.left - this.pointerWidth / 2) + "px"
-
-      this.dom.style.top = tipTop + "px"
-      this.pointer.style.top = (tipTop + size.height) + "px"
+      if (this.dir == "above") {
+        let tipTop = top - around.top - margin - this.pointerHeight - size.height
+        this.dom.style.top = tipTop + "px"
+        this.pointer.style.top = (tipTop + size.height) + "px"
+      } else { // below
+        let tipTop = top - around.top + margin
+        this.pointer.style.top = tipTop + "px"
+        this.dom.style.top = (tipTop + this.pointerHeight) + "px"
+      }
     } else { // left/right
       this.dom.style.top = (top - around.top - size.height / 2) + "px"
       this.pointer.style.top = (top - this.pointerHeight / 2 - around.top) + "px"

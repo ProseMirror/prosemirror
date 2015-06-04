@@ -1,6 +1,8 @@
 import {defineOption} from "../edit"
 import {style, inline} from "../model"
 import {elt} from "../edit/dom"
+import {Debounced} from "../util/debounce"
+
 import {Tooltip} from "./tooltip"
 import {InlineStyleItem, ImageItem, LinkDialog} from "./menuitem"
 import {openMenu, forceFontLoad} from "./tooltip-menu"
@@ -30,9 +32,9 @@ class InlineTooltip {
     this.pm = pm
     this.items = (config && config.items) || items.getItems()
     this.showLinks = config ? config.showLinks !== false : true
-    this.pending = null
+    this.debounced = new Debounced(pm, 100, () => this.update())
 
-    pm.on("selectionChange", this.updateFunc = () => this.scheduleUpdate())
+    pm.on("selectionChange", this.updateFunc = () => this.debounced.trigger())
     pm.on("change", this.updateFunc)
 
     this.tooltip = new Tooltip(pm, "above", true)
@@ -42,18 +44,11 @@ class InlineTooltip {
   }
 
   detach() {
+    this.debounced.clear()
     this.tooltip.detach()
 
     this.pm.off("selectionChange", this.updateFunc)
     this.pm.off("change", this.updateFunc)
-  }
-
-  scheduleUpdate() {
-    window.clearTimeout(this.pending)
-    this.pending = window.setTimeout(() => {
-      this.pending = null
-      this.update()
-    }, 100)
   }
 
   inPlainText(sel) {

@@ -6,12 +6,18 @@ export function elt(tag, attrs, ...args) {
     else if (attrs[name] != null)
       result.setAttribute(name, attrs[name])
   }
-  for (let i = 0; i < args.length; i++) {
-    let arg = args[i]
-    if (typeof arg == "string") arg = document.createTextNode(arg)
-    result.appendChild(arg)
-  }
+  for (let i = 0; i < args.length; i++) add(args[i], result)
   return result
+}
+
+function add(value, target) {
+  if (typeof value == "string")
+    value = document.createTextNode(value)
+  if (Array.isArray(value)) {
+    for (let i = 0; i < value.length; i++) add(value[i], target)
+  } else {
+    target.appendChild(value)
+  }
 }
 
 const reqFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
