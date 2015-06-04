@@ -322,7 +322,7 @@ export class History {
       }
     } else {
       this.undone.clear()
-      let now = Date.now(), target
+      let now = Date.now()
       if (now > this.lastAddedAt + this.pm.options.historyEventDelay)
         this.done.newEvent()
 

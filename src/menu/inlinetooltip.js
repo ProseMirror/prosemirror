@@ -28,7 +28,7 @@ items.addItem(new InlineStyleItem("code", "Code font", style.code))
 class InlineTooltip {
   constructor(pm, config) {
     this.pm = pm
-    this.items = (config && config.items) || items.getItems(pm)
+    this.items = (config && config.items) || items.getItems()
     this.showLinks = config ? config.showLinks !== false : true
     this.pending = null
 

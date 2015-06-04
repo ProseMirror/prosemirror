@@ -1,7 +1,7 @@
 import {defineOption, eventMixin} from "../edit"
-import {applyStep, mapStep, invertStep, Remapping, Transform, Step} from "../transform"
+import {applyStep, mapStep, Remapping, Transform, Step} from "../transform"
 
-defineOption("collab", false, (pm, value, _, isInit) => {
+defineOption("collab", false, (pm, value) => {
   if (pm.mod.collab) {
     pm.mod.collab.detach()
     pm.mod.collab = null
@@ -76,7 +76,6 @@ class Collab {
     this.unconfirmedSteps = rebased.transform.steps.slice()
     this.unconfirmedMaps = rebased.transform.maps.slice()
 
-    let sel = this.pm.selection
     this.pm.updateDoc(rebased.doc, rebased.mapping)
     this.pm.history.rebased(maps, rebased.transform, rebased.positions)
   }

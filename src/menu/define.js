@@ -27,7 +27,7 @@ export class MenuDefinition {
     return path
   }
 
-  getItems(pm) {
+  getItems() {
     let items = []
     let subs = Object.create(null)
     this.items.forEach(({item, options}) => {

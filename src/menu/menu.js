@@ -18,7 +18,7 @@ defineOption("menu", false, function(pm, value) {
     pm.mod.menu = new Menu(pm, value)
 })
 
-import {SubmenuItem, BlockTypeItem, LiftItem, WrapItem, InsertBlockItem, JoinItem, ImageItem} from "./menuitem"
+import {BlockTypeItem, LiftItem, WrapItem, InsertBlockItem, JoinItem, ImageItem} from "./menuitem"
 
 export const items = new MenuDefinition
 
@@ -56,7 +56,7 @@ class Menu {
     pm.on("change", this.updateFunc)
     this.scheduled = null
 
-    this.menuItems = config && config.items || items.getItems(pm)
+    this.menuItems = config && config.items || items.getItems()
     this.followCursor = config && config.followCursor
 
     forceFontLoad(pm)

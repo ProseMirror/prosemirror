@@ -59,7 +59,6 @@ export default class ProseMirror {
   apply(transform, options = nullOptions) {
     if (transform.doc == this.doc) return false
 
-    let sel = this.selection
     this.updateDoc(transform.doc, transform)
     this.signal("transform", transform, options)
     return transform
@@ -67,7 +66,7 @@ export default class ProseMirror {
 
   get tr() { return new Transform(this.doc) }
 
-  setDocInner(doc, sel) {
+  setDocInner(doc) {
     this.doc = doc
     this.ranges = new RangeStore(this)
     this.history = new History(this)
@@ -80,7 +79,7 @@ export default class ProseMirror {
     }
     this.signal("beforeSetDoc", doc, sel)
     this.ensureOperation()
-    this.setDocInner(doc, sel)
+    this.setDocInner(doc)
     this.sel.set(sel, true)
     this.signal("setDoc", doc, sel)
   }
