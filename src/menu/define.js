@@ -31,7 +31,6 @@ export class MenuDefinition {
     let items = []
     let subs = Object.create(null)
     this.items.forEach(({item, options}) => {
-      if (options.predicate && !options.predicate(pm)) return
       let target = items
       if (options.submenu) {
         let path = this.submenuPath(options.submenu)
@@ -46,6 +45,8 @@ export class MenuDefinition {
       }
       target.push(item)
     })
+
+    // FIXME implement collapsing
     return items
   }
 }

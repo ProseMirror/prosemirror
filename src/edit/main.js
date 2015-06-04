@@ -136,9 +136,16 @@ export default class ProseMirror {
     }
     if (docChanged || op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head))
       this.sel.toDOM(docChanged, op.focus)
+    for (let i = 0; i < op.whenFlushed.length; i++)
+      op.whenFlushed[i]()
     if (op.scrollIntoView !== false)
       scrollIntoView(this, op.scrollIntoView)
     if (docChanged) this.signal("draw")
+  }
+
+  whenFlushed(f) {
+    if (this.operation) this.operation.whenFlushed.push(f)
+    else f()
   }
 
   setOption(name, value) { setOption(this, name, value) }
@@ -230,6 +237,7 @@ class Operation {
     this.focus = false
     this.fullRedraw = false
     this.dirty = new Map
+    this.whenFlushed = []
   }
 }
 

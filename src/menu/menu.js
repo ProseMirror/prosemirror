@@ -72,10 +72,8 @@ class Menu {
 
   updated() {
     this.tooltip.close()
-    if (this.followCursor) {
-      window.clearTimeout(this.scheduled)
-      this.scheduled = window.setTimeout(() => this.alignButton(), 100)
-    }
+    if (this.followCursor)
+      this.pm.whenFlushed(() => this.alignButton())
   }
 
   openMenu() {
