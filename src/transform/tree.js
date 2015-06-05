@@ -115,13 +115,9 @@ export function isPlainText(node) {
 }
 
 function canBeJoined(node, offset, depth) {
+  if (!depth || offset == 0 || offset == node.content.length) return false
   let left = node.content[offset - 1], right = node.content[offset]
-  for (let i = 1;; i++) {
-    if (left.sameMarkup(right)) return true
-    if (i == depth) return false
-    left = left.content[left.content.length - 1]
-    right = right.content[0]
-  }
+  return left.sameMarkup(right)
 }
 
 export function replaceHasEffect(doc, from, to) {
