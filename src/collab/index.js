@@ -1,5 +1,7 @@
 import {defineOption, eventMixin} from "../edit"
-import {applyStep, mapStep, Remapping, Transform, Step} from "../transform"
+import {applyStep, Step} from "../transform"
+
+export {rebaseSteps} from "./rebase"
 
 defineOption("collab", false, (pm, value) => {
   if (pm.mod.collab) {
@@ -82,22 +84,3 @@ class Collab {
 }
 
 eventMixin(Collab)
-
-export function rebaseSteps(doc, forward, steps, maps) {
-  let remap = new Remapping([], forward.slice())
-  let transform = new Transform(doc)
-  let positions = []
-
-  for (let i = 0; i < steps.length; i++) {
-    let step = mapStep(steps[i], remap)
-    let result = step && transform.step(step)
-    let id = remap.addToFront(maps[i].invert())
-    if (result) {
-      remap.addToBack(result.map, id)
-      positions.push(transform.steps.length - 1)
-    } else {
-      positions.push(-1)
-    }
-  }
-  return {doc: transform.doc, transform, mapping: remap, positions}
-}
