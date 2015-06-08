@@ -25,8 +25,11 @@ function options(path, ranges) {
         dom = elt("span", null, dom)
         if (!nextCut) wrapped = dom
       }
-      if (!wrapped && (nextCut || ranges.current.length))
-        wrapped = inner.parentNode.appendChild(elt("span", null, inner))
+      if (!wrapped && (nextCut || ranges.current.length)) {
+        wrapped = inner == dom ? (dom = elt("span", null, inner))
+                               : inner.parentNode.appendChild(elt("span", null, inner))
+      }
+
       dom.setAttribute("pm-inline-span", offset + "-" + end.offset)
       if (node.type != Node.types.text)
         dom.setAttribute("pm-inline-atom", "true")
