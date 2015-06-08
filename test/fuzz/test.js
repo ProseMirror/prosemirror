@@ -1,0 +1,81 @@
+import {Node, style} from "../../src/model"
+import {Transform, invertStep, Remapping} from "../../src/transform"
+import {cmpStr, cmpNode} from "../cmp"
+import {randomPos} from "./pos"
+
+export function sizeBetween(doc, from, to) {
+  function count(node, from, to, depth) {
+    if (node.type.block) {
+      return (to ? to.offset : node.size) - (from ? from.offset : 0)
+    } else {
+      let sum = 0, start, end
+      if (from) {
+        if (from.depth > depth) {
+          let n = from.path[depth]
+          if (to && to.depth > depth && to.path[depth] == n)
+            return count(node.content[n], from, to, depth + 1)
+          sum += count(node.content[n], from, null, depth + 1)
+          start = n + 1
+        } else {
+          start = from.offset
+        }
+      } else {
+        start = 0
+      }
+      if (to) {
+        if (to.depth > depth) {
+          end = to.path[depth]
+          sum += count(node.content[end], null, to, depth + 1)
+        } else {
+          end = to.offset
+        }
+      } else {
+        end = node.content.length
+      }
+      for (let i = start; i < end; i++) sum += node.content[i].size
+      return sum
+    }
+  }
+  return count(doc, from, to, 0)
+}
+
+export function checkInvariants(node) {
+  for (let i = 0; i < node.content.length; i++) {
+    let child = node.content[i]
+    if (child.type.type != node.type.contains)
+      throw new Error(child.type.name + " node in " + node.type.name)
+    if (node.type.block && child.type == Node.types.text) {
+      if (i) {
+        let prev = node.content[i - 1]
+        if (prev.type == Node.types.text && style.sameSet(prev.styles, child.styles))
+          throw new Error("identically styled ajacent text nodes")
+      }
+      if (i < node.content.length - 1) {
+        let next = node.content[i + 1]
+        if (next.type == Node.types.text && style.sameSet(next.styles, child.styles))
+          throw new Error("identically styled ajacent text nodes")
+      }
+    }
+    checkInvariants(child)
+  }
+}
+
+const mapTestCount = 10
+
+export function testTransform(tr) {
+  checkInvariants(tr.doc)
+  let inverted = new Transform(tr.doc)
+  for (let i = tr.steps.length - 1; i >= 0; i--)
+    inverted.step(invertStep(tr.steps[i], tr.docs[i], tr.maps[i]))
+  cmpNode(inverted.doc, tr.docs[0], "invert to original")
+  let remap = new Remapping
+  for (let i = 0, j = tr.steps.length - 1; j >= 0; i++, j--) {
+    let id = remap.addToFront(tr.maps[j])
+    remap.addToBack(inverted.maps[i], id)
+  }
+  for (let i = 0; i < mapTestCount; i++) {
+    let pos = randomPos(tr.docs[0])
+    if (!pos) continue
+    cmpStr(remap.map(pos).pos, pos, "mapped back and forth")
+  }
+}
