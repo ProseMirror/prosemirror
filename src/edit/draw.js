@@ -1,4 +1,4 @@
-import {toDOM, Pos} from "../model"
+import {toDOM, Pos, Node} from "../model"
 
 import {elt} from "./dom"
 
@@ -28,6 +28,8 @@ function options(path, ranges) {
       if (!wrapped && (nextCut || ranges.current.length))
         wrapped = inner.parentNode.appendChild(elt("span", null, inner))
       dom.setAttribute("pm-inline-span", offset + "-" + end.offset)
+      if (node.type != Node.types.text)
+        dom.setAttribute("pm-inline-atom", "true")
 
       let inlineOffset = 0
       while (nextCut) {

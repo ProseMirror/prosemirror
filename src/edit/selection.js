@@ -177,16 +177,17 @@ export function resolvePath(parent, path) {
 }
 
 function findByOffset(node, offset) {
-  function search(node) {
+  function search(node, domOffset) {
     if (node.nodeType != 1) return
     let range = node.getAttribute("pm-inline-span")
     if (range) {
       let [_, from, to] = /(\d+)-(\d+)/.exec(range)
       if (+to >= offset)
-        return {node: node, offset: offset - +from, atEnd: +to == offset}
+        return {node: node, parent: node.parentNode, offset: domOffset,
+                innerOffset: offset - +from}
     } else {
-      for (let ch = node.firstChild; ch; ch = ch.nextSibling) {
-        let result = search(ch)
+      for (let ch = node.firstChild, i = 0; ch; ch = ch.nextSibling, i++) {
+        let result = search(ch, i)
         if (result) return result
       }
     }
@@ -215,13 +216,12 @@ function leafAt(node, offset) {
 
 function DOMFromPos(parent, pos) {
   let node = resolvePath(parent, pos.path)
-  let found = findByOffset(node, pos.offset)
+  let found = findByOffset(node, pos.offset), inner
   if (!found) return {node: node, offset: 0}
-  let inner = leafAt(found.node, found.offset)
-  if (inner) return inner;
-  let parentNode = found.node.parentNode
-  let offset = Array.prototype.indexOf.call(parentNode.childNodes, found.node) + (found.offset ? 1 : 0)
-  return {node: parentNode, offset: offset}
+  if (found.node.hasAttribute("pm-inline-atom") || !(inner = leafAt(found.node, found.innerOffset)))
+    return {node: found.parent, offset: found.offset + (found.innerOffset ? 1 : 0)}
+  else
+    return inner
 }
 
 export function hasFocus(pm) {
