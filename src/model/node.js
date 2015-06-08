@@ -206,7 +206,7 @@ const nodeTypes = Node.types = {
   doc: new NodeType({type: "doc", contains: "element"}),
   paragraph: new NodeType({type: "element", contains: "inline"}),
   blockquote: new NodeType({type: "element", contains: "element"}),
-  heading: new NodeType({type: "element", contains: "inline"}),
+  heading: new NodeType({type: "element", contains: "inline", defaultAttrs: false}),
   bullet_list: new NodeType({type: "element", contains: "list_item", defaultAttrs: {bullet: "*", tight: true}}),
   ordered_list: new NodeType({type: "element", contains: "list_item", defaultAttrs: {order: 1, tight: true}}),
   list_item: new NodeType({type: "list_item", contains: "element"}),

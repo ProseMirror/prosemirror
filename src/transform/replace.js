@@ -57,7 +57,7 @@ export function replace(doc, from, to, root, repl) {
     if (node.type.block)
       return inline.stitchTextNodes(node, at)
 
-    if (open == 0 || depth == from.depth) return
+    if (open == 0 || depth == from.depth || at == 0 || at == node.content.length) return
 
     let before = node.content[at - 1], after = node.content[at]
     if (before.sameMarkup(after)) {
@@ -206,8 +206,9 @@ Transform.prototype.replace = function(from, to, source, start, end) {
   if (source) {
     ;({repl, depth} = buildInserted(doc.pathNodes(from.path), source, start, end))
     while (depth > maxDepth) {
-      repl = {nodes: [doc.path(from.path.slice(0, depth)).copy(repl.nodes)],
-              openLeft: repl.openLeft + 1, openRight: repl.openRight + 1}
+      if (repl.nodes.length)
+        repl = {nodes: [doc.path(from.path.slice(0, depth)).copy(repl.nodes)],
+                openLeft: repl.openLeft + 1, openRight: repl.openRight + 1}
       depth--
     }
   } else {

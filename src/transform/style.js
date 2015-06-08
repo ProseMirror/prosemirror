@@ -34,6 +34,8 @@ Transform.prototype.addStyle = function(from, to, st) {
           removing = new Step("removeStyle", new Pos(path, start), new Pos(path, end), null, rm)
           removed.push(removing)
         }
+      } else if (removing) {
+        removing = null
       }
       if (adding) {
         adding.to = new Pos(path, end)
@@ -101,7 +103,8 @@ Transform.prototype.clearMarkup = function(from, to) {
   forSpansBetween(this.doc, from, to, (span, path, start, end) => {
     if (span.type != Node.types.text) {
       path = path.slice()
-      steps.unshift(new Step("replace", new Pos(path, start), new Pos(path, end)))
+      let from = new Pos(path, start)
+      steps.unshift(new Step("replace", from, new Pos(path, end), from))
     }
   })
   this.removeStyle(from.to)

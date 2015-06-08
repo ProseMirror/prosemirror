@@ -41,7 +41,7 @@ defineStep("ancestor", {
     let startOfInner = new Pos(toInner, wrappers.length ? 0 : start)
     let replaced = null
     let insertedSize = wrappers.length ? 1 : to.offset - from.offset
-    if (depth > 1 || wrappers.length > 1) {
+    if (depth != wrappers.length || depth > 1 || wrappers.length > 1) {
       let posBefore = new Pos(toParent, start)
       let posAfter1 = new Pos(toParent, end), posAfter2 = new Pos(toParent, start + insertedSize)
       let endOfInner = new Pos(toInner, startOfInner.offset + (to.offset - from.offset))
@@ -140,6 +140,7 @@ Transform.prototype.lift = function(from, to = from) {
 
 export function canWrap(doc, from, to, node) {
   let range = selectedSiblings(doc, from, to || from)
+  if (range.from == range.to) return null
   let parent = doc.path(range.path)
   let around = Node.findConnection(parent.type, node.type)
   let inside = Node.findConnection(node.type, parent.content[range.from].type)
