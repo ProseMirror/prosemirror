@@ -1,7 +1,8 @@
 import {defineOption, eventMixin} from "../edit"
 import {applyStep, Step} from "../transform"
 
-export {rebaseSteps} from "./rebase"
+import {rebaseSteps} from "./rebase"
+export {rebaseSteps}
 
 defineOption("collab", false, (pm, value) => {
   if (pm.mod.collab) {
