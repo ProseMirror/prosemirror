@@ -16,8 +16,8 @@ export class Debounced {
     if (!this.pending) {
       if (this.pm.operation)
         this.pm.on("flush", this.pending = () => {
-          this.pending = null
           this.pm.off("flush", this.pending)
+          this.pending = null
           this.f()
         })
       else
