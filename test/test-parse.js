@@ -1,4 +1,4 @@
-import {doc, blockquote, hr2, pre, pre2, h1, h2, p, li, ol, ul, uldash, em, strong, code, a, a2, br, img} from "./build"
+import {doc, blockquote, hr2, pre, pre2, h1, h2, p, li, ol, ul, uldash, em, strong, code, a, a2, br, img, dataImage} from "./build"
 import {cmpNode, cmpStr} from "./cmp"
 import {defTest} from "./tests"
 
@@ -49,7 +49,7 @@ t("link",
   doc(p("My ", a("link"), " goes to foo")))
 
 t("image",
-  "Here's an image: ![x](x.png)",
+  "Here's an image: ![x](" + dataImage + ")",
   doc(p("Here's an image: ", img)))
 
 t("break",

@@ -1,6 +1,7 @@
 import {namespace} from "./def"
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "../build"
+import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, img, strong, code, a, a2, br, hr} from "../build"
 import {cmp, gt, cmpStr, P} from "../cmp"
+import {allPositions} from "../fuzz/pos"
 
 const test = namespace("selection")
 
@@ -117,6 +118,21 @@ test("coords_order", pm => {
   doc: doc(p("one"), p("two"))
 })
 
+test("coords_cornercases", pm => {
+  pm.markRange(P(0, 1), P(0, 4), {className: "foo"})
+  pm.markRange(P(0, 6), P(0, 12), {className: "foo"})
+  let positions = allPositions(pm.doc, true)
+  for (let i = 0; i < positions.length; i++) {
+    let coords = pm.coordsAtPos(positions[i])
+    let pos = pm.posAtCoords(coords)
+    cmpStr(pos, positions[i])
+    pm.setSelection(pos)
+    pm.flush()
+  }
+}, {
+  doc: doc(p("one", em("two", strong("three"), img), br, code("foo")), p())
+})
+
 test("coords_round_trip", pm => {
   [P(0, 0), P(0, 1), P(0, 3), P(1, 0, 0), P(1, 1, 2), P(1, 1, 3)].forEach(pos => {
     let coords = pm.coordsAtPos(pos)
@@ -140,4 +156,3 @@ test("follow_change", pm => {
 }, {
   doc: doc(p("hi"))
 })
-

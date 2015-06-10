@@ -255,6 +255,13 @@ export function coordsAtPos(pm, pos) {
     rect = range.getBoundingClientRect()
   } else if (node.nodeType == 1 && node.firstChild) {
     rect = node.childNodes[offset ? offset - 1 : offset].getBoundingClientRect()
+    // BR nodes are likely to return a useless empty rectangle. Try
+    // the node on the other side in that case.
+    if (rect.left == rect.right && offset && offset < node.childNodes.length) {
+      let otherRect = node.childNodes[offset].getBoundingClientRect()
+      if (otherRect.left != otherRect.right)
+        rect = {top: otherRect.top, bottom: otherRect.bottom, right: otherRect.left}
+    }
   } else {
     rect = node.getBoundingClientRect()
   }
