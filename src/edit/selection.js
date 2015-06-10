@@ -1,5 +1,7 @@
 import {Pos} from "../model"
 
+import {contains} from "./dom"
+
 export class Selection {
   constructor(pm) {
     this.pm = pm
@@ -226,12 +228,12 @@ function DOMFromPos(parent, pos) {
 
 export function hasFocus(pm) {
   let sel = window.getSelection()
-  return sel.rangeCount && pm.content.contains(sel.anchorNode)
+  return sel.rangeCount && contains(pm.content, sel.anchorNode)
 }
 
 export function posAtCoords(pm, coords) {
   let element = document.elementFromPoint(coords.left, coords.top + 1)
-  if (!pm.content.contains(element)) return Pos.start(pm.doc)
+  if (!contains(pm.content, element)) return Pos.start(pm.doc)
 
   let offset
   if (element.childNodes.length == 1 && element.firstChild.nodeType == 3) {

@@ -48,3 +48,10 @@ export function addClass(node, cls) {
   let current = node.className
   if (!classTest(cls).test(current)) node.className += (current ? " " : "") + cls
 }
+
+export function contains(parent, child) {
+  // Android browser and IE will return false if child is a text node.
+  if (child.nodeType != 1)
+    child = child.parentNode
+  return child && parent.contains(child)
+}
