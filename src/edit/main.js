@@ -89,8 +89,8 @@ export default class ProseMirror {
     this.ranges.transform(mapping)
     this.doc = doc
     let range = this.sel.range
-    this.sel.set(new Range(mapping.map(range.anchor).pos,
-                           mapping.map(range.head).pos), true)
+    this.sel.setAndSignal(new Range(mapping.map(range.anchor).pos,
+                                    mapping.map(range.head).pos))
     this.signal("change")
   }
 
@@ -105,7 +105,10 @@ export default class ProseMirror {
       range = new Range(rangeOrAnchor, head || rangeOrAnchor)
     this.checkPos(range.head, true)
     this.checkPos(range.anchor, true)
-    this.sel.set(range)
+    this.ensureOperation()
+    if (range.head.cmp(this.sel.range.head) ||
+        range.anchor.cmp(this.sel.range.anchor))
+      this.sel.setAndSignal(range)
   }
 
   ensureOperation() {

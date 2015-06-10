@@ -12,14 +12,14 @@ export class Selection {
     pm.content.addEventListener("focus", () => this.receivedFocus())
   }
 
-  set(range, forceEvent) {
-    let changed = range.head.cmp(this.range.head) || range.anchor.cmp(this.range.anchor)
-    if (changed) {
-      this.pm.ensureOperation()
-      this.range = range
-      this.lastAnchorNode = null
-    }
-    if (changed || forceEvent) this.pm.signal("selectionChange")
+  setAndSignal(range, clearLast) {
+    this.set(range, clearLast)
+    this.pm.signal("selectionChange")
+  }
+
+  set(range, clearLast) {
+    this.range = range
+    if (clearLast !== false) this.lastAnchorNode = null
   }
 
   poll(force) {
@@ -28,13 +28,13 @@ export class Selection {
     if (force || sel.anchorNode != this.lastAnchorNode || sel.anchorOffset != this.lastAnchorOffset ||
         sel.focusNode != this.lastHeadNode || sel.focusOffset != this.lastHeadOffset) {
       let {pos: anchor, inline: anchorInline} =
-          posFromDOM(this.pm, this.lastAnchorNode = sel.anchorNode,
-                     this.lastAnchorOffset = sel.anchorOffset, force)
+          posFromDOM(this.pm, sel.anchorNode, sel.anchorOffset, force)
       let {pos: head, inline: headInline} =
-          posFromDOM(this.pm, this.lastHeadNode = sel.focusNode,
-                     this.lastHeadOffset = sel.focusOffset, force)
-      this.pm.setSelection(new Range(anchorInline ? anchor : moveInline(this.pm.doc, anchor, this.range.anchor),
-                                     headInline ? head: moveInline(this.pm.doc, head, this.range.head)))
+          posFromDOM(this.pm, sel.focusNode, sel.focusOffset, force)
+      this.lastAnchorNode = sel.anchorNode; this.lastAnchorOffset = sel.anchorOffset
+      this.lastHeadNode = sel.focusNode; this.lastHeadOffset = sel.focusOffset
+      this.pm.sel.setAndSignal(new Range(anchorInline ? anchor : moveInline(this.pm.doc, anchor, this.range.anchor),
+                                         headInline ? head: moveInline(this.pm.doc, head, this.range.head)), false)
       if (this.range.anchor.cmp(anchor) || this.range.head.cmp(head))
         this.toDOM(true)
       return true
@@ -54,11 +54,14 @@ export class Selection {
     let anchor = DOMFromPos(content, this.range.anchor)
     let head = DOMFromPos(content, this.range.head)
 
-    range.setEnd(anchor.node, anchor.offset)
-    if (sel.extend)
+    if (sel.extend) {
+      range.setEnd(anchor.node, anchor.offset)
       range.collapse()
-    else
-      range.setStart(head.node, head.offset)
+    } else {
+      if (this.range.anchor.cmp(this.range.head) > 0) { let tmp = anchor; anchor = head; head = anchor }
+      range.setEnd(head.node, head.offset)
+      range.setStart(anchor.node, anchor.offset)
+    }
     sel.removeAllRanges()
     sel.addRange(range)
     if (sel.extend)
