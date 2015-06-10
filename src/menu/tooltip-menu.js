@@ -68,6 +68,9 @@ function showDialog(tooltip, dialog, pm) {
       finish()
       if (tooltip.reset) tooltip.reset()
       else tooltip.close()
+    } else if (e.keyCode == 13 && !(e.ctrlKey || e.metaKey || e.shiftKey)) {
+      e.preventDefault()
+      submit()
     }
   })
   tooltip.show(dialog.id, form)

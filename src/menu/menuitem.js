@@ -132,7 +132,6 @@ export class Dialog {
 
   buildForm(pm, submit) {
     let form = this.form(pm, submit)
-    form.appendChild(elt("button", {type: "submit", style: "display: none"}))
     return form
   }
 }
