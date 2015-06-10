@@ -1,4 +1,5 @@
 import insertCSS from "insert-css"
+import {ie} from "./dom"
 
 insertCSS(`
 
@@ -13,6 +14,7 @@ insertCSS(`
   line-height: 1.2;
 }
 
+${ie ? '' : `
 .ProseMirror-content p,
 .ProseMirror-content li,
 .ProseMirror-content h1,
@@ -23,7 +25,7 @@ insertCSS(`
 .ProseMirror-content h6,
 .ProseMirror-content pre {
   min-height: 1.2em;
-}
+}`}
 
 .ProseMirror-content ul.tight p, .ProseMirror-content ol.tight p {
   margin: 0;
