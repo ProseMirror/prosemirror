@@ -70,6 +70,7 @@ class InputRules {
         if (typeof rule.handler == "string") {
           let offset = pos.offset - (match[1] || match[0]).length
           let start = new Pos(pos.path, offset)
+          // FIXME this overwrites the style of the original text
           this.pm.apply(this.pm.tr.delete(start, pos).insertText(start, rule.handler))
         } else {
           rule.handler(this.pm, match, pos)
