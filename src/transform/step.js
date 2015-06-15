@@ -41,7 +41,7 @@ function objectToJSON(obj) {
 function objectFromJSON(json) {
   if (!json || typeof json != "object") return json
   if (Array.isArray(json)) return json.map(objectFromJSON)
-  if (json.attrs && json.content) return Node.fromJSON(json)
+  if (json.type) return Node.fromJSON(json)
   let result = {}
   for (let prop in json) result[prop] = objectFromJSON(json[prop])
   return result

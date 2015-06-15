@@ -118,16 +118,19 @@ export default class Node {
   }
 
   toJSON() {
-    return {type: this.type.name,
-            content: this.content.length ? this.content.map(n => n.toJSON()) : this.content,
-            attrs: this.attrs}
+    let obj = {type: this.type.name}
+    if (this.content.length) obj.content = this.content.map(n => n.toJSON())
+    if (this.attrs != nullAttrs) obj.attrs = this.attrs
+    return obj
   }
 
   static fromJSON(json) {
-    if (json.styles)
-      return new InlineNode(json.type, maybeNull(json.attrs), maybeEmpty(json.styles), json.text)
+    let type = nodeTypes[json.type]
+    if (type.type == "inline")
+      return InlineNode.fromJSON(type, json)
     else
-      return new Node(json.type, maybeNull(json.attrs), maybeEmpty(json.content.map(n => Node.fromJSON(n))))
+      return new Node(type, maybeNull(json.attrs),
+                      json.content ? json.content.map(n => Node.fromJSON(n)) : Node.empty)
   }
 
   static text(text, styles) {
@@ -138,6 +141,7 @@ export default class Node {
 Node.empty = [] // Reused empty array for collections that are guaranteed to remain empty
 
 function maybeNull(obj) {
+  if (!obj) return nullAttrs;
   for (let _prop in obj) return obj
   return nullAttrs
 }
@@ -179,10 +183,15 @@ class InlineNode extends Node {
   }
 
   toJSON() {
-    let obj = super.toJSON()
-    obj.text = this.text
-    obj.styles = this.styles
+    let obj = {type: this.type.name}
+    if (this.attrs != nullAttrs) obj.attrs = this.attrs
+    if (this.text != "×") obj.text = this.text
+    if (this.styles.length) obj.styles = this.styles
     return obj
+  }
+
+  static fromJSON(type, json) {
+    return new InlineNode(type, maybeNull(json.attrs), json.styles || Node.empty, json.text || "×")
   }
 }
 
