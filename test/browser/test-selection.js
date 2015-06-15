@@ -86,13 +86,13 @@ test("change_event", pm => {
   pm.on("selectionChange", () => ++received)
   pm.setSelection(P(0, 1))
   pm.setSelection(P(0, 1))
-  cmp(received, 1, "changed twice")
+  cmp(received, 1, "changed")
   pm.setSelection(P(0, 0))
   cmp(received, 2, "changed back")
   pm.setOption("doc", doc(p("hi")))
-  cmp(received, 3, "new doc")
+  cmp(received, 2, "new doc")
   pm.apply(pm.tr.insertText(P(0, 2), "you"))
-  cmp(received, 4, "doc changed")
+  cmp(received, 3, "doc changed")
 }, {doc: doc(p("one"))})
 
 test("coords_order", pm => {
