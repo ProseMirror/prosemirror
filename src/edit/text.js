@@ -9,7 +9,7 @@ function fromText(text) {
     let para = new Node("paragraph")
     let parts = blocks[i].split("\n")
     for (let j = 0; j < parts.length; j++) {
-      if (j) para.push(new Node("hard_break"))
+      if (j) para.push(new Node.Inline("hard_break"))
       para.push(Node.text(parts[j]))
     }
     doc.push(para)
