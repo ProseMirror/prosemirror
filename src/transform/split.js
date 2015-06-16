@@ -1,4 +1,4 @@
-import {Pos, inline} from "../model"
+import {Pos, Node, inline} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -29,6 +29,12 @@ defineStep("split", {
   },
   invert(step, _oldDoc, map) {
     return new Step("join", step.pos, map.map(step.pos).pos)
+  },
+  paramToJSON(param) {
+    return param && param.toJSON()
+  },
+  paramFromJSON(json) {
+    return json && Node.fromJSON(json)
   }
 })
 

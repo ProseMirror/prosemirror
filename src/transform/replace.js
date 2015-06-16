@@ -123,6 +123,14 @@ defineStep("replace", {
       openLeft: step.from.depth - depth,
       openRight: step.to.depth - depth
     })
+  },
+  paramToJSON(param) {
+    return {nodes: param.nodes && param.nodes.map(n => n.toJSON()),
+            openLeft: param.openLeft, openRight: param.openRight}
+  },
+  paramFromJSON(json) {
+    return {nodes: json.nodes && json.nodes.map(Node.fromJSON),
+            openLeft: json.openLeft, openRight: json.openRight}
   }
 })
 

@@ -2,6 +2,7 @@ import {Pos, Node} from "../model"
 
 export class Step {
   constructor(name, from, to, pos, param = null) {
+    if (!(name in steps)) throw new Error("Unknown step type: " + name)
     this.name = name
     this.from = from
     this.to = to
@@ -10,41 +11,25 @@ export class Step {
   }
 
   toJSON() {
+    let impl = steps[this.name]
     return {
       name: this.name,
       from: this.from,
       to: this.to,
       pos: this.pos,
-      param: objectToJSON(this.param)
+      param: impl.paramToJSON ? impl.paramToJSON(this.param) : this.param
     }
   }
 
   static fromJSON(json) {
+    let impl = steps[json.name]
     return new Step(
       json.name,
       json.from && Pos.fromJSON(json.from),
       json.to && Pos.fromJSON(json.to),
       json.pos && Pos.fromJSON(json.pos),
-      objectFromJSON(json.param))
+      impl.paramFromJSON ? impl.paramFromJSON(json.param) : json.param)
   }
-}
-
-function objectToJSON(obj) {
-  if (!obj || typeof obj != "object") return obj
-  if (Array.isArray(obj)) return obj.map(objectToJSON)
-  if (obj.toJSON) return obj.toJSON()
-  let result = {}
-  for (let prop in obj) result[prop] = objectToJSON(obj[prop])
-  return result
-}
-
-function objectFromJSON(json) {
-  if (!json || typeof json != "object") return json
-  if (Array.isArray(json)) return json.map(objectFromJSON)
-  if (json.type) return Node.fromJSON(json)
-  let result = {}
-  for (let prop in json) result[prop] = objectFromJSON(json[prop])
-  return result
 }
 
 const steps = Object.create(null)

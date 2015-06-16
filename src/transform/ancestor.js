@@ -65,6 +65,14 @@ defineStep("ancestor", {
     return new Step("ancestor", newFrom, newTo, null,
                     {depth: step.param.wrappers ? step.param.wrappers.length : 0,
                      wrappers: wrappers})
+  },
+  paramToJSON(param) {
+    return {depth: param.depth,
+            wrappers: param.wrappers && param.wrappers.map(n => n.toJSON())}
+  },
+  paramFromJSON(json) {
+    return {depth: json.depth,
+            wrappers: json.wrappers && json.wrappers.map(Node.fromJSON)}
   }
 })
 
