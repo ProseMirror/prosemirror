@@ -73,8 +73,10 @@ class Menu {
   }
 
   updated() {
-    this.tooltip.close()
-    this.debounced.trigger()
+    if (!this.tooltip.active) {
+      this.tooltip.close()
+      this.debounced.trigger()
+    }
   }
 
   openMenu() {

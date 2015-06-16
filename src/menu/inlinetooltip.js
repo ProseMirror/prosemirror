@@ -58,6 +58,8 @@ class InlineTooltip {
   }
 
   update() {
+    if (this.tooltip.active) return
+
     let sel = this.pm.selection, link
     if (!this.pm.hasFocus())
       this.tooltip.close()
