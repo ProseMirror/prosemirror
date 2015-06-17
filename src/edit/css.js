@@ -1,5 +1,4 @@
 import insertCSS from "insert-css"
-import {ie} from "./dom"
 
 insertCSS(`
 

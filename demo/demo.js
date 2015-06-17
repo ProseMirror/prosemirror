@@ -3,6 +3,7 @@ import {Pos, Node, fromDOM, toDOM} from "../src/model"
 import "../src/inputrules/autoinput"
 import "../src/menu/inlinetooltip"
 import "../src/menu/menu"
+import "../src/menu/emptyblockmenu"
 import "../src/collab"
 
 let te = document.querySelector("#content")
@@ -42,6 +43,7 @@ function makeEditor(where, collab) {
     autoInput: true,
     inlineTooltip: true,
     menu: {followCursor: true},
+    emptyBlockMenu: true,
     doc: doc,
     collab: collab
   })
