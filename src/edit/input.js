@@ -143,6 +143,8 @@ function applyComposition(pm, info) {
   inputText(pm, info.sel, info.data)
 }
 
+// FIXME slightly debounce -- firefox fires double event for spelling corrections
+
 handlers.input = (pm) => {
   if (pm.input.composeActive) return
   pm.input.suppressPolling = true

@@ -65,7 +65,7 @@ function splitSpan(span, at) {
 }
 
 export function draw(pm, doc) {
-  pm.content.innerText = ""
+  pm.content.textContent = ""
   pm.content.appendChild(toDOM(doc, options([], pm.ranges.activeRangeTracker())))
 }
 
