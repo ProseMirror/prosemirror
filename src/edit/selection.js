@@ -1,6 +1,6 @@
 import {Pos} from "../model"
 
-import {contains} from "./dom"
+import {contains, gecko} from "./dom"
 
 export class Selection {
   constructor(pm) {
@@ -43,10 +43,14 @@ export class Selection {
 
   toDOM(force, takeFocus) {
     let sel = window.getSelection()
-    if ((!hasFocus(this.pm) && !takeFocus) ||
-        (!force &&
-         sel.anchorNode == this.lastAnchorNode && sel.anchorOffset == this.lastAnchorOffset &&
-         sel.focusNode == this.lastHeadNode && sel.focusOffset == this.lastHeadOffset))
+    if (!hasFocus(this.pm)) {
+      if (!takeFocus) return
+      // See https://bugzilla.mozilla.org/show_bug.cgi?id=921444
+      else if (gecko) this.pm.content.focus()
+    }
+    if (!force &&
+        sel.anchorNode == this.lastAnchorNode && sel.anchorOffset == this.lastAnchorOffset &&
+        sel.focusNode == this.lastHeadNode && sel.focusOffset == this.lastHeadOffset)
       return
 
     let range = document.createRange()
