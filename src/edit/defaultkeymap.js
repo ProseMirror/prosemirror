@@ -6,6 +6,7 @@ const mod = mac ? "Cmd-" : "Ctrl-"
 export const defaultKeymap = new Keymap({
   "Enter": "endBlock",
   [mod + "Enter"]: "insertHardBreak",
+  ["Shift-Enter"]: "insertHardBreak",
   "Backspace": "delBackward",
   "Delete": "delForward",
   [mod + "B"]: "toggleStrong",
