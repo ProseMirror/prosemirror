@@ -1,4 +1,4 @@
-import {style, inline, Node} from "../model"
+import {style, inline, Node, Pos} from "../model"
 import {canLift, canWrap, joinPoint} from "../transform"
 import {elt} from "../edit/dom"
 
@@ -49,12 +49,16 @@ export class SubmenuItem extends Item {
 export class BlockTypeItem extends Item {
   constructor(icon, title, type, attrs) {
     super(icon, title)
-    this.type = type
-    this.attrs = attrs
+    this.node = new Node(type, attrs)
+  }
+  select(pm) {
+    let sel = pm.selection
+    if (!Pos.samePath(sel.head, sel.anchor)) return true
+    return !this.node.sameMarkup(pm.doc.path(sel.head.path))
   }
   apply(pm) {
     let sel = pm.selection
-    pm.apply(pm.tr.setBlockType(sel.from, sel.to, new Node(this.type, this.attrs)))
+    pm.apply(pm.tr.setBlockType(sel.from, sel.to, this.node))
   }
 }
 
