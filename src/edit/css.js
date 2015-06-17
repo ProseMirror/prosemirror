@@ -30,12 +30,6 @@ insertCSS(`
   margin: 0;
 }
 
-/* Kludge to work around https://code.google.com/p/chromium/issues/detail?id=466148&thanks=466148&ts=1426090625 */
-.ProseMirror-content li p:empty:after {
-  content: "";
-  display: block;
-}
-
 .ProseMirror-content ul, .ProseMirror-content ol {
   padding-left: 2em;
 }
