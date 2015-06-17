@@ -95,6 +95,16 @@ export function redraw(pm, dirty, doc, prev) {
       }
     }
 
+    if (node.type.contains == "inline") {
+      let needsBR = node.content.length == 0 ||
+          node.content[node.content.length - 1].type == Node.types.hard_break
+      let hasBR = dom.lastChild && dom.lastChild.hasAttribute("pm-force-br")
+      if (needsBR && !hasBR)
+        dom.appendChild(elt("br", {"pm-force-br": "true"}))
+      else if (!needsBR && hasBR)
+        dom.removeChild(dom.lastChild)
+    }
+
     let domPos = dom.firstChild, j = 0
     let block = node.type.block
     for (let i = 0, offset = 0; i < node.content.length; i++) {

@@ -175,7 +175,10 @@ tags.ol = (dom, context) => {
 
 tags.li = wrapAs("list_item")
 
-tags.br = (_, context) => context.insert(new Node.Inline("hard_break", null, context.styles))
+tags.br = (dom, context) => {
+  if (!dom.hasAttribute("pm-force-br"))
+    context.insert(new Node.Inline("hard_break", null, context.styles))
+}
 
 tags.a = (dom, context) => inline(dom, context, style.link(dom.getAttribute("href"), dom.getAttribute("title")))
 

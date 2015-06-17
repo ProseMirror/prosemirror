@@ -103,6 +103,8 @@ function renderInlineContentFlat(nodes, where, options) {
     where.appendChild(dom)
     offset += node.size
   }
+  if (!nodes.length || nodes[nodes.length - 1].type.name == "hard_break")
+    where.appendChild(elt("br")).setAttribute("pm-force-br", "true")
 }
 
 // Block nodes

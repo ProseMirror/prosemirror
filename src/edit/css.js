@@ -14,18 +14,6 @@ insertCSS(`
   line-height: 1.2;
 }
 
-.ProseMirror-content p:empty:after,
-.ProseMirror-content li:empty:after,
-.ProseMirror-content h1:empty:after,
-.ProseMirror-content h2:empty:after,
-.ProseMirror-content h3:empty:after,
-.ProseMirror-content h4:empty:after,
-.ProseMirror-content h5:empty:after,
-.ProseMirror-content h6:empty:after,
-.ProseMirror-content pre:empty:after {
-  content: "\u200b";
-}
-
 .ProseMirror-content ul.tight p, .ProseMirror-content ol.tight p {
   margin: 0;
 }
