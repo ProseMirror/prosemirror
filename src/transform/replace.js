@@ -125,12 +125,12 @@ defineStep("replace", {
     })
   },
   paramToJSON(param) {
-    return {nodes: param.nodes && param.nodes.map(n => n.toJSON()),
-            openLeft: param.openLeft, openRight: param.openRight}
+    return param && {nodes: param.nodes && param.nodes.map(n => n.toJSON()),
+                     openLeft: param.openLeft, openRight: param.openRight}
   },
   paramFromJSON(json) {
-    return {nodes: json.nodes && json.nodes.map(Node.fromJSON),
-            openLeft: json.openLeft, openRight: json.openRight}
+    return json && {nodes: json.nodes && json.nodes.map(Node.fromJSON),
+                    openLeft: json.openLeft, openRight: json.openRight}
   }
 })
 
