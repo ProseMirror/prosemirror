@@ -169,3 +169,20 @@ test("undo_deleted_event", (pm1, pm2) => {
   pm1.execCommand("undo")
   conv(pm1, pm2, "ho")
 }, {doc: doc(p("hello"))})
+
+/* This is related to the TP_2 condition often referenced in OT
+   literature -- if you insert at two points but then pull out the
+   content between those points, are the inserts still ordered
+   properly. Our algorithm does not guarantee this.
+
+test("tp_2", (pm1, pm2, pm3) => {
+  delay(pm1, () => {
+    delay(pm3, () => {
+      type(pm1, "x", P(0, 1))
+      type(pm3, "y", P(0, 2))
+      pm2.apply(pm2.tr.delete(P(0, 1), P(0, 2)))
+    })
+  })
+  conv(pm1, pm2, pm3, doc(p("axyc")))
+}, {doc: doc(p("abc"))}, 3)
+*/
