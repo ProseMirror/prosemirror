@@ -21,7 +21,6 @@ export default class ProseMirror {
     this.content = dom.elt("div", {class: "ProseMirror-content"})
     this.wrapper = dom.elt("div", {class: "ProseMirror"}, this.content)
     this.wrapper.ProseMirror = this
-    ensureResizeHandler()
 
     if (opts.place && opts.place.appendChild)
       opts.place.appendChild(this.wrapper)
@@ -234,25 +233,4 @@ class Operation {
     this.fullRedraw = false
     this.dirty = new Map
   }
-}
-
-function signalResize() {
-  let byClass = document.body.getElementsByClassName("ProseMirror")
-  for (let i = 0; i < byClass.length; i++) {
-    let pm = byClass[i].ProseMirror
-    if (!pm) continue
-    if (pm) pm.signal("resize")
-  }
-}
-
-let resizeHandlerRegistered = false
-function ensureResizeHandler() {
-  if (resizeHandlerRegistered) return
-  let resizeTimer = null
-  window.addEventListener("resize", () => {
-    if (resizeTimer == null) resizeTimer = window.setTimeout(function() {
-      resizeTimer = null
-      signalResize()
-    }, 100)
-  })
 }
