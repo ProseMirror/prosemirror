@@ -59,8 +59,8 @@ export class Tooltip {
     this.dom.style.display = this.pointer.style.display = "block"
 
     if (this.pointerWidth == null) {
-      this.pointerWidth = this.pointer.offsetWidth
-      this.pointerHeight = this.pointer.offsetHeight
+      this.pointerWidth = this.pointer.offsetWidth - 1
+      this.pointerHeight = this.pointer.offsetHeight - 1
     }
 
     this.dom.style.width = size.width + "px"
