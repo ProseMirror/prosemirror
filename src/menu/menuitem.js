@@ -1,6 +1,6 @@
 import {style, inline, Node, Pos} from "../model"
 import {canLift, canWrap, joinPoint} from "../transform"
-import {elt} from "../edit/dom"
+import {elt} from "../dom"
 
 export class Item {
   constructor(icon, title) {

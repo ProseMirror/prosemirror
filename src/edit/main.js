@@ -5,7 +5,7 @@ import {Transform} from "../transform"
 
 import {parseOptions, initOptions, setOption} from "./options"
 import {Selection, Range, posAtCoords, coordsAtPos, scrollIntoView, hasFocus} from "./selection"
-import * as dom from "./dom"
+import {requestAnimationFrame, elt} from "../dom"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
 import {History} from "./history"
@@ -18,8 +18,8 @@ import {RangeStore, MarkedRange} from "./range"
 export default class ProseMirror {
   constructor(opts) {
     opts = this.options = parseOptions(opts)
-    this.content = dom.elt("div", {class: "ProseMirror-content"})
-    this.wrapper = dom.elt("div", {class: "ProseMirror"}, this.content)
+    this.content = elt("div", {class: "ProseMirror-content"})
+    this.wrapper = elt("div", {class: "ProseMirror"}, this.content)
     this.wrapper.ProseMirror = this
 
     if (opts.place && opts.place.appendChild)
@@ -116,7 +116,7 @@ export default class ProseMirror {
       this.operation = new Operation(this)
     }
     if (!this.flushScheduled) {
-      dom.requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
         this.flushScheduled = false
         this.flush()
       })

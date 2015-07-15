@@ -1,6 +1,6 @@
 import {Pos} from "../model"
 
-import {contains, gecko} from "./dom"
+import {contains, browser} from "../dom"
 
 export class Selection {
   constructor(pm) {
@@ -46,7 +46,7 @@ export class Selection {
     if (!hasFocus(this.pm)) {
       if (!takeFocus) return
       // See https://bugzilla.mozilla.org/show_bug.cgi?id=921444
-      else if (gecko) this.pm.content.focus()
+      else if (browser.gecko) this.pm.content.focus()
     }
     if (!force &&
         sel.anchorNode == this.lastAnchorNode && sel.anchorOffset == this.lastAnchorOffset &&

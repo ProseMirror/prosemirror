@@ -1,6 +1,6 @@
 import {toDOM, Pos, Node} from "../model"
 
-import {elt} from "./dom"
+import {elt} from "../dom"
 
 const nonEditable = {html_block: true, html_tag: true, horizontal_rule: true}
 

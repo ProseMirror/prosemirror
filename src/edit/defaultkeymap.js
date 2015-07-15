@@ -1,7 +1,7 @@
 import {Keymap} from "./keys"
-import {mac} from "./dom"
+import {browser} from "../dom"
 
-const mod = mac ? "Cmd-" : "Ctrl-"
+const mod = browser.mac ? "Cmd-" : "Ctrl-"
 
 export const defaultKeymap = new Keymap({
   "Enter": "endBlock",
@@ -35,7 +35,7 @@ export const defaultKeymap = new Keymap({
 
 function add(key, val) { defaultKeymap.addBinding(key, val) }
 
-if (mac) {
+if (browser.mac) {
   add("Ctrl-D", "delForward")
   add("Ctrl-H", "delBackward")
   add("Ctrl-Alt-Backspace", "delWordForward")

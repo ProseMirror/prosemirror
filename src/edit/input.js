@@ -1,7 +1,7 @@
 import {fromDOM, toDOM, Pos, Node, inline} from "../model"
 
 import * as keys from "./keys"
-import {mac, addClass, rmClass} from "./dom"
+import {browser, addClass, rmClass} from "../dom"
 import {execCommand} from "./commands"
 import {applyDOMChange} from "./domchange"
 import text from "./text"
@@ -108,7 +108,7 @@ function inputText(pm, range, text) {
 }
 
 handlers.keypress = (pm, e) => {
-  if (!e.charCode || e.ctrlKey && !e.altKey || mac && e.metaKey) return
+  if (!e.charCode || e.ctrlKey && !e.altKey || browser.mac && e.metaKey) return
   let ch = String.fromCharCode(e.charCode)
   if (dispatchKey(pm, "'" + ch + "'", e)) return
   inputText(pm, pm.selection, ch)

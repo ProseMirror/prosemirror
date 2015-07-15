@@ -1,5 +1,5 @@
 import {defineOption} from "../edit"
-import {elt} from "../edit/dom"
+import {elt} from "../dom"
 import {resolvePath} from "../edit/selection"
 import {Debounced} from "../util/debounce"
 

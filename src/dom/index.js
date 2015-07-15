@@ -20,6 +20,7 @@ function add(value, target) {
   }
 }
 
+
 const reqFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
       window.webkitRequestAnimationFrame || window.msRequestAnimationFrame
 
@@ -28,11 +29,18 @@ export function requestAnimationFrame(f) {
   else setTimeout(f, 10)
 }
 
-export const mac = /Mac/.test(navigator.platform)
+
 const ie_upto10 = /MSIE \d/.test(navigator.userAgent)
 const ie_11up = /Trident\/(?:[7-9]|\d{2,})\..*rv:(\d+)/.exec(navigator.userAgent)
-export const ie = ie_upto10 || ie_11up
-export const gecko = /gecko\/\d/i.test(navigator.userAgent)
+
+export const browser = {
+  mac: /Mac/.test(navigator.platform),
+  ie_upto10,
+  ie_11up,
+  ie: ie_upto10 || ie_11up,
+  gecko: /gecko\/\d/i.test(navigator.userAgent)
+}
+
 
 function classTest(cls) { return new RegExp("(^|\\s)" + cls + "(?:$|\\s)\\s*"); }
 
@@ -49,6 +57,7 @@ export function addClass(node, cls) {
   let current = node.className
   if (!classTest(cls).test(current)) node.className += (current ? " " : "") + cls
 }
+
 
 export function contains(parent, child) {
   // Android browser and IE will return false if child is a text node.

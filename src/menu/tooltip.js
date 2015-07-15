@@ -1,4 +1,4 @@
-import {elt} from "../edit/dom"
+import {elt} from "../dom"
 import "./tooltip_css"
 
 const prefix = "ProseMirror-tooltip"

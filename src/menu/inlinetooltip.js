@@ -1,6 +1,6 @@
 import {defineOption} from "../edit"
 import {style, inline} from "../model"
-import {elt} from "../edit/dom"
+import {elt} from "../dom"
 import {Debounced} from "../util/debounce"
 
 import {Tooltip} from "./tooltip"
