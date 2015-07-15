@@ -1,4 +1,4 @@
-import {Node, Pos, style, inline} from "../model"
+import {Span, Node, nodeTypes, Pos, style, inline} from "../model"
 import {joinPoint} from "../transform"
 
 import {charCategory} from "./char"
@@ -31,10 +31,10 @@ function clearSel(pm) {
 commands.insertHardBreak = pm => {
   pm.scrollIntoView()
   let tr = clearSel(pm), pos = pm.selection.from
-  if (pm.doc.path(pos.path).type == Node.types.code_block)
+  if (pm.doc.path(pos.path).type == nodeTypes.code_block)
     tr.insertText(pos, "\n")
   else
-    tr.insert(pos, new Node.Inline("hard_break"))
+    tr.insert(pos, new Span("hard_break"))
   return pm.apply(tr)
 }
 
@@ -78,7 +78,7 @@ function delBlockBackward(pm, tr, pos) {
     let offset = pos.path[last]
     // Top of list item below other list item
     // Join with the one above
-    if (parent.type == Node.types.list_item &&
+    if (parent.type == nodeTypes.list_item &&
         offset == 0 && pos.path[last - 1] > 0)
       tr.join(joinPoint(pm.doc, pos))
     // Any other nested block, lift up
@@ -94,7 +94,7 @@ function moveBackward(parent, offset, by) {
     let cat = null, counted = 0
     for (; nodeOffset >= 0; nodeOffset--, innerOffset = null) {
       let child = parent.content[nodeOffset], size = child.size
-      if (child.type != Node.types.text) return cat ? offset : offset - 1
+      if (child.type != nodeTypes.text) return cat ? offset : offset - 1
 
       for (let i = innerOffset == null ? size : innerOffset; i > 0; i--) {
         let nextCharCat = charCategory(child.text.charAt(i - 1))
@@ -163,7 +163,7 @@ function moveForward(parent, offset, by) {
     let cat = null, counted = 0
     for (; nodeOffset < parent.content.length; nodeOffset++, innerOffset = 0) {
       let child = parent.content[nodeOffset], size = child.size
-      if (child.type != Node.types.text) return cat ? offset : offset + 1
+      if (child.type != nodeTypes.text) return cat ? offset : offset + 1
 
       for (let i = innerOffset; i < size; i++) {
         let nextCharCat = charCategory(child.text.charAt(i))
@@ -236,12 +236,12 @@ commands.endBlock = pm => {
   if (pos.depth > 1 && block.content.length == 0 &&
       tr.lift(pos).steps.length) {
     // Lift
-  } else if (block.type == Node.types.code_block && pos.offset < block.size) {
+  } else if (block.type == nodeTypes.code_block && pos.offset < block.size) {
     tr.insertText(pos, "\n")
   } else {
     let end = pos.depth - 1
     let isList = end > 0 && pos.path[end] == 0 &&
-        pm.doc.path(pos.path.slice(0, end)).type == Node.types.list_item
+        pm.doc.path(pos.path.slice(0, end)).type == nodeTypes.list_item
     let type = pos.offset == block.size ? new Node("paragraph") : null
     tr.split(pos, isList ? 2 : 1, type)
   }
@@ -265,7 +265,7 @@ commands.makeParagraph = pm => setType(pm, "paragraph")
 commands.makeCodeBlock = pm => setType(pm, "code_block")
 
 function insertOpaqueBlock(pm, type, attrs) {
-  type = Node.types[type]
+  type = nodeTypes[type]
   pm.scrollIntoView()
   let pos = pm.selection.from
   let tr = clearSel(pm)

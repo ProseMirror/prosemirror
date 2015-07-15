@@ -1,4 +1,4 @@
-import {Pos, Node, inline, slice} from "../model"
+import {Pos, Node, Span, inline, slice} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -265,10 +265,10 @@ Transform.prototype.insert = function(pos, nodes) {
 Transform.prototype.insertInline = function(pos, nodes) {
   if (!Array.isArray(nodes)) nodes = [nodes]
   let styles = inline.inlineStylesAt(this.doc, pos)
-  nodes = nodes.map(n => new Node.Inline(n.type, n.attrs, styles, n.text))
+  nodes = nodes.map(n => new Span(n.type, n.attrs, styles, n.text))
   return this.insert(pos, nodes)
 }
 
 Transform.prototype.insertText = function(pos, text) {
-  return this.insertInline(pos, Node.text(text))
+  return this.insertInline(pos, Span.text(text))
 }

@@ -1,4 +1,4 @@
-export default class Node {
+export class Node {
   constructor(type, attrs = null, content) {
     if (typeof type == "string") {
       let found = nodeTypes[type]
@@ -126,15 +126,11 @@ export default class Node {
 
   static fromJSON(json) {
     let type = nodeTypes[json.type]
-    if (type.type == "inline")
-      return InlineNode.fromJSON(type, json)
+    if (type.type == "span")
+      return Span.fromJSON(type, json)
     else
       return new Node(type, maybeNull(json.attrs),
                       json.content ? json.content.map(n => Node.fromJSON(n)) : Node.empty)
-  }
-
-  static text(text, styles) {
-    return new InlineNode(nodeTypes.text, null, styles, text)
   }
 }
 
@@ -146,7 +142,7 @@ function maybeNull(obj) {
   return nullAttrs
 }
 
-class InlineNode extends Node {
+export class Span extends Node {
   constructor(type, attrs, styles, text) {
     super(type, attrs)
     this.text = text == null ? "×" : text
@@ -165,11 +161,11 @@ class InlineNode extends Node {
   }
 
   slice(from, to = this.text.length) {
-    return new InlineNode(this.type, this.attrs, this.styles, this.text.slice(from, to))
+    return new Span(this.type, this.attrs, this.styles, this.text.slice(from, to))
   }
 
   copy() {
-    throw new Error("Can't copy inline nodes like this!")
+    throw new Error("Can't copy span nodes like this!")
   }
 
   get size() {
@@ -189,11 +185,13 @@ class InlineNode extends Node {
   }
 
   static fromJSON(type, json) {
-    return new InlineNode(type, maybeNull(json.attrs), json.styles || Node.empty, json.text || "×")
+    return new Span(type, maybeNull(json.attrs), json.styles || Node.empty, json.text || "×")
+  }
+
+  static text(text, styles) {
+    return new Span(nodeTypes.text, null, styles, text)
   }
 }
-
-Node.Inline = InlineNode
 
 const nullAttrs = Node.nullAttrs = {}
 
@@ -202,41 +200,41 @@ class NodeType {
     this.name = options.name
     this.type = options.type
     this.contains = options.contains
-    this.block = this.contains == "inline"
+    this.block = this.contains == "span"
     this.defaultAttrs = options.defaultAttrs
     if (this.defaultAttrs == null) this.defaultAttrs = nullAttrs
     this.plainText = !!options.plainText
   }
 }
 
-const nodeTypes = Node.types = {
+export const nodeTypes = {
   doc: new NodeType({type: "doc", contains: "element"}),
-  paragraph: new NodeType({type: "element", contains: "inline"}),
+  paragraph: new NodeType({type: "element", contains: "span"}),
   blockquote: new NodeType({type: "element", contains: "element"}),
-  heading: new NodeType({type: "element", contains: "inline", defaultAttrs: false}),
+  heading: new NodeType({type: "element", contains: "span", defaultAttrs: false}),
   bullet_list: new NodeType({type: "element", contains: "list_item", defaultAttrs: {bullet: "*", tight: true}}),
   ordered_list: new NodeType({type: "element", contains: "list_item", defaultAttrs: {order: 1, tight: true}}),
   list_item: new NodeType({type: "list_item", contains: "element"}),
   html_block: new NodeType({type: "element", defaultAttrs: false}),
-  code_block: new NodeType({type: "element", contains: "inline", defaultAttrs: {params: null}, plainText: true}),
+  code_block: new NodeType({type: "element", contains: "span", defaultAttrs: {params: null}, plainText: true}),
   horizontal_rule: new NodeType({type: "element"}),
-  text: new NodeType({type: "inline"}),
-  image: new NodeType({type: "inline", defaultAttrs: false}),
-  hard_break: new NodeType({type: "inline"}),
-  html_tag: new NodeType({type: "inline", defaultAttrs: false})
+  text: new NodeType({type: "span"}),
+  image: new NodeType({type: "span", defaultAttrs: false}),
+  hard_break: new NodeType({type: "span"}),
+  html_tag: new NodeType({type: "span", defaultAttrs: false})
 }
 
 for (let name in nodeTypes) nodeTypes[name].name = name
 
-Node.findConnection = function(from, to) {
+export function findConnection(from, to) {
   if (from.contains == to.type) return []
 
   let seen = Object.create(null)
   let active = [{from: from, via: []}]
   while (active.length) {
     let current = active.shift()
-    for (let name in Node.types) {
-      let type = Node.types[name]
+    for (let name in nodeTypes) {
+      let type = nodeTypes[name]
       if (current.from.contains == type.type && !(type.contains in seen)) {
         let via = current.via.concat(type)
         if (type.contains == to.type) return via

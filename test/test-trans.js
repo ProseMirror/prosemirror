@@ -1,4 +1,4 @@
-import {style, Node} from "../src/model"
+import {style, Node, Span} from "../src/model"
 import {Transform, invertStep, Remapping} from "../src/transform"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
@@ -111,7 +111,7 @@ function ins(name, doc, expect, nodes) {
 ins("break",
     doc(p("hello<a>there")),
     doc(p("hello", br, "<a>there")),
-    new Node.Inline("hard_break"))
+    new Span("hard_break"))
 ins("simple",
     doc(p("one"), "<a>", p("two<2>")),
     doc(p("one"), p(), "<a>", p("two<2>")),
@@ -119,7 +119,7 @@ ins("simple",
 ins("two",
     doc(p("one"), "<a>", p("two<2>")),
     doc(p("one"), p("hi"), hr, "<a>", p("two<2>")),
-    [new Node("paragraph", null, [new Node.text("hi")]),
+    [new Node("paragraph", null, [new Span.text("hi")]),
      new Node("horizontal_rule")])
 ins("end_of_blockquote",
     doc(blockquote(p("he<before>y"), "<a>"), p("after<after>")),

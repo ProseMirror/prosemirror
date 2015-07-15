@@ -1,28 +1,28 @@
 // Primitive operations on inline content
 
-import Node from "./node"
+import {Node, Span, nodeTypes} from "./node"
 import * as style from "./style"
 
 export function stitchTextNodes(node, at) {
   let before, after
   if (at && node.content.length > at &&
-      (before = node.content[at - 1]).type == Node.types.text &&
-      (after = node.content[at]).type == Node.types.text &&
+      (before = node.content[at - 1]).type == nodeTypes.text &&
+      (after = node.content[at]).type == nodeTypes.text &&
       style.sameSet(before.styles, after.styles)) {
-    let joined = Node.text(before.text + after.text, before.styles)
+    let joined = Span.text(before.text + after.text, before.styles)
     node.content.splice(at - 1, 2, joined)
     return true
   }
 }
 
 export function clearMarkup(node) {
-  if (node.content.length > 1 || node.content[0].type != Node.types.text || node.content[0].styles.length) {
+  if (node.content.length > 1 || node.content[0].type != nodeTypes.text || node.content[0].styles.length) {
     let text = ""
     for (var i = 0; i < node.content.length; i++) {
       let child = node.content[i]
-      if (child.type == Node.types.text) text += child.text
+      if (child.type == nodeTypes.text) text += child.text
     }
-    node.content = [Node.text(text)]
+    node.content = [Span.text(text)]
   }
 }
 

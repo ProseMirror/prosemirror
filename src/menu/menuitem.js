@@ -1,4 +1,4 @@
-import {style, inline, Node, Pos} from "../model"
+import {style, inline, Span, Node, nodeTypes, Pos} from "../model"
 import {canLift, canWrap, joinPoint} from "../transform"
 import {elt} from "../dom"
 
@@ -70,7 +70,7 @@ export class InsertBlockItem extends Item {
   }
   select(pm) {
     let sel = pm.selection
-    return sel.empty && pm.doc.path(sel.head.path).type.type == Node.types[this.type].type
+    return sel.empty && pm.doc.path(sel.head.path).type.type == nodeTypes[this.type].type
   }
   apply(pm) {
     let sel = pm.selection, tr = pm.tr, off = 0
@@ -175,6 +175,6 @@ export class ImageDialog extends Dialog {
     let sel = pm.selection, tr = pm.tr
     tr.delete(sel.from, sel.to)
     let attrs = {src: elts.src.value, alt: elts.alt.value, title: elts.title.value}
-    pm.apply(tr.insertInline(sel.from, new Node.Inline("image", attrs, null, null)))
+    pm.apply(tr.insertInline(sel.from, new Span("image", attrs, null, null)))
   }
 }

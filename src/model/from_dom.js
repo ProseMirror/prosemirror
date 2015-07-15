@@ -1,4 +1,4 @@
-import Node from "./node"
+import {Node, Span, nodeTypes, findConnection} from "./node"
 import * as style from "./style"
 
 export default function fromDOM(dom, options) {
@@ -37,14 +37,14 @@ class Context {
         value = value.replace(/\s+/g, " ")
         if (/^\s/.test(value) && top.content.length && /\s$/.test(top.content[top.content.length - 1].text))
           value = value.slice(1)
-        this.insert(Node.text(value, this.styles))
+        this.insert(Span.text(value, this.styles))
       }
     } else if (dom.nodeType != 1) {
       // Ignore non-text non-element nodes
     } else if (dom.hasAttribute("pm-html")) {
       let type = dom.getAttribute("pm-html")
       if (type == "html_tag")
-        this.insert(new Node.Inline("html_tag", {html: dom.innerHTML}, this.styles))
+        this.insert(new Span("html_tag", {html: dom.innerHTML}, this.styles))
       else
         this.insert(new Node("html_block", {html: dom.innerHTML}))
     } else {
@@ -53,7 +53,7 @@ class Context {
         tags[name](dom, this)
       } else {
         this.addAll(dom.firstChild, null)
-        if (blockElements.hasOwnProperty(name) && this.top.type == Node.types.paragraph)
+        if (blockElements.hasOwnProperty(name) && this.top.type == nodeTypes.paragraph)
           this.closing = true
       }
     }
@@ -81,7 +81,7 @@ class Context {
       this.doClose()
     } else {
       for (let i = this.stack.length - 1; i >= 0; i--) {
-        let route = Node.findConnection(this.stack[i].type, node.type)
+        let route = findConnection(this.stack[i].type, node.type)
         if (!route) continue
         if (i == this.stack.length - 1)
           this.doClose()
@@ -157,7 +157,7 @@ tags.pre = (dom, context) => {
   } else {
     params = null
   }
-  context.insert(new Node("code_block", {params: params}, [Node.text(dom.textContent)]))
+  context.insert(new Node("code_block", {params: params}, [Span.text(dom.textContent)]))
 }
 
 tags.ul = (dom, context) => {
@@ -177,7 +177,7 @@ tags.li = wrapAs("list_item")
 
 tags.br = (dom, context) => {
   if (!dom.hasAttribute("pm-force-br"))
-    context.insert(new Node.Inline("hard_break", null, context.styles))
+    context.insert(new Span("hard_break", null, context.styles))
 }
 
 tags.a = (dom, context) => inline(dom, context, style.link(dom.getAttribute("href"), dom.getAttribute("title")))
@@ -192,5 +192,5 @@ tags.img = (dom, context) => {
   let attrs = {src: dom.getAttribute("src"),
                title: dom.getAttribute("title") || null,
                alt: dom.getAttribute("alt") || null}
-  context.insert(new Node.Inline("image", attrs))
+  context.insert(new Span("image", attrs))
 }

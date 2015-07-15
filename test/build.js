@@ -1,10 +1,10 @@
-import {Node, Pos, style} from "../src/model"
+import {Node, Span, nodeTypes, Pos, style} from "../src/model"
 
 let inlineContext = null
 
 function buildInline(style) {
   return function() {
-    return {type: "inline", style: style, content: arguments}
+    return {type: "span", style: style, content: arguments}
   }
 }
 
@@ -26,17 +26,17 @@ function parseDoc(value, target, path) {
       tags[m[1]] = new Pos(path, offset + out.length)
     }
     out += value.slice(pos)
-    if (out) target.push(Node.text(out, styles))
-  } else if (value.type == "inline") {
+    if (out) target.push(Span.text(out, styles))
+  } else if (value.type == "span") {
     let start = styles, result = []
     styles = style.add(styles, value.style)
     for (let i = 0; i < value.content.length; i++)
       parseDoc(value.content[i], target, path)
     styles = start
   } else if (value.type == "insert") {
-    let type = Node.types[value.style]
-    if (type.type == "inline")
-      target.push(new Node.Inline(type, value.attrs, styles, value.text))
+    let type = nodeTypes[value.style]
+    if (type.type == "span")
+      target.push(new Span(type, value.attrs, styles, value.text))
     else
       target.push(new Node(type, value.attrs, value.content))
   } else {

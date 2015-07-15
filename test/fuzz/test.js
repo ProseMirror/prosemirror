@@ -1,4 +1,4 @@
-import {Node, style} from "../../src/model"
+import {Node, nodeTypes, style} from "../../src/model"
 import {Transform, invertStep, Remapping} from "../../src/transform"
 import {cmpStr, cmpNode} from "../cmp"
 import {randomPos} from "./pos"
@@ -44,15 +44,15 @@ export function checkInvariants(node) {
     let child = node.content[i]
     if (child.type.type != node.type.contains)
       throw new Error(child.type.name + " node in " + node.type.name)
-    if (node.type.block && child.type == Node.types.text) {
+    if (node.type.block && child.type == nodeTypes.text) {
       if (i) {
         let prev = node.content[i - 1]
-        if (prev.type == Node.types.text && style.sameSet(prev.styles, child.styles))
+        if (prev.type == nodeTypes.text && style.sameSet(prev.styles, child.styles))
           throw new Error("identically styled ajacent text nodes")
       }
       if (i < node.content.length - 1) {
         let next = node.content[i + 1]
-        if (next.type == Node.types.text && style.sameSet(next.styles, child.styles))
+        if (next.type == nodeTypes.text && style.sameSet(next.styles, child.styles))
           throw new Error("identically styled ajacent text nodes")
       }
     }

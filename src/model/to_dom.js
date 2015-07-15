@@ -11,7 +11,7 @@ export default function toDOM(node, options) {
 
 toDOM.renderNode = function(node, options, offset) {
   let dom = renderNode(node, options, offset)
-  if (options.renderInlineFlat && node.type.type == "inline") {
+  if (options.renderInlineFlat && node.type.type == "span") {
     dom = wrapInlineFlat(node, dom)
     dom = options.renderInlineFlat(node, dom, offset) || dom
   }
@@ -29,7 +29,7 @@ function elt(name, ...children) {
 
 function wrap(node, options, type) {
   let dom = elt(type || node.type.name)
-  if (node.type.contains != "inline")
+  if (node.type.contains != "span")
     renderNodesInto(node.content, dom, options)
   else if (options.renderInlineFlat)
     renderInlineContentFlat(node.content, dom, options)

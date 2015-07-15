@@ -113,7 +113,7 @@ function scanOffset(node, parent) {
     let tag, range
     if (tag = attr(scan, "pm-path"))
       return +tag + 1
-    else if (range = attr(scan, "pm-inline-span"))
+    else if (range = attr(scan, "pm-span"))
       return +/-(\d+)/.exec(range)[1]
   }
   return 0
@@ -139,14 +139,14 @@ function posFromDOM(pm, node, domOffset, force) {
       path.unshift(+tag)
       if (offset == null)
         offset = scanOffset(prev, cur)
-    } else if (range = cur.getAttribute("pm-inline-span")) {
+    } else if (range = cur.getAttribute("pm-span")) {
       let [_, from, to] = /(\d+)-(\d+)/.exec(range)
       if (inText)
         offset = +from + domOffset
       else
         offset = domOffset ? +to : +from
       inline = true
-    } else if (inText && (tag = cur.getAttribute("pm-inline-offset"))) {
+    } else if (inText && (tag = cur.getAttribute("pm-span-offset"))) {
       domOffset += +tag
     }
   }
@@ -188,7 +188,7 @@ export function resolvePath(parent, path) {
 function findByOffset(node, offset) {
   function search(node, domOffset) {
     if (node.nodeType != 1) return
-    let range = node.getAttribute("pm-inline-span")
+    let range = node.getAttribute("pm-span")
     if (range) {
       let [_, from, to] = /(\d+)-(\d+)/.exec(range)
       if (+to >= offset)
@@ -209,11 +209,11 @@ function leafAt(node, offset) {
     let child = node.firstChild
     if (!child) return {node, offset}
     if (child.nodeType != 1) return {node: child, offset}
-    if (child.hasAttribute("pm-inline-offset")) {
+    if (child.hasAttribute("pm-span-offset")) {
       let nodeOffset = 0
       for (;;) {
         let nextSib = child.nextSibling, nextOffset
-        if (!nextSib || (nextOffset = +nextSib.getAttribute("pm-inline-offset")) >= offset) break
+        if (!nextSib || (nextOffset = +nextSib.getAttribute("pm-span-offset")) >= offset) break
         child = nextSib
         nodeOffset = nextOffset
       }
@@ -227,7 +227,7 @@ function DOMFromPos(parent, pos) {
   let node = resolvePath(parent, pos.path)
   let found = findByOffset(node, pos.offset), inner
   if (!found) return {node: node, offset: 0}
-  if (found.node.hasAttribute("pm-inline-atom") || !(inner = leafAt(found.node, found.innerOffset)))
+  if (found.node.hasAttribute("pm-span-atom") || !(inner = leafAt(found.node, found.innerOffset)))
     return {node: found.parent, offset: found.offset + (found.innerOffset ? 1 : 0)}
   else
     return inner

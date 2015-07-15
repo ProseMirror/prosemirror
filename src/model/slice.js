@@ -1,4 +1,4 @@
-import Node from "./node"
+import {Node, findConnection} from "./node"
 
 function copyInlineTo(node, offset, copy) {
   for (let left = offset, i = 0; left > 0; i++) {
@@ -50,7 +50,7 @@ export function before(node, pos, depth = 0) {
     let n = pos.path[depth]
     copy.pushFrom(node, 0, n)
     copy.push(before(node.content[n], pos, depth + 1))
-  } else if (node.type.contains != "inline") {
+  } else if (node.type.contains != "span") {
     copy.pushFrom(node, 0, pos.offset)
   } else {
     copyInlineTo(node, pos.offset, copy)
@@ -64,7 +64,7 @@ export function after(node, pos, depth = 0) {
     let n = pos.path[depth]
     copy.push(after(node.content[n], pos, depth + 1))
     copy.pushFrom(node, n + 1)
-  } else if (node.type.contains != "inline") {
+  } else if (node.type.contains != "span") {
     copy.pushFrom(node, pos.offset)
   } else {
     copyInlineFrom(node, pos.offset, copy)
@@ -78,7 +78,7 @@ export function between(node, from, to, collapse = true, depth = 0) {
     var inner = between(node.content[from.path[depth]], from, to, collapse, depth + 1)
     if (!collapse) return node.copy([inner])
     if (node.type.name != "doc") return inner
-    var conn = Node.findConnection(node.type, inner.type)
+    var conn = findConnection(node.type, inner.type)
     for (let i = conn.length - 1; i >= 0; i--) inner = new Node(conn[i], null, [inner])
     return node.copy([inner])
   } else {

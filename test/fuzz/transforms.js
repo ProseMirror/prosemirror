@@ -1,4 +1,4 @@
-import {Node, Pos, style} from "../../src/model"
+import {Node, Span, nodeTypes, Pos, style} from "../../src/model"
 import {Transform, joinPoint, canLift, canWrap} from "../../src/transform"
 import {cmp, cmpStr} from "../cmp"
 import {randomPos} from "./pos"
@@ -104,8 +104,8 @@ run.delete = (tr, info) => {
 }
 
 tests.insert = (doc, positions) => {
-  let para = new Node("paragraph", null, [Node.text("Q")])
-  let img = new Node.Inline("image", {src: "http://image2"})
+  let para = new Node("paragraph", null, [Span.text("Q")])
+  let img = new Span("image", {src: "http://image2"})
   for (let i = 0; i < positions.length; i++) {
     let pos = positions[i], node = doc.path(pos.path)
     if (node.type.contains == para.type.type)
@@ -205,11 +205,11 @@ run.lift = (tr, info) => {
 }
 
 let blockTypes = [], wrapTypes = []
-for (let name in Node.types) {
-  let type = Node.types[name]
+for (let name in nodeTypes) {
+  let type = nodeTypes[name]
   if (type.block)
     blockTypes.push(type)
-  else if (type.contains != "inline")
+  else if (type.contains != "span")
     wrapTypes.push(type)
 }
 

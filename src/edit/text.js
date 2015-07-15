@@ -1,4 +1,4 @@
-import {Node} from "../model"
+import {Span, Node, nodeTypes} from "../model"
 
 export default {toText, fromText}
 
@@ -9,8 +9,8 @@ function fromText(text) {
     let para = new Node("paragraph")
     let parts = blocks[i].split("\n")
     for (let j = 0; j < parts.length; j++) {
-      if (j) para.push(new Node.Inline("hard_break"))
-      para.push(Node.text(parts[j]))
+      if (j) para.push(new Span("hard_break"))
+      para.push(Span.text(parts[j]))
     }
     doc.push(para)
   }
@@ -24,9 +24,9 @@ function toText(doc) {
       let text = ""
       for (let i = 0; i < node.content.length; i++) {
         let child = node.content[i]
-        if (child.type == Node.types.text)
+        if (child.type == nodeTypes.text)
           text += child.text
-        else if (child.type == Node.types.hard_break)
+        else if (child.type == nodeTypes.hard_break)
           text += "\n"
       }
       if (text) out += (out ? "\n\n" : "") + text

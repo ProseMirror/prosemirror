@@ -1,4 +1,4 @@
-import {style, Node, Pos} from "../model"
+import {style, Span, nodeTypes, Pos} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -9,7 +9,7 @@ defineStep("addStyle", {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       if (node.type.plainText) return node
       return copyInline(node, from, to, node => {
-        return new Node.Inline(node.type, node.attrs, style.add(node.styles, step.param), node.text)
+        return new Span(node.type, node.attrs, style.add(node.styles, step.param), node.text)
       })
     }))
   },
@@ -55,7 +55,7 @@ defineStep("removeStyle", {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       return copyInline(node, from, to, node => {
         let styles = style.remove(node.styles, step.param)
-        return new Node.Inline(node.type, node.attrs, styles, node.text)
+        return new Span(node.type, node.attrs, styles, node.text)
       })
     }))
   },
@@ -101,7 +101,7 @@ Transform.prototype.removeStyle = function(from, to, st = null) {
 Transform.prototype.clearMarkup = function(from, to) {
   let steps = []
   forSpansBetween(this.doc, from, to, (span, path, start, end) => {
-    if (span.type != Node.types.text) {
+    if (span.type != nodeTypes.text) {
       path = path.slice()
       let from = new Pos(path, start)
       steps.unshift(new Step("replace", from, new Pos(path, end), from))

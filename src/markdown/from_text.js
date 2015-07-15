@@ -1,5 +1,5 @@
 import markdownit from "markdown-it"
-import {Node, style} from "../model"
+import {Node, Span, style} from "../model"
 
 function parseTokens(state, toks) {
   for (let i = 0; i < toks.length; i++) {
@@ -64,7 +64,7 @@ function closeInline(state, rm) {
 }
 
 function addInline(state, type, text = null, attrs = null) {
-  let node = new Node.Inline(type, attrs, state.styles, text)
+  let node = new Span(type, attrs, state.styles, text)
   state.push(node)
   return node
 }

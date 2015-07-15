@@ -1,4 +1,4 @@
-import {Pos, Node} from "../model"
+import {Pos, Node, findConnection} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -150,8 +150,8 @@ export function canWrap(doc, from, to, node) {
   let range = selectedSiblings(doc, from, to || from)
   if (range.from == range.to) return null
   let parent = doc.path(range.path)
-  let around = Node.findConnection(parent.type, node.type)
-  let inside = Node.findConnection(node.type, parent.content[range.from].type)
+  let around = findConnection(parent.type, node.type)
+  let inside = findConnection(node.type, parent.content[range.from].type)
   if (around && inside) return {range, around, inside}
 }
 

@@ -1,4 +1,4 @@
-import Node from "./node"
+export {Node, Span, nodeTypes, findConnection} from "./node"
 import Pos from "./pos"
 import * as style from "./style"
 
@@ -8,6 +8,6 @@ import toDOM from "./to_dom"
 import * as slice from "./slice"
 import * as inline from "./inline"
 
-export {Node, Pos, style, fromDOM, toDOM, inline, slice}
+export {Pos, style, fromDOM, toDOM, inline, slice}
 
 export {findDiffStart, findDiffEnd} from "./diff"

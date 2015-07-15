@@ -1,4 +1,4 @@
-import {toDOM, Pos, Node} from "../model"
+import {toDOM, Pos, nodeTypes} from "../model"
 
 import {elt} from "../dom"
 
@@ -7,7 +7,7 @@ const nonEditable = {html_block: true, html_tag: true, horizontal_rule: true}
 function options(path, ranges) {
   return {
     onRender(node, dom, offset) {
-      if (node.type.type != "inline" && offset != null)
+      if (node.type.type != "span" && offset != null)
         dom.setAttribute("pm-path", offset)
       if (nonEditable.hasOwnProperty(node.type.name))
         dom.contentEditable = false
@@ -30,9 +30,9 @@ function options(path, ranges) {
                                : inner.parentNode.appendChild(elt("span", null, inner))
       }
 
-      dom.setAttribute("pm-inline-span", offset + "-" + end.offset)
-      if (node.type != Node.types.text)
-        dom.setAttribute("pm-inline-atom", "true")
+      dom.setAttribute("pm-span", offset + "-" + end.offset)
+      if (node.type != nodeTypes.text)
+        dom.setAttribute("pm-span-atom", "true")
 
       let inlineOffset = 0
       while (nextCut) {
@@ -40,12 +40,12 @@ function options(path, ranges) {
         let split = splitSpan(wrapped, size)
         if (ranges.current.length)
           split.className = ranges.current.join(" ")
-        split.setAttribute("pm-inline-offset", inlineOffset)
+        split.setAttribute("pm-span-offset", inlineOffset)
         inlineOffset += size
         offset += size
         ranges.advanceTo(new Pos(path, offset))
         if (!(nextCut = ranges.nextChangeBefore(end)))
-          wrapped.setAttribute("pm-inline-offset", inlineOffset)
+          wrapped.setAttribute("pm-span-offset", inlineOffset)
       }
 
       if (ranges.current.length)
@@ -95,9 +95,9 @@ export function redraw(pm, dirty, doc, prev) {
       }
     }
 
-    if (node.type.contains == "inline") {
+    if (node.type.contains == "span") {
       let needsBR = node.content.length == 0 ||
-          node.content[node.content.length - 1].type == Node.types.hard_break
+          node.content[node.content.length - 1].type == nodeTypes.hard_break
       let hasBR = dom.lastChild && dom.lastChild.hasAttribute("pm-force-br")
       if (needsBR && !hasBR)
         dom.appendChild(elt("br", {"pm-force-br": "true"}))
@@ -124,7 +124,7 @@ export function redraw(pm, dirty, doc, prev) {
       }
       if (nodeLeft) {
         if (block)
-          domPos.setAttribute("pm-inline-span", offset + "-" + (offset + child.size))
+          domPos.setAttribute("pm-span", offset + "-" + (offset + child.size))
         else
           domPos.setAttribute("pm-path", i)
         domPos = domPos.nextSibling
