@@ -1,6 +1,6 @@
 import "./css"
 
-import {inline, style, slice, Pos} from "../model"
+import {inline, style, sliceBetween, Pos} from "../model"
 import {Transform} from "../transform"
 
 import {parseOptions, initOptions, setOption} from "./options"
@@ -48,7 +48,7 @@ export default class ProseMirror {
 
   get selectedDoc() {
     let sel = this.selection
-    return slice.between(this.doc, sel.from, sel.to)
+    return sliceBetween(this.doc, sel.from, sel.to)
   }
 
   get selectedText() {

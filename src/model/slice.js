@@ -44,12 +44,12 @@ function copyInlineBetween(node, from, to, copy) {
   }
 }
 
-export function before(node, pos, depth = 0) {
+export function sliceBefore(node, pos, depth = 0) {
   let copy = node.copy()
   if (depth < pos.depth) {
     let n = pos.path[depth]
     copy.pushFrom(node, 0, n)
-    copy.push(before(node.content[n], pos, depth + 1))
+    copy.push(sliceBefore(node.content[n], pos, depth + 1))
   } else if (node.type.contains != "span") {
     copy.pushFrom(node, 0, pos.offset)
   } else {
@@ -58,11 +58,11 @@ export function before(node, pos, depth = 0) {
   return copy
 }
 
-export function after(node, pos, depth = 0) {
+export function sliceAfter(node, pos, depth = 0) {
   let copy = node.copy()
   if (depth < pos.depth) {
     let n = pos.path[depth]
-    copy.push(after(node.content[n], pos, depth + 1))
+    copy.push(sliceAfter(node.content[n], pos, depth + 1))
     copy.pushFrom(node, n + 1)
   } else if (node.type.contains != "span") {
     copy.pushFrom(node, pos.offset)
@@ -72,10 +72,10 @@ export function after(node, pos, depth = 0) {
   return copy
 }
 
-export function between(node, from, to, collapse = true, depth = 0) {
+export function sliceBetween(node, from, to, collapse = true, depth = 0) {
   if (depth < from.depth && depth < to.depth &&
       from.path[depth] == to.path[depth]) {
-    var inner = between(node.content[from.path[depth]], from, to, collapse, depth + 1)
+    var inner = sliceBetween(node.content[from.path[depth]], from, to, collapse, depth + 1)
     if (!collapse) return node.copy([inner])
     if (node.type.name != "doc") return inner
     var conn = findConnection(node.type, inner.type)
@@ -89,14 +89,14 @@ export function between(node, from, to, collapse = true, depth = 0) {
       let start
       if (depth < from.depth) {
         start = from.path[depth] + 1
-        copy.push(after(node.content[start - 1], from, depth + 1))
+        copy.push(sliceAfter(node.content[start - 1], from, depth + 1))
       } else {
         start = from.offset
       }
       let end = depth < to.depth ? to.path[depth] : to.offset
       copy.pushFrom(node, start, end)
       if (depth < to.depth)
-        copy.push(before(node.content[end], to, depth + 1))
+        copy.push(sliceBefore(node.content[end], to, depth + 1))
     }
     return copy
   }

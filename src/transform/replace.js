@@ -1,4 +1,5 @@
-import {Pos, Node, Span, inline, slice} from "../model"
+import {Pos, Node, Span, inline, sliceBefore, sliceAfter,
+        sliceBetween} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -29,7 +30,7 @@ export function replace(doc, from, to, root, repl) {
   let start = fromEnd ? from.offset : from.path[depth]
   parent.pushNodes(origParent.slice(0, start))
   if (!fromEnd) {
-    parent.push(slice.before(origParent.content[start], from, depth + 1))
+    parent.push(sliceBefore(origParent.content[start], from, depth + 1))
     ++start
   } else {
     start = parent.content.length
@@ -40,7 +41,7 @@ export function replace(doc, from, to, root, repl) {
     end = to.offset
   } else {
     let n = to.path[depth]
-    parent.push(slice.after(origParent.content[n], to, depth + 1))
+    parent.push(sliceAfter(origParent.content[n], to, depth + 1))
     end = n + 1
   }
   parent.pushNodes(origParent.slice(end))
@@ -116,7 +117,7 @@ defineStep("replace", {
   },
   invert(step, oldDoc, map) {
     let depth = step.pos.depth
-    let between = slice.between(oldDoc, step.from, step.to, false)
+    let between = sliceBetween(oldDoc, step.from, step.to, false)
     for (let i = 0; i < depth; i++) between = between.content[0]
     return new Step("replace", step.from, map.map(step.to).pos, step.from.shorten(depth), {
       nodes: between.content,
@@ -135,7 +136,7 @@ defineStep("replace", {
 })
 
 function buildInserted(nodesLeft, source, start, end) {
-  let sliced = slice.between(source, start, end, false)
+  let sliced = sliceBetween(source, start, end, false)
   let nodesRight = []
   for (let node = sliced, i = 0; i <= start.path.length; i++, node = node.content[0])
     nodesRight.push(node)
