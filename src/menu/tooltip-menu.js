@@ -31,14 +31,16 @@ function showItems(tooltip, items, pm, where) {
 }
 
 function chainResult(tooltip, result, pm) {
-  if (Array.isArray(result))
+  if (Array.isArray(result)) {
+    tooltip.active++
     showItems(tooltip, result, pm)
-  else if (result instanceof Dialog)
+  } else if (result instanceof Dialog) {
     showDialog(tooltip, result, pm)
-  else if (tooltip.reset)
+  } else if (tooltip.reset) {
     tooltip.reset()
-  else
+  } else {
     tooltip.close()
+  }
 }
 
 function itemClicked(tooltip, item, pm) {
@@ -46,11 +48,15 @@ function itemClicked(tooltip, item, pm) {
 }
 
 function showDialog(tooltip, dialog, pm) {
-  tooltip.active = true
+  let done = false
+  tooltip.active++
 
   function finish() {
-    tooltip.active = false
-    pm.focus()
+    if (!done) {
+      done = true
+      tooltip.active--
+      pm.focus()
+    }
   }
 
   function submit() {

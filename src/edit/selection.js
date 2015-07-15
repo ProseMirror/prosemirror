@@ -62,7 +62,7 @@ export class Selection {
       range.setEnd(anchor.node, anchor.offset)
       range.collapse()
     } else {
-      if (this.range.anchor.cmp(this.range.head) > 0) { let tmp = anchor; anchor = head; head = anchor }
+      if (this.range.anchor.cmp(this.range.head) > 0) { let tmp = anchor; anchor = head; head = tmp }
       range.setEnd(head.node, head.offset)
       range.setStart(anchor.node, anchor.offset)
     }

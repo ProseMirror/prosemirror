@@ -60,6 +60,9 @@ class Menu {
     this.menuItems = config && config.items || items.getItems()
     this.followCursor = config && config.followCursor
 
+    this.pm.content.addEventListener("keydown", this.closeFunc = () => this.tooltip.close())
+    this.pm.content.addEventListener("mousedown", this.closeFunc)
+
     forceFontLoad(pm)
   }
 
@@ -70,6 +73,8 @@ class Menu {
 
     this.pm.off("selectionChange", this.updateFunc)
     this.pm.off("change", this.updateFunc)
+    this.pm.content.removeEventListener("keydown", this.closeFunc)
+    this.pm.content.removeEventListener("mousedown", this.closeFunc)
   }
 
   updated() {

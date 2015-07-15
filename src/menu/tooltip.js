@@ -4,7 +4,7 @@ import "./tooltip_css"
 const prefix = "ProseMirror-tooltip"
 
 export class Tooltip {
-  constructor(pm, dir, persistent) {
+  constructor(pm, dir) {
     this.pm = pm
     this.dir = dir || "above"
     this.knownSizes = Object.create(null)
@@ -15,31 +15,15 @@ export class Tooltip {
       if (this.dom.style.opacity == "0")
         this.dom.style.display = this.pointer.style.display = ""
     })
-    // Prevent clicks on the tooltip from clearing editor selection
-    this.dom.addEventListener("mousedown", e => { if (!this.active) e.preventDefault() })
 
-    this.active = this.open = false
-    this.persistent = persistent
+    this.active = 0
+    this.open = false
     this.lastLeft = this.lastRight = null
-
-    pm.on("change", this.updateFunc = () => { if (!this.active && !this.persistent) this.close() })
-    pm.on("resize", this.closeFunc = () => { if (!this.active) this.close() })
-    pm.on("blur", this.closeFunc)
-    pm.wrapper.addEventListener("mousedown", this.mouseFunc = e => {
-      if ((this.active || !this.persistent) && !this.dom.contains(e.target))
-        this.close()
-    })
-    pm.content.addEventListener("dragover", this.dragFunc = () => this.close())
   }
 
   detach() {
     this.dom.parentNode.removeChild(this.dom)
     this.pointer.parentNode.removeChild(this.pointer)
-    this.pm.off("change", this.updateFunc)
-    this.pm.off("resize", this.closeFunc)
-    this.pm.off("blur", this.closeFunc)
-    this.pm.wrapper.removeEventListener("mousedown", this.mouseFunc)
-    this.pm.content.removeEventListener("dragover", this.dragFunc)
   }
 
   getSize(type, node) {
@@ -118,7 +102,8 @@ export class Tooltip {
 
   close() {
     if (this.open) {
-      this.open = this.active = false
+      this.open = false
+      this.active = 0
       if (this.pm.mod.tooltip == this) this.pm.mod.tooltip = null
       this.dom.style.opacity = this.pointer.style.opacity = 0
     }

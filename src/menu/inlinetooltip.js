@@ -36,8 +36,9 @@ class InlineTooltip {
 
     pm.on("selectionChange", this.updateFunc = () => this.debounced.trigger())
     pm.on("change", this.updateFunc)
+    pm.on("blur", this.updateFunc)
 
-    this.tooltip = new Tooltip(pm, "above", true)
+    this.tooltip = new Tooltip(pm, "above")
     this.tooltip.reset = this.updateFunc
 
     forceFontLoad(pm)
@@ -49,6 +50,7 @@ class InlineTooltip {
 
     this.pm.off("selectionChange", this.updateFunc)
     this.pm.off("change", this.updateFunc)
+    this.pm.off("blur", this.updateFunc)
   }
 
   inPlainText(sel) {
