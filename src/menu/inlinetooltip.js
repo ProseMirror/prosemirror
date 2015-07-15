@@ -1,5 +1,5 @@
 import {defineOption} from "../edit"
-import {style, inline} from "../model"
+import {style, spanStylesAt} from "../model"
 import {elt} from "../dom"
 import {Debounced} from "../util/debounce"
 
@@ -74,7 +74,7 @@ class InlineTooltip {
   }
 
   linkUnderCursor() {
-    let styles = inline.inlineStylesAt(this.pm.doc, this.pm.selection.head)
+    let styles = spanStylesAt(this.pm.doc, this.pm.selection.head)
     return styles.reduce((found, st) => found || (st.type == "link" && st), null)
   }
 

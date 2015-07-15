@@ -1,5 +1,5 @@
 import Failure from "./failure"
-import {style, inline, Pos} from "../src/model"
+import {style, Pos} from "../src/model"
 
 export function cmpNode(a, b, comment) {
   function raise(msg, path) {

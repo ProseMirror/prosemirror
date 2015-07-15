@@ -1,4 +1,4 @@
-import {Span, Node, nodeTypes, Pos, style, inline} from "../model"
+import {Span, Node, nodeTypes, Pos, style, spanAtOrBefore} from "../model"
 import {joinPoint} from "../transform"
 
 import {charCategory} from "./char"
@@ -90,7 +90,7 @@ function delBlockBackward(pm, tr, pos) {
 function moveBackward(parent, offset, by) {
   if (by == "char") return offset - 1
   if (by == "word") {
-    let {offset: nodeOffset, innerOffset} = inline.inlineNodeAtOrBefore(parent, offset)
+    let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
     let cat = null, counted = 0
     for (; nodeOffset >= 0; nodeOffset--, innerOffset = null) {
       let child = parent.content[nodeOffset], size = child.size
@@ -159,7 +159,7 @@ function delBlockForward(pm, tr, pos) {
 function moveForward(parent, offset, by) {
   if (by == "char") return offset + 1
   if (by == "word") {
-    let {offset: nodeOffset, innerOffset} = inline.inlineNodeAtOrBefore(parent, offset)
+    let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
     let cat = null, counted = 0
     for (; nodeOffset < parent.content.length; nodeOffset++, innerOffset = 0) {
       let child = parent.content[nodeOffset], size = child.size

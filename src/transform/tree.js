@@ -1,4 +1,4 @@
-import {nodeTypes, inline} from "../model"
+import {nodeTypes, stitchTextNodes} from "../model"
 
 export function copyStructure(node, from, to, f, depth = 0) {
   if (node.type.block) {
@@ -27,7 +27,7 @@ export function copyInline(node, from, to, f) {
   let end = to ? to.offset : node.size
   let copy = node.copy(node.slice(0, start).concat(node.slice(start, end).map(f)).concat(node.slice(end)))
   for (let i = copy.content.length - 1; i > 0; i--)
-    inline.stitchTextNodes(copy, i)
+    stitchTextNodes(copy, i)
   return copy
 }
 

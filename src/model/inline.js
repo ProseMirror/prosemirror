@@ -26,7 +26,7 @@ export function clearMarkup(node) {
   }
 }
 
-export function inlineNodeAtOrBefore(parent, offset) {
+export function spanAtOrBefore(parent, offset) {
   for (let i = 0; i < parent.content.length; i++) {
     let child = parent.content[i]
     offset -= child.size
@@ -36,12 +36,12 @@ export function inlineNodeAtOrBefore(parent, offset) {
   return {node: null, offset: 0, innerOffset: 0}
 }
 
-export function inlineStylesAt(doc, pos) {
-  let {node} = inlineNodeAtOrBefore(doc.path(pos.path), pos.offset)
+export function spanStylesAt(doc, pos) {
+  let {node} = spanAtOrBefore(doc.path(pos.path), pos.offset)
   return node ? node.styles : Node.empty
 }
 
-export function rangeHasInlineStyle(doc, from, to, type) {
+export function rangeHasStyle(doc, from, to, type) {
   function scan(node, from, to, type, depth) {
     if (node.type.block) {
       let start = from ? from.offset : 0
@@ -68,8 +68,8 @@ export function rangeHasInlineStyle(doc, from, to, type) {
   return scan(doc, from, to, type, 0)
 }
 
-export function splitInlineAt(parent, offset_) {
-  let {node, offset, innerOffset} = inlineNodeAtOrBefore(parent, offset_)
+export function splitSpansAt(parent, offset_) {
+  let {node, offset, innerOffset} = spanAtOrBefore(parent, offset_)
   if (innerOffset && innerOffset != node.size) {
     parent.content.splice(offset, 1, node.slice(0, innerOffset), node.slice(innerOffset))
     offset += 1

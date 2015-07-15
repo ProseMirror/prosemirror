@@ -1,4 +1,4 @@
-import {style, inline, Span, Node, nodeTypes, Pos} from "../model"
+import {style, rangeHasStyle, Span, Node, nodeTypes, Pos} from "../model"
 import {canLift, canWrap, joinPoint} from "../transform"
 import {elt} from "../dom"
 
@@ -104,7 +104,7 @@ export class InlineStyleItem extends Item {
   }
   active(pm) {
     let sel = pm.selection
-    return inline.rangeHasInlineStyle(pm.doc, sel.from, sel.to, this.style.type)
+    return rangeHasStyle(pm.doc, sel.from, sel.to, this.style.type)
   }
   apply(pm) {
     let sel = pm.selection

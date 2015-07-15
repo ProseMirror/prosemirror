@@ -1,4 +1,4 @@
-import {Pos, Node, inline} from "../model"
+import {Pos, Node, splitSpansAt} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -15,7 +15,7 @@ defineStep("split", {
     let target = parent.content[offset], targetSize = target.maxOffset
     let splitAt = pos.offset
     if (target.type.block)
-      splitAt = inline.splitInlineAt(target, pos.offset).offset
+      splitAt = splitSpansAt(target, pos.offset).offset
     let after = (step.param || target).copy(target.content.slice(splitAt))
     target.content.length = splitAt
     parent.content.splice(offset + 1, 0, after)

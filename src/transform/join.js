@@ -1,4 +1,4 @@
-import {Pos, Node, inline} from "../model"
+import {Pos, Node, stitchTextNodes} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -21,7 +21,7 @@ defineStep("join", {
     let target = copy.path(targetPath), oldSize = target.content.length
     let joined = new Node(before.type, before.attrs, before.content.concat(after.content))
     if (joined.type.block)
-      inline.stitchTextNodes(joined, before.content.length)
+      stitchTextNodes(joined, before.content.length)
     target.content.splice(offset - 1, 2, joined)
 
     let map = new PosMap([new MovedRange(step.to, after.maxOffset, step.from),

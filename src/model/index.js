@@ -6,8 +6,9 @@ import fromDOM from "./from_dom"
 import toDOM from "./to_dom"
 
 export {sliceBefore, sliceAfter, sliceBetween} from "./slice"
-import * as inline from "./inline"
+export {stitchTextNodes, clearMarkup, spanAtOrBefore, spanStylesAt, rangeHasStyle,
+        splitSpansAt} from "./inline"
 
-export {Pos, style, fromDOM, toDOM, inline}
+export {Pos, style, fromDOM, toDOM}
 
 export {findDiffStart, findDiffEnd} from "./diff"

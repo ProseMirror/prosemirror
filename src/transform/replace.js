@@ -1,5 +1,5 @@
-import {Pos, Node, Span, inline, sliceBefore, sliceAfter,
-        sliceBetween} from "../model"
+import {Pos, Node, Span, stitchTextNodes, spanStylesAt, sliceBefore,
+        sliceAfter, sliceBetween} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -56,7 +56,7 @@ export function replace(doc, from, to, root, repl) {
 
   function mendLeft(node, at, depth, open) {
     if (node.type.block)
-      return inline.stitchTextNodes(node, at)
+      return stitchTextNodes(node, at)
 
     if (open == 0 || depth == from.depth || at == 0 || at == node.content.length) return
 
@@ -88,7 +88,7 @@ export function replace(doc, from, to, root, repl) {
       addMoved(movedStart, movedSize, new Pos(path, sBefore - 1))
       mendRight(after, before.content.length, path.concat(at - 1), open - 1)
     } else {
-      if (node.type.block) inline.stitchTextNodes(node, at)
+      if (node.type.block) stitchTextNodes(node, at)
       addMoved(movedStart, movedSize, new Pos(path, sBefore))
       if (!toEnd) mendRight(after, 0, path.concat(at), 0)
     }
@@ -265,7 +265,7 @@ Transform.prototype.insert = function(pos, nodes) {
 
 Transform.prototype.insertInline = function(pos, nodes) {
   if (!Array.isArray(nodes)) nodes = [nodes]
-  let styles = inline.inlineStylesAt(this.doc, pos)
+  let styles = spanStylesAt(this.doc, pos)
   nodes = nodes.map(n => new Span(n.type, n.attrs, styles, n.text))
   return this.insert(pos, nodes)
 }

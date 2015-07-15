@@ -1,4 +1,4 @@
-import {style, inline} from "../src/model"
+import {style, spanStylesAt} from "../src/model"
 import Failure from "./failure"
 import {defTest} from "./tests"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br} from "./build"
@@ -49,7 +49,7 @@ defTest("style_remove", () => {
 
 function has(name, doc, st, result) {
   defTest("has_style_" + name, function() {
-    if (style.contains(inline.inlineStylesAt(doc, doc.tag.a), st) != result)
+    if (style.contains(spanStylesAt(doc, doc.tag.a), st) != result)
       throw new Failure("hasStyle(" + doc + ", " + doc.tag.a + ", " + st.type + ") returned " + !result)
   })
 }
