@@ -1,4 +1,4 @@
-import {Pos, Node} from "../model"
+import {Pos} from "../model"
 
 export class Step {
   constructor(name, from, to, pos, param = null) {

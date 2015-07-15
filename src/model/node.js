@@ -141,12 +141,10 @@ export default class Node {
 Node.empty = [] // Reused empty array for collections that are guaranteed to remain empty
 
 function maybeNull(obj) {
-  if (!obj) return nullAttrs;
+  if (!obj) return nullAttrs
   for (let _prop in obj) return obj
   return nullAttrs
 }
-
-function maybeEmpty(arr) { return arr.length ? arr : Node.empty }
 
 class InlineNode extends Node {
   constructor(type, attrs, styles, text) {

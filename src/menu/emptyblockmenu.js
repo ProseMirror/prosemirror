@@ -18,7 +18,7 @@ defineOption("emptyBlockMenu", false, function(pm, value) {
     pm.mod.menu = new EmptyBlockMenu(pm, value)
 })
 
-import {BlockTypeItem, LiftItem, WrapItem, InsertBlockItem, JoinItem, ImageItem} from "./menuitem"
+import {BlockTypeItem, LiftItem, WrapItem, InsertBlockItem} from "./menuitem"
 
 export const items = new MenuDefinition
 
