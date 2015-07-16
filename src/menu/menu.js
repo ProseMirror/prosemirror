@@ -8,13 +8,12 @@ import {openMenu, forceFontLoad} from "./tooltip-menu"
 import {MenuDefinition} from "./define"
 
 import insertCSS from "insert-css"
-
 import "./icons_css"
 
 const classPrefix = "ProseMirror-menu"
 
 defineOption("menu", false, function(pm, value) {
-  if (pm.mod.blockTooltip)
+  if (pm.mod.menu)
     pm.mod.menu.detach()
   if (value)
     pm.mod.menu = new Menu(pm, value)

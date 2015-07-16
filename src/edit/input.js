@@ -4,7 +4,7 @@ import {isModifierKey, lookupKey, keyName} from "./keys"
 import {browser, addClass, rmClass} from "../dom"
 import {execCommand} from "./commands"
 import {applyDOMChange} from "./domchange"
-import text from "./text"
+import {text} from "./text"
 import {Range} from "./selection"
 
 let stopSeq = null
