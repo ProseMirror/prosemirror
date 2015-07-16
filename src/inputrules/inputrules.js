@@ -1,4 +1,4 @@
-import {Pos, style} from "../model"
+import {Pos, Span, style, spanStylesAt} from "../model"
 
 export function addInputRules(pm, rules) {
   if (!pm.mod.interpretInput)
@@ -70,8 +70,8 @@ class InputRules {
         if (typeof rule.handler == "string") {
           let offset = pos.offset - (match[1] || match[0]).length
           let start = new Pos(pos.path, offset)
-          // FIXME this overwrites the style of the original text
-          this.pm.apply(this.pm.tr.delete(start, pos).insertText(start, rule.handler))
+          let styles = spanStylesAt(this.pm.doc, pos)
+          this.pm.apply(this.pm.tr.delete(start, pos).insert(start, Span.text(rule.handler, styles)))
         } else {
           rule.handler(this.pm, match, pos)
         }
