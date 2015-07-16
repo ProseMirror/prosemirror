@@ -4,13 +4,20 @@ import insertCSS from "insert-css"
 
 const prefix = "ProseMirror-tooltip-menu"
 
-export function openMenu(tooltip, items, pm, where) {
-  showItems(tooltip, items.filter(i => i.select(pm)), pm, where)
+class Wrapper {
+  constructor(node) { this.node = node }
+  close() { this.node.textContent = "" }
+  show(_id, dom) { this.close(); this.node.appendChild(dom) }
 }
 
-function showItems(tooltip, items, pm, where) {
+export function openMenu(container, items, pm, where) {
+  if (container.nodeType) container = new Wrapper(container)
+  showItems(container, items.filter(i => i.select(pm)), pm, where)
+}
+
+function showItems(container, items, pm, where) {
   if (items.length == 0) {
-    tooltip.close()
+    container.close()
     return
   }
 
@@ -22,39 +29,39 @@ function showItems(tooltip, items, pm, where) {
                                  elt("span", {class: iconClass})))
     li.addEventListener("mousedown", e => {
       e.preventDefault(); e.stopPropagation()
-      itemClicked(tooltip, item, pm)
+      itemClicked(container, item, pm)
     })
   })
 
   let id = "menu-" + items.map(i => i.icon).join("-")
-  tooltip.show(id, dom, where)
+  container.show(id, dom, where)
 }
 
-function chainResult(tooltip, result, pm) {
+function chainResult(container, result, pm) {
   if (Array.isArray(result)) {
-    tooltip.active++
-    showItems(tooltip, result, pm)
+    container.active++
+    showItems(container, result, pm)
   } else if (result instanceof Dialog) {
-    showDialog(tooltip, result, pm)
-  } else if (tooltip.reset) {
-    tooltip.reset()
+    showDialog(container, result, pm)
+  } else if (container.reset) {
+    container.reset()
   } else {
-    tooltip.close()
+    container.close()
   }
 }
 
-function itemClicked(tooltip, item, pm) {
-  chainResult(tooltip, item.apply(pm), pm)
+function itemClicked(container, item, pm) {
+  chainResult(container, item.apply(pm), pm)
 }
 
-function showDialog(tooltip, dialog, pm) {
+function showDialog(container, dialog, pm) {
   let done = false
-  tooltip.active++
+  container.active++
 
   function finish() {
     if (!done) {
       done = true
-      tooltip.active--
+      container.active--
       pm.focus()
     }
   }
@@ -62,7 +69,7 @@ function showDialog(tooltip, dialog, pm) {
   function submit() {
     let result = dialog.apply(form, pm)
     finish()
-    chainResult(tooltip, result, pm)
+    chainResult(container, result, pm)
   }
   let form = dialog.buildForm(pm, submit)
   form.addEventListener("submit", e => {
@@ -72,14 +79,14 @@ function showDialog(tooltip, dialog, pm) {
   form.addEventListener("keydown", e => {
     if (e.keyCode == 27) {
       finish()
-      if (tooltip.reset) tooltip.reset()
-      else tooltip.close()
+      if (container.reset) container.reset()
+      else container.close()
     } else if (e.keyCode == 13 && !(e.ctrlKey || e.metaKey || e.shiftKey)) {
       e.preventDefault()
       submit()
     }
   })
-  tooltip.show(dialog.id, form)
+  container.show(dialog.id, form)
   dialog.focus(form)
 }
 

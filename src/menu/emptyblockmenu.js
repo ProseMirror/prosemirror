@@ -79,11 +79,7 @@ class EmptyBlockMenu {
     let node = this.node
     node.style.top = (targetRect.top - outerRect.top) + "px"
     node.style.left = (targetRect.left - outerRect.left) + "px"
-    // FIXME change openMenu interface to not requires this kludge
-    openMenu({
-      close() {},
-      show(_id, dom) { node.textContent = ""; node.appendChild(dom) }
-    }, this.menuItems, this.pm)
+    openMenu(node, this.menuItems, this.pm)
     node.style.display = "block"
     this.shown = true
   }

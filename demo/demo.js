@@ -1,4 +1,4 @@
-import ProseMirror from "../src/edit/main"
+import {ProseMirror} from "../src/edit/main"
 import {Pos, Node, fromDOM, toDOM} from "../src/model"
 import "../src/inputrules/autoinput"
 import "../src/menu/inlinetooltip"

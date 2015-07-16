@@ -1,5 +1,5 @@
 import {tests, filter} from "../test/tests"
-import Failure from "../test/failure"
+import {Failure} from "../test/failure"
 import "../test/all"
 import "../test/browser/all"
 
