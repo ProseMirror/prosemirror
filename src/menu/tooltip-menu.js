@@ -1,7 +1,7 @@
 import {elt} from "../dom"
 import {Dialog} from "./menuitem"
+import insertCSS from "insert-css"
 
-import "./tooltip-menu_css"
 const prefix = "ProseMirror-tooltip-menu"
 
 export function openMenu(tooltip, items, pm, where) {
@@ -96,3 +96,29 @@ export function forceFontLoad(pm) {
                                                 style: "visibility: hidden; position: absolute"}))
   window.setTimeout(() => pm.wrapper.removeChild(node), 20)
 }
+
+insertCSS(`
+
+.ProseMirror-tooltip-menu {
+  padding: 0;
+  margin: 0 -4px;
+  display: block;
+  line-height: 1;
+  white-space: pre;
+  width: -webkit-fit-content;
+  width: fit-content;
+}
+
+.ProseMirror-tooltip-menu li {
+  display: inline-block;
+  padding: 2px 7px;
+  margin: 0 2px;
+  cursor: pointer;
+}
+
+.ProseMirror-tooltip-menu-active {
+  background: #666;
+  border-radius: 4px;
+}
+
+`)

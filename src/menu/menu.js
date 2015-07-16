@@ -7,7 +7,8 @@ import {Tooltip} from "./tooltip"
 import {openMenu, forceFontLoad} from "./tooltip-menu"
 import {MenuDefinition} from "./define"
 
-import "./menu_css"
+import insertCSS from "insert-css"
+
 import "./icons_css"
 
 const classPrefix = "ProseMirror-menu"
@@ -98,3 +99,36 @@ class Menu {
     this.hamburger.style.top = Math.max(top - this.hamburger.offsetHeight - 2 - around.top, 7) + "px"
   }
 }
+
+insertCSS(`
+
+.ProseMirror-menu-button {
+  display: none;
+  position: absolute;
+  top: 7px;
+  right: 7px;
+  width: 15px;
+  height: 13px;
+  cursor: pointer;
+
+  -webkit-transition: top 0.3s ease-out;
+  -moz-transition: top 0.3s ease-out;
+  transition: top 0.3s ease-out;
+}
+
+.ProseMirror-focused .ProseMirror-menu-button {
+  display: block;
+}
+
+.ProseMirror-menu-button div {
+  height: 3px;
+  margin-bottom: 2px;
+  border-radius: 4px;
+  background: #888;
+}
+
+.ProseMirror-menu-button:hover div {
+  background: #333;
+}
+
+`)
