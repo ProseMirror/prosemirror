@@ -3,7 +3,7 @@ import {Pos, Node, style} from "../src/model"
 import {Transform} from "../src/transform"
 
 import {doc, blockquote, h1, p, li, ol, ul, em, a, br} from "./build"
-import Failure from "./failure"
+import {Failure} from "./failure"
 import {defTest} from "./tests"
 import {cmpNode, cmpStr} from "./cmp"
 

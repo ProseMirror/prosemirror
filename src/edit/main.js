@@ -15,7 +15,7 @@ import {execCommand} from "./commands"
 import {Map} from "./map"
 import {RangeStore, MarkedRange} from "./range"
 
-export default class ProseMirror {
+export class ProseMirror {
   constructor(opts) {
     opts = this.options = parseOptions(opts)
     this.content = elt("div", {class: "ProseMirror-content"})

@@ -1,6 +1,6 @@
 import {fromDOM, toDOM, Pos, Node, Span, spanStylesAt} from "../model"
 
-import * as keys from "./keys"
+import {isModifierKey, lookupKey, keyName} from "./keys"
 import {browser, addClass, rmClass} from "../dom"
 import {execCommand} from "./commands"
 import {applyDOMChange} from "./domchange"
@@ -51,7 +51,7 @@ export class Input {
 export function dispatchKey(pm, name, e) {
   let seq = pm.input.keySeq
   if (seq) {
-    if (keys.isModifierKey(name)) return true
+    if (isModifierKey(name)) return true
     clearTimeout(stopSeq)
     stopSeq = setTimeout(function() {
       if (pm.input.keySeq == seq)
@@ -69,10 +69,10 @@ export function dispatchKey(pm, name, e) {
 
   let result
   for (let i = 0; !result && i < pm.input.keymaps.length; i++)
-    result = keys.lookupKey(name, pm.input.keymaps[i], handle, pm)
+    result = lookupKey(name, pm.input.keymaps[i], handle, pm)
   if (!result)
-    result = keys.lookupKey(name, pm.options.extraKeymap, handle, pm) ||
-      keys.lookupKey(name, pm.options.keymap, handle, pm)
+    result = lookupKey(name, pm.options.extraKeymap, handle, pm) ||
+      lookupKey(name, pm.options.keymap, handle, pm)
 
   if (result == "multi")
     pm.input.keySeq = name
@@ -89,7 +89,7 @@ export function dispatchKey(pm, name, e) {
 
 handlers.keydown = (pm, e) => {
   if (e.keyCode == 16) pm.input.shiftKey = true
-  let name = keys.keyName(e)
+  let name = keyName(e)
   if (name) dispatchKey(pm, name, e)
 }
 

@@ -4,7 +4,7 @@ import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br
 
 import {defTest} from "./tests"
 import {cmpStr, P} from "./cmp"
-import Failure from "./failure"
+import {Failure} from "./failure"
 
 function t(name, type, a, b, pos) {
   defTest("diff_" + type + "_" + name, () => {

@@ -1,5 +1,5 @@
 import {defTest} from "../tests"
-import ProseMirror from "../../src/edit/main"
+import {ProseMirror} from "../../src/edit/main"
 
 let tempPMs = null
 

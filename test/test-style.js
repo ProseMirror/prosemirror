@@ -1,5 +1,5 @@
 import {style, spanStylesAt} from "../src/model"
-import Failure from "./failure"
+import {Failure} from "./failure"
 import {defTest} from "./tests"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br} from "./build"
 

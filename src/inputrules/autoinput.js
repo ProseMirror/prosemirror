@@ -11,7 +11,6 @@ export var rules = [
   new Rule("-", /--$/, "—"),
   new Rule('"', /\s(")$/, "“"),
   new Rule('"', /"$/, "”"),
-  // FIXME this isn't appropriate for English apostrophes
   new Rule("'", /\s(')$/, "‘"),
   new Rule("'", /'$/, "’"),
 

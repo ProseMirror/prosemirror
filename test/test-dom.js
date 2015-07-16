@@ -1,5 +1,5 @@
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
-import Failure from "./failure"
+import {Failure} from "./failure"
 import {cmpNode} from "./cmp"
 import {defTest} from "./tests"
 

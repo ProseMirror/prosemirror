@@ -1,6 +1,6 @@
 import {Pos} from "../src/model"
 
-import Failure from "./failure"
+import {Failure} from "./failure"
 import {defTest} from "./tests"
 
 function p(...args) {

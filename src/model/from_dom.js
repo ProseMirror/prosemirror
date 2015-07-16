@@ -1,7 +1,7 @@
 import {Node, Span, nodeTypes, findConnection} from "./node"
 import * as style from "./style"
 
-export default function fromDOM(dom, options) {
+export function fromDOM(dom, options) {
   if (!options) options = {}
   let context = new Context(options.topNode || new Node("doc"))
   let start = options.from ? dom.childNodes[options.from] : dom.firstChild

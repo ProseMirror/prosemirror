@@ -1,4 +1,4 @@
-import Pos from "./pos"
+import {Pos} from "./pos"
 import {sameSet} from "./style"
 
 export function findDiffStart(a, b, pathA = [], pathB = []) {

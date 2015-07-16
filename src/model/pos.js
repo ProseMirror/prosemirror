@@ -1,4 +1,4 @@
-export default class Pos {
+export class Pos {
   constructor(path, offset) {
     this.path = path
     this.offset = offset

@@ -2,8 +2,8 @@ import {doc, blockquote, hr2, pre, pre2, h1, h2, p, li, ol, ul, uldash, em, stro
 import {cmpNode, cmpStr} from "./cmp"
 import {defTest} from "./tests"
 
-import fromText from "../src/markdown/from_text"
-import toText from "../src/markdown/to_text"
+import {fromText} from "../src/markdown/from_text"
+import {toText} from "../src/markdown/to_text"
 
 function t(name, text, doc) {
   defTest("parse_" + name, () => {

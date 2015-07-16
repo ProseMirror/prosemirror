@@ -1,4 +1,4 @@
-import Failure from "./failure"
+import {Failure} from "./failure"
 import {style, Pos} from "../src/model"
 
 export function cmpNode(a, b, comment) {

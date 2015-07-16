@@ -1,8 +1,8 @@
 // Glue code that makes ProseMirror aware of the Markdown parser and
 // serializer.
 
-import fromText from "./from_text"
-import toText from "./to_text"
+import {fromText} from "./from_text"
+import {toText} from "./to_text"
 import text from "../edit/text"
 import {ProseMirror, defineOption} from "../edit"
 

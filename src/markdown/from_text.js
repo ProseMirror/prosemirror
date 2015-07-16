@@ -8,7 +8,7 @@ function parseTokens(state, toks) {
   }
 }
 
-export default function fromText(text) {
+export function fromText(text) {
   let tokens = markdownit("commonmark").parse(text, {})
   let state = new State(tokens)
   parseTokens(state, tokens)

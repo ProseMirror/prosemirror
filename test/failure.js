@@ -1,4 +1,4 @@
-export default function Failure(message) {
+export function Failure(message) {
   this.message = message;
   this.stack = (new Error(message)).stack;
 }

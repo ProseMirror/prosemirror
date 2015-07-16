@@ -1,14 +1,14 @@
 export {Node, Span, nodeTypes, findConnection} from "./node"
-import Pos from "./pos"
-import * as style from "./style"
+export {Pos} from "./pos"
 
-import fromDOM from "./from_dom"
-import toDOM from "./to_dom"
+import * as style from "./style"
+export {style}
+
+export {fromDOM} from "./from_dom"
+export {toDOM} from "./to_dom"
 
 export {sliceBefore, sliceAfter, sliceBetween} from "./slice"
 export {stitchTextNodes, clearMarkup, spanAtOrBefore, spanStylesAt, rangeHasStyle,
         splitSpansAt} from "./inline"
-
-export {Pos, style, fromDOM, toDOM}
 
 export {findDiffStart, findDiffEnd} from "./diff"

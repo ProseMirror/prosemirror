@@ -1,8 +1,6 @@
 import {Span, Node, nodeTypes} from "../model"
 
-export default {toText, fromText}
-
-function fromText(text) {
+export function fromText(text) {
   let blocks = text.trim().split("\n\n")
   let doc = new Node("doc")
   for (let i = 0; i < blocks.length; i++) {
@@ -17,7 +15,7 @@ function fromText(text) {
   return doc
 }
 
-function toText(doc) {
+export function toText(doc) {
   let out = ""
   function explore(node) {
     if (node.type.block) {

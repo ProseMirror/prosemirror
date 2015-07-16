@@ -1,6 +1,6 @@
 import {style} from "../model"
 
-export default function toText(doc) {
+export function toText(doc) {
   let state = new State()
   state.renderNodes(doc.content)
   return state.out

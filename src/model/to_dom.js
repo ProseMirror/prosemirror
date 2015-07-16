@@ -4,7 +4,7 @@ const render = Object.create(null), renderStyle = Object.create(null)
 
 let doc = null
 
-export default function toDOM(node, options) {
+export function toDOM(node, options) {
   doc = options.document
   return renderNodes(node.content, options)
 }

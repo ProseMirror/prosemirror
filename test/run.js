@@ -1,4 +1,4 @@
-import Failure from "./failure"
+import {Failure} from "./failure"
 import "./all"
 
 import {tests, filter} from "./tests"
