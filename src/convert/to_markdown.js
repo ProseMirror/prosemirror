@@ -1,10 +1,13 @@
 import {style} from "../model"
+import {defineTarget} from "./convert"
 
 export function toMarkdown(doc) {
   let state = new State()
   state.renderNodes(doc.content)
   return state.out
 }
+
+defineTarget("markdown", toMarkdown)
 
 function esc(str, startOfLine) {
   str = str.replace(/[`*\\~+\[\]]/g, "\\$&")

@@ -1,5 +1,6 @@
 import markdownit from "markdown-it"
 import {Node, Span, style} from "../model"
+import {defineSource} from "./convert"
 
 function parseTokens(state, toks) {
   for (let i = 0; i < toks.length; i++) {
@@ -14,6 +15,8 @@ export function fromMarkdown(text) {
   parseTokens(state, tokens)
   return state.stack[0]
 }
+
+defineSource("markdown", fromMarkdown)
 
 class State {
   constructor(tokens) {

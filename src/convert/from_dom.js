@@ -1,4 +1,5 @@
 import {style, Node, Span, nodeTypes, findConnection} from "../model"
+import {defineSource} from "./convert"
 
 export function fromDOM(dom, options) {
   if (!options) options = {}
@@ -8,6 +9,8 @@ export function fromDOM(dom, options) {
   context.addAll(start, end, true)
   return context.stack[0]
 }
+
+defineSource("dom", fromDOM)
 
 const blockElements = {
   address: true, article: true, aside: true, blockquote: true, canvas: true,

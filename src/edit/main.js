@@ -10,7 +10,8 @@ import {draw, redraw} from "./draw"
 import {Input} from "./input"
 import {History} from "./history"
 import {eventMixin} from "./event"
-import text from "./text"
+import {toText} from "../convert/to_text"
+import "../convert/from_text"
 import {execCommand} from "./commands"
 import {Map} from "./map"
 import {RangeStore, MarkedRange} from "./range"
@@ -52,7 +53,7 @@ export class ProseMirror {
   }
 
   get selectedText() {
-    return text.toText(this.selectedDoc)
+    return toText(this.selectedDoc)
   }
 
   apply(transform, options = nullOptions) {

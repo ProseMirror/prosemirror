@@ -1,12 +1,14 @@
 import {Pos, Node, Span, spanStylesAt} from "../model"
+
 import {fromDOM} from "../convert/from_dom"
 import {toDOM} from "../convert/to_dom"
+import {toText} from "../convert/to_text"
+import {knownSource, convertFrom} from "../convert/convert"
 
 import {isModifierKey, lookupKey, keyName} from "./keys"
 import {browser, addClass, rmClass} from "../dom"
 import {execCommand} from "./commands"
 import {applyDOMChange} from "./domchange"
-import text from "./text"
 import {Range} from "./selection"
 
 let stopSeq = null
@@ -165,7 +167,7 @@ handlers.copy = handlers.cut = (pm, e) => {
   let fragment = pm.selectedDoc
   elt.appendChild(toDOM(fragment, {document: document}))
   lastCopied = {doc: pm.doc, from: sel.from, to: sel.to,
-                html: elt.innerHTML, text: text.toText(fragment)}
+                html: elt.innerHTML, text: toText(fragment)}
 
   if (e.clipboardData) {
     e.preventDefault()
@@ -196,7 +198,7 @@ handlers.paste = (pm, e) => {
       elt.innerHTML = html
       doc = fromDOM(elt)
     } else {
-      doc = (text.fromMarkdown || text.fromText)(txt)
+      doc = convertFrom(txt, knownSource("markdown") ? "markdown" : "text")
     }
     pm.apply(pm.tr.replace(sel.from, sel.to, doc, from || Pos.start(doc), to || Pos.end(doc)))
     pm.scrollIntoView()
@@ -211,7 +213,7 @@ handlers.dragstart = (pm, e) => {
   elt.appendChild(toDOM(fragment, {document: document}))
 
   e.dataTransfer.setData("text/html", elt.innerHTML)
-  e.dataTransfer.setData("text/plain", text.toText(fragment) + "??")
+  e.dataTransfer.setData("text/plain", toText(fragment) + "??")
   pm.input.draggingFrom = true
 }
 
@@ -228,7 +230,7 @@ handlers.drop = (pm, e) => {
     elt.innerHTML = html
     doc = fromDOM(elt)
   } else if (txt = e.dataTransfer.getData("text/plain")) {
-    doc = (text.fromMarkdown || text.fromText)(txt)
+    doc = convertFrom(txt, knownSource("markdown") ? "markdown" : "text")
   }
   if (doc) {
     e.preventDefault()

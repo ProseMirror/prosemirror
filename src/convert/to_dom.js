@@ -1,4 +1,5 @@
 import {style} from "../model"
+import {defineTarget} from "./convert"
 
 const render = Object.create(null), renderStyle = Object.create(null)
 
@@ -8,6 +9,8 @@ export function toDOM(node, options) {
   doc = options.document
   return renderNodes(node.content, options)
 }
+
+defineTarget("dom", toDOM)
 
 export function renderNodeToDOM(node, options, offset) {
   let dom = renderNode(node, options, offset)
