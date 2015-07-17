@@ -44,7 +44,7 @@ function makeEditor(where, collab) {
     autoInput: true,
     inlineTooltip: true,
     buttonMenu: {followCursor: true},
-    menuBar: true,
+    menuBar: {float: true},
     emptyBlockMenu: true,
     doc: doc,
     collab: collab

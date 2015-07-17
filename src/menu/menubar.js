@@ -36,6 +36,18 @@ class MenuBar {
 
     this.menuItems = config && config.items || inlineItems.getItems().concat(blockItems.getItems())
     this.show()
+
+    if (config && config.float) {
+      this.floating = false
+      this.updateFloat()
+      let onScroll = () => {
+        if (!document.body.contains(this.pm.wrapper))
+          window.removeEventListener("scroll", onScroll)
+        else
+          this.updateFloat()
+      }
+      window.addEventListener("scroll", onScroll)
+    }
   }
 
   detach() {
@@ -49,6 +61,29 @@ class MenuBar {
 
   show() { if (!this.menu.active) this.resetMenu() }
   resetMenu() { this.menu.open(this.menuItems) }
+
+  updateFloat() {
+    let editorRect = this.pm.wrapper.getBoundingClientRect()
+    if (this.float) {
+      if (editorRect.top >= 0) {
+        this.float = false
+        this.menuElt.style.position = this.menuElt.style.left = this.menuElt.style.width = ""
+        this.menuElt.style.display = ""
+      } else {
+        let border = (this.pm.wrapper.offsetWidth - this.pm.wrapper.clientWidth) / 2
+        this.menuElt.style.left = (editorRect.left + border) + "px"
+        this.menuElt.style.display = (editorRect.top > window.innerHeight ? "none" : "")
+      }
+    } else {
+      if (editorRect.top < 0) {
+        this.float = true
+        let menuRect = this.menuElt.getBoundingClientRect()
+        this.menuElt.style.left = menuRect.left + "px"
+        this.menuElt.style.width = menuRect.width + "px"
+        this.menuElt.style.position = "fixed"
+      }
+    }
+  }
 }
 
 insertCSS(`
@@ -59,15 +94,18 @@ insertCSS(`
 }
 
 .ProseMirror-menubar-inner {
+  color: #666;
   padding: 1px 4px;
   top: 0; left: 0; right: 0;
   position: absolute;
   border-bottom: 1px solid silver;
   background: white;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
 }
 
 .ProseMirror-menubar .ProseMirror-menu-active {
-  background: #ddd;
+  background: #eee;
 }
 
 .ProseMirror-menubar input[type="text"],
