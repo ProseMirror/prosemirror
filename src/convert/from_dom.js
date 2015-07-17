@@ -1,5 +1,4 @@
-import {Node, Span, nodeTypes, findConnection} from "./node"
-import * as style from "./style"
+import {style, Node, Span, nodeTypes, findConnection} from "../model"
 
 export function fromDOM(dom, options) {
   if (!options) options = {}

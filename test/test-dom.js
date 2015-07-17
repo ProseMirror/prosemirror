@@ -5,7 +5,8 @@ import {defTest} from "./tests"
 
 import xmlDOM from "xmldom"
 
-import {toDOM, fromDOM} from "../src/model"
+import {toDOM} from "../src/convert/to_dom"
+import {fromDOM} from "../src/convert/from_dom"
 
 function domFor(str) {
   return (new xmlDOM.DOMParser).parseFromString("<!doctype html><html>" + str + "</html>")

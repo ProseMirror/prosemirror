@@ -1,4 +1,4 @@
-import * as style from "./style"
+import {style} from "../model"
 
 const render = Object.create(null), renderStyle = Object.create(null)
 
@@ -9,7 +9,7 @@ export function toDOM(node, options) {
   return renderNodes(node.content, options)
 }
 
-toDOM.renderNode = function(node, options, offset) {
+export function renderNodeToDOM(node, options, offset) {
   let dom = renderNode(node, options, offset)
   if (options.renderInlineFlat && node.type.type == "span") {
     dom = wrapInlineFlat(node, dom)

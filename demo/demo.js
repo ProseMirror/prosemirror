@@ -1,5 +1,7 @@
 import {ProseMirror} from "../src/edit/main"
-import {Pos, Node, fromDOM, toDOM} from "../src/model"
+import {Pos, Node} from "../src/model"
+import {fromDOM} from "../src/convert/from_dom"
+
 import "../src/inputrules/autoinput"
 import "../src/menu/inlinetooltip"
 import "../src/menu/buttonmenu"

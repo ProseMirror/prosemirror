@@ -1,4 +1,6 @@
-import {fromDOM, toDOM, Pos, Node, Span, spanStylesAt} from "../model"
+import {Pos, Node, Span, spanStylesAt} from "../model"
+import {fromDOM} from "../convert/from_dom"
+import {toDOM} from "../convert/to_dom"
 
 import {isModifierKey, lookupKey, keyName} from "./keys"
 import {browser, addClass, rmClass} from "../dom"

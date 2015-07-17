@@ -1,4 +1,5 @@
-import {toDOM, Pos, nodeTypes} from "../model"
+import {Pos, nodeTypes} from "../model"
+import {toDOM, renderNodeToDOM} from "../convert/to_dom"
 
 import {elt} from "../dom"
 
@@ -119,7 +120,7 @@ export function redraw(pm, dirty, doc, prev) {
                  status[j] != 2 && child.sameMarkup(prev.content[j])) {
         scan(domPos, child, prev.content[j])
       } else {
-        dom.insertBefore(toDOM.renderNode(child, options(path, ranges), block ? offset : i), domPos)
+        dom.insertBefore(renderNodeToDOM(child, options(path, ranges), block ? offset : i), domPos)
         nodeLeft = false
       }
       if (nodeLeft) {
