@@ -1,7 +1,7 @@
 import {Pos, Node, Span, spanStylesAt} from "../model"
 
-import {fromDOM} from "../convert/from_dom"
-import {toDOM} from "../convert/to_dom"
+import {fromHTML} from "../convert/from_dom"
+import {toHTML} from "../convert/to_dom"
 import {toText} from "../convert/to_text"
 import {knownSource, convertFrom} from "../convert/convert"
 
@@ -163,11 +163,10 @@ let lastCopied = null
 handlers.copy = handlers.cut = (pm, e) => {
   let sel = pm.selection
   if (sel.empty) return
-  let elt = document.createElement("div")
   let fragment = pm.selectedDoc
-  elt.appendChild(toDOM(fragment, {document: document}))
   lastCopied = {doc: pm.doc, from: sel.from, to: sel.to,
-                html: elt.innerHTML, text: toText(fragment)}
+                html: toHTML(fragment, {document}),
+                text: toText(fragment)}
 
   if (e.clipboardData) {
     e.preventDefault()
@@ -194,9 +193,7 @@ handlers.paste = (pm, e) => {
     } else if (lastCopied && (lastCopied.html == html || lastCopied.text == txt)) {
       ;({doc, from, to} = lastCopied)
     } else if (html) {
-      let elt = document.createElement("div")
-      elt.innerHTML = html
-      doc = fromDOM(elt)
+      doc = fromHTML(html, {document})
     } else {
       doc = convertFrom(txt, knownSource("markdown") ? "markdown" : "text")
     }
@@ -208,11 +205,9 @@ handlers.paste = (pm, e) => {
 handlers.dragstart = (pm, e) => {
   if (!e.dataTransfer) return
 
-  let elt = document.createElement("div")
   let fragment = pm.selectedDoc
-  elt.appendChild(toDOM(fragment, {document: document}))
 
-  e.dataTransfer.setData("text/html", elt.innerHTML)
+  e.dataTransfer.setData("text/html", toHTML(fragment, {document}))
   e.dataTransfer.setData("text/plain", toText(fragment) + "??")
   pm.input.draggingFrom = true
 }
@@ -225,13 +220,11 @@ handlers.drop = (pm, e) => {
   if (!e.dataTransfer) return
 
   let html, txt, doc
-  if (html = e.dataTransfer.getData("text/html")) {
-    let elt = document.createElement("div")
-    elt.innerHTML = html
-    doc = fromDOM(elt)
-  } else if (txt = e.dataTransfer.getData("text/plain")) {
+  if (html = e.dataTransfer.getData("text/html"))
+    doc = fromHTML(html, {document})
+  else if (txt = e.dataTransfer.getData("text/plain"))
     doc = convertFrom(txt, knownSource("markdown") ? "markdown" : "text")
-  }
+
   if (doc) {
     e.preventDefault()
     let insertPos = pm.posAtCoords({left: e.clientX, top: e.clientY})

@@ -12,6 +12,14 @@ export function toDOM(node, options) {
 
 defineTarget("dom", toDOM)
 
+export function toHTML(node, options) {
+  let wrap = options.document.createElement("div")
+  wrap.appendChild(toDOM(node, options))
+  return wrap.innerHTML
+}
+
+defineTarget("html", toHTML)
+
 export function renderNodeToDOM(node, options, offset) {
   let dom = renderNode(node, options, offset)
   if (options.renderInlineFlat && node.type.type == "span") {

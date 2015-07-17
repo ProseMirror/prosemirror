@@ -12,6 +12,14 @@ export function fromDOM(dom, options) {
 
 defineSource("dom", fromDOM)
 
+export function fromHTML(html, options) {
+  let wrap = options.document.createElement("div")
+  wrap.innerHTML = html
+  return fromDOM(wrap, options)
+}
+
+defineSource("html", fromHTML)
+
 const blockElements = {
   address: true, article: true, aside: true, blockquote: true, canvas: true,
   dd: true, div: true, dl: true, fieldset: true, figcaption: true, figure: true,

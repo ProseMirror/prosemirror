@@ -1,16 +1,16 @@
 const from = Object.create(null)
 const to = Object.create(null)
 
-export function convertFrom(value, format) {
+export function convertFrom(value, format, arg) {
   let converter = from[format]
   if (!converter) throw new Error("Source format " + format + " not defined")
-  return converter(value)
+  return converter(value, arg)
 }
 
-export function convertTo(doc, format) {
+export function convertTo(doc, format, arg) {
   let converter = from[format]
   if (!converter) throw new Error("Target format " + format + " not defined")
-  return converter(doc)
+  return converter(doc, arg)
 }
 
 export function knownSource(format) { return !!from[format] }
