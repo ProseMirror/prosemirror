@@ -12,6 +12,7 @@ import {History} from "./history"
 import {eventMixin} from "./event"
 import {toText} from "../convert/to_text"
 import "../convert/from_text"
+import {convertFrom, convertTo} from "../convert/convert"
 import {execCommand} from "./commands"
 import {Map} from "./map"
 import {RangeStore, MarkedRange} from "./range"
@@ -65,6 +66,15 @@ export class ProseMirror {
   }
 
   get tr() { return new Transform(this.doc) }
+
+  setContent(value, format) {
+    if (format) value = convertFrom(value, format, {document})
+    this.setDoc(value)
+  }
+
+  getContent(format) {
+    return format ? convertTo(this.doc, format, {document}) : this.doc
+  }
 
   setDocInner(doc) {
     this.doc = doc

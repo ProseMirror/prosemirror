@@ -8,7 +8,7 @@ export function convertFrom(value, format, arg) {
 }
 
 export function convertTo(doc, format, arg) {
-  let converter = from[format]
+  let converter = to[format]
   if (!converter) throw new Error("Target format " + format + " not defined")
   return converter(doc, arg)
 }
