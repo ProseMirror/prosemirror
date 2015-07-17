@@ -4,7 +4,7 @@ import {resolvePath} from "../edit/selection"
 import {Debounced} from "../util/debounce"
 
 import {Tooltip} from "./tooltip"
-import {openMenu, forceFontLoad} from "./tooltip-menu"
+import {openMenu, forceFontLoad} from "./menu"
 import {MenuDefinition} from "./define"
 
 import insertCSS from "insert-css"

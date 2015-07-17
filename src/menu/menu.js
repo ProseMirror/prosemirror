@@ -2,7 +2,7 @@ import {elt} from "../dom"
 import {Dialog} from "./menuitem"
 import insertCSS from "insert-css"
 
-const prefix = "ProseMirror-tooltip-menu"
+const prefix = "ProseMirror-menu"
 
 class Wrapper {
   constructor(node) { this.node = node }
@@ -106,7 +106,7 @@ export function forceFontLoad(pm) {
 
 insertCSS(`
 
-.ProseMirror-tooltip-menu {
+.ProseMirror-menu {
   padding: 0;
   margin: 0 -4px;
   display: block;
@@ -116,14 +116,14 @@ insertCSS(`
   width: fit-content;
 }
 
-.ProseMirror-tooltip-menu li {
+.ProseMirror-menu li {
   display: inline-block;
   padding: 2px 7px;
   margin: 0 2px;
   cursor: pointer;
 }
 
-.ProseMirror-tooltip-menu-active {
+.ProseMirror-menu-active {
   background: #666;
   border-radius: 4px;
 }

@@ -5,7 +5,7 @@ import {Debounced} from "../util/debounce"
 import insertCSS from "insert-css"
 
 import {MenuDefinition} from "./define"
-import {openMenu} from "./tooltip-menu"
+import {openMenu} from "./menu"
 
 import "./icons_css"
 
