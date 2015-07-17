@@ -1,6 +1,6 @@
 import {style} from "../model"
 
-export function toText(doc) {
+export function toMarkdown(doc) {
   let state = new State()
   state.renderNodes(doc.content)
   return state.out

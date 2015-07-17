@@ -2,13 +2,13 @@ import {doc, blockquote, hr2, pre, pre2, h1, h2, p, li, ol, ul, uldash, em, stro
 import {cmpNode, cmpStr} from "./cmp"
 import {defTest} from "./tests"
 
-import {fromText} from "../src/markdown/from_text"
-import {toText} from "../src/markdown/to_text"
+import {fromMarkdown} from "../src/convert/from_markdown"
+import {toMarkdown} from "../src/convert/to_markdown"
 
 function t(name, text, doc) {
   defTest("parse_" + name, () => {
-    cmpNode(fromText(text), doc)
-    cmpStr(toText(doc), text)
+    cmpNode(fromMarkdown(text), doc)
+    cmpStr(toMarkdown(doc), text)
   })
 }
 
