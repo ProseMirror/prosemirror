@@ -4,7 +4,7 @@ import {Debounced} from "../util/debounce"
 
 import {openMenu} from "./tooltip-menu"
 import {items as inlineItems} from "./inlinetooltip"
-import {items as blockItems} from "./menu"
+import {items as blockItems} from "./buttonmenu"
 
 import insertCSS from "insert-css"
 import "./icons_css"

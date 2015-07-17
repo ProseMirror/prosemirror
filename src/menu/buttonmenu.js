@@ -10,9 +10,9 @@ import {MenuDefinition} from "./define"
 import insertCSS from "insert-css"
 import "./icons_css"
 
-const classPrefix = "ProseMirror-menu"
+const classPrefix = "ProseMirror-buttonmenu"
 
-defineOption("menu", false, function(pm, value) {
+defineOption("buttonMenu", false, function(pm, value) {
   if (pm.mod.menu)
     pm.mod.menu.detach()
   if (value)
@@ -101,7 +101,7 @@ class Menu {
 
 insertCSS(`
 
-.ProseMirror-menu-button {
+.ProseMirror-buttonmenu-button {
   display: none;
   position: absolute;
   top: 7px;
@@ -115,18 +115,18 @@ insertCSS(`
   transition: top 0.3s ease-out;
 }
 
-.ProseMirror-focused .ProseMirror-menu-button {
+.ProseMirror-focused .ProseMirror-buttonmenu-button {
   display: block;
 }
 
-.ProseMirror-menu-button div {
+.ProseMirror-buttonmenu-button div {
   height: 3px;
   margin-bottom: 2px;
   border-radius: 4px;
   background: #888;
 }
 
-.ProseMirror-menu-button:hover div {
+.ProseMirror-buttonmenu-button:hover div {
   background: #333;
 }
 

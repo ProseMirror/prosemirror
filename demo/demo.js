@@ -2,7 +2,7 @@ import {ProseMirror} from "../src/edit/main"
 import {Pos, Node, fromDOM, toDOM} from "../src/model"
 import "../src/inputrules/autoinput"
 import "../src/menu/inlinetooltip"
-import "../src/menu/menu"
+import "../src/menu/buttonmenu"
 import "../src/menu/bar"
 import "../src/menu/emptyblockmenu"
 import "../src/collab"
@@ -43,7 +43,7 @@ function makeEditor(where, collab) {
     place: document.querySelector(where),
     autoInput: true,
     inlineTooltip: true,
-    menu: {followCursor: true},
+    buttonMenu: {followCursor: true},
     menuBar: true,
     emptyBlockMenu: true,
     doc: doc,
