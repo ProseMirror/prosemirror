@@ -29,16 +29,16 @@ class MenuBar {
     this.menu = new Menu(pm, this.menuElt, () => this.resetMenu())
     pm.wrapper.insertBefore(this.wrapper, pm.wrapper.firstChild)
 
-    this.debounced = new Debounced(pm, 100, () => this.show())
+    this.debounced = new Debounced(pm, 100, () => this.update())
     pm.on("selectionChange", this.updateFunc = () => this.debounced.trigger())
     pm.on("change", this.updateFunc)
     pm.on("activeStyleChange", this.updateFunc)
 
     this.menuItems = config && config.items || inlineItems.getItems().concat(blockItems.getItems())
-    this.show()
+    this.update()
 
+    this.floating = false
     if (config && config.float) {
-      this.floating = false
       this.updateFloat()
       let onScroll = () => {
         if (!document.body.contains(this.pm.wrapper))
@@ -59,14 +59,19 @@ class MenuBar {
     this.pm.off("activeStyleChange", this.updateFunc)
   }
 
-  show() { if (!this.menu.active) this.resetMenu() }
-  resetMenu() { this.menu.open(this.menuItems) }
+  update() {
+    if (!this.menu.active) this.resetMenu()
+    if (this.floating) this.scrollCursorIfNeeded()
+  }
+  resetMenu() {
+    this.menu.open(this.menuItems)
+  }
 
   updateFloat() {
     let editorRect = this.pm.wrapper.getBoundingClientRect()
-    if (this.float) {
+    if (this.floating) {
       if (editorRect.top >= 0) {
-        this.float = false
+        this.floating = false
         this.menuElt.style.position = this.menuElt.style.left = this.menuElt.style.width = ""
         this.menuElt.style.display = ""
       } else {
@@ -76,7 +81,7 @@ class MenuBar {
       }
     } else {
       if (editorRect.top < 0) {
-        this.float = true
+        this.floating = true
         let menuRect = this.menuElt.getBoundingClientRect()
         this.menuElt.style.left = menuRect.left + "px"
         this.menuElt.style.width = menuRect.width + "px"
@@ -84,6 +89,20 @@ class MenuBar {
       }
     }
   }
+
+  scrollCursorIfNeeded() {
+    let cursorPos = this.pm.coordsAtPos(this.pm.selection.head)
+    let menuRect = this.menuElt.getBoundingClientRect()
+    if (cursorPos.top < menuRect.bottom && cursorPos.bottom > menuRect.top) {
+      let scrollable = findWrappingScrollable(this.pm.wrapper)
+      if (scrollable) scrollable.scrollTop -= (menuRect.bottom - cursorPos.top)
+    }
+  }
+}
+
+function findWrappingScrollable(node) {
+  for (let cur = node.parentNode; cur; cur = cur.parentNode)
+    if (cur.scrollHeight > cur.clientHeight) return cur
 }
 
 insertCSS(`

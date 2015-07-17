@@ -19,7 +19,7 @@ defineOption("buttonMenu", false, function(pm, value) {
     pm.mod.menu = new ButtonMenu(pm, value)
 })
 
-import {BlockTypeItem, LiftItem, WrapItem, InsertBlockItem, JoinItem, ImageItem} from "./menuitem"
+import {BlockTypeItem, LiftItem, WrapItem, InsertBlockItem, JoinItem} from "./menuitem"
 
 export const items = new MenuDefinition
 
