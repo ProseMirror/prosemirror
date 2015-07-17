@@ -104,7 +104,10 @@ export class InlineStyleItem extends Item {
   }
   active(pm) {
     let sel = pm.selection
-    return rangeHasStyle(pm.doc, sel.from, sel.to, this.style.type)
+    if (sel.empty)
+      return style.containsType(pm.activeStyles(), this.style.type)
+    else
+      return rangeHasStyle(pm.doc, sel.from, sel.to, this.style.type)
   }
   apply(pm) {
     let sel = pm.selection

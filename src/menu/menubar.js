@@ -32,6 +32,7 @@ class MenuBar {
     this.debounced = new Debounced(pm, 100, () => this.show())
     pm.on("selectionChange", this.updateFunc = () => this.debounced.trigger())
     pm.on("change", this.updateFunc)
+    pm.on("activeStyleChange", this.updateFunc)
 
     this.menuItems = config && config.items || inlineItems.getItems().concat(blockItems.getItems())
     this.show()
@@ -43,6 +44,7 @@ class MenuBar {
 
     this.pm.off("selectionChange", this.updateFunc)
     this.pm.off("change", this.updateFunc)
+    this.pm.off("activeStyleChange", this.updateFunc)
   }
 
   show() { if (!this.menu.depth) this.resetMenu() }
