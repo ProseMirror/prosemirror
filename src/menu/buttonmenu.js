@@ -38,10 +38,7 @@ items.addItem(new WrapItem("list-ol", "Wrap in ordered list", "ordered_list"), {
 items.addItem(new WrapItem("list-ul", "Wrap in bullet list", "bullet_list"), {submenu: "wrap"})
 items.addItem(new WrapItem("quote-left", "Wrap in blockquote", "blockquote"), {submenu: "wrap"})
 
-items.addSub("insert", {icon: "plus", title: "Insert", collapsible: true})
-items.addItem(new InsertBlockItem("minus", "Horizontal rule", "horizontal_rule"), {submenu: "insert"})
-items.addItem(new ImageItem("image"), {submenu: "insert"})
-
+items.addItem(new InsertBlockItem("minus", "Horizontal rule", "horizontal_rule"))
 items.addItem(new JoinItem("arrow-up"))
 
 class ButtonMenu {
@@ -79,7 +76,7 @@ class ButtonMenu {
   }
 
   updated() {
-    if (!this.menu.depth) {
+    if (!this.menu.active) {
       this.tooltip.close()
       this.debounced.trigger()
     }

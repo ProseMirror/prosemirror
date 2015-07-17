@@ -46,7 +46,6 @@ export class MenuDefinition {
       target.push(item)
     })
 
-    // FIXME implement collapsing
     return items
   }
 }

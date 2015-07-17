@@ -60,7 +60,7 @@ class InlineTooltip {
   }
 
   update() {
-    if (this.menu.depth) return
+    if (this.menu.active) return
 
     let sel = this.pm.selection, link
     if (!this.pm.hasFocus())

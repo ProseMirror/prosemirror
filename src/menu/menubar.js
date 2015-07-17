@@ -47,7 +47,7 @@ class MenuBar {
     this.pm.off("activeStyleChange", this.updateFunc)
   }
 
-  show() { if (!this.menu.depth) this.resetMenu() }
+  show() { if (!this.menu.active) this.resetMenu() }
   resetMenu() { this.menu.open(this.menuItems) }
 }
 

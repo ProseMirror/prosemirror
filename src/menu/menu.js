@@ -1,5 +1,5 @@
 import {elt} from "../dom"
-import {Dialog} from "./menuitem"
+import {Dialog, Item} from "./menuitem"
 import insertCSS from "insert-css"
 
 const prefix = "ProseMirror-menu"
@@ -9,12 +9,16 @@ export class Menu {
     this.pm = pm
     this.place = place
     this.resetFunc = resetFunc || (() => {})
-    this.depth = 0
+    this.stack = []
   }
+
   reset() {
-    this.depth = 0
+    this.stack.length = 0
     this.resetFunc()
   }
+
+  get active() { return this.stack.length > 1 }
+
   show(dom, id, info) {
     if (this.place.nodeType) {
       this.place.textContent = ""
@@ -25,6 +29,7 @@ export class Menu {
   }
 
   open(items, info) {
+    this.stack.length = 0
     this.showItems(items.filter(i => i.select(this.pm)), info)
   }
   showItems(items, info) {
@@ -33,6 +38,7 @@ export class Menu {
       return
     }
 
+    this.stack.push(items)
     let dom = elt("ul", {class: prefix})
     items.forEach(item => {
       let iconClass = "ProseMirror-icon ProseMirror-icon-" + item.icon
@@ -41,7 +47,7 @@ export class Menu {
                                    elt("span", {class: iconClass})))
       li.addEventListener("mousedown", e => {
         e.preventDefault(); e.stopPropagation()
-        this.chainResult(item.apply(this.pm))
+        this.enter(item.apply(this.pm))
       })
     })
 
@@ -49,9 +55,9 @@ export class Menu {
     this.show(dom, id, info)
   }
 
-  chainResult(result) {
-    if (Array.isArray(result)) {
-      this.depth++
+  enter(result) {
+    if (Array.isArray(result) && result.length) {
+      if (this.stack.length) result = [new BackItem(this)].concat(result)
       this.showItems(result)
     } else if (result instanceof Dialog) {
       this.showDialog(result)
@@ -61,13 +67,12 @@ export class Menu {
   }
 
   showDialog(dialog) {
+    this.stack.push(dialog)
     let done = false
-    this.depth++
 
     let finish = () => {
       if (!done) {
         done = true
-        this.depth--
         this.pm.focus()
       }
     }
@@ -75,7 +80,7 @@ export class Menu {
     let submit = () => {
       let result = dialog.apply(form, this.pm)
       finish()
-      this.chainResult(result)
+      this.enter(result)
     }
     let form = dialog.buildForm(this.pm, submit)
     form.addEventListener("submit", e => {
@@ -85,7 +90,8 @@ export class Menu {
     form.addEventListener("keydown", e => {
       if (e.keyCode == 27) {
         finish()
-        this.reset()
+        this.stack.pop()
+        this.enter(this.stack.pop())
       } else if (e.keyCode == 13 && !(e.ctrlKey || e.metaKey || e.shiftKey)) {
         e.preventDefault()
         submit()
@@ -98,6 +104,17 @@ export class Menu {
   static fromTooltip(pm, tooltip, reset) {
     return new Menu(pm, (dom, id, pos) => tooltip.show(id, dom, pos),
                     reset || (() => tooltip.close()))
+  }
+}
+
+export class BackItem extends Item {
+  constructor(menu) {
+    super("laquo", "Back")
+    this.menu = menu
+  }
+  apply() {
+    this.menu.stack.pop()
+    return this.menu.stack.pop()
   }
 }
 

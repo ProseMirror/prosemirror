@@ -70,7 +70,8 @@ export class InsertBlockItem extends Item {
   }
   select(pm) {
     let sel = pm.selection
-    return sel.empty && pm.doc.path(sel.head.path).type.type == nodeTypes[this.type].type
+    return Pos.samePath(sel.head.path, sel.anchor.path) &&
+      pm.doc.path(sel.head.path).type.type == nodeTypes[this.type].type
   }
   apply(pm) {
     let sel = pm.selection, tr = pm.tr, off = 0

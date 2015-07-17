@@ -33,6 +33,7 @@ insertCSS(`
 .ProseMirror-icon-4:before { content: "4" }
 .ProseMirror-icon-5:before { content: "5" }
 .ProseMirror-icon-6:before { content: "6" }
+.ProseMirror-icon-laquo:before { content: "«" }
 
 /* Inlined font with characters from Font Awesome http://fontawesome.github.io/ */
 
