@@ -111,12 +111,19 @@ export class InlineStyleItem extends Item {
   }
   apply(pm) {
     let sel = pm.selection
-    if (this.active(pm))
-      pm.apply(pm.tr.removeStyle(sel.from, sel.to, this.style.type))
-    else if (this.dialog)
+    if (this.active(pm)) {
+      if (sel.empty)
+        pm.setInlineStyle(this.style, false)
+      else
+        pm.apply(pm.tr.removeStyle(sel.from, sel.to, this.style.type))
+    } else if (this.dialog) {
       return this.dialog
-    else
-      pm.apply(pm.tr.addStyle(sel.from, sel.to, this.style))
+    } else {
+      if (sel.empty)
+        pm.setInlineStyle(this.style, true)
+      else
+        pm.apply(pm.tr.addStyle(sel.from, sel.to, this.style))
+    }
   }
 }
 
