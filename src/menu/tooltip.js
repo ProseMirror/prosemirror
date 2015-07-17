@@ -16,7 +16,6 @@ export class Tooltip {
         this.dom.style.display = this.pointer.style.display = ""
     })
 
-    this.active = 0
     this.open = false
     this.lastLeft = this.lastRight = null
   }
@@ -103,7 +102,6 @@ export class Tooltip {
   close() {
     if (this.open) {
       this.open = false
-      this.active = 0
       if (this.pm.mod.tooltip == this) this.pm.mod.tooltip = null
       this.dom.style.opacity = this.pointer.style.opacity = 0
     }

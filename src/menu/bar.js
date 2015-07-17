@@ -2,7 +2,7 @@ import {defineOption} from "../edit"
 import {elt} from "../dom"
 import {Debounced} from "../util/debounce"
 
-import {openMenu} from "./menu"
+import {Menu} from "./menu"
 import {items as inlineItems} from "./inlinetooltip"
 import {items as blockItems} from "./buttonmenu"
 
@@ -21,11 +21,12 @@ const prefix = "ProseMirror-menubar"
 class MenuBar {
   constructor(pm, config) {
     this.pm = pm
-    this.menu = elt("div", {class: prefix + "-inner"})
+    this.menuElt = elt("div", {class: prefix + "-inner"})
     this.wrapper = elt("div", {class: prefix},
                        elt("ul", {class: "ProseMirror-menu", style: "visibility: hidden"},
                            elt("li", null, elt("span", {class: "ProseMirror-icon ProseMirror-icon-bold"}))),
-                       this.menu)
+                       this.menuElt)
+    this.menu = new Menu(pm, this.menuElt, () => this.resetMenu())
     pm.wrapper.insertBefore(this.wrapper, pm.wrapper.firstChild)
 
     this.debounced = new Debounced(pm, 100, () => this.show())
@@ -44,15 +45,15 @@ class MenuBar {
     this.pm.off("change", this.updateFunc)
   }
 
-  show() { // FIXME suppress when the menu is active
-    openMenu(this.menu, this.menuItems, this.pm)
-  }
+  show() { if (!this.menu.depth) this.resetMenu() }
+  resetMenu() { this.menu.open(this.menuItems) }
 }
 
 insertCSS(`
 .ProseMirror-menubar {
   padding: 1px 4px;
   position: relative;
+  margin-bottom: 2px;
 }
 
 .ProseMirror-menubar-inner {

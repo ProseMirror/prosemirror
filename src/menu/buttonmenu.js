@@ -4,7 +4,7 @@ import {resolvePath} from "../edit/selection"
 import {Debounced} from "../util/debounce"
 
 import {Tooltip} from "./tooltip"
-import {openMenu, forceFontLoad} from "./menu"
+import {Menu, forceFontLoad} from "./menu"
 import {MenuDefinition} from "./define"
 
 import insertCSS from "insert-css"
@@ -16,7 +16,7 @@ defineOption("buttonMenu", false, function(pm, value) {
   if (pm.mod.menu)
     pm.mod.menu.detach()
   if (value)
-    pm.mod.menu = new Menu(pm, value)
+    pm.mod.menu = new ButtonMenu(pm, value)
 })
 
 import {BlockTypeItem, LiftItem, WrapItem, InsertBlockItem, JoinItem, ImageItem} from "./menuitem"
@@ -44,11 +44,12 @@ items.addItem(new ImageItem("image"), {submenu: "insert"})
 
 items.addItem(new JoinItem("arrow-up"))
 
-class Menu {
+class ButtonMenu {
   constructor(pm, config) {
     this.pm = pm
 
     this.tooltip = new Tooltip(pm, "left")
+    this.menu = Menu.fromTooltip(pm, this.tooltip)
     this.hamburger = pm.wrapper.appendChild(elt("div", {class: classPrefix + "-button"},
                                                 elt("div"), elt("div"), elt("div")))
     this.hamburger.addEventListener("mousedown", e => { e.preventDefault(); e.stopPropagation(); this.openMenu() })
@@ -78,7 +79,7 @@ class Menu {
   }
 
   updated() {
-    if (!this.tooltip.active) {
+    if (!this.menu.depth) {
       this.tooltip.close()
       this.debounced.trigger()
     }
@@ -87,8 +88,7 @@ class Menu {
   openMenu() {
     let rect = this.hamburger.getBoundingClientRect()
     let pos = {left: rect.left, top: (rect.top + rect.bottom) / 2}
-    openMenu(this.tooltip, this.menuItems.filter(i => i.select(this.pm)),
-             this.pm, pos)
+    this.menu.open(this.menuItems.filter(i => i.select(this.pm)), pos)
   }
 
   alignButton() {

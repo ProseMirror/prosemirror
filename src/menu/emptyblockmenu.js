@@ -5,7 +5,7 @@ import {Debounced} from "../util/debounce"
 import insertCSS from "insert-css"
 
 import {MenuDefinition} from "./define"
-import {openMenu} from "./menu"
+import {Menu} from "./menu"
 
 import "./icons_css"
 
@@ -47,6 +47,7 @@ class EmptyBlockMenu {
 
     this.menuItems = config && config.items || items.getItems()
     this.node = pm.wrapper.appendChild(elt("div", {class: classPrefix}))
+    this.menu = new Menu(this.pm, this.node)
     this.shown = false
   }
 
@@ -75,11 +76,11 @@ class EmptyBlockMenu {
 
   show(path) {
     let targetRect = resolvePath(this.pm.content, path).getBoundingClientRect()
-    let outerRect = this.pm.content.getBoundingClientRect()
+    let outerRect = this.pm.wrapper.getBoundingClientRect()
     let node = this.node
     node.style.top = (targetRect.top - outerRect.top) + "px"
     node.style.left = (targetRect.left - outerRect.left) + "px"
-    openMenu(node, this.menuItems, this.pm)
+    this.menu.open(this.menuItems)
     node.style.display = "block"
     this.shown = true
   }

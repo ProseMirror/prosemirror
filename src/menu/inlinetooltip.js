@@ -5,7 +5,7 @@ import {Debounced} from "../util/debounce"
 
 import {Tooltip} from "./tooltip"
 import {InlineStyleItem, ImageItem, LinkDialog} from "./menuitem"
-import {openMenu, forceFontLoad} from "./menu"
+import {Menu, forceFontLoad} from "./menu"
 import {MenuDefinition} from "./define"
 
 import insertCSS from "insert-css"
@@ -39,7 +39,7 @@ class InlineTooltip {
     pm.on("blur", this.updateFunc)
 
     this.tooltip = new Tooltip(pm, "above")
-    this.tooltip.reset = this.updateFunc
+    this.menu = Menu.fromTooltip(pm, this.tooltip, this.updateFunc)
 
     forceFontLoad(pm)
   }
@@ -60,13 +60,13 @@ class InlineTooltip {
   }
 
   update() {
-    if (this.tooltip.active) return
+    if (this.menu.depth) return
 
     let sel = this.pm.selection, link
     if (!this.pm.hasFocus())
       this.tooltip.close()
     else if (!sel.empty && !this.inPlainText(sel))
-      openMenu(this.tooltip, this.items, this.pm, topCenterOfSelection())
+      this.menu.open(this.items, topCenterOfSelection())
     else if (this.showLinks && (link = this.linkUnderCursor()))
       this.showLink(link, this.pm.coordsAtPos(sel.head))
     else

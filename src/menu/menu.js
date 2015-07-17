@@ -4,97 +4,107 @@ import insertCSS from "insert-css"
 
 const prefix = "ProseMirror-menu"
 
-class Wrapper {
-  constructor(node) { this.node = node }
-  close() { this.node.textContent = "" }
-  show(_id, dom) { this.close(); this.node.appendChild(dom) }
-}
-
-export function openMenu(container, items, pm, where) {
-  if (container.nodeType) container = new Wrapper(container)
-  showItems(container, items.filter(i => i.select(pm)), pm, where)
-}
-
-function showItems(container, items, pm, where) {
-  if (items.length == 0) {
-    container.close()
-    return
+export class Menu {
+  constructor(pm, place, resetFunc) {
+    this.pm = pm
+    this.place = place
+    this.resetFunc = resetFunc || (() => {})
+    this.depth = 0
   }
-
-  let dom = elt("ul", {class: prefix})
-  items.forEach(item => {
-    let iconClass = "ProseMirror-icon ProseMirror-icon-" + item.icon
-    let maybeActive = item.active(pm) ? prefix + "-active" : null
-    let li = dom.appendChild(elt("li", {title: item.title, class: maybeActive},
-                                 elt("span", {class: iconClass})))
-    li.addEventListener("mousedown", e => {
-      e.preventDefault(); e.stopPropagation()
-      itemClicked(container, item, pm)
-    })
-  })
-
-  let id = "menu-" + items.map(i => i.icon).join("-")
-  container.show(id, dom, where)
-}
-
-function chainResult(container, result, pm) {
-  if (Array.isArray(result)) {
-    container.active++
-    showItems(container, result, pm)
-  } else if (result instanceof Dialog) {
-    showDialog(container, result, pm)
-  } else if (container.reset) {
-    container.reset()
-  } else {
-    container.close()
+  reset() {
+    this.depth = 0
+    this.resetFunc()
   }
-}
-
-function itemClicked(container, item, pm) {
-  chainResult(container, item.apply(pm), pm)
-}
-
-function showDialog(container, dialog, pm) {
-  let done = false
-  container.active++
-
-  function finish() {
-    if (!done) {
-      done = true
-      container.active--
-      pm.focus()
+  show(dom, id, info) {
+    if (this.place.nodeType) {
+      this.place.textContent = ""
+      this.place.appendChild(dom)
+    } else {
+      this.place(dom, id, info)
     }
   }
 
-  function submit() {
-    let result = dialog.apply(form, pm)
-    finish()
-    chainResult(container, result, pm)
+  open(items, info) {
+    this.showItems(items.filter(i => i.select(this.pm)), info)
   }
-  let form = dialog.buildForm(pm, submit)
-  form.addEventListener("submit", e => {
-    e.preventDefault()
-    submit()
-  })
-  form.addEventListener("keydown", e => {
-    if (e.keyCode == 27) {
+  showItems(items, info) {
+    if (items.length == 0) {
+      this.reset()
+      return
+    }
+
+    let dom = elt("ul", {class: prefix})
+    items.forEach(item => {
+      let iconClass = "ProseMirror-icon ProseMirror-icon-" + item.icon
+      let maybeActive = item.active(this.pm) ? prefix + "-active" : null
+      let li = dom.appendChild(elt("li", {title: item.title, class: maybeActive},
+                                   elt("span", {class: iconClass})))
+      li.addEventListener("mousedown", e => {
+        e.preventDefault(); e.stopPropagation()
+        this.chainResult(item.apply(this.pm))
+      })
+    })
+
+    let id = "menu-" + items.map(i => i.icon).join("-")
+    this.show(dom, id, info)
+  }
+
+  chainResult(result) {
+    if (Array.isArray(result)) {
+      this.depth++
+      this.showItems(result)
+    } else if (result instanceof Dialog) {
+      this.showDialog(result)
+    } else {
+      this.reset()
+    }
+  }
+
+  showDialog(dialog) {
+    let done = false
+    this.depth++
+
+    let finish = () => {
+      if (!done) {
+        done = true
+        this.depth--
+        this.pm.focus()
+      }
+    }
+
+    let submit = () => {
+      let result = dialog.apply(form, this.pm)
       finish()
-      if (container.reset) container.reset()
-      else container.close()
-    } else if (e.keyCode == 13 && !(e.ctrlKey || e.metaKey || e.shiftKey)) {
+      this.chainResult(result)
+    }
+    let form = dialog.buildForm(this.pm, submit)
+    form.addEventListener("submit", e => {
       e.preventDefault()
       submit()
-    }
-  })
-  container.show(dialog.id, form)
-  dialog.focus(form)
+    })
+    form.addEventListener("keydown", e => {
+      if (e.keyCode == 27) {
+        finish()
+        this.reset()
+      } else if (e.keyCode == 13 && !(e.ctrlKey || e.metaKey || e.shiftKey)) {
+        e.preventDefault()
+        submit()
+      }
+    })
+    this.show(form, dialog.id)
+    dialog.focus(form)
+  }
+
+  static fromTooltip(pm, tooltip, reset) {
+    return new Menu(pm, (dom, id, pos) => tooltip.show(id, dom, pos),
+                    reset || (() => tooltip.close()))
+  }
 }
 
 // Awkward hack to force Chrome to initialize the font and not return
 // incorrect size information the first time it is used.
 
 let forced = false
-
 export function forceFontLoad(pm) {
   if (forced) return
   forced = true
