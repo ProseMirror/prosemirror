@@ -40,13 +40,13 @@ class MenuBar {
     this.floating = false
     if (config && config.float) {
       this.updateFloat()
-      let onScroll = () => {
+      this.scrollFunc = () => {
         if (!document.body.contains(this.pm.wrapper))
-          window.removeEventListener("scroll", onScroll)
+          window.removeEventListener("scroll", this.scrollFunc)
         else
           this.updateFloat()
       }
-      window.addEventListener("scroll", onScroll)
+      window.addEventListener("scroll", this.scrollFunc)
     }
   }
 
@@ -57,6 +57,8 @@ class MenuBar {
     this.pm.off("selectionChange", this.updateFunc)
     this.pm.off("change", this.updateFunc)
     this.pm.off("activeStyleChange", this.updateFunc)
+    if (this.scrollFunc)
+      window.removeEventListener("scroll", this.scrollFunc)
   }
 
   update() {
