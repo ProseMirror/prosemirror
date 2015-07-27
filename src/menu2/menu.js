@@ -78,7 +78,7 @@ export class TooltipDisplay {
       e.preventDefault(); e.stopPropagation()
       back()
     })
-    this.show(elt("div", null, dom, button), info)
+    this.show(elt("div", {class: "ProseMirror-tooltip-back-wrapper"}, dom, button), info)
   }
 }
 
@@ -97,11 +97,16 @@ insertCSS(`
   width: fit-content;
 }
 
+.ProseMirror-tooltip-back-wrapper {
+  padding-left: 12px;
+}
 .ProseMirror-tooltip-back {
-  line-height: .5;
+  position: absolute;
+  top: 5px; left: 5px;
+  cursor: pointer;
 }
 .ProseMirror-tooltip-back:after {
-  content: "⌄";
+  content: "«";
 }
 
 `)
