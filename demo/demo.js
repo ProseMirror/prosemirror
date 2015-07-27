@@ -3,10 +3,7 @@ import {Pos, Node} from "../src/model"
 import {fromDOM} from "../src/convert/from_dom"
 
 import "../src/inputrules/autoinput"
-import "../src/menu/inlinetooltip"
-import "../src/menu/buttonmenu"
-import "../src/menu/menubar"
-import "../src/menu/emptyblockmenu"
+import "../src/menu2/inlinemenu"
 import "../src/collab"
 
 let te = document.querySelector("#content")
@@ -44,10 +41,7 @@ function makeEditor(where, collab) {
   return new ProseMirror({
     place: document.querySelector(where),
     autoInput: true,
-    inlineTooltip: true,
-    buttonMenu: {followCursor: true},
-    menuBar: {float: true},
-    emptyBlockMenu: true,
+    inlineMenu: true,
     doc: doc,
     collab: collab
   })
