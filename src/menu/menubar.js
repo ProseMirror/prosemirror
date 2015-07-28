@@ -174,6 +174,11 @@ insertCSS(`
   padding: 0 4px;
 }
 
+.ProseMirror-menubar .ProseMirror-blocktype {
+  border: 1px solid #ccc;
+  min-width: 4em;
+}
+
 .ProseMirror-menubar-sliding {
   -webkit-transition: left 0.2s ease-out;
   -moz-transition: left 0.2s ease-out;

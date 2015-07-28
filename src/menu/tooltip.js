@@ -118,6 +118,7 @@ insertCSS(`
   padding: 3px 7px;
   margin: 0;
   background: #444;
+  border-color: #777;
   color: white;
 
   z-index: 5;

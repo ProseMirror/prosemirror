@@ -235,12 +235,67 @@ class HistorySeparator extends SeparatorItem {
   select(pm) { return pm.history.canUndo() || pm.history.canRedo() }
 }
 
+const blockTypes = [
+  {name: "Normal", node: new Node("paragraph")},
+  {name: "Code", node: new Node("code_block")},
+]
+for (let i = 1; i <= 6; i++)
+  blockTypes.push({name: "Head " + i, node: new Node("heading", {level: i})})
+function getBlockType(block) {
+  for (let i = 0; i < blockTypes.length; i++)
+    if (blockTypes[i].node.sameMarkup(block)) return blockTypes[i]
+}
+
+class BlockTypeItem extends MenuItem {
+  render(menu) {
+    let sel = menu.pm.selection, type
+    if (Pos.samePath(sel.head.path, sel.anchor.path)) type = getBlockType(menu.pm.doc.path(sel.head.path))
+    let dom = elt("div", {class: "ProseMirror-blocktype", title: "Paragraph type"},
+                  type ? type.name : "Type...")
+    dom.addEventListener("mousedown", e => {
+      e.preventDefault(); e.stopPropagation()
+      showBlockTypeMenu(menu.pm, dom)
+    })
+    return dom
+  }
+}
+
+function showBlockTypeMenu(pm, dom) {
+  let menu = elt("div", {class: "ProseMirror-blocktype-menu"},
+                 blockTypes.map(t => {
+                   let dom = elt("div", null, t.name)
+                   dom.addEventListener("mousedown", e => {
+                     e.preventDefault()
+                     let sel = pm.selection
+                     pm.apply(pm.tr.setBlockType(sel.from, sel.to, t.node))
+                     finish()
+                   })
+                   return dom
+                 }))
+  let pos = dom.getBoundingClientRect(), box = pm.wrapper.getBoundingClientRect()
+  menu.style.left = (pos.left - box.left - 2) + "px"
+  menu.style.top = (pos.top - box.top - 2) + "px"
+
+  let done = false
+  function finish() {
+    if (done) return
+    done = true
+    document.body.removeEventListener("mousedown", finish)
+    document.body.removeEventListener("keydown", finish)
+    pm.wrapper.removeChild(menu)
+  }
+  document.body.addEventListener("mousedown", finish)
+  document.body.addEventListener("keydown", finish)
+  pm.wrapper.appendChild(menu)
+}
+
 registerItem("inline", new InlineStyleItem("strong", "Strong text", style.strong))
 registerItem("inline", new InlineStyleItem("em", "Emphasized text", style.em))
 registerItem("inline", new InlineStyleItem("link", "Hyperlink", "link", linkDialog))
 registerItem("inline", new InlineStyleItem("code", "Code font", style.code))
 registerItem("inline", new ImageItem("image"))
 
+registerItem("block", new BlockTypeItem)
 registerItem("block", new LiftItem)
 registerItem("block", new WrapItem("list-ol", "Wrap in ordered list", "ordered_list"))
 registerItem("block", new WrapItem("list-ul", "Wrap in bullet list", "bullet_list"))
@@ -292,6 +347,40 @@ insertCSS(`
   opacity: 0.5;
   padding: 0 4px;
   vertical-align: middle;
+}
+
+.ProseMirror-blocktype, .ProseMirror-blocktype-menu {
+  border: 1px solid #777;
+  border-radius: 3px;
+  font-size: 90%;
+}
+
+.ProseMirror-blocktype {
+  padding: 1px 2px 1px 4px;
+  display: inline-block;
+  vertical-align: middle;
+  cursor: pointer;
+  margin: 0 4px;
+}
+
+.ProseMirror-blocktype:after {
+  content: " ▿";
+  vertical-align: top;
+}
+
+.ProseMirror-blocktype-menu {
+  position: absolute;
+  background: #444;
+  color: white;
+  padding: 2px 2px;
+  z-index: 5;
+}
+.ProseMirror-blocktype-menu div {
+  cursor: pointer;
+  padding: 0 18px 0 2px;
+}
+.ProseMirror-blocktype-menu div:hover {
+  background: #777;
 }
 
 `)
