@@ -19,10 +19,10 @@ export class Menu {
   }
 
   enter(content, displayInfo) {
-    let selected = content.map(i => i.select(this.pm))
+    let selected = content.filter(i => i.select(this.pm))
     if (!selected.length) return this.display.clear()
 
-    this.stack.push(content)
+    this.stack.push(selected)
     this.draw(displayInfo)
   }
 

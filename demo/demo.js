@@ -4,6 +4,7 @@ import {fromDOM} from "../src/convert/from_dom"
 
 import "../src/inputrules/autoinput"
 import "../src/menu2/inlinemenu"
+import "../src/menu2/menubar"
 import "../src/collab"
 
 let te = document.querySelector("#content")
@@ -42,6 +43,7 @@ function makeEditor(where, collab) {
     place: document.querySelector(where),
     autoInput: true,
     inlineMenu: true,
+    menuBar: {float: true},
     doc: doc,
     collab: collab
   })

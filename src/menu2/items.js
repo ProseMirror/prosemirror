@@ -243,6 +243,11 @@ export function forceFontLoad(pm) {
   window.setTimeout(() => pm.wrapper.removeChild(node), 20)
 }
 
+class SeparatorItem extends MenuItem {
+  render() { return elt("div", {class: "ProseMirror-menuseparator"}) }
+}
+export const separatorItem = new SeparatorItem
+
 insertCSS(`
 
 .ProseMirror-menuicon {
@@ -259,6 +264,14 @@ insertCSS(`
 .ProseMirror-menuicon-active {
   background: #666;
   border-radius: 4px;
+}
+
+.ProseMirror-menuseparator {
+  display: inline-block;
+}
+.ProseMirror-menuseparator:after {
+  content: "︙";
+  opacity: 0.7;
 }
 
 `)
