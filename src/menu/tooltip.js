@@ -115,9 +115,9 @@ insertCSS(`
   opacity: 0;
 
   border-radius: 5px;
-  padding: 5px 7px;
+  padding: 3px 7px;
   margin: 0;
-  background: #333;
+  background: #444;
   color: white;
 
   z-index: 5;
@@ -140,30 +140,30 @@ insertCSS(`
 .ProseMirror-tooltip-pointer-above {
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
-  border-top: 6px solid #333;
+  border-top: 6px solid #444;
 }
 
 .ProseMirror-tooltip-pointer-below {
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
-  border-bottom: 6px solid #333;
+  border-bottom: 6px solid #444;
 }
 
 .ProseMirror-tooltip-pointer-right {
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
-  border-right: 6px solid #333;
+  border-right: 6px solid #444;
 }
 
 .ProseMirror-tooltip-pointer-left {
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
-  border-left: 6px solid #333;
+  border-left: 6px solid #444;
 }
 
 .ProseMirror-tooltip input[type="text"],
 .ProseMirror-tooltip textarea {
-  background: #555;
+  background: #666;
   color: white;
   border: none;
   outline: none;

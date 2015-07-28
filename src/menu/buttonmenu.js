@@ -25,13 +25,18 @@ class ButtonMenu {
     this.menu = new Menu(pm, new TooltipDisplay(this.tooltip))
     this.hamburger = pm.wrapper.appendChild(elt("div", {class: classPrefix + "-button"},
                                                 elt("div"), elt("div"), elt("div")))
-    this.hamburger.addEventListener("mousedown", e => { e.preventDefault(); e.stopPropagation(); this.openMenu() })
+    this.hamburger.addEventListener("mousedown", e => {
+      e.preventDefault(); e.stopPropagation()
+      if (this.tooltip.isOpen) this.tooltip.close()
+      else this.openMenu()
+    })
 
     this.debounced = new Debounced(pm, 100, () => this.alignButton())
     pm.on("selectionChange", this.updateFunc = () => this.updated())
     pm.on("change", this.updateFunc)
 
-    this.menuItems = config && config.items || [...getItems("inline"), separatorItem, ...getItems("block")]
+    this.blockItems = getItems("block")
+    this.allItems = [...getItems("inline"), separatorItem, ...this.blockItems]
     this.followCursor = config && config.followCursor
 
     this.pm.content.addEventListener("keydown", this.closeFunc = () => this.tooltip.close())
@@ -61,7 +66,8 @@ class ButtonMenu {
   openMenu() {
     let rect = this.hamburger.getBoundingClientRect()
     let pos = {left: rect.left, top: (rect.top + rect.bottom) / 2}
-    this.menu.show(this.menuItems, pos)
+    let showInline = this.pm.selection.empty || !this.pm.getOption("inlineMenu")
+    this.menu.show(showInline ? this.allItems : this.blockItems, pos)
   }
 
   alignButton() {

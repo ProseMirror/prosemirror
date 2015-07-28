@@ -269,7 +269,7 @@ insertCSS(`
 
 .ProseMirror-menuicon {
   display: inline-block;
-  padding: 2px 4px;
+  padding: 1px 4px;
   margin: 0 2px;
   cursor: pointer;
   text-rendering: auto;
