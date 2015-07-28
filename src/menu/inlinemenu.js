@@ -9,14 +9,14 @@ import {Menu, TooltipDisplay} from "./menu"
 
 import insertCSS from "insert-css"
 
-const classPrefix = "ProseMirror-inlinetooltip"
+const classPrefix = "ProseMirror-inlinemenu"
 
 defineOption("inlineMenu", false, function(pm, value) {
   if (pm.mod.inlineMenu) pm.mod.inlineMenu.detach()
-  pm.mod.inlineTooltip = value ? new InlineTooltip(pm, value) : null
+  pm.mod.inlineMenu = value ? new InlineMenu(pm, value) : null
 })
 
-class InlineTooltip {
+class InlineMenu {
   constructor(pm, config) {
     this.pm = pm
     this.items = (config && config.items) || getItems("inline")
@@ -34,6 +34,7 @@ class InlineTooltip {
   }
 
   detach() {
+    console.log("detaching")
     this.debounced.clear()
     this.tooltip.detach()
 
@@ -90,13 +91,13 @@ function topCenterOfSelection() {
 
 insertCSS(`
 
-.ProseMirror-inlinetooltip-linktext a {
+.ProseMirror-inlinemenu-linktext a {
   color: white;
   text-decoration: none;
   padding: 0 5px;
 }
 
-.ProseMirror-inlinetooltip-linktext a:hover {
+.ProseMirror-inlinemenu-linktext a:hover {
   text-decoration: underline;
 }
 

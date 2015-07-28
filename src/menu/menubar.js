@@ -142,7 +142,9 @@ insertCSS(`
 .ProseMirror-menubar {
   padding: 1px 4px;
   position: relative;
-  margin-bottom: 2px;
+  margin-bottom: 3px;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
 }
 
 .ProseMirror-menubar-inner {
@@ -155,6 +157,8 @@ insertCSS(`
   -moz-box-sizing: border-box;
   box-sizing: border-box;
   overflow: hidden;
+  border-top-left-radius: inherit;
+  border-top-right-radius: inherit;
 }
 
 .ProseMirror-menubar .ProseMirror-menuicon-active {

@@ -34,6 +34,7 @@ class ButtonMenu {
     this.debounced = new Debounced(pm, 100, () => this.alignButton())
     pm.on("selectionChange", this.updateFunc = () => this.updated())
     pm.on("change", this.updateFunc)
+    pm.on("blur", this.updateFunc)
 
     this.blockItems = getItems("block")
     this.allItems = [...getItems("inline"), separatorItem, ...this.blockItems]
@@ -52,6 +53,7 @@ class ButtonMenu {
 
     this.pm.off("selectionChange", this.updateFunc)
     this.pm.off("change", this.updateFunc)
+    this.pm.off("blur", this.updateFunc)
     this.pm.content.removeEventListener("keydown", this.closeFunc)
     this.pm.content.removeEventListener("mousedown", this.closeFunc)
   }
