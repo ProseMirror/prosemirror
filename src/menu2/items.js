@@ -14,7 +14,7 @@ export function getItems(tag) {
   return tags[tag] || []
 }
 
-class IconItem extends MenuItem {
+export class IconItem extends MenuItem {
   constructor(icon, title) {
     super()
     this.icon = icon
@@ -216,6 +216,25 @@ export class ImageDialog extends DialogItem {
 }
 const imageDialog = new ImageDialog
 
+class SeparatorItem extends MenuItem {
+  render() { return elt("div", {class: "ProseMirror-menuseparator"}) }
+}
+export const separatorItem = new SeparatorItem
+
+class UndoItem extends IconItem {
+  constructor() { super("undo", "Undo") }
+  select(pm) { return pm.history.canUndo() }
+  apply(pm) { pm.history.undo() }
+}
+class RedoItem extends IconItem {
+  constructor() { super("redo", "Redo") }
+  select(pm) { return pm.history.canRedo() }
+  apply(pm) { pm.history.redo() }
+}
+class HistorySeparator extends SeparatorItem {
+  select(pm) { return pm.history.canUndo() || pm.history.canRedo() }
+}
+
 registerItem("inline", new InlineStyleItem("strong", "Strong text", style.strong))
 registerItem("inline", new InlineStyleItem("em", "Emphasized text", style.em))
 registerItem("inline", new InlineStyleItem("link", "Hyperlink", "link", linkDialog))
@@ -226,9 +245,12 @@ registerItem("block", new LiftItem)
 registerItem("block", new WrapItem("list-ol", "Wrap in ordered list", "ordered_list"))
 registerItem("block", new WrapItem("list-ul", "Wrap in bullet list", "bullet_list"))
 registerItem("block", new WrapItem("quote", "Wrap in blockquote", "blockquote"))
-registerItem("block", new JoinItem)
 registerItem("block", new InsertBlockItem("hr", "Insert horizontal rule", "horizontal_rule"))
+registerItem("block", new JoinItem)
 
+registerItem("history", new HistorySeparator)
+registerItem("history", new UndoItem)
+registerItem("history", new RedoItem)
 
 // Awkward hack to force Chrome to initialize the font and not return
 // incorrect size information the first time it is used.
@@ -243,22 +265,18 @@ export function forceFontLoad(pm) {
   window.setTimeout(() => pm.wrapper.removeChild(node), 20)
 }
 
-class SeparatorItem extends MenuItem {
-  render() { return elt("div", {class: "ProseMirror-menuseparator"}) }
-}
-export const separatorItem = new SeparatorItem
-
 insertCSS(`
 
 .ProseMirror-menuicon {
   display: inline-block;
-  padding: 2px 7px;
+  padding: 2px 4px;
   margin: 0 2px;
   cursor: pointer;
   text-rendering: auto;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
+  vertical-align: middle;
 }
 
 .ProseMirror-menuicon-active {
@@ -271,7 +289,9 @@ insertCSS(`
 }
 .ProseMirror-menuseparator:after {
   content: "︙";
-  opacity: 0.7;
+  opacity: 0.5;
+  padding: 0 4px;
+  vertical-align: middle;
 }
 
 `)

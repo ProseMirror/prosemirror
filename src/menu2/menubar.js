@@ -65,7 +65,7 @@ class MenuBar {
     pm.on("activeStyleChange", this.updateFunc)
 
     this.menuItems = config && config.items ||
-      [...getItems("inline"), separatorItem, ...getItems("block")]
+      [...getItems("inline"), separatorItem, ...getItems("block"), ...getItems("history")]
     this.update()
 
     this.floating = false

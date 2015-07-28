@@ -335,6 +335,9 @@ export class History {
   undo() { return this.shift(this.done, this.undone) }
   redo() { return this.shift(this.undone, this.done) }
 
+  canUndo() { return this.done.events.length > 0 }
+  canRedo() { return this.undone.events.length > 0 }
+
   shift(from, to) {
     let event = from.popEvent(this.pm.doc, this.allowCollapsing)
     if (!event) return false
