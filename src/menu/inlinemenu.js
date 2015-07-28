@@ -1,5 +1,5 @@
 import {defineOption} from "../edit"
-import {style, spanStylesAt} from "../model"
+import {spanStylesAt} from "../model"
 import {elt} from "../dom"
 import {Debounced} from "../util/debounce"
 
@@ -34,7 +34,6 @@ class InlineMenu {
   }
 
   detach() {
-    console.log("detaching")
     this.debounced.clear()
     this.tooltip.detach()
 

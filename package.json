@@ -24,6 +24,7 @@
     "demo": "watchify -d --outfile demo/demo-built.js -t babelify demo/demo.js",
     "browsertests": "watchify -d --outfile demo/test-built.js -t babelify demo/test.js",
     "dist": "node_modules/.bin/babel -d dist src",
-    "dist-watch": "node_modules/.bin/babel -w -d dist src"
+    "dist-watch": "node_modules/.bin/babel -w -d dist src",
+    "lint": "blint --browser --ecmaVersion 6 --forbidSemicolons src"
   }
 }

@@ -8,7 +8,7 @@ import "./icons"
 const tags = Object.create(null)
 
 export function registerItem(tag, item) {
-  (tags[tag] || (tags[tag] = [])).push(item)
+  ;(tags[tag] || (tags[tag] = [])).push(item)
 }
 export function getItems(tag) {
   return tags[tag] || []
@@ -237,7 +237,7 @@ class HistorySeparator extends SeparatorItem {
 
 const blockTypes = [
   {name: "Normal", node: new Node("paragraph")},
-  {name: "Code", node: new Node("code_block")},
+  {name: "Code", node: new Node("code_block")}
 ]
 for (let i = 1; i <= 6; i++)
   blockTypes.push({name: "Head " + i, node: new Node("heading", {level: i})})
