@@ -4,49 +4,25 @@ import {resolvePath} from "../edit/selection"
 import {Debounced} from "../util/debounce"
 
 import {Tooltip} from "./tooltip"
-import {Menu, forceFontLoad} from "./menu"
-import {MenuDefinition} from "./define"
+import {Menu, TooltipDisplay} from "./menu"
+import {getItems, separatorItem, forceFontLoad} from "./items"
 
 import insertCSS from "insert-css"
-import "./icons_css"
+import "./icons"
 
 const classPrefix = "ProseMirror-buttonmenu"
 
 defineOption("buttonMenu", false, function(pm, value) {
-  if (pm.mod.menu)
-    pm.mod.menu.detach()
-  if (value)
-    pm.mod.menu = new ButtonMenu(pm, value)
+  if (pm.mod.menu) pm.mod.menu.detach()
+  pm.mod.menu = value ? new ButtonMenu(pm, value) : null
 })
-
-import {BlockTypeItem, LiftItem, WrapItem, InsertBlockItem, JoinItem} from "./menuitem"
-
-export const items = new MenuDefinition
-
-items.addSub("paragraph", {icon: "paragraph", title: "Paragraph type"})
-items.addSub("heading", {icon: "header", title: "Heading", parent: "paragraph"})
-for (let i = 1; i <= 6; i++)
-  items.addItem(new BlockTypeItem("" + i, "Heading " + i, "heading", {level: i}),
-                {submenu: "heading"})
-items.addItem(new BlockTypeItem("paragraph", "Normal paragraph", "paragraph"), {submenu: "paragraph"})
-items.addItem(new BlockTypeItem("code", "Code block", "code_block"), {submenu: "paragraph"})
-
-items.addItem(new LiftItem("dedent"))
-
-items.addSub("wrap", {icon: "indent", title: "Wrap block"})
-items.addItem(new WrapItem("list-ol", "Wrap in ordered list", "ordered_list"), {submenu: "wrap"})
-items.addItem(new WrapItem("list-ul", "Wrap in bullet list", "bullet_list"), {submenu: "wrap"})
-items.addItem(new WrapItem("quote-left", "Wrap in blockquote", "blockquote"), {submenu: "wrap"})
-
-items.addItem(new InsertBlockItem("minus", "Horizontal rule", "horizontal_rule"))
-items.addItem(new JoinItem("arrow-up"))
 
 class ButtonMenu {
   constructor(pm, config) {
     this.pm = pm
 
     this.tooltip = new Tooltip(pm, "left")
-    this.menu = Menu.fromTooltip(pm, this.tooltip)
+    this.menu = new Menu(pm, new TooltipDisplay(this.tooltip))
     this.hamburger = pm.wrapper.appendChild(elt("div", {class: classPrefix + "-button"},
                                                 elt("div"), elt("div"), elt("div")))
     this.hamburger.addEventListener("mousedown", e => { e.preventDefault(); e.stopPropagation(); this.openMenu() })
@@ -55,7 +31,7 @@ class ButtonMenu {
     pm.on("selectionChange", this.updateFunc = () => this.updated())
     pm.on("change", this.updateFunc)
 
-    this.menuItems = config && config.items || items.getItems()
+    this.menuItems = config && config.items || [...getItems("inline"), separatorItem, ...getItems("block")]
     this.followCursor = config && config.followCursor
 
     this.pm.content.addEventListener("keydown", this.closeFunc = () => this.tooltip.close())
@@ -85,7 +61,7 @@ class ButtonMenu {
   openMenu() {
     let rect = this.hamburger.getBoundingClientRect()
     let pos = {left: rect.left, top: (rect.top + rect.bottom) / 2}
-    this.menu.open(this.menuItems.filter(i => i.select(this.pm)), pos)
+    this.menu.show(this.menuItems, pos)
   }
 
   alignButton() {

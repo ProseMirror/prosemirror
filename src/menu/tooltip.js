@@ -15,7 +15,7 @@ export class Tooltip {
         this.dom.style.display = this.pointer.style.display = ""
     })
 
-    this.open = false
+    this.isOpen = false
     this.lastLeft = this.lastRight = null
   }
 
@@ -34,11 +34,7 @@ export class Tooltip {
     return size
   }
 
-  show(node, pos) {
-    if (this.pm.mod.tooltip && this.pm.mod.tooltip != this)
-      this.pm.mod.tooltip.close()
-    this.pm.mod.tooltip = this
-
+  open(node, pos) {
     let left = this.lastLeft = pos ? pos.left : this.lastLeft
     let top = this.lastTop = pos ? pos.top : this.lastTop
 
@@ -93,13 +89,12 @@ export class Tooltip {
     getComputedStyle(this.dom).opacity
     getComputedStyle(this.pointer).opacity
     this.dom.style.opacity = this.pointer.style.opacity = 1
-    this.open = true
+    this.isOpen = true
   }
 
   close() {
-    if (this.open) {
-      this.open = false
-      if (this.pm.mod.tooltip == this) this.pm.mod.tooltip = null
+    if (this.isOpen) {
+      this.isOpen = false
       this.dom.style.opacity = this.pointer.style.opacity = 0
     }
   }

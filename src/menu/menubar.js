@@ -3,38 +3,69 @@ import {elt} from "../dom"
 import {Debounced} from "../util/debounce"
 
 import {Menu} from "./menu"
-import {items as inlineItems} from "./inlinetooltip"
-import {items as blockItems} from "./buttonmenu"
+import {getItems, separatorItem} from "./items"
 
 import insertCSS from "insert-css"
-import "./icons_css"
+import "./icons"
 
 defineOption("menuBar", false, function(pm, value) {
-  if (pm.mod.menuBar)
-    pm.mod.menuBar.detach()
-  if (value)
-    pm.mod.menuBar = new MenuBar(pm, value)
+  if (pm.mod.menuBar) pm.mod.menuBar.detach()
+  pm.mod.menuBar = value ? new MenuBar(pm, value) : null
 })
 
-const prefix = "ProseMirror-menubar"
+class BarDisplay {
+  constructor(container, resetFunc) {
+    this.container = container
+    this.resetFunc = resetFunc
+  }
+  clear() { this.container.textContent = "" }
+  reset() { this.resetFunc() }
+  show(dom) {
+    this.clear()
+    this.container.appendChild(dom)
+  }
+  enter(dom, back) {
+    let current = this.container.firstChild
+    if (current) {
+      current.style.position = "absolute"
+      current.style.opacity = "0.5"
+    }
+    let backButton = elt("div", {class: "ProseMirror-menubar-back"})
+    backButton.addEventListener("mousedown", e => {
+      e.preventDefault(); e.stopPropagation()
+      back()
+    })
+    let added = elt("div", {class: "ProseMirror-menubar-sliding"}, backButton, dom)
+    this.container.appendChild(added)
+    added.getBoundingClientRect() // Force layout for transition
+    added.style.left = "0"
+    added.addEventListener("transitionend", () => {
+      if (current && current.parentNode) current.parentNode.removeChild(current)
+    })
+  }
+}
 
 class MenuBar {
   constructor(pm, config) {
     this.pm = pm
-    this.menuElt = elt("div", {class: prefix + "-inner"})
-    this.wrapper = elt("div", {class: prefix},
-                       elt("ul", {class: "ProseMirror-menu", style: "visibility: hidden"},
-                           elt("li", null, elt("span", {class: "ProseMirror-icon ProseMirror-icon-bold"}))),
+
+    this.menuElt = elt("div", {class: "ProseMirror-menubar-inner"})
+    this.wrapper = elt("div", {class: "ProseMirror-menubar"},
+                       // Height-forcing placeholder
+                       elt("div", {class: "ProseMirror-menu", style: "visibility: hidden"},
+                           elt("div", {class: "ProseMirror-menuicon"},
+                               elt("span", {class: "ProseMirror-menuicon ProseMirror-icon-strong"}))),
                        this.menuElt)
-    this.menu = new Menu(pm, this.menuElt, () => this.resetMenu())
     pm.wrapper.insertBefore(this.wrapper, pm.wrapper.firstChild)
 
+    this.menu = new Menu(pm, new BarDisplay(this.menuElt, () => this.resetMenu()))
     this.debounced = new Debounced(pm, 100, () => this.update())
     pm.on("selectionChange", this.updateFunc = () => this.debounced.trigger())
     pm.on("change", this.updateFunc)
     pm.on("activeStyleChange", this.updateFunc)
 
-    this.menuItems = config && config.items || inlineItems.getItems().concat(blockItems.getItems())
+    this.menuItems = config && config.items ||
+      [...getItems("inline"), separatorItem, ...getItems("block"), ...getItems("history")]
     this.update()
 
     this.floating = false
@@ -66,7 +97,7 @@ class MenuBar {
     if (this.floating) this.scrollCursorIfNeeded()
   }
   resetMenu() {
-    this.menu.open(this.menuItems)
+    this.menu.show(this.menuItems)
   }
 
   updateFloat() {
@@ -123,9 +154,10 @@ insertCSS(`
   background: white;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
-.ProseMirror-menubar .ProseMirror-menu-active {
+.ProseMirror-menubar .ProseMirror-menuicon-active {
   background: #eee;
 }
 
@@ -140,6 +172,31 @@ insertCSS(`
 
 .ProseMirror-menubar input[type="text"] {
   padding: 0 4px;
+}
+
+.ProseMirror-menubar-sliding {
+  -webkit-transition: left 0.2s ease-out;
+  -moz-transition: left 0.2s ease-out;
+  transition: left 0.2s ease-out;
+  position: relative;
+  left: 100%;
+  width: 100%;
+  padding-left: 16px;
+  background: white;
+}
+
+.ProseMirror-menubar-back {
+  position: absolute;
+  height: 100%;
+  margin-top: -1px;
+  padding-bottom: 2px;
+  width: 10px;
+  left: 0;
+  border-right: 1px solid silver;
+  cursor: pointer;
+}
+.ProseMirror-menubar-back:after {
+  content: "«";
 }
 
 `)

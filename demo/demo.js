@@ -3,9 +3,9 @@ import {Pos, Node} from "../src/model"
 import {fromDOM} from "../src/convert/from_dom"
 
 import "../src/inputrules/autoinput"
-import "../src/menu2/inlinemenu"
-import "../src/menu2/menubar"
-import "../src/menu2/buttonmenu"
+import "../src/menu/inlinemenu"
+import "../src/menu/menubar"
+import "../src/menu/buttonmenu"
 import "../src/collab"
 
 let te = document.querySelector("#content")
