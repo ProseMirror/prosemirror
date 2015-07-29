@@ -135,7 +135,7 @@ export class ImageItem extends IconItem {
   apply() { return [imageDialog] }
 }
 
-class DialogItem extends MenuItem {
+export class DialogItem extends MenuItem {
   focus(form) {
     let input = form.querySelector("input, textarea")
     if (input) input.focus()

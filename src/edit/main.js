@@ -29,7 +29,7 @@ export class ProseMirror {
     else if (opts.place)
       opts.place(this.wrapper)
 
-    this.setDocInner(opts.doc)
+    this.setDocInner(opts.docFormat ? convertFrom(opts.doc, opts.docFormat, {document}) : opts.doc)
     draw(this, this.doc)
     this.content.contentEditable = true
 

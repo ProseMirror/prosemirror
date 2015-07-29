@@ -18,6 +18,8 @@ const options = {
     pm.setDoc(value)
   }, false),
 
+  docFormat: new Option(null),
+
   place: new Option(null),
 
   keymap: new Option(defaultKeymap),
