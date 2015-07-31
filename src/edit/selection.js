@@ -283,7 +283,7 @@ const scrollMargin = 5
 export function scrollIntoView(pm, pos) {
   if (!pos) pos = pm.sel.range.head
   let coords = coordsAtPos(pm, pos)
-  for (let parent = pm.wrapper;; parent = parent.parentNode) {
+  for (let parent = pm.content;; parent = parent.parentNode) {
     let atBody = parent == document.body
     let rect = atBody ? windowRect() : parent.getBoundingClientRect()
     if (coords.top < rect.top)

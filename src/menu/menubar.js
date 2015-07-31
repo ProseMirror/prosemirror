@@ -103,7 +103,7 @@ class MenuBar {
   updateFloat() {
     let editorRect = this.pm.wrapper.getBoundingClientRect()
     if (this.floating) {
-      if (editorRect.top >= 0) {
+      if (editorRect.top >= 0 || editorRect.bottom < this.menuElt.offsetHeight + 10) {
         this.floating = false
         this.menuElt.style.position = this.menuElt.style.left = this.menuElt.style.width = ""
         this.menuElt.style.display = ""
@@ -113,7 +113,7 @@ class MenuBar {
         this.menuElt.style.display = (editorRect.top > window.innerHeight ? "none" : "")
       }
     } else {
-      if (editorRect.top < 0) {
+      if (editorRect.top < 0 && editorRect.bottom >= this.menuElt.offsetHeight + 10) {
         this.floating = true
         let menuRect = this.menuElt.getBoundingClientRect()
         this.menuElt.style.left = menuRect.left + "px"
@@ -181,6 +181,9 @@ insertCSS(`
 .ProseMirror-menubar .ProseMirror-blocktype {
   border: 1px solid #ccc;
   min-width: 4em;
+}
+.ProseMirror-menubar .ProseMirror-blocktype:after {
+  color: #ccc;
 }
 
 .ProseMirror-menubar-sliding {

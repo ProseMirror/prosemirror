@@ -365,6 +365,7 @@ insertCSS(`
 
 .ProseMirror-blocktype:after {
   content: " ▿";
+  color: #777;
   vertical-align: top;
 }
 
@@ -377,7 +378,7 @@ insertCSS(`
 }
 .ProseMirror-blocktype-menu div {
   cursor: pointer;
-  padding: 0 18px 0 2px;
+  padding: 0 1em 0 2px;
 }
 .ProseMirror-blocktype-menu div:hover {
   background: #777;
