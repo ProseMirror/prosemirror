@@ -8,7 +8,7 @@ import {knownSource, convertFrom} from "../convert/convert"
 import {isModifierKey, lookupKey, keyName} from "./keys"
 import {browser, addClass, rmClass} from "../dom"
 import {execCommand} from "./commands"
-import {applyDOMChange} from "./domchange"
+import {applyDOMChange, textContext, textInContext} from "./domchange"
 import {Range} from "./selection"
 
 let stopSeq = null
@@ -20,8 +20,8 @@ export class Input {
 
     this.keySeq = null
     this.composing = null
-    this.shiftKey = false
-    this.composeActive = 0
+    this.shiftKey = this.updatingComposition = false
+    this.skipInput = 0
 
     this.draggingFrom = false
 
@@ -32,7 +32,7 @@ export class Input {
 
     for (let event in handlers) {
       let handler = handlers[event]
-      pm.content.addEventListener(event, (e) => handler(pm, e))
+      pm.content.addEventListener(event, e => handler(pm, e))
     }
 
     pm.on("selectionChange", () => this.storedStyles = null)
@@ -49,6 +49,24 @@ export class Input {
     let arr = obj && obj[priority]
     if (arr) for (let i = 0; i < arr.length; i++)
       if (arr[i] == f) { arr.splice(i, 1); break }
+  }
+
+  maybeAbortComposition() {
+    if (this.composing && !this.updatingComposition) {
+      if (this.composing.finished) {
+        finishComposing(this.pm)
+      } else { // Toggle selection to force end of composition
+        this.composing = null
+        this.skipInput++
+        let sel = getSelection()
+        if (sel.rangeCount) {
+          let range = sel.getRangeAt(0)
+          sel.removeAllRanges()
+          sel.addRange(range)
+        }
+      }
+      return true
+    }
   }
 }
 
@@ -93,6 +111,7 @@ export function dispatchKey(pm, name, e) {
 
 handlers.keydown = (pm, e) => {
   if (e.keyCode == 16) pm.input.shiftKey = true
+  if (pm.input.composing) return
   let name = keyName(e)
   if (name) dispatchKey(pm, name, e)
 }
@@ -112,45 +131,73 @@ function inputText(pm, range, text) {
 }
 
 handlers.keypress = (pm, e) => {
-  if (!e.charCode || e.ctrlKey && !e.altKey || browser.mac && e.metaKey) return
+  if (pm.input.composing || !e.charCode || e.ctrlKey && !e.altKey || browser.mac && e.metaKey) return
   let ch = String.fromCharCode(e.charCode)
   if (dispatchKey(pm, "'" + ch + "'", e)) return
   inputText(pm, pm.selection, ch)
   e.preventDefault()
 }
 
+class Composing {
+  constructor(pm, data) {
+    this.finished = false
+    this.context = textContext(data)
+    this.data = data
+    this.endData = null
+    let range = pm.selection
+    if (data) {
+      let path = range.head.path, line = pm.doc.path(path).textContent
+      let found = line.indexOf(data, range.head.offset - data.length)
+      if (found > -1 && found <= range.head.offset + data.length)
+        range = new Range(new Pos(path, found), new Pos(path, found + data.length))
+    }
+    this.range = range
+  }
+}
+
 handlers.compositionstart = (pm, e) => {
-  let data = e.data
-  pm.input.composing = {sel: pm.selection,
-                        data: data,
-                        startData: data}
-  pm.input.composeActive++
-  // FIXME set selection around existing data if applicable
+  if (pm.input.maybeAbortComposition()) return console.log("leaving")
+
+  pm.flush()
+  pm.input.composing = new Composing(pm, e.data)
 }
 
 handlers.compositionupdate = (pm, e) => {
-  pm.input.composing.data = e.data
+  let info = pm.input.composing
+  if (info && info.data != e.data) {
+    info.data = e.data
+    pm.input.updatingComposition = true
+    inputText(pm, info.range, info.data)
+    pm.input.updatingComposition = false
+    info.range = new Range(info.range.from, info.range.from.shift(info.data.length))
+  }
 }
 
 handlers.compositionend = (pm, e) => {
   let info = pm.input.composing
-  if (!info) return
+  if (info) {
+    pm.input.composing.finished = true
+    pm.input.composing.endData = e.data
+    setTimeout(() => {if (pm.input.composing == info) finishComposing(pm)}, 20)
+  }
+}
+
+function finishComposing(pm) {
+  let info = pm.input.composing
+  let text = textInContext(info.context, info.endData)
+  if (text != info.data) pm.ensureOperation()
   pm.input.composing = null
-  if (e.data != info.startData && !/\u200b/.test(e.data))
-    info.data = e.data
-  applyComposition(pm, info)
-  // Disable input events for a short time more
-  setTimeout((() => pm.input.composeActive--), 50)
+  if (text != info.data) inputText(pm, info.range, text)
 }
-
-function applyComposition(pm, info) {
-  inputText(pm, info.sel, info.data)
-}
-
-// FIXME slightly debounce -- firefox fires double event for spelling corrections
 
 handlers.input = (pm) => {
-  if (pm.input.composeActive) return
+  if (pm.input.skipInput) return --pm.input.skipInput
+
+  if (pm.input.composing) {
+    if (pm.input.composing.finished) finishComposing(pm)
+    return
+  }
+
   pm.input.suppressPolling = true
   applyDOMChange(pm)
   pm.input.suppressPolling = false

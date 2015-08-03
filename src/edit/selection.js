@@ -23,7 +23,7 @@ export class Selection {
   }
 
   poll(force) {
-    if (!hasFocus(this.pm)) return
+    if (this.pm.input.composing || !hasFocus(this.pm)) return
     let sel = getSelection()
     if (force || sel.anchorNode != this.lastAnchorNode || sel.anchorOffset != this.lastAnchorOffset ||
         sel.focusNode != this.lastHeadNode || sel.focusOffset != this.lastHeadOffset) {

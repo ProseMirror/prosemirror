@@ -75,3 +75,73 @@ function findDiffEndConstrained(a, b, start) {
   if (end.b.cmp(start.b) < 0) return {a: offsetBy(end.b, start.b, end.a), b: start.b}
   return end
 }
+
+// Text-only queries for composition events
+
+export function textContext(data) {
+  let range = getSelection().getRangeAt(0)
+  let start = range.startContainer, end = range.endContainer
+  if (start == end && start.nodeType == 3) {
+    let value = start.nodeValue, lead = range.startOffset, end = range.endOffset
+    if (data && end >= data.length && value.slice(end - data.length, end) == data)
+      lead = end - data.length
+    return {inside: start, lead, trail: value.length - end}
+  }
+
+  let sizeBefore = null, sizeAfter = null
+  let before = start.childNodes[range.startOffset - 1] || nodeBefore(start)
+  while (before.lastChild) before = before.lastChild
+  if (before && before.nodeType == 3) {
+    let value = before.nodeValue
+    sizeBefore = value.length
+    if (data && value.slice(value.length - data.length) == data)
+      sizeBefore -= data.length
+  }
+  let after = end.childNodes[range.endOffset] || nodeAfter(end)
+  while (after.firstChild) after = after.firstChild
+  if (after && after.nodeType == 3) sizeAfter = after.nodeValue.length
+
+  return {before: before, sizeBefore,
+          after: after, sizeAfter}
+}
+
+export function textInContext(context, deflt) {
+  if (context.inside) {
+    let val = context.inside.nodeValue
+    return val.slice(context.lead, val.length - context.trail)
+  } else {
+    var before = context.before, after = context.after, val = ""
+    if (!before) return deflt
+    if (before.nodeType == 3)
+      val = before.nodeValue.slice(context.sizeBefore)
+    var scan = scanText(before, after)
+    if (scan == null) return delft
+    val += scan
+    if (after && after.nodeType == 3) {
+      let valAfter = after.nodeValue
+      val += valAfter.slice(0, valAfter.length - context.sizeAfter)
+    }
+    return val
+  }
+}
+
+function nodeAfter(node) {
+  for (;;) {
+    let next = node.nextSibling
+    if (next) {
+      while (next.firstChild) next = next.firstChild
+      return next
+    }
+    if (!(node = node.parentElement)) return null
+  }
+}
+
+function scanText(start, end) {
+  let text = "", cur = start
+  for (;;) {
+    if (cur == end) return text
+    if (!cur) return null
+    if (cur.nodeType == 3) text += cur.nodeValue
+    cur = cur.firstChild || nodeAfter(cur)
+  }
+}

@@ -96,6 +96,7 @@ export class ProseMirror {
 
   updateDoc(doc, mapping) {
     this.ensureOperation()
+    this.input.maybeAbortComposition()
     this.ranges.transform(mapping)
     this.doc = doc
     let range = this.sel.range
@@ -116,6 +117,7 @@ export class ProseMirror {
     this.checkPos(range.head, true)
     this.checkPos(range.anchor, true)
     this.ensureOperation()
+    this.input.maybeAbortComposition()
     if (range.head.cmp(this.sel.range.head) ||
         range.anchor.cmp(this.sel.range.anchor))
       this.sel.setAndSignal(range)
@@ -142,11 +144,12 @@ export class ProseMirror {
     this.operation = null
 
     let docChanged = op.doc != this.doc || op.dirty.size
-    if (docChanged) {
-      if (op.fullRedraw) draw(this, this.doc)
+    if (docChanged && !this.input.composing) {
+      if (op.fullRedraw) draw(this, this.doc) // FIXME only redraw target block composition
       else redraw(this, op.dirty, this.doc, op.doc)
     }
-    if (docChanged || op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head))
+    if ((docChanged || op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head)) &&
+        !this.input.composing)
       this.sel.toDOM(docChanged, op.focus)
     if (op.scrollIntoView !== false)
       scrollIntoView(this, op.scrollIntoView)
@@ -246,7 +249,7 @@ class Operation {
     this.sel = pm.sel.range
     this.scrollIntoView = false
     this.focus = false
-    this.fullRedraw = false
-    this.dirty = new Map
+    this.fullRedraw = !!pm.input.composing
+    this.dirty = new Map // FIXME preserve across ops when composing
   }
 }
