@@ -14,7 +14,6 @@ import {toText} from "../convert/to_text"
 import "../convert/from_text"
 import {convertFrom, convertTo} from "../convert/convert"
 import {execCommand} from "./commands"
-import {Map} from "./map"
 import {RangeStore, MarkedRange} from "./range"
 
 export class ProseMirror {
@@ -143,10 +142,11 @@ export class ProseMirror {
     if (!op || !document.body.contains(this.wrapper)) return
     this.operation = null
 
-    let docChanged = op.doc != this.doc || op.dirty.size
+    let docChanged = op.doc != this.doc || this.ranges.dirty.size
     if (docChanged && !this.input.composing) {
       if (op.fullRedraw) draw(this, this.doc) // FIXME only redraw target block composition
-      else redraw(this, op.dirty, this.doc, op.doc)
+      else redraw(this, this.ranges.dirty, this.doc, op.doc)
+      this.ranges.resetDirty()
     }
     if ((docChanged || op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head)) &&
         !this.input.composing)
@@ -250,6 +250,5 @@ class Operation {
     this.scrollIntoView = false
     this.focus = false
     this.fullRedraw = !!pm.input.composing
-    this.dirty = new Map // FIXME preserve across ops when composing
   }
 }

@@ -1,3 +1,4 @@
+import {Map} from "./map"
 import {eventMixin} from "./event"
 
 export class MarkedRange {
@@ -70,6 +71,11 @@ export class RangeStore {
     this.pm = pm
     this.ranges = []
     this.sorted = new RangeSorter
+    this.resetDirty()
+  }
+
+  resetDirty() {
+    this.dirty = new Map
   }
 
   addRange(range) {
@@ -107,7 +113,8 @@ export class RangeStore {
   }
 
   markDisplayDirty(range) {
-    let dirty = this.pm.ensureOperation().dirty
+    this.pm.ensureOperation()
+    let dirty = this.dirty
     let from = range.from, to = range.to
     for (let depth = 0, node = this.pm.doc;; depth++) {
       let fromEnd = depth == from.depth, toEnd = depth == to.depth
