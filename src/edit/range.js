@@ -30,7 +30,7 @@ class RangeSorter {
         return max
       }
       let mid = (min + max) >> 1
-      if (this.sorted[mid].cmp(at) > 0) max = mid
+      if (this.sorted[mid].at.cmp(at) > 0) max = mid
       else min = mid
     }
   }
