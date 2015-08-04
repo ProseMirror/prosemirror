@@ -53,7 +53,7 @@ class Collab {
     return {
       version: this.version,
       doc: this.pm.doc,
-      steps: this.unconfirmedSteps.map(s => s.toJSON())
+      steps: this.unconfirmedSteps.slice()
     }
   }
 
@@ -66,8 +66,7 @@ class Collab {
 
   receive(steps) {
     let doc = this.versionDoc
-    let maps = steps.map(json => {
-      let step = Step.fromJSON(json)
+    let maps = steps.map(step => {
       let result = applyStep(doc, step)
       doc = result.doc
       return result.map
@@ -81,6 +80,7 @@ class Collab {
 
     this.pm.updateDoc(rebased.doc, rebased.mapping)
     this.pm.history.rebased(maps, rebased.transform, rebased.positions)
+    return maps
   }
 }
 
