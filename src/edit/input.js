@@ -82,9 +82,7 @@ export function dispatchKey(pm, name, e) {
     name = seq + " " + name
   }
 
-  let sawHandler = false
   let handle = function(bound) {
-    sawHandler = true
     let result = typeof bound == "string" ? execCommand(pm, bound) : bound(pm)
     return result !== false
   }
@@ -99,7 +97,7 @@ export function dispatchKey(pm, name, e) {
   if (result == "multi")
     pm.input.keySeq = name
 
-  if (result == "handled" || result == "multi" || sawHandler)
+  if (result == "handled" || result == "multi")
     e.preventDefault()
 
   if (seq && !result && /\'$/.test(name)) {
