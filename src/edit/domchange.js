@@ -115,7 +115,7 @@ export function textInContext(context, deflt) {
     if (before.nodeType == 3)
       val = before.nodeValue.slice(context.sizeBefore)
     var scan = scanText(before, after)
-    if (scan == null) return delft
+    if (scan == null) return deflt
     val += scan
     if (after && after.nodeType == 3) {
       let valAfter = after.nodeValue
@@ -131,6 +131,17 @@ function nodeAfter(node) {
     if (next) {
       while (next.firstChild) next = next.firstChild
       return next
+    }
+    if (!(node = node.parentElement)) return null
+  }
+}
+
+function nodeBefore(node) {
+  for (;;) {
+    let prev = node.previousSibling
+    if (prev) {
+      while (prev.lastChild) prev = prev.lastChild
+      return prev
     }
     if (!(node = node.parentElement)) return null
   }
