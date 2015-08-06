@@ -26,6 +26,10 @@ export function clearMarkup(node) {
   }
 }
 
+export function getSpan(doc, pos) {
+  return spanAtOrBefore(doc.path(pos.path), pos.offset).node
+}
+
 export function spanAtOrBefore(parent, offset) {
   for (let i = 0; i < parent.content.length; i++) {
     let child = parent.content[i]

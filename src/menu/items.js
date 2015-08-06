@@ -2,6 +2,7 @@ import {style, rangeHasStyle, Span, Node, nodeTypes, Pos} from "../model"
 import {canLift, canWrap, joinPoint} from "../transform"
 import {elt} from "../dom"
 import {MenuItem} from "./menu"
+export {MenuItem}
 import insertCSS from "insert-css"
 import "./icons"
 

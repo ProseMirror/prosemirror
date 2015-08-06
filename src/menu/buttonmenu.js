@@ -38,7 +38,6 @@ class ButtonMenu {
 
     this.blockItems = getItems("block")
     this.allItems = [...getItems("inline"), separatorItem, ...this.blockItems]
-    this.followCursor = config && config.followCursor
 
     this.pm.content.addEventListener("keydown", this.closeFunc = () => this.tooltip.close())
     this.pm.content.addEventListener("mousedown", this.closeFunc)

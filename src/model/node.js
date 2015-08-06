@@ -195,7 +195,7 @@ export class Span extends Node {
 
 const nullAttrs = Node.nullAttrs = {}
 
-class NodeType {
+export class NodeType {
   constructor(options) {
     this.name = options.name
     this.type = options.type
