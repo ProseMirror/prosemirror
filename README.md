@@ -4,9 +4,10 @@ This is a well-behaved what-you-see-is-what-you-mean editor based on
 contentEditable, with support for collaborative editing and (soon)
 customizable document models.
 
-THIS CODE IS NOT CURRENTLY OPEN SOURCE (i.e. don't use it)
+THIS CODE IS NOT CURRENTLY OPEN SOURCE (i.e. don't use it yet)
 
-To help make it open source, head to the crowd-funding campaign at
+BUT WITH YOUR HELP, IT WILL BE: Take a look at my crowd-funding
+campaign at
 [IndieGogo](https://www.indiegogo.com/projects/prosemirror/).
 
 There isn't much documentation yet. You can read a bit more about the
