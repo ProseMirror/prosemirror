@@ -128,7 +128,8 @@ class Context {
   }
 }
 
-const tags = Object.create(null)
+// FIXME don't export, define proper extension mechanism
+export const tags = Object.create(null)
 
 function wrap(dom, context, node) {
   context.enter(node)
