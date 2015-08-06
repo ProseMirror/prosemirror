@@ -1,5 +1,5 @@
 import {defineOption, eventMixin} from "../edit"
-import {applyStep, Step} from "../transform"
+import {applyStep} from "../transform"
 
 import {rebaseSteps} from "./rebase"
 export {rebaseSteps}

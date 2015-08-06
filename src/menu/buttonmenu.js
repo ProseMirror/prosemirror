@@ -18,7 +18,7 @@ defineOption("buttonMenu", false, function(pm, value) {
 })
 
 class ButtonMenu {
-  constructor(pm, config) {
+  constructor(pm, _config) {
     this.pm = pm
 
     this.tooltip = new Tooltip(pm, "left")

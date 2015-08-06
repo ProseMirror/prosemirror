@@ -154,7 +154,7 @@ class Composing {
 }
 
 handlers.compositionstart = (pm, e) => {
-  if (pm.input.maybeAbortComposition()) return console.log("leaving")
+  if (pm.input.maybeAbortComposition()) return
 
   pm.flush()
   pm.input.composing = new Composing(pm, e.data)
