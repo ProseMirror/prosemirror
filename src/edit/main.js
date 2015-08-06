@@ -11,6 +11,8 @@ import {Input} from "./input"
 import {History} from "./history"
 import {eventMixin} from "./event"
 import {toText} from "../convert/to_text"
+import {toMarkdown} from "../convert/to_markdown"
+import {fromMarkdown} from "../convert/from_markdown"
 import "../convert/from_text"
 import {convertFrom, convertTo} from "../convert/convert"
 import {execCommand} from "./commands"
@@ -56,6 +58,14 @@ export class ProseMirror {
     return toText(this.selectedDoc)
   }
 
+  get selectedMarkdown() {
+    return toMarkdown(this.selectedDoc)
+  }
+
+  get markdown() {
+    return toMarkdown(this.doc)
+  }
+
   apply(transform, options = nullOptions) {
     if (transform.doc == this.doc) return false
 
@@ -69,6 +79,10 @@ export class ProseMirror {
   setContent(value, format) {
     if (format) value = convertFrom(value, format, {document})
     this.setDoc(value)
+  }
+
+  setMarkdown(value) {
+    this.setDoc(fromMarkdown(value))
   }
 
   getContent(format) {
