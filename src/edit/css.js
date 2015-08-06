@@ -31,4 +31,14 @@ insertCSS(`
   white-space: pre-wrap;
 }
 
+.ProseMirror-content p:first-child,
+.ProseMirror-content h1:first-child,
+.ProseMirror-content h2:first-child,
+.ProseMirror-content h3:first-child,
+.ProseMirror-content h4:first-child,
+.ProseMirror-content h5:first-child,
+.ProseMirror-content h6:first-child {
+  margin-top: .3em;
+}
+
 `)
