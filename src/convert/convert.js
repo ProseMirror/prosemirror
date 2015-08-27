@@ -1,3 +1,5 @@
+import {Node} from "../model"
+
 const from = Object.create(null)
 const to = Object.create(null)
 
@@ -18,3 +20,6 @@ export function knownTarget(format) { return !!to[format] }
 
 export function defineSource(format, func) { from[format] = func }
 export function defineTarget(format, func) { to[format] = func }
+
+defineSource("json", json => Node.fromJSON(json))
+defineTarget("json", doc => doc.toJSON())
