@@ -2,6 +2,7 @@
   "libs": ["browser"],
   "plugins": {
     "node": {},
-    "complete_strings": {}
+    "complete_strings": {},
+    "es_modules": {}
   }
 }
