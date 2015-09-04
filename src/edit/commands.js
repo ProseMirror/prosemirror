@@ -155,8 +155,6 @@ function delBlockForward(pm, tr, pos) {
 
   if (iAfter) {
     tr.delete(pos, iAfter)
-    let joinable = joinPoint(tr.doc, tr.map(pos).pos, 1)
-    if (joinable) tr.join(joinable)
   } else if (bAfter) {
     tr.delete(bAfter, bAfter.shift(1))
   }
