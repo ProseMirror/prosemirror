@@ -2,6 +2,7 @@
   "name": "prosemirror",
   "version": "0.0.1",
   "description": "Well-defined WYSIWYG editor",
+  "license": "MIT",
   "maintainers": [
     {
       "name": "Marijn Haverbeke",
