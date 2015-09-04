@@ -15,6 +15,11 @@ function esc(str, startOfLine) {
   return str
 }
 
+function quote(str) {
+  var wrap = str.indexOf('"') == -1 ? '""' : str.indexOf("'") == -1 ? "''" : "()"
+  return wrap[0] + str + wrap[1]
+}
+
 function rep(str, n) {
   let out = ""
   for (let i = 0; i < n; i++) out += str
@@ -202,7 +207,7 @@ render.paragraph = (state, node) => {
 
 render.image = (state, node) => {
   state.write("![" + esc(node.attrs.alt || "") + "](" + esc(node.attrs.src) +
-              (node.attrs.title ? " " + esc(node.attrs.title) : "") + ")")
+              (node.attrs.title ? " " + quote(node.attrs.title) : "") + ")")
 }
 
 render.hard_break = state => state.write("\\\n")
@@ -214,7 +219,7 @@ render.html_tag = (state, node) => state.text(node.attrs.html)
 // Styles
 
 function closeLink(style) {
-  return "](" + esc(style.href) + (style.title ? " " + esc(style.title) : "") + ")"
+  return "](" + esc(style.href) + (style.title ? " " + quote(style.title) : "") + ")"
 }
 
 const open_style = {link: "[", strong: "**", em: "*", code: "`"}
