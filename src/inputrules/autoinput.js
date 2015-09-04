@@ -36,13 +36,13 @@ export var rules = [
 ]
 
 function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
-  let parentOffset = pos.path[pos.path.length - 1]
-  let sibling = parentOffset > 0 && pm.doc.path(pos.shorten()).content[parentOffset - 1]
+  let before = pos.shorten()
+  let sibling = before.offset > 0 && pm.doc.path(before.path).content[before.offset - 1]
   let join = sibling && sibling.type.name == type && (!predicate || predicate(sibling))
   let tr = pm.tr.wrap(pos, pos, new Node(type, attrs))
   let delPos = tr.map(pos).pos
   tr.delete(new Pos(delPos.path, 0), delPos)
-  if (join) tr.join(tr.map(pos, -1).pos)
+  if (join) tr.join(before)
   pm.apply(tr)
 }
 
