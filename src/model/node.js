@@ -10,7 +10,7 @@ export class Node {
     this.content = content || (type.contains ? [] : Node.empty)
     if (!attrs && !(attrs = type.defaultAttrs))
       throw new Error("No default attributes for node type " + type.name)
-    this.attrs = attrs || type.defaultAttrs
+    this.attrs = attrs
   }
 
   toString() {

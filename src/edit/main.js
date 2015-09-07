@@ -1,6 +1,6 @@
 import "./css"
 
-import {spanStylesAt, rangeHasStyle, style, sliceBetween, Pos} from "../model"
+import {spanStylesAt, rangeHasStyle, style, sliceBetween, Pos, findDiffStart} from "../model"
 import {Transform} from "../transform"
 
 import {parseOptions, initOptions, setOption} from "./options"
@@ -58,6 +58,8 @@ export class ProseMirror {
 
   apply(transform, options = nullOptions) {
     if (transform.doc == this.doc) return false
+    if (transform.docs[0] != this.doc && findDiffStart(transform.docs[0], this.doc))
+      throw new Error("Applying a transform that does not start with the current document")
 
     this.updateDoc(transform.doc, transform)
     this.signal("transform", transform, options)
