@@ -84,11 +84,6 @@ function delBlockBackward(pm, tr, pos) {
     // Any other nested block, lift up
     } else {
       tr.lift(pos, pos)
-      let next = pos.depth - 2
-      // Split list item when we backspace back into it
-      if (next > 0 && offset > 0 &&
-          pm.doc.path(pos.path.slice(0, next)).type == nodeTypes.list_item)
-        tr.split(new Pos(pos.path.slice(0, next), pos.path[next] + 1))
     }
   }
 }
