@@ -186,17 +186,6 @@ export class ProseMirror {
     this.ranges.removeRange(range)
   }
 
-  extendCommand(name, priority, f) {
-    if (f == null) { f = priority; priority = "normal"; }
-    if (!/^(normal|low|high)$/.test(priority)) throw new Error("Invalid priority: " + priority)
-    this.input.extendCommand(name, priority, f)
-  }
-
-  unextendCommand(name, priority, f) {
-    if (f == null) { f = priority; priority = "normal"; }
-    this.input.unextendCommand(name, priority, f)
-  }
-
   setInlineStyle(st, to, range) {
     if (!range) range = this.selection
     if (!range.empty) {

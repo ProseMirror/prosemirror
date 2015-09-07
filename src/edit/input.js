@@ -26,7 +26,6 @@ export class Input {
     this.draggingFrom = false
 
     this.keymaps = []
-    this.commandExtensions = Object.create(null)
 
     this.storedStyles = null
 
@@ -36,19 +35,6 @@ export class Input {
     }
 
     pm.on("selectionChange", () => this.storedStyles = null)
-  }
-
-  extendCommand(name, priority, f) {
-    let obj = this.commandExtensions[name] ||
-        (this.commandExtensions[name] = {low: [], normal: [], high: []})
-    obj[priority].push(f)
-  }
-
-  unextendCommand(name, priority, f) {
-    let obj = this.commandExtensions[name]
-    let arr = obj && obj[priority]
-    if (arr) for (let i = 0; i < arr.length; i++)
-      if (arr[i] == f) { arr.splice(i, 1); break }
   }
 
   maybeAbortComposition() {
