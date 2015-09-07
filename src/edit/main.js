@@ -205,7 +205,7 @@ export class ProseMirror {
     } else if (!this.doc.path(range.head.path).type.plainText && range == this.selection) {
       let styles = this.activeStyles()
       if (to == null) to = !style.contains(styles, st)
-      this.input.storedStyles = to ? style.add(styles, st) : style.remove(styles, st)
+      this.input.storedStyles = to ? style.add(styles, st) : style.removeType(styles, st.type)
       this.signal("activeStyleChange")
     }
   }
