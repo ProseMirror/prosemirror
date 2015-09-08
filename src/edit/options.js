@@ -24,8 +24,6 @@ const options = {
 
   keymap: new Option(defaultKeymap),
 
-  extraKeymap: new Option(new Keymap),
-
   historyDepth: new Option(50),
 
   historyEventDelay: new Option(500)

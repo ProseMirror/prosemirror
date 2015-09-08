@@ -77,8 +77,7 @@ export function dispatchKey(pm, name, e) {
   for (let i = pm.input.keymaps.length - 1; !result && i >= 0; i--)
     result = lookupKey(name, pm.input.keymaps[i], handle, pm)
   if (!result)
-    result = lookupKey(name, pm.options.extraKeymap, handle, pm) ||
-      lookupKey(name, pm.options.keymap, handle, pm)
+    result = lookupKey(name, pm.options.keymap, handle, pm)
 
   if (result == "multi")
     pm.input.keySeq = name
