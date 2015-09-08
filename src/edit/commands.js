@@ -10,6 +10,7 @@ export function registerCommand(name, func) {
 }
 
 export function execCommand(pm, name) {
+  if (pm.signalHandleable("command_" + name) !== false) return true
   let base = commands[name]
   return !!(base && base(pm) !== false)
 }

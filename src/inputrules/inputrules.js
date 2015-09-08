@@ -32,13 +32,13 @@ class InputRules {
 
     pm.on("selectionChange", this.onSelChange = () => this.cancelVersion = null)
     pm.on("textInput", this.onTextInput = this.onTextInput.bind(this))
-    pm.extendCommand("delBackward", "high", this.delBackward = this.delBackward.bind(this))
+    pm.on("command_delBackward", this.delBackward = this.delBackward.bind(this))
   }
 
   unregister() {
     this.pm.off("selectionChange", this.onSelChange)
     this.pm.off("textInput", this.onTextInput)
-    this.pm.unextendCommand("delBackward", "high", this.delBackward)
+    this.pm.off("command_delBackward", this.delBackward)
   }
 
   addRules(rules) {
