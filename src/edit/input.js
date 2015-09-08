@@ -74,7 +74,7 @@ export function dispatchKey(pm, name, e) {
   }
 
   let result
-  for (let i = 0; !result && i < pm.input.keymaps.length; i++)
+  for (let i = pm.input.keymaps.length - 1; !result && i >= 0; i--)
     result = lookupKey(name, pm.input.keymaps[i], handle, pm)
   if (!result)
     result = lookupKey(name, pm.options.extraKeymap, handle, pm) ||

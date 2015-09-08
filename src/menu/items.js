@@ -113,19 +113,12 @@ export class InlineStyleItem extends IconItem {
   }
   apply(pm) {
     let sel = pm.selection
-    if (this.active(pm)) {
-      if (sel.empty)
-        pm.setInlineStyle(this.style, false)
-      else
-        pm.apply(pm.tr.removeStyle(sel.from, sel.to, this.style.type))
-    } else if (this.dialog) {
+    if (this.active(pm))
+      pm.setStyle(this.style, false)
+    else if (this.dialog)
       return [this.dialog]
-    } else {
-      if (sel.empty)
-        pm.setInlineStyle(this.style, true)
-      else
-        pm.apply(pm.tr.addStyle(sel.from, sel.to, this.style))
-    }
+    else
+      pm.setStyle(this.style, true)
   }
 }
 

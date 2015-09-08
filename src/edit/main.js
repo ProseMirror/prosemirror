@@ -186,16 +186,18 @@ export class ProseMirror {
     this.ranges.removeRange(range)
   }
 
-  setInlineStyle(st, to, range) {
-    if (!range) range = this.selection
-    if (!range.empty) {
-      if (to == null) to = !rangeHasStyle(this.doc, range.from, range.to, st.type)
-      this.apply(this.tr[to ? "addStyle" : "removeStyle"](range.from, range.to, st))
-    } else if (!this.doc.path(range.head.path).type.plainText && range == this.selection) {
+  setStyle(st, to) {
+    let sel = this.selection
+    if (sel.empty) {
       let styles = this.activeStyles()
-      if (to == null) to = !style.contains(styles, st)
+      if (to == null) to = !style.containsType(styles, st.type)
       this.input.storedStyles = to ? style.add(styles, st) : style.removeType(styles, st.type)
       this.signal("activeStyleChange")
+    } else {
+      if (to != null ? to : !rangeHasStyle(this.doc, sel.from, sel.to, st.type))
+        this.apply(this.tr.addStyle(sel.from, sel.to, st))
+      else
+        this.apply(this.tr.removeStyle(sel.from, sel.to, st.type))
     }
   }
 

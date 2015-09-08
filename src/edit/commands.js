@@ -30,17 +30,17 @@ commands.insertHardBreak = pm => {
   return pm.apply(tr)
 }
 
-commands.setStrong = pm => pm.setInlineStyle(style.strong, true)
-commands.unsetStrong = pm => pm.setInlineStyle(style.strong, false)
-commands.toggleStrong = pm => pm.setInlineStyle(style.strong, null)
+commands.setStrong = pm => pm.setStyle(style.strong, true)
+commands.unsetStrong = pm => pm.setStyle(style.strong, false)
+commands.toggleStrong = pm => pm.setStyle(style.strong, null)
 
-commands.setEm = pm => pm.setInlineStyle(style.em, true)
-commands.unsetEm = pm => pm.setInlineStyle(style.em, false)
-commands.toggleEm = pm => pm.setInlineStyle(style.em, null)
+commands.setEm = pm => pm.setStyle(style.em, true)
+commands.unsetEm = pm => pm.setStyle(style.em, false)
+commands.toggleEm = pm => pm.setStyle(style.em, null)
 
-commands.setCode = pm => pm.setInlineStyle(style.code, true)
-commands.unsetCode = pm => pm.setInlineStyle(style.code, false)
-commands.toggleCode = pm => pm.setInlineStyle(style.code, null)
+commands.setCode = pm => pm.setStyle(style.code, true)
+commands.unsetCode = pm => pm.setStyle(style.code, false)
+commands.toggleCode = pm => pm.setStyle(style.code, null)
 
 function blockBefore(pos) {
   for (let i = pos.path.length - 1; i >= 0; i--) {
