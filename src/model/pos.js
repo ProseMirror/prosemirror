@@ -48,12 +48,6 @@ export class Pos {
     return new Pos(this.path, this.offset + by)
   }
 
-  offsetAt(pos, offset) {
-    let path = this.path.slice()
-    path[pos] += offset
-    return new Pos(path, this.offset)
-  }
-
   extend(pos) {
     let path = this.path.slice(), add = this.offset
     for (let i = 0; i < pos.path.length; i++) {
@@ -63,7 +57,17 @@ export class Pos {
     return new Pos(path, pos.offset + add)
   }
 
+  toJSON() { return this }
+
   static fromJSON(json) { return new Pos(json.path, json.offset) }
+
+  static after(node, pos) { return findAfter(node, pos, []) }
+  static start(node) { return findLeft(node, []) }
+
+  static before(node, pos) { return findBefore(node, pos, []) }
+  static end(node) { return findRight(node, []) }
+
+  static near(node, pos) { return Pos.after(node, pos) || Pos.before(node, pos) }
 }
 
 function findLeft(node, path) {
@@ -91,9 +95,6 @@ function findAfter(node, pos, path) {
   }
 }
 
-Pos.after = function(node, pos) { return findAfter(node, pos, []) }
-Pos.start = function(node) { return findLeft(node, []) }
-
 function findRight(node, path) {
   if (node.type.block)
     return new Pos(path, node.size)
@@ -117,8 +118,3 @@ function findBefore(node, pos, path) {
     path.pop()
   }
 }
-
-Pos.before = function(node, pos) { return findBefore(node, pos, []) }
-Pos.end = function(node) { return findRight(node, []) }
-
-Pos.near = function(node, pos) { return Pos.after(node, pos) || Pos.before(node, pos) }

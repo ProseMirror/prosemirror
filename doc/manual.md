@@ -2,7 +2,7 @@
 
 ...
 
-## edit Module
+## edit Module <a name="edit"></a>
 
 This module implements the core editor, and is the main thing you'd
 interact with when embedding a ProseMirror instance in a website.
@@ -345,3 +345,183 @@ named operations that can be bound to keys or ran with the
 
 **insertRule** <a name="command_insertRule"></a>
   : Insert a horizontal rule element at the cursor.
+
+## model Module <a name="model"></a>
+
+This module implements the document model. Documents are immutable (by
+convention) data structures represented as a tree of [nodes](#Node),
+with text-block leaves containing a flat array of [spans](#Span)
+representing their content.
+
+### class Node <a name="Node"></a>
+
+Nodes make up the structure of a document. They are somewhat like HTML
+DOM nodes, but simpler. A node is identified by a type, which
+determines the role it has. Each node may have children, though the
+schema determines what kind of children, and for many types of nodes
+forbids children entirely. Nodes can also have attributes, which again
+are constrained by the schema.
+
+**constructor**(type: string|[NodeType](#NodeType), attrs?: Object, content?: [[Node](#Node)] <a name="Node.constructor"></a>
+  : Construct a node with the given type, attributes, and content. If
+    `attrs` is not given, it will default to the node type's default
+    attributes, or raise an error if no suitable defaults exist for
+    the node. If `content` is not given, the resulting node is empty.
+
+**type**: [NodeType](#NodeType) <a name="Node.type"></a>
+  : The node's type.
+
+**attrs**: Object <a name="Node.attrs"></a>
+  : An object containing the node's attributes.
+
+**content**: [[Node](#Node)] <a name="Node.content"></a>
+  : The node's children. Exists but is empty for nodes that can not
+    have children.
+
+**toString**() → string <a name="Node.toString"></a>
+  : Produces a simple human-readable representation of the node.
+
+**copy**(content?: [[Node](#Node)]) → [Node](#Node) <a name="Node.copy"></a>
+  : Copies the node, optionally providing a new content array.
+
+**slice**(from: number, to?: number) → [[Node](#Node)] <a name="Node.slice"></a>
+  : Returns a slice of the node's content between the two given
+    offsets.
+
+**size**: number <a name="Node.size"></a>
+  : Returns the total size (in characters/opaque nodes) of this node
+    and its children.
+
+**maxOffset**: number <a name="Node.maxOffset"></a>
+  : The maximum offset into this node.
+
+**textContent**() → string <a name="Node.textContent"></a>
+  : Returns the text in the node as a single string.
+
+**path**(path: [number]) → [Node](#Node) <a name="Node.path"></a>
+  : Looks up a node by path, which is an array of offsets. When path
+    is `[]`, the current node is returned, when it is `[0]` the first
+    child is returned, when `[0, 1]` the second child of the first
+    child, and so on.
+
+**pathNodes**(path: [number]) → [[Node](#node)] <a name="Node.pathNodes"></a>
+  : Like [`path`](#Node.path), but return an array of nodes that the
+    path passes through.
+
+**isValidPos**(pos: [Pos](#Pos), requireInBlock?: bool) → bool <a name="Node.isValidPos"></a>
+  : Checks whether the given position points to a valid place in this
+    node. If `requireInBlock` is true, the position must point into a
+    content block.
+
+**sameMarkup**(other: [Node](#Node)) → bool <a name="Node.sameMarkup"></a>
+  : Tells you whether two nodes have the same type and attributes.
+
+**toJSON**() → Object <a name="Node.toJSON"></a>
+  : Returns a JSON-serializable representation of the node.
+
+The Node class also has a static method:
+
+**fromJSON**(json: Object) → [Node](#Node) <a name="Node.fromJSON"></a>
+  : Given an object as produced by the [`toJSON`](#Node.toJSON)
+    method, deserialize it into a proper [`Node`](#Node) object again.
+
+### class Span <a name="Span"></a>
+
+Span is a subclass of [Node](#Node) used to represent inline content,
+such as text and hard breaks.
+
+**constructor**(type: string|[NodeType](#NodeType), attrs?: Object, styles?: [Object], text?: string) <a name="Span.constructor"></a>
+  : Create a span node of the given type. `styles` should be an array
+    of style objects, such as [`style.strong`](#style.strong) or a
+    value created with [`style.link`](#style.link). `text` should only
+    be given when creating a text node.
+
+**text**: string <a name="Span.text"></a>
+  : The span's text content (if any).
+
+**styles**: [Object] <a name="Span.styles"></a>
+  : An array of style information objects (such 
+
+`Span` has one static method:
+
+**text**(text: string, styles: [Object]) → [Span](#Span) <a name="Span.text"></a>
+  : Shorthand for creating a text span.
+
+### class NodeType <a name="NodeType"></a>
+
+Node type objects contain information about a node type. FIXME I'm
+holding off documenting these properly because they are almost
+certainly about to change very much as a result of the schema work.
+
+### class Pos <a name="Pos"></a>
+
+Instances of `Pos` represent positions in a document, as an array of
+integers that describes a path to the target node (see
+[`Node.path`](#Node.path)) and an integer offset. The offset's meaning
+depends on the type of the target node. If it contains inline content,
+it is a character offset, whereas for nodes containing block nodes, it
+is an offset into the [`content`](#Node.content) array.
+
+**constructor**(path: [number], offset: number) <a name="Pos.constructor"></a>
+  : Create a position with the given path and offset.
+
+**path**: [number] <a name="Pos.path"></a>
+  : The path from the document root to the parent node of this
+    position.
+
+**offset**: number <a name="Pos.offset"></a>
+  : The offset into the position's parent node.
+
+**toString**() → string <a name="Pos.toString"></a>
+  : Returns a simple string representation of the position, in the
+    shape of `"0/1:2"` (path `[0, 1]`, offset `2`).
+
+**depth**: number <a name="Pos.depth"></a>
+  : The length of the position's path.
+
+**cmp**(other: [Pos](#Pos)) → number <a name="Pos.cmp"></a>
+  : Compares two positions. Returns a negative number if `this` is
+    before `other`, zero if they are the same, and a positive number
+    otherwise.
+
+**shorten**(depth?: number, offset?: number) → [Pos](#Pos) <a name="Pos.shorten"></a>
+  : Shorten the path, moving its position closer to the document root.
+    By default, it will go one level up, but you can pass `depth` to
+    explicitly set the depth of the result. `offset` determines where
+    in the parent node the result ends up. If it is 0, you get a
+    position directly before the original target node, if it is 1,
+    directly after it. Other numbers are also allowed, but might
+    create invalid offsets.
+
+**shift**(by: number) → [Pos](#Pos) <a name="Pos.shift"></a>
+  : Create a position whose offset is shifted by `by` units compared
+    to the original position.
+
+**toJSON**() → Object <a name="Pos.toJSON"></a>
+  : Return a JSON-serializable representation of the position.
+
+The class has the following static methods:
+
+**fromJSON**(json: Object) → [Pos](#Pos) <a name="Pos.fromJSON"></a>
+  : Convert a JSON object representing a position into an actual
+    [`Pos`](#Pos) instance.
+  
+**start**(doc: [Node](#Node)) → [Pos](#Pos) <a name="Pos.start"></a><br>**end**(doc: [Node](#Node)) → [Pos](#Pos) <a name="Pos.end"></a>
+  : Find the first or last inline position in a document.
+
+**after**(doc: [Node](#Node), pos: [Pos](#Pos)) → [Pos](#Pos) <a name="Pos.after"></a><br>**before**(doc: [Node](#Node), pos: [Pos](#Pos)) → [Pos](#Pos) <a name="Pos.before"></a>
+  : Find the first inline position before or after `pos` in the given
+    document. May return `null` if no such position exists.
+
+**near**(doc: [Node](#Node), pos: [Pos](#Pos)) → [Pos](#Pos) <a name="Pos.near"></a>
+  : Find an inline position near `pos` in the given document. Tries
+    calling [`after`](#Pos.after) first, and falls back to
+    [`before`](#Pos.before) if that fails.
+  
+### model.style. Submodule <a name="model.style"></a>
+
+### Further exports
+
+sliceBefore, sliceAfter, sliceBetween
+spanAtOrBefore, getSpan, spanStylesAt, rangeHasStyle
+findDiffStart, findDiffEnd
