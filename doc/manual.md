@@ -23,11 +23,11 @@ and properties:
   : Replace the document with a new document. The way `value` is
     interpreted depends on the `format` parameter. If this is `null`,
     `value` should be a [`Node`](#Node). Otherwise, it should be a
-    valid value for the given [source format type](#FIXME).
+    valid value for the given [source format type](#formats).
 
 **getContent**(format?: string) → Any <a name="ProseMirror.getContent"></a>
   : Retrieve the content document in a given
-    [output format type](#FIXME). When `format` is `null`, the
+    [output format type](#formats). When `format` is `null`, the
     document is returned as a [`Node`](#Node).
 
 **selection**: [Range](#Range) <a name="ProseMirror.selection"></a>
@@ -42,7 +42,7 @@ and properties:
 **selectedText**: string <a name="ProseMirror.selectedText"></a>
   : Get the text inside the current selection.
 
-**apply**(transform: [Transform](#transform.Transform), options?: Object) <a name="ProseMirror.apply"></a>
+**apply**(transform: [Transform](#Transform), options?: Object) <a name="ProseMirror.apply"></a>
   : Apply a transformation to the document in the editor. This will
     update the editor's content document and adjust the selection.
     You'll usually want to use the [`tr`](#ProseMirror.tr) getter to
@@ -142,27 +142,27 @@ These are the options
 default. Note that you can use [`defineOption`](#defineOption) to
 define new ones.
 
-doc: Any <a name="ProseMirror.options.doc"></a>
+**doc**: Any <a name="ProseMirror.options.doc"></a>
   : The editor's starting document. By default, a [`Node`](#Node) is
     expected, but you can use the
     [`docFormat`](#ProseMirror.options.docFormat) option to pass in
-    another [supported format](#FIXME).
+    another [supported format](#formats).
 
-docFormat: string <a name="ProseMirror.options.docFormat"></a>
-  : The [source format](#FIXME) of the
+**docFormat**: string <a name="ProseMirror.options.docFormat"></a>
+  : The [source format](#formats) of the
     [`doc` option](#ProseMirror.options.doc).
 
-place: DOM Element <a name="ProseMirror.options.place"></a>
+**place**: DOM Element <a name="ProseMirror.options.place"></a>
   : The DOM node to append the editor to. Optional.
 
-keymap: [Keymap](#Keymap) <a name="ProseMirror.options.keymap"></a>
+**keymap**: [Keymap](#Keymap) <a name="ProseMirror.options.keymap"></a>
   : The base keymap to use. Defaults to the
     [default keymap](#defaultKeymap).
 
-historyDepth: number <a name="ProseMirror.options.historyDepth"></a>
+**historyDepth**: number <a name="ProseMirror.options.historyDepth"></a>
   : The amount of history events to store. Defaults to 50.
 
-historyEventDelay: number <a name="ProseMirror.options.historyEventDelay"></a>
+**historyEventDelay**: number <a name="ProseMirror.options.historyEventDelay"></a>
   : The idle time (in milliseconds) that causes a new history event to
     be started. Defaults to 500.
 
@@ -237,19 +237,19 @@ A marked range represents a part of the document marked with
 Apart from the classes listed above, the `edit` module also exports
 these bindings:
 
-**defineOption**(name: string, defaultValue: Any, update?: Function) #{defineOption}
+**defineOption**(name: string, defaultValue: Any, update?: Function) <a name="defineOption"></a>
   : Define a new editor option with the given name and default value.
     If an `update` callback is given, it will be called on
     initialization and every time the option is changed, with
     arguments `(instance: `[`ProseMirror`](#ProseMirror)`, value: Any, oldValue: Any,
     initializing: bool)`.
 
-**registerCommand**(name: string, func: Function)
+**registerCommand**(name: string, func: Function) <a name="registerCommand"></a>
   : Registers a new [command](#commands). The command's function will
     be called with an editor instance as argument when the command is
     executed.
 
-**eventMixin**(constructor: Function) #{eventMixin}
+**eventMixin**(constructor: Function) <a name="eventMixin"></a>
   : A function that can be applied to a constructor to add the
     following methods to its prototype:
 
@@ -271,7 +271,7 @@ these bindings:
     **hasHandler**(event: string) → bool #{hasHandler}
       : Check whether the object has a handler for the given event.
 
-**defaultKeymap**: [Keymap](#Keymap)
+**defaultKeymap**: [Keymap](#Keymap) <a name="defaultKeymap"></a>
   : The default keymap for ProseMirror editors.
 
 ### Commands <a name="commands"></a>
@@ -410,7 +410,7 @@ are constrained by the schema.
     child is returned, when `[0, 1]` the second child of the first
     child, and so on.
 
-**pathNodes**(path: [number]) → [[Node](#node)] <a name="Node.pathNodes"></a>
+**pathNodes**(path: [number]) → [[Node](#Node)] <a name="Node.pathNodes"></a>
   : Like [`path`](#Node.path), but return an array of nodes that the
     path passes through.
 
@@ -450,7 +450,7 @@ such as text and hard breaks.
 
 `Span` has one static method:
 
-**text**(text: string, styles: [Object]) → [Span](#Span) <a name="Span.text"></a>
+**text**(text: string, styles: [Object]) → [Span](#Span) <a name="Span.text_"></a>
   : Shorthand for creating a text span.
 
 ### Class `model.NodeType` <a name="NodeType"></a>
@@ -721,22 +721,122 @@ that they can be chained.
 
 ### Class `transform.TransformResult` <a name="TransformResult"></a>
 
-FIXME
+This is a simple struct type that is returned when a transform step is
+applied to a document.
+
+**constructor**(doc: [Node](#Node), map?: [PosMap](#PosMap)) <a name="TransformResult.constructor"></a>
+  : Create a new result.
+
+**doc**: [Node](#Node) <a name="TransformResult.doc"></a>
+  : The new document.
+
+**map**: [PosMap](#PosMap) <a name="TransformResult.map"></a>
+  : A mapping of positions from the old document to the new document.
 
 ### Class `transform.PosMap` <a name="PosMap"></a>
 
-FIXME
+A position map is a byproduct of transforming a document. It can be
+used to go from a position in the old document to the corresponding
+position in the new document, for example to compute the new cursor
+position.
+
+**map**(pos: [Pos](#Pos), bias?: number) → [MapResult](#MapResult) <a name="PosMap.map"></a>
+  : Map a position. Bias determines whether, if something is inserted
+    at this very position, the new position ends up before (`-1`) or
+    after (`1`) it.
+
+**invert**() → [PosMap](#PosMap) <a name="PosMap.invert"></a>
+  : Create an inverted version of the map, which maps in the other
+    direction.
 
 ### Class `transform.MapResult` <a name="MapResult"></a>
 
-FIXME
+[Mapping a position](#PosMap.map) produces not just a new position,
+but also some information about the transformation.
+
+**pos**: [Pos](#Pos) <a name="MapResult.pos"></a>
+  : The mapped position.
+
+**deleted**: bool <a name="MapResult.deleted"></a>
+  : When true, the part of the document that contained the original
+    position was deleted. This is only set if the position was
+    entirely in a deleted chunk, not if it was on the edge of one.
 
 ### Further exports
 
-FIXME
+Sometimes it can be useful to know in advance whether a specific
+transformation applies in a certain context, for example to enable or
+disable a button. That's what these utility functions help with.
 
-**canLift**
+**canLift**(doc: [Node](#Node), from: [Pos](#Pos), to: [Pos](#Pos)) → bool <a name="canLift"></a>
+  : Check whether the blocks in the range `from` to `to` can be
+    [lifted](#Transform.lift).
 
-**canWrap**
+**canWrap**(doc: [Node](#Node), from: [Pos](#Pos), to: [Pos](#Pos), nodeType: [Node](#Node)) → bool <a name="canWrap"></a>
+  : Check whether the blocks in the given range can be
+    [wrapped](#Transform.wrap) in the given type of node.
 
-**joinPoint**
+**joinPoint**(doc: [Node](#Node), pos: [Pos](#Pos), dir?: number) → [Pos](#Pos) <a name="joinPoint"></a>
+  : Given a position, try to find a point directly before (or after if
+    `dir` is 1) it or one of its ancestors that would allow nodes to
+    be [joined](#Transform.join) (which requires adjacent nodes of
+    similar type). Returns a position that can be passed to
+    [`join`](#Transform.join) if successful, and `null` otherwise.
+
+## Module `convert` <a name="convert"></a>
+
+This module provides a registry for functions that can convert
+ProseMirror [documents](#Node) to and from other formats. Its
+`index.js` does not, like most other modules, automatically pull in
+everything in the module, because you probably only want to load
+the conversions that you need.
+
+**convertFrom**(value: Any, format: string, options: Any) → [Node](#Node) <a name="convertFrom"></a>
+  : Convert from the format named by `format`. `options` is passed
+    through to the conversion function.
+
+**defineSource**(format: string, func: Function) <a name="defineSource"></a>
+  : Define a source format. The conversion function will be passed
+    a value in the named format, and optionally an options value. It
+    should return a [document](#Node).
+
+**knownSource**(format: string) → bool <a name="knownSource"></a>
+  : Test whether a source format has been defined.
+
+**convertTo**(doc: [Node](#Node), format: string, options: Any) → Any <a name="convertTo"></a>
+  : Convert a document to the named format. `options` is passed
+    through to the conversion function.
+
+**defineTarget**(format: string, func: Function) <a name="defineTarget"></a>
+  : Define a target format. The conversion function will be called
+    with a [document](#Node) and optionally an options value, and
+    should return a representation of the document in this format.
+
+**knownTarget**(format: string) → bool <a name="knownTarget"></a>
+  : Test whether a target format has been defined.
+
+### Conversion formats <a name="formats"></a>
+
+These are the formats defined in the distribution:
+
+**"json"** <a name="format_json"></a>
+  : Defined by the main `convert` module. (De)serializes documents in
+    an (as of yet unspec'ed) JSON-serializable object. Note that it
+    does not do the string conversion.
+
+**"html"**, **"dom"** <a name="format_html"></a>
+  : Defined in `convert/to_dom` and `convert/from_dom` (and imported
+    by the `edit` module). The `"html"` format is an HTML string, the
+    `"dom"` format is actual DOM nodes.
+
+**"text"** <a name="format_text"></a>
+  : Conversion to and from plain text strings. Defined in
+    `convert/to_text` and `convert/from_text` (and imported by the
+    `edit` module).
+
+**"markdown"** <a name="format_markdown"></a>
+  : Conversion to and from Markdown strings. Defined in
+    `convert/to_markdown` and `convert/from_markdown`. The latter
+    depends on the
+    [`markdown-it`](https://github.com/markdown-it/markdown-it) parser
+    library.
