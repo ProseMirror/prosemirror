@@ -12,7 +12,7 @@ import {History} from "./history"
 import {eventMixin} from "./event"
 import {toText} from "../convert/to_text"
 import "../convert/from_text"
-import {convertFrom, convertTo} from "../convert/convert"
+import {convertFrom, convertTo} from "../convert"
 import {execCommand} from "./commands"
 import {RangeStore, MarkedRange} from "./range"
 

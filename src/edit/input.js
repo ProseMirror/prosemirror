@@ -3,7 +3,7 @@ import {Pos, Node, Span, spanStylesAt} from "../model"
 import {fromHTML} from "../convert/from_dom"
 import {toHTML} from "../convert/to_dom"
 import {toText} from "../convert/to_text"
-import {knownSource, convertFrom} from "../convert/convert"
+import {knownSource, convertFrom} from "../convert"
 
 import {isModifierKey, lookupKey, keyName} from "./keys"
 import {browser, addClass, rmClass} from "../dom"

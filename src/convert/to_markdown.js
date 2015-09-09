@@ -1,5 +1,5 @@
 import {style} from "../model"
-import {defineTarget} from "./convert"
+import {defineTarget} from "./index"
 
 export function toMarkdown(doc) {
   let state = new State()

@@ -1,5 +1,5 @@
 import {Span, Node} from "../model"
-import {defineSource} from "./convert"
+import {defineSource} from "./index"
 
 export function fromText(text) {
   let blocks = text.trim().split("\n\n")

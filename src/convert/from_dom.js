@@ -1,5 +1,5 @@
 import {style, Node, Span, nodeTypes, findConnection} from "../model"
-import {defineSource} from "./convert"
+import {defineSource} from "./index"
 
 export function fromDOM(dom, options) {
   if (!options) options = {}

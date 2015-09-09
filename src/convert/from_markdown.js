@@ -1,6 +1,6 @@
 import markdownit from "markdown-it"
 import {Node, Span, style} from "../model"
-import {defineSource} from "./convert"
+import {defineSource} from "./index"
 
 function parseTokens(state, toks) {
   for (let i = 0; i < toks.length; i++) {

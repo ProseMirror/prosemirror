@@ -1,5 +1,5 @@
 import {nodeTypes} from "../model"
-import {defineTarget} from "./convert"
+import {defineTarget} from "./index"
 
 export function toText(doc) {
   let out = ""

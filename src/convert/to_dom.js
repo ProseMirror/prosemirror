@@ -1,5 +1,5 @@
 import {style} from "../model"
-import {defineTarget} from "./convert"
+import {defineTarget} from "./index"
 
 // FIXME un-export, define proper extension mechanism
 export const render = Object.create(null), renderStyle = Object.create(null)
