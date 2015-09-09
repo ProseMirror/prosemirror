@@ -1,5 +1,5 @@
 import {style, Node, Span} from "../src/model"
-import {Transform, invertStep, Remapping} from "../src/transform"
+import {Transform, Remapping} from "../src/transform"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
@@ -12,7 +12,7 @@ function Tr(doc) { return new Transform(doc) }
 function invert(transform) {
   let doc = transform.doc, out = Tr(doc)
   for (let i = transform.steps.length - 1; i >= 0; i--)
-    out.step(invertStep(transform.steps[i], transform.docs[i], transform.maps[i]))
+    out.step(transform.steps[i].invert(transform.docs[i], transform.maps[i]))
   return out
 }
 

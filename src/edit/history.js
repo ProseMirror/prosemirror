@@ -1,5 +1,5 @@
 import {Pos} from "../model"
-import {Transform, Step, invertStep, mapStep, Remapping, applyStep} from "../transform"
+import {Transform, Step, mapStep, Remapping} from "../transform"
 
 class InvertedStep {
   constructor(step, version, id) {
@@ -86,7 +86,7 @@ class CompressionWorker {
                                   {nodes: [], openLeft: 0, openRight: 0})
           }
         }
-        let result = mappedStep && applyStep(this.doc, mappedStep)
+        let result = mappedStep && mappedStep.apply(this.doc)
         if (result) {
           this.doc = result.doc
           this.maps.push(result.map.invert())
@@ -180,7 +180,7 @@ class Branch {
   addTransform(transform, ids) {
     this.abortCompression()
     for (let i = 0; i < transform.steps.length; i++) {
-      let inverted = invertStep(transform.steps[i], transform.docs[i], transform.maps[i])
+      let inverted = transform.steps[i].invert(transform.docs[i], transform.maps[i])
       this.addStep(inverted, transform.maps[i], ids && ids[i])
     }
   }
@@ -253,8 +253,8 @@ class Branch {
         if (off == -1) {
           event.splice(j--, 1)
         } else {
-          let inv = invertStep(rebasedTransform.steps[off], rebasedTransform.docs[off],
-                               rebasedTransform.maps[off])
+          let inv = rebasedTransform.steps[off].invert(rebasedTransform.docs[off],
+                                                       rebasedTransform.maps[off])
           event[j] = new InvertedStep(inv, startVersion + newMaps.length + off + 1, step.id)
         }
       }

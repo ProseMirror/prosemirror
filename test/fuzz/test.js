@@ -1,5 +1,5 @@
 import {Node, nodeTypes, style} from "../../src/model"
-import {Transform, invertStep, Remapping} from "../../src/transform"
+import {Transform, Remapping} from "../../src/transform"
 import {cmpStr, cmpNode} from "../cmp"
 import {randomPos} from "./pos"
 
@@ -66,7 +66,7 @@ export function testTransform(tr) {
   checkInvariants(tr.doc)
   let inverted = new Transform(tr.doc)
   for (let i = tr.steps.length - 1; i >= 0; i--)
-    inverted.step(invertStep(tr.steps[i], tr.docs[i], tr.maps[i]))
+    inverted.step(tr.steps[i].invert(tr.docs[i], tr.maps[i]))
   cmpNode(inverted.doc, tr.docs[0], "invert to original")
   let remap = new Remapping
   for (let i = 0, j = tr.steps.length - 1; j >= 0; i++, j--) {

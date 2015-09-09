@@ -10,6 +10,14 @@ export class Step {
     this.param = param
   }
 
+  apply(doc) {
+    return steps[this.name].apply(doc, this)
+  }
+
+  invert(oldDoc, map) {
+    return steps[this.name].invert(this, oldDoc, map)
+  }
+
   toJSON() {
     let impl = steps[this.name]
     return {
@@ -35,15 +43,3 @@ export class Step {
 const steps = Object.create(null)
 
 export function defineStep(name, impl) { steps[name] = impl }
-
-export function applyStep(doc, step) {
-  if (!(step.name in steps))
-    throw new Error("Undefined transform " + step.name)
-
-  return steps[step.name].apply(doc, step)
-}
-
-export function invertStep(step, oldDoc, map) {
-  return steps[step.name].invert(step, oldDoc, map)
-}
-
