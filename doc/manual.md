@@ -1,6 +1,119 @@
 # ProseMirror user manual
 
-...
+ProseMirror is a rich text editor that can be embedded in web pages.
+This is its manual and programming API documentation.
+
+For more background on the project, see the blog posts
+[announcing](http://marijnhaverbeke.nl/blog/prosemirror.html) the
+project and describing its
+[collaborative editing implementation](http://marijnhaverbeke.nl/blog/collaborative-editing.html).
+
+Contents:
+
+ * [Bundling](#bundling)
+ * [Quick start](#quickstart)
+ * [Module `edit`](#edit)
+ * [Module `model`](#model)
+ * [Module `transform`](#transform)
+ * [Module `convert`](#convert)
+ * [Module `menu`](#menu)
+
+## Bundling <a name="bundling"></a>
+
+To use ProseMirror in a web page, you first need to build your script
+using a module bundler. This library is distributed as a large number
+of small modules. This means you get a clean, modular interface, and
+only have to include the parts that you need. But it also means you
+can't just drop in a script tag and get going.
+
+To build a script, make sure you've installed the ProseMirror package:
+
+    npm install git+https://github.com/ProseMirror/prosemirror.git
+    cd node_modules/prosemirror
+    npm run dist
+
+(FIXME: this will become simply `npm install prosemirror` when an NPM
+package is available)
+
+Then write your own script (say `src/edit.js`) that includes ProseMirror.
+For example:
+
+```javascript
+var ProseMirror = require("prosemirror/dist/edit").ProseMirror
+require("prosemirror/dist/menu/menubar") // Load menubar module
+
+var editor = new ProseMirror({
+  place: document.body,
+  menuBar: true
+})
+```
+
+And now let [Browserify](http://browserify.org) bundle the library for
+you:
+
+    browserify --outfile public/edit-bundle.js src/edit.js
+
+Or use [Webpack](http://webpack.github.io/) instead:
+
+    webpack src/edit.js public/edit-bundle.js
+
+## Quick start <a name="quickstart"></a>
+
+The [`ProseMirror`](#ProseMirror.constructor) constructor creates an
+editor. You can pass it an object with options to configure it. You'll
+usually want to pass at least [`place`](#option_place) so that the
+editor is added to the document.
+
+```javascript
+var ProseMirror = require("prosemirror/dist/edit").ProseMirror
+
+var editor = new ProseMirror({
+  place: document.querySelector("div#editor"),
+  doc: "Hello!",
+  docFormat: "text"
+})
+```
+
+The editor will be appended to the element passed as `place` option.
+You can pass in the initial contents using the
+[`doc` option](#option_doc). By default, it takes a
+[ProseMirror document](#Node), but you can use the
+[`docFormat` option](#option_docFormat) to choose another
+[format](#formats), such as plain text.
+
+You'll usually want to include some menu module, so that users have
+access to easily findable buttons for basic functionality. You do that
+by including one or more of the menu styles from the
+[`menu` module](#menu), and enable the [options](#defineOption) they
+define.
+
+To get the content out again, use the [`getContent`](#getContent)
+method, which again allows you to choose a [format](#formats).
+
+```javascript
+console.log(editor.getContent("html"))
+// "<p>Hello!</p>"
+```
+
+You can listen for [events](#events) by registering handlers with the
+[`on`](#on) method.
+
+```javascript
+editor.on("change", function() { scheduleSave(editor) })
+```
+
+And you can make specific changes to the editor content using the
+[transform](#Transform) API and the [`apply`](#ProseMirror.apply)
+method.
+
+```javascript
+function insertSmiley(editor) {
+  editor.apply(editor.tr.insertText(editor.selection.head, "😁"))
+}
+```
+
+For some examples of using ProseMirror, see the
+[demos](http://prosemirror.net/#demolist) on the project page.
 
 ## Module `edit` <a name="edit"></a>
 
@@ -352,6 +465,42 @@ named operations that can be bound to keys or ran with the
 **insertRule** <a name="command_insertRule"></a>
   : Insert a horizontal rule element at the cursor.
 
+### Events <a name="events"></a>
+
+A ProseMirror instance is an [event emitter](#eventMixin). That means
+you can register and unregister event handlers with its [`on`](#on)
+and [`off`](#off) methods. It fires the following events:
+
+**textInput**(text: string) <a name="event_textInput"></a>
+  : Fired when the user inputs text.
+
+**focus**() <a name="event_focus"></a><br>**blur**() <a name="event_blur"></a>
+  : The editor has gained or lost focus.
+
+**transform**(transform: [Transform](#Transform)) <a name="event_transform"></a>
+  : Fired after the content of the editor is transformed.
+
+**change**() <a name="event_change"></a>
+  : Fired when the document is modified for any reason.
+
+**setDoc**(doc: [Node](#Node), newSelection: [Range](#Range)) <a name="event_setDoc"></a>
+  : Fired when the document is replaced using [`setContent`](#setContent).
+
+**draw**() <a name="event_draw"></a>
+  : The editor's DOM display has been updated.
+
+**flush**() <a name="event_flush"></a>
+  : Updates are being flushed to the DOM. May or may not result in a
+    redraw (depending on whether anything changed).
+
+**activeStyleChange**() <a name="event_activeStyleChange"></a>
+  : The [current inline style](#setStyle) (for the next typed input)
+    has changed.
+
+**selectionChange**() <a name="event_selectionChange"></a>
+  : The selection has changed (for any reason, might be caused by a
+    document change).
+
 ## Module `model` <a name="model"></a>
 
 This module implements the document model. Documents are immutable (by
@@ -524,7 +673,7 @@ The class has the following static methods:
     calling [`after`](#Pos.after) first, and falls back to
     [`before`](#Pos.before) if that fails.
   
-### model.style. Submodule <a name="model.style"></a>
+### Submodule `model.style` <a name="model.style"></a>
 
 This submodule groups style related functionality. Style objects are
 used to annotate pieces of inline content. They have a `type` property
@@ -827,7 +976,8 @@ These are the formats defined in the distribution:
 **"html"**, **"dom"** <a name="format_html"></a>
   : Defined in `convert/to_dom` and `convert/from_dom` (and imported
     by the `edit` module). The `"html"` format is an HTML string, the
-    `"dom"` format is actual DOM nodes.
+    `"dom"` format takes a DOM node or document fragment as input, and
+    outputs a DOM document fragment.
 
 **"text"** <a name="format_text"></a>
   : Conversion to and from plain text strings. Defined in
@@ -840,3 +990,92 @@ These are the formats defined in the distribution:
     depends on the
     [`markdown-it`](https://github.com/markdown-it/markdown-it) parser
     library.
+
+## Module `menu` <a name="menu"></a>
+
+The `menu` module contains various building blocks for creating menus,
+and several ready-to-use menu styles. It does not have an
+`index.js`—you must explicitly include the submodules that you need.
+
+The submodules implement a few menu styles and parts that can be
+useful for implementing your own interface elements.
+
+### Submodule `menu.menubar` <a name="menu.menubar"></a>
+
+Defines an option `menuBar` that can be set to `true` or an options
+object to enable a classical menubar on top of the editor. If the
+`float` option is enabled (`menuBar: {float: true}`), the menubar will
+stick to the top of the screen when the editor is partially scrolled
+out of view.
+
+The items shown in the bar are taken from the `"inline"`, `"block"`
+and `"history"` [menu item categories](#getItems).
+
+### Submodule `menu.inlinemenu` <a name="menu.inlinemenu"></a>
+
+Defines an option `inlineMenu` that, when enabled, causes a tooltip to
+pop up whenever the user selects text. When the `showLinks` sub-option
+isn't explicitly disabled (`inlineMenu: {showLinks: false}`), a
+tooltip showing the target URL will also show up when there is no
+selection but the cursor is in a link.
+
+Shows the menu items from the `"inline"` [category](#getItems).
+
+### Submodule `menu.buttonmenu` <a name="menu.buttonmenu"></a>
+
+Defines an option `buttonMenu` that causes a ‘hamburger’ button to
+show in the right margin of the editor, besides the currently selected
+block. When clicked, the button shows a tooltip containing menu items.
+
+Designed to be used alongside the [`inlinemenu`](#menu.inlinemenu)
+module. Shows the items from the `"block"` and `"history"`
+[categories](#getItems), and if there is no selection, also includes
+the items from the `"inline"` category.
+
+### Submodule `menu.items` <a name="menu.items"></a>
+
+Contains a superclass for menu items, a collection of standard items,
+and a registry for grouping items into categories, which can then be
+shown by the various menu styles.
+
+(FIXME Needs more detail, also document other submodules)
+
+**getItems**(category: string) → [[MenuItem](#MenuItem)]
+  : Get the items in the given category.
+
+**MenuItem**
+  : Superclass for menu items. Subclasses may implement the
+    `select(pm)` method to control when the item is visible, and the
+    `render()` method that draws the item as a DOM node.
+
+**IconItem**
+  : Superclass for simple clickable icon items. Subclasses can
+    override `active(pm)` to determine whether the icon is currently
+    active (highlighted).
+
+**DialogItem**
+  : Superclass for dialogs.
+
+**separatorItem**
+  : An item that shows up as a non-interactive menu separator.
+
+### Submodule `menu.tooltip` <a name="menu.tooltip"></a>
+
+This module exports a single class, `Tooltip`. <a name="Tooltip"></a>
+
+**constructor**(pm: [ProseMirror](#ProseMirror), dir: string) <a name="Tooltip.constructor"></a>
+  : Construct a tooltip. `dir` may be one of `"left"`, `"right"`,
+    `"above"`, and `"below"`, and determines on which side of the
+    target position the tooltip will be placed. A tooltip is a
+    persistent object that can be shown and hidden during its
+    lifetime. It starts out hidden.
+
+**detach**() <a name="Tooltip.detach"></a>
+  : Destroy the tooltip (removing its DOM nodes and event handlers).
+
+**open**(node: DOM Element, pos: {left, right, top, bottom: number}) <a name="Tooltip.open"></a>
+  : Open the tooltip, showing the given DOM element, and position it
+    near the given position.
+
+**close**() <a name="Tooltip.close"></a>
+  : Hide this tooltip.
