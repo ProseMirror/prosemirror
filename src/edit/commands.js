@@ -28,7 +28,7 @@ commands.insertHardBreak = pm => {
     tr.insertText(pos, "\n")
   else
     tr.insert(pos, new Span("hard_break"))
-  return pm.apply(tr)
+  pm.apply(tr)
 }
 
 commands.setStrong = pm => pm.setStyle(style.strong, true)
@@ -113,7 +113,7 @@ function delBackward(pm, by) {
     delBlockBackward(pm, tr, from)
   else
     tr.delete(new Pos(from.path, moveBackward(pm.doc.path(from.path), from.offset, by)), from)
-  return pm.apply(tr)
+  pm.apply(tr)
 }
 
 commands.delBackward = pm => delBackward(pm, "char")
@@ -182,7 +182,7 @@ function delForward(pm, by) {
     else
       tr.delete(from, new Pos(from.path, moveForward(parent, from.offset, by)))
   }
-  return pm.apply(tr)
+  pm.apply(tr)
 }
 
 commands.delForward = pm => delForward(pm, "char")
