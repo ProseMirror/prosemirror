@@ -1,7 +1,6 @@
 import {Node} from "../model"
 
 import {defaultKeymap} from "./defaultkeymap"
-import {Keymap} from "./keys"
 
 class Option {
   constructor(defaultValue, update, updateOnInit) {

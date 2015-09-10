@@ -112,7 +112,6 @@ export class InlineStyleItem extends IconItem {
       return rangeHasStyle(pm.doc, sel.from, sel.to, this.style.type)
   }
   apply(pm) {
-    let sel = pm.selection
     if (this.active(pm))
       pm.setStyle(this.style, false)
     else if (this.dialog)
