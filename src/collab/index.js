@@ -66,7 +66,7 @@ class Collab {
   receive(steps) {
     let doc = this.versionDoc
     let maps = steps.map(step => {
-      let result = step.apply(step)
+      let result = step.apply(doc)
       doc = result.doc
       return result.map
     })
