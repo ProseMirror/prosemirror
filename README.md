@@ -19,7 +19,10 @@ discussion and support requests, and the [Github bug
 tracker](https://github.com/prosemirror/prosemirror/issues) is the
 place to report issues.
 
-## Usage
+Documentation can be found on [the
+website](http://prosemirror.net/doc/manual.html).
+
+## Structure
 
 This software is written as a collection of ES6 modules. Since JS
 engines don't really run ES6 yet, it has to be compiled to ES5 to
