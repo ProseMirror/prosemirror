@@ -1,5 +1,5 @@
 import markdownit from "markdown-it"
-import {Node, Span, style} from "../model"
+import {Node, Span, Pos, style} from "../model"
 import {defineSource} from "./index"
 
 function parseTokens(state, toks) {
@@ -13,6 +13,8 @@ export function fromMarkdown(text) {
   let tokens = markdownit("commonmark").parse(text, {})
   let state = new State(tokens)
   parseTokens(state, tokens)
+  let doc = state.stack[0]
+  if (!Pos.start(doc)) doc.push(new Node("paragraph"))
   return state.stack[0]
 }
 

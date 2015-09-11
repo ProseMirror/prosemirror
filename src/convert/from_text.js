@@ -13,6 +13,7 @@ export function fromText(text) {
     }
     doc.push(para)
   }
+  if (!doc.content.length) doc.push(new Node("paragraph"))
   return doc
 }
 

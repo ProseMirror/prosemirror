@@ -1,4 +1,4 @@
-import {style, Node, Span, nodeTypes, findConnection} from "../model"
+import {style, Node, Span, Pos, nodeTypes, findConnection} from "../model"
 import {defineSource} from "./index"
 
 export function fromDOM(dom, options) {
@@ -7,7 +7,9 @@ export function fromDOM(dom, options) {
   let start = options.from ? dom.childNodes[options.from] : dom.firstChild
   let end = options.to != null && dom.childNodes[options.to] || null
   context.addAll(start, end, true)
-  return context.stack[0]
+  let doc = context.stack[0]
+  if (!Pos.start(doc)) doc.push(new Node("paragraph"))
+  return doc
 }
 
 defineSource("dom", fromDOM)
