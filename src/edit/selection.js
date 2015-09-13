@@ -60,7 +60,7 @@ export class Selection {
 
     if (sel.extend) {
       range.setEnd(anchor.node, anchor.offset)
-      range.collapse()
+      range.collapse(false)
     } else {
       if (this.range.anchor.cmp(this.range.head) > 0) { let tmp = anchor; anchor = head; head = tmp }
       range.setEnd(head.node, head.offset)
