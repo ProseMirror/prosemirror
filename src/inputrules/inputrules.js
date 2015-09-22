@@ -6,7 +6,7 @@ export function addInputRules(pm, rules) {
   pm.mod.interpretInput.addRules(rules)
 }
 
-export function removeInputRule(pm, rules) {
+export function removeInputRules(pm, rules) {
   let ii = pm.mod.interpretInput
   if (!ii) return
   ii.removeRules(rules)
