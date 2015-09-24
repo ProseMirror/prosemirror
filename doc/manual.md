@@ -32,6 +32,10 @@ To build a script, make sure you've installed the ProseMirror package:
     cd node_modules/prosemirror
     npm run dist
 
+If you don't already have `babel` installed globally or in your project, also install `babel` as it is used to build ProseMirror:
+
+	npm install --save babel
+
 (FIXME: this will become simply `npm install prosemirror` when an NPM
 package is available)
 
