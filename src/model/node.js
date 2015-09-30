@@ -53,6 +53,10 @@ export class Node {
     }
   }
 
+  splice(from, to, replace) {
+    return new Node(this.type, this.attrs, this.content.slice(0, from).concat(replace).concat(this.content.slice(to)))
+  }
+
   remove(child) {
     let found = this.content.indexOf(child)
     if (found == -1) throw new Error("Child not found")

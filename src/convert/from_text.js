@@ -3,18 +3,18 @@ import {defineSource} from "./index"
 
 export function fromText(text) {
   let blocks = text.trim().split("\n\n")
-  let doc = new Node("doc")
+  let nodes = []
   for (let i = 0; i < blocks.length; i++) {
-    let para = new Node("paragraph")
+    let spans = []
     let parts = blocks[i].split("\n")
     for (let j = 0; j < parts.length; j++) {
-      if (j) para.push(new Span("hard_break"))
-      para.push(Span.text(parts[j]))
+      if (j) spans.push(new Span("hard_break"))
+      spans.push(Span.text(parts[j]))
     }
-    doc.push(para)
+    doc.push(new Node("paragraph", null, spans))
   }
-  if (!doc.content.length) doc.push(new Node("paragraph"))
-  return doc
+  if (!nodes.length) nodes.push(new Node("paragraph"))
+  return new Node("doc", null, nodes)
 }
 
 defineSource("text", fromText)

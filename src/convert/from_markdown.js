@@ -11,18 +11,18 @@ function parseTokens(state, toks) {
 
 export function fromMarkdown(text) {
   let tokens = markdownit("commonmark").parse(text, {})
-  let state = new State(tokens)
+  let state = new State(tokens), doc
   parseTokens(state, tokens)
-  let doc = state.stack[0]
-  if (!Pos.start(doc)) doc.push(new Node("paragraph"))
-  return state.stack[0]
+  do { doc = closeNode(state) } while (state.stack.length)
+  if (!Pos.start(doc)) doc = doc.splice(0, 0, [new Node("paragraph")])
+  return doc
 }
 
 defineSource("markdown", fromMarkdown)
 
 class State {
   constructor(tokens) {
-    this.stack = [new Node("doc")]
+    this.stack = [{type: "doc", content: []}]
     this.tokens = tokens
     this.styles = []
   }
@@ -32,7 +32,8 @@ class State {
   }
 
   push(elt) {
-    this.top().push(elt)
+    if (this.stack.length)
+      this.top().content.push(elt)
   }
 }
 
@@ -42,22 +43,20 @@ const tokens = Object.create(null)
 // and _close tokens with more tokens in between them, and `token` for
 // atomic tokens.
 
-function addNode(state, type, attrs = null) {
-  let node = new Node(type, attrs)
+function addNode(state, type, attrs, content) {
+  let node = new Node(type, attrs, content)
   state.push(node)
   return node
 }
 
-function openNode(state, type, attrs = null) {
-  let node = addNode(state, type, attrs)
-  state.stack.push(node)
-  return node
+function openNode(state, type, attrs) {
+  state.stack.push({type: type, attrs: attrs, content: []})
 }
 
 function closeNode(state) {
-  state.stack.pop()
-  if (state.styles.length)
-    state.styles = []
+  if (state.styles.length) state.styles = []
+  let info = state.stack.pop()
+  return addNode(state, info.type, info.attrs, info.content)
 }
 
 function openInline(state, add) {
