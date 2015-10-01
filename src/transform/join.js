@@ -1,4 +1,4 @@
-import {Pos, Node} from "../model"
+import {Pos} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"

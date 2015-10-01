@@ -1,6 +1,6 @@
 // Primitive operations on inline content
 
-import {Node, Span, nodeTypes} from "./node"
+import {Node} from "./node"
 import * as style from "./style"
 
 export function getSpan(doc, pos) {

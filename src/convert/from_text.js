@@ -11,7 +11,7 @@ export function fromText(text) {
       if (j) spans.push(new Span("hard_break"))
       spans.push(Span.text(parts[j]))
     }
-    doc.push(new Node("paragraph", null, spans))
+    nodes.push(new Node("paragraph", null, spans))
   }
   if (!nodes.length) nodes.push(new Node("paragraph"))
   return new Node("doc", null, nodes)
