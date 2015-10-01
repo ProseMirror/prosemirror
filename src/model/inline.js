@@ -3,29 +3,6 @@
 import {Node, Span, nodeTypes} from "./node"
 import * as style from "./style"
 
-export function stitchTextNodes(node, at) {
-  let before, after
-  if (at && node.content.length > at &&
-      (before = node.content[at - 1]).type == nodeTypes.text &&
-      (after = node.content[at]).type == nodeTypes.text &&
-      style.sameSet(before.styles, after.styles)) {
-    let joined = Span.text(before.text + after.text, before.styles)
-    node.content.splice(at - 1, 2, joined)
-    return true
-  }
-}
-
-export function clearMarkup(node) {
-  if (node.content.length > 1 || node.content[0].type != nodeTypes.text || node.content[0].styles.length) {
-    let text = ""
-    for (var i = 0; i < node.content.length; i++) {
-      let child = node.content[i]
-      if (child.type == nodeTypes.text) text += child.text
-    }
-    node.content = [Span.text(text)]
-  }
-}
-
 export function getSpan(doc, pos) {
   return spanAtOrBefore(doc.path(pos.path), pos.offset).node
 }
@@ -70,15 +47,4 @@ export function rangeHasStyle(doc, from, to, type) {
     }
   }
   return scan(doc, from, to, type, 0)
-}
-
-export function splitSpansAt(parent, offset_) {
-  let {node, offset, innerOffset} = spanAtOrBefore(parent, offset_)
-  if (innerOffset && innerOffset != node.size) {
-    parent.content.splice(offset, 1, node.slice(0, innerOffset), node.slice(innerOffset))
-    offset += 1
-  } else if (innerOffset) {
-    offset += 1
-  }
-  return {offset: offset, styles: node ? node.styles : Node.empty}
 }

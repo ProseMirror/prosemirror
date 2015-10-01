@@ -1,10 +1,10 @@
-import {Pos, Node, Span, stitchTextNodes, spanStylesAt, sliceBefore,
+import {Pos, Node, Span, spanStylesAt, sliceBefore,
         sliceAfter, sliceBetween} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
-import {copyTo, replaceHasEffect, samePathDepth} from "./tree"
+import {replaceHasEffect, samePathDepth} from "./tree"
 
 function findMovedChunks(oldNode, oldPath, newNode, startDepth) {
   let moved = []

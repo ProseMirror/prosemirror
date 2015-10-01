@@ -5,7 +5,6 @@ import * as style from "./style"
 export {style}
 
 export {sliceBefore, sliceAfter, sliceBetween} from "./slice"
-export {stitchTextNodes, clearMarkup, spanAtOrBefore, getSpan, spanStylesAt, rangeHasStyle,
-        splitSpansAt} from "./inline"
+export {spanAtOrBefore, getSpan, spanStylesAt, rangeHasStyle} from "./inline"
 
 export {findDiffStart, findDiffEnd} from "./diff"

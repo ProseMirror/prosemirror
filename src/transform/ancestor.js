@@ -2,7 +2,7 @@ import {Pos, Node, findConnection} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
-import {isFlatRange, copyTo, selectedSiblings, blocksBetween, isPlainText} from "./tree"
+import {isFlatRange, selectedSiblings, blocksBetween, isPlainText} from "./tree"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 
 defineStep("ancestor", {

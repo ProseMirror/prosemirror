@@ -1,34 +1,36 @@
-import {nodeTypes, stitchTextNodes} from "../model"
+import {nodeTypes} from "../model"
 
 export function copyStructure(node, from, to, f, depth = 0) {
   if (node.type.block) {
     return f(node, from, to)
   } else {
-    let copy = node.copy()
-    if (node.content.length == 0) return copy
+    if (!node.content.length) return node
     let start = from ? from.path[depth] : 0
     let end = to ? to.path[depth] : node.content.length - 1
-    copy.pushFrom(node, 0, start)
+    let content = node.slice(0, start)
     if (start == end) {
-      copy.push(copyStructure(node.content[start], from, to, f, depth + 1))
+      content.push(copyStructure(node.content[start], from, to, f, depth + 1))
     } else {
-      copy.push(copyStructure(node.content[start], from, null, f, depth + 1))
+      content.push(copyStructure(node.content[start], from, null, f, depth + 1))
       for (let i = start + 1; i < end; i++)
-        copy.push(copyStructure(node.content[i], null, null, f, depth + 1))
-      copy.push(copyStructure(node.content[end], null, to, f, depth + 1))
+        content.push(copyStructure(node.content[i], null, null, f, depth + 1))
+      content.push(copyStructure(node.content[end], null, to, f, depth + 1))
     }
-    copy.pushFrom(node, end + 1)
-    return copy
+    for (let i = end + 1; i < node.content.length; i++)
+      content.push(node.content[i])
+    return node.copy(content)
   }
 }
 
 export function copyInline(node, from, to, f) {
   let start = from ? from.offset : 0
   let end = to ? to.offset : node.size
-  let copy = node.copy(node.slice(0, start).concat(node.slice(start, end).map(f)).concat(node.slice(end)))
-  for (let i = copy.content.length - 1; i > 0; i--)
-    stitchTextNodes(copy, i)
-  return copy
+  let copied = node.slice(0, start).concat(node.slice(start, end).map(f)).concat(node.slice(end))
+  for (let i = copied.length - 2; i >= 0; i--) {
+    let merged = copied[i].maybeMerge(copied[i + 1])
+    if (merged) copied.splice(i, 2, merged)
+  }
+  return node.copy(copied)
 }
 
 export function forSpansBetween(doc, from, to, f) {
@@ -54,18 +56,6 @@ export function forSpansBetween(doc, from, to, f) {
     }
   }
   scan(doc, from, to)
-}
-
-export function copyTo(node, path, depth = 0) {
-  if (depth == path.length)
-    return node.copy(node.content.slice())
-
-  let copy = node.copy()
-  let n = path[depth]
-  copy.pushFrom(node, 0, n)
-  copy.push(copyTo(node.content[n], path, depth + 1))
-  copy.pushFrom(node, n + 1)
-  return copy
 }
 
 export function isFlatRange(from, to) {

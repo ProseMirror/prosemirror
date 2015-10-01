@@ -1,8 +1,7 @@
-import {Pos, Node, stitchTextNodes} from "../model"
+import {Pos, Node} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
-import {copyTo} from "./tree"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 
 defineStep("join", {
@@ -17,12 +16,9 @@ defineStep("join", {
     for (let i = 0; i < last; i++) if (pFrom[i] != pTo[i]) return null
 
     let targetPath = pFrom.slice(0, last)
-    let copy = copyTo(doc, targetPath)
-    let target = copy.path(targetPath), oldSize = target.content.length
-    let joined = new Node(before.type, before.attrs, before.content.concat(after.content))
-    if (joined.type.block)
-      stitchTextNodes(joined, before.content.length)
-    target.content.splice(offset - 1, 2, joined)
+    let target = doc.path(targetPath), oldSize = target.content.length
+    let joined = before.append(after.content)
+    let copy = doc.replaceDeep(targetPath, target.splice(offset - 1, offset + 1, [joined]))
 
     let map = new PosMap([new MovedRange(step.to, after.maxOffset, step.from),
                           new MovedRange(new Pos(targetPath, offset + 1), oldSize - offset - 1, new Pos(targetPath, offset))],
