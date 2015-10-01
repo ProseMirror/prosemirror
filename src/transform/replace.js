@@ -24,7 +24,7 @@ function findMovedChunks(oldNode, oldPath, newNode, startDepth) {
 
     oldNode = oldNode.content[cut]
     newNode = newNode.content[newOffset]
-    newPath = newPath.concat([newOffset])
+    newPath = newPath.concat(newOffset)
   }
 }
 

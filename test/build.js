@@ -16,45 +16,50 @@ function build(type, attrs) {
 
 let styles = []
 
-function parseDoc(value, target, path) {
+function countOffset(nodes) {
+  return nodes.reduce((s, n) => s + (n.text == null ? 1 : n.text.length), 0)
+}
+
+function parseDoc(value, content, path) {
   if (typeof value == "string") {
-    let offset = target.maxOffset
     let re = /<(\w+)>/g, m, pos = 0, out = ""
+    let offset = countOffset(content)
     while (m = re.exec(value)) {
       out += value.slice(pos, m.index)
       pos = m.index + m[0].length
       tags[m[1]] = new Pos(path, offset + out.length)
     }
     out += value.slice(pos)
-    if (out) target.content.push(Span.text(out, styles))
+    if (out) content.push(Span.text(out, styles))
   } else if (value.type == "span") {
     let start = styles, result = []
     styles = style.add(styles, value.style)
     for (let i = 0; i < value.content.length; i++)
-      parseDoc(value.content[i], target, path)
+      parseDoc(value.content[i], content, path)
     styles = start
   } else if (value.type == "insert") {
     let type = nodeTypes[value.style]
     if (type.type == "span")
-      target.content.push(new Span(type, value.attrs, styles, value.text))
+      content.push(new Span(type, value.attrs, styles, value.text))
     else
-      target.content.push(new Node(type, value.attrs, value.content))
+      content.push(new Node(type, value.attrs, value.content))
   } else {
-    let node = new Node(value.style, value.attrs)
-    let nodePath = path.concat(target.maxOffset)
+    let inner = []
+    let nodePath = path.concat(content.length)
     styles = []
     for (let i = 0; i < value.content.length; i++)
-      parseDoc(value.content[i], node, nodePath)
-    target.content.push(node)
+      parseDoc(value.content[i], inner, nodePath)
+    content.push(new Node(value.style, value.attrs, inner))
   }
 }
 
 let tags = Object.create(null)
 
 export function doc() {
-  let doc = new Node("doc")
+  let content = []
   for (let i = 0; i < arguments.length; i++)
-    parseDoc(arguments[i], doc, [])
+    parseDoc(arguments[i], content, [])
+  let doc = new Node("doc", null, content)
   doc.tag = tags
   tags = Object.create(null)
   return doc
