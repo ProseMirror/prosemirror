@@ -1,4 +1,4 @@
-import {Pos, Node, splitSpansAt} from "../model"
+import {Pos, Node} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"

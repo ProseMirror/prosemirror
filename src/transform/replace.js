@@ -113,9 +113,10 @@ function buildInserted(nodesLeft, source, start, end) {
         result = nodesLeft[matched].copy(node.content)
         searchLeft = matched - 1
       } else {
-        while (searchLeft >= matched)
-          result = nodesLeft[searchLeft--].copy([result])
-        result.pushFrom(node)
+        while (searchLeft >= matched) {
+          result = nodesLeft[searchLeft].copy(searchLeft == matched ? [result].concat(node.content) : [result])
+          searchLeft--
+        }
       }
     }
     if (matched != null || node.content.length == 0) {

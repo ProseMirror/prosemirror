@@ -26,7 +26,7 @@ function parseDoc(value, target, path) {
       tags[m[1]] = new Pos(path, offset + out.length)
     }
     out += value.slice(pos)
-    if (out) target.push(Span.text(out, styles))
+    if (out) target.content.push(Span.text(out, styles))
   } else if (value.type == "span") {
     let start = styles, result = []
     styles = style.add(styles, value.style)
@@ -36,16 +36,16 @@ function parseDoc(value, target, path) {
   } else if (value.type == "insert") {
     let type = nodeTypes[value.style]
     if (type.type == "span")
-      target.push(new Span(type, value.attrs, styles, value.text))
+      target.content.push(new Span(type, value.attrs, styles, value.text))
     else
-      target.push(new Node(type, value.attrs, value.content))
+      target.content.push(new Node(type, value.attrs, value.content))
   } else {
     let node = new Node(value.style, value.attrs)
     let nodePath = path.concat(target.maxOffset)
     styles = []
     for (let i = 0; i < value.content.length; i++)
       parseDoc(value.content[i], node, nodePath)
-    target.push(node)
+    target.content.push(node)
   }
 }
 

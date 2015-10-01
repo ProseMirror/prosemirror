@@ -26,21 +26,6 @@ export class Node {
     return new Node(this.type, this.attrs, content)
   }
 
-  push(child) {
-    if (this.type.contains != child.type.type)
-      throw new Error("Can't insert " + child.type.name + " into " + this.type.name)
-    this.content.push(child)
-  }
-
-  pushFrom(other, start = 0, end = other.content.length) {
-    for (let i = start; i < end; i++)
-      this.push(other.content[i])
-  }
-
-  pushNodes(array) {
-    for (let i = 0; i < array.length; i++) this.push(array[i])
-  }
-
   slice(from, to = this.maxOffset) {
     if (from == to) return []
     if (!this.type.block) return this.content.slice(from, to)
@@ -91,12 +76,6 @@ export class Node {
     }
     for (let i = 1; i < nodes.length; i++) content.push(nodes[i])
     return this.copy(content)
-  }
-
-  remove(child) {
-    let found = this.content.indexOf(child)
-    if (found == -1) throw new Error("Child not found")
-    this.content.splice(found, 1)
   }
 
   get size() {
