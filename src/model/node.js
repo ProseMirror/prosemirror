@@ -65,6 +65,12 @@ export class Node {
     return this.copy(content)
   }
 
+  replaceDeep(path, node, depth = 0) {
+    if (depth == path.length) return node
+    let pos = path[depth]
+    return this.replace(pos, this.content[pos].replaceDeep(path, node, depth + 1))
+  }
+
   append(nodes, joinDepth = 0) {
     if (!nodes.length) return this
     if (!this.content.length) return this.copy(nodes)
