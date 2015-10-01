@@ -1,4 +1,4 @@
-import {style, rangeHasStyle, Span, Node, nodeTypes, Pos} from "../model"
+import {style, rangeHasStyle, $node, nodeTypes, Pos} from "../model"
 import {canLift, canWrap, joinPoint} from "../transform"
 import {elt} from "../dom"
 import {MenuItem} from "./menu"
@@ -80,7 +80,7 @@ export class InsertBlockItem extends IconItem {
       tr.split(sel.head)
       off = 1
     }
-    pm.apply(tr.insert(sel.head.shorten(null, off), new Node(this.type, this.attrs)))
+    pm.apply(tr.insert(sel.head.shorten(null, off), $node(this.type, this.attrs)))
   }
 }
 
@@ -90,11 +90,11 @@ export class WrapItem extends IconItem {
     this.type = type
   }
   select(pm) {
-    return canWrap(pm.doc, pm.selection.from, pm.selection.to, new Node(this.type))
+    return canWrap(pm.doc, pm.selection.from, pm.selection.to, $node(this.type))
   }
   apply(pm) {
     let sel = pm.selection
-    pm.apply(pm.tr.wrap(sel.from, sel.to, new Node(this.type)))
+    pm.apply(pm.tr.wrap(sel.from, sel.to, $node(this.type)))
   }
 }
 
@@ -204,7 +204,7 @@ export class ImageDialog extends DialogItem {
     let sel = pm.selection, tr = pm.tr
     tr.delete(sel.from, sel.to)
     let attrs = {src: elts.src.value, alt: elts.alt.value, title: elts.title.value}
-    pm.apply(tr.insertInline(sel.from, new Span("image", attrs, null, null)))
+    pm.apply(tr.insertInline(sel.from, $node("image", attrs)))
   }
 }
 const imageDialog = new ImageDialog
@@ -229,11 +229,11 @@ class HistorySeparator extends SeparatorItem {
 }
 
 const blockTypes = [
-  {name: "Normal", node: new Node("paragraph")},
-  {name: "Code", node: new Node("code_block")}
+  {name: "Normal", node: $node("paragraph")},
+  {name: "Code", node: $node("code_block")}
 ]
 for (let i = 1; i <= 6; i++)
-  blockTypes.push({name: "Head " + i, node: new Node("heading", {level: i})})
+  blockTypes.push({name: "Head " + i, node: $node("heading", {level: i})})
 function getBlockType(block) {
   for (let i = 0; i < blockTypes.length; i++)
     if (blockTypes[i].node.sameMarkup(block)) return blockTypes[i]

@@ -1,4 +1,4 @@
-import {Pos, Node, Span, spanStylesAt} from "../model"
+import {Pos, $node, $text, spanStylesAt} from "../model"
 
 import {fromHTML} from "../convert/from_dom"
 import {toHTML} from "../convert/to_dom"
@@ -108,7 +108,7 @@ function inputText(pm, range, text) {
   let styles = pm.input.storedStyles || spanStylesAt(pm.doc, range.from)
   let tr = pm.tr
   if (!range.empty) tr.delete(range.from, range.to)
-  pm.apply(tr.insert(range.from, Span.text(text, styles)))
+  pm.apply(tr.insert(range.from, $text(text, styles)))
   pm.signal("textInput", text)
   pm.scrollIntoView()
 }
@@ -219,7 +219,7 @@ handlers.paste = (pm, e) => {
     if (pm.input.shiftKey && txt) {
       let paragraphs = txt.split(/[\r\n]+/)
       let styles = spanStylesAt(pm.doc, sel.from)
-      doc = new Node("doc", null, paragraphs.map(s => new Node("paragraph", null, [Span.text(s, styles)])))
+      doc = $node("doc", null, paragraphs.map(s => $node("paragraph", null, [$text(s, styles)])))
     } else if (lastCopied && (lastCopied.html == html || lastCopied.text == txt)) {
       ;({doc, from, to} = lastCopied)
     } else if (html) {

@@ -1,4 +1,4 @@
-import {Pos, Span, style, spanStylesAt} from "../model"
+import {Pos, $text, style, spanStylesAt} from "../model"
 
 export function addInputRules(pm, rules) {
   if (!pm.mod.interpretInput)
@@ -71,7 +71,7 @@ class InputRules {
           let offset = pos.offset - (match[1] || match[0]).length
           let start = new Pos(pos.path, offset)
           let styles = spanStylesAt(this.pm.doc, pos)
-          this.pm.apply(this.pm.tr.delete(start, pos).insert(start, Span.text(rule.handler, styles)))
+          this.pm.apply(this.pm.tr.delete(start, pos).insert(start, $text(rule.handler, styles)))
         } else {
           rule.handler(this.pm, match, pos)
         }

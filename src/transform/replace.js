@@ -1,4 +1,4 @@
-import {Pos, Node, Span, spanStylesAt, sliceBefore,
+import {Pos, $text, Node, spanStylesAt, sliceBefore,
         sliceAfter, sliceBetween} from "../model"
 
 import {TransformResult, Transform} from "./transform"
@@ -215,10 +215,10 @@ Transform.prototype.insert = function(pos, nodes) {
 Transform.prototype.insertInline = function(pos, nodes) {
   if (!Array.isArray(nodes)) nodes = [nodes]
   let styles = spanStylesAt(this.doc, pos)
-  nodes = nodes.map(n => new Span(n.type, n.attrs, styles, n.text))
+  nodes = nodes.map(n => n.styled(styles))
   return this.insert(pos, nodes)
 }
 
 Transform.prototype.insertText = function(pos, text) {
-  return this.insertInline(pos, Span.text(text))
+  return this.insertInline(pos, $text(text))
 }

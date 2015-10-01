@@ -1,5 +1,5 @@
 import markdownit from "markdown-it"
-import {Node, Span, Pos, style} from "../model"
+import {$node, $text, Pos, style} from "../model"
 import {defineSource} from "./index"
 
 function parseTokens(state, toks) {
@@ -14,7 +14,7 @@ export function fromMarkdown(text) {
   let state = new State(tokens), doc
   parseTokens(state, tokens)
   do { doc = closeNode(state) } while (state.stack.length)
-  if (!Pos.start(doc)) doc = doc.splice(0, 0, [new Node("paragraph")])
+  if (!Pos.start(doc)) doc = doc.splice(0, 0, [$node("paragraph")])
   return doc
 }
 
@@ -44,7 +44,7 @@ const tokens = Object.create(null)
 // atomic tokens.
 
 function addNode(state, type, attrs, content) {
-  let node = new Node(type, attrs, content)
+  let node = $node(type, attrs, content)
   state.push(node)
   return node
 }
@@ -68,14 +68,14 @@ function closeInline(state, rm) {
 }
 
 function addInline(state, type, text = null, attrs = null) {
-  let node = new Span(type, attrs, state.styles, text)
+  let node = $node(type, attrs, text, state.styles)
   state.push(node)
   return node
 }
 
 function addText(state, text) {
   let nodes = state.top().content, last = nodes[nodes.length - 1]
-  let node = Span.text(text, state.styles), merged
+  let node = $text(text, state.styles), merged
   if (last && (merged = last.maybeMerge(node))) nodes[nodes.length - 1] = merged
   else nodes.push(node)
 }

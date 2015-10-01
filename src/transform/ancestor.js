@@ -1,4 +1,4 @@
-import {Pos, Node, findConnection} from "../model"
+import {Pos, $node, Node, findConnection} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -160,7 +160,7 @@ Transform.prototype.wrap = function(from, to, node) {
   let can = canWrap(this.doc, from, to, node)
   if (!can) return this
   let {range, around, inside} = can
-  let wrappers = around.map(t => new Node(t)).concat(node).concat(inside.map(t => new Node(t)))
+  let wrappers = around.map(t => $node(t)).concat(node).concat(inside.map(t => $node(t)))
   this.step("ancestor", new Pos(range.path, range.from), new Pos(range.path, range.to),
             null, {wrappers: wrappers})
   if (inside.length) {

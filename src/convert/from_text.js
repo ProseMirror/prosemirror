@@ -1,4 +1,4 @@
-import {Span, Node} from "../model"
+import {$node, $text} from "../model"
 import {defineSource} from "./index"
 
 export function fromText(text) {
@@ -8,13 +8,13 @@ export function fromText(text) {
     let spans = []
     let parts = blocks[i].split("\n")
     for (let j = 0; j < parts.length; j++) {
-      if (j) spans.push(new Span("hard_break"))
-      spans.push(Span.text(parts[j]))
+      if (j) spans.push($node("hard_break"))
+      spans.push($text(parts[j]))
     }
-    nodes.push(new Node("paragraph", null, spans))
+    nodes.push($node("paragraph", null, spans))
   }
-  if (!nodes.length) nodes.push(new Node("paragraph"))
-  return new Node("doc", null, nodes)
+  if (!nodes.length) nodes.push($node("paragraph"))
+  return $node("doc", null, nodes)
 }
 
 defineSource("text", fromText)

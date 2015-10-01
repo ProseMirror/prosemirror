@@ -1,4 +1,4 @@
-import {Span, Node, nodeTypes, Pos, style, spanAtOrBefore} from "../model"
+import {$node, nodeTypes, Pos, style, spanAtOrBefore} from "../model"
 import {joinPoint} from "../transform"
 
 import {charCategory} from "./char"
@@ -27,7 +27,7 @@ commands.insertHardBreak = pm => {
   if (pm.doc.path(pos.path).type == nodeTypes.code_block)
     tr.insertText(pos, "\n")
   else
-    tr.insert(pos, new Span("hard_break"))
+    tr.insert(pos, $node("hard_break"))
   pm.apply(tr)
 }
 
@@ -213,7 +213,7 @@ commands.lift = pm => {
 function wrap(pm, type) {
   let sel = pm.selection
   pm.scrollIntoView()
-  return pm.apply(pm.tr.wrap(sel.from, sel.to, new Node(type)))
+  return pm.apply(pm.tr.wrap(sel.from, sel.to, $node(type)))
 }
 
 commands.wrapBulletList = pm => wrap(pm, "bullet_list")
@@ -234,7 +234,7 @@ commands.endBlock = pm => {
     let end = pos.depth - 1
     let isList = end > 0 && pos.path[end] == 0 &&
         pm.doc.path(pos.path.slice(0, end)).type == nodeTypes.list_item
-    let type = pos.offset == block.size ? new Node("paragraph") : null
+    let type = pos.offset == block.size ? $node("paragraph") : null
     tr.split(pos, isList ? 2 : 1, type)
   }
   return pm.apply(tr)
@@ -243,7 +243,7 @@ commands.endBlock = pm => {
 function setType(pm, type, attrs) {
   let sel = pm.selection
   pm.scrollIntoView()
-  return pm.apply(pm.tr.setBlockType(sel.from, sel.to, new Node(type, attrs)))
+  return pm.apply(pm.tr.setBlockType(sel.from, sel.to, $node(type, attrs)))
 }
 
 commands.makeH1 = pm => setType(pm, "heading", {level: 1})
@@ -268,7 +268,7 @@ function insertOpaqueBlock(pm, type, attrs) {
     tr.split(pos)
     off = 1
   }
-  return pm.apply(tr.insert(pos.shorten(null, off), new Node(type, attrs)))
+  return pm.apply(tr.insert(pos.shorten(null, off), $node(type, attrs)))
 }
 
 commands.insertRule = pm => insertOpaqueBlock(pm, "horizontal_rule")

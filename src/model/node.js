@@ -1,18 +1,10 @@
 import * as style from "./style"
 
 export class Node {
-  constructor(type, attrs = null, content) {
-    if (typeof type == "string") {
-      let found = nodeTypes[type]
-      if (!found) throw new Error("Unknown node type: " + type)
-      type = found
-    }
-    if (!(type instanceof NodeType)) throw new Error("Invalid node type: " + type)
+  constructor(type, attrs, content) {
     this.type = type
-    this.content = content || (type.contains ? [] : Node.empty)
-    if (!attrs && !(attrs = type.defaultAttrs))
-      throw new Error("No default attributes for node type " + type.name)
     this.attrs = attrs
+    this.content = content || (type.contains ? [] : Node.empty)
   }
 
   toString() {
@@ -162,7 +154,7 @@ function maybeNull(obj) {
 }
 
 export class Span extends Node {
-  constructor(type, attrs, styles, text) {
+  constructor(type, attrs, text, styles) {
     super(type, attrs)
     this.text = text == null ? "×" : text
     this.styles = styles || Node.empty
@@ -180,7 +172,7 @@ export class Span extends Node {
   }
 
   slice(from, to = this.text.length) {
-    return new Span(this.type, this.attrs, this.styles, this.text.slice(from, to))
+    return new Span(this.type, this.attrs, this.text.slice(from, to), this.styles)
   }
 
   copy() {
@@ -195,10 +187,14 @@ export class Span extends Node {
     return this.text
   }
 
+  styled(styles) {
+    return new Span(this.type, this.attrs, this.text, styles)
+  }
+
   maybeMerge(other) {
     if (other.type == this.type && this.type == nodeTypes.text &&
         style.sameSet(this.styles, other.styles))
-      return Span.text(this.text + other.text, this.styles)
+      return $text(this.text + other.text, this.styles)
   }
 
   toJSON() {
@@ -210,11 +206,7 @@ export class Span extends Node {
   }
 
   static fromJSON(type, json) {
-    return new Span(type, maybeNull(json.attrs), json.styles || Node.empty, json.text || "×")
-  }
-
-  static text(text, styles) {
-    return new Span(nodeTypes.text, null, styles, text)
+    return new Span(type, maybeNull(json.attrs), json.text || "×", json.styles || Node.empty)
   }
 }
 
@@ -250,6 +242,22 @@ export const nodeTypes = {
 }
 
 for (let name in nodeTypes) nodeTypes[name].name = name
+
+export function $node(type, attrs, content, styles) {
+  if (typeof type == "string") {
+    let found = nodeTypes[type]
+    if (!found) throw new Error("Unknown node type: " + type)
+    type = found
+  }
+  if (!(type instanceof NodeType)) throw new Error("Invalid node type: " + type)
+  if (!attrs && !(attrs = type.defaultAttrs))
+    throw new Error("No default attributes for node type " + type.name)
+
+  return new (type.type == "span" ? Span : Node)(type, attrs, content, styles)
+}
+export function $text(text, styles) {
+  return new Span(nodeTypes.text, null, text, styles)
+}
 
 export function findConnection(from, to) {
   if (from.contains == to.type) return []

@@ -1,4 +1,4 @@
-import {Node} from "../model"
+import {$node} from "../model"
 
 import {defaultKeymap} from "./defaultkeymap"
 
@@ -13,7 +13,7 @@ class Option {
 const options = {
   __proto__: null,
 
-  doc: new Option(new Node("doc", null, [new Node("paragraph")]), function(pm, value) {
+  doc: new Option($node("doc", null, [$node("paragraph")]), function(pm, value) {
     pm.setDoc(value)
   }, false),
 

@@ -1,4 +1,4 @@
-import {Node, Span, nodeTypes, style} from "../../src/model"
+import {$node, $text, nodeTypes, style} from "../../src/model"
 
 import {text} from "./tao"
 
@@ -10,7 +10,7 @@ export const attrs = {
 }
 
 export function createNode(type, fuel) {
-  let node = new Node(type, attrs[type.name])
+  let node = $node(type, attrs[type.name])
   if (type.contains == "span")
     fillNodeInline(node, fuel)
   else if (type.contains)
@@ -44,7 +44,7 @@ function fillNode(node, fuel) {
 
 function fillNodeInline(node, fuel) {
   if (node.type.plainText || Math.random() < .6) {
-    node.content.push(new Span.text(randomText(40)))
+    node.content.push($text(randomText(40)))
   } else {
     let types = childTypes(node.type, nodeTypes.text)
     let children = Math.ceil(fuel * 10)
@@ -52,10 +52,10 @@ function fillNodeInline(node, fuel) {
     for (let i = 0; i < children; i++) {
       if (Math.random() < .75) {
         styles = modifyStyles(styles)
-        node.content.push(Span.text(randomText(20), styles))
+        node.content.push($text(randomText(20), styles))
       } else {
         let type = types[Math.floor(Math.random() * types.length)]
-        node.content.push(new Span(type, attrs[type.name], styles))
+        node.content.push($node(type, attrs[type.name], null, styles))
       }
     }
   }

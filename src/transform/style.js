@@ -1,4 +1,4 @@
-import {style, Span, nodeTypes, Pos} from "../model"
+import {style, nodeTypes, Pos} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -9,7 +9,7 @@ defineStep("addStyle", {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       if (node.type.plainText) return node
       return copyInline(node, from, to, node => {
-        return new Span(node.type, node.attrs, style.add(node.styles, step.param), node.text)
+        return node.styled(style.add(node.styles, step.param))
       })
     }))
   },
@@ -54,8 +54,7 @@ defineStep("removeStyle", {
   apply(doc, step) {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       return copyInline(node, from, to, node => {
-        let styles = style.remove(node.styles, step.param)
-        return new Span(node.type, node.attrs, styles, node.text)
+        return node.styled(style.remove(node.styles, step.param))
       })
     }))
   },

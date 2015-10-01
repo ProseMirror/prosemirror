@@ -1,15 +1,15 @@
-import {style, Node, Span, Pos, nodeTypes, findConnection} from "../model"
+import {style, $node, $text, Node, Pos, nodeTypes, findConnection} from "../model"
 import {defineSource} from "./index"
 
 export function fromDOM(dom, options) {
   if (!options) options = {}
-  let context = new Context(options.topNode || new Node("doc"))
+  let context = new Context(options.topNode || $node("doc"))
   let start = options.from ? dom.childNodes[options.from] : dom.firstChild
   let end = options.to != null && dom.childNodes[options.to] || null
   context.addAll(start, end, true)
   let doc
   while (context.stack.length) doc = context.leave()
-  if (!Pos.start(doc)) doc = doc.splice(0, 0, [new Node("paragraph")])
+  if (!Pos.start(doc)) doc = doc.splice(0, 0, [$node("paragraph")])
   return doc
 }
 
@@ -52,16 +52,16 @@ class Context {
         if (/^\s/.test(value) && (last = top.content[top.content.length - 1]) &&
             last.type.name == "text" && /\s$/.test(last.text))
           value = value.slice(1)
-        this.insert(Span.text(value, this.styles))
+        this.insert($text(value, this.styles))
       }
     } else if (dom.nodeType != 1) {
       // Ignore non-text non-element nodes
     } else if (dom.hasAttribute("pm-html")) {
       let type = dom.getAttribute("pm-html")
       if (type == "html_tag")
-        this.insert(new Span("html_tag", {html: dom.innerHTML}, this.styles))
+        this.insert($node("html_tag", {html: dom.innerHTML}, null, this.styles))
       else
-        this.insert(new Node("html_block", {html: dom.innerHTML}))
+        this.insert($node("html_block", {html: dom.innerHTML}))
     } else {
       let name = dom.nodeName.toLowerCase()
       if (name in tags) {
@@ -118,7 +118,7 @@ class Context {
 
   leave() {
     let top = this.stack.pop()
-    let node = new Node(top.type, top.attrs, top.content)
+    let node = $node(top.type, top.attrs, top.content)
     if (this.stack.length) this.insert(node)
     return node
   }
@@ -168,7 +168,7 @@ for (var i = 1; i <= 6; i++) {
   tags["h" + i] = (dom, context) => wrap(dom, context, "heading", attrs)
 }
 
-tags.hr = (_, context) => context.insert(new Node("horizontal_rule"))
+tags.hr = (_, context) => context.insert($node("horizontal_rule"))
 
 tags.pre = (dom, context) => {
   let params = dom.firstChild && /^code$/i.test(dom.firstChild.nodeName) && dom.firstChild.getAttribute("class")
@@ -179,7 +179,7 @@ tags.pre = (dom, context) => {
   } else {
     params = null
   }
-  context.insert(new Node("code_block", {params: params}, [Span.text(dom.textContent)]))
+  context.insert($node("code_block", {params: params}, [$text(dom.textContent)]))
 }
 
 tags.ul = (dom, context) => {
@@ -199,7 +199,7 @@ tags.li = wrapAs("list_item")
 
 tags.br = (dom, context) => {
   if (!dom.hasAttribute("pm-force-br"))
-    context.insert(new Span("hard_break", null, context.styles))
+    context.insert($node("hard_break", null, null, context.styles))
 }
 
 tags.a = (dom, context) => inline(dom, context, style.link(dom.getAttribute("href"), dom.getAttribute("title")))
@@ -214,5 +214,5 @@ tags.img = (dom, context) => {
   let attrs = {src: dom.getAttribute("src"),
                title: dom.getAttribute("title") || null,
                alt: dom.getAttribute("alt") || null}
-  context.insert(new Span("image", attrs))
+  context.insert($node("image", attrs))
 }

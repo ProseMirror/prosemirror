@@ -1,4 +1,4 @@
-import {Node, Span, nodeTypes, Pos, style} from "../../src/model"
+import {$node, $text, Node, nodeTypes, Pos, style} from "../../src/model"
 import {Transform, joinPoint, canLift, canWrap} from "../../src/transform"
 import {cmp, cmpStr} from "../cmp"
 import {randomPos} from "./pos"
@@ -104,8 +104,8 @@ run.delete = (tr, info) => {
 }
 
 tests.insert = (doc, positions) => {
-  let para = new Node("paragraph", null, [Span.text("Q")])
-  let img = new Span("image", {src: "http://image2"})
+  let para = $node("paragraph", null, [$text("Q")])
+  let img = $node("image", {src: "http://image2"})
   for (let i = 0; i < positions.length; i++) {
     let pos = positions[i], node = doc.path(pos.path)
     if (node.type.contains == para.type.type)
@@ -219,7 +219,7 @@ tests.wrap = (doc, positions) => {
     let from = positions[i], p
     let to = positions[Math.floor(Math.random() * (positions.length - i)) + i]
     let type = wrapTypes[Math.floor(Math.random() * wrapTypes.length)]
-    let node = new Node(type, attrs[type.name])
+    let node = $node(type, attrs[type.name])
     let wrap = canWrap(doc, from, to, node)
     if (wrap && (!last || (p = new Pos(wrap.range.path, wrap.range.from)).cmp(last))) {
       runTest("wrap", doc, {from, to, node})
@@ -238,7 +238,7 @@ tests.setBlockType = (doc, _, blockPositions) => {
     let from = blockPositions[i]
     let to = blockPositions[Math.floor(Math.random() * blockPositions.length - i) + i]
     let type = blockTypes[Math.floor(Math.random() * blockTypes.length)]
-    runTest("setBlockType", doc, {from, to, node: new Node(type, attrs[type.name])})
+    runTest("setBlockType", doc, {from, to, node: $node(type, attrs[type.name])})
   }
 }
 
