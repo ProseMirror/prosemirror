@@ -22,16 +22,7 @@ function test(name, doc, insert, expected, moved) {
     }
     let result = replace(doc, doc.tag.a, doc.tag.b, doc.tag.root.path, repl)
     cmpNode(result.doc, expected)
-    if (moved) {
-      if (moved.length != result.moved.length)
-        throw new Failure("Unexpected moved range length: wanted " + moved.length + ", got " + result.moved.length)
-      for (let i = 0; i < moved.length; i++) {
-        let expect = moved[i], got = result.moved[i]
-        cmpStr(got.size, expect.size, i + " size")
-        cmpStr(got.start, expect.start, i + " start")
-        cmpStr(got.dest, expect.dest, i + " dest")
-      }
-    }
+    if (moved) cmpStr("\n" + result.moved.join("\n"), "\n" + moved.join("\n"))
   })
 }
 

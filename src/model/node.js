@@ -1,3 +1,5 @@
+import * as style from "./style"
+
 export class Node {
   constructor(type, attrs = null, content) {
     if (typeof type == "string") {
@@ -55,6 +57,34 @@ export class Node {
 
   splice(from, to, replace) {
     return new Node(this.type, this.attrs, this.content.slice(0, from).concat(replace).concat(this.content.slice(to)))
+  }
+
+  replace(pos, node) {
+    let content = this.content.slice()
+    content[pos] = node
+    return this.copy(content)
+  }
+
+  append(nodes, joinDepth = 0) {
+    if (!nodes.length) return this
+    if (!this.content.length) return this.copy(nodes)
+
+    if (this.type.block) {
+      let content = this.content.concat(nodes), last = this.content.length - 1, merged
+      if (merged = this.content[last].maybeMerge(nodes[0]))
+        content.splice(last, 2, merged)
+      return this.copy(content)
+    }
+
+    let last = this.content.length - 1, content = this.content.slice(0, last)
+    let before = this.content[last], after = nodes[0]
+    if (joinDepth && before.sameMarkup(after)) {
+      content.push(before.append(after.content, joinDepth - 1))
+    } else {
+      content.push(before, after)
+    }
+    for (let i = 1; i < nodes.length; i++) content.push(nodes[i])
+    return this.copy(content)
   }
 
   remove(child) {
@@ -178,6 +208,12 @@ export class Span extends Node {
 
   get textContent() {
     return this.text
+  }
+
+  maybeMerge(other) {
+    if (other.type == this.type && this.type == nodeTypes.text &&
+        style.sameSet(this.styles, other.styles))
+      return Span.text(this.text + other.text, this.styles)
   }
 
   toJSON() {

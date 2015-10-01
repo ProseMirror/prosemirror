@@ -40,7 +40,7 @@ export class Pos {
   }
 
   shorten(to = null, offset = 0) {
-    if (to == this.depth) return this
+    if (to >= this.depth) return this
     return Pos.shorten(this.path, to, offset)
   }
 

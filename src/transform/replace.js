@@ -6,95 +6,43 @@ import {defineStep, Step} from "./step"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 import {copyTo, replaceHasEffect, samePathDepth} from "./tree"
 
-function sizeBefore(node, at) {
-  if (node.type.block) {
-    let size = 0
-    for (let i = 0; i < at; i++) size += node.content[i].size
-    return size
-  } else {
-    return at
+function findMovedChunks(oldNode, oldPath, newNode, startDepth) {
+  let moved = []
+  let newPath = oldPath.path.slice(0, startDepth)
+
+  for (let depth = startDepth;; depth++) {
+    let joined = depth == oldPath.depth ? 0 : 1
+    let cut = depth == oldPath.depth ? oldPath.offset : oldPath.path[depth]
+    let afterCut = oldNode.maxOffset - cut
+    let newOffset = newNode.maxOffset - afterCut
+
+    let from = oldPath.shorten(depth, joined)
+    let to = new Pos(newPath, newOffset + joined)
+    if (from.cmp(to)) moved.push(new MovedRange(from, afterCut - joined, to))
+
+    if (!joined) return moved
+
+    oldNode = oldNode.content[cut]
+    newNode = newNode.content[newOffset]
+    newPath = newPath.concat([newOffset])
   }
 }
 
-export function replace(doc, from, to, root, repl) {
-  let origParent = doc.path(root)
-  if (repl.nodes.length && repl.nodes[0].type.type != origParent.type.contains)
-    return null
-
-  let copy = copyTo(doc, root)
-  let parent = copy.path(root)
-  parent.content.length = 0
-  let depth = root.length
-
-  let fromEnd = depth == from.depth
-  let start = fromEnd ? from.offset : from.path[depth]
-  parent.pushNodes(origParent.slice(0, start))
-  if (!fromEnd) {
-    parent.push(sliceBefore(origParent.content[start], from, depth + 1))
-    ++start
+export function replace(node, from, to, root, repl, depth = 0) {
+  if (depth == root.length) {
+    let before = sliceBefore(node, from, depth)
+    let after = sliceAfter(node, to, depth), result
+    if (repl.nodes.length)
+      result = before.append(repl.nodes, Math.min(repl.openLeft, from.depth - depth))
+                     .append(after.content, Math.min(repl.openRight, to.depth - depth))
+    else
+      result = before.append(after.content, Math.min(to.depth, from.depth) - depth)
+    return {doc: result, moved: findMovedChunks(node, to, result, depth)}
   } else {
-    start = parent.content.length
+    let pos = root[depth]
+    let {doc, moved} = replace(node.content[pos], from, to, root, repl, depth + 1)
+    return {doc: node.replace(pos, doc), moved}
   }
-  parent.pushNodes(repl.nodes)
-  let end
-  if (depth == to.depth) {
-    end = to.offset
-  } else {
-    let n = to.path[depth]
-    parent.push(sliceAfter(origParent.content[n], to, depth + 1))
-    end = n + 1
-  }
-  parent.pushNodes(origParent.slice(end))
-
-  var moved = []
-
-  let rightEdge = start + repl.nodes.length, startLen = parent.content.length
-  if (repl.nodes.length)
-    mendLeft(parent, start, depth, repl.openLeft)
-  mendRight(parent, rightEdge + (parent.content.length - startLen), root,
-            repl.nodes.length ? repl.openRight : from.depth - depth)
-
-  function mendLeft(node, at, depth, open) {
-    if (node.type.block)
-      return stitchTextNodes(node, at)
-
-    if (open == 0 || depth == from.depth || at == 0 || at == node.content.length) return
-
-    let before = node.content[at - 1], after = node.content[at]
-    if (before.sameMarkup(after)) {
-      let oldSize = before.content.length
-      before.pushFrom(after)
-      node.content.splice(at, 1)
-      mendLeft(before, oldSize, depth + 1, open - 1)
-    }
-  }
-
-  function addMoved(start, size, dest) {
-    if (start.cmp(dest))
-      moved.push(new MovedRange(start, size, dest))
-  }
-
-  function mendRight(node, at, path, open) {
-    let toEnd = path.length == to.depth
-    let after = node.content[at], before
-
-    let sBefore = toEnd ? sizeBefore(node, at) : at + 1
-    let movedStart = toEnd ? to : to.shorten(path.length, 1)
-    let movedSize = node.maxOffset - sBefore
-
-    if (!toEnd && open > 0 && (before = node.content[at - 1]).sameMarkup(after)) {
-      after.content = before.content.concat(after.content)
-      node.content.splice(at - 1, 1)
-      addMoved(movedStart, movedSize, new Pos(path, sBefore - 1))
-      mendRight(after, before.content.length, path.concat(at - 1), open - 1)
-    } else {
-      if (node.type.block) stitchTextNodes(node, at)
-      addMoved(movedStart, movedSize, new Pos(path, sBefore))
-      if (!toEnd) mendRight(after, 0, path.concat(at), 0)
-    }
-  }
-
-  return {doc: copy, moved}
 }
 
 const nullRepl = {nodes: [], openLeft: 0, openRight: 0}
