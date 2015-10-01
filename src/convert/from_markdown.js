@@ -75,10 +75,9 @@ function addInline(state, type, text = null, attrs = null) {
 
 function addText(state, text) {
   let nodes = state.top().content, last = nodes[nodes.length - 1]
-  if (last && last.type.name == "text" && style.sameSet(last.styles, state.styles))
-    last.text += text
-  else
-    addInline(state, "text", text)
+  let node = Span.text(text, state.styles), merged
+  if (last && (merged = last.maybeMerge(node))) nodes[nodes.length - 1] = merged
+  else nodes.push(node)
 }
 
 function tokBlock(name, getAttrs = null) {

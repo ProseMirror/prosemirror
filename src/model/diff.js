@@ -10,7 +10,7 @@ export function findDiffStart(a, b, pathA = [], pathB = []) {
     }
     let childA = a.content[i], childB = b.content[i]
     if (childA == childB) {
-      offset += a.type.block ? childA.text.length : 1
+      offset += a.type.block ? childA.size : 1
       continue
     }
 
@@ -18,12 +18,12 @@ export function findDiffStart(a, b, pathA = [], pathB = []) {
 
     if (a.type.block) {
       if (!sameSet(childA.styles, childB.styles)) break
-      if (childA.text != childB.text) {
+      if (childA.type.name == "text" && childA.text != childB.text) {
         for (let j = 0; childA.text[j] == childB.text[j]; j++)
           offset++
         break
       }
-      offset += childA.text.length
+      offset += childA.size
     } else {
       let inner = findDiffStart(childA, childB, pathA.concat(i), pathB.concat(i))
       if (inner) return inner

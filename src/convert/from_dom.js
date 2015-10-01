@@ -46,10 +46,11 @@ class Context {
   addDOM(dom) {
     if (dom.nodeType == 3) {
       let value = dom.nodeValue
-      let top = this.top, block = top.type.block
+      let top = this.top, block = top.type.block, last
       if (/\S/.test(value) || block) {
         value = value.replace(/\s+/g, " ")
-        if (/^\s/.test(value) && top.content.length && /\s$/.test(top.content[top.content.length - 1].text))
+        if (/^\s/.test(value) && (last = top.content[top.content.length - 1]) &&
+            last.type.name == "text" && /\s$/.test(last.text))
           value = value.slice(1)
         this.insert(Span.text(value, this.styles))
       }

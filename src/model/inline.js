@@ -28,7 +28,7 @@ export function rangeHasStyle(doc, from, to, type) {
       let start = from ? from.offset : 0
       let end = to ? to.offset : 1e5
       for (let i = 0, offset = 0; i < node.content.length; i++) {
-        let child = node.content[i], size = child.text.length
+        let child = node.content[i], size = child.size
         if (offset < end && offset + size > start && style.containsType(child.styles, type))
           return true
         offset += size
