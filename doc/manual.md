@@ -510,6 +510,10 @@ representing their content.
 
 ### Class `model.Node` <a name="Node"></a>
 
+**Note**: This part of documentation is currently out of date, since
+the model/schema API is being overhauled. I'll update it as soon as
+something stable comes out.
+
 Nodes make up the structure of a document. They are somewhat like HTML
 DOM nodes, but simpler. A node is identified by a type, which
 determines the role it has. Each node may have children, though the
