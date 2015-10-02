@@ -1,4 +1,4 @@
-export {$node, $text, Node, Span, nodeTypes, NodeType, findConnection} from "./node"
+export {$fromJSON, $node, $text, nodeTypes, NodeType, findConnection, compareMarkup} from "./node"
 export {Pos} from "./pos"
 
 import * as style from "./style"

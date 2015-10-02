@@ -1,4 +1,4 @@
-import {Pos, $node, Node, findConnection} from "../model"
+import {Pos, $node, $fromJSON, findConnection} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -10,7 +10,7 @@ defineStep("ancestor", {
     let from = step.from, to = step.to
     if (!isFlatRange(from, to)) return null
     let toParent = from.path, start = from.offset, end = to.offset
-    let depth = step.param.depth || 0, wrappers = step.param.wrappers || Node.empty
+    let depth = step.param.depth || 0, wrappers = step.param.wrappers || []
     if (!depth && wrappers.length == 0) return null
     for (let i = 0; i < depth; i++) {
       if (start > 0 || end < doc.path(toParent).maxOffset || toParent.length == 0) return null
@@ -73,7 +73,7 @@ defineStep("ancestor", {
   },
   paramFromJSON(json) {
     return {depth: json.depth,
-            wrappers: json.wrappers && json.wrappers.map(Node.fromJSON)}
+            wrappers: json.wrappers && json.wrappers.map($fromJSON)}
   }
 })
 

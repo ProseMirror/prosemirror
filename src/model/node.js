@@ -1,39 +1,54 @@
 import * as style from "./style"
 
+const emptyArray = []
+
 export class Node {
-  constructor(type, attrs, content) {
+  constructor(type, attrs) {
     this.type = type
     this.attrs = attrs
-    this.content = content || (type.contains ? [] : Node.empty)
+  }
+
+  sameMarkup(other) {
+    return compareMarkup(this.type, other.type, this.attrs, other.attrs)
+  }
+
+  child(_) {
+    throw new Error("Trying to index non-block node " + this)
+  }
+  get length() { return 0 }
+
+  toJSON() {
+    let obj = {type: this.type.name}
+    for (let _ in this.attrs) {
+      obj.attrs = this.attrs
+      return obj
+    }
+    return obj
+  }
+}
+
+export class BlockNode extends Node {
+  constructor(type, attrs, content, styles) {
+    if (styles) throw new Error("Constructing a block node with styles")
+    super(type, attrs)
+    this.content = content || (type.contains ? [] : emptyArray)
   }
 
   toString() {
-    if (this.type.contains)
-      return this.type.name + "(" + this.children.join(", ") + ")"
-    else
-      return this.type.name
+    return this.type.name + "(" + this.content.join(", ") + ")"
   }
 
   copy(content = null) {
-    return new Node(this.type, this.attrs, content)
+    return new this.constructor(this.type, this.attrs, content)
   }
 
-  slice(from, to = this.maxOffset) {
-    if (from == to) return []
-    if (!this.type.block) return this.content.slice(from, to)
-    let result = []
-    for (let i = 0, offset = 0;; i++) {
-      let child = this.child(i), size = child.offset, end = offset + size
-      if (offset + size > from)
-        result.push(offset >= from && end <= to ? child : child.slice(Math.max(0, from - offset),
-                                                                      Math.min(size, to - offset)))
-      if (end >= to) return result
-      offset = end
-    }
+  slice(from, to = this.length) {
+    return this.content.slice(from, to)
   }
 
+  // FIXME maybe slice and splice returning different things is going to confuse
   splice(from, to, replace) {
-    return new Node(this.type, this.attrs, this.content.slice(0, from).concat(replace).concat(this.content.slice(to)))
+    return new this.constructor(this.type, this.attrs, this.content.slice(0, from).concat(replace).concat(this.content.slice(to)))
   }
 
   replace(pos, node) {
@@ -52,13 +67,6 @@ export class Node {
     if (!nodes.length) return this
     if (!this.length) return this.copy(nodes)
 
-    if (this.type.block) {
-      let content = this.content.concat(nodes), last = this.length - 1, merged
-      if (merged = content[last].maybeMerge(content[last + 1]))
-        content.splice(last, 2, merged)
-      return this.copy(content)
-    }
-
     let last = this.length - 1, content = this.content.slice(0, last)
     let before = this.content[last], after = nodes[0]
     if (joinDepth && before.sameMarkup(after)) {
@@ -70,12 +78,7 @@ export class Node {
     return this.copy(content)
   }
 
-  get maxOffset() {
-    if (!this.type.block) return this.length
-    let sum = 0
-    for (let i = 0; i < this.length; i++) sum += this.child(i).offset
-    return sum
-  }
+  get maxOffset() { return this.length }
 
   get textContent() {
     let text = ""
@@ -125,97 +128,92 @@ export class Node {
     return nodes
   }
 
-  static compareMarkup(typeA, typeB, attrsA, attrsB) {
-    if (typeA != typeB) return false
-    for (var prop in attrsA)
-      if (attrsB[prop] !== attrsA[prop])
-        return false
-    return true
-  }
-
-  sameMarkup(other) {
-    return Node.compareMarkup(this.type, other.type, this.attrs, other.attrs)
-  }
-
   toJSON() {
-    let obj = {type: this.type.name}
-    if (this.length) obj.content = this.content.map(n => n.toJSON())
-    if (this.attrs != nullAttrs) obj.attrs = this.attrs
+    let obj = super.toJSON()
+    obj.content = this.content.map(n => n.toJSON())
     return obj
   }
-
-  static fromJSON(json) {
-    let type = nodeTypes[json.type]
-    if (type.type == "span")
-      return Span.fromJSON(type, json)
-    else
-      return new Node(type, maybeNull(json.attrs),
-                      json.content ? json.content.map(n => Node.fromJSON(n)) : Node.empty)
-  }
 }
 
-Node.empty = [] // Reused empty array for collections that are guaranteed to remain empty
-
-function maybeNull(obj) {
-  if (!obj) return nullAttrs
-  for (let _prop in obj) return obj
-  return nullAttrs
-}
-
-export class Span extends Node {
-  constructor(type, attrs, text, styles) {
-    super(type, attrs)
-    this.text = text == null ? "×" : text
-    this.styles = styles || Node.empty
-  }
-
-  toString() {
-    if (this.type == nodeTypes.text) {
-      let text = JSON.stringify(this.text)
-      for (let i = 0; i < this.styles.length; i++)
-        text = this.styles[i].type + "(" + text + ")"
-      return text
-    } else {
-      return super.toString()
+class TextblockNode extends BlockNode {
+  slice(from, to = this.maxOffset) {
+    let result = []
+    if (from == to) return result
+    for (let i = 0, offset = 0;; i++) {
+      let child = this.child(i), size = child.offset, end = offset + size
+      if (offset + size > from)
+        result.push(offset >= from && end <= to ? child : child.slice(Math.max(0, from - offset),
+                                                                      Math.min(size, to - offset)))
+      if (end >= to) return result
+      offset = end
     }
   }
 
-  slice(from, to = this.text.length) {
-    return new Span(this.type, this.attrs, this.text.slice(from, to), this.styles)
+  append(nodes) {
+    if (!nodes.length) return this
+    if (!this.length) return this.copy(nodes)
+
+    let content = this.content.concat(nodes), last = this.length - 1, merged
+    if (merged = content[last].maybeMerge(content[last + 1]))
+      content.splice(last, 2, merged)
+    return this.copy(content)
   }
 
-  copy() {
-    throw new Error("Can't copy span nodes like this!")
+  get maxOffset() {
+    let sum = 0
+    for (let i = 0; i < this.length; i++) sum += this.child(i).offset
+    return sum
+  }
+}
+
+export class SpanNode extends Node {
+  constructor(type, attrs, content, styles) {
+    if (content) throw new Error("Can't create a span node with content")
+    super(type, attrs)
+    this.styles = styles || emptyArray
   }
 
-  get offset() {
-    return this.text.length
-  }
+  get offset() { return 1 }
 
-  get textContent() {
-    return this.text
-  }
+  get textContent() { return "" }
 
   styled(styles) {
-    return new Span(this.type, this.attrs, this.text, styles)
+    return new this.constructor(this.type, this.attrs, this.text, styles)
   }
 
-  maybeMerge(other) {
-    if (other.type == this.type && this.type == nodeTypes.text &&
-        style.sameSet(this.styles, other.styles))
-      return $text(this.text + other.text, this.styles)
-  }
+  maybeMerge(_) { return null }
 
   toJSON() {
-    let obj = {type: this.type.name}
-    if (this.attrs != nullAttrs) obj.attrs = this.attrs
-    if (this.text != "×") obj.text = this.text
+    let obj = super.toJSON()
     if (this.styles.length) obj.styles = this.styles
     return obj
   }
+}
 
-  static fromJSON(type, json) {
-    return new Span(type, maybeNull(json.attrs), json.text || "×", json.styles || Node.empty)
+class TextNode extends SpanNode {
+  constructor(type, attrs, content, styles) {
+    if (typeof content != "string") throw new Error("Passing non-string as text node content")
+    super(type, attrs, null, styles)
+    this.text = content
+  }
+
+  get offset() { return this.text.length }
+
+  get textContent() { return this.text }
+
+  maybeMerge(other) {
+    if (other.type == this.type && style.sameSet(this.styles, other.styles))
+      return $text(this.text + other.text, this.styles)
+  }
+
+  slice(from, to = this.offset) {
+    return new TextNode(this.type, this.attrs, this.text.slice(from, to), this.styles)
+  }
+
+  toJSON() {
+    let obj = super.toJSON()
+    obj.text = this.text
+    return obj
   }
 }
 
@@ -262,10 +260,33 @@ export function $node(type, attrs, content, styles) {
   if (!attrs && !(attrs = type.defaultAttrs))
     throw new Error("No default attributes for node type " + type.name)
 
-  return new (type.type == "span" ? Span : Node)(type, attrs, content, styles)
+  let ctor = type.name == "text" ? TextNode
+           : type.type == "span" ? SpanNode
+           : type.block ? TextblockNode
+           : BlockNode
+  return new ctor(type, attrs, content, styles)
 }
+
 export function $text(text, styles) {
-  return new Span(nodeTypes.text, null, text, styles)
+  return new TextNode(nodeTypes.text, null, text, styles)
+}
+
+function maybeNull(obj) {
+  if (!obj) return nullAttrs
+  for (let _prop in obj) return obj
+  return nullAttrs
+}
+
+export function $fromJSON(json) {
+  let type = nodeTypes[json.type]
+  if (!type) throw new Error("Unknown node type: " + json.type)
+  let attrs = maybeNull(json.attrs)
+  if (type.name == "text") return new TextNode(type, attrs, node.text, json.styles || emptyArray)
+  if (type.type == "span") return new SpanNode(type, attrs, null, json.styles || emptyArray)
+
+  let content = json.content ? json.content.map($fromJSON) : emptyArray
+  if (type.block) return new TextblockNode(type, attrs, content)
+  return new BlockNode(type, attrs, content)
 }
 
 export function findConnection(from, to) {
@@ -285,4 +306,12 @@ export function findConnection(from, to) {
       }
     }
   }
+}
+
+export function compareMarkup(typeA, typeB, attrsA, attrsB) {
+  if (typeA != typeB) return false
+  for (var prop in attrsA)
+    if (attrsB[prop] !== attrsA[prop])
+      return false
+  return true
 }

@@ -136,5 +136,5 @@ export function redraw(pm, dirty, doc, prev) {
     }
     deleteNextNodes(dom, domPos, prev.length - j)
   }
-  scan(pm.children, doc, prev)
+  scan(pm.content, doc, prev)
 }

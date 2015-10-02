@@ -1,4 +1,4 @@
-import {Pos, Node} from "../model"
+import {Pos, $fromJSON} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -33,7 +33,7 @@ defineStep("split", {
     return param && param.toJSON()
   },
   paramFromJSON(json) {
-    return json && Node.fromJSON(json)
+    return json && $fromJSON(json)
   }
 })
 

@@ -1,4 +1,4 @@
-import {Pos, $text, Node, spanStylesAt, sliceBefore,
+import {Pos, $text, $fromJSON, spanStylesAt, sliceBefore,
         sliceAfter, sliceBetween} from "../model"
 
 import {TransformResult, Transform} from "./transform"
@@ -78,7 +78,7 @@ defineStep("replace", {
                      openLeft: param.openLeft, openRight: param.openRight}
   },
   paramFromJSON(json) {
-    return json && {nodes: json.nodes && json.nodes.map(Node.fromJSON),
+    return json && {nodes: json.nodes && json.nodes.map($fromJSON),
                     openLeft: json.openLeft, openRight: json.openRight}
   }
 })

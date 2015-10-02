@@ -1,4 +1,4 @@
-import {style, $node, $text, Node, Pos, nodeTypes, findConnection} from "../model"
+import {style, $node, $text, compareMarkup, Pos, nodeTypes, findConnection} from "../model"
 import {defineSource} from "./index"
 
 export function fromDOM(dom, options) {
@@ -127,7 +127,7 @@ class Context {
     while (this.stack.length > stack.length) this.leave()
     for (;;) {
       let n = this.stack.length - 1, one = this.stack[n], two = stack[n]
-      if (Node.compareMarkup(one.type, two.type, one.attrs, two.attrs)) break
+      if (compareMarkup(one.type, two.type, one.attrs, two.attrs)) break
       this.leave()
     }
     while (stack.length > this.stack.length) {

@@ -1,4 +1,4 @@
-import {$node, $text, Node, nodeTypes, Pos, style} from "../../src/model"
+import {$fromJSON, $node, $text, nodeTypes, Pos, style} from "../../src/model"
 import {Transform, joinPoint, canLift, canWrap} from "../../src/transform"
 import {cmp, cmpStr} from "../cmp"
 import {randomPos} from "./pos"
@@ -32,7 +32,7 @@ function runTest(type, doc, info, simple) {
 export function runCase(n) {
   let cases = readFileSync(logFile, "utf8").split("\n")
   let data = JSON.parse(cases[n])
-  let doc = Node.fromJSON(data.doc), info = restoreObjs(data.info)
+  let doc = $fromJSON(data.doc), info = restoreObjs(data.info)
   console.log("running " + data.type, info)
   console.log("on " + doc)
   runTest(data.type, doc, info, true)
@@ -51,7 +51,7 @@ function restoreObjs(obj) {
       if (val.path) {
         obj[prop] = Pos.fromJSON(val)
       } else if (val.content) {
-        obj[prop] = Node.fromJSON(val)
+        obj[prop] = $fromJSON(val)
       } else {
         restoreObjs(val)
       }

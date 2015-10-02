@@ -1,6 +1,5 @@
 // Primitive operations on inline content
 
-import {Node} from "./node"
 import * as style from "./style"
 
 export function getSpan(doc, pos) {
@@ -17,9 +16,11 @@ export function spanAtOrBefore(parent, offset) {
   return {node: null, offset: 0, innerOffset: 0}
 }
 
+const empty = []
+
 export function spanStylesAt(doc, pos) {
   let {node} = spanAtOrBefore(doc.path(pos.path), pos.offset)
-  return node ? node.styles : Node.empty
+  return node ? node.styles : empty
 }
 
 export function rangeHasStyle(doc, from, to, type) {
