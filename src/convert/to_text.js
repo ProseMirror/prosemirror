@@ -6,8 +6,8 @@ export function toText(doc) {
   function explore(node) {
     if (node.type.block) {
       let text = ""
-      for (let i = 0; i < node.content.length; i++) {
-        let child = node.content[i]
+      for (let i = 0; i < node.width; i++) {
+        let child = node.child(i)
         if (child.type == nodeTypes.text)
           text += child.text
         else if (child.type == nodeTypes.hard_break)
@@ -15,7 +15,7 @@ export function toText(doc) {
       }
       if (text) out += (out ? "\n\n" : "") + text
     } else {
-      node.content.forEach(explore)
+      for (let i = 0; i < node.width; i++) explore(node.child(i))
     }
   }
   explore(doc)

@@ -3,7 +3,7 @@ import {defineTarget} from "./index"
 
 export function toMarkdown(doc) {
   let state = new State()
-  state.renderNodes(doc.content)
+  state.renderNodes(doc.children)
   return state.out
 }
 
@@ -137,9 +137,9 @@ class State {
 
     let prevTight = this.inTightList
     this.inTightList = node.attrs.tight
-    for (let i = 0; i < node.content.length; i++) {
+    for (let i = 0; i < node.width; i++) {
       if (i && node.attrs.tight) this.flushClose(1)
-      let item = node.content[i]
+      let item = node.child(i)
       this.wrapBlock(delim, firstDelim(i), node, () => this.render(item))
     }
     this.inTightList = prevTight
@@ -149,7 +149,7 @@ class State {
 const render = Object.create(null)
 
 render.blockquote = (state, node) => {
-  state.wrapBlock("> ", null, node, () => state.renderNodes(node.content))
+  state.wrapBlock("> ", null, node, () => state.renderNodes(node.children))
 }
 
 render.code_block = (state, node) => {
@@ -166,7 +166,7 @@ render.code_block = (state, node) => {
 
 render.heading = (state, node) => {
   state.write(rep("#", node.attrs.level) + " ")
-  state.renderInline(node.content)
+  state.renderInline(node.children)
   state.closeBlock(node)
 }
 
@@ -183,7 +183,7 @@ render.bullet_list = (state, node) => {
 
 render.ordered_list = (state, node) => {
   let start = Number(node.attrs.order || 1)
-  let maxW = String(start + node.content.length - 1).length
+  let maxW = String(start + node.width - 1).length
   let space = rep(" ", maxW + 2)
   state.renderList(node, space, i => {
     let nStr = String(start + i)
@@ -191,7 +191,7 @@ render.ordered_list = (state, node) => {
   })
 }
 
-render.list_item = (state, node) => state.renderNodes(node.content)
+render.list_item = (state, node) => state.renderNodes(node.children)
 
 render.html_block = (state, node) => {
   state.text(node.attrs.html, false)
@@ -199,7 +199,7 @@ render.html_block = (state, node) => {
 }
 
 render.paragraph = (state, node) => {
-  state.renderInline(node.content)
+  state.renderInline(node.children)
   state.closeBlock(node)
 }
 

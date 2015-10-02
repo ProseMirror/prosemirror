@@ -11,7 +11,7 @@ defineStep("split", {
 
     let last = pos.depth - 1, parentPath = pos.path.slice(0, last)
     let offset = pos.path[last], parent = doc.path(parentPath)
-    let target = parent.content[offset], targetSize = target.maxOffset
+    let target = parent.child(offset), targetSize = target.maxOffset
 
     let splitAt = pos.offset
     let newParent = parent.splice(offset, offset + 1,
@@ -21,7 +21,7 @@ defineStep("split", {
 
     let dest = new Pos(parentPath.concat(offset + 1), 0)
     let map = new PosMap([new MovedRange(pos, targetSize - pos.offset, dest),
-                          new MovedRange(new Pos(parentPath, offset + 1), newParent.content.length - 2 - offset,
+                          new MovedRange(new Pos(parentPath, offset + 1), newParent.width - 2 - offset,
                                          new Pos(parentPath, offset + 2))],
                          [new ReplacedRange(pos, pos, pos, dest, pos, pos.shorten(null, 1))])
     return new TransformResult(copy, map)

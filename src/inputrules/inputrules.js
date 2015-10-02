@@ -96,7 +96,7 @@ function getContext(doc, pos) {
   let isPlain = parent.type.plainText
   let textBefore = ""
   for (let offset = 0, i = 0; offset < pos.offset;) {
-    let child = parent.content[i++], size = child.size
+    let child = parent.child(i++), size = child.offset
     textBefore += offset + size > pos.offset ? child.text.slice(0, pos.offset - offset) : child.text
     if (offset + size >= pos.offset) {
       if (style.contains(child.styles, style.code))

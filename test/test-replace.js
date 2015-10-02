@@ -15,10 +15,10 @@ function test(name, doc, insert, expected, moved) {
     for (let left = insert.tag.a, right = insert.tag.b, i = 0, node = sliced;; i++) {
       if (i == left.path.length || i == right.path.length || left.path[i] != right.path[i] ||
           insert.tag.root && i == insert.tag.root.path.length) {
-        repl = {nodes: node.content, openLeft: left.path.length - i, openRight: right.path.length - i}
+        repl = {nodes: node.children, openLeft: left.path.length - i, openRight: right.path.length - i}
         break
       }
-      node = node.content[left.path[i]]
+      node = node.child(left.path[i])
     }
     let result = replace(doc, doc.tag.a, doc.tag.b, doc.tag.root.path, repl)
     cmpNode(result.doc, expected)

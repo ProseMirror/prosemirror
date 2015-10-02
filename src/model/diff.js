@@ -4,13 +4,13 @@ import {sameSet} from "./style"
 export function findDiffStart(a, b, pathA = [], pathB = []) {
   let offset = 0
   for (let i = 0;; i++) {
-    if (i == a.content.length || i == b.content.length) {
-      if (a.content.length == b.content.length) return null
+    if (i == a.width || i == b.width) {
+      if (a.width == b.width) return null
       break
     }
-    let childA = a.content[i], childB = b.content[i]
+    let childA = a.child(i), childB = b.child(i)
     if (childA == childB) {
-      offset += a.type.block ? childA.size : 1
+      offset += a.type.block ? childA.offset : 1
       continue
     }
 
@@ -23,7 +23,7 @@ export function findDiffStart(a, b, pathA = [], pathB = []) {
           offset++
         break
       }
-      offset += childA.size
+      offset += childA.offset
     } else {
       let inner = findDiffStart(childA, childB, pathA.concat(i), pathB.concat(i))
       if (inner) return inner
@@ -34,7 +34,7 @@ export function findDiffStart(a, b, pathA = [], pathB = []) {
 }
 
 export function findDiffEnd(a, b, pathA = [], pathB = []) {
-  let iA = a.content.length, iB = b.content.length
+  let iA = a.width, iB = b.width
   let offset = 0
 
   for (;; iA--, iB--) {
@@ -42,7 +42,7 @@ export function findDiffEnd(a, b, pathA = [], pathB = []) {
       if (iA == iB) return null
       break
     }
-    let childA = a.content[iA - 1], childB = b.content[iB - 1]
+    let childA = a.child(iA - 1), childB = b.child(iB - 1)
     if (childA == childB) {
       offset += a.type.block ? childA.text.length : 1
       continue

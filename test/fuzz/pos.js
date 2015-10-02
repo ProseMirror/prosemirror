@@ -10,9 +10,9 @@ export function allPositions(doc, block) {
     } else if (node.type.contains) {
       for (let i = 0;; i++) {
         if (!block) found.push(new Pos(p, i))
-        if (i == node.content.length) break
+        if (i == node.width) break
         path.push(i)
-        scan(node.content[i])
+        scan(node.child(i))
         path.pop()
       }
     }
@@ -25,15 +25,15 @@ export function randomPos(doc, block) {
   let path = []
   function walk(node) {
     if (node.type.block) {
-      return new Pos(path, Math.floor(Math.random() * (node.size + 1)))
-    } else if (!node.content.length) {
+      return new Pos(path, Math.floor(Math.random() * (node.maxOffset + 1)))
+    } else if (!node.width) {
       return null
     } else if (!block && Math.random() < .2) {
-      return new Pos(path, Math.floor(Math.random() * (node.content.length + 1)))
+      return new Pos(path, Math.floor(Math.random() * (node.width + 1)))
     } else {
-      let child = Math.floor(Math.random() * node.content.length)
+      let child = Math.floor(Math.random() * node.width)
       path.push(child)
-      return walk(node.content[child])
+      return walk(node.child(child))
     }
   }
   for (let i = 0; i < 5; i++) {

@@ -8,7 +8,7 @@ let doc = null
 
 export function toDOM(node, options) {
   doc = options.document
-  return renderNodes(node.content, options)
+  return renderNodes(node.children, options)
 }
 
 defineTarget("dom", toDOM)
@@ -42,11 +42,11 @@ function elt(name, ...children) {
 function wrap(node, options, type) {
   let dom = elt(type || node.type.name)
   if (node.type.contains != "span")
-    renderNodesInto(node.content, dom, options)
+    renderNodesInto(node.children, dom, options)
   else if (options.renderInlineFlat)
-    renderInlineContentFlat(node.content, dom, options)
+    renderInlineContentFlat(node.children, dom, options)
   else
-    renderInlineContent(node.content, dom, options)
+    renderInlineContent(node.children, dom, options)
   return dom
 }
 
@@ -113,7 +113,7 @@ function renderInlineContentFlat(nodes, where, options) {
     let dom = wrapInlineFlat(node, renderNode(node, options, i))
     dom = options.renderInlineFlat(node, dom, offset) || dom
     where.appendChild(dom)
-    offset += node.size
+    offset += node.offset
   }
   if (!nodes.length || nodes[nodes.length - 1].type.name == "hard_break")
     where.appendChild(elt("br")).setAttribute("pm-force-br", "true")

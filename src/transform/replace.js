@@ -22,8 +22,8 @@ function findMovedChunks(oldNode, oldPath, newNode, startDepth) {
 
     if (!joined) return moved
 
-    oldNode = oldNode.content[cut]
-    newNode = newNode.content[newOffset]
+    oldNode = oldNode.child(cut)
+    newNode = newNode.child(newOffset)
     newPath = newPath.concat(newOffset)
   }
 }
@@ -34,13 +34,13 @@ export function replace(node, from, to, root, repl, depth = 0) {
     let after = sliceAfter(node, to, depth), result
     if (repl.nodes.length)
       result = before.append(repl.nodes, Math.min(repl.openLeft, from.depth - depth))
-                     .append(after.content, Math.min(repl.openRight, to.depth - depth))
+                     .append(after.children, Math.min(repl.openRight, to.depth - depth))
     else
-      result = before.append(after.content, Math.min(to.depth, from.depth) - depth)
+      result = before.append(after.children, Math.min(to.depth, from.depth) - depth)
     return {doc: result, moved: findMovedChunks(node, to, result, depth)}
   } else {
     let pos = root[depth]
-    let {doc, moved} = replace(node.content[pos], from, to, root, repl, depth + 1)
+    let {doc, moved} = replace(node.child(pos), from, to, root, repl, depth + 1)
     return {doc: node.replace(pos, doc), moved}
   }
 }
@@ -66,9 +66,9 @@ defineStep("replace", {
   invert(step, oldDoc, map) {
     let depth = step.pos.depth
     let between = sliceBetween(oldDoc, step.from, step.to, false)
-    for (let i = 0; i < depth; i++) between = between.content[0]
+    for (let i = 0; i < depth; i++) between = between.firstChild
     return new Step("replace", step.from, map.map(step.to).pos, step.from.shorten(depth), {
-      nodes: between.content,
+      nodes: between.children,
       openLeft: step.from.depth - depth,
       openRight: step.to.depth - depth
     })
@@ -83,19 +83,26 @@ defineStep("replace", {
   }
 })
 
+function shiftFromStack(stack, depth) {
+  let shifted = stack[depth] = stack[depth].splice(0, 1, [])
+  for (let i = depth - 1; i >= 0; i--)
+    shifted = stack[i] = stack[i].replace(0, shifted)
+}
+
 function buildInserted(nodesLeft, source, start, end) {
   let sliced = sliceBetween(source, start, end, false)
   let nodesRight = []
-  for (let node = sliced, i = 0; i <= start.path.length; i++, node = node.content[0])
+  for (let node = sliced, i = 0; i <= start.path.length; i++, node = node.firstChild)
     nodesRight.push(node)
   let same = samePathDepth(start, end)
   let searchLeft = nodesLeft.length - 1, searchRight = nodesRight.length - 1
   let result = null
 
   let inner = nodesRight[searchRight]
-  if (inner.type.block && inner.size && nodesLeft[searchLeft].type.block) {
-    result = nodesLeft[searchLeft--].copy(inner.content)
-    nodesRight[--searchRight].content.shift()
+  if (inner.type.block && inner.width && nodesLeft[searchLeft].type.block) {
+    result = nodesLeft[searchLeft--].copy(inner.children)
+    --searchRight
+    shiftFromStack(nodesRight, searchRight)
   }
 
   for (;;) {
@@ -110,23 +117,23 @@ function buildInserted(nodesLeft, source, start, end) {
     }
     if (matched != null) {
       if (!result) {
-        result = nodesLeft[matched].copy(node.content)
+        result = nodesLeft[matched].copy(node.children)
         searchLeft = matched - 1
       } else {
         while (searchLeft >= matched) {
-          result = nodesLeft[searchLeft].copy(searchLeft == matched ? [result].concat(node.content) : [result])
+          result = nodesLeft[searchLeft].copy(searchLeft == matched ? [result].concat(node.children) : [result])
           searchLeft--
         }
       }
     }
-    if (matched != null || node.content.length == 0) {
+    if (matched != null || node.width == 0) {
       if (outside) break
-      if (searchRight) nodesRight[searchRight - 1].content.shift()
+      if (searchRight) shiftFromStack(nodesRight, searchRight - 1)
     }
     searchRight--
   }
 
-  let repl = {nodes: result ? result.content : [],
+  let repl = {nodes: result ? result.children : [],
               openLeft: start.depth - searchRight,
               openRight: end.depth - searchRight}
   return {repl, depth: searchLeft + 1}
@@ -135,7 +142,7 @@ function buildInserted(nodesLeft, source, start, end) {
 function moveText(tr, doc, before, after) {
   let root = samePathDepth(before, after)
   let cutAt = after.shorten(null, 1)
-  while (cutAt.path.length > root && doc.path(cutAt.path).content.length == 1)
+  while (cutAt.path.length > root && doc.path(cutAt.path).width == 1)
     cutAt = cutAt.shorten(null, 1)
   tr.split(cutAt, cutAt.path.length - root)
   let start = after, end = new Pos(start.path, doc.path(start.path).maxOffset)
@@ -192,7 +199,7 @@ Transform.prototype.replace = function(from, to, source, start, end) {
     for (let i = 0; i < repl.openRight; i++) {
       let last = inserted[inserted.length - 1]
       nodesBefore.push(last)
-      inserted = last.content
+      inserted = last.children
     }
   } else {
     nodesBefore = doc.path(root.path).pathNodes(from.path.slice(depth)).slice(1)

@@ -16,8 +16,8 @@ defineStep("join", {
     for (let i = 0; i < last; i++) if (pFrom[i] != pTo[i]) return null
 
     let targetPath = pFrom.slice(0, last)
-    let target = doc.path(targetPath), oldSize = target.content.length
-    let joined = before.append(after.content)
+    let target = doc.path(targetPath), oldSize = target.width
+    let joined = before.append(after.children)
     let copy = doc.replaceDeep(targetPath, target.splice(offset - 1, offset + 1, [joined]))
 
     let map = new PosMap([new MovedRange(step.to, after.maxOffset, step.from),
@@ -34,20 +34,20 @@ export function joinPoint(doc, pos, dir = -1) {
   let joinDepth = -1
   for (let i = 0, parent = doc; i < pos.path.length; i++) {
     let index = pos.path[i]
-    let type = parent.content[index].type
+    let type = parent.child(index).type
     if (!type.block &&
-        (dir == -1 ? (index > 0 && parent.content[index - 1].type == type)
-                   : (index < parent.content.length - 1 && parent.content[index + 1].type == type)))
+        (dir == -1 ? (index > 0 && parent.child(index - 1).type == type)
+                   : (index < parent.width - 1 && parent.child(index + 1).type == type)))
       joinDepth = i
-    parent = parent.content[index]
+    parent = parent.child(index)
   }
   if (joinDepth > -1) return pos.shorten(joinDepth, dir == -1 ? 0 : 1)
 }
 
 Transform.prototype.join = function(at) {
   let parent = this.doc.path(at.path)
-  if (at.offset == 0 || at.offset == parent.content.length || parent.type.block) return this
-  this.step("join", new Pos(at.path.concat(at.offset - 1), parent.content[at.offset - 1].maxOffset),
+  if (at.offset == 0 || at.offset == parent.width || parent.type.block) return this
+  this.step("join", new Pos(at.path.concat(at.offset - 1), parent.child(at.offset - 1).maxOffset),
             new Pos(at.path.concat(at.offset), 0))
   return this
 }

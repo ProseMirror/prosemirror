@@ -20,7 +20,7 @@ export var rules = [
   new Rule(" ", /^(\d+)\. $/, function(pm, match, pos) {
     let order = +match[1]
     wrapAndJoin(pm, pos, "ordered_list", {order: order || null, tight: true},
-                node => node.content.length + (node.attrs.order || 1) == order)
+                node => node.width + (node.attrs.order || 1) == order)
   }),
   new Rule(" ", /^\s*([-+*]) $/, function(pm, match, pos) {
     let bullet = match[1]
@@ -37,7 +37,7 @@ export var rules = [
 
 function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
   let before = pos.shorten()
-  let sibling = before.offset > 0 && pm.doc.path(before.path).content[before.offset - 1]
+  let sibling = before.offset > 0 && pm.doc.path(before.path).child(before.offset - 1)
   let join = sibling && sibling.type.name == type && (!predicate || predicate(sibling))
   let tr = pm.tr.wrap(pos, pos, $node(type, attrs))
   let delPos = tr.map(pos).pos

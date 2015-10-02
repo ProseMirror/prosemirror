@@ -87,7 +87,7 @@ function moveBackward(parent, offset, by) {
     let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
     let cat = null, counted = 0
     for (; nodeOffset >= 0; nodeOffset--, innerOffset = null) {
-      let child = parent.content[nodeOffset], size = child.size
+      let child = parent.child(nodeOffset), size = child.offset
       if (child.type != nodeTypes.text) return cat ? offset : offset - 1
 
       for (let i = innerOffset == null ? size : innerOffset; i > 0; i--) {
@@ -127,7 +127,7 @@ function blockAfter(doc, pos) {
     let offset = path[end] + 1
     path = path.slice(0, end)
     let node = doc.path(path)
-    if (offset < node.content.length)
+    if (offset < node.width)
       return new Pos(path, offset)
   }
 }
@@ -153,8 +153,8 @@ function moveForward(parent, offset, by) {
   if (by == "word") {
     let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
     let cat = null, counted = 0
-    for (; nodeOffset < parent.content.length; nodeOffset++, innerOffset = 0) {
-      let child = parent.content[nodeOffset], size = child.size
+    for (; nodeOffset < parent.width; nodeOffset++, innerOffset = 0) {
+      let child = parent.child(nodeOffset), size = child.offset
       if (child.type != nodeTypes.text) return cat ? offset : offset + 1
 
       for (let i = innerOffset; i < size; i++) {
@@ -177,7 +177,7 @@ function delForward(pm, by) {
     tr.delete(from, sel.to)
   } else {
     let parent = pm.doc.path(from.path)
-    if (from.offset == parent.size)
+    if (from.offset == parent.maxOffset)
       delBlockForward(pm, tr, from)
     else
       tr.delete(from, new Pos(from.path, moveForward(parent, from.offset, by)))
@@ -225,16 +225,16 @@ commands.endBlock = pm => {
   let pos = pm.selection.from
   let tr = clearSel(pm)
   let block = pm.doc.path(pos.path)
-  if (pos.depth > 1 && block.content.length == 0 &&
+  if (pos.depth > 1 && block.width == 0 &&
       tr.lift(pos).steps.length) {
     // Lift
-  } else if (block.type == nodeTypes.code_block && pos.offset < block.size) {
+  } else if (block.type == nodeTypes.code_block && pos.offset < block.maxOffset) {
     tr.insertText(pos, "\n")
   } else {
     let end = pos.depth - 1
     let isList = end > 0 && pos.path[end] == 0 &&
         pm.doc.path(pos.path.slice(0, end)).type == nodeTypes.list_item
-    let type = pos.offset == block.size ? $node("paragraph") : null
+    let type = pos.offset == block.maxOffset ? $node("paragraph") : null
     tr.split(pos, isList ? 2 : 1, type)
   }
   return pm.apply(tr)

@@ -9,7 +9,7 @@ export class Node {
 
   toString() {
     if (this.type.contains)
-      return this.type.name + "(" + this.content.join(", ") + ")"
+      return this.type.name + "(" + this.children.join(", ") + ")"
     else
       return this.type.name
   }
@@ -23,7 +23,7 @@ export class Node {
     if (!this.type.block) return this.content.slice(from, to)
     let result = []
     for (let i = 0, offset = 0;; i++) {
-      let child = this.content[i], size = child.size, end = offset + size
+      let child = this.child(i), size = child.offset, end = offset + size
       if (offset + size > from)
         result.push(offset >= from && end <= to ? child : child.slice(Math.max(0, from - offset),
                                                                       Math.min(size, to - offset)))
@@ -45,21 +45,21 @@ export class Node {
   replaceDeep(path, node, depth = 0) {
     if (depth == path.length) return node
     let pos = path[depth]
-    return this.replace(pos, this.content[pos].replaceDeep(path, node, depth + 1))
+    return this.replace(pos, this.child(pos).replaceDeep(path, node, depth + 1))
   }
 
   append(nodes, joinDepth = 0) {
     if (!nodes.length) return this
-    if (!this.content.length) return this.copy(nodes)
+    if (!this.width) return this.copy(nodes)
 
     if (this.type.block) {
-      let content = this.content.concat(nodes), last = this.content.length - 1, merged
-      if (merged = this.content[last].maybeMerge(nodes[0]))
+      let content = this.content.concat(nodes), last = this.width - 1, merged
+      if (merged = content[last].maybeMerge(content[last + 1]))
         content.splice(last, 2, merged)
       return this.copy(content)
     }
 
-    let last = this.content.length - 1, content = this.content.slice(0, last)
+    let last = this.width - 1, content = this.content.slice(0, last)
     let before = this.content[last], after = nodes[0]
     if (joinDepth && before.sameMarkup(after)) {
       content.push(before.append(after.content, joinDepth - 1))
@@ -70,23 +70,32 @@ export class Node {
     return this.copy(content)
   }
 
-  get size() {
-    let sum = 0
-    for (let i = 0; i < this.content.length; i++)
-      sum += this.content[i].size
-    return sum
-  }
-
   get maxOffset() {
-    return this.type.block ? this.size : this.content.length
+    if (!this.type.block) return this.width
+    let sum = 0
+    for (let i = 0; i < this.width; i++) sum += this.child(i).offset
+    return sum
   }
 
   get textContent() {
     let text = ""
-    for (let i = 0; i < this.content.length; i++)
-      text += this.content[i].textContent
+    for (let i = 0; i < this.width; i++)
+      text += this.child(i).textContent
     return text
   }
+
+  child(i) {
+    if (i < 0 || i > this.width)
+      throw new Error("Index " + i + " out of range in " + this)
+    return this.content[i]
+  }
+
+  get firstChild() { return this.content[0] || null }
+  get lastChild() { return this.content[this.width - 1] || null }
+
+  get width() { return this.content.length }
+
+  get children() { return this.content }
 
   path(path) {
     for (var i = 0, node = this; i < path.length; node = node.content[path[i]], i++) {}
@@ -100,8 +109,8 @@ export class Node {
         return pos.offset <= node.maxOffset
       } else {
         let n = pos.path[i]
-        if (n >= node.content.length || node.type.block) return false
-        node = node.content[n]
+        if (n >= node.width || node.type.block) return false
+        node = node.child(n)
       }
     }
   }
@@ -111,7 +120,7 @@ export class Node {
     for (var i = 0, node = this;; i++) {
       nodes.push(node)
       if (i == path.length) break
-      node = node.content[path[i]]
+      node = node.child(path[i])
     }
     return nodes
   }
@@ -130,7 +139,7 @@ export class Node {
 
   toJSON() {
     let obj = {type: this.type.name}
-    if (this.content.length) obj.content = this.content.map(n => n.toJSON())
+    if (this.width) obj.content = this.content.map(n => n.toJSON())
     if (this.attrs != nullAttrs) obj.attrs = this.attrs
     return obj
   }
@@ -179,7 +188,7 @@ export class Span extends Node {
     throw new Error("Can't copy span nodes like this!")
   }
 
-  get size() {
+  get offset() {
     return this.text.length
   }
 

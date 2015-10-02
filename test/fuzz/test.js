@@ -13,8 +13,8 @@ export function sizeBetween(doc, from, to) {
         if (from.depth > depth) {
           let n = from.path[depth]
           if (to && to.depth > depth && to.path[depth] == n)
-            return count(node.content[n], from, to, depth + 1)
-          sum += count(node.content[n], from, null, depth + 1)
+            return count(node.child(n), from, to, depth + 1)
+          sum += count(node.child(n), from, null, depth + 1)
           start = n + 1
         } else {
           start = from.offset
@@ -25,14 +25,14 @@ export function sizeBetween(doc, from, to) {
       if (to) {
         if (to.depth > depth) {
           end = to.path[depth]
-          sum += count(node.content[end], null, to, depth + 1)
+          sum += count(node.child(end), null, to, depth + 1)
         } else {
           end = to.offset
         }
       } else {
-        end = node.content.length
+        end = node.width
       }
-      for (let i = start; i < end; i++) sum += node.content[i].size
+      for (let i = start; i < end; i++) sum += node.child(i).size
       return sum
     }
   }
@@ -40,18 +40,18 @@ export function sizeBetween(doc, from, to) {
 }
 
 export function checkInvariants(node) {
-  for (let i = 0; i < node.content.length; i++) {
-    let child = node.content[i]
+  for (let i = 0; i < node.width; i++) {
+    let child = node.child(i)
     if (child.type.type != node.type.contains)
       throw new Error(child.type.name + " node in " + node.type.name)
     if (node.type.block && child.type == nodeTypes.text) {
       if (i) {
-        let prev = node.content[i - 1]
+        let prev = node.child(i - 1)
         if (prev.type == nodeTypes.text && style.sameSet(prev.styles, child.styles))
           throw new Error("identically styled ajacent text nodes")
       }
-      if (i < node.content.length - 1) {
-        let next = node.content[i + 1]
+      if (i < node.width - 1) {
+        let next = node.child(i + 1)
         if (next.type == nodeTypes.text && style.sameSet(next.styles, child.styles))
           throw new Error("identically styled ajacent text nodes")
       }
