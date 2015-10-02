@@ -20,7 +20,7 @@ defineStep("ancestor", {
     }
 
     let parent = doc.path(toParent), inner = doc.path(from.path), newParent
-    let parentSize = parent.width
+    let parentSize = parent.length
     if (wrappers.length) {
       let lastWrapper = wrappers[wrappers.length - 1]
       if (parent.type.contains != wrappers[0].type.type ||
@@ -115,7 +115,7 @@ Transform.prototype.lift = function(from, to = from) {
   let rangeNode = found.unwrap && this.doc.path(range.path)
 
   for (let d = 0, pos = new Pos(range.path, range.to);; d++) {
-    if (pos.offset < this.doc.path(pos.path).width) {
+    if (pos.offset < this.doc.path(pos.path).length) {
       this.split(pos, depth)
       break
     }
@@ -138,7 +138,7 @@ Transform.prototype.lift = function(from, to = from) {
       this.join(new Pos(range.path, i))
     let size = 0
     for (let i = range.from; i < range.to; i++)
-      size += rangeNode.child(i).width
+      size += rangeNode.child(i).length
     range = {path: range.path.concat(range.from), from: 0, to: size}
     ++depth
   }

@@ -5,12 +5,12 @@ export function allPositions(doc, block) {
   function scan(node) {
     let p = path.slice()
     if (node.type.block) {
-      let size = node.size
+      let size = node.maxOffset
       for (let i = 0; i <= size; i++) found.push(new Pos(p, i))
     } else if (node.type.contains) {
       for (let i = 0;; i++) {
         if (!block) found.push(new Pos(p, i))
-        if (i == node.width) break
+        if (i == node.length) break
         path.push(i)
         scan(node.child(i))
         path.pop()
@@ -26,12 +26,12 @@ export function randomPos(doc, block) {
   function walk(node) {
     if (node.type.block) {
       return new Pos(path, Math.floor(Math.random() * (node.maxOffset + 1)))
-    } else if (!node.width) {
+    } else if (!node.length) {
       return null
     } else if (!block && Math.random() < .2) {
-      return new Pos(path, Math.floor(Math.random() * (node.width + 1)))
+      return new Pos(path, Math.floor(Math.random() * (node.length + 1)))
     } else {
-      let child = Math.floor(Math.random() * node.width)
+      let child = Math.floor(Math.random() * node.length)
       path.push(child)
       return walk(node.child(child))
     }

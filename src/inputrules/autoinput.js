@@ -20,7 +20,7 @@ export var rules = [
   new Rule(" ", /^(\d+)\. $/, function(pm, match, pos) {
     let order = +match[1]
     wrapAndJoin(pm, pos, "ordered_list", {order: order || null, tight: true},
-                node => node.width + (node.attrs.order || 1) == order)
+                node => node.length + (node.attrs.order || 1) == order)
   }),
   new Rule(" ", /^\s*([-+*]) $/, function(pm, match, pos) {
     let bullet = match[1]

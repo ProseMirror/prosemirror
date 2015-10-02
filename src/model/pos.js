@@ -73,7 +73,7 @@ export class Pos {
 function findLeft(node, path) {
   if (node.type.block)
     return new Pos(path, 0)
-  for (let i = 0; i < node.width; i++) {
+  for (let i = 0; i < node.length; i++) {
     path.push(i)
     let found = findLeft(node.child(i), path)
     if (found) return found
@@ -86,7 +86,7 @@ function findAfter(node, pos, path) {
     return pos
   let atEnd = path.length == pos.path.length
   let start = atEnd ? pos.offset : pos.path[path.length]
-  for (let i = start; i < node.width; i++) {
+  for (let i = start; i < node.length; i++) {
     path.push(i)
     let child = node.child(i)
     let found = i == start && !atEnd ? findAfter(child, pos, path) : findLeft(child, path)
@@ -98,7 +98,7 @@ function findAfter(node, pos, path) {
 function findRight(node, path) {
   if (node.type.block)
     return new Pos(path, node.maxOffset)
-  for (let i = node.width - 1; i >= 0; i--) {
+  for (let i = node.length - 1; i >= 0; i--) {
     path.push(i)
     let found = findRight(node.child(i), path)
     if (found) return found

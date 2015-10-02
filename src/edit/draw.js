@@ -85,7 +85,7 @@ export function redraw(pm, dirty, doc, prev) {
 
   function scan(dom, node, prev) {
     let status = [], inPrev = [], inNode = []
-    for (let i = 0, j = 0; i < prev.width && j < node.width; i++) {
+    for (let i = 0, j = 0; i < prev.length && j < node.width; i++) {
       let cur = prev.child(i), dirtyStatus = dirty.get(cur)
       status.push(dirtyStatus)
       let matching = dirtyStatus ? -1 : node.children.indexOf(cur, j)
@@ -97,7 +97,7 @@ export function redraw(pm, dirty, doc, prev) {
     }
 
     if (node.type.contains == "span") {
-      let needsBR = node.width == 0 ||
+      let needsBR = node.length == 0 ||
           node.lastChild.type == nodeTypes.hard_break
       let last = dom.lastChild, hasBR = last && last.nodeType == 1 && last.hasAttribute("pm-force-br")
       if (needsBR && !hasBR)
@@ -108,7 +108,7 @@ export function redraw(pm, dirty, doc, prev) {
 
     let domPos = dom.firstChild, j = 0
     let block = node.type.block
-    for (let i = 0, offset = 0; i < node.width; i++) {
+    for (let i = 0, offset = 0; i < node.length; i++) {
       let child = node.child(i)
       if (!block) path.push(i)
       let found = inPrev[i]
@@ -116,7 +116,7 @@ export function redraw(pm, dirty, doc, prev) {
       if (found > -1) {
         domPos = deleteNextNodes(dom, domPos, found - j)
         j = found
-      } else if (!block && j < prev.width && inNode[j] == null &&
+      } else if (!block && j < prev.length && inNode[j] == null &&
                  status[j] != 2 && child.sameMarkup(prev.child(j))) {
         scan(domPos, child, prev.child(j))
       } else {
@@ -134,7 +134,7 @@ export function redraw(pm, dirty, doc, prev) {
       if (block) offset += child.offset
       else path.pop()
     }
-    deleteNextNodes(dom, domPos, prev.width - j)
+    deleteNextNodes(dom, domPos, prev.length - j)
   }
   scan(pm.children, doc, prev)
 }

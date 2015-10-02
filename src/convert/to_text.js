@@ -6,7 +6,7 @@ export function toText(doc) {
   function explore(node) {
     if (node.type.block) {
       let text = ""
-      for (let i = 0; i < node.width; i++) {
+      for (let i = 0; i < node.length; i++) {
         let child = node.child(i)
         if (child.type == nodeTypes.text)
           text += child.text
@@ -15,7 +15,7 @@ export function toText(doc) {
       }
       if (text) out += (out ? "\n\n" : "") + text
     } else {
-      for (let i = 0; i < node.width; i++) explore(node.child(i))
+      for (let i = 0; i < node.length; i++) explore(node.child(i))
     }
   }
   explore(doc)

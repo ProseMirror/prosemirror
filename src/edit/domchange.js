@@ -7,7 +7,7 @@ import {findByPath} from "./selection"
 function isAtEnd(node, pos, depth) {
   for (let i = depth || 0; i < pos.path.length; i++) {
     let n = pos.path[depth]
-    if (n < node.width - 1) return false
+    if (n < node.length - 1) return false
     node = node.child(n)
   }
   return pos.offset == node.maxOffset
@@ -30,8 +30,8 @@ function parseNearSelection(pm) {
       let startOffset = depth == from.depth ? from.offset : from.path[depth]
       if (fromStart && startOffset > 0) startOffset--
       let endOffset = depth == to.depth ? to.offset : to.path[depth] + 1
-      if (toEnd && endOffset < node.width - 1) endOffset++
-      let parsed = fromDOM(dom, {topNode: node.copy(), from: startOffset, to: dom.childNodes.length - (node.width - endOffset)})
+      if (toEnd && endOffset < node.length - 1) endOffset++
+      let parsed = fromDOM(dom, {topNode: node.copy(), from: startOffset, to: dom.childNodes.length - (node.length - endOffset)})
       parsed = parsed.copy(node.slice(0, startOffset).concat(parsed.children).concat(node.slice(endOffset)))
       for (let i = depth - 1; i >= 0; i--) {
         let wrap = pm.doc.path(from.path.slice(0, i))

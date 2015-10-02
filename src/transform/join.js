@@ -16,7 +16,7 @@ defineStep("join", {
     for (let i = 0; i < last; i++) if (pFrom[i] != pTo[i]) return null
 
     let targetPath = pFrom.slice(0, last)
-    let target = doc.path(targetPath), oldSize = target.width
+    let target = doc.path(targetPath), oldSize = target.length
     let joined = before.append(after.children)
     let copy = doc.replaceDeep(targetPath, target.splice(offset - 1, offset + 1, [joined]))
 
@@ -37,7 +37,7 @@ export function joinPoint(doc, pos, dir = -1) {
     let type = parent.child(index).type
     if (!type.block &&
         (dir == -1 ? (index > 0 && parent.child(index - 1).type == type)
-                   : (index < parent.width - 1 && parent.child(index + 1).type == type)))
+                   : (index < parent.length - 1 && parent.child(index + 1).type == type)))
       joinDepth = i
     parent = parent.child(index)
   }
@@ -46,7 +46,7 @@ export function joinPoint(doc, pos, dir = -1) {
 
 Transform.prototype.join = function(at) {
   let parent = this.doc.path(at.path)
-  if (at.offset == 0 || at.offset == parent.width || parent.type.block) return this
+  if (at.offset == 0 || at.offset == parent.length || parent.type.block) return this
   this.step("join", new Pos(at.path.concat(at.offset - 1), parent.child(at.offset - 1).maxOffset),
             new Pos(at.path.concat(at.offset), 0))
   return this

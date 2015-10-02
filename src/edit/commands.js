@@ -127,7 +127,7 @@ function blockAfter(doc, pos) {
     let offset = path[end] + 1
     path = path.slice(0, end)
     let node = doc.path(path)
-    if (offset < node.width)
+    if (offset < node.length)
       return new Pos(path, offset)
   }
 }
@@ -153,7 +153,7 @@ function moveForward(parent, offset, by) {
   if (by == "word") {
     let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
     let cat = null, counted = 0
-    for (; nodeOffset < parent.width; nodeOffset++, innerOffset = 0) {
+    for (; nodeOffset < parent.length; nodeOffset++, innerOffset = 0) {
       let child = parent.child(nodeOffset), size = child.offset
       if (child.type != nodeTypes.text) return cat ? offset : offset + 1
 
@@ -225,7 +225,7 @@ commands.endBlock = pm => {
   let pos = pm.selection.from
   let tr = clearSel(pm)
   let block = pm.doc.path(pos.path)
-  if (pos.depth > 1 && block.width == 0 &&
+  if (pos.depth > 1 && block.length == 0 &&
       tr.lift(pos).steps.length) {
     // Lift
   } else if (block.type == nodeTypes.code_block && pos.offset < block.maxOffset) {

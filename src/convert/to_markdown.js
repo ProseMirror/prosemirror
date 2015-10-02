@@ -137,7 +137,7 @@ class State {
 
     let prevTight = this.inTightList
     this.inTightList = node.attrs.tight
-    for (let i = 0; i < node.width; i++) {
+    for (let i = 0; i < node.length; i++) {
       if (i && node.attrs.tight) this.flushClose(1)
       let item = node.child(i)
       this.wrapBlock(delim, firstDelim(i), node, () => this.render(item))
@@ -183,7 +183,7 @@ render.bullet_list = (state, node) => {
 
 render.ordered_list = (state, node) => {
   let start = Number(node.attrs.order || 1)
-  let maxW = String(start + node.width - 1).length
+  let maxW = String(start + node.length - 1).length
   let space = rep(" ", maxW + 2)
   state.renderList(node, space, i => {
     let nStr = String(start + i)

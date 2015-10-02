@@ -117,7 +117,7 @@ class MenuBar {
         this.floating = true
         let menuRect = this.menuElt.getBoundingClientRect()
         this.menuElt.style.left = menuRect.left + "px"
-        this.menuElt.style.width = menuRect.width + "px"
+        this.menuElt.style.width = menuRect.length + "px"
         this.menuElt.style.position = "fixed"
       }
     }

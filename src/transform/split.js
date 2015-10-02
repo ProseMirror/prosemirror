@@ -21,7 +21,7 @@ defineStep("split", {
 
     let dest = new Pos(parentPath.concat(offset + 1), 0)
     let map = new PosMap([new MovedRange(pos, targetSize - pos.offset, dest),
-                          new MovedRange(new Pos(parentPath, offset + 1), newParent.width - 2 - offset,
+                          new MovedRange(new Pos(parentPath, offset + 1), newParent.length - 2 - offset,
                                          new Pos(parentPath, offset + 2))],
                          [new ReplacedRange(pos, pos, pos, dest, pos, pos.shorten(null, 1))])
     return new TransformResult(copy, map)

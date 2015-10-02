@@ -4,8 +4,8 @@ import {sameSet} from "./style"
 export function findDiffStart(a, b, pathA = [], pathB = []) {
   let offset = 0
   for (let i = 0;; i++) {
-    if (i == a.width || i == b.width) {
-      if (a.width == b.width) return null
+    if (i == a.length || i == b.length) {
+      if (a.length == b.length) return null
       break
     }
     let childA = a.child(i), childB = b.child(i)
@@ -34,7 +34,7 @@ export function findDiffStart(a, b, pathA = [], pathB = []) {
 }
 
 export function findDiffEnd(a, b, pathA = [], pathB = []) {
-  let iA = a.width, iB = b.width
+  let iA = a.length, iB = b.length
   let offset = 0
 
   for (;; iA--, iB--) {

@@ -3,7 +3,7 @@ import {Transform, joinPoint, canLift, canWrap} from "../../src/transform"
 import {cmp, cmpStr} from "../cmp"
 import {randomPos} from "./pos"
 import {createDoc, attrs} from "./generate"
-import {testTransform, sizeBetween} from "./test"
+import {testTransform, sizeBetween, nodeSize} from "./test"
 
 export const tests = Object.create(null)
 const run = Object.create(null)
@@ -64,7 +64,7 @@ let cachedSize = null, cachedSizeDoc = null
 function docSize(doc) {
   if (cachedSizeDoc == doc) return cachedSize
   cachedSizeDoc = doc
-  return cachedSize = doc.size
+  return cachedSize = nodeSize(doc)
 }
 
 let cachedStr = null, cachedStrDoc = null
@@ -81,12 +81,12 @@ tests.type = (doc, _, blockPositions) => {
 
 run.type = (tr, info) => {
   tr.insertText(info.pos, "°")
-  cmp(tr.doc.size, docSize(tr.docs[0]) + 1, "insert single char")
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]) + 1, "insert single char")
 }
 
 run.type = (tr, info) => {
   tr.insertText(info.pos, "°")
-  cmp(tr.doc.size, docSize(tr.docs[0]) + 1, "insert single char")
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]) + 1, "insert single char")
 }
 
 tests.delete = (doc, positions) => {
@@ -100,7 +100,7 @@ tests.delete = (doc, positions) => {
 run.delete = (tr, info) => {
   tr.delete(info.from, info.to)
   let delSize = sizeBetween(tr.docs[0], info.from, info.to)
-  cmp(tr.doc.size, docSize(tr.docs[0]) - delSize, "size reduced appropriately")
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]) - delSize, "size reduced appropriately")
 }
 
 tests.insert = (doc, positions) => {
@@ -120,7 +120,7 @@ run.insert = (tr, info) => {
     tr.insertInline(info.pos, info.node)
   else
     tr.insert(info.pos, info.node)
-  cmp(tr.doc.size, docSize(tr.docs[0]) + 1, "added one character")
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]) + 1, "added one character")
 }
 
 tests.replace = (doc, positions) => {
@@ -137,7 +137,7 @@ tests.replace = (doc, positions) => {
 
 run.replace = (tr, info) => {
   tr.replace(info.from, info.to, info.source, info.start, info.end)
-  cmp(tr.doc.size, docSize(tr.docs[0]) - sizeBetween(tr.docs[0], info.from, info.to) +
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]) - sizeBetween(tr.docs[0], info.from, info.to) +
       sizeBetween(info.source, info.start, info.end), "replaced size matches")
 }
 
@@ -154,7 +154,7 @@ tests.join = (doc, positions) => {
 
 run.join = (tr, info) => {
   tr.join(info.pos)
-  cmp(tr.doc.size, docSize(tr.docs[0]), "join doesn't change length")
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]), "join doesn't change length")
 }
 
 tests.split = (doc, positions) => {
@@ -165,7 +165,7 @@ tests.split = (doc, positions) => {
 run.split = (tr, info) => {
   tr.split(info.pos, info.depth)
   if (tr.steps.length)
-    cmp(tr.doc.size, docSize(tr.docs[0]), "split doesn't change length")
+    cmp(nodeSize(tr.doc), docSize(tr.docs[0]), "split doesn't change length")
 }
 
 tests.style = (doc, _, blockPositions) => {
@@ -183,7 +183,7 @@ tests.style = (doc, _, blockPositions) => {
 run.style = (tr, info) => {
   tr[info.type](info.from, info.to, info.style)
   if (info.type != "clearMarkup")
-    cmp(tr.doc.size, docSize(tr.docs[0]), "style doesn't change length")
+    cmp(nodeSize(tr.doc), docSize(tr.docs[0]), "style doesn't change length")
 }
 
 tests.lift = (doc, _, blockPositions) => {
@@ -201,7 +201,7 @@ tests.lift = (doc, _, blockPositions) => {
 
 run.lift = (tr, info) => {
   tr.lift(info.from, info.to)
-  cmp(tr.doc.size, docSize(tr.docs[0]), "lift doesn't change size")
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]), "lift doesn't change size")
 }
 
 let blockTypes = [], wrapTypes = []
@@ -230,7 +230,7 @@ tests.wrap = (doc, positions) => {
 
 run.wrap = (tr, info) => {
   tr.lift(info.from, info.to, info.node)
-  cmp(tr.doc.size, docSize(tr.docs[0]), "wrap doesn't change size")
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]), "wrap doesn't change size")
 }
 
 tests.setBlockType = (doc, _, blockPositions) => {
@@ -245,5 +245,5 @@ tests.setBlockType = (doc, _, blockPositions) => {
 run.setBlockType = (tr, info) => {
   tr.setBlockType(info.from, info.to, info.node)
   if (!info.node.type.plainText)
-    cmp(tr.doc.size, docSize(tr.docs[0]), "setBlockType doesn't change size")
+    cmp(nodeSize(tr.doc), docSize(tr.docs[0]), "setBlockType doesn't change size")
 }

@@ -8,7 +8,7 @@ export function getSpan(doc, pos) {
 }
 
 export function spanAtOrBefore(parent, offset) {
-  for (let i = 0; i < parent.width; i++) {
+  for (let i = 0; i < parent.length; i++) {
     let child = parent.child(i)
     offset -= child.offset
     if (offset <= 0)
@@ -27,15 +27,15 @@ export function rangeHasStyle(doc, from, to, type) {
     if (node.type.block) {
       let start = from ? from.offset : 0
       let end = to ? to.offset : 1e5
-      for (let i = 0, offset = 0; i < node.width; i++) {
+      for (let i = 0, offset = 0; i < node.length; i++) {
         let child = node.child(i), size = child.offset
         if (offset < end && offset + size > start && style.containsType(child.styles, type))
           return true
         offset += size
       }
-    } else if (node.width) {
+    } else if (node.length) {
       let start = from ? from.path[depth] : 0
-      let end = to ? to.path[depth] : node.width - 1
+      let end = to ? to.path[depth] : node.length - 1
       if (start == end) {
         return scan(node.child(start), from, to, type, depth + 1)
       } else {

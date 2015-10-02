@@ -4,9 +4,9 @@ export function copyStructure(node, from, to, f, depth = 0) {
   if (node.type.block) {
     return f(node, from, to)
   } else {
-    if (!node.width) return node
+    if (!node.length) return node
     let start = from ? from.path[depth] : 0
-    let end = to ? to.path[depth] : node.width - 1
+    let end = to ? to.path[depth] : node.length - 1
     let content = node.slice(0, start)
     if (start == end) {
       content.push(copyStructure(node.child(start), from, to, f, depth + 1))
@@ -16,7 +16,7 @@ export function copyStructure(node, from, to, f, depth = 0) {
         content.push(copyStructure(node.child(i), null, null, f, depth + 1))
       content.push(copyStructure(node.child(end), null, to, f, depth + 1))
     }
-    for (let i = end + 1; i < node.width; i++)
+    for (let i = end + 1; i < node.length; i++)
       content.push(node.child(i))
     return node.copy(content)
   }
@@ -45,9 +45,9 @@ export function forSpansBetween(doc, from, to, f) {
         if (offset > startOffset)
           f(child, path, Math.max(offset - child.offset, startOffset), Math.min(offset, endOffset))
       }
-    } else if (node.width) {
+    } else if (node.length) {
       let start = from ? from.path[path.length] : 0
-      let end = to ? to.path[path.length] + 1 : node.width
+      let end = to ? to.path[path.length] + 1 : node.length
       for (let i = start; i < end; i++) {
         path.push(i)
         scan(node.child(i), i == start && from, i == end - 1 && to)
@@ -87,7 +87,7 @@ export function blocksBetween(doc, from, to, f) {
       let fromMore = from && from.path.length > path.length
       let toMore = to && to.path.length > path.length
       let start = !from ? 0 : fromMore ? from.path[path.length] : from.offset
-      let end = !to ? node.width : toMore ? to.path[path.length] + 1 : to.offset
+      let end = !to ? node.length : toMore ? to.path[path.length] + 1 : to.offset
       for (let i = start; i < end; i++) {
         path.push(i)
         scan(node.child(i), fromMore && i == start ? from : null, toMore && i == end - 1 ? to : null)
@@ -99,13 +99,13 @@ export function blocksBetween(doc, from, to, f) {
 }
 
 export function isPlainText(node) {
-  if (node.width == 0) return true
+  if (node.length == 0) return true
   let child = node.firstChild
-  return node.width == 1 && child.type == nodeTypes.text && child.styles.length == 0
+  return node.length == 1 && child.type == nodeTypes.text && child.styles.length == 0
 }
 
 function canBeJoined(node, offset, depth) {
-  if (!depth || offset == 0 || offset == node.width) return false
+  if (!depth || offset == 0 || offset == node.length) return false
   let left = node.child(offset - 1), right = node.child(offset)
   return left.sameMarkup(right)
 }

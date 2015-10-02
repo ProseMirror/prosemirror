@@ -50,16 +50,16 @@ export class Node {
 
   append(nodes, joinDepth = 0) {
     if (!nodes.length) return this
-    if (!this.width) return this.copy(nodes)
+    if (!this.length) return this.copy(nodes)
 
     if (this.type.block) {
-      let content = this.content.concat(nodes), last = this.width - 1, merged
+      let content = this.content.concat(nodes), last = this.length - 1, merged
       if (merged = content[last].maybeMerge(content[last + 1]))
         content.splice(last, 2, merged)
       return this.copy(content)
     }
 
-    let last = this.width - 1, content = this.content.slice(0, last)
+    let last = this.length - 1, content = this.content.slice(0, last)
     let before = this.content[last], after = nodes[0]
     if (joinDepth && before.sameMarkup(after)) {
       content.push(before.append(after.content, joinDepth - 1))
@@ -71,29 +71,29 @@ export class Node {
   }
 
   get maxOffset() {
-    if (!this.type.block) return this.width
+    if (!this.type.block) return this.length
     let sum = 0
-    for (let i = 0; i < this.width; i++) sum += this.child(i).offset
+    for (let i = 0; i < this.length; i++) sum += this.child(i).offset
     return sum
   }
 
   get textContent() {
     let text = ""
-    for (let i = 0; i < this.width; i++)
+    for (let i = 0; i < this.length; i++)
       text += this.child(i).textContent
     return text
   }
 
   child(i) {
-    if (i < 0 || i > this.width)
+    if (i < 0 || i > this.length)
       throw new Error("Index " + i + " out of range in " + this)
     return this.content[i]
   }
 
   get firstChild() { return this.content[0] || null }
-  get lastChild() { return this.content[this.width - 1] || null }
+  get lastChild() { return this.content[this.length - 1] || null }
 
-  get width() { return this.content.length }
+  get length() { return this.content.length }
 
   get children() { return this.content }
 
@@ -109,7 +109,7 @@ export class Node {
         return pos.offset <= node.maxOffset
       } else {
         let n = pos.path[i]
-        if (n >= node.width || node.type.block) return false
+        if (n >= node.length || node.type.block) return false
         node = node.child(n)
       }
     }
@@ -139,7 +139,7 @@ export class Node {
 
   toJSON() {
     let obj = {type: this.type.name}
-    if (this.width) obj.content = this.content.map(n => n.toJSON())
+    if (this.length) obj.content = this.content.map(n => n.toJSON())
     if (this.attrs != nullAttrs) obj.attrs = this.attrs
     return obj
   }

@@ -99,7 +99,7 @@ function buildInserted(nodesLeft, source, start, end) {
   let result = null
 
   let inner = nodesRight[searchRight]
-  if (inner.type.block && inner.width && nodesLeft[searchLeft].type.block) {
+  if (inner.type.block && inner.length && nodesLeft[searchLeft].type.block) {
     result = nodesLeft[searchLeft--].copy(inner.children)
     --searchRight
     shiftFromStack(nodesRight, searchRight)
@@ -126,7 +126,7 @@ function buildInserted(nodesLeft, source, start, end) {
         }
       }
     }
-    if (matched != null || node.width == 0) {
+    if (matched != null || node.length == 0) {
       if (outside) break
       if (searchRight) shiftFromStack(nodesRight, searchRight - 1)
     }
@@ -142,7 +142,7 @@ function buildInserted(nodesLeft, source, start, end) {
 function moveText(tr, doc, before, after) {
   let root = samePathDepth(before, after)
   let cutAt = after.shorten(null, 1)
-  while (cutAt.path.length > root && doc.path(cutAt.path).width == 1)
+  while (cutAt.path.length > root && doc.path(cutAt.path).length == 1)
     cutAt = cutAt.shorten(null, 1)
   tr.split(cutAt, cutAt.path.length - root)
   let start = after, end = new Pos(start.path, doc.path(start.path).maxOffset)
