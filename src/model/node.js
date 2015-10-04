@@ -281,7 +281,7 @@ export function $fromJSON(json) {
   let type = nodeTypes[json.type]
   if (!type) throw new Error("Unknown node type: " + json.type)
   let attrs = maybeNull(json.attrs)
-  if (type.name == "text") return new TextNode(type, attrs, node.text, json.styles || emptyArray)
+  if (type.name == "text") return new TextNode(type, attrs, json.text, json.styles || emptyArray)
   if (type.type == "span") return new SpanNode(type, attrs, null, json.styles || emptyArray)
 
   let content = json.content ? json.content.map($fromJSON) : emptyArray
