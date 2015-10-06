@@ -11,7 +11,7 @@ export const attrs = {
 
 export function createNode(type, fuel) {
   let node = $node(type, attrs[type.name])
-  if (type.contains == "span")
+  if (type.textblock)
     fillNodeInline(node, fuel)
   else if (type.contains)
     fillNode(node, fuel)
@@ -26,7 +26,7 @@ function childTypes(type, omit) {
   let contains = type.contains, result = []
   for (var name in nodeTypes) {
     let cur = nodeTypes[name]
-    if (cur.type == contains && cur != omit) result.content.push(cur)
+    if (type.canContain(cur.type) && cur != omit) result.content.push(cur)
   }
   return result
 }

@@ -8,7 +8,7 @@ const nonEditable = {html_block: true, html_tag: true, horizontal_rule: true}
 function options(path, ranges) {
   return {
     onRender(node, dom, offset) {
-      if (node.type.type != "span" && offset != null)
+      if (node.kind != "inline" && offset != null)
         dom.setAttribute("pm-path", offset)
       if (nonEditable.hasOwnProperty(node.type.name))
         dom.contentEditable = false
@@ -96,7 +96,7 @@ export function redraw(pm, dirty, doc, prev) {
       }
     }
 
-    if (node.type.contains == "span") {
+    if (node.isTextblock) {
       let needsBR = node.length == 0 ||
           node.lastChild.type == nodeTypes.hard_break
       let last = dom.lastChild, hasBR = last && last.nodeType == 1 && last.hasAttribute("pm-force-br")
@@ -107,7 +107,7 @@ export function redraw(pm, dirty, doc, prev) {
     }
 
     let domPos = dom.firstChild, j = 0
-    let block = node.type.block
+    let block = node.isTextblock
     for (let i = 0, offset = 0; i < node.length; i++) {
       let child = node.child(i)
       if (!block) path.push(i)

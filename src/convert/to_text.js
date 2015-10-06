@@ -4,7 +4,7 @@ import {defineTarget} from "./index"
 export function toText(doc) {
   let out = ""
   function explore(node) {
-    if (node.type.block) {
+    if (node.isTextblock) {
       let text = ""
       for (let i = 0; i < node.length; i++) {
         let child = node.child(i)

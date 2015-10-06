@@ -26,7 +26,7 @@ function parseNearSelection(pm) {
     let toNode = node.child(to.path[depth])
     let fromStart = isAtStart(from, depth + 1)
     let toEnd = isAtEnd(toNode, to, depth + 1)
-    if (fromStart || toEnd || from.path[depth] != to.path[depth] || toNode.type.block) {
+    if (fromStart || toEnd || from.path[depth] != to.path[depth] || toNode.isTextblock) {
       let startOffset = depth == from.depth ? from.offset : from.path[depth]
       if (fromStart && startOffset > 0) startOffset--
       let endOffset = depth == to.depth ? to.offset : to.path[depth] + 1

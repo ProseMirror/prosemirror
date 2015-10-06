@@ -72,7 +72,7 @@ export class InsertBlockItem extends IconItem {
   select(pm) {
     let sel = pm.selection
     return Pos.samePath(sel.head.path, sel.anchor.path) &&
-      pm.doc.path(sel.head.path).type.type == nodeTypes[this.type].type
+      pm.doc.path(sel.head.path).type.canContain(nodeTypes[this.type])
   }
   apply(pm) {
     let sel = pm.selection, tr = pm.tr, off = 0

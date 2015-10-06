@@ -23,7 +23,7 @@ defineStep("ancestor", {
     let parentSize = parent.length
     if (wrappers.length) {
       let lastWrapper = wrappers[wrappers.length - 1]
-      if (parent.type.contains != wrappers[0].type.type ||
+      if (!parent.type.canContain(wrappers[0].type) ||
           lastWrapper.type.contains != inner.type.contains ||
           lastWrapper.type.plainText && !isPlainText(inner))
         return null
@@ -151,8 +151,8 @@ export function canWrap(doc, from, to, node) {
   let range = selectedSiblings(doc, from, to || from)
   if (range.from == range.to) return null
   let parent = doc.path(range.path)
-  let around = findConnection(parent.type, node.type)
-  let inside = findConnection(node.type, parent.child(range.from).type)
+  let around = parent.type.findConnection(node.type)
+  let inside = node.type.findConnection(parent.child(range.from).type)
   if (around && inside) return {range, around, inside}
 }
 

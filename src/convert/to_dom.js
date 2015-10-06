@@ -23,7 +23,7 @@ defineTarget("html", toHTML)
 
 export function renderNodeToDOM(node, options, offset) {
   let dom = renderNode(node, options, offset)
-  if (options.renderInlineFlat && node.type.type == "span") {
+  if (options.renderInlineFlat && node.isInline) {
     dom = wrapInlineFlat(node, dom)
     dom = options.renderInlineFlat(node, dom, offset) || dom
   }
@@ -41,7 +41,7 @@ function elt(name, ...children) {
 
 function wrap(node, options, type) {
   let dom = elt(type || node.type.name)
-  if (node.type.contains != "span")
+  if (!node.isTextblock)
     renderNodesInto(node.children, dom, options)
   else if (options.renderInlineFlat)
     renderInlineContentFlat(node.children, dom, options)
@@ -134,18 +134,11 @@ render.heading = (node, options) => wrap(node, options, "h" + node.attrs.level)
 
 render.horizontal_rule = _node => elt("hr")
 
-render.bullet_list = (node, options) => {
-  let dom = wrap(node, options, "ul")
-  let bul = node.attrs.bullet
-  dom.setAttribute("class", bul == "+" ? "bullet_plus" : bul == "-" ? "bullet_dash" : "bullet_star")
-  if (node.attrs.tight) dom.setAttribute("class", "tight")
-  return dom
-}
+render.bullet_list = (node, options) => wrap(node, options, "ul")
 
 render.ordered_list = (node, options) => {
   let dom = wrap(node, options, "ol")
   if (node.attrs.order > 1) dom.setAttribute("start", node.attrs.order)
-  if (node.attrs.tight) dom.setAttribute("class", "tight")
   return dom
 }
 

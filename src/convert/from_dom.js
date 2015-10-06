@@ -1,4 +1,4 @@
-import {style, $node, $text, compareMarkup, Pos, nodeTypes, findConnection} from "../model"
+import {style, $node, $text, compareMarkup, Pos, nodeTypes} from "../model"
 import {defineSource} from "./index"
 
 export function fromDOM(dom, options) {
@@ -46,7 +46,7 @@ class Context {
   addDOM(dom) {
     if (dom.nodeType == 3) {
       let value = dom.nodeValue
-      let top = this.top, block = top.type.block, last
+      let top = this.top, block = top.isTextblock, last
       if (/\S/.test(value) || block) {
         value = value.replace(/\s+/g, " ")
         if (/^\s/.test(value) && (last = top.content[top.content.length - 1]) &&
@@ -91,11 +91,11 @@ class Context {
   }
 
   insert(node) {
-    if (this.top.type.contains == node.type.type) {
+    if (this.top.type.canContain(node.type)) {
       this.doClose()
     } else {
       for (let i = this.stack.length - 1; i >= 0; i--) {
-        let route = findConnection(this.stack[i].type, node.type)
+        let route = this.stack[i].type.findConnection(node.type)
         if (!route) continue
         if (i == this.stack.length - 1) {
           this.doClose()

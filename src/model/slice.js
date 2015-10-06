@@ -1,4 +1,4 @@
-import {$node, findConnection} from "./node"
+import {$node} from "./node"
 
 export function sliceBefore(node, pos, depth = 0) {
   let content
@@ -30,12 +30,12 @@ export function sliceBetween(node, from, to, collapse = true, depth = 0) {
     var inner = sliceBetween(node.child(from.path[depth]), from, to, collapse, depth + 1)
     if (!collapse) return node.copy([inner])
     if (node.type.name != "doc") return inner
-    var conn = findConnection(node.type, inner.type)
+    var conn = node.type.findConnection(inner.type)
     for (let i = conn.length - 1; i >= 0; i--) inner = $node(conn[i], null, [inner])
     return node.copy([inner])
   } else {
     let content
-    if (depth == from.depth && depth == to.depth && node.type.block) {
+    if (depth == from.depth && depth == to.depth && node.isTextblock) {
       content = node.slice(from.offset, to.offset)
     } else {
       content = []

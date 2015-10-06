@@ -4,7 +4,7 @@ export function allPositions(doc, block) {
   let found = [], path = []
   function scan(node) {
     let p = path.slice()
-    if (node.type.block) {
+    if (node.isTextblock) {
       let size = node.maxOffset
       for (let i = 0; i <= size; i++) found.push(new Pos(p, i))
     } else if (node.type.contains) {
@@ -24,7 +24,7 @@ export function allPositions(doc, block) {
 export function randomPos(doc, block) {
   let path = []
   function walk(node) {
-    if (node.type.block) {
+    if (node.isTextblock) {
       return new Pos(path, Math.floor(Math.random() * (node.maxOffset + 1)))
     } else if (!node.length) {
       return null

@@ -125,7 +125,7 @@ export class RangeStore {
       } else {
         let start = fromEnd ? from.offset : from.path[depth]
         let end = toEnd ? to.offset : to.path[depth] + 1
-        if (node.type.block) {
+        if (node.isTextblock) {
           for (let offset = 0, i = 0; offset < end; i++) {
             let child = node.child(i)
             offset += child.offset

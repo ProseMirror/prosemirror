@@ -108,9 +108,9 @@ tests.insert = (doc, positions) => {
   let img = $node("image", {src: "http://image2"})
   for (let i = 0; i < positions.length; i++) {
     let pos = positions[i], node = doc.path(pos.path)
-    if (node.type.contains == para.type.type)
+    if (node.type.canContain(para.type))
       runTest("insert", doc, {pos: pos, node: para})
-    else if (node.type.block)
+    else if (node.isTextblock)
       runTest("insert", doc, {pos: pos, node: img})
   }
 }
@@ -207,9 +207,9 @@ run.lift = (tr, info) => {
 let blockTypes = [], wrapTypes = []
 for (let name in nodeTypes) {
   let type = nodeTypes[name]
-  if (type.block)
+  if (type.textblock)
     blockTypes.push(type)
-  else if (type.contains != "span")
+  else if (type.textblock)
     wrapTypes.push(type)
 }
 

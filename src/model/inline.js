@@ -25,7 +25,7 @@ export function spanStylesAt(doc, pos) {
 
 export function rangeHasStyle(doc, from, to, type) {
   function scan(node, from, to, type, depth) {
-    if (node.type.block) {
+    if (node.isTextblock) {
       let start = from ? from.offset : 0
       let end = to ? to.offset : 1e5
       for (let i = 0, offset = 0; i < node.length; i++) {

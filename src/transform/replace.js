@@ -89,6 +89,7 @@ function shiftFromStack(stack, depth) {
     shifted = stack[i] = stack[i].replace(0, shifted)
 }
 
+// FIXME find a not so horribly confusing way to express this
 function buildInserted(nodesLeft, source, start, end) {
   let sliced = sliceBetween(source, start, end, false)
   let nodesRight = []
@@ -99,7 +100,7 @@ function buildInserted(nodesLeft, source, start, end) {
   let result = null
 
   let inner = nodesRight[searchRight]
-  if (inner.type.block && inner.length && nodesLeft[searchLeft].type.block) {
+  if (inner.isTextblock && inner.length && nodesLeft[searchLeft].isTextblock) {
     result = nodesLeft[searchLeft--].copy(inner.children)
     --searchRight
     shiftFromStack(nodesRight, searchRight)
@@ -188,8 +189,8 @@ Transform.prototype.replace = function(from, to, source, start, end) {
   }
 
   // If no text nodes before or after end of replacement, don't glue text
-  if (!doc.path(to.path).type.block) return this
-  if (!(repl.nodes.length ? source.path(end.path).type.block : doc.path(from.path).type.block)) return this
+  if (!doc.path(to.path).isTextblock) return this
+  if (!(repl.nodes.length ? source.path(end.path).isTextblock : doc.path(from.path).isTextblock)) return this
 
   let nodesAfter = doc.path(root.path).pathNodes(to.path.slice(depth)).slice(1)
   let nodesBefore

@@ -10,13 +10,13 @@ export function findDiffStart(a, b, pathA = [], pathB = []) {
     }
     let childA = a.child(i), childB = b.child(i)
     if (childA == childB) {
-      offset += a.type.block ? childA.offset : 1
+      offset += a.isTextblock ? childA.offset : 1
       continue
     }
 
     if (!childA.sameMarkup(childB)) break
 
-    if (a.type.block) {
+    if (a.isTextblock) {
       if (!sameSet(childA.styles, childB.styles)) break
       if (childA.type.name == "text" && childA.text != childB.text) {
         for (let j = 0; childA.text[j] == childB.text[j]; j++)
@@ -44,13 +44,13 @@ export function findDiffEnd(a, b, pathA = [], pathB = []) {
     }
     let childA = a.child(iA - 1), childB = b.child(iB - 1)
     if (childA == childB) {
-      offset += a.type.block ? childA.text.length : 1
+      offset += a.isTextblock ? childA.text.length : 1
       continue
     }
 
     if (!childA.sameMarkup(childB)) break
 
-    if (a.type.block) {
+    if (a.isTextblock) {
       if (!sameSet(childA.styles, childB.styles)) break
 
       if (childA.text != childB.text) {

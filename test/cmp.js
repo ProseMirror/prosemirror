@@ -17,10 +17,8 @@ export function cmpNode(a, b, comment) {
     for (var name in a.attrs)
       if (!(name in b.attrs) && a.attrs[name])
         raise("missing attr " + name + " on right", path)
-    if (a.type.type == "span") {
-      if (a.text != b.text) raise("different text", path)
-      if (!style.sameSet(a.styles, b.styles)) raise("different styles", path)
-    }
+    if (a.text != null && a.text != b.text) raise("different text", path)
+    if (a.styles && !style.sameSet(a.styles, b.styles)) raise("different styles", path)
     for (var i = 0; i < a.length; i++)
       inner(a.child(i), b.child(i), path + "." + i)
   }

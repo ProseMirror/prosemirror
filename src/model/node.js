@@ -25,6 +25,10 @@ export class Node {
     }
     return obj
   }
+
+  get isBlock() { return false }
+  get isTextblock() { return false }
+  get isInline() { return false }
 }
 
 export class BlockNode extends Node {
@@ -108,11 +112,11 @@ export class BlockNode extends Node {
   isValidPos(pos, requireInBlock) {
     for (let i = 0, node = this;; i++) {
       if (i == pos.path.length) {
-        if (requireInBlock && !node.type.block) return false
+        if (requireInBlock && !node.isTextblock) return false
         return pos.offset <= node.maxOffset
       } else {
         let n = pos.path[i]
-        if (n >= node.length || node.type.block) return false
+        if (n >= node.length || node.isTextblock) return false
         node = node.child(n)
       }
     }
@@ -133,9 +137,11 @@ export class BlockNode extends Node {
     obj.content = this.content.map(n => n.toJSON())
     return obj
   }
+
+  get isBlock() { return true }
 }
 
-class TextblockNode extends BlockNode {
+export class TextblockNode extends BlockNode {
   slice(from, to = this.maxOffset) {
     let result = []
     if (from == to) return result
@@ -164,9 +170,11 @@ class TextblockNode extends BlockNode {
     for (let i = 0; i < this.length; i++) sum += this.child(i).offset
     return sum
   }
+
+  get isTextblock() { return true }
 }
 
-export class SpanNode extends Node {
+export class InlineNode extends Node {
   constructor(type, attrs, content, styles) {
     if (content) throw new Error("Can't create a span node with content")
     super(type, attrs)
@@ -188,9 +196,13 @@ export class SpanNode extends Node {
     if (this.styles.length) obj.styles = this.styles
     return obj
   }
+
+  toString() { return this.type.name }
+
+  get isInline() { return true }
 }
 
-class TextNode extends SpanNode {
+export class TextNode extends InlineNode {
   constructor(type, attrs, content, styles) {
     if (typeof content != "string") throw new Error("Passing non-string as text node content")
     super(type, attrs, null, styles)
@@ -203,108 +215,24 @@ class TextNode extends SpanNode {
 
   maybeMerge(other) {
     if (other.type == this.type && style.sameSet(this.styles, other.styles))
-      return $text(this.text + other.text, this.styles)
+      return new TextNode(this.type, this.attrs, this.text + other.text, this.styles)
   }
 
   slice(from, to = this.offset) {
     return new TextNode(this.type, this.attrs, this.text.slice(from, to), this.styles)
   }
 
+  toString() {
+    let text = JSON.stringify(this.text)
+    for (let i = 0; i < this.styles.length; i++)
+      text += this.styles[i].type + "(" + text + ")"
+    return text
+  }
+
   toJSON() {
     let obj = super.toJSON()
     obj.text = this.text
     return obj
-  }
-}
-
-const nullAttrs = Node.nullAttrs = {}
-
-export class NodeType {
-  constructor(options) {
-    this.name = options.name
-    this.type = options.type
-    this.contains = options.contains
-    this.block = this.contains == "span"
-    this.defaultAttrs = options.defaultAttrs
-    if (this.defaultAttrs == null) this.defaultAttrs = nullAttrs
-    this.plainText = !!options.plainText
-  }
-}
-
-export const nodeTypes = {
-  doc: new NodeType({type: "doc", contains: "element"}),
-  paragraph: new NodeType({type: "element", contains: "span"}),
-  blockquote: new NodeType({type: "element", contains: "element"}),
-  heading: new NodeType({type: "element", contains: "span", defaultAttrs: false}),
-  bullet_list: new NodeType({type: "element", contains: "list_item", defaultAttrs: {bullet: "*", tight: true}}),
-  ordered_list: new NodeType({type: "element", contains: "list_item", defaultAttrs: {order: 1, tight: true}}),
-  list_item: new NodeType({type: "list_item", contains: "element"}),
-  html_block: new NodeType({type: "element", defaultAttrs: false}),
-  code_block: new NodeType({type: "element", contains: "span", defaultAttrs: {params: null}, plainText: true}),
-  horizontal_rule: new NodeType({type: "element"}),
-  text: new NodeType({type: "span"}),
-  image: new NodeType({type: "span", defaultAttrs: false}),
-  hard_break: new NodeType({type: "span"}),
-  html_tag: new NodeType({type: "span", defaultAttrs: false})
-}
-
-for (let name in nodeTypes) nodeTypes[name].name = name
-
-export function $node(type, attrs, content, styles) {
-  if (typeof type == "string") {
-    let found = nodeTypes[type]
-    if (!found) throw new Error("Unknown node type: " + type)
-    type = found
-  }
-  if (!(type instanceof NodeType)) throw new Error("Invalid node type: " + type)
-  if (!attrs && !(attrs = type.defaultAttrs))
-    throw new Error("No default attributes for node type " + type.name)
-
-  let ctor = type.name == "text" ? TextNode
-           : type.type == "span" ? SpanNode
-           : type.block ? TextblockNode
-           : BlockNode
-  return new ctor(type, attrs, content, styles)
-}
-
-export function $text(text, styles) {
-  return new TextNode(nodeTypes.text, null, text, styles)
-}
-
-function maybeNull(obj) {
-  if (!obj) return nullAttrs
-  for (let _prop in obj) return obj
-  return nullAttrs
-}
-
-export function $fromJSON(json) {
-  let type = nodeTypes[json.type]
-  if (!type) throw new Error("Unknown node type: " + json.type)
-  let attrs = maybeNull(json.attrs)
-  if (type.name == "text") return new TextNode(type, attrs, json.text, json.styles || emptyArray)
-  if (type.type == "span") return new SpanNode(type, attrs, null, json.styles || emptyArray)
-
-  let content = json.content ? json.content.map($fromJSON) : emptyArray
-  if (type.block) return new TextblockNode(type, attrs, content)
-  return new BlockNode(type, attrs, content)
-}
-
-export function findConnection(from, to) {
-  if (from.contains == to.type) return []
-
-  let seen = Object.create(null)
-  let active = [{from: from, via: []}]
-  while (active.length) {
-    let current = active.shift()
-    for (let name in nodeTypes) {
-      let type = nodeTypes[name]
-      if (current.from.contains == type.type && !(type.contains in seen)) {
-        let via = current.via.concat(type)
-        if (type.contains == to.type) return via
-        active.push({from: type, via: via})
-        seen[type.contains] = true
-      }
-    }
   }
 }
 

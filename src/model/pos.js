@@ -71,7 +71,7 @@ export class Pos {
 }
 
 function findLeft(node, path) {
-  if (node.type.block)
+  if (node.isTextblock)
     return new Pos(path, 0)
   for (let i = 0; i < node.length; i++) {
     path.push(i)
@@ -82,7 +82,7 @@ function findLeft(node, path) {
 }
 
 function findAfter(node, pos, path) {
-  if (node.type.block)
+  if (node.isTextblock)
     return pos
   let atEnd = path.length == pos.path.length
   let start = atEnd ? pos.offset : pos.path[path.length]
@@ -96,7 +96,7 @@ function findAfter(node, pos, path) {
 }
 
 function findRight(node, path) {
-  if (node.type.block)
+  if (node.isTextblock)
     return new Pos(path, node.maxOffset)
   for (let i = node.length - 1; i >= 0; i--) {
     path.push(i)
@@ -107,7 +107,7 @@ function findRight(node, path) {
 }
 
 function findBefore(node, pos, path) {
-  if (node.type.block) return pos
+  if (node.isTextblock) return pos
   let atEnd = pos.path.length == path.length
   let end = atEnd ? pos.offset - 1 : pos.path[path.length]
   for (let i = end; i >= 0; i--) {

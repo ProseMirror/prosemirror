@@ -178,7 +178,7 @@ render.horizontal_rule = (state, node) => {
 
 
 render.bullet_list = (state, node) => {
-  state.renderList(node, "  ", () => node.attrs.bullet + " ")
+  state.renderList(node, "  ", () => (node.attrs.bullet || "*") + " ")
 }
 
 render.ordered_list = (state, node) => {

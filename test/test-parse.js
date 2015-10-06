@@ -1,4 +1,4 @@
-import {doc, blockquote, hr2, pre, pre2, h1, h2, p, li, ol, ul, uldash, em, strong, code, a, a2, br, img, dataImage} from "./build"
+import {doc, blockquote, pre, pre2, h1, h2, p, hr, li, ol, ul, em, strong, code, a, a2, br, img, dataImage} from "./build"
 import {cmpNode, cmpStr} from "./cmp"
 import {defTest} from "./tests"
 
@@ -24,17 +24,21 @@ t("quote",
   "> once\n\n> > twice",
   doc(blockquote(p("once")), blockquote(blockquote(p("twice")))))
 
+// FIXME bring back testing for preserving bullets and tight attrs
+// when supported again
+
 t("bullet_list",
-  "* foo\n  - bar\n  - baz\n* quux",
-  doc(ul(li(p("foo"), uldash(li(p("bar")), li(p("baz")))), li(p("quux")))))
+  "* foo\n\n  * bar\n\n  * baz\n\n* quux",
+  doc(ul(li(p("foo"), ul(li(p("bar")), li(p("baz")))), li(p("quux")))))
 
 t("ordered_list",
-  "1. Hello\n2. Goodbye\n3. Nest\n   1. Hey\n   2. Aye",
+  "1. Hello\n\n2. Goodbye\n\n3. Nest\n\n   1. Hey\n\n   2. Aye",
   doc(ol(li(p("Hello")), li(p("Goodbye")), li(p("Nest"), ol(li(p("Hey")), li(p("Aye")))))))
 
+/* FIXME disabled until we have markdown attributes
 t("code_block",
   "```\nMy Code\n```\n\n    Other code\n\nPara",
-  doc(pre2("My Code"), pre("Other code"), p("Para")))
+  doc(pre2("My Code"), pre("Other code"), p("Para")))*/
 
 t("inline",
   "Hello. Some *em* text, some **strong** text, and some `code`",
@@ -58,4 +62,4 @@ t("break",
 
 t("horizontal_rule",
   "one two\n\n---\n\nthree",
-  doc(p("one two"), hr2, p("three")))
+  doc(p("one two"), hr, p("three")))
