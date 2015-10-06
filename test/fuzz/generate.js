@@ -1,4 +1,4 @@
-import {$node, $text, nodeTypes, style} from "../../src/model"
+import {defaultSchema as schema, style} from "../../src/model"
 
 import {text} from "./tao"
 
@@ -10,7 +10,7 @@ export const attrs = {
 }
 
 export function createNode(type, fuel) {
-  let node = $node(type, attrs[type.name])
+  let node = schema.node(type, attrs[type.name])
   if (type.textblock)
     fillNodeInline(node, fuel)
   else if (type.contains)
@@ -19,13 +19,13 @@ export function createNode(type, fuel) {
 }
 
 export function createDoc(fuel) {
-  return createNode(nodeTypes.doc, fuel || 1)
+  return createNode(schema.nodeTypes.doc, fuel || 1)
 }
 
 function childTypes(type, omit) {
   let contains = type.contains, result = []
-  for (var name in nodeTypes) {
-    let cur = nodeTypes[name]
+  for (var name in schema.nodeTypes) {
+    let cur = schema.nodeTypes[name]
     if (type.canContain(cur.type) && cur != omit) result.content.push(cur)
   }
   return result
@@ -44,18 +44,18 @@ function fillNode(node, fuel) {
 
 function fillNodeInline(node, fuel) {
   if (node.type.plainText || Math.random() < .6) {
-    node.content.push($text(randomText(40)))
+    node.content.push(schema.text(randomText(40)))
   } else {
-    let types = childTypes(node.type, nodeTypes.text)
+    let types = childTypes(node.type, schema.nodeTypes.text)
     let children = Math.ceil(fuel * 10)
     let styles = randomStyles()
     for (let i = 0; i < children; i++) {
       if (Math.random() < .75) {
         styles = modifyStyles(styles)
-        node.content.push($text(randomText(20), styles))
+        node.content.push(schema.text(randomText(20), styles))
       } else {
         let type = types[Math.floor(Math.random() * types.length)]
-        node.content.push($node(type, attrs[type.name], null, styles))
+        node.content.push(schema.node(type, attrs[type.name], null, styles))
       }
     }
   }

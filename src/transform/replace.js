@@ -1,5 +1,4 @@
-import {Pos, $text, $fromJSON, spanStylesAt, sliceBefore,
-        sliceAfter, sliceBetween} from "../model"
+import {Pos, spanStylesAt, sliceBefore, sliceAfter, sliceBetween} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -77,8 +76,8 @@ defineStep("replace", {
     return param && {nodes: param.nodes && param.nodes.map(n => n.toJSON()),
                      openLeft: param.openLeft, openRight: param.openRight}
   },
-  paramFromJSON(json) {
-    return json && {nodes: json.nodes && json.nodes.map($fromJSON),
+  paramFromJSON(schema, json) {
+    return json && {nodes: json.nodes && json.nodes.map(schema.nodeFromJSON),
                     openLeft: json.openLeft, openRight: json.openRight}
   }
 })
@@ -228,5 +227,5 @@ Transform.prototype.insertInline = function(pos, nodes) {
 }
 
 Transform.prototype.insertText = function(pos, text) {
-  return this.insertInline(pos, $text(text))
+  return this.insertInline(pos, this.doc.type.schema.text(text))
 }

@@ -42,7 +42,7 @@ function copyObj(obj) {
   return result
 }
 
-export class Schema {
+export class SchemaSpec {
   constructor(nodeTypes, styles, data) {
     this.nodeTypes = nodeTypes
     this.styles = styles
@@ -64,7 +64,7 @@ export class Schema {
           existing[prop] = info[prop]
       }
     }
-    return new Schema(copy, this.styles, this.data)
+    return new SchemaSpec(copy, this.styles, this.data)
   }
 
   renameNode(oldName, newName) {
@@ -88,7 +88,7 @@ export class Schema {
         if (newCat) info.category = newCat
       }
     }
-    return new Schema(copy, this.styles, this.data)
+    return new SchemaSpec(copy, this.styles, this.data)
   }
 
   addAttribute(filter, attrName, attrInfo) {
@@ -109,11 +109,11 @@ export class Schema {
       if (info == null) delete copy[name]
       else copy[name] = info
     }
-    return new Schema(this.nodeTypes, copy, this.data)
+    return new SchemaSpec(this.nodeTypes, copy, this.data)
   }
 
   compile() {
-    return this.compiled || (this.compiled = new CompiledSchema(this))
+    return this.compiled || (this.compiled = new Schema(this))
   }
 }
 
@@ -144,7 +144,7 @@ class NodeType {
     while (active.length) {
       let current = active.shift()
       for (let name in this.schema.nodeTypes) {
-        let type = this.schema.nodeTypes[name]
+        let type = this.schema.nodeType(name)
         if (!(type.contains in seen) && current.from.canContain(type)) {
           let via = current.via.concat(type)
           if (type.canContain(other)) return via
@@ -185,11 +185,15 @@ function compileNodeTypes(types, schema) {
   return result
 }
 
-class CompiledSchema {
-  constructor(schema) {
-    this.nodeTypes = compileNodeTypes(schema.nodeTypes, this)
-    this.styles = schema.styles // FIXME
-    this.data = schema.data
+export class Schema {
+  constructor(spec) {
+    this.spec = spec
+    this.nodeTypes = compileNodeTypes(spec.nodeTypes, this)
+    this.styles = spec.styles // FIXME
+    this.data = spec.data
+    this.node = this.node.bind(this)
+    this.text = this.text.bind(this)
+    this.nodeFromJSON = this.nodeFromJSON.bind(this)
   }
 
   buildAttrs(type, attrs) {
@@ -207,16 +211,13 @@ class CompiledSchema {
   }
 
   // FIXME provide variant that doesn't check/fill in type and attrs?
-  mk(type, attrs, content, styles) {
-    if (typeof type == "string") {
-      let found = this.nodeTypes[type]
-      if (!found) SchemaError.raise("Unknown node type: " + type)
-      type = found
-    } else if (!(type instanceof NodeType)) {
+  node(type, attrs, content, styles) {
+    if (typeof type == "string")
+      type = this.nodeType(type)
+    else if (!(type instanceof NodeType))
       SchemaError.raise("Invalid node type: " + type)
-    } else if (type.schema != this) {
+    else if (type.schema != this)
       SchemaError.raise("Node type from different schema used (" + type.name + ")")
-    }
 
     return new type.ctor(type, this.buildAttrs(type, attrs), content, styles)
   }
@@ -225,12 +226,15 @@ class CompiledSchema {
     return new TextNode(this.nodeTypes.text, this.buildAttrs(this.nodeTypes.text), text, styles)
   }
 
-  mkFromJSON(json) {
-    let type = this.nodeTypes[json.type]
-    if (!type) SchemaError.raise("Unknown node type: " + json.type)
+  nodeFromJSON(json) {
+    let type = this.nodeType(json.type)
     return new type.ctor(type, this.buildAttrs(type, maybeNull(json.attrs)),
-                         json.text || (json.content && json.content.map(e => this.mkFromJSON(e))),
+                         json.text || (json.content && json.content.map(this.nodeFromJSON)),
                          json.styles)
+  }
+
+  nodeType(name) {
+    return this.nodeTypes[name] || SchemaError.raise("Unknown node type: " + name)
   }
 }
 
@@ -242,7 +246,7 @@ function maybeNull(obj) {
   return nullAttrs
 }
 
-export const baseSchema = new Schema({
+export const baseSchemaSpec = new SchemaSpec({
   doc: {
     kind: "block",
   },
@@ -264,7 +268,7 @@ export const baseSchema = new Schema({
   }
 }, {})
 
-const defaultSchema = baseSchema.updateNodes({
+export const defaultSchemaSpec = baseSchemaSpec.updateNodes({
   blockquote: {
     kind: "block"
   },
@@ -315,17 +319,4 @@ const defaultSchema = baseSchema.updateNodes({
   }
 })
 
-export const nodeTypes = defaultSchema.compile().nodeTypes // FIXME
-
-
-export function $node(type, attrs, content, styles) {
-  return defaultSchema.compile().mk(type, attrs, content, styles)
-}
-
-export function $text(text, styles) {
-  return defaultSchema.compile().text(text, styles)
-}
-
-export function $fromJSON(json) {
-  return defaultSchema.compile().mkFromJSON(json)
-}
+export const defaultSchema = defaultSchemaSpec.compile()

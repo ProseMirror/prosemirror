@@ -1,24 +1,24 @@
-import {style, $node, $text, compareMarkup, Pos, nodeTypes} from "../model"
+import {style, compareMarkup, Pos} from "../model"
 import {defineSource} from "./index"
 
-export function fromDOM(dom, options) {
+export function fromDOM(schema, dom, options) {
   if (!options) options = {}
-  let context = new Context(options.topNode || $node("doc"))
+  let context = new Context(schema, options.topNode || schema.node("doc"))
   let start = options.from ? dom.childNodes[options.from] : dom.firstChild
   let end = options.to != null && dom.childNodes[options.to] || null
   context.addAll(start, end, true)
   let doc
   while (context.stack.length) doc = context.leave()
-  if (!Pos.start(doc)) doc = doc.splice(0, 0, [$node("paragraph")])
+  if (!Pos.start(doc)) doc = doc.splice(0, 0, [schema.node("paragraph")])
   return doc
 }
 
 defineSource("dom", fromDOM)
 
-export function fromHTML(html, options) {
+export function fromHTML(schema, html, options) {
   let wrap = options.document.createElement("div")
   wrap.innerHTML = html
-  return fromDOM(wrap, options)
+  return fromDOM(schema, wrap, options)
 }
 
 defineSource("html", fromHTML)
@@ -32,7 +32,8 @@ const blockElements = {
 }
 
 class Context {
-  constructor(topNode) {
+  constructor(schema, topNode) {
+    this.schema = schema
     this.stack = []
     this.styles = []
     this.closing = false
@@ -52,23 +53,23 @@ class Context {
         if (/^\s/.test(value) && (last = top.content[top.content.length - 1]) &&
             last.type.name == "text" && /\s$/.test(last.text))
           value = value.slice(1)
-        this.insert($text(value, this.styles))
+        this.insert(this.schema.text(value, this.styles))
       }
     } else if (dom.nodeType != 1) {
       // Ignore non-text non-element nodes
     } else if (dom.hasAttribute("pm-html")) {
       let type = dom.getAttribute("pm-html")
       if (type == "html_tag")
-        this.insert($node("html_tag", {html: dom.innerHTML}, null, this.styles))
+        this.insert(this.schema.node("html_tag", {html: dom.innerHTML}, null, this.styles))
       else
-        this.insert($node("html_block", {html: dom.innerHTML}))
+        this.insert(this.schema.node("html_block", {html: dom.innerHTML}))
     } else {
       let name = dom.nodeName.toLowerCase()
       if (name in tags) {
         tags[name](dom, this)
       } else {
         this.addAll(dom.firstChild, null)
-        if (blockElements.hasOwnProperty(name) && this.top.type == nodeTypes.paragraph)
+        if (blockElements.hasOwnProperty(name) && this.top.type == this.schema.nodeTypes.paragraph)
           this.closing = true
       }
     }
@@ -118,7 +119,7 @@ class Context {
 
   leave() {
     let top = this.stack.pop()
-    let node = $node(top.type, top.attrs, top.content)
+    let node = this.schema.node(top.type, top.attrs, top.content)
     if (this.stack.length) this.insert(node)
     return node
   }
@@ -143,7 +144,7 @@ class Context {
 export const tags = Object.create(null)
 
 function wrap(dom, context, type, attrs) {
-  context.enter(nodeTypes[type], attrs)
+  context.enter(context.schema.nodeType(type), attrs)
   context.addAll(dom.firstChild, null, true)
   context.leave()
 }
@@ -168,7 +169,7 @@ for (var i = 1; i <= 6; i++) {
   tags["h" + i] = (dom, context) => wrap(dom, context, "heading", attrs)
 }
 
-tags.hr = (_, context) => context.insert($node("horizontal_rule"))
+tags.hr = (_, context) => context.insert(context.schema.node("horizontal_rule"))
 
 tags.pre = (dom, context) => {
   let params = dom.firstChild && /^code$/i.test(dom.firstChild.nodeName) && dom.firstChild.getAttribute("class")
@@ -179,7 +180,7 @@ tags.pre = (dom, context) => {
   } else {
     params = null
   }
-  context.insert($node("code_block", {params: params}, [$text(dom.textContent)]))
+  context.insert(context.schema.node("code_block", {params: params}, [context.schema.text(dom.textContent)]))
 }
 
 tags.ul = (dom, context) => {
@@ -199,7 +200,7 @@ tags.li = wrapAs("list_item")
 
 tags.br = (dom, context) => {
   if (!dom.hasAttribute("pm-force-br"))
-    context.insert($node("hard_break", null, null, context.styles))
+    context.insert(context.schema.node("hard_break", null, null, context.styles))
 }
 
 tags.a = (dom, context) => inline(dom, context, style.link(dom.getAttribute("href"), dom.getAttribute("title")))
@@ -214,5 +215,5 @@ tags.img = (dom, context) => {
   let attrs = {src: dom.getAttribute("src"),
                title: dom.getAttribute("title") || null,
                alt: dom.getAttribute("alt") || null}
-  context.insert($node("image", attrs))
+  context.insert(context.schema.node("image", attrs))
 }

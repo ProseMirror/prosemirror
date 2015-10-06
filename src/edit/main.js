@@ -19,6 +19,8 @@ import {RangeStore, MarkedRange} from "./range"
 export class ProseMirror {
   constructor(opts) {
     opts = this.options = parseOptions(opts)
+    this.schema = opts.schema
+    if (opts.doc == null) opts.doc = this.schema.node("doc", null, [this.schema.node("paragraph")])
     this.content = elt("div", {class: "ProseMirror-content"})
     this.wrapper = elt("div", {class: "ProseMirror"}, this.content)
     this.wrapper.ProseMirror = this
@@ -28,7 +30,7 @@ export class ProseMirror {
     else if (opts.place)
       opts.place(this.wrapper)
 
-    this.setDocInner(opts.docFormat ? convertFrom(opts.doc, opts.docFormat, {document}) : opts.doc)
+    this.setDocInner(opts.docFormat ? convertFrom(this.schema, opts.doc, opts.docFormat, {document}) : opts.doc)
     draw(this, this.doc)
     this.content.contentEditable = true
 
@@ -69,7 +71,7 @@ export class ProseMirror {
   get tr() { return new Transform(this.doc) }
 
   setContent(value, format) {
-    if (format) value = convertFrom(value, format, {document})
+    if (format) value = convertFrom(this.schema, value, format, {document})
     this.setDoc(value)
   }
 
@@ -78,6 +80,8 @@ export class ProseMirror {
   }
 
   setDocInner(doc) {
+    if (doc.type != this.schema.nodeTypes.doc)
+      throw new Error("Trying to set a document with a different schema")
     this.doc = doc
     this.ranges = new RangeStore(this)
     this.history = new History(this)

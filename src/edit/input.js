@@ -1,4 +1,4 @@
-import {Pos, $node, $text, spanStylesAt} from "../model"
+import {Pos, spanStylesAt} from "../model"
 
 import {fromHTML} from "../convert/from_dom"
 import {toHTML} from "../convert/to_dom"
@@ -108,7 +108,7 @@ function inputText(pm, range, text) {
   let styles = pm.input.storedStyles || spanStylesAt(pm.doc, range.from)
   let tr = pm.tr
   if (!range.empty) tr.delete(range.from, range.to)
-  pm.apply(tr.insert(range.from, $text(text, styles)))
+  pm.apply(tr.insert(range.from, pm.schema.text(text, styles)))
   pm.signal("textInput", text)
   pm.scrollIntoView()
 }
@@ -219,13 +219,13 @@ handlers.paste = (pm, e) => {
     if (pm.input.shiftKey && txt) {
       let paragraphs = txt.split(/[\r\n]+/)
       let styles = spanStylesAt(pm.doc, sel.from)
-      doc = $node("doc", null, paragraphs.map(s => $node("paragraph", null, [$text(s, styles)])))
+      doc = pm.schema.node("doc", null, paragraphs.map(s => pm.schema.node("paragraph", null, [pm.schema.text(s, styles)])))
     } else if (lastCopied && (lastCopied.html == html || lastCopied.text == txt)) {
       ;({doc, from, to} = lastCopied)
     } else if (html) {
-      doc = fromHTML(html, {document})
+      doc = fromHTML(pm.schema, html, {document})
     } else {
-      doc = convertFrom(txt, knownSource("markdown") ? "markdown" : "text")
+      doc = convertFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
     }
     pm.apply(pm.tr.replace(sel.from, sel.to, doc, from || Pos.start(doc), to || Pos.end(doc)))
     pm.scrollIntoView()
@@ -251,9 +251,9 @@ handlers.drop = (pm, e) => {
 
   let html, txt, doc
   if (html = e.dataTransfer.getData("text/html"))
-    doc = fromHTML(html, {document})
+    doc = fromHTML(pm.schema, html, {document})
   else if (txt = e.dataTransfer.getData("text/plain"))
-    doc = convertFrom(txt, knownSource("markdown") ? "markdown" : "text")
+    doc = convertFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
 
   if (doc) {
     e.preventDefault()

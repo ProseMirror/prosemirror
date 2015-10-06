@@ -1,4 +1,4 @@
-import {$node, $text, nodeTypes, Pos, style} from "../src/model"
+import {defaultSchema as schema, Pos, style} from "../src/model"
 
 let inlineContext = null
 
@@ -30,7 +30,7 @@ function parseDoc(value, content, path) {
       tags[m[1]] = new Pos(path, offset + out.length)
     }
     out += value.slice(pos)
-    if (out) content.push($text(out, styles))
+    if (out) content.push(schema.text(out, styles))
   } else if (value.type == "span") {
     let start = styles, result = []
     styles = style.add(styles, value.style)
@@ -38,18 +38,18 @@ function parseDoc(value, content, path) {
       parseDoc(value.content[i], content, path)
     styles = start
   } else if (value.type == "insert") {
-    let type = nodeTypes[value.style]
+    let type = schema.nodeType(value.style)
     if (type.type == "span")
-      content.push($node(type, value.attrs, value.text, styles))
+      content.push(schema.node(type, value.attrs, value.text, styles))
     else
-      content.push($node(type, value.attrs, value.content))
+      content.push(schema.node(type, value.attrs, value.content))
   } else {
     let inner = []
     let nodePath = path.concat(content.length)
     styles = []
     for (let i = 0; i < value.content.length; i++)
       parseDoc(value.content[i], inner, nodePath)
-    content.push($node(value.style, value.attrs, inner))
+    content.push(schema.node(value.style, value.attrs, inner))
   }
 }
 
@@ -59,7 +59,7 @@ export function doc() {
   let content = []
   for (let i = 0; i < arguments.length; i++)
     parseDoc(arguments[i], content, [])
-  let doc = $node("doc", null, content)
+  let doc = schema.node("doc", null, content)
   doc.tag = tags
   tags = Object.create(null)
   return doc

@@ -1,5 +1,3 @@
-import {nodeTypes} from "../model"
-
 export function copyStructure(node, from, to, f, depth = 0) {
   if (node.isTextblock) {
     return f(node, from, to)
@@ -101,7 +99,7 @@ export function blocksBetween(doc, from, to, f) {
 export function isPlainText(node) {
   if (node.length == 0) return true
   let child = node.firstChild
-  return node.length == 1 && child.type == nodeTypes.text && child.styles.length == 0
+  return node.length == 1 && child.isText && child.styles.length == 0
 }
 
 function canBeJoined(node, offset, depth) {

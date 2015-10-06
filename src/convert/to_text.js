@@ -1,4 +1,3 @@
-import {nodeTypes} from "../model"
 import {defineTarget} from "./index"
 
 export function toText(doc) {
@@ -8,9 +7,9 @@ export function toText(doc) {
       let text = ""
       for (let i = 0; i < node.length; i++) {
         let child = node.child(i)
-        if (child.type == nodeTypes.text)
+        if (child.isText)
           text += child.text
-        else if (child.type == nodeTypes.hard_break)
+        else if (child.type == child.type.schema.nodeTypes.hard_break)
           text += "\n"
       }
       if (text) out += (out ? "\n\n" : "") + text

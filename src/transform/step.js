@@ -29,14 +29,14 @@ export class Step {
     }
   }
 
-  static fromJSON(json) {
+  static fromJSON(schema, json) {
     let impl = steps[json.name]
     return new Step(
       json.name,
       json.from && Pos.fromJSON(json.from),
       json.to && Pos.fromJSON(json.to),
       json.pos && Pos.fromJSON(json.pos),
-      impl.paramFromJSON ? impl.paramFromJSON(json.param) : json.param)
+      impl.paramFromJSON ? impl.paramFromJSON(schema, json.param) : json.param)
   }
 }
 

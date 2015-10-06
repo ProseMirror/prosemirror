@@ -1,4 +1,4 @@
-import {Pos, $fromJSON} from "../model"
+import {Pos} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -32,8 +32,8 @@ defineStep("split", {
   paramToJSON(param) {
     return param && param.toJSON()
   },
-  paramFromJSON(json) {
-    return json && $fromJSON(json)
+  paramFromJSON(schema, json) {
+    return json && schema.nodeFromJSON(json)
   }
 })
 

@@ -1,4 +1,4 @@
-import {$fromJSON, $node, $text, nodeTypes, Pos, style} from "../../src/model"
+import {defaultSchema as schema, Pos, style} from "../../src/model"
 import {Transform, joinPoint, canLift, canWrap} from "../../src/transform"
 import {cmp, cmpStr} from "../cmp"
 import {randomPos} from "./pos"
@@ -32,7 +32,7 @@ function runTest(type, doc, info, simple) {
 export function runCase(n) {
   let cases = readFileSync(logFile, "utf8").split("\n")
   let data = JSON.parse(cases[n])
-  let doc = $fromJSON(data.doc), info = restoreObjs(data.info)
+  let doc = schema.fromJSON(data.doc), info = restoreObjs(data.info)
   console.log("running " + data.type, info)
   console.log("on " + doc)
   runTest(data.type, doc, info, true)
@@ -51,7 +51,7 @@ function restoreObjs(obj) {
       if (val.path) {
         obj[prop] = Pos.fromJSON(val)
       } else if (val.content) {
-        obj[prop] = $fromJSON(val)
+        obj[prop] = schema.fromJSON(val)
       } else {
         restoreObjs(val)
       }
@@ -104,8 +104,8 @@ run.delete = (tr, info) => {
 }
 
 tests.insert = (doc, positions) => {
-  let para = $node("paragraph", null, [$text("Q")])
-  let img = $node("image", {src: "http://image2"})
+  let para = schema.node("paragraph", null, [schema.text("Q")])
+  let img = schema.node("image", {src: "http://image2"})
   for (let i = 0; i < positions.length; i++) {
     let pos = positions[i], node = doc.path(pos.path)
     if (node.type.canContain(para.type))
@@ -205,8 +205,8 @@ run.lift = (tr, info) => {
 }
 
 let blockTypes = [], wrapTypes = []
-for (let name in nodeTypes) {
-  let type = nodeTypes[name]
+for (let name in schema.nodeTypes) {
+  let type = schema.nodeTypes[name]
   if (type.textblock)
     blockTypes.push(type)
   else if (type.textblock)
@@ -219,7 +219,7 @@ tests.wrap = (doc, positions) => {
     let from = positions[i], p
     let to = positions[Math.floor(Math.random() * (positions.length - i)) + i]
     let type = wrapTypes[Math.floor(Math.random() * wrapTypes.length)]
-    let node = $node(type, attrs[type.name])
+    let node = schema.node(type, attrs[type.name])
     let wrap = canWrap(doc, from, to, node)
     if (wrap && (!last || (p = new Pos(wrap.range.path, wrap.range.from)).cmp(last))) {
       runTest("wrap", doc, {from, to, node})
@@ -238,7 +238,7 @@ tests.setBlockType = (doc, _, blockPositions) => {
     let from = blockPositions[i]
     let to = blockPositions[Math.floor(Math.random() * blockPositions.length - i) + i]
     let type = blockTypes[Math.floor(Math.random() * blockTypes.length)]
-    runTest("setBlockType", doc, {from, to, node: $node(type, attrs[type.name])})
+    runTest("setBlockType", doc, {from, to, node: schema.node(type, attrs[type.name])})
   }
 }
 

@@ -1,4 +1,4 @@
-import {Pos, $node, $fromJSON, findConnection} from "../model"
+import {Pos} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -71,9 +71,9 @@ defineStep("ancestor", {
     return {depth: param.depth,
             wrappers: param.wrappers && param.wrappers.map(n => n.toJSON())}
   },
-  paramFromJSON(json) {
+  paramFromJSON(schema, json) {
     return {depth: json.depth,
-            wrappers: json.wrappers && json.wrappers.map($fromJSON)}
+            wrappers: json.wrappers && json.wrappers.map(schema.nodeFromJSON)}
   }
 })
 
@@ -160,7 +160,9 @@ Transform.prototype.wrap = function(from, to, node) {
   let can = canWrap(this.doc, from, to, node)
   if (!can) return this
   let {range, around, inside} = can
-  let wrappers = around.map(t => $node(t)).concat(node).concat(inside.map(t => $node(t)))
+  let wrappers = around.map(t => node.type.schema.node(t))
+                   .concat(node)
+                   .concat(inside.map(t => node.type.schema.node(t)))
   this.step("ancestor", new Pos(range.path, range.from), new Pos(range.path, range.to),
             null, {wrappers: wrappers})
   if (inside.length) {

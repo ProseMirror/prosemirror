@@ -1,5 +1,3 @@
-import {$node} from "./node"
-
 export function sliceBefore(node, pos, depth = 0) {
   let content
   if (depth < pos.depth) {
@@ -31,7 +29,7 @@ export function sliceBetween(node, from, to, collapse = true, depth = 0) {
     if (!collapse) return node.copy([inner])
     if (node.type.name != "doc") return inner
     var conn = node.type.findConnection(inner.type)
-    for (let i = conn.length - 1; i >= 0; i--) inner = $node(conn[i], null, [inner])
+    for (let i = conn.length - 1; i >= 0; i--) inner = node.type.schema.node(conn[i], null, [inner])
     return node.copy([inner])
   } else {
     let content

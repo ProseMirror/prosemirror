@@ -1,5 +1,5 @@
 import markdownit from "markdown-it"
-import {$node, $text, Pos, style} from "../model"
+import {Pos, style} from "../model"
 import {defineSource} from "./index"
 
 function parseTokens(state, toks) {
@@ -9,19 +9,20 @@ function parseTokens(state, toks) {
   }
 }
 
-export function fromMarkdown(text) {
+export function fromMarkdown(schema, text) {
   let tokens = markdownit("commonmark").parse(text, {})
-  let state = new State(tokens), doc
+  let state = new State(schema, tokens), doc
   parseTokens(state, tokens)
   do { doc = closeNode(state) } while (state.stack.length)
-  if (!Pos.start(doc)) doc = doc.splice(0, 0, [$node("paragraph")])
+  if (!Pos.start(doc)) doc = doc.splice(0, 0, [schema.node("paragraph")])
   return doc
 }
 
 defineSource("markdown", fromMarkdown)
 
 class State {
-  constructor(tokens) {
+  constructor(schema, tokens) {
+    this.schema = schema
     this.stack = [{type: "doc", content: []}]
     this.tokens = tokens
     this.styles = []
@@ -44,7 +45,7 @@ const tokens = Object.create(null)
 // atomic tokens.
 
 function addNode(state, type, attrs, content) {
-  let node = $node(type, attrs, content)
+  let node = state.schema.node(type, attrs, content)
   state.push(node)
   return node
 }
@@ -68,14 +69,14 @@ function closeInline(state, rm) {
 }
 
 function addInline(state, type, text = null, attrs = null) {
-  let node = $node(type, attrs, text, state.styles)
+  let node = state.schema.node(type, attrs, text, state.styles)
   state.push(node)
   return node
 }
 
 function addText(state, text) {
   let nodes = state.top().content, last = nodes[nodes.length - 1]
-  let node = $text(text, state.styles), merged
+  let node = state.schema.text(text, state.styles), merged
   if (last && (merged = last.maybeMerge(node))) nodes[nodes.length - 1] = merged
   else nodes.push(node)
 }

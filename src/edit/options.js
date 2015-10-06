@@ -1,4 +1,4 @@
-import {$node} from "../model"
+import {defaultSchema} from "../model"
 
 import {defaultKeymap} from "./defaultkeymap"
 
@@ -13,7 +13,9 @@ class Option {
 const options = {
   __proto__: null,
 
-  doc: new Option($node("doc", null, [$node("paragraph")]), function(pm, value) {
+  schema: new Option(defaultSchema, false, false),
+
+  doc: new Option(null, function(pm, value) {
     pm.setDoc(value)
   }, false),
 
@@ -56,8 +58,9 @@ export function initOptions(pm) {
 }
 
 export function setOption(pm, name, value) {
+  let desc = options[name]
+  if (desc.update === false) throw new Error("Option '" + name + "' can not be changed")
   let old = pm.options[name]
   pm.options[name] = value
-  let desc = options[name]
   if (desc.update) desc.update(pm, value, old, false)
 }

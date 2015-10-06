@@ -1,5 +1,5 @@
 import {rebaseSteps} from "../src/collab/rebase"
-import {Pos, $node, style} from "../src/model"
+import {Pos, defaultSchema as schema, style} from "../src/model"
 import {Transform} from "../src/transform"
 
 import {doc, blockquote, h1, p, li, ol, ul, em, a, br} from "./build"
@@ -28,7 +28,7 @@ function text(pos, text) {
   return tr => tr.insertText(asPos(tr.doc, pos), text)
 }
 function wrap(from, to, type, attrs) {
-  return tr => tr.wrap(asPos(tr.doc, from), asPos(tr.doc, to), $node(type, attrs))
+  return tr => tr.wrap(asPos(tr.doc, from), asPos(tr.doc, to), schema.node(type, attrs))
 }
 function rm(from, to) {
   return tr => tr.delete(asPos(tr.doc, from), asPos(tr.doc, to))
@@ -46,7 +46,7 @@ function repl(from, to, source, start, end) {
   return tr => tr.replace(asPos(tr.doc, from), asPos(tr.doc, to), source, start, end)
 }
 function addNode(pos, type, attrs) {
-  return tr => tr.insert(asPos(tr.doc, pos), $node(type, attrs))
+  return tr => tr.insert(asPos(tr.doc, pos), schema.node(type, attrs))
 }
 
 function buildChanges(startDoc, clients) {

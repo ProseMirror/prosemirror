@@ -1,5 +1,5 @@
 export {compareMarkup} from "./node"
-export {nodeTypes, $fromJSON, $node, $text} from "./schema"
+export {baseSchemaSpec, defaultSchemaSpec, defaultSchema, SchemaSpec, Schema, SchemaError} from "./schema"
 export {Pos} from "./pos"
 
 import * as style from "./style"

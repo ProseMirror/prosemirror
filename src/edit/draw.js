@@ -1,4 +1,4 @@
-import {Pos, nodeTypes} from "../model"
+import {Pos} from "../model"
 import {toDOM, renderNodeToDOM} from "../convert/to_dom"
 
 import {elt} from "../dom"
@@ -32,7 +32,7 @@ function options(path, ranges) {
       }
 
       dom.setAttribute("pm-span", offset + "-" + end.offset)
-      if (node.type != nodeTypes.text)
+      if (!node.isText)
         dom.setAttribute("pm-span-atom", "true")
 
       let inlineOffset = 0
@@ -98,7 +98,7 @@ export function redraw(pm, dirty, doc, prev) {
 
     if (node.isTextblock) {
       let needsBR = node.length == 0 ||
-          node.lastChild.type == nodeTypes.hard_break
+          node.lastChild.type == node.type.schema.nodeTypes.hard_break
       let last = dom.lastChild, hasBR = last && last.nodeType == 1 && last.hasAttribute("pm-force-br")
       if (needsBR && !hasBR)
         dom.appendChild(elt("br", {"pm-force-br": "true"}))

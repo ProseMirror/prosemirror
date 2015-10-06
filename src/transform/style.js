@@ -1,4 +1,4 @@
-import {style, nodeTypes, Pos} from "../model"
+import {style, Pos} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -100,7 +100,7 @@ Transform.prototype.removeStyle = function(from, to, st = null) {
 Transform.prototype.clearMarkup = function(from, to) {
   let steps = []
   forSpansBetween(this.doc, from, to, (span, path, start, end) => {
-    if (span.type != nodeTypes.text) {
+    if (!span.isText) {
       path = path.slice()
       let from = new Pos(path, start)
       steps.unshift(new Step("replace", from, new Pos(path, end), from))

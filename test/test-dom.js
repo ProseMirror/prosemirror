@@ -5,6 +5,7 @@ import {defTest} from "./tests"
 
 import xmlDOM from "xmldom"
 
+import {defaultSchema as schema} from "../src/model"
 import {toDOM} from "../src/convert/to_dom"
 import {fromDOM} from "../src/convert/from_dom"
 
@@ -30,7 +31,7 @@ function t(name, doc, dom) {
     if (derivedText != declaredText)
       throw new Failure("DOM text mismatch: " + derivedText + " vs " + declaredText)
 
-    cmpNode(doc, fromDOM(derivedDOM.documentElement))
+    cmpNode(doc, fromDOM(schema, derivedDOM.documentElement))
   })
 }
 
@@ -79,7 +80,7 @@ t("code_block",
   "<blockquote><pre><code>some code</code></pre></blockquote><p>and</p>")
 
 function recover(name, html, doc) {
-  defTest("dom_recover_" + name, () => cmpNode(fromDOM(domFor(html)), doc))
+  defTest("dom_recover_" + name, () => cmpNode(fromDOM(schema, domFor(html)), doc))
 }
 
 recover("list",

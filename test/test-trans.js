@@ -1,4 +1,4 @@
-import {style, $node, $text} from "../src/model"
+import {style, defaultSchema as schema} from "../src/model"
 import {Transform, Remapping} from "../src/transform"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
@@ -111,24 +111,24 @@ function ins(name, doc, expect, nodes) {
 ins("break",
     doc(p("hello<a>there")),
     doc(p("hello", br, "<a>there")),
-    $node("hard_break"))
+    schema.node("hard_break"))
 ins("simple",
     doc(p("one"), "<a>", p("two<2>")),
     doc(p("one"), p(), "<a>", p("two<2>")),
-    $node("paragraph"))
+    schema.node("paragraph"))
 ins("two",
     doc(p("one"), "<a>", p("two<2>")),
     doc(p("one"), p("hi"), hr, "<a>", p("two<2>")),
-    [$node("paragraph", null, [$text("hi")]),
-     $node("horizontal_rule")])
+    [schema.node("paragraph", null, [schema.text("hi")]),
+     schema.node("horizontal_rule")])
 ins("end_of_blockquote",
     doc(blockquote(p("he<before>y"), "<a>"), p("after<after>")),
     doc(blockquote(p("he<before>y"), p()), p("after<after>")),
-    $node("paragraph"))
+    schema.node("paragraph"))
 ins("start_of_blockquote",
     doc(blockquote("<a>", p("he<1>y")), p("after<2>")),
     doc(blockquote(p(), "<a>", p("he<1>y")), p("after<2>")),
-    $node("paragraph"))
+    schema.node("paragraph"))
 
 function del(name, doc, expect) {
   defTest("delete_" + name, () => {
@@ -247,7 +247,7 @@ split("list_item",
 split("change_type",
       doc(h1("hell<a>o!")),
       doc(h1("hell"), p("<a>o!")),
-      {node: $node("paragraph")})
+      {node: schema.node("paragraph")})
 
 function lift(name, doc, expect) {
   defTest("lift_" + name, () => {
@@ -298,31 +298,31 @@ function wrap(name, doc, expect, node) {
 wrap("simple",
      doc(p("one"), p("<a>two"), p("three")),
      doc(p("one"), blockquote(p("<a>two")), p("three")),
-     $node("blockquote"))
+     schema.node("blockquote"))
 wrap("two",
      doc(p("one<1>"), p("<a>two"), p("<b>three"), p("four<4>")),
      doc(p("one<1>"), blockquote(p("<a>two"), p("three")), p("four<4>")),
-     $node("blockquote"))
+     schema.node("blockquote"))
 wrap("list",
      doc(p("<a>one"), p("<b>two")),
      doc(ol(li(p("<a>one")), li(p("<b>two")))),
-     $node("ordered_list"))
+     schema.node("ordered_list"))
 wrap("nested_list",
      doc(ol(li(p("<1>one")), li(p("<a>two"), p("<b>three")), li(p("<4>four")))),
      doc(ol(li(p("<1>one")), li(ol(li(p("<a>two")), li(p("<b>three")))), li(p("<4>four")))),
-     $node("ordered_list"))
+     schema.node("ordered_list"))
 wrap("not_possible",
      doc(p("hi<a>")),
      doc(p("hi<a>")),
-     $node("horizontal_rule"))
+     schema.node("horizontal_rule"))
 wrap("include_parent",
      doc(blockquote(p("<1>one"), p("two<a>")), p("three<b>")),
      doc(blockquote(blockquote(p("<1>one"), p("two<a>")), p("three<b>"))),
-     $node("blockquote"))
+     schema.node("blockquote"))
 wrap("bullet_list",
      doc(p("x"), p("yyyy<a>y"), p("z")),
      doc(p("x"), ul(li(p("yyyy<a>y"))), p("z")),
-     $node("bullet_list"))
+     schema.node("bullet_list"))
 
 function type(name, doc, expect, node) {
   defTest("setType_" + name, () => {
@@ -333,23 +333,23 @@ function type(name, doc, expect, node) {
 type("simple",
      doc(p("am<a> i")),
      doc(h2("am i")),
-     $node("heading", {level: 2}))
+     schema.node("heading", {level: 2}))
 type("multiple",
      doc(h1("<a>hello"), p("there"), p("<b>you"), p("end")),
      doc(pre("hello"), pre("there"), pre("you"), p("end")),
-     $node("code_block"))
+     schema.node("code_block"))
 type("inside",
      doc(blockquote(p("one<a>"), p("two<b>"))),
      doc(blockquote(h1("one<a>"), h1("two<b>"))),
-     $node("heading", {level: 1}))
+     schema.node("heading", {level: 1}))
 type("clear_markup",
      doc(p("hello<a> ", em("world"))),
      doc(pre("hello world")),
-     $node("code_block"))
+     schema.node("code_block"))
 type("only_clear_for_code_block",
      doc(p("hello<a> ", em("world"))),
      doc(h1("hello<a> ", em("world"))),
-     $node("heading", {level: 1}))
+     schema.node("heading", {level: 1}))
 
 function repl(name, doc, source, expect) {
   defTest("replace_" + name, () => {

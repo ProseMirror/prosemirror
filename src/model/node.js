@@ -29,6 +29,7 @@ export class Node {
   get isBlock() { return false }
   get isTextblock() { return false }
   get isInline() { return false }
+  get isText() { return false }
 }
 
 export class BlockNode extends Node {
@@ -234,6 +235,8 @@ export class TextNode extends InlineNode {
     obj.text = this.text
     return obj
   }
+
+  get isText() { return true }
 }
 
 export function compareMarkup(typeA, typeB, attrsA, attrsB) {

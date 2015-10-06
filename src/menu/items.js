@@ -1,4 +1,4 @@
-import {style, rangeHasStyle, $node, nodeTypes, Pos} from "../model"
+import {style, rangeHasStyle, Pos} from "../model"
 import {canLift, canWrap, joinPoint} from "../transform"
 import {elt} from "../dom"
 import {MenuItem} from "./menu"
@@ -72,7 +72,7 @@ export class InsertBlockItem extends IconItem {
   select(pm) {
     let sel = pm.selection
     return Pos.samePath(sel.head.path, sel.anchor.path) &&
-      pm.doc.path(sel.head.path).type.canContain(nodeTypes[this.type])
+      pm.doc.path(sel.head.path).type.canContain(pm.schema.nodeType(this.type))
   }
   apply(pm) {
     let sel = pm.selection, tr = pm.tr, off = 0
@@ -80,7 +80,7 @@ export class InsertBlockItem extends IconItem {
       tr.split(sel.head)
       off = 1
     }
-    pm.apply(tr.insert(sel.head.shorten(null, off), $node(this.type, this.attrs)))
+    pm.apply(tr.insert(sel.head.shorten(null, off), pm.schema.node(this.type, this.attrs)))
   }
 }
 
@@ -90,11 +90,11 @@ export class WrapItem extends IconItem {
     this.type = type
   }
   select(pm) {
-    return canWrap(pm.doc, pm.selection.from, pm.selection.to, $node(this.type))
+    return canWrap(pm.doc, pm.selection.from, pm.selection.to, pm.schema.node(this.type))
   }
   apply(pm) {
     let sel = pm.selection
-    pm.apply(pm.tr.wrap(sel.from, sel.to, $node(this.type)))
+    pm.apply(pm.tr.wrap(sel.from, sel.to, pm.schema.node(this.type)))
   }
 }
 
@@ -204,7 +204,7 @@ export class ImageDialog extends DialogItem {
     let sel = pm.selection, tr = pm.tr
     tr.delete(sel.from, sel.to)
     let attrs = {src: elts.src.value, alt: elts.alt.value, title: elts.title.value}
-    pm.apply(tr.insertInline(sel.from, $node("image", attrs)))
+    pm.apply(tr.insertInline(sel.from, pm.schema.node("image", attrs)))
   }
 }
 const imageDialog = new ImageDialog
@@ -228,15 +228,18 @@ class HistorySeparator extends SeparatorItem {
   select(pm) { return pm.history.canUndo() || pm.history.canRedo() }
 }
 
+// FIXME make schema-aware
 const blockTypes = [
-  {name: "Normal", node: $node("paragraph")},
-  {name: "Code", node: $node("code_block")}
+  {name: "Normal", type: "paragraph"},
+  {name: "Code", type: "code_block"}
 ]
 for (let i = 1; i <= 6; i++)
-  blockTypes.push({name: "Head " + i, node: $node("heading", {level: i})})
+  blockTypes.push({name: "Head " + i, type: "heading", attrs: {level: i}})
 function getBlockType(block) {
   for (let i = 0; i < blockTypes.length; i++)
-    if (blockTypes[i].node.sameMarkup(block)) return blockTypes[i]
+    if (blockTypes[i].type == block.type.name &&
+        (block.type.attrs.level == null || block.type.attrs.level == blockTypes[i].attrs.level))
+      return blockTypes[i]
 }
 
 class BlockTypeItem extends MenuItem {
@@ -260,7 +263,7 @@ function showBlockTypeMenu(pm, dom) {
                    dom.addEventListener("mousedown", e => {
                      e.preventDefault()
                      let sel = pm.selection
-                     pm.apply(pm.tr.setBlockType(sel.from, sel.to, t.node))
+                     pm.apply(pm.tr.setBlockType(sel.from, sel.to, pm.schema.node(t.type, t.attrs)))
                      finish()
                    })
                    return dom
