@@ -1,6 +1,7 @@
 import {ProseMirror} from "../src/edit/main"
 import {Pos, Node} from "../src/model"
 import {fromDOM} from "../src/convert/from_dom"
+import {defaultSchema as schema} from "../src/model"
 
 import "../src/inputrules/autoinput"
 import "../src/menu/inlinemenu"
@@ -13,7 +14,7 @@ te.style.display = "none"
 
 let dummy = document.createElement("div")
 dummy.innerHTML = te.value
-let doc = fromDOM(dummy)
+let doc = fromDOM(schema, dummy)
 
 class DummyServer {
   constructor() {
