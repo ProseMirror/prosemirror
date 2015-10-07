@@ -62,7 +62,7 @@ function renderNodes(nodes, options) {
 
 function renderNode(node, options, offset) {
   let dom = render[node.type.name](node, options)
-  if (options.onRender)
+  if (options.onRender && node.isBlock)
     dom = options.onRender(node, dom, offset) || dom
   return dom
 }

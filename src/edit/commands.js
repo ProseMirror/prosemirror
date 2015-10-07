@@ -261,7 +261,7 @@ function insertOpaqueBlock(pm, type, attrs) {
   pm.scrollIntoView()
   let pos = pm.selection.from
   let tr = clearSel(pm)
-  let parent = tr.doc.path(pos.path)
+  let parent = tr.doc.path(pos.shorten().path)
   if (!parent.type.canContain(type)) return false
   let off = 0
   if (pos.offset) {
