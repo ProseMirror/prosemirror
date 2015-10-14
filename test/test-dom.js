@@ -6,7 +6,7 @@ import {defTest} from "./tests"
 import xmlDOM from "xmldom"
 
 import {defaultSchema as schema} from "../src/model"
-import {toDOM} from "../src/convert/to_dom"
+import {toDOM} from "../src/serialize/dom"
 import {fromDOM} from "../src/convert/from_dom"
 
 function domFor(str) {

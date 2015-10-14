@@ -1,5 +1,5 @@
 import {Pos} from "../model"
-import {toDOM, renderNodeToDOM} from "../convert/to_dom"
+import {toDOM, renderNodeToDOM} from "../serialize/dom"
 
 import {elt} from "../dom"
 

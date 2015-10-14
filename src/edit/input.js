@@ -1,7 +1,7 @@
 import {Pos, spanStylesAt} from "../model"
 
 import {fromHTML} from "../convert/from_dom"
-import {toHTML} from "../convert/to_dom"
+import {toHTML} from "../serialize/dom"
 import {toText} from "../convert/to_text"
 import {knownSource, convertFrom} from "../convert"
 

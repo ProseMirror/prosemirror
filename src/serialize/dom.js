@@ -1,13 +1,17 @@
-import {style} from "../model"
-import {defineTarget} from "./index"
+import {NodeType, Text, Doc, BlockQuote, OrderedList, BulletList, ListItem,
+        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
+        SchemaError, style} from "../model"
+import {defineTarget} from "../convert"
 
 // FIXME un-export, define proper extension mechanism
-export const render = Object.create(null), renderStyle = Object.create(null)
+export const renderStyle = Object.create(null)
 
 let doc = null
 
+// declare_global: window
+
 export function toDOM(node, options) {
-  doc = options.document
+  doc = options && options.document || window.document
   return renderNodes(node.children, options)
 }
 
@@ -51,7 +55,7 @@ function wrap(node, options, type) {
 }
 
 function wrapIn(type) {
-  return function(node, options) { return wrap(node, options, type) }
+  return (node, options) => wrap(node, options, type)
 }
 
 function renderNodes(nodes, options) {
@@ -61,7 +65,7 @@ function renderNodes(nodes, options) {
 }
 
 function renderNode(node, options, offset) {
-  let dom = render[node.type.name](node, options)
+  let dom = node.type.serializeToDOM(node, options)
   if (options.onRender && node.isBlock)
     dom = options.onRender(node, dom, offset) || dom
   return dom
@@ -121,58 +125,46 @@ function renderInlineContentFlat(nodes, where, options) {
 
 // Block nodes
 
-render.blockquote = wrap
+function def(cls, method) { cls.prototype.serializeToDOM = method }
 
-render.code_block = (node, options) => {
+def(BlockQuote, wrapIn("blockquote"))
+
+def(BulletList, wrapIn("ul"))
+
+def(OrderedList, (node, options) => {
+  let dom = wrap(node, options, "ol")
+  if (node.attrs.order > 1) dom.setAttribute("start", node.attrs.order)
+  return dom
+})
+
+def(ListItem, wrapIn("li"))
+
+def(HorizontalRule, () => elt("hr"))
+
+def(Paragraph, wrapIn("p"))
+
+def(Heading, (node, options) => wrap(node, options, "h" + node.attrs.level))
+
+def(CodeBlock, (node, options) => {
   let code = wrap(node, options, "code")
   if (node.attrs.params != null)
     code.className = "fence " + node.attrs.params.replace(/(^|\s+)/g, "$&lang-")
   return elt("pre", code)
-}
-
-render.heading = (node, options) => wrap(node, options, "h" + node.attrs.level)
-
-render.horizontal_rule = _node => elt("hr")
-
-render.bullet_list = (node, options) => wrap(node, options, "ul")
-
-render.ordered_list = (node, options) => {
-  let dom = wrap(node, options, "ol")
-  if (node.attrs.order > 1) dom.setAttribute("start", node.attrs.order)
-  return dom
-}
-
-render.list_item = wrapIn("li")
-
-render.paragraph = wrapIn("p")
-
-render.html_block = node => {
-  let dom = elt("div")
-  dom.innerHTML = node.attrs.html
-  dom.setAttribute("pm-html", "html_block")
-  return dom
-}
+})
 
 // Inline content
 
-render.text = node => doc.createTextNode(node.text)
+def(Text, node => doc.createTextNode(node.text))
 
-render.image = node => {
+def(Image, node => {
   let dom = elt("img")
   dom.setAttribute("src", node.attrs.src)
   if (node.attrs.title) dom.setAttribute("title", node.attrs.title)
   if (node.attrs.alt) dom.setAttribute("alt", node.attrs.alt)
   return dom
-}
+})
 
-render.hard_break = _node => elt("br")
-
-render.html_tag = node => {
-  let dom = elt("span")
-  dom.innerHTML = node.attrs.html
-  dom.setAttribute("pm-html", "html_tag")
-  return dom
-}
+def(HardBreak, () => elt("br"))
 
 // Inline styles
 
