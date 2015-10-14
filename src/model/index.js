@@ -1,5 +1,7 @@
 export {compareMarkup} from "./node"
-export {baseSchemaSpec, defaultSchemaSpec, defaultSchema, SchemaSpec, Schema, SchemaError} from "./schema"
+export {SchemaSpec, Schema, SchemaError, Block, Textblock, Inline, Text} from "./schema"
+export {defaultSchema, Doc, Blockquote, OrderedList, BulletList, ListItem,
+        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak} from "./defaultschema"
 export {Pos} from "./pos"
 
 import * as style from "./style"

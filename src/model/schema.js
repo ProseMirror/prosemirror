@@ -4,7 +4,7 @@ import {ProseMirrorError} from "../util/error"
 
 export class SchemaError extends ProseMirrorError {}
 
-class NodeType {
+export class NodeType {
   constructor(name, contains, categories, attrs, schema) {
     this.name = name
     this.contains = contains
@@ -43,25 +43,25 @@ class NodeType {
   }
 }
 
-class BlockNodeType extends NodeType {
+export class Block extends NodeType {
   get instance() { return BlockNode }
   static get contains() { return "block" }
   static get category() { return "block" }
 }
 
-class TextblockNodeType extends BlockNodeType {
+export class Textblock extends Block {
   get instance() { return TextblockNode }
   static get contains() { return "inline" }
   get textblock() { return true }
 }
 
-class InlineNodeType extends NodeType {
+export class Inline extends NodeType {
   get instance() { return InlineNode }
   static get contains() { return null }
   static get category() { return "inline" }
 }
 
-class TextNodeType extends InlineNodeType {
+export class Text extends Inline {
   get instance() { return TextNode }
 }
 
@@ -79,7 +79,6 @@ export class SchemaSpec {
   constructor(nodeTypes, styles) {
     this.nodeTypes = copyObj(nodeTypes, ensureWrapped)
     this.styles = styles
-    this.compiled = null
   }
 
   updateNodes(nodes) {
@@ -118,10 +117,6 @@ export class SchemaSpec {
       else copy[name] = info
     }
     return new SchemaSpec(this.nodeTypes, copy)
-  }
-
-  compile() {
-    return this.compiled || (this.compiled = new Schema(this))
   }
 }
 
@@ -207,73 +202,3 @@ function maybeNull(obj) {
   for (let _prop in obj) return obj
   return nullAttrs
 }
-
-export const baseSchemaSpec = new SchemaSpec({
-  doc: BlockNodeType,
-  paragraph: TextblockNodeType,
-  text: TextNodeType
-}, {
-  code: {},
-  em: {},
-  strong: {},
-  link: {
-    attributes: {
-      href: {},
-      title: {default: ""}
-    }
-  }
-}, {})
-
-class CodeBlockNodeType extends TextblockNodeType {
-  get plainText() { return true }
-}
-
-export const defaultSchemaSpec = baseSchemaSpec.updateNodes({
-  blockquote: BlockNodeType,
-  ordered_list: {
-    type: BlockNodeType,
-    contains: "list_item",
-    attributes: {
-      order: {default: "1"}
-    }
-  },
-  bullet_list: {
-    type: BlockNodeType,
-    contains: "list_item"
-  },
-  list_item: {
-    type: BlockNodeType,
-    category: "list_item"
-  },
-  horizontal_rule: {
-    type: BlockNodeType,
-    contains: null
-  },
-
-  heading: {
-    type: TextblockNodeType,
-    attributes: {
-      level: {default: "1"}
-    }
-  },
-  code_block: {
-    type: CodeBlockNodeType,
-    attributes: {
-      params: {default: ""}
-    },
-  },
-
-  image: {
-    type: InlineNodeType,
-    attributes: {
-      src: {},
-      title: {default: ""},
-      alt: {default: ""}
-    }
-  },
-  hard_break: {
-    type: InlineNodeType
-  }
-})
-
-export const defaultSchema = defaultSchemaSpec.compile()
