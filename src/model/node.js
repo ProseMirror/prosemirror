@@ -226,7 +226,7 @@ export class TextNode extends InlineNode {
   toString() {
     let text = JSON.stringify(this.text)
     for (let i = 0; i < this.styles.length; i++)
-      text += this.styles[i].type + "(" + text + ")"
+      text = this.styles[i].type + "(" + text + ")"
     return text
   }
 
