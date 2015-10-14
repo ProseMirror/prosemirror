@@ -1,5 +1,5 @@
 import {Pos, findDiffStart, findDiffEnd} from "../model"
-import {fromDOM} from "../convert/from_dom"
+import {fromDOM} from "../parse/dom"
 import {samePathDepth} from "../transform/tree"
 
 import {findByPath} from "./selection"

@@ -148,6 +148,7 @@ export class Schema {
     this.spec = spec
     this.nodeTypes = compileNodeTypes(spec.nodeTypes, this)
     this.styles = spec.styles // FIXME
+    this.cached = Object.create(null)
     this.node = this.node.bind(this)
     this.text = this.text.bind(this)
     this.nodeFromJSON = this.nodeFromJSON.bind(this)

@@ -1,6 +1,6 @@
 import {Pos, spanStylesAt} from "../model"
 
-import {fromHTML} from "../convert/from_dom"
+import {fromHTML} from "../parse/dom"
 import {toHTML} from "../serialize/dom"
 import {toText} from "../serialize/text"
 import {knownSource, convertFrom} from "../convert"

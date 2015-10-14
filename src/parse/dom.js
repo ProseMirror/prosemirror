@@ -1,5 +1,7 @@
-import {style, compareMarkup, Pos} from "../model"
-import {defineSource} from "./index"
+import {Text, Doc, BlockQuote, OrderedList, BulletList, ListItem,
+        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
+        style, compareMarkup, Pos} from "../model"
+import {defineSource} from "../convert"
 
 export function fromDOM(schema, dom, options) {
   if (!options) options = {}
@@ -38,6 +40,7 @@ class Context {
     this.styles = []
     this.closing = false
     this.enter(topNode.type, topNode.attrs)
+    this.nodeInfo = nodeInfo(schema)
   }
 
   get top() {
@@ -63,16 +66,24 @@ class Context {
         this.insert(this.schema.node("html_tag", {html: dom.innerHTML}, null, this.styles))
       else
         this.insert(this.schema.node("html_block", {html: dom.innerHTML}))
-    } else {
+    } else if (!this.parseNodeType(dom)) {
+      this.addAll(dom.firstChild, null)
       let name = dom.nodeName.toLowerCase()
-      if (name in tags) {
-        tags[name](dom, this)
-      } else {
-        this.addAll(dom.firstChild, null)
-        if (blockElements.hasOwnProperty(name) && this.top.type == this.schema.nodeTypes.paragraph)
-          this.closing = true
-      }
+      if (blockElements.hasOwnProperty(name) && this.top.type == this.schema.nodeTypes.paragraph)
+        this.closing = true
     }
+  }
+
+  tryParsers(parsers, dom) {
+    if (parsers) for (let i = 0; i < parsers.length; i++) {
+      let parser = parsers[i]
+      if (parser.parse(dom, this, parser.type) !== false) return true
+    }
+  }
+
+  parseNodeType(dom) {
+    return this.tryParsers(this.nodeInfo[dom.nodeName.toLowerCase()], dom)
+      || this.tryParsers(this.nodeInfo._, dom)
   }
 
   addAll(from, to, sync) {
@@ -140,17 +151,34 @@ class Context {
   }
 }
 
-// FIXME don't export, define proper extension mechanism
-export const tags = Object.create(null)
-
-function wrap(dom, context, type, attrs) {
-  context.enter(context.schema.nodeType(type), attrs)
-  context.addAll(dom.firstChild, null, true)
-  context.leave()
+function nodeInfo(schema) {
+  return schema.cached.parseDOMNodes || (schema.cached.parseDOMNodes = summarizeNodeInfo(schema))
 }
 
-function wrapAs(type) {
-  return (dom, context) => wrap(dom, context, type)
+function summarizeNodeInfo(schema) {
+  let tags = Object.create(null)
+  tags._ = []
+  for (let name in schema.nodeTypes) {
+    let type = schema.nodeTypes[name], info = type.parseFromDOM
+    if (!info) continue
+    ;(Array.isArray(info) ? info : [info]).forEach(info => {
+      let tag = info.tag || "_"
+      ;(tags[tag] || (tags[tag] = [])).push({
+        type,
+        rank: info.rank == null ? 50 : info.rank,
+        parse: info.parse
+      })
+    })
+  }
+  for (let tag in tags)
+    tags[tag].sort((a, b) => a.rank - b.rank)
+  return tags
+}
+
+function wrap(dom, context, type, attrs) {
+  context.enter(type, attrs)
+  context.addAll(dom.firstChild, null, true)
+  context.leave()
 }
 
 function inline(dom, context, added) {
@@ -160,18 +188,20 @@ function inline(dom, context, added) {
   context.styles = old
 }
 
-tags.p = wrapAs("paragraph")
-
-tags.blockquote = wrapAs("blockquote")
-
-for (var i = 1; i <= 6; i++) {
-  let attrs = {level: i}
-  tags["h" + i] = (dom, context) => wrap(dom, context, "heading", attrs)
+function def(type, tag, parse, rank) {
+  ;(type.prototype.parseFromDOM || (type.prototype.parseFromDOM = [])).push({tag, parse, rank})
 }
 
-tags.hr = (_, context) => context.insert(context.schema.node("horizontal_rule"))
+def(Paragraph, "p", wrap)
 
-tags.pre = (dom, context) => {
+def(BlockQuote, "blockquote", wrap)
+
+for (let i = 1; i <= 6; i++)
+  def(Heading, "h" + i, (dom, context, type) => wrap(dom, context, type, {level: i}))
+
+def(HorizontalRule, "hr", wrap)
+
+def(CodeBlock, "pre", (dom, context, type) => {
   let params = dom.firstChild && /^code$/i.test(dom.firstChild.nodeName) && dom.firstChild.getAttribute("class")
   if (params && /fence/.test(params)) {
     let found = [], re = /(?:^|\s)lang-(\S+)/g, m
@@ -180,40 +210,40 @@ tags.pre = (dom, context) => {
   } else {
     params = null
   }
-  context.insert(context.schema.node("code_block", {params: params}, [context.schema.text(dom.textContent)]))
-}
+  context.insert(context.schema.node(type, {params: params}, [context.schema.text(dom.textContent)]))
+})
 
-tags.ul = (dom, context) => {
-  let cls = dom.getAttribute("class")
-  let attrs = {bullet: /bullet_dash/.test(cls) ? "-" : /bullet_plus/.test(cls) ? "+" : "*",
-               tight: /\btight\b/.test(dom.getAttribute("class"))}
-  wrap(dom, context, "bullet_list", attrs)
-}
+def(BulletList, "ul", wrap)
 
-tags.ol = (dom, context) => {
-  let attrs = {order: dom.getAttribute("start") || 1,
-               tight: /\btight\b/.test(dom.getAttribute("class"))}
-  wrap(dom, context, "ordered_list", attrs)
-}
+def(OrderedList, "ol", (dom, context, type) => {
+  let attrs = {order: dom.getAttribute("start") || 1}
+  wrap(dom, context, type, attrs)
+})
 
-tags.li = wrapAs("list_item")
+def(ListItem, "li", wrap)
 
-tags.br = (dom, context) => {
+def(HardBreak, "br", (dom, context, type) => {
   if (!dom.hasAttribute("pm-force-br"))
-    context.insert(context.schema.node("hard_break", null, null, context.styles))
-}
+    context.insert(context.schema.node(type, null, null, context.styles))
+})
 
-tags.a = (dom, context) => inline(dom, context, style.link(dom.getAttribute("href"), dom.getAttribute("title")))
-
-tags.b = tags.strong = (dom, context) => inline(dom, context, style.strong)
-
-tags.i = tags.em = (dom, context) => inline(dom, context, style.em)
-
-tags.code = (dom, context) => inline(dom, context, style.code)
-
-tags.img = (dom, context) => {
+def(Image, "img", (dom, context, type) => {
   let attrs = {src: dom.getAttribute("src"),
                title: dom.getAttribute("title") || null,
                alt: dom.getAttribute("alt") || null}
-  context.insert(context.schema.node("image", attrs))
-}
+  context.insert(context.schema.node(type, attrs))
+})
+
+// FIXME associate these with the actual style objects, not Text
+
+def(Text, "a", (dom, context) => {
+  inline(dom, context, style.link(dom.getAttribute("href"), dom.getAttribute("title")))
+})
+
+def(Text, "b", (dom, context) => inline(dom, context, style.strong))
+def(Text, "strong", (dom, context) => inline(dom, context, style.strong))
+
+def(Text, "i", (dom, context) => inline(dom, context, style.em))
+def(Text, "em", (dom, context) => inline(dom, context, style.em))
+
+def(Text, "code", (dom, context) => inline(dom, context, style.code))
