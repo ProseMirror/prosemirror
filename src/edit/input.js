@@ -2,7 +2,7 @@ import {Pos, spanStylesAt} from "../model"
 
 import {fromHTML} from "../convert/from_dom"
 import {toHTML} from "../serialize/dom"
-import {toText} from "../convert/to_text"
+import {toText} from "../serialize/text"
 import {knownSource, convertFrom} from "../convert"
 
 import {isModifierKey, lookupKey, keyName} from "./keys"
