@@ -1,5 +1,7 @@
-import {style} from "../model"
-import {defineTarget} from "./index"
+import {Text, Doc, BlockQuote, OrderedList, BulletList, ListItem,
+        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
+        style} from "../model"
+import {defineTarget} from "../convert"
 
 export function toMarkdown(doc) {
   let state = new State()
@@ -87,7 +89,7 @@ class State {
   }
 
   render(node) {
-    render[node.type.name](this, node)
+    node.type.serializeToMarkdown(this, node)
   }
 
   renderNodes(nodes) {
@@ -146,13 +148,13 @@ class State {
   }
 }
 
-const render = Object.create(null)
+function def(cls, method) { cls.prototype.serializeToMarkdown = method }
 
-render.blockquote = (state, node) => {
+def(BlockQuote, (state, node) => {
   state.wrapBlock("> ", null, node, () => state.renderNodes(node.children))
-}
+})
 
-render.code_block = (state, node) => {
+def(CodeBlock, (state, node) => {
   if (node.attrs.params == null) {
     state.wrapBlock("    ", null, node, () => state.text(node.textContent, false))
   } else {
@@ -162,26 +164,24 @@ render.code_block = (state, node) => {
     state.write("```")
     state.closeBlock(node)
   }
-}
+})
 
-render.heading = (state, node) => {
+def(Heading, (state, node) => {
   state.write(rep("#", node.attrs.level) + " ")
   state.renderInline(node.children)
   state.closeBlock(node)
-}
+})
 
-render.horizontal_rule = (state, node) => {
+def(HorizontalRule, (state, node) => {
   state.write(node.attrs.markup || "---")
   state.closeBlock(node)
-}
+})
 
-
-
-render.bullet_list = (state, node) => {
+def(BulletList, (state, node) => {
   state.renderList(node, "  ", () => (node.attrs.bullet || "*") + " ")
-}
+})
 
-render.ordered_list = (state, node) => {
+def(OrderedList, (state, node) => {
   let start = Number(node.attrs.order || 1)
   let maxW = String(start + node.length - 1).length
   let space = rep(" ", maxW + 2)
@@ -189,34 +189,29 @@ render.ordered_list = (state, node) => {
     let nStr = String(start + i)
     return rep(" ", maxW - nStr.length) + nStr + ". "
   })
-}
+})
 
-render.list_item = (state, node) => state.renderNodes(node.children)
+def(ListItem, (state, node) => state.renderNodes(node.children))
 
-render.html_block = (state, node) => {
-  state.text(node.attrs.html, false)
-  state.closeBlock(node)
-}
-
-render.paragraph = (state, node) => {
+def(Paragraph, (state, node) => {
   state.renderInline(node.children)
   state.closeBlock(node)
-}
+})
 
 // Inline nodes
 
-render.image = (state, node) => {
+def(Image, (state, node) => {
   state.write("![" + esc(node.attrs.alt || "") + "](" + esc(node.attrs.src) +
               (node.attrs.title ? " " + quote(node.attrs.title) : "") + ")")
-}
+})
 
-render.hard_break = state => state.write("\\\n")
+def(HardBreak, state => state.write("\\\n"))
 
-render.text = (state, node) => state.text(node.text)
-
-render.html_tag = (state, node) => state.text(node.attrs.html)
+def(Text, (state, node) => state.text(node.text))
 
 // Styles
+
+// FIXME move to style definitions
 
 function closeLink(style) {
   return "](" + esc(style.href) + (style.title ? " " + quote(style.title) : "") + ")"

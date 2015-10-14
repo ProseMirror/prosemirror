@@ -1,6 +1,6 @@
-import {NodeType, Text, Doc, BlockQuote, OrderedList, BulletList, ListItem,
+import {Text, Doc, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        SchemaError, style} from "../model"
+        style} from "../model"
 import {defineTarget} from "../convert"
 
 // FIXME un-export, define proper extension mechanism

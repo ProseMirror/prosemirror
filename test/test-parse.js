@@ -4,7 +4,7 @@ import {defTest} from "./tests"
 
 import {defaultSchema as schema} from "../src/model"
 import {fromMarkdown} from "../src/convert/from_markdown"
-import {toMarkdown} from "../src/convert/to_markdown"
+import {toMarkdown} from "../src/serialize/markdown"
 
 function t(name, text, doc) {
   defTest("parse_" + name, () => {
