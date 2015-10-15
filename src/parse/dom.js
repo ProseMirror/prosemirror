@@ -1,7 +1,7 @@
 import {Text, Doc, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         style, compareMarkup, Pos} from "../model"
-import {defineSource} from "../convert"
+import {defineSource} from "./index"
 
 export function fromDOM(schema, dom, options) {
   if (!options) options = {}

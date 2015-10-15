@@ -3,7 +3,7 @@ import {Pos, spanStylesAt} from "../model"
 import {fromHTML} from "../parse/dom"
 import {toHTML} from "../serialize/dom"
 import {toText} from "../serialize/text"
-import {knownSource, convertFrom} from "../convert"
+import {knownSource, convertFrom} from "../parse"
 
 import {isModifierKey, lookupKey, keyName} from "./keys"
 import {browser, addClass, rmClass} from "../dom"

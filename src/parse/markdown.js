@@ -2,7 +2,7 @@ import markdownit from "markdown-it"
 import {NodeType, Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         defaultSchema, style, Pos} from "../model"
-import {defineSource} from "../convert"
+import {defineSource} from "./index"
 
 export function fromMarkdown(schema, text) {
   let tokens = markdownit("commonmark").parse(text, {})

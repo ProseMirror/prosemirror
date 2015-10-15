@@ -1,5 +1,8 @@
 import {defineSource} from "./index"
 
+// FIXME is it meaningful to try and attach text-parsing information
+// to node types?
+
 export function fromText(schema, text) {
   let blocks = text.trim().split("\n\n")
   let nodes = []

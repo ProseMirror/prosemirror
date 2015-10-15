@@ -1,7 +1,7 @@
 import {Text, Doc, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         style} from "../model"
-import {defineTarget} from "../convert"
+import {defineTarget} from "./index"
 
 export function toMarkdown(doc) {
   let state = new State()

@@ -1,7 +1,7 @@
 import {Text, Doc, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         style} from "../model"
-import {defineTarget} from "../convert"
+import {defineTarget} from "./index"
 
 // FIXME un-export, define proper extension mechanism
 export const renderStyle = Object.create(null)
