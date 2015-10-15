@@ -11,13 +11,12 @@ export class NodeType {
     this.categories = categories
     this.attrs = attrs
     this.schema = schema
+    this.defaultAttrs = null
   }
 
   get plainText() { return false }
   get configurable() { return true }
   get textblock() { return false }
-
-  static get attributes() { return {} }
 
   canContain(type) {
     return type.categories.indexOf(this.contains) > -1
@@ -42,6 +41,7 @@ export class NodeType {
     }
   }
 }
+NodeType.attributes = {}
 
 export class Block extends NodeType {
   get instance() { return BlockNode }
@@ -63,6 +63,14 @@ export class Inline extends NodeType {
 
 export class Text extends Inline {
   get instance() { return TextNode }
+}
+
+// Attribute descriptors
+
+export class Attribute {
+  constructor(deflt) {
+    this.default = deflt
+  }
 }
 
 // Schema specifications are data structures that specify a schema --
@@ -123,6 +131,23 @@ export class SchemaSpec {
   }
 }
 
+// For node types where all attrs have a default value (or which don't
+// have any attributes), build up a single reusable default attribute
+// object, and use it for all nodes that don't specify specific
+// attributes.
+function buildDefaultAttrs(nodeTypes) {
+  nodeLoop: for (let name in nodeTypes) {
+    let type = nodeTypes[name]
+    let attrs = type.attrs, defaults = Object.create(null)
+    for (let attrName in attrs) {
+      let attr = attrs[attrName]
+      if (attr.default == null) continue nodeLoop
+      defaults[attrName] = attr.default
+    }
+    type.defaultAttrs = defaults
+  }
+}
+
 function compileNodeTypes(types, schema) {
   let result = Object.create(null)
   let categoriesSeen = Object.create(null)
@@ -143,6 +168,7 @@ function compileNodeTypes(types, schema) {
   }
   if (!result.doc) SchemaError.raise("Every schema needs a 'doc' type")
   if (!result.text) SchemaError.raise("Every schema needs a 'text' type")
+  buildDefaultAttrs(result)
   return result
 }
 
@@ -158,6 +184,8 @@ export class Schema {
   }
 
   buildAttrs(type, attrs) {
+    if (!attrs && type.defaultAttrs) return type.defaultAttrs
+
     let built = Object.create(null)
     for (let name in type.attrs) {
       let value = attrs && attrs[name]
@@ -171,7 +199,6 @@ export class Schema {
     return built
   }
 
-  // FIXME provide variant that doesn't check/fill in type and attrs?
   node(type, attrs, content, styles) {
     if (typeof type == "string")
       type = this.nodeType(type)
@@ -189,20 +216,12 @@ export class Schema {
 
   nodeFromJSON(json) {
     let type = this.nodeType(json.type)
-    return new type.instance(type, this.buildAttrs(type, maybeNull(json.attrs)),
-                         json.text || (json.content && json.content.map(this.nodeFromJSON)),
-                         json.styles)
+    return new type.instance(type, this.buildAttrs(type, json.attrs),
+                             json.text || (json.content && json.content.map(this.nodeFromJSON)),
+                             json.styles)
   }
 
   nodeType(name) {
     return this.nodeTypes[name] || SchemaError.raise("Unknown node type: " + name)
   }
-}
-
-const nullAttrs = {}
-
-function maybeNull(obj) {
-  if (!obj) return nullAttrs
-  for (let _prop in obj) return obj
-  return nullAttrs
 }

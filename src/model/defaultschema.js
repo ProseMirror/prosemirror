@@ -1,4 +1,4 @@
-import {SchemaSpec, Schema, Block, Textblock, Inline, Text} from "./schema"
+import {SchemaSpec, Schema, Block, Textblock, Inline, Text, Attribute} from "./schema"
 
 export class Doc extends Block {}
 
@@ -6,10 +6,8 @@ export class BlockQuote extends Block {}
 
 export class OrderedList extends Block {
   static get contains() { return "list_item" }
-  static get attributes() {
-    return {order: {default: "1"}}
-  }
 }
+OrderedList.attributes = {order: new Attribute("1")}
 
 export class BulletList extends Block {
   static get contains() { return "list_item" }
@@ -23,31 +21,23 @@ export class HorizontalRule extends Block {
   static get contains() { return null }
 }
 
-export class Heading extends Textblock {
-  static get attributes() {
-    return {level: {default: "1"}}
-  }
-}
+export class Heading extends Textblock {}
+Heading.attributes = {level: new Attribute("1")}
 
 export class CodeBlock extends Textblock {
   get plainText() { return true }
 }
 
-export class Paragraph extends Textblock {
+export class Paragraph extends Textblock {}
+
+export class Image extends Inline {}
+Image.attributes = {
+  src: new Attribute,
+  title: new Attribute(""),
+  alt: new Attribute("")
 }
 
-export class Image extends Inline {
-  static get attributes() {
-    return {
-      src: {},
-      title: {default: ""},
-      alt: {default: ""}
-    }
-  }
-}
-
-export class HardBreak extends Inline {
-}
+export class HardBreak extends Inline {}
 
 const defaultSpec = new SchemaSpec({
   doc: Doc,
@@ -70,8 +60,8 @@ const defaultSpec = new SchemaSpec({
   strong: {},
   link: {
     attributes: {
-      href: {},
-      title: {default: ""}
+      href: new Attribute,
+      title: new Attribute("")
     }
   }
 })
