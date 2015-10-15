@@ -65,6 +65,9 @@ export class Text extends Inline {
   get instance() { return TextNode }
 }
 
+// Schema specifications are data structures that specify a schema --
+// a set of node types, their names, attributes, and nesting behavior.
+
 function copyObj(obj, f) {
   let result = Object.create(null)
   for (let prop in obj) result[prop] = f ? f(obj[prop]) : obj[prop]
@@ -110,9 +113,9 @@ export class SchemaSpec {
   }
 
   updateStyles(styles) {
-    let copy = copyObj(this.styles)
-    for (let name in nodes) {
-      let info = nodes[name]
+    let copy = copyObj(styles)
+    for (let name in this.styles) {
+      let info = styles[name]
       if (info == null) delete copy[name]
       else copy[name] = info
     }

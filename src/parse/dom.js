@@ -1,4 +1,4 @@
-import {Text, Doc, BlockQuote, OrderedList, BulletList, ListItem,
+import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         style, compareMarkup, Pos} from "../model"
 import {defineSource} from "./index"

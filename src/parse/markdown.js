@@ -1,5 +1,5 @@
 import markdownit from "markdown-it"
-import {NodeType, Text, BlockQuote, OrderedList, BulletList, ListItem,
+import {NodeType, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         defaultSchema, style, Pos} from "../model"
 import {defineSource} from "./index"
@@ -153,8 +153,8 @@ function trimTrailingNewline(str) {
   return str
 }
 
-function parseCodeBlock(state, tok) {
-  state.openNode("code_block")
+function parseCodeBlock(state, tok, type) {
+  state.openNode(type)
   state.addText(trimTrailingNewline(tok.content))
   state.closeNode()
 }
@@ -162,17 +162,17 @@ function parseCodeBlock(state, tok) {
 CodeBlock.markdownToken("code_block", parseCodeBlock)
 CodeBlock.markdownToken("fence", parseCodeBlock)
 
-HardBreak.markdownToken("hr", (state, tok) => {
-  state.addNode("horizontal_rule", {markup: tok.markup})
+HorizontalRule.markdownToken("hr", (state, tok, type) => {
+  state.addNode(type, {markup: tok.markup})
 })
 
-Image.markdownToken("image", (state, tok) => {
-  state.addInline("image", null, {src: state.getAttr(tok, "src"),
-                                  title: state.getAttr(tok, "title") || null,
-                                  alt: tok.children[0] && tok.children[0].content || null})
+Image.markdownToken("image", (state, tok, type) => {
+  state.addInline(type, null, {src: state.getAttr(tok, "src"),
+                               title: state.getAttr(tok, "title") || null,
+                               alt: tok.children[0] && tok.children[0].content || null})
 })
 
-HardBreak.markdownToken("hardbreak", state => state.addInline("hard_break"))
+HardBreak.markdownToken("hardbreak", (state, _, type) => state.addInline(type))
 
 // FIXME move to proper exported objects/prototypes
 
