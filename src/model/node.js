@@ -1,4 +1,4 @@
-import * as style from "./style"
+import {sameStyles} from "./style"
 
 const emptyArray = []
 
@@ -215,7 +215,7 @@ export class TextNode extends InlineNode {
   get textContent() { return this.text }
 
   maybeMerge(other) {
-    if (other.type == this.type && style.sameSet(this.styles, other.styles))
+    if (other.type == this.type && sameStyles(this.styles, other.styles))
       return new TextNode(this.type, this.attrs, this.text + other.text, this.styles)
   }
 
@@ -226,7 +226,7 @@ export class TextNode extends InlineNode {
   toString() {
     let text = JSON.stringify(this.text)
     for (let i = 0; i < this.styles.length; i++)
-      text = this.styles[i].type + "(" + text + ")"
+      text = this.styles[i].type.name + "(" + text + ")"
     return text
   }
 

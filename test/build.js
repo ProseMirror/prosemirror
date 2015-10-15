@@ -1,4 +1,4 @@
-import {defaultSchema as schema, Pos, style} from "../src/model"
+import {defaultSchema as schema, Pos} from "../src/model"
 
 let inlineContext = null
 
@@ -33,7 +33,7 @@ function parseDoc(value, content, path) {
     if (out) content.push(schema.text(out, styles))
   } else if (value.type == "span") {
     let start = styles, result = []
-    styles = style.add(styles, value.style)
+    styles = value.style.addToSet(styles)
     for (let i = 0; i < value.content.length; i++)
       parseDoc(value.content[i], content, path)
     styles = start
@@ -74,11 +74,11 @@ export let h2 = build("heading", {level: "2"})
 export let li = build("list_item")
 export let ul = build("bullet_list")
 export let ol = build("ordered_list", {order: "1"})
-export let em = buildInline(style.em)
-export let strong = buildInline(style.strong)
-export let code = buildInline(style.code)
-export let a = buildInline(style.link("http://foo"))
-export let a2 = buildInline(style.link("http://bar"))
+export let em = buildInline(schema.style("em"))
+export let strong = buildInline(schema.style("strong"))
+export let code = buildInline(schema.style("code"))
+export let a = buildInline(schema.style("link", {href: "http://foo"}))
+export let a2 = buildInline(schema.style("link", {href: "http://bar"}))
 export let br = {type: "insert", style: "hard_break"}
 export const dataImage = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
 export let img = {type: "insert", style: "image", attrs: {src: dataImage, alt: "x"}}

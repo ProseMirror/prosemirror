@@ -1,6 +1,6 @@
 import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        style, compareMarkup, Pos} from "../model"
+        compareMarkup, Pos, defaultSchema} from "../model"
 import {defineSource} from "./index"
 
 export function fromDOM(schema, dom, options) {
@@ -183,7 +183,7 @@ function wrap(dom, context, type, attrs) {
 
 function inline(dom, context, added) {
   var old = context.styles
-  context.styles = style.add(old, added)
+  context.styles = added.addToSet(old)
   context.addAll(dom.firstChild, null)
   context.styles = old
 }
@@ -237,13 +237,16 @@ def(Image, "img", (dom, context, type) => {
 // FIXME associate these with the actual style objects, not Text
 
 def(Text, "a", (dom, context) => {
-  inline(dom, context, style.link(dom.getAttribute("href"), dom.getAttribute("title")))
+  inline(dom, context, defaultSchema.style("link", {
+    href: dom.getAttribute("href"),
+    title: dom.getAttribute("title")
+  }))
 })
 
-def(Text, "b", (dom, context) => inline(dom, context, style.strong))
-def(Text, "strong", (dom, context) => inline(dom, context, style.strong))
+def(Text, "b", (dom, context) => inline(dom, context, defaultSchema.style("strong")))
+def(Text, "strong", (dom, context) => inline(dom, context, defaultSchema.style("strong")))
 
-def(Text, "i", (dom, context) => inline(dom, context, style.em))
-def(Text, "em", (dom, context) => inline(dom, context, style.em))
+def(Text, "i", (dom, context) => inline(dom, context, defaultSchema.style("em")))
+def(Text, "em", (dom, context) => inline(dom, context, defaultSchema.style("em")))
 
-def(Text, "code", (dom, context) => inline(dom, context, style.code))
+def(Text, "code", (dom, context) => inline(dom, context, defaultSchema.style("code")))

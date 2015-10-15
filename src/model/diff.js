@@ -1,5 +1,5 @@
 import {Pos} from "./pos"
-import {sameSet} from "./style"
+import {sameStyles} from "./style"
 
 export function findDiffStart(a, b, pathA = [], pathB = []) {
   let offset = 0
@@ -17,7 +17,7 @@ export function findDiffStart(a, b, pathA = [], pathB = []) {
     if (!childA.sameMarkup(childB)) break
 
     if (a.isTextblock) {
-      if (!sameSet(childA.styles, childB.styles)) break
+      if (!sameStyles(childA.styles, childB.styles)) break
       if (childA.type.name == "text" && childA.text != childB.text) {
         for (let j = 0; childA.text[j] == childB.text[j]; j++)
           offset++
@@ -51,7 +51,7 @@ export function findDiffEnd(a, b, pathA = [], pathB = []) {
     if (!childA.sameMarkup(childB)) break
 
     if (a.isTextblock) {
-      if (!sameSet(childA.styles, childB.styles)) break
+      if (!sameStyles(childA.styles, childB.styles)) break
 
       if (childA.text != childB.text) {
         let same = 0, minSize = Math.min(childA.text.length, childB.text.length)

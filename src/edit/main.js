@@ -1,6 +1,7 @@
 import "./css"
 
-import {spanStylesAt, rangeHasStyle, style, sliceBetween, Pos, findDiffStart} from "../model"
+import {spanStylesAt, rangeHasStyle, sliceBetween, Pos, findDiffStart,
+        containsStyle, removeStyle} from "../model"
 import {Transform} from "../transform"
 
 import {parseOptions, initOptions, setOption} from "./options"
@@ -195,8 +196,8 @@ export class ProseMirror {
     let sel = this.selection
     if (sel.empty) {
       let styles = this.activeStyles()
-      if (to == null) to = !style.containsType(styles, st.type)
-      this.input.storedStyles = to ? style.add(styles, st) : style.removeType(styles, st.type)
+      if (to == null) to = !containsStyle(styles, st.type)
+      this.input.storedStyles = to ? st.addToSet(styles) : removeStyle(styles, st.type)
       this.signal("activeStyleChange")
     } else {
       if (to != null ? to : !rangeHasStyle(this.doc, sel.from, sel.to, st.type))

@@ -1,4 +1,4 @@
-import {defaultSchema as schema, Pos, style} from "../../src/model"
+import {defaultSchema as schema, Pos} from "../../src/model"
 import {Transform, joinPoint, canLift, canWrap} from "../../src/transform"
 import {cmp, cmpStr} from "../cmp"
 import {randomPos} from "./pos"
@@ -174,7 +174,10 @@ tests.style = (doc, _, blockPositions) => {
       let rnd = Math.random(), rnd2 = Math.random()
       let type = rnd < .33 ? "addStyle" : rnd < .66  ? "removeStyle" : "clearMarkup"
       let st = type != "clearMarkup" &&
-          rnd2 < .3 ? style.em : rnd2 < .6 ? style.strong : rnd2 < .8 ? style.link("http://p") : style.code
+          rnd2 < .3 ? schema.style("em")
+        : rnd2 < .6 ? schema.style("strong")
+        : rnd2 < .8 ? schema.style("link", {href: "http://p"})
+        : schema.style("code")
       runTest("style", doc, {type: type, from: blockPositions[i], to: blockPositions[j], style: st})
     }
   }

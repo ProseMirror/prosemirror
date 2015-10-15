@@ -1,4 +1,5 @@
 import {BlockNode, TextblockNode, InlineNode, TextNode} from "./node"
+import {InlineStyleMarker} from "./style"
 
 import {ProseMirrorError} from "../util/error"
 
@@ -40,6 +41,11 @@ export class NodeType {
       }
     }
   }
+
+  buildAttrs(attrs, content) {
+    if (!attrs && this.defaultAttrs) return this.defaultAttrs
+    else return buildAttrs(this.attrs, attrs, this, content)
+  }
 }
 NodeType.attributes = {}
 
@@ -68,8 +74,25 @@ export class Text extends Inline {
 // Attribute descriptors
 
 export class Attribute {
-  constructor(deflt) {
+  constructor(deflt, compute) {
     this.default = deflt
+    this.compute = compute
+  }
+}
+
+// Styles
+
+export class InlineStyle {
+  constructor(name, attrs) {
+    this.name = name
+    this.attrs = attrs || Object.create(null)
+    let defaults = getDefaultAttrs(this.attrs)
+    this.instance = defaults && new InlineStyleMarker(this, defaults)
+  }
+
+  create(attrs) {
+    if (!attrs && this.instance) return this.instance
+    return new InlineStyleMarker(this, buildAttrs(this.attrs, attrs, this))
   }
 }
 
@@ -135,17 +158,40 @@ export class SchemaSpec {
 // have any attributes), build up a single reusable default attribute
 // object, and use it for all nodes that don't specify specific
 // attributes.
-function buildDefaultAttrs(nodeTypes) {
-  nodeLoop: for (let name in nodeTypes) {
-    let type = nodeTypes[name]
-    let attrs = type.attrs, defaults = Object.create(null)
-    for (let attrName in attrs) {
-      let attr = attrs[attrName]
-      if (attr.default == null) continue nodeLoop
-      defaults[attrName] = attr.default
-    }
-    type.defaultAttrs = defaults
+
+function getDefaultAttrs(attrs) {
+  let defaults = Object.create(null)
+  for (let attrName in attrs) {
+    let attr = attrs[attrName]
+    if (attr.default == null) return null
+    defaults[attrName] = attr.default
   }
+  return defaults
+}
+
+function buildDefaultAttrs(nodeTypes) {
+  for (let name in nodeTypes) {
+    let type = nodeTypes[name]
+    type.defaultAttrs = getDefaultAttrs(type.attrs)
+  }
+}
+
+function buildAttrs(attrSpec, attrs, arg1, arg2) {
+  let built = Object.create(null)
+  for (let name in attrSpec) {
+    let value = attrs && attrs[name]
+    if (value == null) {
+      let attr = attrSpec[name]
+      if (attr.default != null)
+        value = attr.default
+      else if (attr.compute)
+        value = attr.compute(arg1, arg2)
+      else
+        SchemaError.raise("No value supplied for attribute " + name)
+    }
+    built[name] = value
+  }
+  return built
 }
 
 function compileNodeTypes(types, schema) {
@@ -176,27 +222,16 @@ export class Schema {
   constructor(spec) {
     this.spec = spec
     this.nodeTypes = compileNodeTypes(spec.nodeTypes, this)
-    this.styles = spec.styles // FIXME
+    this.styles = spec.styles
+    for (let name in this.styles)
+      if (this.styles[name].name != name)
+        SchemaError.raise("The style named " + name + " declares its name to be " + this.styles[name].name)
     this.cached = Object.create(null)
+
     this.node = this.node.bind(this)
     this.text = this.text.bind(this)
     this.nodeFromJSON = this.nodeFromJSON.bind(this)
-  }
-
-  buildAttrs(type, attrs) {
-    if (!attrs && type.defaultAttrs) return type.defaultAttrs
-
-    let built = Object.create(null)
-    for (let name in type.attrs) {
-      let value = attrs && attrs[name]
-      if (value == null) {
-        value = type.attrs[name].default
-        if (value == null)
-          SchemaError.raise("No value supplied for attribute " + name + " on node " + type.name)
-      }
-      built[name] = value
-    }
-    return built
+    this.styleFromJSON = this.styleFromJSON.bind(this)
   }
 
   node(type, attrs, content, styles) {
@@ -207,18 +242,28 @@ export class Schema {
     else if (type.schema != this)
       SchemaError.raise("Node type from different schema used (" + type.name + ")")
 
-    return new type.instance(type, this.buildAttrs(type, attrs), content, styles)
+    return new type.instance(type, type.buildAttrs(attrs, content), content, styles)
   }
 
   text(text, styles) {
-    return new TextNode(this.nodeTypes.text, this.buildAttrs(this.nodeTypes.text), text, styles)
+    return new TextNode(this.nodeTypes.text, this.nodeTypes.text.buildAttrs(null, text), text, styles)
+  }
+
+  style(name, attrs) {
+    let spec = this.styles[name] || SchemaError.raise("No style named " + name)
+    return spec.create(attrs)
   }
 
   nodeFromJSON(json) {
     let type = this.nodeType(json.type)
-    return new type.instance(type, this.buildAttrs(type, json.attrs),
-                             json.text || (json.content && json.content.map(this.nodeFromJSON)),
-                             json.styles)
+    let content = json.text || (json.content && json.content.map(this.nodeFromJSON))
+    return new type.instance(type, type.buildAttrs(json.attrs, content), content,
+                             json.styles && json.styles.map(this.styleFromJSON))
+  }
+
+  styleFromJSON(json) {
+    if (typeof json == "string") return this.style(json)
+    return this.style(json._name, json)
   }
 
   nodeType(name) {

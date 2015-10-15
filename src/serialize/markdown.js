@@ -1,6 +1,5 @@
 import {Text, BlockQuote, OrderedList, BulletList, ListItem,
-        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        style} from "../model"
+        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak} from "../model"
 import {defineTarget} from "./index"
 
 export function toMarkdown(doc) {
@@ -97,6 +96,7 @@ class State {
       this.render(nodes[i])
   }
 
+  // FIXME this depends on the styles being ordered, which is no longer the case
   renderInline(nodes) {
     let stack = []
     for (let i = 0; i <= nodes.length; i++) {
@@ -110,14 +110,14 @@ class State {
       for (let j = 0; j < stack.length; j++) {
         let cur = stack[j], found = false
         for (let k = 0; k < styles.length; k++) {
-          if (style.same(stack[j], styles[k])) {
+          if (styles[k].eq(stack[j])) {
             styles.splice(k, 1)
             found = true
             break
           }
         }
         if (!found) {
-          let closer = close_style[cur.type]
+          let closer = close_style[cur.type.name]
           this.text(typeof closer != "string" ? closer(cur) : closer, false)
           stack.splice(j--, 1)
         }
@@ -125,7 +125,7 @@ class State {
       for (let j = 0; j < styles.length; j++) {
         let cur = styles[j]
         stack.push(cur)
-        this.text(open_style[cur.type], false)
+        this.text(open_style[cur.type.name], false)
       }
       if (node) this.render(node)
     }
@@ -214,7 +214,7 @@ def(Text, (state, node) => state.text(node.text))
 // FIXME move to style definitions
 
 function closeLink(style) {
-  return "](" + esc(style.href) + (style.title ? " " + quote(style.title) : "") + ")"
+  return "](" + esc(style.attrs.href) + (style.attrs.title ? " " + quote(style.attrs.title) : "") + ")"
 }
 
 const open_style = {link: "[", strong: "**", em: "*", code: "`"}

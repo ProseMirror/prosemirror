@@ -1,4 +1,4 @@
-import {style, defaultSchema as schema} from "../src/model"
+import {defaultSchema as schema} from "../src/model"
 import {Transform, Remapping} from "../src/transform"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
@@ -45,27 +45,27 @@ function add(name, doc, expect, style) {
 add("simple",
     doc(p("hello <a>there<b>!")),
     doc(p("hello ", strong("there"), "!")),
-    style.strong)
+    schema.style("strong"))
 add("double_bold",
     doc(p("hello ", strong("<a>there"), "!<b>")),
     doc(p("hello ", strong("there!"))),
-    style.strong)
+    schema.style("strong"))
 add("overlap",
     doc(p("one <a>two ", em("three<b> four"))),
     doc(p("one ", strong("two ", em("three")), em(" four"))),
-    style.strong)
+    schema.style("strong"))
 add("overwrite_link",
     doc(p("this is a ", a("<a>link<b>"))),
     doc(p("this is a ", a2("link"))),
-    style.link("http://bar"))
+    schema.style("link", {href: "http://bar"}))
 add("code",
     doc(p("before"), blockquote(p("the variable is called <a>i<b>")), p("after")),
     doc(p("before"), blockquote(p("the variable is called ", code("i"))), p("after")),
-    style.code)
+    schema.style("code"))
 add("across_blocks",
     doc(p("hi <a>this"), blockquote(p("is")), p("a docu<b>ment"), p("!")),
     doc(p("hi ", em("this")), blockquote(p(em("is"))), p(em("a docu"), "ment"), p("!")),
-    style.em)
+    schema.style("em"))
 
 function rem(name, doc, expect, style) {
   defTest("removeStyle_" + name, () => {
@@ -76,27 +76,27 @@ function rem(name, doc, expect, style) {
 rem("gap",
     doc(p(em("hello <a>world<b>!"))),
     doc(p(em("hello "), "world", em("!"))),
-    style.em)
+    schema.style("em"))
 rem("nothing_there",
     doc(p(em("hello"), " <a>world<b>!")),
     doc(p(em("hello"), " <a>world<b>!")),
-    style.em)
+    schema.style("em"))
 rem("from_nested",
     doc(p(em("one ", strong("<a>two<b>"), " three"))),
     doc(p(em("one two three"))),
-    style.strong)
+    schema.style("strong"))
 rem("unlink",
     doc(p("hello ", a("link"))),
     doc(p("hello link")),
-    style.link("http://foo"))
+    schema.style("link", {href: "http://foo"}))
 rem("other_link",
     doc(p("hello ", a("link"))),
     doc(p("hello ", a("link"))),
-    style.link("http://bar"))
+    schema.style("link", {href: "http://bar"}))
 rem("across_blocks",
     doc(blockquote(p(em("much <a>em")), p(em("here too"))), p("between", em("...")), p(em("end<b>"))),
     doc(blockquote(p(em("much "), "em"), p("here too")), p("between..."), p("end")),
-    style.em)
+    schema.style("em"))
 rem("all",
     doc(p("<a>hello, ", em("this is ", strong("much"), " ", a("markup<b>")))),
     doc(p("<a>hello, this is much markup")),

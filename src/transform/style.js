@@ -1,4 +1,4 @@
-import {style, Pos} from "../model"
+import {Pos, containsStyle} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -9,7 +9,7 @@ defineStep("addStyle", {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       if (node.type.plainText) return node
       return copyInline(node, from, to, node => {
-        return node.styled(style.add(node.styles, step.param))
+        return node.styled(step.param.addToSet(node.styles))
       })
     }))
   },
@@ -22,13 +22,13 @@ defineStep("addStyle", {
 Transform.prototype.addStyle = function(from, to, st) {
   let removed = [], added = [], removing = null, adding = null
   forSpansBetween(this.doc, from, to, (span, path, start, end) => {
-    if (style.contains(span.styles, st)) {
+    if (st.isInSet(span.styles)) {
       adding = removing = null
     } else {
       path = path.slice()
-      let rm = style.containsType(span.styles, st.type)
+      let rm = containsStyle(span.styles, st.type)
       if (rm) {
-        if (removing && style.same(removing.param, rm)) {
+        if (removing && removing.param.eq(rm)) {
           removing.to = new Pos(path, end)
         } else {
           removing = new Step("removeStyle", new Pos(path, start), new Pos(path, end), null, rm)
@@ -54,7 +54,7 @@ defineStep("removeStyle", {
   apply(doc, step) {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       return copyInline(node, from, to, node => {
-        return node.styled(style.remove(node.styles, step.param))
+        return node.styled(step.param.removeFromSet(node.styles))
       })
     }))
   },
@@ -69,10 +69,10 @@ Transform.prototype.removeStyle = function(from, to, st = null) {
     step++
     let toRemove = null
     if (typeof st == "string") {
-      let found = style.containsType(span.styles, st)
+      let found = containsStyle(span.styles, st)
       if (found) toRemove = [found]
     } else if (st) {
-      if (style.contains(span.styles, st)) toRemove = [st]
+      if (st.isInSet(span.styles)) toRemove = [st]
     } else {
       toRemove = span.styles
     }
@@ -82,7 +82,7 @@ Transform.prototype.removeStyle = function(from, to, st = null) {
         let rm = toRemove[i], found
         for (let j = 0; j < matched.length; j++) {
           let m = matched[j]
-          if (m.step == step - 1 && style.same(rm, matched[j].style)) found = m
+          if (m.step == step - 1 && rm.eq(matched[j].style)) found = m
         }
         if (found) {
           found.to = new Pos(path, end)

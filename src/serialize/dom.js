@@ -1,6 +1,5 @@
 import {Text, BlockQuote, OrderedList, BulletList, ListItem,
-        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        style} from "../model"
+        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak} from "../model"
 import {defineTarget} from "./index"
 
 // FIXME un-export, define proper extension mechanism
@@ -79,6 +78,7 @@ function renderNodesInto(nodes, where, options) {
   }
 }
 
+// FIXME deal with styles not being in a fixed order
 function renderInlineContent(nodes, where, options) {
   let top = where
   let active = []
@@ -86,7 +86,7 @@ function renderInlineContent(nodes, where, options) {
     let node = nodes[i], styles = node.styles
     let keep = 0
     for (; keep < Math.min(active.length, styles.length); ++keep)
-      if (!style.same(active[keep], styles[keep])) break
+      if (!styles[keep].eq(active[keep])) break
     while (keep < active.length) {
       active.pop()
       top = top.parentNode
@@ -94,7 +94,7 @@ function renderInlineContent(nodes, where, options) {
     while (active.length < styles.length) {
       let add = styles[active.length]
       active.push(add)
-      top = top.appendChild(renderStyle[add.type](add))
+      top = top.appendChild(renderStyle[add.type.name](add))
     }
     top.appendChild(renderNode(node, options, i))
   }
@@ -103,7 +103,7 @@ function renderInlineContent(nodes, where, options) {
 function wrapInlineFlat(node, dom) {
   let styles = node.styles
   for (let i = styles.length - 1; i >= 0; i--) {
-    let wrap = renderStyle[styles[i].type](styles[i])
+    let wrap = renderStyle[styles[i].type.name](styles[i])
     wrap.appendChild(dom)
     dom = wrap
   }
@@ -168,6 +168,8 @@ def(HardBreak, () => elt("br"))
 
 // Inline styles
 
+// FIXME move onto style definitions
+
 renderStyle.em = () => elt("em")
 
 renderStyle.strong = () => elt("strong")
@@ -176,7 +178,7 @@ renderStyle.code = () => elt("code")
 
 renderStyle.link = style => {
   let dom = elt("a")
-  dom.setAttribute("href", style.href)
-  if (style.title) dom.setAttribute("title", style.title)
+  dom.setAttribute("href", style.attrs.href)
+  if (style.attrs.title) dom.setAttribute("title", style.attrs.title)
   return dom
 }

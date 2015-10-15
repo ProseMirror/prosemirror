@@ -1,4 +1,5 @@
-import {SchemaSpec, Schema, Block, Textblock, Inline, Text, Attribute} from "./schema"
+import {SchemaSpec, Schema, Block, Textblock, Inline, Text,
+        Attribute, InlineStyle} from "./schema"
 
 export class Doc extends Block {}
 
@@ -39,6 +40,16 @@ Image.attributes = {
 
 export class HardBreak extends Inline {}
 
+export const style = {
+  code: new InlineStyle("code"),
+  em: new InlineStyle("em"),
+  strong: new InlineStyle("strong"),
+  link: new InlineStyle("link", {
+    href: new Attribute,
+    title: new Attribute("")
+  })
+}
+
 const defaultSpec = new SchemaSpec({
   doc: Doc,
   blockquote: BlockQuote,
@@ -55,15 +66,10 @@ const defaultSpec = new SchemaSpec({
   image: Image,
   hard_break: HardBreak
 }, {
-  code: {},
-  em: {},
-  strong: {},
-  link: {
-    attributes: {
-      href: new Attribute,
-      title: new Attribute("")
-    }
-  }
+  code: style.code,
+  em: style.em,
+  strong: style.strong,
+  link: style.link
 })
 
 export const defaultSchema = new Schema(defaultSpec)

@@ -1,5 +1,5 @@
 import {rebaseSteps} from "../src/collab/rebase"
-import {Pos, defaultSchema as schema, style} from "../src/model"
+import {Pos, defaultSchema as schema} from "../src/model"
 import {Transform} from "../src/transform"
 
 import {doc, blockquote, h1, p, li, ol, ul, em, a, br} from "./build"
@@ -163,20 +163,20 @@ rebase$("join",
 
 rebase("style",
        doc(p("hello <1>wo<2>rld<3>")),
-       [addSt("1", "3", style.em)],
+       [addSt("1", "3", schema.style("em"))],
        [text("2", "_")],
        doc(p("hello <1>", em("wo"), "_<2>", em("rld<3>"))))
 
 rebase("style_unstyle",
        doc(p(em("<1>hello"), " world<2>")),
-       [addSt("1", "2", style.em)],
-       [rmSt("1", "2", style.em)],
+       [addSt("1", "2", schema.style("em"))],
+       [rmSt("1", "2", schema.style("em"))],
        doc(p("<1>hello", em(" world<2>"))))
 
 rebase("unstyle_style",
        doc(p("<1>hello ", em("world<2>"))),
-       [rmSt("1", "2", style.em)],
-       [addSt("1", "2", style.em)],
+       [rmSt("1", "2", schema.style("em"))],
+       [addSt("1", "2", schema.style("em"))],
        doc(p(em("<1>hello "), "world<2>")))
 
 rebase("replace_nested",

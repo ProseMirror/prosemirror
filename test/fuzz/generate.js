@@ -1,4 +1,4 @@
-import {defaultSchema as schema, style} from "../../src/model"
+import {defaultSchema as schema} from "../../src/model"
 
 import {text} from "./tao"
 
@@ -63,26 +63,26 @@ function fillNodeInline(node, fuel) {
 
 function randomStyles() {
   let styles = []
-  if (Math.random() < .3) styles.push(style.em)
-  if (Math.random() < .2) styles.push(style.strong)
-  if (Math.random() < .2) styles.push(style.link("http://foobar"))
-  if (Math.random() < .1) styles.push(style.code)
+  if (Math.random() < .3) styles.push(defaultSchema.style("em"))
+  if (Math.random() < .2) styles.push(defaultSchema.style("strong"))
+  if (Math.random() < .2) styles.push(defaultSchema.style("link", {href: "http://foobar"}))
+  if (Math.random() < .1) styles.push(defaultSchema.style("code"))
   return styles
 }
 
 function toggleStyle(styles, st) {
-  if (style.contains(styles, st))
-    return style.remove(styles, st)
+  if (st.isInSet(styles, st))
+    return st.removeFromSet(styles)
   else
-    return style.add(styles, st)
+    return st.addToSet(styles)
 }
 
 function modifyStyles(styles) {
   let rnd = Math.random()
-  if (rnd < .3) return toggleStyle(styles, style.em)
-  if (rnd < .6) return toggleStyle(styles, style.strong)
-  if (rnd < .85) return toggleStyle(styles, style.link("http://foobar"))
-  return toggleStyle(styles, style.code)
+  if (rnd < .3) return toggleStyle(styles, defaultSchema.style("em"))
+  if (rnd < .6) return toggleStyle(styles, defaultSchema.style("strong"))
+  if (rnd < .85) return toggleStyle(styles, defaultSchema.style("link", {href: "http://foobar"}))
+  return toggleStyle(styles, defaultSchema.style("code"))
 }
 
 function randomText(maxLen) {

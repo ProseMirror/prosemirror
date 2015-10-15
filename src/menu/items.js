@@ -1,4 +1,4 @@
-import {style, rangeHasStyle, Pos} from "../model"
+import {rangeHasStyle, Pos, containsStyle} from "../model"
 import {canLift, canWrap, joinPoint} from "../transform"
 import {elt} from "../dom"
 import {MenuItem} from "./menu"
@@ -99,25 +99,27 @@ export class WrapItem extends IconItem {
 }
 
 export class InlineStyleItem extends IconItem {
-  constructor(icon, title, style, dialog) {
+  constructor(icon, title, style, dialog, attrs) {
     super(icon, title)
-    this.style = typeof style == "string" ? {type: style} : style
+    this.style = style
+    this.attrs = attrs
     this.dialog = dialog
   }
   active(pm) {
     let sel = pm.selection
+    let type = pm.schema.styles[this.style]
     if (sel.empty)
-      return style.containsType(pm.activeStyles(), this.style.type)
+      return containsStyle(pm.activeStyles(), type)
     else
-      return rangeHasStyle(pm.doc, sel.from, sel.to, this.style.type)
+      return rangeHasStyle(pm.doc, sel.from, sel.to, type)
   }
   apply(pm) {
     if (this.active(pm))
-      pm.setStyle(this.style, false)
+      pm.setStyle(pm.schema.style(this.style, this.attrs), false)
     else if (this.dialog)
       return [this.dialog]
     else
-      pm.setStyle(this.style, true)
+      pm.setStyle(pm.schema.style(this.style, this.attrs), true)
   }
 }
 
@@ -181,7 +183,9 @@ export class LinkDialog extends DialogItem {
     let elts = form.elements
     if (!elts.href.value) return
     let sel = pm.selection
-    pm.apply(pm.tr.addStyle(sel.from, sel.to, style.link(elts.href.value, elts.title.value)))
+    pm.apply(pm.tr.addStyle(sel.from, sel.to,
+                            pm.schema.style("link", {href: elts.href.value,
+                                                     title: elts.title.value})))
   }
 }
 const linkDialog = new LinkDialog
@@ -285,10 +289,10 @@ function showBlockTypeMenu(pm, dom) {
   pm.wrapper.appendChild(menu)
 }
 
-registerItem("inline", new InlineStyleItem("strong", "Strong text", style.strong))
-registerItem("inline", new InlineStyleItem("em", "Emphasized text", style.em))
+registerItem("inline", new InlineStyleItem("strong", "Strong text", "strong"))
+registerItem("inline", new InlineStyleItem("em", "Emphasized text", "em"))
 registerItem("inline", new InlineStyleItem("link", "Hyperlink", "link", linkDialog))
-registerItem("inline", new InlineStyleItem("code", "Code font", style.code))
+registerItem("inline", new InlineStyleItem("code", "Code font", "code"))
 registerItem("inline", new ImageItem("image"))
 
 registerItem("block", new BlockTypeItem)

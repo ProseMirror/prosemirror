@@ -1,6 +1,6 @@
 // Primitive operations on inline content
 
-import * as style from "./style"
+import {containsStyle} from "./style"
 
 export function getSpan(doc, pos) {
   return spanAtOrBefore(doc.path(pos.path), pos.offset).node
@@ -30,7 +30,7 @@ export function rangeHasStyle(doc, from, to, type) {
       let end = to ? to.offset : 1e5
       for (let i = 0, offset = 0; i < node.length; i++) {
         let child = node.child(i), size = child.offset
-        if (offset < end && offset + size > start && style.containsType(child.styles, type))
+        if (offset < end && offset + size > start && containsStyle(child.styles, type))
           return true
         offset += size
       }

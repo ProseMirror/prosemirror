@@ -1,4 +1,4 @@
-import {Pos, style, spanStylesAt} from "../model"
+import {Pos, spanStylesAt} from "../model"
 
 export function addInputRules(pm, rules) {
   if (!pm.mod.interpretInput)
@@ -99,7 +99,7 @@ function getContext(doc, pos) {
     let child = parent.child(i++), size = child.offset
     textBefore += offset + size > pos.offset ? child.text.slice(0, pos.offset - offset) : child.text
     if (offset + size >= pos.offset) {
-      if (style.contains(child.styles, style.code))
+      if (child.styles.some(st => st.type.name == "code")) // FIXME generalize?
         isPlain = true
       break
     }

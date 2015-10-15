@@ -1,7 +1,7 @@
 import markdownit from "markdown-it"
 import {NodeType, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        defaultSchema, style, Pos} from "../model"
+        defaultSchema, Pos} from "../model"
 import {defineSource} from "./index"
 
 export function fromMarkdown(schema, text) {
@@ -41,11 +41,11 @@ class State {
   }
 
   openInline(add) {
-    this.styles = style.add(this.styles, add)
+    this.styles = add.addToSet(this.styles)
   }
 
   closeInline(rm) {
-    this.styles = style.remove(this.styles, rm)
+    this.styles = rm.removeFromSet(this.styles)
   }
 
   parseTokens(toks) {
@@ -188,17 +188,19 @@ function markdownInline(style, tokenName, getStyle) {
 }
 
 markdownInline(defaultSchema.styles.link, "link",
-               (state, tok) => style.link(state.getAttr(tok, "href"),
-                                          state.getAttr(tok, "title") || null))
+               (state, tok) => defaultSchema.style("link", {
+                 href: state.getAttr(tok, "href"),
+                 title: state.getAttr(tok, "title") || null
+               }))
 
-markdownInline(defaultSchema.styles.strong, "strong", style.strong)
+markdownInline(defaultSchema.styles.strong, "strong", defaultSchema.style("strong"))
 
-markdownInline(defaultSchema.styles.em, "em", style.em)
+markdownInline(defaultSchema.styles.em, "em", defaultSchema.style("em"))
 
 defaultSchema.styles.code.markdownRegisterTokens = function(tokens) {
   tokens.code_inline = (state, tok) => {
-    state.openInline(style.code)
+    state.openInline(defaultSchema.style("code"))
     state.addText(tok.content)
-    state.closeInline(style.code)
+    state.closeInline(defaultSchema.style("code"))
   }
 }

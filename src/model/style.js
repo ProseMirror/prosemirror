@@ -1,64 +1,62 @@
-export const code = {type: "code"}
-export const em = {type: "em"}
-export const strong = {type: "strong"}
-
-export function link(href, title) {
-  return {type: "link", href: href, title: title || null}
-}
-
-export const ordering = ["em", "strong", "link", "code"]
-
-export function add(styles, style) {
-  var order = ordering.indexOf(style.type)
-  for (var i = 0; i < styles.length; i++) {
-    var other = styles[i]
-    if (other.type == style.type) {
-      if (same(other, style)) return styles
-      else return styles.slice(0, i).concat(style).concat(styles.slice(i + 1))
-    }
-    if (ordering.indexOf(other.type) > order)
-      return styles.slice(0, i).concat(style).concat(styles.slice(i))
+export class InlineStyleMarker {
+  constructor(type, attrs) {
+    this.type = type
+    this.attrs = attrs
   }
-  return styles.concat(style)
+
+  toJSON() {
+    if (this.type.instance) return this.type.name
+    let obj = {_name: this.type.name}
+    for (let attr in this.attrs) obj[attr] = this.attrs[attr]
+  }
+
+  addToSet(set) {
+    for (var i = 0; i < set.length; i++) {
+      var other = set[i]
+      if (other.type == this.type) {
+        if (this.eq(other)) return set
+        else return [...set.slice(0, i), this, ...set.slice(i + 1)]
+      }
+    }
+    return set.concat(this)
+  }
+
+  removeFromSet(set) {
+    for (var i = 0; i < set.length; i++)
+      if (this.eq(set[i]))
+        return [...set.slice(0, i), ...set.slice(i + 1)]
+    return set
+  }
+
+  isInSet(set) {
+    for (let i = 0; i < set.length; i++)
+      if (this.eq(set[i])) return true
+    return false
+  }
+
+  eq(other) {
+    if (this.type != other.type) return false
+    for (let attr in this.attrs)
+      if (other.attrs[attr] != this.attrs[attr]) return false
+    return true
+  }
 }
 
-export function remove(styles, style) {
-  for (var i = 0; i < styles.length; i++)
-    if (same(style, styles[i]))
-      return styles.slice(0, i).concat(styles.slice(i + 1))
-  return styles
+export function removeStyle(set, type) {
+  for (var i = 0; i < set.length; i++)
+    if (set[i].type == type)
+      return [...set.slice(0, i), ...set.slice(i + 1)]
+  return set
 }
 
-export function removeType(styles, type) {
-  for (var i = 0; i < styles.length; i++)
-    if (styles[i].type == type)
-      return styles.slice(0, i).concat(styles.slice(i + 1))
-  return styles
-}
-
-export function sameSet(a, b) {
+export function sameStyles(a, b) {
   if (a.length != b.length) return false
   for (let i = 0; i < a.length; i++)
-    if (!same(a[i], b[i])) return false
+    if (!a[i].eq(b[i])) return false
   return true
 }
 
-export function same(a, b) {
-  if (a == b) return true
-  for (let prop in a)
-    if (a[prop] != b[prop]) return false
-  for (let prop in b)
-    if (a[prop] != b[prop]) return false
-  return true
-}
-
-export function contains(set, style) {
-  for (let i = 0; i < set.length; i++)
-    if (same(set[i], style)) return true
-  return false
-}
-
-export function containsType(set, type) {
+export function containsStyle(set, type) {
   for (let i = 0; i < set.length; i++)
     if (set[i].type == type) return set[i]
   return false
