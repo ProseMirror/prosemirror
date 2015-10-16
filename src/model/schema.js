@@ -47,6 +47,10 @@ export class NodeType {
     else return buildAttrs(this.attrs, attrs, this, content)
   }
 
+  create(attrs, content, styles) {
+    return new this.instance(this, this.buildAttrs(attrs, content), content, styles)
+  }
+
   static compile(types, schema) {
     let result = Object.create(null)
     let categoriesSeen = Object.create(null)
@@ -256,11 +260,11 @@ export class Schema {
     else if (type.schema != this)
       SchemaError.raise("Node type from different schema used (" + type.name + ")")
 
-    return new type.instance(type, type.buildAttrs(attrs, content), content, styles)
+    return type.create(attrs, content, styles)
   }
 
   text(text, styles) {
-    return new TextNode(this.nodes.text, this.nodes.text.buildAttrs(null, text), text, styles)
+    return this.nodes.text.create(null, text, styles)
   }
 
   style(name, attrs) {
@@ -270,9 +274,9 @@ export class Schema {
 
   nodeFromJSON(json) {
     let type = this.nodeType(json.type)
-    let content = json.text || (json.content && json.content.map(this.nodeFromJSON))
-    return new type.instance(type, type.buildAttrs(json.attrs, content), content,
-                             json.styles && json.styles.map(this.styleFromJSON))
+    return type.create(json.attrs,
+                       json.text || (json.content && json.content.map(this.nodeFromJSON)),
+                       json.styles && json.styles.map(this.styleFromJSON))
   }
 
   styleFromJSON(json) {

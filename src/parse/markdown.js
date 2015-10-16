@@ -21,7 +21,7 @@ defineSource("markdown", fromMarkdown)
 class State {
   constructor(schema, tokens) {
     this.schema = schema
-    this.stack = [{type: "doc", content: []}]
+    this.stack = [{type: schema.nodes.doc, content: []}]
     this.tokens = tokens
     this.styles = []
     this.tokenTypes = tokenTypeInfo(schema)
@@ -59,13 +59,13 @@ class State {
   }
 
   addInline(type, text = null, attrs = null) {
-    let node = this.schema.node(type, attrs, text, this.styles)
+    let node = type.create(attrs, text, this.styles)
     this.push(node)
     return node
   }
 
   addNode(type, attrs, content) {
-    let node = this.schema.node(type, attrs, content)
+    let node = type.create(attrs, content)
     this.push(node)
     return node
   }

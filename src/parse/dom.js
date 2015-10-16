@@ -61,12 +61,6 @@ class Context {
       }
     } else if (dom.nodeType != 1) {
       // Ignore non-text non-element nodes
-    } else if (dom.hasAttribute("pm-html")) {
-      let type = dom.getAttribute("pm-html")
-      if (type == "html_tag")
-        this.insert(this.schema.node("html_tag", {html: dom.innerHTML}, null, this.styles))
-      else
-        this.insert(this.schema.node("html_block", {html: dom.innerHTML}))
     } else if (!this.parseNodeType(dom)) {
       this.addAll(dom.firstChild, null)
       let name = dom.nodeName.toLowerCase()
@@ -131,7 +125,7 @@ class Context {
 
   leave() {
     let top = this.stack.pop()
-    let node = this.schema.node(top.type, top.attrs, top.content)
+    let node = top.type.create(top.attrs, top.content)
     if (this.stack.length) this.insert(node)
     return node
   }
@@ -206,7 +200,7 @@ def(CodeBlock, "pre", (dom, context, type) => {
   } else {
     params = null
   }
-  context.insert(context.schema.node(type, {params: params}, [context.schema.text(dom.textContent)]))
+  context.insert(type.create({params: params}, [context.schema.text(dom.textContent)]))
 })
 
 def(BulletList, "ul", wrap)
@@ -220,15 +214,14 @@ def(ListItem, "li", wrap)
 
 def(HardBreak, "br", (dom, context, type) => {
   if (!dom.hasAttribute("pm-force-br"))
-    context.insert(context.schema.node(type, null, null, context.styles))
+    context.insert(type.create(null, null, context.styles))
 })
 
-def(Image, "img", (dom, context, type) => {
-  let attrs = {src: dom.getAttribute("src"),
-               title: dom.getAttribute("title") || null,
-               alt: dom.getAttribute("alt") || null}
-  context.insert(context.schema.node(type, attrs))
-})
+def(Image, "img", (dom, context, type) => context.insert(type.create({
+  src: dom.getAttribute("src"),
+  title: dom.getAttribute("title") || null,
+  alt: dom.getAttribute("alt") || null
+})))
 
 // Inline style tokens
 
