@@ -1,7 +1,8 @@
 import markdownit from "markdown-it"
 import {NodeType, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        defaultSchema, Pos} from "../model"
+        EmStyle, StrongStyle, LinkStyle, CodeStyle,
+        defaultSchema, Pos, removeStyle} from "../model"
 import {defineSource} from "./index"
 
 export function fromMarkdown(schema, text) {
@@ -12,6 +13,8 @@ export function fromMarkdown(schema, text) {
   if (!Pos.start(doc)) doc = doc.splice(0, 0, [schema.node("paragraph")])
   return doc
 }
+
+// FIXME create a schema for defining these without importing this file
 
 defineSource("markdown", fromMarkdown)
 
@@ -45,7 +48,7 @@ class State {
   }
 
   closeInline(rm) {
-    this.styles = rm.removeFromSet(this.styles)
+    this.styles = removeStyle(this.styles, rm)
   }
 
   parseTokens(toks) {
@@ -174,33 +177,31 @@ Image.markdownToken("image", (state, tok, type) => {
 
 HardBreak.markdownToken("hardbreak", (state, _, type) => state.addInline(type))
 
-// FIXME move to proper exported objects/prototypes
+// Inline styles
 
-function markdownInline(style, tokenName, getStyle) {
-  style.markdownRegisterTokens = function(tokens) {
-    let styleObj
+function markdownInline(style, tokenName, attrs) {
+  style.prototype.markdownRegisterTokens = function(tokens) {
     tokens[tokenName + "_open"] = (state, tok) => {
-      styleObj = getStyle instanceof Function ? getStyle(state, tok) : getStyle
-      state.openInline(styleObj)
+      state.openInline(this.create(attrs instanceof Function ? attrs(state, tok) : attrs))
     }
-    tokens[tokenName + "_close"] = state => state.closeInline(styleObj)
+    tokens[tokenName + "_close"] = state => state.closeInline(this)
   }
 }
 
-markdownInline(defaultSchema.styles.link, "link",
-               (state, tok) => defaultSchema.style("link", {
+markdownInline(EmStyle, "em")
+
+markdownInline(StrongStyle, "strong")
+
+markdownInline(LinkStyle, "link",
+               (state, tok) => ({
                  href: state.getAttr(tok, "href"),
                  title: state.getAttr(tok, "title") || null
                }))
 
-markdownInline(defaultSchema.styles.strong, "strong", defaultSchema.style("strong"))
-
-markdownInline(defaultSchema.styles.em, "em", defaultSchema.style("em"))
-
-defaultSchema.styles.code.markdownRegisterTokens = function(tokens) {
+CodeStyle.prototype.markdownRegisterTokens = function(tokens) {
   tokens.code_inline = (state, tok) => {
-    state.openInline(defaultSchema.style("code"))
+    state.openInline(this.create())
     state.addText(tok.content)
-    state.closeInline(defaultSchema.style("code"))
+    state.closeInline(this)
   }
 }
