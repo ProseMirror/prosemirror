@@ -1,4 +1,4 @@
-import {Pos, containsStyle} from "../model"
+import {Pos, containsStyle, StyleType} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -68,7 +68,7 @@ Transform.prototype.removeStyle = function(from, to, st = null) {
   forSpansBetween(this.doc, from, to, (span, path, start, end) => {
     step++
     let toRemove = null
-    if (typeof st == "string") {
+    if (st instanceof StyleType) {
       let found = containsStyle(span.styles, st)
       if (found) toRemove = [found]
     } else if (st) {

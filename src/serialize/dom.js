@@ -78,7 +78,6 @@ function renderNodesInto(nodes, where, options) {
   }
 }
 
-// FIXME deal with styles not being in a fixed order
 function renderInlineContent(nodes, where, options) {
   let top = where
   let active = []

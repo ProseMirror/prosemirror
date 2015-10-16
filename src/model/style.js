@@ -1,4 +1,4 @@
-export class InlineStyleMarker {
+export class StyleMarker {
   constructor(type, attrs) {
     this.type = type
     this.attrs = attrs
@@ -17,6 +17,8 @@ export class InlineStyleMarker {
         if (this.eq(other)) return set
         else return [...set.slice(0, i), this, ...set.slice(i + 1)]
       }
+      if (other.type.rank > this.type.rank)
+        return [...set.slice(0, i), this, ...set.slice(i)]
     }
     return set.concat(this)
   }

@@ -1,5 +1,5 @@
 import {SchemaSpec, Schema, Block, Textblock, Inline, Text,
-        Attribute, InlineStyle} from "./schema"
+        Attribute, StyleType} from "./schema"
 
 export class Doc extends Block {}
 
@@ -40,14 +40,26 @@ Image.attributes = {
 
 export class HardBreak extends Inline {}
 
-export const style = {
-  code: new InlineStyle("code"),
-  em: new InlineStyle("em"),
-  strong: new InlineStyle("strong"),
-  link: new InlineStyle("link", {
-    href: new Attribute,
-    title: new Attribute("")
-  })
+// Style types
+
+export class EmStyle extends StyleType {
+  static get rank() { return  51 }
+}
+
+export class StrongStyle extends StyleType {
+  static get rank() { return  52 }
+}
+
+export class LinkStyle extends StyleType {
+  static get rank() { return  53 }
+}
+LinkStyle.attributes = {
+  href: new Attribute,
+  title: new Attribute("")
+}
+
+export class CodeStyle extends StyleType {
+  static get rank() { return 101 }
 }
 
 const defaultSpec = new SchemaSpec({
@@ -66,10 +78,10 @@ const defaultSpec = new SchemaSpec({
   image: Image,
   hard_break: HardBreak
 }, {
-  code: style.code,
-  em: style.em,
-  strong: style.strong,
-  link: style.link
+  em: EmStyle,
+  strong: StrongStyle,
+  link: LinkStyle,
+  code: CodeStyle
 })
 
 export const defaultSchema = new Schema(defaultSpec)

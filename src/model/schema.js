@@ -1,5 +1,5 @@
 import {BlockNode, TextblockNode, InlineNode, TextNode} from "./node"
-import {InlineStyleMarker} from "./style"
+import {StyleMarker} from "./style"
 
 import {ProseMirrorError} from "../util/error"
 
@@ -82,19 +82,43 @@ export class Attribute {
 
 // Styles
 
-export class InlineStyle {
-  constructor(name, attrs) {
+export class StyleType {
+  constructor(name, attrs, rank) {
     this.name = name
-    this.attrs = attrs || Object.create(null)
+    this.attrs = attrs
+    this.rank = rank
     let defaults = getDefaultAttrs(this.attrs)
-    this.instance = defaults && new InlineStyleMarker(this, defaults)
+    this.instance = defaults && new StyleMarker(this, defaults)
   }
+
+  static get rank() { return 50 }
 
   create(attrs) {
     if (!attrs && this.instance) return this.instance
-    return new InlineStyleMarker(this, buildAttrs(this.attrs, attrs, this))
+    return new StyleMarker(this, buildAttrs(this.attrs, attrs, this))
+  }
+
+  static getOrder(styles) {
+    let sorted = []
+    for (let name in styles) sorted.push({name, rank: styles[name].type.rank})
+    sorted.sort((a, b) => a.rank - b.rank)
+    let ranks = Object.create(null)
+    for (let i = 0; i < sorted.length; i++) ranks[sorted[i].name] = i
+    return ranks
+  }
+
+  static compile(styles) {
+    let order = this.getOrder(styles)
+    let result = Object.create(null)
+    for (let name in styles) {
+      let info = styles[name]
+      let attrs = info.attributes || info.type.attributes
+      result[name] = new info.type(name, attrs, order[name])
+    }
+    return result
   }
 }
+StyleType.attributes = {}
 
 // Schema specifications are data structures that specify a schema --
 // a set of node types, their names, attributes, and nesting behavior.
@@ -109,27 +133,35 @@ function ensureWrapped(obj) {
   return obj instanceof Function ? {type: obj} : obj
 }
 
+function overlayObj(obj, overlay) {
+  let copy = copyObj(obj)
+  for (let name in overlay) {
+    let info = ensureWrapped(overlay[name])
+    if (info == null) {
+      delete copy[name]
+    } else if (info.type) {
+      copy[name] = info
+    } else {
+      let existing = copy[name] = copyObj(copy[name])
+      for (let prop in info)
+        existing[prop] = info[prop]
+    }
+  }
+  return copy
+}
+
 export class SchemaSpec {
   constructor(nodeTypes, styles) {
     this.nodeTypes = copyObj(nodeTypes, ensureWrapped)
-    this.styles = styles
+    this.styles = copyObj(styles, ensureWrapped)
   }
 
-  updateNodes(nodes) {
-    let copy = copyObj(this.nodeTypes)
-    for (let name in nodes) {
-      let info = ensureWrapped(nodes[name])
-      if (info == null) {
-        delete copy[name]
-      } else if (info.type) {
-        copy[name] = info
-      } else {
-        let existing = copy[name] = copyObj(copy[name])
-        for (let prop in info)
-          existing[prop] = info[prop]
-      }
-    }
-    return new SchemaSpec(copy, this.styles)
+  updateNodes(nodeTypes) {
+    return new SchemaSpec(overlayObj(this.nodeTypes, nodeTypes), this.styles)
+  }
+
+  updateStyles(styles) {
+    return new SchemaSpec(this.nodeTypes, overlayObj(this.styles, styles))
   }
 
   addAttribute(filter, attrName, attrInfo) {
@@ -143,15 +175,6 @@ export class SchemaSpec {
     }
   }
 
-  updateStyles(styles) {
-    let copy = copyObj(styles)
-    for (let name in this.styles) {
-      let info = styles[name]
-      if (info == null) delete copy[name]
-      else copy[name] = info
-    }
-    return new SchemaSpec(this.nodeTypes, copy)
-  }
 }
 
 // For node types where all attrs have a default value (or which don't
@@ -222,10 +245,7 @@ export class Schema {
   constructor(spec) {
     this.spec = spec
     this.nodeTypes = compileNodeTypes(spec.nodeTypes, this)
-    this.styles = spec.styles
-    for (let name in this.styles)
-      if (this.styles[name].name != name)
-        SchemaError.raise("The style named " + name + " declares its name to be " + this.styles[name].name)
+    this.styles = StyleType.compile(spec.styles)
     this.cached = Object.create(null)
 
     this.node = this.node.bind(this)

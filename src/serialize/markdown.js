@@ -96,7 +96,6 @@ class State {
       this.render(nodes[i])
   }
 
-  // FIXME this depends on the styles being ordered, which is no longer the case
   renderInline(nodes) {
     let stack = []
     for (let i = 0; i <= nodes.length; i++) {

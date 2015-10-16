@@ -34,10 +34,14 @@ defTest("style_add", () => {
   assert("from empty", em_.addToSet([]), [em_])
   assert("duplicate", em_.addToSet([em_]), [em_])
   assert("at start", em_.addToSet([strong]), [em_, strong])
+  assert("at end", strong.addToSet([em_]), [em_, strong])
   assert("replace link", link("http://bar").addToSet([em_, link("http://foo")]),
          [em_, link("http://bar")])
   assert("same link", link("http://foo").addToSet([em_, link("http://foo")]),
          [em_, link("http://foo")])
+  assert("code at end", code.addToSet([em_, strong, link("http://foo")]),
+         [em_, strong, link("http://foo"), code])
+  assert("strong in middle", strong.addToSet([em_, code]), [em_, strong, code])
 })
 
 defTest("style_remove", () => {
