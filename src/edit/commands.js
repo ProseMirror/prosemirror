@@ -24,7 +24,7 @@ function clearSel(pm) {
 commands.insertHardBreak = pm => {
   pm.scrollIntoView()
   let tr = clearSel(pm), pos = pm.selection.from
-  if (pm.doc.path(pos.path).type == pm.schema.nodeTypes.code_block)
+  if (pm.doc.path(pos.path).type == pm.schema.nodes.code_block)
     tr.insertText(pos, "\n")
   else
     tr.insert(pos, pm.schema.node("hard_break"))
@@ -71,7 +71,7 @@ function delBlockBackward(pm, tr, pos) {
     let offset = pos.path[last]
     // Top of list item below other list item
     // Join with the one above
-    if (parent.type == pm.schema.nodeTypes.list_item &&
+    if (parent.type == pm.schema.nodes.list_item &&
         offset == 0 && pos.path[last - 1] > 0) {
       tr.join(joinPoint(pm.doc, pos))
     // Any other nested block, lift up
@@ -228,12 +228,12 @@ commands.endBlock = pm => {
   if (pos.depth > 1 && block.length == 0 &&
       tr.lift(pos).steps.length) {
     // Lift
-  } else if (block.type == pm.schema.nodeTypes.code_block && pos.offset < block.maxOffset) {
+  } else if (block.type == pm.schema.nodes.code_block && pos.offset < block.maxOffset) {
     tr.insertText(pos, "\n")
   } else {
     let end = pos.depth - 1
     let isList = end > 0 && pos.path[end] == 0 &&
-        pm.doc.path(pos.path.slice(0, end)).type == pm.schema.nodeTypes.list_item
+        pm.doc.path(pos.path.slice(0, end)).type == pm.schema.nodes.list_item
     let type = pos.offset == block.maxOffset ? pm.schema.node("paragraph") : null
     tr.split(pos, isList ? 2 : 1, type)
   }

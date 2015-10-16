@@ -98,7 +98,7 @@ export function redraw(pm, dirty, doc, prev) {
 
     if (node.isTextblock) {
       let needsBR = node.length == 0 ||
-          node.lastChild.type == node.type.schema.nodeTypes.hard_break
+          node.lastChild.type == node.type.schema.nodes.hard_break
       let last = dom.lastChild, hasBR = last && last.nodeType == 1 && last.hasAttribute("pm-force-br")
       if (needsBR && !hasBR)
         dom.appendChild(elt("br", {"pm-force-br": "true"}))

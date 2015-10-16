@@ -73,16 +73,16 @@ export class ProseMirror {
   get tr() { return new Transform(this.doc) }
 
   setContent(value, format) {
-    if (format) value = convertFrom(this.schema, value, format, {document})
+    if (format) value = convertFrom(this.schema, value, format)
     this.setDoc(value)
   }
 
   getContent(format) {
-    return format ? convertTo(this.doc, format, {document}) : this.doc
+    return format ? convertTo(this.doc, format) : this.doc
   }
 
   setDocInner(doc) {
-    if (doc.type != this.schema.nodeTypes.doc)
+    if (doc.type != this.schema.nodes.doc)
       throw new Error("Trying to set a document with a different schema")
     this.doc = doc
     this.ranges = new RangeStore(this)

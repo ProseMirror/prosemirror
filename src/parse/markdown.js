@@ -101,7 +101,7 @@ function summarizeTokens(schema) {
     if (obj.markdownRegisterTokens) obj.markdownRegisterTokens(tokens)
   }
 
-  for (let name in schema.nodeTypes) read(schema.nodeTypes[name])
+  for (let name in schema.nodes) read(schema.nodes[name])
   for (let name in schema.styles) read(schema.styles[name])
   return tokens
 }
@@ -192,11 +192,10 @@ markdownInline(EmStyle, "em")
 
 markdownInline(StrongStyle, "strong")
 
-markdownInline(LinkStyle, "link",
-               (state, tok) => ({
-                 href: state.getAttr(tok, "href"),
-                 title: state.getAttr(tok, "title") || null
-               }))
+markdownInline(LinkStyle, "link", (state, tok) => ({
+  href: state.getAttr(tok, "href"),
+  title: state.getAttr(tok, "title") || null
+}))
 
 CodeStyle.prototype.markdownRegisterTokens = function(tokens) {
   tokens.code_inline = (state, tok) => {

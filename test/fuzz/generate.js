@@ -19,13 +19,13 @@ export function createNode(type, fuel) {
 }
 
 export function createDoc(fuel) {
-  return createNode(schema.nodeTypes.doc, fuel || 1)
+  return createNode(schema.nodes.doc, fuel || 1)
 }
 
 function childTypes(type, omit) {
   let contains = type.contains, result = []
-  for (var name in schema.nodeTypes) {
-    let cur = schema.nodeTypes[name]
+  for (var name in schema.nodes) {
+    let cur = schema.nodes[name]
     if (type.canContain(cur.type) && cur != omit) result.content.push(cur)
   }
   return result
@@ -46,7 +46,7 @@ function fillNodeInline(node, fuel) {
   if (node.type.plainText || Math.random() < .6) {
     node.content.push(schema.text(randomText(40)))
   } else {
-    let types = childTypes(node.type, schema.nodeTypes.text)
+    let types = childTypes(node.type, schema.nodes.text)
     let children = Math.ceil(fuel * 10)
     let styles = randomStyles()
     for (let i = 0; i < children; i++) {

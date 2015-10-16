@@ -70,7 +70,7 @@ class Context {
     } else if (!this.parseNodeType(dom)) {
       this.addAll(dom.firstChild, null)
       let name = dom.nodeName.toLowerCase()
-      if (blockElements.hasOwnProperty(name) && this.top.type == this.schema.nodeTypes.paragraph)
+      if (blockElements.hasOwnProperty(name) && this.top.type == this.schema.nodes.paragraph)
         this.closing = true
     }
   }
@@ -172,7 +172,7 @@ function summarizeNodeInfo(schema) {
     })
   }
 
-  for (let name in schema.nodeTypes) read(schema.nodeTypes[name])
+  for (let name in schema.nodes) read(schema.nodes[name])
   for (let name in schema.styles) read(schema.styles[name])
   for (let tag in tags) tags[tag].sort((a, b) => a.rank - b.rank)
   return tags

@@ -1,6 +1,6 @@
 import {ProseMirror} from "../src/edit/main"
 import {Pos, Node} from "../src/model"
-import {fromDOM} from "../src/convert/from_dom"
+import {fromDOM} from "../src/parse/dom"
 import {defaultSchema as schema} from "../src/model"
 
 import "../src/inputrules/autoinput"

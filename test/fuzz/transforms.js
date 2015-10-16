@@ -208,8 +208,8 @@ run.lift = (tr, info) => {
 }
 
 let blockTypes = [], wrapTypes = []
-for (let name in schema.nodeTypes) {
-  let type = schema.nodeTypes[name]
+for (let name in schema.nodes) {
+  let type = schema.nodes[name]
   if (type.textblock)
     blockTypes.push(type)
   else if (type.textblock)

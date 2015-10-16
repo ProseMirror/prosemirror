@@ -30,7 +30,7 @@ export class NodeType {
     let active = [{from: this, via: []}]
     while (active.length) {
       let current = active.shift()
-      for (let name in this.schema.nodeTypes) {
+      for (let name in this.schema.nodes) {
         let type = this.schema.nodeType(name)
         if (!(type.contains in seen) && current.from.canContain(type)) {
           let via = current.via.concat(type)
@@ -45,6 +45,32 @@ export class NodeType {
   buildAttrs(attrs, content) {
     if (!attrs && this.defaultAttrs) return this.defaultAttrs
     else return buildAttrs(this.attrs, attrs, this, content)
+  }
+
+  static compile(types, schema) {
+    let result = Object.create(null)
+    let categoriesSeen = Object.create(null)
+    for (let name in types) {
+      let info = types[name]
+      let type = info.type || SchemaError.raise("Missing node type for " + name)
+      let categories = (info.category || type.category).split(" ")
+      categories.forEach(n => categoriesSeen[n] = true)
+      let contains = "contains" in info ? info.contains : type.contains
+      result[name] = new type(name, contains, categories,
+                              info.attributes || type.attributes,
+                              schema)
+    }
+    for (let name in result) {
+      let contains = result[name].contains
+      if (contains && !(contains in categoriesSeen))
+        SchemaError.raise("Node type " + name + " is specified to contain non-existing category " + contains)
+    }
+    if (!result.doc) SchemaError.raise("Every schema needs a 'doc' type")
+    if (!result.text) SchemaError.raise("Every schema needs a 'text' type")
+
+    for (let name in types)
+      types[name].defaultAttrs = getDefaultAttrs(types[name].attrs)
+    return result
   }
 }
 NodeType.attributes = {}
@@ -151,21 +177,21 @@ function overlayObj(obj, overlay) {
 }
 
 export class SchemaSpec {
-  constructor(nodeTypes, styles) {
-    this.nodeTypes = copyObj(nodeTypes, ensureWrapped)
+  constructor(nodes, styles) {
+    this.nodes = copyObj(nodes, ensureWrapped)
     this.styles = copyObj(styles, ensureWrapped)
   }
 
-  updateNodes(nodeTypes) {
-    return new SchemaSpec(overlayObj(this.nodeTypes, nodeTypes), this.styles)
+  updateNodes(nodes) {
+    return new SchemaSpec(overlayObj(this.nodes, nodes), this.styles)
   }
 
   updateStyles(styles) {
-    return new SchemaSpec(this.nodeTypes, overlayObj(this.styles, styles))
+    return new SchemaSpec(this.nodes, overlayObj(this.styles, styles))
   }
 
   addAttribute(filter, attrName, attrInfo) {
-    let copy = copyObj(this.nodeTypes)
+    let copy = copyObj(this.nodes)
     for (let name in copy) {
       if (typeof filter == "string" ? filter == name : filter(name, copy[name])) {
         let info = copy[name] = copyObj(copy[name])
@@ -174,7 +200,6 @@ export class SchemaSpec {
       }
     }
   }
-
 }
 
 // For node types where all attrs have a default value (or which don't
@@ -190,13 +215,6 @@ function getDefaultAttrs(attrs) {
     defaults[attrName] = attr.default
   }
   return defaults
-}
-
-function buildDefaultAttrs(nodeTypes) {
-  for (let name in nodeTypes) {
-    let type = nodeTypes[name]
-    type.defaultAttrs = getDefaultAttrs(type.attrs)
-  }
 }
 
 function buildAttrs(attrSpec, attrs, arg1, arg2) {
@@ -217,34 +235,10 @@ function buildAttrs(attrSpec, attrs, arg1, arg2) {
   return built
 }
 
-function compileNodeTypes(types, schema) {
-  let result = Object.create(null)
-  let categoriesSeen = Object.create(null)
-  for (let name in types) {
-    let info = types[name]
-    let type = info.type || SchemaError.raise("Missing node type for " + name)
-    let categories = (info.category || type.category).split(" ")
-    categories.forEach(n => categoriesSeen[n] = true)
-    let contains = "contains" in info ? info.contains : type.contains
-    result[name] = new type(name, contains, categories,
-                            info.attributes || type.attributes,
-                            schema)
-  }
-  for (let name in result) {
-    let contains = result[name].contains
-    if (contains && !(contains in categoriesSeen))
-      SchemaError.raise("Node type " + name + " is specified to contain non-existing category " + contains)
-  }
-  if (!result.doc) SchemaError.raise("Every schema needs a 'doc' type")
-  if (!result.text) SchemaError.raise("Every schema needs a 'text' type")
-  buildDefaultAttrs(result)
-  return result
-}
-
 export class Schema {
   constructor(spec) {
     this.spec = spec
-    this.nodeTypes = compileNodeTypes(spec.nodeTypes, this)
+    this.nodes = NodeType.compile(spec.nodes, this)
     this.styles = StyleType.compile(spec.styles)
     this.cached = Object.create(null)
 
@@ -266,7 +260,7 @@ export class Schema {
   }
 
   text(text, styles) {
-    return new TextNode(this.nodeTypes.text, this.nodeTypes.text.buildAttrs(null, text), text, styles)
+    return new TextNode(this.nodes.text, this.nodes.text.buildAttrs(null, text), text, styles)
   }
 
   style(name, attrs) {
@@ -287,6 +281,6 @@ export class Schema {
   }
 
   nodeType(name) {
-    return this.nodeTypes[name] || SchemaError.raise("Unknown node type: " + name)
+    return this.nodes[name] || SchemaError.raise("Unknown node type: " + name)
   }
 }
