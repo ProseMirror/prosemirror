@@ -1,9 +1,7 @@
 import {Text, BlockQuote, OrderedList, BulletList, ListItem,
-        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak} from "../model"
+        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
+        EmStyle, StrongStyle, LinkStyle, CodeStyle} from "../model"
 import {defineTarget} from "./index"
-
-// FIXME un-export, define proper extension mechanism
-export const renderStyle = Object.create(null)
 
 let doc = null
 
@@ -93,7 +91,7 @@ function renderInlineContent(nodes, where, options) {
     while (active.length < styles.length) {
       let add = styles[active.length]
       active.push(add)
-      top = top.appendChild(renderStyle[add.type.name](add))
+      top = top.appendChild(add.type.serializeToDOM(add))
     }
     top.appendChild(renderNode(node, options, i))
   }
@@ -102,7 +100,7 @@ function renderInlineContent(nodes, where, options) {
 function wrapInlineFlat(node, dom) {
   let styles = node.styles
   for (let i = styles.length - 1; i >= 0; i--) {
-    let wrap = renderStyle[styles[i].type.name](styles[i])
+    let wrap = styles[i].type.serializeToDOM(styles[i])
     wrap.appendChild(dom)
     dom = wrap
   }
@@ -167,17 +165,15 @@ def(HardBreak, () => elt("br"))
 
 // Inline styles
 
-// FIXME move onto style definitions
+def(EmStyle, () => elt("em"))
 
-renderStyle.em = () => elt("em")
+def(StrongStyle, () => elt("strong"))
 
-renderStyle.strong = () => elt("strong")
+def(CodeStyle, () => elt("code"))
 
-renderStyle.code = () => elt("code")
-
-renderStyle.link = style => {
+def(LinkStyle, style => {
   let dom = elt("a")
   dom.setAttribute("href", style.attrs.href)
   if (style.attrs.title) dom.setAttribute("title", style.attrs.title)
   return dom
-}
+})
