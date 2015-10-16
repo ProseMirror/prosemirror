@@ -1,5 +1,6 @@
 import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
+        EmStyle, StrongStyle, LinkStyle, CodeStyle,
         compareMarkup, Pos, defaultSchema} from "../model"
 import {defineSource} from "./index"
 
@@ -158,20 +159,22 @@ function nodeInfo(schema) {
 function summarizeNodeInfo(schema) {
   let tags = Object.create(null)
   tags._ = []
-  for (let name in schema.nodeTypes) {
-    let type = schema.nodeTypes[name], info = type.parseFromDOM
-    if (!info) continue
+  function read(value) {
+    let info = value.parseFromDOM
+    if (!info) return
     ;(Array.isArray(info) ? info : [info]).forEach(info => {
       let tag = info.tag || "_"
       ;(tags[tag] || (tags[tag] = [])).push({
-        type,
+        type: value,
         rank: info.rank == null ? 50 : info.rank,
         parse: info.parse
       })
     })
   }
-  for (let tag in tags)
-    tags[tag].sort((a, b) => a.rank - b.rank)
+
+  for (let name in schema.nodeTypes) read(schema.nodeTypes[name])
+  for (let name in schema.styles) read(schema.styles[name])
+  for (let tag in tags) tags[tag].sort((a, b) => a.rank - b.rank)
   return tags
 }
 
@@ -179,13 +182,6 @@ function wrap(dom, context, type, attrs) {
   context.enter(type, attrs)
   context.addAll(dom.firstChild, null, true)
   context.leave()
-}
-
-function inline(dom, context, added) {
-  var old = context.styles
-  context.styles = added.addToSet(old)
-  context.addAll(dom.firstChild, null)
-  context.styles = old
 }
 
 function def(type, tag, parse, rank) {
@@ -234,19 +230,26 @@ def(Image, "img", (dom, context, type) => {
   context.insert(context.schema.node(type, attrs))
 })
 
-// FIXME associate these with the actual style objects, not Text
+// Inline style tokens
 
-def(Text, "a", (dom, context) => {
-  inline(dom, context, defaultSchema.style("link", {
+function inline(dom, context, style) {
+  var old = context.styles
+  context.styles = (style.instance || style).addToSet(old)
+  context.addAll(dom.firstChild, null)
+  context.styles = old
+}
+
+def(LinkStyle, "a", (dom, context, style) => {
+  inline(dom, context, style.create({
     href: dom.getAttribute("href"),
     title: dom.getAttribute("title")
   }))
 })
 
-def(Text, "b", (dom, context) => inline(dom, context, defaultSchema.style("strong")))
-def(Text, "strong", (dom, context) => inline(dom, context, defaultSchema.style("strong")))
+def(StrongStyle, "b", inline)
+def(StrongStyle, "strong", inline)
 
-def(Text, "i", (dom, context) => inline(dom, context, defaultSchema.style("em")))
-def(Text, "em", (dom, context) => inline(dom, context, defaultSchema.style("em")))
+def(EmStyle, "i", inline)
+def(EmStyle, "em", inline)
 
-def(Text, "code", (dom, context) => inline(dom, context, defaultSchema.style("code")))
+def(CodeStyle, "code", inline)
