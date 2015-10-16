@@ -1,9 +1,10 @@
-SOURCES := src/**/*.js
+SOURCES := $(wildcard src/**/*.js)
 DIST = $(SOURCES:src/%=dist/%)
 
 all: $(DIST)
 
 dist/%.js: src/%.js
+	@mkdir -p $(dir $@)
 	node_modules/.bin/babel $< > $@
 
 demo: demo/demo-built.js
