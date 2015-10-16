@@ -1,7 +1,7 @@
-import {Text, BlockQuote, OrderedList, BulletList, ListItem,
+import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmStyle, StrongStyle, LinkStyle, CodeStyle,
-        compareMarkup, Pos, defaultSchema} from "../model"
+        compareMarkup, Pos} from "../model"
 import {defineSource} from "./index"
 
 export function fromDOM(schema, dom, options) {
@@ -154,9 +154,9 @@ function summarizeNodeInfo(schema) {
   let tags = Object.create(null)
   tags._ = []
   function read(value) {
-    let info = value.parseFromDOM
+    let info = value.parseDOM
     if (!info) return
-    ;(Array.isArray(info) ? info : [info]).forEach(info => {
+    info.forEach(info => {
       let tag = info.tag || "_"
       ;(tags[tag] || (tags[tag] = [])).push({
         type: value,
@@ -178,20 +178,19 @@ function wrap(dom, context, type, attrs) {
   context.leave()
 }
 
-function def(type, tag, parse, rank) {
-  ;(type.prototype.parseFromDOM || (type.prototype.parseFromDOM = [])).push({tag, parse, rank})
-}
+Paragraph.register("parseDOM", {tag: "p", parse: wrap})
 
-def(Paragraph, "p", wrap)
-
-def(BlockQuote, "blockquote", wrap)
+BlockQuote.register("parseDOM", {tag: "blockquote", parse: wrap})
 
 for (let i = 1; i <= 6; i++)
-  def(Heading, "h" + i, (dom, context, type) => wrap(dom, context, type, {level: i}))
+  Heading.register("parseDOM", {
+    tag: "h" + i,
+    parse: (dom, context, type) => wrap(dom, context, type, {level: i})
+  })
 
-def(HorizontalRule, "hr", wrap)
+HorizontalRule.register("parseDOM", {tag: "hr", parse: wrap})
 
-def(CodeBlock, "pre", (dom, context, type) => {
+CodeBlock.register("parseDOM", {tag: "pre", parse: (dom, context, type) => {
   let params = dom.firstChild && /^code$/i.test(dom.firstChild.nodeName) && dom.firstChild.getAttribute("class")
   if (params && /fence/.test(params)) {
     let found = [], re = /(?:^|\s)lang-(\S+)/g, m
@@ -201,27 +200,29 @@ def(CodeBlock, "pre", (dom, context, type) => {
     params = null
   }
   context.insert(type.create({params: params}, [context.schema.text(dom.textContent)]))
-})
+}})
 
-def(BulletList, "ul", wrap)
+BulletList.register("parseDOM", {tag: "ul", parse: wrap})
 
-def(OrderedList, "ol", (dom, context, type) => {
+OrderedList.register("parseDOM", {tag: "ol", parse: (dom, context, type) => {
   let attrs = {order: dom.getAttribute("start") || 1}
   wrap(dom, context, type, attrs)
-})
+}})
 
-def(ListItem, "li", wrap)
+ListItem.register("parseDOM", {tag: "li", parse: wrap})
 
-def(HardBreak, "br", (dom, context, type) => {
+HardBreak.register("parseDOM", {tag: "br", parse: (dom, context, type) => {
   if (!dom.hasAttribute("pm-force-br"))
     context.insert(type.create(null, null, context.styles))
-})
+}})
 
-def(Image, "img", (dom, context, type) => context.insert(type.create({
-  src: dom.getAttribute("src"),
-  title: dom.getAttribute("title") || null,
-  alt: dom.getAttribute("alt") || null
-})))
+Image.register("parseDOM", {tag: "img", parse: (dom, context, type) => {
+  context.insert(type.create({
+    src: dom.getAttribute("src"),
+    title: dom.getAttribute("title") || null,
+    alt: dom.getAttribute("alt") || null
+  }))
+}})
 
 // Inline style tokens
 
@@ -232,17 +233,17 @@ function inline(dom, context, style) {
   context.styles = old
 }
 
-def(LinkStyle, "a", (dom, context, style) => {
+LinkStyle.register("parseDOM", {tag: "a", parse: (dom, context, style) => {
   inline(dom, context, style.create({
     href: dom.getAttribute("href"),
     title: dom.getAttribute("title")
   }))
-})
+}})
 
-def(StrongStyle, "b", inline)
-def(StrongStyle, "strong", inline)
+EmStyle.register("parseDOM", {tag: "i", parse: inline})
+EmStyle.register("parseDOM", {tag: "em", parse: inline})
 
-def(EmStyle, "i", inline)
-def(EmStyle, "em", inline)
+StrongStyle.register("parseDOM", {tag: "b", parse: inline})
+StrongStyle.register("parseDOM", {tag: "strong", parse: inline})
 
-def(CodeStyle, "code", inline)
+CodeStyle.register("parseDOM", {tag: "code", parse: inline})

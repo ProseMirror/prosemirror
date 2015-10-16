@@ -76,6 +76,10 @@ export class NodeType {
       types[name].defaultAttrs = getDefaultAttrs(types[name].attrs)
     return result
   }
+
+  static register(prop, value) {
+    ;(this.prototype[prop] || (this.prototype[prop] = [])).push(value)
+  }
 }
 NodeType.attributes = {}
 
@@ -146,6 +150,10 @@ export class StyleType {
       result[name] = new info.type(name, attrs, order[name])
     }
     return result
+  }
+
+  static register(prop, value) {
+    ;(this.prototype[prop] || (this.prototype[prop] = [])).push(value)
   }
 }
 StyleType.attributes = {}

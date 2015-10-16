@@ -1,8 +1,8 @@
 import markdownit from "markdown-it"
-import {NodeType, BlockQuote, OrderedList, BulletList, ListItem,
+import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmStyle, StrongStyle, LinkStyle, CodeStyle,
-        defaultSchema, Pos, removeStyle} from "../model"
+        Pos, removeStyle} from "../model"
 import {defineSource} from "./index"
 
 export function fromMarkdown(schema, text) {
@@ -54,7 +54,7 @@ class State {
   parseTokens(toks) {
     for (let i = 0; i < toks.length; i++) {
       let tok = toks[i]
-      this.tokenTypes[tok.type](this, tok, i)
+      this.tokenTypes[tok.type](this, tok)
     }
   }
 
@@ -91,14 +91,35 @@ function tokenTypeInfo(schema) {
     (schema.cached.markdownTokens = summarizeTokens(schema))
 }
 
+function registerTokens(tokens, type, info) {
+  if (info.type == "block") {
+    tokens[info.token + "_open"] = (state, tok) => {
+      let attrs = typeof info.attrs == "function" ? info.attrs(state, tok) : info.attrs
+      state.openNode(type, attrs)
+    }
+    tokens[info.token + "_close"] = state => state.closeNode()
+  } else if (info.type == "inline") {
+    tokens[info.token + "_open"] = (state, tok) => {
+      let attrs = info.attrs instanceof Function ? info.attrs(state, tok) : info.attrs
+      state.openInline(type.create(attrs))
+    }
+    tokens[info.token + "_close"] = state => state.closeInline(type)
+  } else if (info.parse) {
+    tokens[info.token] = info.parse.bind(type)
+  } else {
+    throw new Error("Unrecognized markdown parsing spec: " + info)
+  }
+}
+
 function summarizeTokens(schema) {
   let tokens = Object.create(null)
   tokens.text = (state, tok) => state.addText(tok.content)
   tokens.inline = (state, tok) => state.parseTokens(tok.children)
   tokens.softbreak = state => state.addText("\n")
 
-  function read(obj) {
-    if (obj.markdownRegisterTokens) obj.markdownRegisterTokens(tokens)
+  function read(type) {
+    let info = type.parseMarkdown
+    if (info) info.forEach(info => registerTokens(tokens, type, info))
   }
 
   for (let name in schema.nodes) read(schema.nodes[name])
@@ -106,49 +127,21 @@ function summarizeTokens(schema) {
   return tokens
 }
 
-function addMarkdownMethod(ctor, method) {
-  if (ctor.prototype.hasOwnProperty("markdownRegisterTokens")) {
-    let a = ctor.prototype.markdownRegisterTokens, b = method
-    method = function(tokens) {
-      a.call(this, tokens)
-      b.call(this, tokens)
-    }
-  }
-  ctor.prototype.markdownRegisterTokens = method
-}
+BlockQuote.register("parseMarkdown", {type: "block", token: "blockquote"})
 
-NodeType.markdownBlock = function(tokenName, readAttrs) {
-  addMarkdownMethod(this, function(tokens) {
-    tokens[tokenName + "_open"] = (state, tok) => {
-      state.openNode(this, readAttrs ? readAttrs(state, tok) : null)
-    }
-    tokens[tokenName + "_close"] = state => state.closeNode()
-  })
-}
+Paragraph.register("parseMarkdown", {type: "block", token: "paragraph"})
 
-NodeType.markdownToken = function(tokenName, parser) {
-  addMarkdownMethod(this, function(tokens) {
-    tokens[tokenName] = (state, tok) => {
-      parser(state, tok, this)
-    }
-  })
-}
+ListItem.register("parseMarkdown", {type: "block", token: "list_item"})
 
-BlockQuote.markdownBlock("blockquote")
+BulletList.register("parseMarkdown", {type: "block", token: "bullet_list"})
 
-Paragraph.markdownBlock("paragraph")
+OrderedList.register("parseMarkdown", {type: "block", token: "ordered_list", attrs: (state, tok) => ({
+  order: Number(state.getAttr(tok, "order") || 1)
+})})
 
-ListItem.markdownBlock("list_item")
-
-BulletList.markdownBlock("bullet_list")
-
-OrderedList.markdownBlock("ordered_list", (state, tok) => {
-  return {order: Number(state.getAttr(tok, "order") || 1)}
-})
-
-Heading.markdownBlock("heading", (_state, tok) => {
-  return {level: Number(tok.tag.slice(1))}
-})
+Heading.register("parseMarkdown", {type: "block", token: "heading", attrs: (_, tok) => ({
+  level: tok.tag.slice(1)
+})})
 
 function trimTrailingNewline(str) {
   if (str.charAt(str.length - 1) == "\n")
@@ -156,51 +149,46 @@ function trimTrailingNewline(str) {
   return str
 }
 
-function parseCodeBlock(state, tok, type) {
-  state.openNode(type)
+function parseCodeBlock(state, tok) {
+  state.openNode(this)
   state.addText(trimTrailingNewline(tok.content))
   state.closeNode()
 }
 
-CodeBlock.markdownToken("code_block", parseCodeBlock)
-CodeBlock.markdownToken("fence", parseCodeBlock)
+CodeBlock.register("parseMarkdown", {token: "code_block", parse: parseCodeBlock})
+CodeBlock.register("parseMarkdown", {token: "fence", parse: parseCodeBlock})
 
-HorizontalRule.markdownToken("hr", (state, tok, type) => {
-  state.addNode(type, {markup: tok.markup})
-})
+HorizontalRule.register("parseMarkdown", {token: "hr", parse: function(state, tok) {
+  state.addNode(this, {markup: tok.markup})
+}})
 
-Image.markdownToken("image", (state, tok, type) => {
-  state.addInline(type, null, {src: state.getAttr(tok, "src"),
+Image.register("parseMarkdown", {token: "image", parse: function(state, tok) {
+  state.addInline(this, null, {src: state.getAttr(tok, "src"),
                                title: state.getAttr(tok, "title") || null,
                                alt: tok.children[0] && tok.children[0].content || null})
-})
+}})
 
-HardBreak.markdownToken("hardbreak", (state, _, type) => state.addInline(type))
+HardBreak.register("parseMarkdown", {token: "hardbreak", parse: function(state) {
+  state.addInline(this)
+}})
 
 // Inline styles
 
-function markdownInline(style, tokenName, attrs) {
-  style.prototype.markdownRegisterTokens = function(tokens) {
-    tokens[tokenName + "_open"] = (state, tok) => {
-      state.openInline(this.create(attrs instanceof Function ? attrs(state, tok) : attrs))
-    }
-    tokens[tokenName + "_close"] = state => state.closeInline(this)
-  }
-}
+EmStyle.register("parseMarkdown", {type: "inline", token: "em"})
 
-markdownInline(EmStyle, "em")
+StrongStyle.register("parseMarkdown", {type: "inline", token: "strong"})
 
-markdownInline(StrongStyle, "strong")
+LinkStyle.register("parseMarkdown", {
+  type: "inline",
+  token: "link",
+  attrs: (state, tok) => ({
+    href: state.getAttr(tok, "href"),
+    title: state.getAttr(tok, "title") || null
+  })
+})
 
-markdownInline(LinkStyle, "link", (state, tok) => ({
-  href: state.getAttr(tok, "href"),
-  title: state.getAttr(tok, "title") || null
-}))
-
-CodeStyle.prototype.markdownRegisterTokens = function(tokens) {
-  tokens.code_inline = (state, tok) => {
-    state.openInline(this.create())
-    state.addText(tok.content)
-    state.closeInline(this)
-  }
-}
+CodeStyle.register("parseMarkdown", {token: "code_inline", parse: function(state, tok) {
+  state.openInline(this.create())
+  state.addText(tok.content)
+  state.closeInline(this)
+}})
