@@ -89,7 +89,7 @@ class State {
   }
 
   render(node) {
-    node.type.serializeToMarkdown(this, node)
+    node.type.serializeMarkdown(this, node)
   }
 
   renderNodes(nodes) {
@@ -147,7 +147,7 @@ class State {
   }
 }
 
-function def(cls, method) { cls.prototype.serializeToMarkdown = method }
+function def(cls, method) { cls.prototype.serializeMarkdown = method }
 
 def(BlockQuote, (state, node) => {
   state.wrapBlock("> ", null, node, () => state.renderNodes(node.children))

@@ -62,7 +62,7 @@ function renderNodes(nodes, options) {
 }
 
 function renderNode(node, options, offset) {
-  let dom = node.type.serializeToDOM(node, options)
+  let dom = node.type.serializeDOM(node, options)
   if (options.onRender && node.isBlock)
     dom = options.onRender(node, dom, offset) || dom
   return dom
@@ -91,7 +91,7 @@ function renderInlineContent(nodes, where, options) {
     while (active.length < styles.length) {
       let add = styles[active.length]
       active.push(add)
-      top = top.appendChild(add.type.serializeToDOM(add))
+      top = top.appendChild(add.type.serializeDOM(add))
     }
     top.appendChild(renderNode(node, options, i))
   }
@@ -100,7 +100,7 @@ function renderInlineContent(nodes, where, options) {
 function wrapInlineFlat(node, dom) {
   let styles = node.styles
   for (let i = styles.length - 1; i >= 0; i--) {
-    let wrap = styles[i].type.serializeToDOM(styles[i])
+    let wrap = styles[i].type.serializeDOM(styles[i])
     wrap.appendChild(dom)
     dom = wrap
   }
@@ -122,7 +122,7 @@ function renderInlineContentFlat(nodes, where, options) {
 
 // Block nodes
 
-function def(cls, method) { cls.prototype.serializeToDOM = method }
+function def(cls, method) { cls.prototype.serializeDOM = method }
 
 def(BlockQuote, wrapIn("blockquote"))
 

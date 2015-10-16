@@ -1,28 +1,28 @@
 import {Block, Textblock, Inline, HardBreak, Text} from "../model"
 import {defineTarget} from "./index"
 
-Block.prototype.serializeToText = node => {
+Block.prototype.serializeText = node => {
   let accum = ""
   for (let i = 0; i < node.length; i++) {
     let child = node.child(i)
-    accum += child.type.serializeToText(child)
+    accum += child.type.serializeText(child)
   }
   return accum
 }
 
-Textblock.prototype.serializeToText = node => {
-  let text = Block.prototype.serializeToText(node)
+Textblock.prototype.serializeText = node => {
+  let text = Block.prototype.serializeText(node)
   return text && text + "\n\n"
 }
 
-Inline.prototype.serializeToText = () => ""
+Inline.prototype.serializeText = () => ""
 
-HardBreak.prototype.serializeToText = () => "\n"
+HardBreak.prototype.serializeText = () => "\n"
 
-Text.prototype.serializeToText = node => node.text
+Text.prototype.serializeText = node => node.text
 
 export function toText(doc) {
-  return doc.type.serializeToText(doc).trim()
+  return doc.type.serializeText(doc).trim()
 }
 
 defineTarget("text", toText)
