@@ -27,7 +27,7 @@
   },
   "scripts": {
     "test": "node test/start.js",
-    "demo": "watchify -d --outfile demo/demo-built.js -t babelify demo/demo.js",
+    "demo": "watchify -d -v --outfile demo/demo-built.js -t babelify demo/demo.js",
     "browsertests": "watchify -d --outfile demo/test-built.js -t babelify demo/test.js",
     "dist": "babel -d dist src",
     "dist-watch": "babel -w -d dist src",
