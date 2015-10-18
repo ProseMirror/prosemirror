@@ -1,6 +1,7 @@
 import {Pos, spanStylesAt} from "../model"
 
 import {fromHTML} from "../parse/dom"
+import {elt} from "../dom"
 import {toHTML} from "../serialize/dom"
 import {toText} from "../serialize/text"
 import {knownSource, convertFrom} from "../parse"
@@ -9,9 +10,19 @@ import {isModifierKey, lookupKey, keyName} from "./keys"
 import {browser, addClass, rmClass} from "../dom"
 import {execCommand} from "./commands"
 import {applyDOMChange, textContext, textInContext} from "./domchange"
-import {Range} from "./selection"
+import {Range, coordsAtPos} from "./selection"
+
+import insertCSS from "insert-css"
+
 
 let stopSeq = null
+
+/**
+ * A collection of input events that occur within the editor, and callback functions
+ * to invoke when the event fires.
+ *
+ * @type {Object}
+ */
 const handlers = {}
 
 export class Input {
@@ -28,6 +39,8 @@ export class Input {
     this.keymaps = []
 
     this.storedStyles = null
+
+    this.draggingCursor = new PseudoCursor(pm)
 
     for (let event in handlers) {
       let handler = handlers[event]
@@ -244,10 +257,64 @@ handlers.dragstart = (pm, e) => {
 
 handlers.dragend = pm => window.setTimeout(() => pm.input.dragginFrom = false, 50)
 
-handlers.dragover = handlers.dragenter = (_, e) => e.preventDefault()
+/**
+ * A cursor to indicate where text being dragged will be dropped into.
+ *
+ * Not sure where this class should go yet, here for context for now.
+ */
+class PseudoCursor {
+  constructor(pm) {
+    this.pm = pm
+    this.dom = pm.wrapper.appendChild(elt("div", {class: 'pseudo-cursor'}))
+  }
+
+  /**
+   * Update the visual location of the cursor.
+   *
+   * @param {Object} pos
+   */
+  updateLocation(pos) {
+    this.dom.style.left = ( pos.left - 1 ) + "px"
+    this.dom.style.top = pos.top + "px"
+    this.dom.style.height = pos.bottom - pos.top + "px"
+  }
+
+  hide() {
+    this.dom.style.display = "none"
+  }
+
+  show() {
+    this.dom.style.display = "block"
+  }
+}
+
+insertCSS(`
+
+.pseudo-cursor {
+  position: absolute;
+  width: 1px;
+  background: #666;
+}
+
+`)
+
+handlers.dragover = handlers.dragenter = (pm, e) => {
+  e.preventDefault()
+  pm.input.draggingCursor.show()
+  let cursorPos = pm.posAtCoords({left: e.clientX, top: e.clientY})
+  let coords = coordsAtPos(pm, cursorPos)
+  let rect = pm.wrapper.getBoundingClientRect()
+  coords.top -= rect.top
+  coords.right -= rect.left
+  coords.bottom -= rect.top
+  coords.left -= rect.left
+  pm.input.draggingCursor.updateLocation(coords)
+}
 
 handlers.drop = (pm, e) => {
   if (!e.dataTransfer) return
+
+  pm.input.draggingCursor.hide()
 
   let html, txt, doc
   if (html = e.dataTransfer.getData("text/html"))
