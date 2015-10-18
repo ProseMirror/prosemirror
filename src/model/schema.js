@@ -249,6 +249,9 @@ function buildAttrs(attrSpec, attrs, arg1, arg2) {
   return built
 }
 
+/**
+ * Document schema class.
+ */
 export class Schema {
   constructor(spec) {
     this.spec = spec

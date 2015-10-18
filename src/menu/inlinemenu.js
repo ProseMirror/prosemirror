@@ -73,6 +73,11 @@ class InlineMenu {
   }
 }
 
+/**
+ * Get the x and y coordinates at the top center of the current DOM selection.
+ *
+ * @return {Object}
+ */
 function topCenterOfSelection() {
   let rects = window.getSelection().getRangeAt(0).getClientRects()
   let {left, right, top} = rects[0]

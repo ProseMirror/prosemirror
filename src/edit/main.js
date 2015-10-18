@@ -18,7 +18,16 @@ import {convertTo} from "../serialize"
 import {execCommand} from "./commands"
 import {RangeStore, MarkedRange} from "./range"
 
+/**
+ * ProseMirror editor class.
+ * @class
+ */
 export class ProseMirror {
+  /**
+   * @param {Object} opts        Instance options hash.
+   * @param {Object} opts.schema The document model schema for the editor instance.
+   * @param {Object} opts.doc    The document model for the instance. Optional.
+   */
   constructor(opts) {
     opts = this.options = parseOptions(opts)
     this.schema = opts.schema
@@ -46,6 +55,9 @@ export class ProseMirror {
     initOptions(this)
   }
 
+  /**
+   * @return {Range} The instance of the editor's selection range.
+   */
   get selection() {
     this.ensureOperation()
     return this.sel.range
@@ -60,6 +72,9 @@ export class ProseMirror {
     return toText(this.selectedDoc)
   }
 
+  /**
+   * Apply a transform on the editor.
+   */
   apply(transform, options = nullOptions) {
     if (transform.doc == this.doc) return false
     if (transform.docs[0] != this.doc && findDiffStart(transform.docs[0], this.doc))
@@ -70,6 +85,9 @@ export class ProseMirror {
     return transform
   }
 
+  /**
+   * @return {Transform} A new transform object.
+   */
   get tr() { return new Transform(this.doc) }
 
   setContent(value, format) {
