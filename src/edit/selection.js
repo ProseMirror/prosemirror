@@ -229,6 +229,13 @@ function leafAt(node, offset) {
   }
 }
 
+/**
+ * Get a DOM element at a given position in the document.
+ *
+ * @param {Node} parent The parent DOM node.
+ * @param {Pos} pos     The position in the document.
+ * @return {Object}     The DOM node and character offset inside the node.
+ */
 function DOMFromPos(parent, pos) {
   let node = resolvePath(parent, pos.path)
   let found = findByOffset(node, pos.offset), inner
@@ -244,6 +251,13 @@ export function hasFocus(pm) {
   return sel.rangeCount && contains(pm.content, sel.anchorNode)
 }
 
+/**
+ * Given an x,y position on the editor, get the position in the document.
+ *
+ * @param  {ProseMirror} pm     Editor instance.
+ * @param  {Object}      coords The x, y coordinates.
+ * @return {Pos}
+ */
 export function posAtCoords(pm, coords) {
   let element = document.elementFromPoint(coords.left, coords.top + 1)
   if (!contains(pm.content, element)) return Pos.start(pm.doc)
@@ -260,6 +274,14 @@ export function posAtCoords(pm, coords) {
   return inline ? pos : moveInline(pm.doc, pos, pos)
 }
 
+/**
+ * Given a position in the document model, get a bounding box of the character at
+ * that position, relative to the window.
+ *
+ * @param  {ProseMirror} pm The editor instance.
+ * @param  {Pos}         pos
+ * @return {Object} The bounding box.
+ */
 export function coordsAtPos(pm, pos) {
   let {node, offset} = DOMFromPos(pm.content, pos)
   let rect
