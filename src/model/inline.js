@@ -6,6 +6,9 @@ export function getSpan(doc, pos) {
   return spanAtOrBefore(doc.path(pos.path), pos.offset).node
 }
 
+/**
+ * Given a parent node and an offset, get the child node the offset falls inside.
+ */
 export function spanAtOrBefore(parent, offset) {
   for (let i = 0; i < parent.length; i++) {
     let child = parent.child(i)

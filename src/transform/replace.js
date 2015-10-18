@@ -162,10 +162,20 @@ function moveText(tr, doc, before, after) {
     tr.join(before.shorten(i, 1))
 }
 
+/**
+ * Delete content between two positions.
+ *
+ * @param  {Pos} from
+ * @param  {Pos} to
+ * @return this
+ */
 Transform.prototype.delete = function(from, to) {
   return this.replace(from, to)
 }
 
+/**
+ * Replace the content between two positions.
+ */
 Transform.prototype.replace = function(from, to, source, start, end) {
   let repl, depth, doc = this.doc, maxDepth = samePathDepth(from, to)
   if (source) {

@@ -81,6 +81,14 @@ function delBlockBackward(pm, tr, pos) {
   }
 }
 
+/**
+ * Get an offset moving backward from a current offset inside a node.
+ *
+ * @param  {Object} parent The parent node.
+ * @param  {int}    offset Offset to move from inside the node.
+ * @param  {string} by     Size to delete by. Either "char" or "word".
+ * @return {[type]}        [description]
+ */
 function moveBackward(parent, offset, by) {
   if (by == "char") return offset - 1
   if (by == "word") {
@@ -103,6 +111,16 @@ function moveBackward(parent, offset, by) {
   throw new Error("Unknown motion unit: " + by)
 }
 
+/**
+ * Deletes, in order of preference:
+ *  - the current selection, if a selection is active
+ *  - the block break if the cursor is at the beginning of a block,
+ *    and a previous adjacent block exists
+ *  - the preceding character
+ *
+ * @param  {ProseMirror} pm A ProseMirror editor instance.
+ * @param  {string}      by Size to delete by. Either "char" or "word".
+ */
 function delBackward(pm, by) {
   pm.scrollIntoView()
 

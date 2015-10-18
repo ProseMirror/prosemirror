@@ -92,6 +92,12 @@ function windowRect() {
           top: 0, bottom: window.innerHeight}
 }
 
+/**
+ * Selection range class.
+ *
+ * A range consists of a head (the active location of the cursor)
+ * and an anchor (the start location of the selection).
+ */
 export class Range {
   constructor(anchor, head) {
     this.anchor = anchor

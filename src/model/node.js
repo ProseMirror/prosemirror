@@ -2,6 +2,9 @@ import {sameStyles} from "./style"
 
 const emptyArray = []
 
+/**
+ * Document node class
+ */
 export class Node {
   constructor(type, attrs) {
     this.type = type
@@ -92,6 +95,9 @@ export class BlockNode extends Node {
     return text
   }
 
+  /**
+   * Get the child node at a given index.
+   */
   child(i) {
     if (i < 0 || i > this.length)
       throw new Error("Index " + i + " out of range in " + this)
@@ -105,6 +111,12 @@ export class BlockNode extends Node {
 
   get children() { return this.content }
 
+  /**
+   * Get a child node given a path.
+   *
+   * @param  {array} path
+   * @return {Node}
+   */
   path(path) {
     for (var i = 0, node = this; i < path.length; node = node.content[path[i]], i++) {}
     return node
