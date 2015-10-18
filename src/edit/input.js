@@ -1,6 +1,7 @@
 import {Pos, spanStylesAt} from "../model"
 
 import {fromHTML} from "../parse/dom"
+import {elt} from "../dom"
 import {toHTML} from "../serialize/dom"
 import {toText} from "../serialize/text"
 import {knownSource, convertFrom} from "../parse"
@@ -9,7 +10,10 @@ import {isModifierKey, lookupKey, keyName} from "./keys"
 import {browser, addClass, rmClass} from "../dom"
 import {execCommand} from "./commands"
 import {applyDOMChange, textContext, textInContext} from "./domchange"
-import {Range} from "./selection"
+import {Range, coordsAtPos} from "./selection"
+
+import insertCSS from "insert-css"
+
 
 let stopSeq = null
 const handlers = {}
@@ -244,10 +248,66 @@ handlers.dragstart = (pm, e) => {
 
 handlers.dragend = pm => window.setTimeout(() => pm.input.dragginFrom = false, 50)
 
-handlers.dragover = handlers.dragenter = (_, e) => e.preventDefault()
+/**
+ * A cursor to indicate where text being dragged will be dropped into.
+ *
+ * Not sure where this class should go yet, here for context for now.
+ */
+class PseudoCursor {
+  constructor(pm) {
+    this.pm = pm
+    this.dom = pm.wrapper.appendChild(elt("div", {class: 'pseudo-cursor'}))
+  }
+
+  /**
+   * Update the visual location of the cursor.
+   *
+   * @param {Object} pos
+   */
+  updateLocation(pos) {
+    this.dom.style.left = pos.left + "px"
+    this.dom.style.top = pos.top + "px"
+    this.dom.style.height = pos.bottom - pos.top + "px"
+  }
+
+  remove() {
+    this.dom.parentNode.removeChild(this.dom)
+  }
+}
+
+insertCSS(`
+
+.pseudo-cursor {
+  position: absolute;
+  width: 2px;
+  background: #666;
+}
+
+`)
+
+// This should be debounced.
+handlers.dragover = handlers.dragenter = (pm, e) => {
+  e.preventDefault()
+  let cursorPos = pm.posAtCoords({left: e.clientX, top: e.clientY})
+  let coords = coordsAtPos(pm, cursorPos)
+  if ( ! pm.draggingCursor ) {
+    pm.draggingCursor = new PseudoCursor(pm)
+  }
+  let rect = pm.wrapper.getBoundingClientRect()
+  coords.top -= rect.top
+  coords.right -= rect.left
+  coords.bottom -= rect.top
+  coords.left -= rect.left
+  pm.draggingCursor.updatePos(coords)
+}
 
 handlers.drop = (pm, e) => {
   if (!e.dataTransfer) return
+
+  if (pm.draggingCursor) {
+    pm.draggingCursor.remove()
+    delete pm.draggingCursor
+  }
 
   let html, txt, doc
   if (html = e.dataTransfer.getData("text/html"))
