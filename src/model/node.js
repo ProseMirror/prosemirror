@@ -206,7 +206,7 @@ export class InlineNode extends Node {
 
   toJSON() {
     let obj = super.toJSON()
-    if (this.styles.length) obj.styles = this.styles
+    if (this.styles.length) obj.styles = this.styles.map(s => s.toJSON())
     return obj
   }
 

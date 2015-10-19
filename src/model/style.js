@@ -6,7 +6,7 @@ export class StyleMarker {
 
   toJSON() {
     if (this.type.instance) return this.type.name
-    let obj = {_name: this.type.name}
+    let obj = {_: this.type.name}
     for (let attr in this.attrs) obj[attr] = this.attrs[attr]
   }
 

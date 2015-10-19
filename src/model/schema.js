@@ -294,7 +294,7 @@ export class Schema {
 
   styleFromJSON(json) {
     if (typeof json == "string") return this.style(json)
-    return this.style(json._name, json)
+    return this.style(json._, json)
   }
 
   nodeType(name) {
