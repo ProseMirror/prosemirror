@@ -242,7 +242,7 @@ for (let i = 1; i <= 6; i++)
 function getBlockType(block) {
   for (let i = 0; i < blockTypes.length; i++)
     if (blockTypes[i].type == block.type.name &&
-        (block.type.attrs.level == null || block.type.attrs.level == blockTypes[i].attrs.level))
+        (block.attrs.level == null || block.attrs.level == blockTypes[i].attrs.level))
       return blockTypes[i]
 }
 
