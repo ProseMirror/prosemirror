@@ -15,6 +15,12 @@ defineStep("addStyle", {
   },
   invert(step, _oldDoc, map) {
     return new Step("removeStyle", step.from, map.map(step.to).pos, null, step.param)
+  },
+  paramToJSON(param) {
+    return param.toJSON()
+  },
+  paramFromJSON(schema, json) {
+    return schema.styleFromJSON(json)
   }
 })
 
@@ -60,6 +66,12 @@ defineStep("removeStyle", {
   },
   invert(step, _oldDoc, map) {
     return new Step("addStyle", step.from, map.map(step.to).pos, null, step.param)
+  },
+  paramToJSON(param) {
+    return param.toJSON()
+  },
+  paramFromJSON(schema, json) {
+    return schema.styleFromJSON(json)
   }
 })
 
