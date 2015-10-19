@@ -205,7 +205,9 @@ export class SchemaSpec {
   addAttribute(filter, attrName, attrInfo) {
     let copy = copyObj(this.nodes)
     for (let name in copy) {
-      if (typeof filter == "string" ? filter == name : filter(name, copy[name])) {
+      if (typeof filter == "string" ? filter == name :
+          typeof filter == "function" ? filter(name, copy[name]) :
+          filter ? filter == copy[name] : true) {
         let info = copy[name] = copyObj(copy[name])
         if (!info.attributes) info.attributes = copyObj(info.type.attributes)
         info.attributes[attrName] = attrInfo
