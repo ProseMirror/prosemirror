@@ -51,11 +51,7 @@ thing in a module the exported value or default export).
 
 ## Run the demo
 
-Install [Node manually](http://nodejs.org), or with [Homebrew](http://brew.sh/):
-
-```bash
-brew install node
-```
+Install [Node.js](http://nodejs.org).
 
 Install node dependencies
 
