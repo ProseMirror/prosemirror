@@ -1,7 +1,7 @@
 import {Pos, spanAtOrBefore} from "../model"
 import {joinPoint} from "../transform"
 
-import {charCategory} from "./char"
+import {charCategory, isExtendingChar} from "./char"
 
 const commands = Object.create(null)
 
@@ -90,14 +90,24 @@ function delBlockBackward(pm, tr, pos) {
  * @return {[type]}        [description]
  */
 function moveBackward(parent, offset, by) {
-  if (by == "char") return offset - 1
-  if (by == "word") {
-    let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
-    let cat = null, counted = 0
-    for (; nodeOffset >= 0; nodeOffset--, innerOffset = null) {
-      let child = parent.child(nodeOffset), size = child.offset
-      if (!child.isText) return cat ? offset : offset - 1
+  let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
+  let cat = null, counted = 0
+  for (; nodeOffset >= 0; nodeOffset--, innerOffset = null) {
+    let child = parent.child(nodeOffset), size = child.offset
+    if (!child.isText) return cat ? offset : offset - 1
 
+    if (by == "char") {
+      for (let i = innerOffset == null ? size : innerOffset; i > 0; i--) {
+        if (!isExtendingChar(child.text.charAt(i - 1))) {
+          return offset - 1
+        }
+        offset--
+      }
+    }
+    if (by == "word") {
+      // Work from the current position backwards through text of a singular
+      // character category (e.g. "cat" of "#!*") until reaching a character in a
+      // different category (i.e. the end of the word).
       for (let i = innerOffset == null ? size : innerOffset; i > 0; i--) {
         let nextCharCat = charCategory(child.text.charAt(i - 1))
         if (cat == null || counted == 1 && cat == "space") cat = nextCharCat
@@ -106,9 +116,11 @@ function moveBackward(parent, offset, by) {
         counted++
       }
     }
-    return offset
   }
-  throw new Error("Unknown motion unit: " + by)
+  if (by !== "char" && by !== "word") {
+    throw new Error("Unknown motion unit: " + by)
+  }
+  return offset
 }
 
 /**
@@ -167,14 +179,21 @@ function delBlockForward(pm, tr, pos) {
 }
 
 function moveForward(parent, offset, by) {
-  if (by == "char") return offset + 1
-  if (by == "word") {
-    let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
-    let cat = null, counted = 0
-    for (; nodeOffset < parent.length; nodeOffset++, innerOffset = 0) {
-      let child = parent.child(nodeOffset), size = child.offset
-      if (!child.isText) return cat ? offset : offset + 1
+  let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
+  let cat = null, counted = 0
+  for (; nodeOffset < parent.length; nodeOffset++, innerOffset = 0) {
+    let child = parent.child(nodeOffset), size = child.offset
+    if (!child.isText) return cat ? offset : offset + 1
 
+    if (by == "char") {
+      for (let i = innerOffset; i < size; i++) {
+        if (!isExtendingChar(child.text.charAt(i + 1))) {
+          return offset + 1
+        }
+        offset++
+      }
+    }
+    if (by == "word") {
       for (let i = innerOffset; i < size; i++) {
         let nextCharCat = charCategory(child.text.charAt(i))
         if (cat == null || counted == 1 && cat == "space") cat = nextCharCat
@@ -183,9 +202,11 @@ function moveForward(parent, offset, by) {
         counted++
       }
     }
-    return offset
   }
-  throw new Error("Unknown motion unit: " + by)
+  if (by !== "char" && by !== "word") {
+    throw new Error("Unknown motion unit: " + by)
+  }
+  return offset
 }
 
 function delForward(pm, by) {
