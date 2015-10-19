@@ -111,6 +111,12 @@ test("delBackward",
 test("delBackward",
      doc(blockquote(p("foo"), p("<a>bar"), p("baz"))),
      doc(blockquote(p("foo")), p("<a>bar"), blockquote(p("baz"))))
+test("delBackward",
+     doc(p("fç̀<a>o")), // The c has two combining characters, which must be deleted along with it
+     doc(p("fo")))
+test("delBackward",
+     doc(p("çç<a>ç")), // The combining characters in nearby characters must be left alone
+     doc(p("çç")))
 
 test("delForward",
      doc(p("f<a>o<b>o")),
@@ -133,6 +139,12 @@ test("delForward",
 test("delForward",
      doc(ul(li(p("a<a>")), li(p("b")))),
      doc(ul(li(p("ab")))))
+test("delForward",
+     doc(p("f<a>ç̀o")), // The c has two combining characters, which must be deleted along with it
+     doc(p("fo")))
+test("delForward",
+     doc(p("ç<a>çç")), // The combining characters in nearby characters must be left alone
+     doc(p("çç")))
 
 test("delWordBackward",
      doc(p("foo bar <a>baz")),
