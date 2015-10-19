@@ -117,6 +117,9 @@ test("delBackward",
 test("delBackward",
      doc(p("çç<a>ç")), // The combining characters in nearby characters must be left alone
      doc(p("çç")))
+test("delBackward",
+     doc(p("😅😆<a>😇😈")), // Must delete astral plane characters as one unit
+     doc(p("😅😇😈")))
 
 test("delForward",
      doc(p("f<a>o<b>o")),
@@ -145,6 +148,9 @@ test("delForward",
 test("delForward",
      doc(p("ç<a>çç")), // The combining characters in nearby characters must be left alone
      doc(p("çç")))
+test("delForward",
+     doc(p("😅😆<a>😇😈")), // Must delete astral plane characters as one unit
+     doc(p("😅😆😈")))
 
 test("delWordBackward",
      doc(p("foo bar <a>baz")),
