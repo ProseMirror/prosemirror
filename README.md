@@ -53,7 +53,7 @@ thing in a module the exported value or default export).
 
 Install [Node.js](http://nodejs.org).
 
-Install node dependencies
+Inside the project directory, install the project's node dependencies
 
 ```bash
 npm install
@@ -65,8 +65,4 @@ Build the demo, which will recompile files on change
 npm run demo
 ```
 
-Open the demo in your browser
-
-```bash
-open demo/index.html
-```
+Open `demo/index.html` in your browser
