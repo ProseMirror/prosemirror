@@ -16,6 +16,13 @@ import insertCSS from "insert-css"
 
 
 let stopSeq = null
+
+/**
+ * A collection of input events that occur within the editor, and callback functions
+ * to invoke when the event fires.
+ *
+ * @type {Object}
+ */
 const handlers = {}
 
 export class Input {
@@ -279,7 +286,7 @@ insertCSS(`
 
 .pseudo-cursor {
   position: absolute;
-  width: 2px;
+  width: 1px;
   background: #666;
 }
 
@@ -290,23 +297,22 @@ handlers.dragover = handlers.dragenter = (pm, e) => {
   e.preventDefault()
   let cursorPos = pm.posAtCoords({left: e.clientX, top: e.clientY})
   let coords = coordsAtPos(pm, cursorPos)
-  if ( ! pm.draggingCursor ) {
-    pm.draggingCursor = new PseudoCursor(pm)
-  }
+  if (!pm.input.draggingCursor)
+    pm.input.draggingCursor = new PseudoCursor(pm)
   let rect = pm.wrapper.getBoundingClientRect()
   coords.top -= rect.top
   coords.right -= rect.left
   coords.bottom -= rect.top
   coords.left -= rect.left
-  pm.draggingCursor.updatePos(coords)
+  pm.input.draggingCursor.updateLocation(coords)
 }
 
 handlers.drop = (pm, e) => {
   if (!e.dataTransfer) return
 
-  if (pm.draggingCursor) {
-    pm.draggingCursor.remove()
-    delete pm.draggingCursor
+  if (pm.input.draggingCursor) {
+    pm.input.draggingCursor.remove()
+    pm.input.draggingCursor = null
   }
 
   let html, txt, doc
