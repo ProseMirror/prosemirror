@@ -40,6 +40,8 @@ export class Input {
 
     this.storedStyles = null
 
+    this.draggingCursor = new PseudoCursor(pm)
+
     for (let event in handlers) {
       let handler = handlers[event]
       pm.content.addEventListener(event, e => handler(pm, e))
@@ -272,13 +274,17 @@ class PseudoCursor {
    * @param {Object} pos
    */
   updateLocation(pos) {
-    this.dom.style.left = pos.left + "px"
+    this.dom.style.left = ( pos.left - 1 ) + "px"
     this.dom.style.top = pos.top + "px"
     this.dom.style.height = pos.bottom - pos.top + "px"
   }
 
-  remove() {
-    this.dom.parentNode.removeChild(this.dom)
+  hide() {
+    this.dom.style.display = "none"
+  }
+
+  show() {
+    this.dom.style.display = "block"
   }
 }
 
@@ -292,13 +298,11 @@ insertCSS(`
 
 `)
 
-// This should be debounced.
 handlers.dragover = handlers.dragenter = (pm, e) => {
   e.preventDefault()
+  pm.input.draggingCursor.show()
   let cursorPos = pm.posAtCoords({left: e.clientX, top: e.clientY})
   let coords = coordsAtPos(pm, cursorPos)
-  if (!pm.input.draggingCursor)
-    pm.input.draggingCursor = new PseudoCursor(pm)
   let rect = pm.wrapper.getBoundingClientRect()
   coords.top -= rect.top
   coords.right -= rect.left
@@ -310,10 +314,7 @@ handlers.dragover = handlers.dragenter = (pm, e) => {
 handlers.drop = (pm, e) => {
   if (!e.dataTransfer) return
 
-  if (pm.input.draggingCursor) {
-    pm.input.draggingCursor.remove()
-    pm.input.draggingCursor = null
-  }
+  pm.input.draggingCursor.hide()
 
   let html, txt, doc
   if (html = e.dataTransfer.getData("text/html"))
