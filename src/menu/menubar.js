@@ -2,8 +2,7 @@ import {defineOption} from "../edit"
 import {elt} from "../dom"
 import {Debounced} from "../util/debounce"
 
-import {Menu} from "./menu"
-import {getItems, separatorItem} from "./items"
+import {Menu, commandGroups} from "./menu"
 
 import insertCSS from "insert-css"
 import "./icons"
@@ -64,8 +63,7 @@ class MenuBar {
     pm.on("change", this.updateFunc)
     pm.on("activeStyleChange", this.updateFunc)
 
-    this.menuItems = config && config.items ||
-      [...getItems("inline"), separatorItem, ...getItems("block"), ...getItems("history")]
+    this.menuItems = config && config.items || commandGroups(pm, "inline", "block", "history")
     this.update()
 
     this.floating = false

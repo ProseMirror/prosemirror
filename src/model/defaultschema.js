@@ -34,8 +34,8 @@ export class Paragraph extends Textblock {}
 export class Image extends Inline {}
 Image.attributes = {
   src: new Attribute,
-  title: new Attribute(""),
-  alt: new Attribute("")
+  alt: new Attribute(""),
+  title: new Attribute("")
 }
 
 export class HardBreak extends Inline {}

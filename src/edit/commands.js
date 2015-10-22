@@ -1,5 +1,5 @@
 import {HardBreak, BulletList, OrderedList, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
-        StrongStyle, EmStyle, CodeStyle, LinkStyle,
+        StrongStyle, EmStyle, CodeStyle, LinkStyle, Image,
         Pos, spanAtOrBefore, containsStyle, rangeHasStyle, alreadyHasBlockType} from "../model"
 import {joinPoint, canLift} from "../transform"
 
@@ -21,18 +21,16 @@ export class Command {
     this.label = options.label || name
     this._exec = options.exec
     this.params = options.params || []
-    this._select = options.select || (() => true)
-    this.active = options.select || (() => false)
+    this.select = options.select || (() => true)
+    this.active = options.active || (() => false)
+    this.menuGroup = options.menuGroup
     this.display = options.display
   }
 
-  select(pm) {
-    if (this.params.length && !pm.mod.readParams) return false
-    return this.select(pm)
-  }
-
-  exec(pm) {
+  exec(pm, params) {
     if (!this.params.length) return this._exec(pm)
+    if (params) return this._exec(pm, ...params)
+    // FIXME make readParams a thing or remove reference to it
     pm.mod.readParams.read(this, (...params) => this._exec(pm, ...params))
   }
 }
@@ -47,13 +45,13 @@ export function execCommand(pm, name) {
 export function initCommands(schema) {
   let result = Object.create(null)
   for (let cmd in globalCommands) result[cmd] = globalCommands[cmd]
-  for (let name in schema.nodes) {
-    let node = schema.nodes[name], cmds = node.commands
-    if (cmds) cmds.forEach(ctor => { let cmd = ctor(node); result[cmd.name] = cmd })
-  }
   for (let name in schema.styles) {
     let style = schema.styles[name], cmds = style.commands
     if (cmds) cmds.forEach(ctor => { let cmd = ctor(style); result[cmd.name] = cmd })
+  }
+  for (let name in schema.nodes) {
+    let node = schema.nodes[name], cmds = node.commands
+    if (cmds) cmds.forEach(ctor => { let cmd = ctor(node); result[cmd.name] = cmd })
   }
   return result
 }
@@ -100,7 +98,8 @@ function generateStyleCommands(type, name, labelName) {
   attachCommand(type, name, type => ({
     label: "Toggle " + labelName,
     exec(pm) { pm.setStyle(type.create(), null) },
-    active(pm) { return inlineActive(pm, type) }
+    active(pm) { return inlineActive(pm, type) },
+    menuGroup: "inline"
   }))
 }
 
@@ -117,9 +116,25 @@ attachCommand(LinkStyle, "link", type => ({
   label: "Add link",
   exec(pm, href, title) { pm.setStyle(type.create({href, title}), true) },
   params: [
-    {name: "Target", type: "text", default: null},
+    {name: "Target", type: "text"},
     {name: "Title", type: "text", default: ""}
-  ]
+  ],
+  menuGroup: "inline"
+}))
+
+attachCommand(Image, "insertImage", type => ({
+  label: "Insert image",
+  exec(pm, src, alt, title) {
+    let sel = pm.selection, tr = pm.tr
+    tr.delete(sel.from, sel.to)
+    return pm.apply(tr.insertInline(sel.from, type.create({src, title, alt})))
+  },
+  params: [
+    {name: "Image URL", type: "text"},
+    {name: "Description / alternative text", type: "text", default: ""},
+    {name: "Title", type: "text", default: ""}
+  ],
+  menuGroup: "inline"
 }))
 
 function blockBefore(pos) {
@@ -315,18 +330,6 @@ defineCommand("delWordForward", {
   exec(pm) { return delForward(pm, "word") }
 })
 
-defineCommand("undo", {
-  label: "Undo last change",
-  exec(pm) { pm.scrollIntoView(); return pm.history.undo() },
-  select(pm) { return pm.history.canUndo() }
-})
-
-defineCommand("redo", {
-  label: "Redo last undone change",
-  exec(pm) { pm.scrollIntoView(); return pm.history.redo() },
-  select(pm) { return pm.history.canRedo() }
-})
-
 defineCommand("join", {
   label: "Join with above block",
   exec(pm) {
@@ -334,7 +337,8 @@ defineCommand("join", {
     if (!point) return false
     return pm.apply(pm.tr.join(point))
   },
-  select(pm) { return joinPoint(pm.doc, pm.selection.head) }
+  select(pm) { return joinPoint(pm.doc, pm.selection.head) },
+  menuGroup: "block"
 })
 
 defineCommand("lift", {
@@ -348,7 +352,8 @@ defineCommand("lift", {
   select(pm) {
     let sel = pm.selection
     return canLift(pm.doc, sel.from, sel.to)
-  }
+  },
+  menuGroup: "block"
 })
 
 function wrapCommand(type, name, labelName) {
@@ -358,7 +363,8 @@ function wrapCommand(type, name, labelName) {
       let sel = pm.selection
       pm.scrollIntoView()
       return pm.apply(pm.tr.wrap(sel.from, sel.to, type.create()))
-    }
+    },
+    menuGroup: "block"
   }))
 }
 
@@ -435,3 +441,96 @@ attachCommand(HorizontalRule, "insertHorizontalRule", type => ({
   label: "Insert horizontal rule",
   exec(pm) { return insertOpaqueBlock(pm, type) }
 }))
+
+defineCommand("undo", {
+  label: "Undo last change",
+  exec(pm) { pm.scrollIntoView(); return pm.history.undo() },
+  select(pm) { return pm.history.canUndo() },
+  menuGroup: "history"
+})
+
+defineCommand("redo", {
+  label: "Redo last undone change",
+  exec(pm) { pm.scrollIntoView(); return pm.history.redo() },
+  select(pm) { return pm.history.canRedo() },
+  menuGroup: "history"
+})
+
+// FIXME does this belong here?
+
+defineCommand("blockType", {
+  label: "Change block type",
+  exec(pm) {
+    // FIXME
+  },
+  params: [
+    {name: "Type", type: "select", options: listBlockTypes}
+  ],
+  display: "select",
+//  menuGroup: "block"
+})
+
+function listBlockTypes(pm) {
+  let found = []
+  // FIXME
+  return found
+}
+
+/* FIXME old code to be rewritten
+
+const blockTypes = [
+  {name: "Normal", type: "paragraph"},
+  {name: "Code", type: "code_block"}
+]
+for (let i = 1; i <= 6; i++)
+  blockTypes.push({name: "Head " + i, type: "heading", attrs: {level: i}})
+function getBlockType(block) {
+  for (let i = 0; i < blockTypes.length; i++)
+    if (blockTypes[i].type == block.type.name &&
+        (block.attrs.level == null || block.attrs.level == blockTypes[i].attrs.level))
+      return blockTypes[i]
+}
+
+class BlockTypeItem extends MenuItem {
+  render(menu) {
+    let sel = menu.pm.selection, type
+    if (Pos.samePath(sel.head.path, sel.anchor.path)) type = getBlockType(menu.pm.doc.path(sel.head.path))
+    let dom = elt("div", {class: "ProseMirror-blocktype", title: "Paragraph type"},
+                  type ? type.name : "Type...")
+    dom.addEventListener("mousedown", e => {
+      e.preventDefault(); e.stopPropagation()
+      showBlockTypeMenu(menu.pm, dom)
+    })
+    return dom
+  }
+}
+
+function showBlockTypeMenu(pm, dom) {
+  let menu = elt("div", {class: "ProseMirror-blocktype-menu"},
+                 blockTypes.map(t => {
+                   let dom = elt("div", null, t.name)
+                   dom.addEventListener("mousedown", e => {
+                     e.preventDefault()
+                     let sel = pm.selection
+                     pm.apply(pm.tr.setBlockType(sel.from, sel.to, pm.schema.node(t.type, t.attrs)))
+                     finish()
+                   })
+                   return dom
+                 }))
+  let pos = dom.getBoundingClientRect(), box = pm.wrapper.getBoundingClientRect()
+  menu.style.left = (pos.left - box.left - 2) + "px"
+  menu.style.top = (pos.top - box.top - 2) + "px"
+
+  let done = false
+  function finish() {
+    if (done) return
+    done = true
+    document.body.removeEventListener("mousedown", finish)
+    document.body.removeEventListener("keydown", finish)
+    pm.wrapper.removeChild(menu)
+  }
+  document.body.addEventListener("mousedown", finish)
+  document.body.addEventListener("keydown", finish)
+  pm.wrapper.appendChild(menu)
+}
+*/

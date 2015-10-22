@@ -4,8 +4,7 @@ import {elt} from "../dom"
 import {Debounced} from "../util/debounce"
 
 import {Tooltip} from "./tooltip"
-import {getItems, forceFontLoad} from "./items"
-import {Menu, TooltipDisplay} from "./menu"
+import {Menu, TooltipDisplay, commandGroups, forceFontLoad} from "./menu"
 
 import insertCSS from "insert-css"
 
@@ -19,7 +18,7 @@ defineOption("inlineMenu", false, function(pm, value) {
 class InlineMenu {
   constructor(pm, config) {
     this.pm = pm
-    this.items = (config && config.items) || getItems("inline")
+    this.items = (config && config.items) || commandGroups(pm, "inline")
     this.showLinks = config ? config.showLinks !== false : true
     this.debounced = new Debounced(pm, 100, () => this.update())
 
