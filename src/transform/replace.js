@@ -222,6 +222,13 @@ Transform.prototype.replace = function(from, to, source, start, end) {
   return this
 }
 
+/**
+ * Insert a node at a given position.
+ *
+ * @param  {Pos}   pos
+ * @param  {mixed} nodes
+ * @return {this}
+ */
 Transform.prototype.insert = function(pos, nodes) {
   if (!Array.isArray(nodes)) nodes = [nodes]
   this.step("replace", pos, pos, pos,

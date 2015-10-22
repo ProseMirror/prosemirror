@@ -1,5 +1,10 @@
 // From CodeMirror, should be factored into its own NPM module
 
+/**
+ * A map of KeyboardEvent keycodes to key names.
+ *
+ * @type {Array}
+ */
 export const names = {
   3: "Enter", 8: "Backspace", 9: "Tab", 13: "Enter", 16: "Shift", 17: "Ctrl", 18: "Alt",
   19: "Pause", 20: "CapsLock", 27: "Esc", 32: "Space", 33: "PageUp", 34: "PageDown", 35: "End",
@@ -18,6 +23,13 @@ for (let i = 65; i <= 90; i++) names[i] = String.fromCharCode(i)
 // Function keys
 for (let i = 1; i <= 12; i++) names[i + 111] = names[i + 63235] = "F" + i
 
+/**
+ * Given a keypress event, get the key name.
+ *
+ * @param  {KeyboardEvent} event   The keypress event.
+ * @param  {Boolean}       noShift
+ * @return {string}                The key name.
+ */
 export function keyName(event, noShift) {
   let base = names[event.keyCode], name = base
   if (name == null || event.altGraphKey) return false
@@ -52,6 +64,10 @@ function normalizeKeyName(fullName) {
   return name
 }
 
+/**
+ * A group of bindings of key names and editor commands,
+ * which override the default key press event behavior in the editor's DOM.
+ */
 export class Keymap {
   constructor(keys, options) {
     this.options = options || {}
@@ -91,6 +107,18 @@ export class Keymap {
   }
 }
 
+/**
+ * Lookup a key name in a KeyMap, and pass the mapped value to a handler.
+ *
+ * @param {string}   key     The key name.
+ * @param {Keymap}   map     The key map. If the keymap has an options.call method,
+ *                           that will be invoked to get the mapped value.
+ * @param {Function} handle  Callback
+ * @param {Object}   context
+ * @return {string} If the key name has a mapping and the callback is invoked ("handled"),
+ *                  if the key name needs to be combined in sequence with the next key ("multi"),
+ *                  if there is no mapping ("nothing").
+ */
 export function lookupKey(key, map, handle, context) {
   let found = map.options.call ? map.options.call(key, context) : map.bindings[key]
   if (found === false) return "nothing"
