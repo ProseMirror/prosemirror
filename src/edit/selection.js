@@ -242,7 +242,7 @@ function DOMFromPos(parent, pos) {
   if (!found) return {node: node, offset: 0}
   if (found.node.hasAttribute("pm-span-atom") || !(inner = leafAt(found.node, found.innerOffset)))
     return {node: found.parent, offset: found.offset + (found.innerOffset ? 1 : 0)}
-  else
+  else 
     return inner
 }
 
@@ -291,13 +291,21 @@ export function coordsAtPos(pm, pos) {
     range.setStart(node, offset ? offset - 1 : offset)
     rect = range.getBoundingClientRect()
   } else if (node.nodeType == 1 && node.firstChild) {
-    rect = node.childNodes[offset ? offset - 1 : offset].getBoundingClientRect()
-    // BR nodes are likely to return a useless empty rectangle. Try
-    // the node on the other side in that case.
-    if (rect.left == rect.right && offset && offset < node.childNodes.length) {
-      let otherRect = node.childNodes[offset].getBoundingClientRect()
-      if (otherRect.left != otherRect.right)
-        rect = {top: otherRect.top, bottom: otherRect.bottom, right: otherRect.left}
+    let childNode = node.childNodes[offset ? offset - 1 : offset]
+    if (childNode.nodeType === 1) {
+      rect = childNode.getBoundingClientRect()
+      // BR nodes are likely to return a useless empty rectangle. Try
+      // the node on the other side in that case.
+      if (rect.left == rect.right && offset && offset < node.childNodes.length) {
+        let otherRect = node.childNodes[offset].getBoundingClientRect()
+        if (otherRect.left != otherRect.right)
+          rect = {top: otherRect.top, bottom: otherRect.bottom, right: otherRect.left}
+      }
+    } else {
+      let range = document.createRange()
+      range.setEnd(childNode, 0)
+      range.setStart(childNode, 0)
+      rect = range.getBoundingClientRect()
     }
   } else {
     rect = node.getBoundingClientRect()

@@ -146,14 +146,14 @@ handlers.compositionstart = (pm, e) => {
 }
 
 handlers.compositionupdate = (pm, e) => {
-  let info = pm.input.composing
-  if (info && info.data != e.data) {
-    info.data = e.data
-    pm.input.updatingComposition = true
-    inputText(pm, info.range, info.data)
-    pm.input.updatingComposition = false
-    info.range = new Range(info.range.from, info.range.from.shift(info.data.length))
-  }
+  // let info = pm.input.composing
+  // if (info && info.data != e.data) {
+  //   info.data = e.data
+  //   pm.input.updatingComposition = true
+  //   inputText(pm, info.range, info.data)
+  //   pm.input.updatingComposition = false
+  //   info.range = new Range(info.range.from, info.range.from.shift(info.data.length))
+  // }
 }
 
 handlers.compositionend = (pm, e) => {
