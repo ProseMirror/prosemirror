@@ -25,6 +25,9 @@ export class Input {
     this.pm = pm
 
     this.keySeq = null
+
+    // When the user is creating a composed character,
+    // this is set to a Composing instance.
     this.composing = null
     this.shiftKey = this.updatingComposition = false
     this.skipInput = 0
@@ -150,6 +153,9 @@ handlers.keypress = (pm, e) => {
   e.preventDefault()
 }
 
+/**
+ * A class to track state while creating a composed character.
+ */
 class Composing {
   constructor(pm, data) {
     this.finished = false
