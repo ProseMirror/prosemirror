@@ -175,6 +175,15 @@ Transform.prototype.wrap = function(from, to, node) {
   return this
 }
 
+export function alreadyHasBlockType(doc, from, to, type, attrs) {
+  let found = false
+  if (!attrs) attrs = {}
+  blocksBetween(doc, from, to || from, node => {
+    if (!compareMarkup(node.type, type, node.attrs, attrs)) found = true
+  })
+  return found
+}
+
 Transform.prototype.setBlockType = function(from, to, wrapNode) {
   blocksBetween(this.doc, from, to || from, (node, path) => {
     path = path.slice()

@@ -48,13 +48,13 @@ test("unsetStrong",
      doc(p("f<a>oo"), p(strong("ba<b>r"))),
      doc(p("foo"), p("ba", strong("r"))))
 
-test("toggleStrong",
+test("strong",
      doc(p("f<a>o<b>o")),
      doc(p("f", strong("o"), "o")))
-test("toggleStrong",
+test("strong",
      doc(p(strong("f<a>o<b>o"))),
      doc(p(strong("f"), "o", strong("o"))))
-test("toggleStrong",
+test("strong",
      doc(p("f<a>oo ", strong("ba<b>r"))),
      doc(p("foo ba", strong("r"))))
 
@@ -64,10 +64,10 @@ test("setEm",
 test("unsetEm",
      doc(p(em("f<a>o<b>o"))),
      doc(p(em("f"), "o", em("o"))))
-test("toggleEm",
+test("em",
      doc(p("f<a>o<b>o")),
      doc(p("f", em("o"), "o")))
-test("toggleEm",
+test("em",
      doc(p(em("f<a>o<b>o"))),
      doc(p(em("f"), "o", em("o"))))
      
@@ -77,10 +77,10 @@ test("setCode",
 test("unsetCode",
      doc(p(code("f<a>o<b>o"))),
      doc(p(code("f"), "o", code("o"))))
-test("toggleCode",
+test("code",
      doc(p("f<a>o<b>o")),
      doc(p("f", code("o"), "o")))
-test("toggleCode",
+test("code",
      doc(p(code("f<a>o<b>o"))),
      doc(p(code("f"), "o", code("o"))))
 
@@ -235,13 +235,13 @@ test("wrapOrderedList",
 test("wrapOrderedList",
      doc(p("foo"), p("ba<a>r"), p("ba<b>z")),
      doc(p("foo"), ol(li(p("bar")), li(p("baz")))))
-test("wrapBlockquote",
+test("wrapBlockQuote",
      doc(p("fo<a>o")),
      doc(blockquote(p("foo"))))
-test("wrapBlockquote",
+test("wrapBlockQuote",
      doc(p("fo<a>o"), p("bar"), p("ba<b>z"), p("quux")),
      doc(blockquote(p("foo"), p("bar"), p("baz")), p("quux")))
-test("wrapBlockquote",
+test("wrapBlockQuote",
      doc(blockquote(p("fo<a>o"))),
      doc(blockquote(blockquote(p("foo")))))
 
@@ -288,15 +288,15 @@ test("makeCodeBlock",
      doc(p("fo<a>o", em("bar"))),
      doc(pre("foobar")))
 
-test("insertRule",
+test("insertHorizontalRule",
      doc(p("<a>foo")),
      doc(hr, p("foo")))
-test("insertRule",
+test("insertHorizontalRule",
      doc(p("foo"), p("<a>bar")),
      doc(p("foo"), hr, p("bar")))
-test("insertRule",
+test("insertHorizontalRule",
      doc(p("foo"), p("b<a>ar")),
      doc(p("foo"), p("b"), hr, p("ar")))
-test("insertRule",
+test("insertHorizontalRule",
      doc(p("fo<a>o"), p("b<b>ar")),
      doc(p("fo"), hr, p("ar")))

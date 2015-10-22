@@ -1,6 +1,9 @@
 import {Keymap} from "./keys"
 import {browser} from "../dom"
 
+// FIXME add a separate base keymap that captures keys with dangerous
+// defaults
+
 const mod = browser.mac ? "Cmd-" : "Ctrl-"
 
 export const defaultKeymap = new Keymap({
@@ -9,9 +12,9 @@ export const defaultKeymap = new Keymap({
   ["Shift-Enter"]: "insertHardBreak",
   "Backspace": "delBackward",
   "Delete": "delForward",
-  [mod + "B"]: "toggleStrong",
-  [mod + "I"]: "toggleEm",
-  [mod + "`"]: "toggleCode",
+  [mod + "B"]: "strong",
+  [mod + "I"]: "em",
+  [mod + "`"]: "code",
   [mod + "Backspace"]: "delWordBackward",
   [mod + "Delete"]: "delWordForward",
   [mod + "Z"]: "undo",
@@ -21,7 +24,7 @@ export const defaultKeymap = new Keymap({
   "Alt-Left": "lift",
   "Alt-Right '*'": "wrapBulletList",
   "Alt-Right '1'": "wrapOrderedList",
-  "Alt-Right '>'": "wrapBlockquote",
+  "Alt-Right '>'": "wrapBlockQuote",
   [mod + "H '1'"]: "makeH1",
   [mod + "H '2'"]: "makeH2",
   [mod + "H '3'"]: "makeH3",
@@ -30,7 +33,7 @@ export const defaultKeymap = new Keymap({
   [mod + "H '6'"]: "makeH6",
   [mod + "P"]: "makeParagraph",
   [mod + "\\"]: "makeCodeBlock",
-  [mod + "Space"]: "insertRule"
+  [mod + "Space"]: "insertHorizontalRule"
 })
 
 function add(key, val) { defaultKeymap.addBinding(key, val) }

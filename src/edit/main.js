@@ -15,7 +15,7 @@ import {toText} from "../serialize/text"
 import "../parse/text"
 import {convertFrom} from "../parse"
 import {convertTo} from "../serialize"
-import {execCommand} from "./commands"
+import {execCommand, initCommands} from "./commands"
 import {RangeStore, MarkedRange} from "./range"
 
 /**
@@ -51,6 +51,8 @@ export class ProseMirror {
 
     this.sel = new Selection(this)
     this.input = new Input(this)
+
+    this.commands = initCommands(this.schema)
 
     initOptions(this)
   }
@@ -210,6 +212,7 @@ export class ProseMirror {
     this.ranges.removeRange(range)
   }
 
+  // FIXME stop requiring marker instance?
   setStyle(st, to) {
     let sel = this.selection
     if (sel.empty) {

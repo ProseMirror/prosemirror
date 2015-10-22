@@ -117,10 +117,11 @@ export class Attribute {
 // Styles
 
 export class StyleType {
-  constructor(name, attrs, rank) {
+  constructor(name, attrs, rank, schema) {
     this.name = name
     this.attrs = attrs
     this.rank = rank
+    this.schema = schema
     let defaults = getDefaultAttrs(this.attrs)
     this.instance = defaults && new StyleMarker(this, defaults)
   }
@@ -141,13 +142,13 @@ export class StyleType {
     return ranks
   }
 
-  static compile(styles) {
+  static compile(styles, schema) {
     let order = this.getOrder(styles)
     let result = Object.create(null)
     for (let name in styles) {
       let info = styles[name]
       let attrs = info.attributes || info.type.attributes
-      result[name] = new info.type(name, attrs, order[name])
+      result[name] = new info.type(name, attrs, order[name], schema)
     }
     return result
   }
@@ -190,16 +191,12 @@ function overlayObj(obj, overlay) {
 
 export class SchemaSpec {
   constructor(nodes, styles) {
-    this.nodes = copyObj(nodes, ensureWrapped)
-    this.styles = copyObj(styles, ensureWrapped)
+    this.nodes = nodes ? copyObj(nodes, ensureWrapped) : Object.create(null)
+    this.styles = styles ? copyObj(styles, ensureWrapped) : Object.create(null)
   }
 
   updateNodes(nodes) {
     return new SchemaSpec(overlayObj(this.nodes, nodes), this.styles)
-  }
-
-  updateStyles(styles) {
-    return new SchemaSpec(this.nodes, overlayObj(this.styles, styles))
   }
 
   addAttribute(filter, attrName, attrInfo) {
@@ -213,6 +210,11 @@ export class SchemaSpec {
         info.attributes[attrName] = attrInfo
       }
     }
+    return new SchemaSpec(copy, this.styles)
+  }
+
+  updateStyles(styles) {
+    return new SchemaSpec(this.nodes, overlayObj(this.styles, styles))
   }
 }
 
@@ -256,7 +258,7 @@ export class Schema {
   constructor(spec) {
     this.spec = spec
     this.nodes = NodeType.compile(spec.nodes, this)
-    this.styles = StyleType.compile(spec.styles)
+    this.styles = StyleType.compile(spec.styles, this)
     this.cached = Object.create(null)
 
     this.node = this.node.bind(this)
