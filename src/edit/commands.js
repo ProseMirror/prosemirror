@@ -1,7 +1,7 @@
 import {HardBreak, BulletList, OrderedList, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
         StrongStyle, EmStyle, CodeStyle, LinkStyle,
         Pos, spanAtOrBefore, containsStyle, rangeHasStyle, alreadyHasBlockType} from "../model"
-import {joinPoint} from "../transform"
+import {joinPoint, canLift} from "../transform"
 
 import {charCategory, isExtendingChar} from "./char"
 
@@ -21,14 +21,14 @@ export class Command {
     this.label = options.label || name
     this._exec = options.exec
     this.params = options.params || []
-    this._select = options.select || () => true
-    this.active = options.select || () => false
+    this._select = options.select || (() => true)
+    this.active = options.select || (() => false)
     this.display = options.display
   }
 
   select(pm) {
     if (this.params.length && !pm.mod.readParams) return false
-    return this_select(pm)
+    return this.select(pm)
   }
 
   exec(pm) {

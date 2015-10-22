@@ -1,4 +1,4 @@
-import {Pos} from "../model"
+import {Pos, compareMarkup} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
