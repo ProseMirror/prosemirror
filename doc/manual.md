@@ -30,6 +30,7 @@ To build a script, make sure you've installed the ProseMirror package:
 
     npm install git+https://github.com/ProseMirror/prosemirror.git
     cd node_modules/prosemirror
+    npm install
     npm run dist
 
 (FIXME: this will become simply `npm install prosemirror` when an NPM
