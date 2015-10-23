@@ -6,6 +6,7 @@ import {joinPoint, canLift} from "../transform"
 import {charCategory, isExtendingChar} from "./char"
 
 const globalCommands = Object.create(null)
+const paramHandlers = Object.create(null)
 
 export function defineCommand(name, cmd) {
   globalCommands[name] = cmd instanceof Command ? cmd : new Command(name, cmd)
@@ -13,6 +14,15 @@ export function defineCommand(name, cmd) {
 
 export function attachCommand(typeCtor, name, create) {
   typeCtor.register("commands", type => new Command(name, create(type)))
+}
+
+export function defineParamHandler(name, handler) {
+  paramHandlers[name] = handler
+}
+
+function getParamHandler(pm) {
+  let option = pm.options.commandParamHandler
+  if (option && paramHandlers[option]) return paramHandlers[option]
 }
 
 export class Command {
@@ -30,8 +40,11 @@ export class Command {
   exec(pm, params) {
     if (!this.params.length) return this._exec(pm)
     if (params) return this._exec(pm, ...params)
-    // FIXME make readParams a thing or remove reference to it
-    pm.mod.readParams.read(this, (...params) => this._exec(pm, ...params))
+    let handler = getParamHandler(pm)
+    if (handler) handler(pm, this, params => {
+      if (params) this._exec(pm, ...params)
+    })
+    else return false
   }
 }
 

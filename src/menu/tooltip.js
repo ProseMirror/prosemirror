@@ -72,7 +72,7 @@ export class Tooltip {
         this.pointer.style.top = tipTop + "px"
         this.dom.style.top = (tipTop + this.pointerHeight) + "px"
       }
-    } else { // left/right
+    } else if (this.dir == "left" || this.dir == "right") {
       this.dom.style.top = (top - around.top - size.height / 2) + "px"
       this.pointer.style.top = (top - this.pointerHeight / 2 - around.top) + "px"
       if (this.dir == "left") {
@@ -84,6 +84,11 @@ export class Tooltip {
         this.dom.style.left = (pointerLeft + this.pointerWidth) + "px"
         this.pointer.style.left = pointerLeft + "px"
       }
+    } else if (this.dir == "center") {
+      let top = Math.max(around.top, 0), bottom = Math.min(around.bottom, window.innerHeight)
+      let fromTop = (bottom - top - size.height) / 2
+      this.dom.style.left = (around.width - size.width) / 2 + "px"
+      this.dom.style.top = (top - around.top + fromTop) + "px"
     }
 
     getComputedStyle(this.dom).opacity

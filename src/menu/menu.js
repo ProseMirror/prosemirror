@@ -1,5 +1,7 @@
+import {Tooltip} from "./tooltip"
 import {elt} from "../dom"
 import insertCSS from "insert-css"
+import {defineParamHandler} from "../edit"
 
 export class Menu {
   constructor(pm, display) {
@@ -174,49 +176,57 @@ function gatherParams(command, form, pm) {
     let val = form.elements["field_" + i].value
     if (val) return val
     if (param.default == null) bad = true
-    return param.default.call ? param.default(pm) : param.default
+    else return param.default.call ? param.default(pm) : param.default
   })
   return bad ? null : params
 }
 
-export function readParams(command) {
-  return {display(menu) {
-    let form = buildParamForm(command), done = false
+function paramForm(pm, command, callback) {
+  let form = buildParamForm(command), done = false
 
-    let finish = () => {
-      if (!done) {
-        done = true
-        menu.pm.focus()
-      }
+  let finish = result => {
+    if (!done) {
+      done = true
+      callback(result)
     }
+  }
 
-    let submit = () => {
-      // FIXME error messages
-      let params = gatherParams(command, form, menu.pm)
-      if (params) command.exec(menu.pm, params)
-      finish()
-      menu.reset()
-    }
-    form.addEventListener("submit", e => {
+  let submit = () => {
+    // FIXME error messages
+    finish(gatherParams(command, form, pm))
+  }
+  form.addEventListener("submit", e => {
+    e.preventDefault()
+    submit()
+  })
+  form.addEventListener("keydown", e => {
+    if (e.keyCode == 27) {
+      finish(null)
+    } else if (e.keyCode == 13 && !(e.ctrlKey || e.metaKey || e.shiftKey)) {
       e.preventDefault()
       submit()
-    })
-    form.addEventListener("keydown", e => {
-      if (e.keyCode == 27) {
-        finish()
+    }
+  })
+  // FIXME too hacky?
+  setTimeout(() => {
+    let input = form.querySelector("input, textarea")
+    if (input) input.focus()
+  }, 20)
+
+  return form
+}
+
+export function readParams(command) {
+  return {display(menu) {
+    return paramForm(menu.pm, command, params => {
+      menu.pm.focus()
+      if (params) {
+        command.exec(menu.pm, params)
+        menu.reset()
+      } else {
         menu.leave()
-      } else if (e.keyCode == 13 && !(e.ctrlKey || e.metaKey || e.shiftKey)) {
-        e.preventDefault()
-        submit()
       }
     })
-    // FIXME too hacky?
-    setTimeout(() => {
-      let input = form.querySelector("input, textarea")
-      if (input) input.focus()
-    }, 20)
-
-    return form
   }}
 }
 
@@ -247,6 +257,18 @@ export function forceFontLoad(pm) {
                                                 style: "visibility: hidden; position: absolute"}))
   window.setTimeout(() => pm.wrapper.removeChild(node), 20)
 }
+
+function tooltipParamHandler(pm, command, callback) {
+  let tooltip = new Tooltip(pm, "center")
+  tooltip.open(paramForm(pm, command, params => {
+    pm.focus()
+    tooltip.close()
+    callback(params)
+  }))
+}
+
+defineParamHandler("default", tooltipParamHandler)
+defineParamHandler("tooltip", tooltipParamHandler)
 
 // FIXME check for obsolete styles
 insertCSS(`
