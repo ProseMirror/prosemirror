@@ -290,6 +290,16 @@ export class Schema {
     return this.nodes.text.create(null, text, styles)
   }
 
+  defaultTextblockType() {
+    let cached = this.cached.defaultTextblockType
+    if (cached !== undefined) return cached
+    for (let name in this.nodes) {
+      if (this.nodes[name].defaultTextblock)
+        return this.cached.defaultTextblockType = this.nodes[name]
+    }
+    return this.cached.defaultTextblockType = null
+  }
+
   style(name, attrs) {
     let spec = this.styles[name] || SchemaError.raise("No style named " + name)
     return spec.create(attrs)

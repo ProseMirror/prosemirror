@@ -265,7 +265,10 @@ test("endBlock",
      doc(p("fo"), p("ar")))
 test("endBlock",
      doc(blockquote(p("foo"), p("<a>"))),
-     doc(blockquote(p("foo")), p()))
+     doc(blockquote(p("foo")), blockquote(p())))
+test("endBlock",
+     doc(blockquote(p("foo")), blockquote(p("<a>"))),
+     doc(blockquote(p("foo")), p("<a>")))
 
 test("makeH1",
      doc(p("fo<a>o")),

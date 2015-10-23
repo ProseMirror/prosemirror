@@ -1,7 +1,7 @@
 import {HardBreak, BulletList, OrderedList, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
         StrongStyle, EmStyle, CodeStyle, LinkStyle, Image, NodeType, StyleType,
-        Pos, spanAtOrBefore, containsStyle, rangeHasStyle, alreadyHasBlockType} from "../model"
-import {joinPoint, canLift} from "../transform"
+        Pos, spanAtOrBefore, containsStyle, rangeHasStyle, siblingRange} from "../model"
+import {joinPoint, canLift, alreadyHasBlockType} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
 
@@ -438,26 +438,36 @@ wrapCommand(BlockQuote, "BlockQuote", "block quote", {
   key: ["Alt-Right '>'", "Alt-Right '\"'"]
 })
 
-defineCommand("endBlock", {
+function fullySelectedRange(doc, from, to) {
+  if (from.offset > 0) return null
+  let range = siblingRange(doc, from, to)
+  if (Pos.after(doc, range.from).cmp(from) == 0 &&
+      Pos.before(doc, range.to).cmp(to) == 0)
+    return range
+}
+
+defineCommand("endBlock", { // FIXME rename
   label: "End or split the current block",
-  run(pm) { // FIXME remove node-specific logic (specialize?)
+  run(pm) {
     pm.scrollIntoView()
-    let pos = pm.selection.from
-    let tr = clearSel(pm)
-    let block = pm.doc.path(pos.path)
-    if (pos.depth > 1 && block.length == 0 &&
-        tr.lift(pos).steps.length) {
-      // Lift
-    } else if (block.type.isCode && pos.offset < block.maxOffset) {
-      tr.insertText(pos, "\n")
-    } else {
-      let end = pos.depth - 1
-      let isList = end > 0 && pos.path[end] == 0 &&
-          pm.doc.path(pos.path.slice(0, end)).type == pm.schema.nodes.list_item
-      let type = pos.offset == block.maxOffset ? pm.schema.node("paragraph") : null
-      tr.split(pos, isList ? 2 : 1, type)
-    }
-    return pm.apply(tr)
+    let {from, to, empty} = pm.selection, tr
+    let blockFrom = pm.doc.path(from.path), blockTo = pm.doc.path(to.path)
+
+    // Insert newline if in code
+    if (blockFrom == blockTo && blockFrom.type.isCode && (!empty || to.offset < blockFrom.maxOffset))
+      return pm.apply(clearSel(pm).insertText(from, "\n"))
+
+    // If selecting a whole block or range of blocks, lift them
+    let fullBlocks = fullySelectedRange(pm.doc, from, to)
+    if (fullBlocks && from.path[from.path.length - 1] > 0 &&
+        pm.apply(pm.tr.split(fullBlocks.from)) !== false)
+      return
+    if (fullBlocks && pm.apply(pm.tr.lift(fullBlocks.from, fullBlocks.to)) !== false)
+      return
+
+    // Otherwise, split the current block
+    let type = to.offset == blockTo.maxOffset ? pm.schema.defaultTextblockType().create() : null
+    return pm.apply(clearSel(pm).split(from, 1, type))
   },
   info: {key: "Enter"}
 })

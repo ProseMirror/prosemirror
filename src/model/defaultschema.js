@@ -30,7 +30,9 @@ export class CodeBlock extends Textblock {
   get isCode() { return true }
 }
 
-export class Paragraph extends Textblock {}
+export class Paragraph extends Textblock {
+  get defaultTextblock() { return true }
+}
 
 export class Image extends Inline {}
 Image.attributes = {
