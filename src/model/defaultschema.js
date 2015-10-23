@@ -26,7 +26,8 @@ export class Heading extends Textblock {}
 Heading.attributes = {level: new Attribute("1")}
 
 export class CodeBlock extends Textblock {
-  get plainText() { return true }
+  static get contains() { return "text" }
+  get isCode() { return true }
 }
 
 export class Paragraph extends Textblock {}

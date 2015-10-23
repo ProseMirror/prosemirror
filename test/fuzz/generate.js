@@ -11,7 +11,7 @@ export const attrs = {
 
 export function createNode(type, fuel) {
   let node = schema.node(type, attrs[type.name])
-  if (type.textblock)
+  if (type.isTextblock)
     fillNodeInline(node, fuel)
   else if (type.contains)
     fillNode(node, fuel)

@@ -8,7 +8,7 @@ const nonEditable = {html_block: true, html_tag: true, horizontal_rule: true}
 function options(path, ranges) {
   return {
     onRender(node, dom, offset) {
-      if (node.kind != "inline" && offset != null)
+      if (!node.isInline && offset != null)
         dom.setAttribute("pm-path", offset)
       if (nonEditable.hasOwnProperty(node.type.name))
         dom.contentEditable = false

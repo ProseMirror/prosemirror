@@ -24,15 +24,14 @@ defineStep("ancestor", {
     if (wrappers.length) {
       let lastWrapper = wrappers[wrappers.length - 1]
       if (!parent.type.canContain(wrappers[0].type) ||
-          lastWrapper.type.contains != inner.type.contains ||
-          lastWrapper.type.plainText && !isPlainText(inner))
+          !lastWrapper.type.canContainChildren(inner))
         return null
       let node = null
       for (let i = wrappers.length - 1; i >= 0; i--)
         node = wrappers[i].copy(node ? [node] : inner.slice(from.offset, to.offset))
       newParent = parent.splice(start, end, [node])
     } else {
-      if (parent.type.contains != inner.type.contains) return null
+      if (!parent.type.canContainChildren(inner)) return null
       newParent = parent.splice(start, end, inner.children)
     }
     let copy = doc.replaceDeep(toParent, newParent)
@@ -77,26 +76,19 @@ defineStep("ancestor", {
   }
 })
 
-function canUnwrap(container, from, to) {
-  let type = container.child(from).type.contains
-  for (let i = from + 1; i < to; i++)
-    if (container.child(i).type.contains != type)
-      return false
-  return type
-}
-
 function canBeLifted(doc, range) {
-  let container = doc.path(range.path)
-  let parentDepth, unwrap = false, innerType = container.type.contains
+  let content = [doc.path(range.path)], unwrap = false
   for (;;) {
-    parentDepth = -1
+    let parentDepth = -1
     for (let node = doc, i = 0; i < range.path.length; i++) {
-      if (node.type.contains == innerType) parentDepth = i
+      if (content.every(inner => node.type.canContainChildren(inner)))
+        parentDepth = i
       node = node.child(range.path[i])
     }
-    if (parentDepth > -1) return {path: range.path.slice(0, parentDepth),
-                                  unwrap: unwrap}
-    if (unwrap || !(innerType = canUnwrap(container, range.from, range.to))) return null
+    if (parentDepth > -1)
+      return {path: range.path.slice(0, parentDepth), unwrap}
+    if (unwrap || !content[0].isBlock) return null
+    content = content[0].slice(range.from, range.to)
     unwrap = true
   }
 }

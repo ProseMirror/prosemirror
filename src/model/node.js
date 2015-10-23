@@ -39,7 +39,7 @@ export class BlockNode extends Node {
   constructor(type, attrs, content, styles) {
     if (styles) throw new Error("Constructing a block node with styles")
     super(type, attrs)
-    this.content = content || (type.contains ? [] : emptyArray)
+    this.content = content || emptyArray
   }
 
   toString() {

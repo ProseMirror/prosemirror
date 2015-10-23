@@ -9,7 +9,7 @@ defineStep("join", {
     let before = doc.path(step.from.path)
     let after = doc.path(step.to.path)
     if (step.from.offset < before.maxOffset || step.to.offset > 0 ||
-        before.type.contains != after.type.contains) return null
+        !before.type.canContainChildren(after)) return null
     let pFrom = step.from.path, pTo = step.to.path
     let last = pFrom.length - 1, offset = pFrom[last] + 1
     if (pFrom.length != pTo.length || pFrom.length == 0 || offset != pTo[last]) return null
@@ -35,7 +35,7 @@ export function joinPoint(doc, pos, dir = -1) {
   for (let i = 0, parent = doc; i < pos.path.length; i++) {
     let index = pos.path[i]
     let type = parent.child(index).type
-    if (!type.textblock &&
+    if (!type.isTextblock &&
         (dir == -1 ? (index > 0 && parent.child(index - 1).type == type)
                    : (index < parent.length - 1 && parent.child(index + 1).type == type)))
       joinDepth = i
@@ -46,7 +46,7 @@ export function joinPoint(doc, pos, dir = -1) {
 
 Transform.prototype.join = function(at) {
   let parent = this.doc.path(at.path)
-  if (at.offset == 0 || at.offset == parent.length || parent.type.textblock) return this
+  if (at.offset == 0 || at.offset == parent.length || parent.isTextblock) return this
   this.step("join", new Pos(at.path.concat(at.offset - 1), parent.child(at.offset - 1).maxOffset),
             new Pos(at.path.concat(at.offset), 0))
   return this

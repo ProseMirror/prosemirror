@@ -94,7 +94,7 @@ HardBreak.attachCommand("insertHardBreak", type => ({
   run(pm) {
     pm.scrollIntoView()
     let tr = clearSel(pm), pos = pm.selection.from
-    if (pm.doc.path(pos.path).type == pm.schema.nodes.code_block)
+    if (pm.doc.path(pos.path).type.isCode)
       tr.insertText(pos, "\n")
     else
       tr.insert(pos, pm.schema.node(type))
@@ -448,7 +448,7 @@ defineCommand("endBlock", {
     if (pos.depth > 1 && block.length == 0 &&
         tr.lift(pos).steps.length) {
       // Lift
-    } else if (block.type == pm.schema.nodes.code_block && pos.offset < block.maxOffset) {
+    } else if (block.type.isCode && pos.offset < block.maxOffset) {
       tr.insertText(pos, "\n")
     } else {
       let end = pos.depth - 1

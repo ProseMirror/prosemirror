@@ -15,12 +15,19 @@ export class NodeType {
     this.defaultAttrs = null
   }
 
-  get plainText() { return false }
+  get plainText() { return this.contains == "text" }
   get configurable() { return true }
-  get textblock() { return false }
+  get isTextblock() { return false }
 
   canContain(type) {
     return type.categories.indexOf(this.contains) > -1
+  }
+
+  canContainChildren(node) {
+    let children = node.children
+    for (let i = 0; i < children.length; i++)
+      if (!this.canContain(children[i].type)) return false
+    return true
   }
 
   findConnection(other) {
@@ -103,6 +110,7 @@ export class Inline extends NodeType {
 
 export class Text extends Inline {
   get instance() { return TextNode }
+  static get category() { return "inline text" }
 }
 
 // Attribute descriptors
