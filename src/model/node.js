@@ -99,7 +99,7 @@ export class BlockNode extends Node {
    * Get the child node at a given index.
    */
   child(i) {
-    if (i < 0 || i > this.length)
+    if (i < 0 || i >= this.length)
       throw new Error("Index " + i + " out of range in " + this)
     return this.content[i]
   }

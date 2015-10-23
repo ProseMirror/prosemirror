@@ -107,9 +107,53 @@ function renderIcon(command, menu) {
   return dom
 }
 
+function renderSelect(item, menu) {
+  let param = item.params[0]
+  let value = !param.default ? null : param.default.call ? param.default(menu.pm) : param.default
+
+  let dom = elt("div", {class: "ProseMirror-select", title: item.label},
+                !value ? (param.defaultLabel || "Select...") : value.label)
+  dom.addEventListener("mousedown", e => {
+    e.preventDefault(); e.stopPropagation()
+    showSelectMenu(menu.pm, item, dom)
+  })
+  return dom
+}
+
+function showSelectMenu(pm, item, dom) {
+  let param = item.params[0]
+  let options = param.options.call ? param.options(pm) : param.options
+  let menu = elt("div", {class: "ProseMirror-select-menu"}, options.map(o => {
+    let dom = elt("div", null, o.label)
+    dom.addEventListener("mousedown", e => {
+      e.preventDefault()
+      item.exec(pm, [o.value])
+      finish()
+    })
+    return dom
+  }))
+  let pos = dom.getBoundingClientRect(), box = pm.wrapper.getBoundingClientRect()
+  menu.style.left = (pos.left - box.left - 2) + "px"
+  menu.style.top = (pos.top - box.top - 2) + "px"
+
+  let done = false
+  function finish() {
+    if (done) return
+    done = true
+    document.body.removeEventListener("mousedown", finish)
+    document.body.removeEventListener("keydown", finish)
+    pm.wrapper.removeChild(menu)
+  }
+  document.body.addEventListener("mousedown", finish)
+  document.body.addEventListener("keydown", finish)
+  pm.wrapper.appendChild(menu)
+}
+
 function renderItem(item, menu) {
-  if (item.display) return item.display(menu)
-  else return renderIcon(item, menu)
+  if (item.display == "icon") return renderIcon(item, menu)
+  else if (item.display == "select") return renderSelect(item, menu)
+  else if (!item.display) throw new Error("Command " + item.name + " can not be shown in a menu")
+  else return item.display(menu)
 }
 
 function buildParamForm(command) {
@@ -124,13 +168,13 @@ function buildParamForm(command) {
   return elt("form", null, fields)
 }
 
-function gatherParams(command, form) {
+function gatherParams(command, form, pm) {
   let bad = false
   let params = command.params.map((param, i) => {
     let val = form.elements["field_" + i].value
     if (val) return val
     if (param.default == null) bad = true
-    return param.default
+    return param.default.call ? param.default(pm) : param.default
   })
   return bad ? null : params
 }
@@ -148,7 +192,7 @@ export function readParams(command) {
 
     let submit = () => {
       // FIXME error messages
-      let params = gatherParams(command, form)
+      let params = gatherParams(command, form, menu.pm)
       if (params) command.exec(menu.pm, params)
       finish()
       menu.reset()
@@ -254,13 +298,13 @@ insertCSS(`
   vertical-align: middle;
 }
 
-.ProseMirror-blocktype, .ProseMirror-blocktype-menu {
+.ProseMirror-select, .ProseMirror-select-menu {
   border: 1px solid #777;
   border-radius: 3px;
   font-size: 90%;
 }
 
-.ProseMirror-blocktype {
+.ProseMirror-select {
   padding: 1px 2px 1px 4px;
   display: inline-block;
   vertical-align: middle;
@@ -268,24 +312,24 @@ insertCSS(`
   margin: 0 4px;
 }
 
-.ProseMirror-blocktype:after {
+.ProseMirror-select:after {
   content: " ▿";
   color: #777;
   vertical-align: top;
 }
 
-.ProseMirror-blocktype-menu {
+.ProseMirror-select-menu {
   position: absolute;
   background: #444;
   color: white;
   padding: 2px 2px;
   z-index: 5;
 }
-.ProseMirror-blocktype-menu div {
+.ProseMirror-select-menu div {
   cursor: pointer;
   padding: 0 1em 0 2px;
 }
-.ProseMirror-blocktype-menu div:hover {
+.ProseMirror-select-menu div:hover {
   background: #777;
 }
 

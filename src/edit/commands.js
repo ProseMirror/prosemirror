@@ -24,7 +24,7 @@ export class Command {
     this.select = options.select || (() => true)
     this.active = options.active || (() => false)
     this.menuGroup = options.menuGroup
-    this.display = options.display
+    this.display = options.display || "icon"
   }
 
   exec(pm, params) {
@@ -456,81 +456,44 @@ defineCommand("redo", {
   menuGroup: "history"
 })
 
-// FIXME does this belong here?
-
-defineCommand("blockType", {
+defineCommand("textblockType", {
   label: "Change block type",
-  exec(pm) {
-    // FIXME
+  exec(pm, type) {
+    let sel = pm.selection
+    return pm.apply(pm.tr.setBlockType(sel.from, sel.to, type))
   },
   params: [
-    {name: "Type", type: "select", options: listBlockTypes}
+    {name: "Type", type: "select", options: listTextblockTypes, default: currentTextblockType, defaultLabel: "Type..."}
   ],
   display: "select",
-//  menuGroup: "block"
+  menuGroup: "block"
 })
 
-function listBlockTypes(pm) {
+Paragraph.prototype.textblockTypes = [{label: "Normal", rank: 10}]
+CodeBlock.prototype.textblockTypes = [{label: "Code", rank: 20}]
+Heading.prototype.textblockTypes = [1, 2, 3, 4, 5, 6].map(n => ({label: "Head " + n, attrs: {level: n}, rank: 30 + n}))
+
+function listTextblockTypes(pm) {
+  let cached = pm.schema.cached.textblockTypes
+  if (cached) return cached
+
   let found = []
-  // FIXME
-  return found
-}
-
-/* FIXME old code to be rewritten
-
-const blockTypes = [
-  {name: "Normal", type: "paragraph"},
-  {name: "Code", type: "code_block"}
-]
-for (let i = 1; i <= 6; i++)
-  blockTypes.push({name: "Head " + i, type: "heading", attrs: {level: i}})
-function getBlockType(block) {
-  for (let i = 0; i < blockTypes.length; i++)
-    if (blockTypes[i].type == block.type.name &&
-        (block.attrs.level == null || block.attrs.level == blockTypes[i].attrs.level))
-      return blockTypes[i]
-}
-
-class BlockTypeItem extends MenuItem {
-  render(menu) {
-    let sel = menu.pm.selection, type
-    if (Pos.samePath(sel.head.path, sel.anchor.path)) type = getBlockType(menu.pm.doc.path(sel.head.path))
-    let dom = elt("div", {class: "ProseMirror-blocktype", title: "Paragraph type"},
-                  type ? type.name : "Type...")
-    dom.addEventListener("mousedown", e => {
-      e.preventDefault(); e.stopPropagation()
-      showBlockTypeMenu(menu.pm, dom)
-    })
-    return dom
+  for (let name in pm.schema.nodes) {
+    let type = pm.schema.nodes[name]
+    if (!type.textblockTypes) continue
+    for (let i = 0; i < type.textblockTypes.length; i++) {
+      let info = type.textblockTypes[i]
+      found.push({label: info.label, value: type.create(info.attrs), rank: info.rank})
+    }
   }
+  return pm.schema.cached.textblockTypes = found.sort((a, b) => a.rank - b.rank)
 }
 
-function showBlockTypeMenu(pm, dom) {
-  let menu = elt("div", {class: "ProseMirror-blocktype-menu"},
-                 blockTypes.map(t => {
-                   let dom = elt("div", null, t.name)
-                   dom.addEventListener("mousedown", e => {
-                     e.preventDefault()
-                     let sel = pm.selection
-                     pm.apply(pm.tr.setBlockType(sel.from, sel.to, pm.schema.node(t.type, t.attrs)))
-                     finish()
-                   })
-                   return dom
-                 }))
-  let pos = dom.getBoundingClientRect(), box = pm.wrapper.getBoundingClientRect()
-  menu.style.left = (pos.left - box.left - 2) + "px"
-  menu.style.top = (pos.top - box.top - 2) + "px"
-
-  let done = false
-  function finish() {
-    if (done) return
-    done = true
-    document.body.removeEventListener("mousedown", finish)
-    document.body.removeEventListener("keydown", finish)
-    pm.wrapper.removeChild(menu)
-  }
-  document.body.addEventListener("mousedown", finish)
-  document.body.addEventListener("keydown", finish)
-  pm.wrapper.appendChild(menu)
+function currentTextblockType(pm) {
+  let sel = pm.selection
+  if (!Pos.samePath(sel.head.path, sel.anchor.path)) return null
+  let types = listTextblockTypes(pm)
+  let focusNode = pm.doc.path(pm.selection.head.path)
+  for (let i = 0; i < types.length; i++)
+    if (types[i].value.sameMarkup(focusNode)) return types[i]
 }
-*/
