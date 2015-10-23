@@ -15,7 +15,7 @@ export function toDOM(node, options) {
 defineTarget("dom", toDOM)
 
 export function toHTML(node, options) {
-  let wrap = options.document.createElement("div")
+  let wrap = (options && options.document || window.document).createElement("div")
   wrap.appendChild(toDOM(node, options))
   return wrap.innerHTML
 }
