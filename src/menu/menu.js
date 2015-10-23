@@ -2,6 +2,7 @@ import {Tooltip} from "./tooltip"
 import {elt} from "../dom"
 import insertCSS from "insert-css"
 import {defineParamHandler} from "../edit"
+import sortedInsert from "../util/sortedinsert"
 
 export class Menu {
   constructor(pm, display) {
@@ -239,9 +240,10 @@ export function commandGroups(pm, ...names) {
     let found = []
     for (let name in pm.commands) {
       let cmd = pm.commands[name]
-      if (cmd.info.menuGroup && cmd.info.menuGroup == group) found.push(cmd)
+      if (cmd.info.menuGroup && cmd.info.menuGroup == group)
+        sortedInsert(found, cmd, (a, b) => (a.info.menuRank || 50) - (b.info.menuRank || 50))
     }
-    return found.sort((a, b) => (a.info.menuRank || 50) - (b.info.menuRank || 50))
+    return found
   })
 }
 

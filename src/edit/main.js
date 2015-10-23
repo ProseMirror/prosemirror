@@ -3,6 +3,7 @@ import "./css"
 import {spanStylesAt, rangeHasStyle, sliceBetween, Pos, findDiffStart,
         containsStyle, removeStyle} from "../model"
 import {Transform} from "../transform"
+import sortedInsert from "../util/sortedinsert"
 
 import {parseOptions, initOptions, setOption} from "./options"
 import {Selection, Range, posAtCoords, coordsAtPos, scrollIntoView, hasFocus} from "./selection"
@@ -188,13 +189,13 @@ export class ProseMirror {
   setOption(name, value) { setOption(this, name, value) }
   getOption(name) { return this.options[name] }
 
-  addKeymap(map, bottom) {
-    this.input.keymaps[bottom ? "push" : "unshift"](map)
+  addKeymap(map, rank = 50) {
+    sortedInsert(this.input.keymaps, {map, rank}, (a, b) => a.rank - b.rank)
   }
 
   removeKeymap(map) {
     let maps = this.input.keymaps
-    for (let i = 0; i < maps.length; ++i) if (maps[i] == map || maps[i].options.name == map) {
+    for (let i = 0; i < maps.length; ++i) if (maps[i].map == map || maps[i].map.options.name == map) {
       maps.splice(i, 1)
       return true
     }

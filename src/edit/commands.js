@@ -3,6 +3,7 @@ import {HardBreak, BulletList, OrderedList, BlockQuote, Heading, Paragraph, Code
         Pos, spanAtOrBefore, containsStyle, rangeHasStyle, alreadyHasBlockType} from "../model"
 import {joinPoint, canLift} from "../transform"
 import {browser} from "../dom"
+import sortedInsert from "../util/sortedinsert"
 
 import {charCategory, isExtendingChar} from "./char"
 import {Keymap} from "./keys"
@@ -566,10 +567,11 @@ function listTextblockTypes(pm) {
     if (!type.textblockTypes) continue
     for (let i = 0; i < type.textblockTypes.length; i++) {
       let info = type.textblockTypes[i]
-      found.push({label: info.label, value: type.create(info.attrs), rank: info.rank})
+      sortedInsert(found, {label: info.label, value: type.create(info.attrs), rank: info.rank},
+                   (a, b) => a.rank - b.rank)
     }
   }
-  return pm.schema.cached.textblockTypes = found.sort((a, b) => a.rank - b.rank)
+  return pm.schema.cached.textblockTypes = found
 }
 
 function currentTextblockType(pm) {
