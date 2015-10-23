@@ -195,7 +195,7 @@ tests.lift = (doc, _, blockPositions) => {
     let from = blockPositions[i]
     let to = blockPositions[Math.floor(Math.random() * (blockPositions.length - i)) + i]
     let lift = canLift(doc, from, to), p
-    if (lift && (!last || (p = new Pos(lift.range.path, lift.range.from)).cmp(last))) {
+    if (lift && (!last || (p = lift.range.from).cmp(last))) {
       runTest("lift", doc, {from, to})
       last = p
     }
@@ -224,7 +224,7 @@ tests.wrap = (doc, positions) => {
     let type = wrapTypes[Math.floor(Math.random() * wrapTypes.length)]
     let node = schema.node(type, attrs[type.name])
     let wrap = canWrap(doc, from, to, node)
-    if (wrap && (!last || (p = new Pos(wrap.range.path, wrap.range.from)).cmp(last))) {
+    if (wrap && (!last || (p = wrap.range.from).cmp(last))) {
       runTest("wrap", doc, {from, to, node})
       last = p
     }

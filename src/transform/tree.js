@@ -63,19 +63,6 @@ export function isFlatRange(from, to) {
   return from.offset <= to.offset
 }
 
-export function selectedSiblings(doc, from, to) {
-  for (let i = 0, node = doc;; i++) {
-    if (node.isTextblock)
-      return {path: from.path.slice(0, i - 1), from: from.path[i - 1], to: from.path[i - 1] + 1}
-    let fromEnd = i == from.path.length, toEnd = i == to.path.length
-    let left = fromEnd ? from.offset : from.path[i]
-    let right = toEnd ? to.offset : to.path[i]
-    if (fromEnd || toEnd || left != right)
-      return {path: from.path.slice(0, i), from: left, to: right + (toEnd ? 0 : 1)}
-    node = node.child(left)
-  }
-}
-
 export function blocksBetween(doc, from, to, f) {
   let path = []
   function scan(node, from, to) {

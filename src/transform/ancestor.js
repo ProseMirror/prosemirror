@@ -1,8 +1,8 @@
-import {Pos, compareMarkup} from "../model"
+import {Pos, compareMarkup, siblingRange} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
-import {isFlatRange, selectedSiblings, blocksBetween, isPlainText} from "./tree"
+import {isFlatRange, blocksBetween, isPlainText} from "./tree"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 
 defineStep("ancestor", {
@@ -77,24 +77,24 @@ defineStep("ancestor", {
 })
 
 function canBeLifted(doc, range) {
-  let content = [doc.path(range.path)], unwrap = false
+  let content = [doc.path(range.from.path)], unwrap = false
   for (;;) {
     let parentDepth = -1
-    for (let node = doc, i = 0; i < range.path.length; i++) {
+    for (let node = doc, i = 0; i < range.from.path.length; i++) {
       if (content.every(inner => node.type.canContainChildren(inner)))
         parentDepth = i
-      node = node.child(range.path[i])
+      node = node.child(range.from.path[i])
     }
     if (parentDepth > -1)
-      return {path: range.path.slice(0, parentDepth), unwrap}
+      return {path: range.from.path.slice(0, parentDepth), unwrap}
     if (unwrap || !content[0].isBlock) return null
-    content = content[0].slice(range.from, range.to)
+    content = content[0].slice(range.from.offset, range.to.offset)
     unwrap = true
   }
 }
 
 export function canLift(doc, from, to) {
-  let range = selectedSiblings(doc, from, to || from)
+  let range = siblingRange(doc, from, to || from)
   let found = canBeLifted(doc, range)
   if (found) return {found, range}
 }
@@ -103,10 +103,10 @@ Transform.prototype.lift = function(from, to = from) {
   let can = canLift(this.doc, from, to)
   if (!can) return this
   let {found, range} = can
-  let depth = range.path.length - found.path.length
-  let rangeNode = found.unwrap && this.doc.path(range.path)
+  let depth = range.from.path.length - found.path.length
+  let rangeNode = found.unwrap && this.doc.path(range.from.path)
 
-  for (let d = 0, pos = new Pos(range.path, range.to);; d++) {
+  for (let d = 0, pos = range.to;; d++) {
     if (pos.offset < this.doc.path(pos.path).length) {
       this.split(pos, depth)
       break
@@ -114,37 +114,37 @@ Transform.prototype.lift = function(from, to = from) {
     if (d == depth - 1) break
     pos = pos.shorten(null, 1)
   }
-  for (let d = 0, pos = new Pos(range.path, range.from);; d++) {
+  for (let d = 0, pos = range.from;; d++) {
     if (pos.offset > 0) {
       this.split(pos, depth - d)
-      let cut = range.path.length - depth, path = pos.path.slice(0, cut).concat(pos.path[cut] + 1)
-      while (path.length < range.path.length) path.push(0)
-      range = {path: path, from: 0, to: range.to - range.from}
+      let cut = range.from.path.length - depth, path = pos.path.slice(0, cut).concat(pos.path[cut] + 1)
+      while (path.length < range.from.path.length) path.push(0)
+      range = {from: new Pos(path, 0), to: new Pos(path, range.to.offset - range.from.offset)}
       break
     }
     if (d == depth - 1) break
     pos = pos.shorten()
   }
   if (found.unwrap) {
-    for (let i = range.to - 1; i > range.from; i--)
-      this.join(new Pos(range.path, i))
+    for (let i = range.to.offset - 1; i > range.from.offset; i--)
+      this.join(new Pos(range.from.path, i))
     let size = 0
-    for (let i = range.from; i < range.to; i++)
+    for (let i = range.from.offset; i < range.to.offset; i++)
       size += rangeNode.child(i).length
-    range = {path: range.path.concat(range.from), from: 0, to: size}
+    let path = range.from.path.concat(range.from.offset)
+    range = {from: new Pos(path, 0), to: new Pos(path, size)}
     ++depth
   }
-  this.step("ancestor", new Pos(range.path, range.from),
-            new Pos(range.path, range.to), null, {depth: depth})
+  this.step("ancestor", range.from, range.to, null, {depth: depth})
   return this
 }
 
 export function canWrap(doc, from, to, node) {
-  let range = selectedSiblings(doc, from, to || from)
-  if (range.from == range.to) return null
-  let parent = doc.path(range.path)
+  let range = siblingRange(doc, from, to || from)
+  if (range.from.offset == range.to.offset) return null
+  let parent = doc.path(range.from.path)
   let around = parent.type.findConnection(node.type)
-  let inside = node.type.findConnection(parent.child(range.from).type)
+  let inside = node.type.findConnection(parent.child(range.from.offset).type)
   if (around && inside) return {range, around, inside}
 }
 
@@ -155,13 +155,12 @@ Transform.prototype.wrap = function(from, to, node) {
   let wrappers = around.map(t => node.type.schema.node(t))
                    .concat(node)
                    .concat(inside.map(t => node.type.schema.node(t)))
-  this.step("ancestor", new Pos(range.path, range.from), new Pos(range.path, range.to),
-            null, {wrappers: wrappers})
+  this.step("ancestor", range.from, range.to, null, {wrappers: wrappers})
   if (inside.length) {
-    let toInner = range.path.slice()
+    let toInner = range.from.path.slice()
     for (let i = 0; i < around.length + inside.length + 1; i++)
-      toInner.push(i ? 0 : range.from)
-    for (let i = range.to - 1 - range.from; i > 0; i--)
+      toInner.push(i ? 0 : range.from.offset)
+    for (let i = range.to.offset - 1 - range.from.offset; i > 0; i--)
       this.split(new Pos(toInner, i), inside.length)
   }
   return this
