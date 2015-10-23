@@ -52,8 +52,6 @@ export class Command {
 }
 
 export function execCommand(pm, name) {
-  // FIXME replace this mechanism with ranked bindings
-  if (pm.signalHandleable("command_" + name) !== false) return true
   let base = pm.commands[name]
   return !!(base && base.exec(pm) !== false)
 }

@@ -1,4 +1,5 @@
 import {Pos, spanStylesAt} from "../model"
+import {Keymap} from "../edit"
 
 export function addInputRules(pm, rules) {
   if (!pm.mod.interpretInput)
@@ -32,13 +33,13 @@ class InputRules {
 
     pm.on("selectionChange", this.onSelChange = () => this.cancelVersion = null)
     pm.on("textInput", this.onTextInput = this.onTextInput.bind(this))
-    pm.on("command_delBackward", this.delBackward = this.delBackward.bind(this))
+    pm.addKeymap(new Keymap({Backspace: pm => this.backspace(pm)}, {name: "inputRules"}), 20)
   }
 
   unregister() {
     this.pm.off("selectionChange", this.onSelChange)
     this.pm.off("textInput", this.onTextInput)
-    this.pm.off("command_delBackward", this.delBackward)
+    this.pm.removeKeymap("inputRules")
   }
 
   addRules(rules) {
@@ -81,7 +82,7 @@ class InputRules {
     }
   }
 
-  delBackward() {
+  backspace() {
     if (this.cancelVersion) {
       this.pm.history.backToVersion(this.cancelVersion)
       this.cancelVersion = null
