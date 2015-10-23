@@ -2,8 +2,10 @@ import {HardBreak, BulletList, OrderedList, BlockQuote, Heading, Paragraph, Code
         StrongStyle, EmStyle, CodeStyle, LinkStyle, Image, NodeType, StyleType,
         Pos, spanAtOrBefore, containsStyle, rangeHasStyle, alreadyHasBlockType} from "../model"
 import {joinPoint, canLift} from "../transform"
+import {browser} from "../dom"
 
 import {charCategory, isExtendingChar} from "./char"
+import {Keymap} from "./keys"
 
 const globalCommands = Object.create(null)
 const paramHandlers = Object.create(null)
@@ -33,7 +35,7 @@ export class Command {
     this.params = options.params || []
     this.select = options.select || (() => true)
     this.active = options.active || (() => false)
-    this.menuGroup = options.menuGroup
+    this.info = options.info || {}
     this.display = options.display || "icon"
   }
 
@@ -71,6 +73,22 @@ export function initCommands(schema) {
   return result
 }
 
+export function defaultKeymap(pm) {
+  let bindings = {}
+  function add(name, key) {
+    if (Array.isArray(key))
+      for (let i = 0; i < key.length; i++) bindings[key[i]] = name
+    else if (key)
+      bindings[key] = name
+  }
+  for (let name in pm.commands) {
+    let cmd = pm.commands[name]
+    add(name, cmd.info.key)
+    add(name, browser.mac ? cmd.info.macKey : cmd.info.pcKey)
+  }
+  return new Keymap(bindings)
+}
+
 function clearSel(pm) {
   let sel = pm.selection, tr = pm.tr
   if (!sel.empty) tr.delete(sel.from, sel.to)
@@ -87,7 +105,8 @@ HardBreak.attachCommand("insertHardBreak", type => ({
     else
       tr.insert(pos, pm.schema.node(type))
     pm.apply(tr)
-  }
+  },
+  info: {key: ["Mod-Enter", "Shift-Enter"]}
 }))
 
 function inlineActive(pm, type) {
@@ -98,7 +117,7 @@ function inlineActive(pm, type) {
     return rangeHasStyle(pm.doc, sel.from, sel.to, type)
 }
 
-function generateStyleCommands(type, name, labelName, rank) {
+function generateStyleCommands(type, name, labelName, info) {
   if (!labelName) labelName = name
   let cap = name.charAt(0).toUpperCase() + name.slice(1)
   type.attachCommand("set" + cap, type => ({
@@ -114,13 +133,27 @@ function generateStyleCommands(type, name, labelName, rank) {
     label: "Toggle " + labelName,
     run(pm) { pm.setStyle(type.create(), null) },
     active(pm) { return inlineActive(pm, type) },
-    menuGroup: {name: "inline", rank}
+    info
   }))
 }
 
-generateStyleCommands(StrongStyle, "strong", null, 20)
-generateStyleCommands(EmStyle, "em", "emphasis", 21)
-generateStyleCommands(CodeStyle, "code", null, 22)
+generateStyleCommands(StrongStyle, "strong", null, {
+  menuGroup: "inline",
+  menuRank: 20,
+  key: "Mod-B"
+})
+
+generateStyleCommands(EmStyle, "em", "emphasis", {
+  menuGroup: "inline",
+  menuRank: 21,
+  key: "Mod-I"
+})
+
+generateStyleCommands(CodeStyle, "code", null, {
+  menuGroup: "inline",
+  menuRank: 22,
+  key: "Mod-`"
+})
 
 LinkStyle.attachCommand("unlink", type => ({
   label: "Unlink",
@@ -134,7 +167,7 @@ LinkStyle.attachCommand("link", type => ({
     {name: "Target", type: "text"},
     {name: "Title", type: "text", default: ""}
   ],
-  menuGroup: {name: "inline", rank: 30}
+  info: {menuGroup: "inline", menuRank: 30}
 }))
 
 Image.attachCommand("insertImage", type => ({
@@ -149,7 +182,7 @@ Image.attachCommand("insertImage", type => ({
     {name: "Description / alternative text", type: "text", default: ""},
     {name: "Title", type: "text", default: ""}
   ],
-  menuGroup: {name: "inline", rank: 40}
+  info: {menuGroup: "inline", menuRank: 40}
 }))
 
 function blockBefore(pos) {
@@ -255,12 +288,14 @@ function delBackward(pm, by) {
 
 defineCommand("delBackward", {
   label: "Delete before cursor",
-  run(pm) { return delBackward(pm, "char") }
+  run(pm) { return delBackward(pm, "char") },
+  info: {key: "Backspace", macKey: "Ctrl-H"}
 })
 
 defineCommand("delWordBackward", {
   label: "Delete word before cursor",
-  run(pm) { return delBackward(pm, "word") }
+  run(pm) { return delBackward(pm, "word") },
+  info: {key: "Mod-Backspace", macKey: "Alt-Backspace"}
 })
 
 function blockAfter(doc, pos) {
@@ -337,12 +372,14 @@ function delForward(pm, by) {
 
 defineCommand("delForward", {
   label: "Delete after cursor",
-  run(pm) { return delForward(pm, "char") }
+  run(pm) { return delForward(pm, "char") },
+  info: {key: "Delete", macKey: "Ctrl-D"}
 })
 
 defineCommand("delWordForward", {
   label: "Delete word after cursor",
-  run(pm) { return delForward(pm, "word") }
+  run(pm) { return delForward(pm, "word") },
+  info: {key: "Mod-Delete", macKey: ["Ctrl-Alt-Backspace", "Alt-Delete", "Alt-D"]}
 })
 
 defineCommand("join", {
@@ -353,7 +390,10 @@ defineCommand("join", {
     return pm.apply(pm.tr.join(point))
   },
   select(pm) { return joinPoint(pm.doc, pm.selection.head) },
-  menuGroup: {name: "block", rank: 80}
+  info: {
+    menuGroup: "block", menuRank: 80,
+    key: "Alt-Up"
+  }
 })
 
 defineCommand("lift", {
@@ -368,10 +408,13 @@ defineCommand("lift", {
     let sel = pm.selection
     return canLift(pm.doc, sel.from, sel.to)
   },
-  menuGroup: {name: "block", rank: 75}
+  info: {
+    menuGroup: "block", menuRank: 75,
+    key: "Alt-Left"
+  }
 })
 
-function wrapCommand(type, name, labelName, rank) {
+function wrapCommand(type, name, labelName, info) {
   type.attachCommand("wrap" + name, type => ({
     label: "Wrap in " + labelName,
     run(pm) {
@@ -379,13 +422,27 @@ function wrapCommand(type, name, labelName, rank) {
       pm.scrollIntoView()
       return pm.apply(pm.tr.wrap(sel.from, sel.to, type.create()))
     },
-    menuGroup: {name: "block", rank}
+    info
   }))
 }
 
-wrapCommand(BulletList, "BulletList", "bullet list", 40)
-wrapCommand(OrderedList, "OrderedList", "ordered list", 41)
-wrapCommand(BlockQuote, "BlockQuote", "block quote", 45)
+wrapCommand(BulletList, "BulletList", "bullet list", {
+  menuGroup: "block",
+  menuRank: 40,
+  key: ["Alt-Right '*'", "Alt-Right '-'"]
+})
+
+wrapCommand(OrderedList, "OrderedList", "ordered list", {
+  menuGroup: "block",
+  menuRank: 41,
+  key: "Alt-Right '1'"
+})
+
+wrapCommand(BlockQuote, "BlockQuote", "block quote", {
+  menuGroup: "block",
+  menuRank: 45,
+  key: ["Alt-Right '>'", "Alt-Right '\"'"]
+})
 
 defineCommand("endBlock", {
   label: "End or split the current block",
@@ -407,7 +464,8 @@ defineCommand("endBlock", {
       tr.split(pos, isList ? 2 : 1, type)
     }
     return pm.apply(tr)
-  }
+  },
+  info: {key: "Enter"}
 })
 
 function setType(pm, type, attrs) {
@@ -416,7 +474,7 @@ function setType(pm, type, attrs) {
   return pm.apply(pm.tr.setBlockType(sel.from, sel.to, pm.schema.node(type, attrs)))
 }
 
-function blockTypeCommand(type, name, labelName, attrs) {
+function blockTypeCommand(type, name, labelName, attrs, key) {
   if (!attrs) attrs = {}
   type.attachCommand(name, type => ({
     label: "Change to " + labelName,
@@ -424,19 +482,20 @@ function blockTypeCommand(type, name, labelName, attrs) {
     select(pm) {
       let sel = pm.selection
       return !alreadyHasBlockType(pm.doc, sel.from, sel.to, type, attrs)
-    }
+    },
+    info: {key}
   }))
 }
 
-blockTypeCommand(Heading, "makeH1", "heading 1", {level: 1})
-blockTypeCommand(Heading, "makeH2", "heading 2", {level: 2})
-blockTypeCommand(Heading, "makeH3", "heading 3", {level: 3})
-blockTypeCommand(Heading, "makeH4", "heading 4", {level: 4})
-blockTypeCommand(Heading, "makeH5", "heading 5", {level: 5})
-blockTypeCommand(Heading, "makeH6", "heading 6", {level: 6})
+blockTypeCommand(Heading, "makeH1", "heading 1", {level: 1}, "Mod-H '1'")
+blockTypeCommand(Heading, "makeH2", "heading 2", {level: 2}, "Mod-H '2'")
+blockTypeCommand(Heading, "makeH3", "heading 3", {level: 3}, "Mod-H '3'")
+blockTypeCommand(Heading, "makeH4", "heading 4", {level: 4}, "Mod-H '4'")
+blockTypeCommand(Heading, "makeH5", "heading 5", {level: 5}, "Mod-H '5'")
+blockTypeCommand(Heading, "makeH6", "heading 6", {level: 6}, "Mod-H '6'")
 
-blockTypeCommand(Paragraph, "makeParagraph", "paragraph")
-blockTypeCommand(CodeBlock, "makeCodeBlock", "code block")
+blockTypeCommand(Paragraph, "makeParagraph", "paragraph", "Mod-P")
+blockTypeCommand(CodeBlock, "makeCodeBlock", "code block", "Mod-\\")
 
 function insertOpaqueBlock(pm, type, attrs) {
   pm.scrollIntoView()
@@ -454,21 +513,30 @@ function insertOpaqueBlock(pm, type, attrs) {
 
 HorizontalRule.attachCommand("insertHorizontalRule", type => ({
   label: "Insert horizontal rule",
-  run(pm) { return insertOpaqueBlock(pm, type) }
+  run(pm) { return insertOpaqueBlock(pm, type) },
+  info: {key: "Mod-Space"}
 }))
 
 defineCommand("undo", {
   label: "Undo last change",
   run(pm) { pm.scrollIntoView(); return pm.history.undo() },
   select(pm) { return pm.history.canUndo() },
-  menuGroup: {name: "history", rank: 10}
+  info: {
+    menuGroup: "history",
+    menuRank: 10,
+    key: "Mod-Z"
+  }
 })
 
 defineCommand("redo", {
   label: "Redo last undone change",
   run(pm) { pm.scrollIntoView(); return pm.history.redo() },
   select(pm) { return pm.history.canRedo() },
-  menuGroup: {name: "history", rank: 20}
+  info: {
+    menuGroup: "history",
+    menuRank: 20,
+    key: ["Mod-Y", "Shift-Mod-Z"]
+  }
 })
 
 defineCommand("textblockType", {
@@ -481,7 +549,7 @@ defineCommand("textblockType", {
     {name: "Type", type: "select", options: listTextblockTypes, default: currentTextblockType, defaultLabel: "Type..."}
   ],
   display: "select",
-  menuGroup: {name: "block", rank: 10}
+  info: {menuGroup: "block", menuRank: 10}
 })
 
 Paragraph.prototype.textblockTypes = [{label: "Normal", rank: 10}]

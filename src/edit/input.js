@@ -7,8 +7,8 @@ import {toText} from "../serialize/text"
 import {knownSource, convertFrom} from "../parse"
 
 import {isModifierKey, lookupKey, keyName} from "./keys"
+import {dangerousKeys} from "./dangerouskeys"
 import {browser, addClass, rmClass} from "../dom"
-import {execCommand} from "./commands"
 import {applyDOMChange, textContext, textInContext} from "./domchange"
 import {Range, coordsAtPos} from "./selection"
 
@@ -77,7 +77,15 @@ export function dispatchKey(pm, name, e) {
   }
 
   let handle = function(bound) {
-    let result = typeof bound == "string" ? execCommand(pm, bound) : bound(pm)
+    let result = false
+    if (Array.isArray(bound)) {
+      for (let i = 0; result === false && i < bound.length; i++)
+        result = handle(bound[i])
+    } else if (typeof bound == "string") {
+      result = pm.execCommand(bound)
+    } else {
+      result = bound(pm)
+    }
     return result !== false
   }
 
@@ -85,7 +93,7 @@ export function dispatchKey(pm, name, e) {
   for (let i = pm.input.keymaps.length - 1; !result && i >= 0; i--)
     result = lookupKey(name, pm.input.keymaps[i], handle, pm)
   if (!result)
-    result = lookupKey(name, pm.options.keymap, handle, pm)
+    result = lookupKey(name, pm.options.keymap, handle, pm) || lookupKey(name, dangerousKeys, handle, pm)
 
   if (result == "multi")
     pm.input.keySeq = name

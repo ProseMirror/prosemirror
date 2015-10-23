@@ -1,6 +1,6 @@
 import {defaultSchema} from "../model"
 
-import {defaultKeymap} from "./defaultkeymap"
+import {defaultKeymap} from "./commands"
 
 class Option {
   constructor(defaultValue, update, updateOnInit) {
@@ -23,7 +23,9 @@ const options = {
 
   place: new Option(null),
 
-  keymap: new Option(defaultKeymap),
+  keymap: new Option(null, (pm, value) => {
+    if (!value) pm.options.keymap = defaultKeymap(pm)
+  }),
 
   historyDepth: new Option(50),
 

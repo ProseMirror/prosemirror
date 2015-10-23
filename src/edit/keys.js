@@ -1,5 +1,8 @@
 // From CodeMirror, should be factored into its own NPM module
 
+// declare_global: navigator
+let mac = typeof navigator != "undefined" ? /Mac/.test(navigator.platform) : false
+
 export const names = {
   3: "Enter", 8: "Backspace", 9: "Tab", 13: "Enter", 16: "Shift", 17: "Ctrl", 18: "Alt",
   19: "Pause", 20: "CapsLock", 27: "Esc", 32: "Space", 33: "PageUp", 34: "PageDown", 35: "End",
@@ -35,7 +38,7 @@ export function isModifierKey(value) {
 }
 
 function normalizeKeyName(fullName) {
-  let parts = fullName.split(/-(?!$)/), name = parts[parts.length - 1]
+  let parts = fullName.split(/-(?!'?$)/), name = parts[parts.length - 1]
   let alt, ctrl, shift, cmd
   for (let i = 0; i < parts.length - 1; i++) {
     let mod = parts[i]
@@ -43,6 +46,7 @@ function normalizeKeyName(fullName) {
     else if (/^a(lt)?$/i.test(mod)) alt = true
     else if (/^(c|ctrl|control)$/i.test(mod)) ctrl = true
     else if (/^s(hift)$/i.test(mod)) shift = true
+    else if (/^mod$/i.test(mod)) { if (mac) cmd = true; else ctrl = true }
     else throw new Error("Unrecognized modifier name: " + mod)
   }
   if (alt) name = "Alt-" + name

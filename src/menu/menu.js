@@ -239,9 +239,9 @@ export function commandGroups(pm, ...names) {
     let found = []
     for (let name in pm.commands) {
       let cmd = pm.commands[name]
-      if (cmd.menuGroup && cmd.menuGroup.name == group) found.push(cmd)
+      if (cmd.info.menuGroup && cmd.info.menuGroup == group) found.push(cmd)
     }
-    return found.sort((a, b) => a.menuGroup.rank - b.menuGroup.rank)
+    return found.sort((a, b) => (a.info.menuRank || 50) - (b.info.menuRank || 50))
   })
 }
 
