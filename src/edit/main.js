@@ -16,7 +16,7 @@ import {toText} from "../serialize/text"
 import "../parse/text"
 import {convertFrom} from "../parse"
 import {convertTo} from "../serialize"
-import {execCommand, initCommands} from "./commands"
+import {initCommands} from "./commands"
 import {RangeStore, MarkedRange} from "./range"
 
 /**
@@ -257,7 +257,10 @@ export class ProseMirror {
     this.operation.scrollIntoView = pos
   }
 
-  execCommand(name) { execCommand(this, name) }
+  execCommand(name) {
+    let cmd = this.commands[name]
+    return !!(cmd && cmd.exec(this) !== false)
+  }
 }
 
 const nullOptions = {}

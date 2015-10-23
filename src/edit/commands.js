@@ -51,11 +51,6 @@ export class Command {
   }
 }
 
-export function execCommand(pm, name) {
-  let base = pm.commands[name]
-  return !!(base && base.exec(pm) !== false)
-}
-
 export function initCommands(schema) {
   let result = Object.create(null)
   for (let cmd in globalCommands) result[cmd] = globalCommands[cmd]
