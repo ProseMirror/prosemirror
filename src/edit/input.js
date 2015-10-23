@@ -25,6 +25,9 @@ export class Input {
     this.pm = pm
 
     this.keySeq = null
+
+    // When the user is creating a composed character,
+    // this is set to a Composing instance.
     this.composing = null
     this.shiftKey = this.updatingComposition = false
     this.skipInput = 0
@@ -64,8 +67,20 @@ export class Input {
   }
 }
 
+/**
+ * Dispatch a key press to the internal keymaps, which will override the default
+ * DOM behavior.
+ *
+ * @param  {ProseMirror}   pm The editor instance.
+ * @param  {string}        name The name of the key pressed.
+ * @param  {KeyboardEvent} e
+ * @return {string} If the key name has a mapping and the callback is invoked ("handled"),
+ *                  if the key name needs to be combined in sequence with the next key ("multi"),
+ *                  if there is no mapping ("nothing").
+ */
 export function dispatchKey(pm, name, e) {
   let seq = pm.input.keySeq
+  // If the previous key should be used in sequence with this one, modify the name accordingly.
   if (seq) {
     if (isModifierKey(name)) return true
     clearTimeout(stopSeq)
@@ -87,6 +102,7 @@ export function dispatchKey(pm, name, e) {
   if (!result)
     result = lookupKey(name, pm.options.keymap, handle, pm)
 
+  // If the key should be used in sequence with the next key, store the keyname internally.
   if (result == "multi")
     pm.input.keySeq = name
 
@@ -129,6 +145,9 @@ handlers.keypress = (pm, e) => {
   e.preventDefault()
 }
 
+/**
+ * A class to track state while creating a composed character.
+ */
 class Composing {
   constructor(pm, data) {
     this.finished = false
