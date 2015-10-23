@@ -189,7 +189,7 @@ Transform.prototype.setBlockType = function(from, to, wrapNode) {
     path = path.slice()
     if (wrapNode.type.plainText && !isPlainText(node))
       this.clearMarkup(new Pos(path, 0), new Pos(path, node.maxOffset))
-    this.step("ancestor", new Pos(path, 0), new Pos(path, node.maxOffset),
+    this.step("ancestor", new Pos(path, 0), new Pos(path, this.doc.path(path).maxOffset),
               null, {depth: 1, wrappers: [wrapNode]})
   })
   return this
