@@ -113,7 +113,7 @@ function renderSelect(item, menu) {
   let param = item.params[0]
   let value = !param.default ? null : param.default.call ? param.default(menu.pm) : param.default
 
-  let dom = elt("div", {class: "ProseMirror-select", title: item.label},
+  let dom = elt("div", {class: "ProseMirror-select ProseMirror-select-command-" + item.name, title: item.label},
                 !value ? (param.defaultLabel || "Select...") : value.label)
   dom.addEventListener("mousedown", e => {
     e.preventDefault(); e.stopPropagation()
@@ -239,9 +239,9 @@ export function commandGroups(pm, ...names) {
     let found = []
     for (let name in pm.commands) {
       let cmd = pm.commands[name]
-      if (cmd.menuGroup == group) found.push(cmd)
+      if (cmd.menuGroup && cmd.menuGroup.name == group) found.push(cmd)
     }
-    return found
+    return found.sort((a, b) => a.menuGroup.rank - b.menuGroup.rank)
   })
 }
 
@@ -327,17 +327,23 @@ insertCSS(`
 }
 
 .ProseMirror-select {
-  padding: 1px 2px 1px 4px;
+  padding: 1px 12px 1px 4px;
   display: inline-block;
   vertical-align: middle;
+  position: relative;
   cursor: pointer;
   margin: 0 4px;
 }
 
+.ProseMirror-select-command-textblockType {
+  min-width: 3.2em;
+}
+
 .ProseMirror-select:after {
-  content: " ▿";
+  content: "▿";
   color: #777;
-  vertical-align: top;
+  position: absolute;
+  right: 4px;
 }
 
 .ProseMirror-select-menu {
