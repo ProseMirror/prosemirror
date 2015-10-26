@@ -169,6 +169,24 @@ test("joinForward",
 test("joinForward",
      doc(ul(li(p("a<a>"), p("b")))),
      doc(ul(li(p("ab")))))
+test("joinForward",
+     doc(blockquote(p("foo<a>")), p("bar")),
+     doc(blockquote(p("foo<a>"), p("bar"))))
+test("joinForward",
+     doc(blockquote(p("hi<a>")), blockquote(p("there"))),
+     doc(blockquote(p("hi"), p("there"))))
+test("joinForward",
+     doc(p("foo<a>"), blockquote(p("bar"))),
+     doc(p("foobar")))
+test("joinForward",
+     doc(ul(li(p("hi<a>"))), ul(li(p("there")))),
+     doc(ul(li(p("hi")), li(p("there")))))
+test("joinForward",
+     doc(ul(li(p("there<a>")))),
+     doc(ul(li(p("there")))))
+test("joinForward",
+     doc(blockquote(p("there<a>")), hr),
+     doc(blockquote(p("there"))))
 
 test("deleteCharAfter",
      doc(p("b<a>ar")),

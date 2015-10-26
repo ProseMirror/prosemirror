@@ -237,6 +237,29 @@ defineCommand("deleteSelection", {
          macKey: ["Ctrl-H(10)", "Alt-Backspace(10)", "Ctrl-D(10)", "Ctrl-Alt-Backspace(10)", "Alt-Delete(10)", "Alt-D(10)"]}
 })
 
+function deleteBarrier(pm, cut) {
+  let target = pm.doc.path(cut.path).child(cut.offset - 1)
+  for (let pos = cut, inner;; pos = inner) {
+    let parent = pm.doc.path(pos.path)
+    if (pos.offset >= parent.length) return false
+    let after = parent.child(pos.offset), wrappers, conn
+    inner = new Pos(pos.path.concat(pos.offset), 0)
+    if (target.type.canContainChildren(after))
+      wrappers = [after]
+    else if (conn = target.type.findConnection(after.type))
+      wrappers = [target, ...conn.map(t => t.create()), after]
+    else
+      continue
+
+    let tr = pm.tr, diff = pos.depth - cut.depth
+    if (diff) tr.splitIfNeeded(pos.move(1), diff)
+    if (diff || wrappers.length > 1)
+      tr.step("ancestor", inner, new Pos(inner.path, after.maxOffset), null, {depth: diff + 1, wrappers})
+    tr.join(cut)
+    return pm.apply(tr, andScroll)
+  }
+}
+
 defineCommand("joinBackward", {
   label: "Join with the block above",
   run(pm) {
@@ -244,11 +267,10 @@ defineCommand("joinBackward", {
     if (!empty || head.offset > 0) return false
 
     // Find the node before this one
-    let before, parent, cut
+    let before, cut
     for (let i = head.path.length - 1; !before && i >= 0; i--) if (head.path[i] > 0) {
       cut = head.shorten(i)
-      parent = pm.doc.path(cut.path)
-      before = parent.child(cut.offset - 1)
+      before = pm.doc.path(cut.path).child(cut.offset - 1)
     }
 
     // If there is no node before this, try to lift
@@ -259,30 +281,9 @@ defineCommand("joinBackward", {
     if (before.type.contains == null)
       return pm.apply(pm.tr.delete(cut.move(-1), cut), andScroll)
 
-    // Else, iterate over wrappers between point after the node before
-    // and the cursor pos
-    for (let i = cut.path.length; i < head.path.length; i++) {
-      let pos = head.shorten(i)
-      let node = pm.doc.path(pos.path).child(pos.offset), conn, wrappers
-      // If it can be joined with the node before, join
-      if (before.type.canContainChildren(node))
-        wrappers = [node]
-      // If it can be moved into the node before, do so
-      else if (conn = before.type.findConnection(node.type))
-        wrappers = [before, ...conn.map(t => t.create()), node]
-      else
-        continue
-
-      let tr = pm.tr, posAfter = pos.move(1), diff = pos.depth - cut.depth
-      if (diff) tr.splitIfNeeded(posAfter, diff)
-      if (diff || wrappers.length > 1) {
-        let toInner = pos.path.concat(pos.offset)
-        tr.step("ancestor", new Pos(toInner, 0), new Pos(toInner, node.maxOffset),
-                null, {depth: diff + 1, wrappers})
-      }
-      tr.join(cut)
-      return pm.apply(tr, andScroll)
-    }
+    // Apply the joining algorithm
+    if (deleteBarrier(pm, cut) !== false)
+      return
 
     // As fallback, try a lift
     return pm.apply(pm.tr.lift(head), andScroll)
@@ -348,10 +349,10 @@ defineCommand("joinForward", {
     if (!empty || head.offset < pm.doc.path(head.path).maxOffset) return false
 
     // Find the node after this one
-    let after, parent, cut
+    let after, cut
     for (let i = head.path.length - 1; !after && i >= 0; i--) {
       cut = head.shorten(i, 1)
-      parent = pm.doc.path(cut.path)
+      let parent = pm.doc.path(cut.path)
       if (cut.offset < parent.length)
         after = parent.child(cut.offset)
     }
@@ -363,32 +364,8 @@ defineCommand("joinForward", {
     if (after.type.contains == null)
       return pm.apply(pm.tr.delete(cut, cut.move(1)), andScroll)
 
-    // Else, iterate over wrappers between point before the node after
-    // and the cursor pos
-    for (let i = cut.path.length; i < head.path.length; i++) {
-      let pos = head.shorten(i)
-      let node = pm.doc.path(pos.path).child(pos.offset), conn, wrappers
-      // If it can be joined with the node after, join
-      if (after.type.canContainChildren(node))
-        wrappers = [node]
-      // If it can be moved into the node after, do so
-      else if (conn = after.type.findConnection(node.type))
-        wrappers = [after, ...conn.map(t => t.create()), node]
-      else
-        continue
-
-      let tr = pm.tr, diff = pos.depth - cut.depth
-      if (diff) tr.splitIfNeeded(pos, diff)
-      if (diff || wrappers.length > 1) {
-        let toInner = pos.path.concat(pos.offset)
-        tr.step("ancestor", new Pos(toInner, 0), new Pos(toInner, node.maxOffset),
-                null, {depth: diff + 1, wrappers})
-      }
-      tr.join(cut)
-      return pm.apply(tr, andScroll)
-    }
-
-    return false
+    // Apply the joining algorithm
+    return deleteBarrier(pm, cut)
   },
   info: {key: ["Delete(30)", "Mod-Delete(30)"]}
 })
