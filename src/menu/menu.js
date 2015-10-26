@@ -115,7 +115,7 @@ function renderSelect(item, menu) {
   let value = !param.default ? null : param.default.call ? param.default(menu.pm) : param.default
 
   let dom = elt("div", {class: "ProseMirror-select ProseMirror-select-command-" + item.name, title: item.label},
-                !value ? (param.defaultLabel || "Select...") : value.label)
+                !value ? (param.defaultLabel || "Select...") : value.display ? value.display(value) : value.label)
   dom.addEventListener("mousedown", e => {
     e.preventDefault(); e.stopPropagation()
     showSelectMenu(menu.pm, item, dom)
@@ -127,7 +127,7 @@ function showSelectMenu(pm, item, dom) {
   let param = item.params[0]
   let options = param.options.call ? param.options(pm) : param.options
   let menu = elt("div", {class: "ProseMirror-select-menu"}, options.map(o => {
-    let dom = elt("div", null, o.label)
+    let dom = elt("div", null, o.display ? o.display(o) : o.label)
     dom.addEventListener("mousedown", e => {
       e.preventDefault()
       item.exec(pm, [o.value])
