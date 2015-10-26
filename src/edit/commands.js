@@ -233,12 +233,12 @@ defineCommand("deleteSelection", {
     if (empty) return false
     return pm.apply(pm.tr.delete(from, to), andScroll)
   },
-  info: {key: ["Backspace(10)", "Delete(10)", "Ctrl-Backspace(10)"],
-         macKey: ["Ctrl-H(10)", "Alt-Backspace(10)"]}
+  info: {key: ["Backspace(10)", "Delete(10)", "Mod-Backspace(10)", "Mod-Delete(10)"],
+         macKey: ["Ctrl-H(10)", "Alt-Backspace(10)", "Ctrl-D(10)", "Ctrl-Alt-Backspace(10)", "Alt-Delete(10)", "Alt-D(10)"]}
 })
 
 defineCommand("joinBackward", {
-  label: "Join with block before",
+  label: "Join with the block above",
   run(pm) {
     let {head, empty} = pm.selection
     if (!empty || head.offset > 0) return false
@@ -267,6 +267,7 @@ defineCommand("joinBackward", {
       // If it can be joined with the node before, join
       if (before.type.canContainChildren(node))
         wrappers = [node]
+      // If it can be moved into the node before, do so
       else if (conn = before.type.findConnection(node.type))
         wrappers = [before, ...conn.map(t => t.create()), node]
       else
@@ -286,7 +287,7 @@ defineCommand("joinBackward", {
     // As fallback, try a lift
     return pm.apply(pm.tr.lift(head), andScroll)
   },
-  info: {key: "Backspace(30)"}
+  info: {key: ["Backspace(30)", "Mod-Backspace(30)"]}
 })
 
 defineCommand("deleteCharBefore", {
@@ -297,7 +298,7 @@ defineCommand("deleteCharBefore", {
     let from = moveBackward(pm.doc.path(head.path), head.offset, "char")
     return pm.apply(pm.tr.delete(new Pos(head.path, from), head), andScroll)
   },
-  info: {key: "Backspace(60)", macKey: "Ctrl-H(20)"}
+  info: {key: "Backspace(60)", macKey: "Ctrl-H(40)"}
 })
 
 defineCommand("deleteWordBefore", {
@@ -308,36 +309,8 @@ defineCommand("deleteWordBefore", {
     let from = moveBackward(pm.doc.path(head.path), head.offset, "word")
     return pm.apply(pm.tr.delete(new Pos(head.path, from), head), andScroll)
   },
-  info: {key: "Ctrl-Backspace(20)", macKey: "Alt-Backspace(20)"}
+  info: {key: "Mod-Backspace(40)", macKey: "Alt-Backspace(40)"}
 })
-
-function blockAfter(doc, pos) {
-  let path = pos.path
-  while (path.length > 0) {
-    let end = path.length - 1
-    let offset = path[end] + 1
-    path = path.slice(0, end)
-    let node = doc.path(path)
-    if (offset < node.length)
-      return new Pos(path, offset)
-  }
-}
-
-function delBlockForward(pm, tr, pos) {
-  let lst = pos.depth - 1
-  let iAfter = Pos.after(pm.doc, new Pos(pos.path.slice(0, lst), pos.path[lst] + 1))
-  let bAfter = blockAfter(pm.doc, pos)
-  if (iAfter && bAfter) {
-    if (iAfter.cmp(bAfter.move(1)) < 0) bAfter = null
-    else iAfter = null
-  }
-
-  if (iAfter) {
-    tr.delete(pos, iAfter)
-  } else if (bAfter) {
-    tr.delete(bAfter, bAfter.move(1))
-  }
-}
 
 function moveForward(parent, offset, by) {
   if (by != "char" && by != "word")
@@ -368,30 +341,78 @@ function moveForward(parent, offset, by) {
   return offset
 }
 
-function delForward(pm, by) {
-  let tr = pm.tr, sel = pm.selection, from = sel.from
-  if (!sel.empty) {
-    tr.delete(from, sel.to)
-  } else {
-    let parent = pm.doc.path(from.path)
-    if (from.offset == parent.maxOffset)
-      delBlockForward(pm, tr, from)
-    else
-      tr.delete(from, new Pos(from.path, moveForward(parent, from.offset, by)))
-  }
-  return pm.apply(tr, andScroll)
-}
+defineCommand("joinForward", {
+  label: "Join with the block below",
+  run(pm) {
+    let {head, empty} = pm.selection
+    if (!empty || head.offset < pm.doc.path(head.path).maxOffset) return false
 
-defineCommand("delForward", {
-  label: "Delete after cursor",
-  run(pm) { return delForward(pm, "char") },
-  info: {key: "Delete", macKey: "Ctrl-D"}
+    // Find the node after this one
+    let after, parent, cut
+    for (let i = head.path.length - 1; !after && i >= 0; i--) {
+      cut = head.shorten(i, 1)
+      parent = pm.doc.path(cut.path)
+      if (cut.offset < parent.length)
+        after = parent.child(cut.offset)
+    }
+
+    // If there is no node after this, there's nothing to do
+    if (!after) return false
+
+    // If the node doesn't allow children, delete it
+    if (after.type.contains == null)
+      return pm.apply(pm.tr.delete(cut, cut.move(1)), andScroll)
+
+    // Else, iterate over wrappers between point before the node after
+    // and the cursor pos
+    for (let i = cut.path.length; i < head.path.length; i++) {
+      let pos = head.shorten(i)
+      let node = pm.doc.path(pos.path).child(pos.offset), conn, wrappers
+      // If it can be joined with the node after, join
+      if (after.type.canContainChildren(node))
+        wrappers = [node]
+      // If it can be moved into the node after, do so
+      else if (conn = after.type.findConnection(node.type))
+        wrappers = [after, ...conn.map(t => t.create()), node]
+      else
+        continue
+
+      let tr = pm.tr, diff = pos.depth - cut.depth
+      if (diff) tr.splitIfNeeded(pos, diff)
+      if (diff || wrappers.length > 1) {
+        let toInner = pos.path.concat(pos.offset)
+        tr.step("ancestor", new Pos(toInner, 0), new Pos(toInner, node.maxOffset),
+                null, {depth: diff + 1, wrappers})
+      }
+      tr.join(cut)
+      return pm.apply(tr, andScroll)
+    }
+
+    return false
+  },
+  info: {key: ["Delete(30)", "Mod-Delete(30)"]}
 })
 
-defineCommand("delWordForward", {
-  label: "Delete word after cursor",
-  run(pm) { return delForward(pm, "word") },
-  info: {key: "Mod-Delete", macKey: ["Ctrl-Alt-Backspace", "Alt-Delete", "Alt-D"]}
+defineCommand("deleteCharAfter", {
+  label: "Delete a character after the cursor",
+  run(pm) {
+    let {head, empty} = pm.selection
+    if (!empty || head.offset == 0) return false
+    let to = moveForward(pm.doc.path(head.path), head.offset, "char")
+    return pm.apply(pm.tr.delete(head, new Pos(head.path, to)), andScroll)
+  },
+  info: {key: "Delete(60)", macKey: "Ctrl-D(60)"}
+})
+
+defineCommand("deleteWordAfter", {
+  label: "Delete a character after the cursor",
+  run(pm) {
+    let {head, empty} = pm.selection
+    if (!empty || head.offset == 0) return false
+    let to = moveForward(pm.doc.path(head.path), head.offset, "word")
+    return pm.apply(pm.tr.delete(head, new Pos(head.path, to)), andScroll)
+  },
+  info: {key: "Mod-Delete(40)", macKey: ["Ctrl-Alt-Backspace(40)", "Alt-Delete(40)", "Alt-D(40)"]}
 })
 
 defineCommand("join", {

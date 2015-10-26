@@ -154,53 +154,51 @@ test("deleteWordBefore",
      doc(p("foo   <a>bar")),
      doc(p("foobar")))
 
-test("delForward",
-     doc(p("f<a>o<b>o")),
-     doc(p("fo")))
-test("delForward",
-     doc(p("f<a>oo"), p("ba<b>r")),
-     doc(p("fr")))
-test("delForward",
-     doc(p("b<a>ar")),
-     doc(p("br")))
-test("delForward",
+test("joinForward",
      doc(p("foo<a>"), p("bar")),
      doc(p("foobar")))
-test("delForward",
+test("joinForward",
      doc(p("foo<a>")),
      doc(p("foo")))
-test("delForward",
+test("joinForward",
      doc(p("foo<a>"), hr, p("bar")),
      doc(p("foo"), p("bar")))
-test("delForward",
+test("joinForward",
      doc(ul(li(p("a<a>")), li(p("b")))),
+     doc(ul(li(p("a"), p("b")))))
+test("joinForward",
+     doc(ul(li(p("a<a>"), p("b")))),
      doc(ul(li(p("ab")))))
-test("delForward",
+
+test("deleteCharAfter",
+     doc(p("b<a>ar")),
+     doc(p("br")))
+test("deleteCharAfter",
      doc(p("f<a>ç̀o")), // The c has two combining characters, which must be deleted along with it
      doc(p("fo")))
-test("delForward",
+test("deleteCharAfter",
      doc(p("ç<a>çç")), // The combining characters in nearby characters must be left alone
      doc(p("çç")))
-test("delForward",
+test("deleteCharAfter",
      doc(p("😅😆<a>😇😈")), // Must delete astral plane characters as one unit
      doc(p("😅😆😈")))
 
-test("delWordForward",
+test("deleteWordAfter",
      doc(p("foo<a> bar baz")),
      doc(p("foo baz")))
-test("delWordForward",
+test("deleteWordAfter",
      doc(p("foo <a>bar baz")),
      doc(p("foo  baz")))
-test("delWordForward",
+test("deleteWordAfter",
      doc(p("foo<a>... baz")),
      doc(p("foo baz")))
-test("delWordForward",
+test("deleteWordAfter",
      doc(p("foo<a>")),
      doc(p("foo")))
-test("delWordForward",
+test("deleteWordAfter",
      doc(p("fo<a>o")),
      doc(p("fo")))
-test("delWordForward",
+test("deleteWordAfter",
      doc(p("foo<a>   bar")),
      doc(p("foobar")))
 
