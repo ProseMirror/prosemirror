@@ -110,7 +110,7 @@ function buildInserted(nodesLeft, source, start, end) {
     let outside = searchRight <= same
     for (let i = searchLeft; i >= 0; i--) {
       let left = nodesLeft[i]
-      if (outside ? left.type.canContainChildren(node) : left.type == type) {
+      if (outside ? left.type.canContainContent(node) : left.type == type) {
         matched = i
         break
       }

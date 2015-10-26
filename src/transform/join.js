@@ -9,7 +9,7 @@ defineStep("join", {
     let before = doc.path(step.from.path)
     let after = doc.path(step.to.path)
     if (step.from.offset < before.maxOffset || step.to.offset > 0 ||
-        !before.type.canContainChildren(after)) return null
+        !before.type.canContainContent(after)) return null
     let pFrom = step.from.path, pTo = step.to.path
     let last = pFrom.length - 1, offset = pFrom[last] + 1
     if (pFrom.length != pTo.length || pFrom.length == 0 || offset != pTo[last]) return null

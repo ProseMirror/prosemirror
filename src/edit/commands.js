@@ -244,7 +244,7 @@ function deleteBarrier(pm, cut) {
     if (pos.offset >= parent.length) return false
     let after = parent.child(pos.offset), wrappers, conn
     inner = new Pos(pos.path.concat(pos.offset), 0)
-    if (target.type.canContainChildren(after))
+    if (target.type.canContainContent(after))
       wrappers = [after]
     else if (conn = target.type.findConnection(after.type))
       wrappers = [target, ...conn.map(t => t.create()), after]

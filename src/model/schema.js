@@ -5,27 +5,37 @@ import {ProseMirrorError} from "../util/error"
 
 export class SchemaError extends ProseMirrorError {}
 
-function findKinds(type, name, kind) {
-  let kinds = [name]
-  function add(kind) {
-    if (!kind) return false
-    let end = /\.$/.test(kind)
-    let split = (end ? kind.slice(0, kind.length - 1) : kind).split(" ")
-    split.forEach(kind => {
-      if (kind && kinds.indexOf(kind) == -1) kinds.push(kind)
-    })
-    return end
+function findKinds(type, name, schema, override) {
+  function set(sub, sup) {
+    if (sub in schema.kinds) {
+      if (schema.kinds[sub] == sup) return
+      SchemaError.raise(`Inconsistent superkinds for kind ${sub}: ${sup} and ${schema.kinds[sub]}`)
+    }
+    if (schema.subKind(sub, sup))
+      SchemaError.raise(`Conflicting kind hierarchy through ${sub} and ${sup}`)
+    schema.kinds[sub] = sup
   }
-  if (!add(kind)) for (let obj = type; obj; obj = Object.getPrototypeOf(obj))
-    if (obj.hasOwnProperty("kind") && add(obj.kind)) break
-  return kinds
+
+  for (let cur = type;; cur = Object.getPrototypeOf(cur)) {
+    let curKind = override != null && cur == type ? override : cur.kind
+    if (curKind != null) {
+      let [_, kind, end] = /^(.*?)(\.)?$/.exec(curKind)
+      if (kind) {
+        set(name, kind)
+        name = kind
+      }
+      if (end) {
+        set(name, null)
+        return
+      }
+    }
+  }
 }
 
 export class NodeType {
-  constructor(name, contains, kinds, attrs, schema) {
+  constructor(name, contains, attrs, schema) {
     this.name = name
     this.contains = contains
-    this.kinds = kinds
     this.attrs = attrs
     this.schema = schema
     this.defaultAttrs = null
@@ -35,14 +45,19 @@ export class NodeType {
   get configurable() { return true }
   get isTextblock() { return false }
 
+  static get kind() { return "." }
+
   canContain(type) {
-    return type.kinds.indexOf(this.contains) > -1
+    return this.schema.subKind(type.name, this.contains)
+  }
+
+  canContainContent(node) {
+    return this.schema.subKind(node.type.contains, this.contains)
   }
 
   canContainChildren(node) {
-    let children = node.children
-    for (let i = 0; i < children.length; i++)
-      if (!this.canContain(children[i].type)) return false
+    for (let i = 0; i < node.length; i++)
+      if (!this.canContain(node.child(i).type)) return false
     return true
   }
 
@@ -76,20 +91,16 @@ export class NodeType {
 
   static compile(types, schema) {
     let result = Object.create(null)
-    let kindsSeen = Object.create(null)
     for (let name in types) {
       let info = types[name]
       let type = info.type || SchemaError.raise("Missing node type for " + name)
-      let kinds = findKinds(type, name, info.kind)
-      kinds.forEach(n => kindsSeen[n] = true)
+      findKinds(type, name, schema, info.kind)
       let contains = "contains" in info ? info.contains : type.contains
-      result[name] = new type(name, contains, kinds,
-                              info.attributes || type.attributes,
-                              schema)
+      result[name] = new type(name, contains, info.attributes || type.attributes, schema)
     }
     for (let name in result) {
       let contains = result[name].contains
-      if (contains && !(contains in kindsSeen))
+      if (contains && !(contains in schema.kinds))
         SchemaError.raise("Node type " + name + " is specified to contain non-existing kind " + contains)
     }
     if (!result.doc) SchemaError.raise("Every schema needs a 'doc' type")
@@ -280,6 +291,7 @@ function buildAttrs(attrSpec, attrs, arg1, arg2) {
 export class Schema {
   constructor(spec) {
     this.spec = spec
+    this.kinds = Object.create(null)
     this.nodes = NodeType.compile(spec.nodes, this)
     this.styles = StyleType.compile(spec.styles, this)
     this.cached = Object.create(null)
@@ -334,5 +346,13 @@ export class Schema {
 
   nodeType(name) {
     return this.nodes[name] || SchemaError.raise("Unknown node type: " + name)
+  }
+
+  subKind(sub, sup) {
+    for (;;) {
+      if (sub == sup) return true
+      sub = this.kinds[sub]
+      if (!sub) return false
+    }
   }
 }
