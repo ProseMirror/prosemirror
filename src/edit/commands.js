@@ -71,7 +71,7 @@ export function defaultKeymap(pm) {
   let bindings = {}
   function add(command, key) {
     if (Array.isArray(key)) {
-      for (let i = 0; i < key.length; i++) add(name, key[i])
+      for (let i = 0; i < key.length; i++) add(command, key[i])
     } else if (key) {
       let [_, name, rank = 50] = /^(.+?)(?:\((\d+)\))?$/.exec(key)
       sortedInsert(bindings[name] || (bindings[name] = []), {command, rank},
