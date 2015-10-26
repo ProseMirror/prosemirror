@@ -1,7 +1,9 @@
 import {SchemaSpec, Schema, Block, Textblock, Inline, Text,
         Attribute, StyleType} from "./schema"
 
-export class Doc extends Block {}
+export class Doc extends Block {
+  static get kind() { return "." }
+}
 
 export class BlockQuote extends Block {}
 
@@ -15,7 +17,7 @@ export class BulletList extends Block {
 }
 
 export class ListItem extends Block {
-  static get category() { return "list_item" }
+  static get kind() { return "." }
 }
 
 export class HorizontalRule extends Block {

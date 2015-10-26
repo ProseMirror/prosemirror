@@ -5,11 +5,27 @@ import {ProseMirrorError} from "../util/error"
 
 export class SchemaError extends ProseMirrorError {}
 
+function findKinds(type, name, kind) {
+  let kinds = [name]
+  function add(kind) {
+    if (!kind) return false
+    let end = /\.$/.test(kind)
+    let split = (end ? kind.slice(0, kind.length - 1) : kind).split(" ")
+    split.forEach(kind => {
+      if (kind && kinds.indexOf(kind) == -1) kinds.push(kind)
+    })
+    return end
+  }
+  if (!add(kind)) for (let obj = type; obj; obj = Object.getPrototypeOf(obj))
+    if (obj.hasOwnProperty("kind") && add(obj.kind)) break
+  return kinds
+}
+
 export class NodeType {
-  constructor(name, contains, categories, attrs, schema) {
+  constructor(name, contains, kinds, attrs, schema) {
     this.name = name
     this.contains = contains
-    this.categories = categories
+    this.kinds = kinds
     this.attrs = attrs
     this.schema = schema
     this.defaultAttrs = null
@@ -20,7 +36,7 @@ export class NodeType {
   get isTextblock() { return false }
 
   canContain(type) {
-    return type.categories.indexOf(this.contains) > -1
+    return type.kinds.indexOf(this.contains) > -1
   }
 
   canContainChildren(node) {
@@ -60,21 +76,21 @@ export class NodeType {
 
   static compile(types, schema) {
     let result = Object.create(null)
-    let categoriesSeen = Object.create(null)
+    let kindsSeen = Object.create(null)
     for (let name in types) {
       let info = types[name]
       let type = info.type || SchemaError.raise("Missing node type for " + name)
-      let categories = (info.category || type.category).split(" ")
-      categories.forEach(n => categoriesSeen[n] = true)
+      let kinds = findKinds(type, name, info.kind)
+      kinds.forEach(n => kindsSeen[n] = true)
       let contains = "contains" in info ? info.contains : type.contains
-      result[name] = new type(name, contains, categories,
+      result[name] = new type(name, contains, kinds,
                               info.attributes || type.attributes,
                               schema)
     }
     for (let name in result) {
       let contains = result[name].contains
-      if (contains && !(contains in categoriesSeen))
-        SchemaError.raise("Node type " + name + " is specified to contain non-existing category " + contains)
+      if (contains && !(contains in kindsSeen))
+        SchemaError.raise("Node type " + name + " is specified to contain non-existing kind " + contains)
     }
     if (!result.doc) SchemaError.raise("Every schema needs a 'doc' type")
     if (!result.text) SchemaError.raise("Every schema needs a 'text' type")
@@ -93,7 +109,7 @@ NodeType.attributes = {}
 export class Block extends NodeType {
   get instance() { return BlockNode }
   static get contains() { return "block" }
-  static get category() { return "block" }
+  static get kind() { return "block." }
 }
 
 export class Textblock extends Block {
@@ -105,12 +121,11 @@ export class Textblock extends Block {
 export class Inline extends NodeType {
   get instance() { return InlineNode }
   static get contains() { return null }
-  static get category() { return "inline" }
+  static get kind() { return "inline." }
 }
 
 export class Text extends Inline {
   get instance() { return TextNode }
-  static get category() { return "inline text" }
 }
 
 // Attribute descriptors
