@@ -155,7 +155,7 @@ Transform.prototype.wrap = function(from, to, node) {
   let wrappers = around.map(t => node.type.schema.node(t))
                    .concat(node)
                    .concat(inside.map(t => node.type.schema.node(t)))
-  this.step("ancestor", range.from, range.to, null, {wrappers: wrappers})
+  this.step("ancestor", range.from, range.to, null, {wrappers})
   if (inside.length) {
     let toInner = range.from.path.slice()
     for (let i = 0; i < around.length + inside.length + 1; i++)

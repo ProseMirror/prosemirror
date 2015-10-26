@@ -95,16 +95,17 @@ function clearSel(pm) {
   return tr
 }
 
+const andScroll = {scrollIntoView: true}
+
 HardBreak.attachCommand("insertHardBreak", type => ({
   label: "Insert hard break",
   run(pm) {
-    pm.scrollIntoView()
     let tr = clearSel(pm), pos = pm.selection.from
     if (pm.doc.path(pos.path).type.isCode)
       tr.insertText(pos, "\n")
     else
       tr.insert(pos, pm.schema.node(type))
-    pm.apply(tr)
+    pm.apply(tr, andScroll)
   },
   info: {key: ["Mod-Enter", "Shift-Enter"]}
 }))
@@ -185,44 +186,6 @@ Image.attachCommand("insertImage", type => ({
   info: {menuGroup: "inline", menuRank: 40}
 }))
 
-function blockBefore(pos) {
-  for (let i = pos.path.length - 1; i >= 0; i--) {
-    let offset = pos.path[i] - 1
-    if (offset >= 0) return new Pos(pos.path.slice(0, i), offset)
-  }
-}
-
-function delBlockBackward(pm, tr, pos) {
-  if (pos.depth == 1) { // Top level block, join with block above
-    let iBefore = Pos.before(pm.doc, new Pos([], pos.path[0]))
-    let bBefore = blockBefore(pos)
-    if (iBefore && bBefore) {
-      if (iBefore.cmp(bBefore) > 0) bBefore = null
-      else iBefore = null
-    }
-    if (iBefore) {
-      tr.delete(iBefore, pos)
-      let joinable = joinPoint(tr.doc, tr.map(pos).pos, 1)
-      if (joinable) tr.join(joinable)
-    } else if (bBefore) {
-      tr.delete(bBefore, bBefore.shift(1))
-    }
-  } else {
-    let last = pos.depth - 1
-    let parent = pm.doc.path(pos.path.slice(0, last))
-    let offset = pos.path[last]
-    // Top of list item below other list item
-    // Join with the one above
-    if (parent.type == pm.schema.nodes.list_item &&
-        offset == 0 && pos.path[last - 1] > 0) {
-      tr.join(joinPoint(pm.doc, pos))
-    // Any other nested block, lift up
-    } else {
-      tr.lift(pos, pos)
-    }
-  }
-}
-
 /**
  * Get an offset moving backward from a current offset inside a node.
  *
@@ -263,39 +226,89 @@ function moveBackward(parent, offset, by) {
   return offset
 }
 
-/**
- * Deletes, in order of preference:
- *  - the current selection, if a selection is active
- *  - the block break if the cursor is at the beginning of a block,
- *    and a previous adjacent block exists
- *  - the preceding character
- *
- * @param  {ProseMirror} pm A ProseMirror editor instance.
- * @param  {string}      by Size to delete by. Either "char" or "word".
- */
-function delBackward(pm, by) {
-  pm.scrollIntoView()
-
-  let tr = pm.tr, sel = pm.selection, from = sel.from
-  if (!sel.empty)
-    tr.delete(from, sel.to)
-  else if (from.offset == 0)
-    delBlockBackward(pm, tr, from)
-  else
-    tr.delete(new Pos(from.path, moveBackward(pm.doc.path(from.path), from.offset, by)), from)
-  return pm.apply(tr)
-}
-
-defineCommand("delBackward", {
-  label: "Delete before cursor",
-  run(pm) { return delBackward(pm, "char") },
-  info: {key: "Backspace", macKey: "Ctrl-H"}
+defineCommand("deleteSelection", {
+  label: "Delete the selection",
+  run(pm) {
+    let {from, to, empty} = pm.selection
+    if (empty) return false
+    return pm.apply(pm.tr.delete(from, to), andScroll)
+  },
+  info: {key: ["Backspace(10)", "Delete(10)", "Ctrl-Backspace(10)"],
+         macKey: ["Ctrl-H(10)", "Alt-Backspace(10)"]}
 })
 
-defineCommand("delWordBackward", {
-  label: "Delete word before cursor",
-  run(pm) { return delBackward(pm, "word") },
-  info: {key: "Mod-Backspace", macKey: "Alt-Backspace"}
+defineCommand("joinBackward", {
+  label: "Join with block before",
+  run(pm) {
+    let {head, empty} = pm.selection
+    if (!empty || head.offset > 0) return false
+
+    // Find the node before this one
+    let before, parent, cut
+    for (let i = head.path.length - 1; !before && i >= 0; i--) if (head.path[i] > 0) {
+      cut = head.shorten(i)
+      parent = pm.doc.path(cut.path)
+      before = parent.child(cut.offset - 1)
+    }
+
+    // If there is no node before this, try to lift
+    if (!before)
+      return pm.apply(pm.tr.lift(head), andScroll)
+
+    // If the node doesn't allow children, delete it
+    if (before.type.contains == null)
+      return pm.apply(pm.tr.delete(cut.move(-1), cut), andScroll)
+
+    // Else, iterate over wrappers between point after the node before
+    // and the cursor pos
+    for (let i = cut.path.length; i < head.path.length; i++) {
+      let pos = head.shorten(i)
+      let node = pm.doc.path(pos.path).child(pos.offset), conn, wrappers
+      // If it can be joined with the node before, join
+      if (before.type.canContainChildren(node))
+        wrappers = [node]
+      else if (conn = before.type.findConnection(node.type))
+        wrappers = [before, ...conn.map(t => t.create()), node]
+      else
+        continue
+
+      let tr = pm.tr, posAfter = pos.move(1), diff = pos.depth - cut.depth
+      if (diff) tr.splitIfNeeded(posAfter, diff)
+      if (diff || wrappers.length > 1) {
+        let toInner = pos.path.concat(pos.offset)
+        tr.step("ancestor", new Pos(toInner, 0), new Pos(toInner, node.maxOffset),
+                null, {depth: diff + 1, wrappers})
+      }
+      tr.join(cut)
+      return pm.apply(tr, andScroll)
+    }
+
+    // As fallback, try a lift
+    return pm.apply(pm.tr.lift(head), andScroll)
+  },
+  info: {key: "Backspace(30)"}
+})
+
+defineCommand("deleteCharBefore", {
+  label: "Delete a character before the cursor",
+  run(pm) {
+    let {head, empty} = pm.selection
+    if (!empty || head.offset == 0) return false
+    let from = moveBackward(pm.doc.path(head.path), head.offset, "char")
+    return pm.apply(pm.tr.delete(new Pos(head.path, from), head), andScroll)
+  },
+  info: {key: "Backspace(60)", macKey: "Ctrl-H(20)"}
+})
+
+defineCommand("deleteWordBefore", {
+  label: "Delete the word before the cursor",
+  run(pm) {
+    let {head, empty} = pm.selection
+    if (!empty || head.offset == 0) return false
+    let from = moveBackward(pm.doc.path(head.path), head.offset, "word")
+    return pm.apply(pm.tr.delete(new Pos(head.path, from), head), andScroll)
+  },
+  info: {key: "Ctrl-Backspace(20)", macKey: "Alt-Backspace(20)"}
 })
 
 function blockAfter(doc, pos) {
@@ -315,14 +328,14 @@ function delBlockForward(pm, tr, pos) {
   let iAfter = Pos.after(pm.doc, new Pos(pos.path.slice(0, lst), pos.path[lst] + 1))
   let bAfter = blockAfter(pm.doc, pos)
   if (iAfter && bAfter) {
-    if (iAfter.cmp(bAfter.shift(1)) < 0) bAfter = null
+    if (iAfter.cmp(bAfter.move(1)) < 0) bAfter = null
     else iAfter = null
   }
 
   if (iAfter) {
     tr.delete(pos, iAfter)
   } else if (bAfter) {
-    tr.delete(bAfter, bAfter.shift(1))
+    tr.delete(bAfter, bAfter.move(1))
   }
 }
 
@@ -356,7 +369,6 @@ function moveForward(parent, offset, by) {
 }
 
 function delForward(pm, by) {
-  pm.scrollIntoView()
   let tr = pm.tr, sel = pm.selection, from = sel.from
   if (!sel.empty) {
     tr.delete(from, sel.to)
@@ -367,7 +379,7 @@ function delForward(pm, by) {
     else
       tr.delete(from, new Pos(from.path, moveForward(parent, from.offset, by)))
   }
-  return pm.apply(tr)
+  return pm.apply(tr, andScroll)
 }
 
 defineCommand("delForward", {
@@ -400,9 +412,7 @@ defineCommand("lift", {
   label: "Lift out of enclosing block",
   run(pm) {
     let sel = pm.selection
-    let result = pm.apply(pm.tr.lift(sel.from, sel.to))
-    if (result !== false) pm.scrollIntoView()
-    return result
+    return pm.apply(pm.tr.lift(sel.from, sel.to), andScroll)
   },
   select(pm) {
     let sel = pm.selection
@@ -419,8 +429,7 @@ function wrapCommand(type, name, labelName, info) {
     label: "Wrap in " + labelName,
     run(pm) {
       let sel = pm.selection
-      pm.scrollIntoView()
-      return pm.apply(pm.tr.wrap(sel.from, sel.to, type.create()))
+      return pm.apply(pm.tr.wrap(sel.from, sel.to, type.create()), andScroll)
     },
     info
   }))
@@ -451,8 +460,7 @@ defineCommand("newlineInCode", {
     if (Pos.samePath(from.path, to.path) &&
         (block = pm.doc.path(from.path)).type.isCode &&
         to.offset < block.maxOffset) {
-      pm.scrollIntoView()
-      return pm.apply(clearSel(pm).insertText(from, "\n"))
+      return pm.apply(clearSel(pm).insertText(from, "\n"), andScroll)
     }
     return false
   },
@@ -466,11 +474,10 @@ defineCommand("liftEmptyBlock", {
     if (!empty || head.offset > 0) return false
     let block = pm.doc.path(head.path)
     if (block.length != 0) return false
-    pm.scrollIntoView()
     if (head.path[head.path.length - 1] > 0 &&
         pm.apply(pm.tr.split(head.shorten())) !== false)
       return
-    return pm.apply(pm.tr.lift(head))
+    return pm.apply(pm.tr.lift(head), andScroll)
   },
   info: {key: "Enter(30)"}
 })
@@ -480,16 +487,14 @@ defineCommand("splitBlock", {
   run(pm) {
     let {from, to} = pm.selection, block = pm.doc.path(to.path)
     let type = to.offset == block.maxOffset ? pm.schema.defaultTextblockType().create() : null
-    pm.scrollIntoView()
-    return pm.apply(clearSel(pm).split(from, 1, type))
+    return pm.apply(clearSel(pm).split(from, 1, type), andScroll)
   },
   info: {key: "Enter(60)"}
 })
 
 function setType(pm, type, attrs) {
   let sel = pm.selection
-  pm.scrollIntoView()
-  return pm.apply(pm.tr.setBlockType(sel.from, sel.to, pm.schema.node(type, attrs)))
+  return pm.apply(pm.tr.setBlockType(sel.from, sel.to, pm.schema.node(type, attrs)), andScroll)
 }
 
 function blockTypeCommand(type, name, labelName, attrs, key) {
@@ -516,7 +521,6 @@ blockTypeCommand(Paragraph, "makeParagraph", "paragraph", "Mod-P")
 blockTypeCommand(CodeBlock, "makeCodeBlock", "code block", "Mod-\\")
 
 function insertOpaqueBlock(pm, type, attrs) {
-  pm.scrollIntoView()
   let pos = pm.selection.from
   let tr = clearSel(pm)
   let parent = tr.doc.path(pos.shorten().path)
@@ -526,7 +530,7 @@ function insertOpaqueBlock(pm, type, attrs) {
     tr.split(pos)
     off = 1
   }
-  return pm.apply(tr.insert(pos.shorten(null, off), pm.schema.node(type, attrs)))
+  return pm.apply(tr.insert(pos.shorten(null, off), pm.schema.node(type, attrs)), andScroll)
 }
 
 HorizontalRule.attachCommand("insertHorizontalRule", type => ({

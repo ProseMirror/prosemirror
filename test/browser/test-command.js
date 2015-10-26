@@ -84,42 +84,75 @@ test("code",
      doc(p(code("f<a>o<b>o"))),
      doc(p(code("f"), "o", code("o"))))
 
-test("delBackward",
-     doc(p("f<a>o<b>o")),
-     doc(p("fo")))
-test("delBackward",
-     doc(p("f<a>oo"), p("ba<b>r")),
-     doc(p("fr")))
-test("delBackward",
-     doc(p("ba<a>r")),
-     doc(p("br")))
-test("delBackward",
-     doc(p("foo"), p("<a>bar")),
-     doc(p("foobar")))
-test("delBackward",
+test("joinBackward",
+     doc(p("hi"), p("<a>there")),
+     doc(p("hithere")))
+test("joinBackward",
+     doc(p("hi"), blockquote(p("<a>there"))),
+     doc(p("hithere")))
+test("joinBackward",
+     doc(blockquote(p("hi")), blockquote(p("<a>there"))),
+     doc(blockquote(p("hi"), p("there"))))
+test("joinBackward",
+     doc(blockquote(p("hi")), p("<a>there")),
+     doc(blockquote(p("hi"), p("there"))))
+test("joinBackward",
+     doc(ul(li(p("hi"))), p("<a>there")),
+     doc(ul(li(p("hi")), li(p("there")))))
+test("joinBackward",
+     doc(ul(li(p("hi"))), ul(li(p("<a>there")))),
+     doc(ul(li(p("hi")), li(p("there")))))
+test("joinBackward",
+     doc(ul(li(p("hi")), li(p("<a>there")))),
+     doc(ul(li(p("hi"), p("there")))))
+test("joinBackward",
+     doc(ul(li(p("<a>there")))),
+     doc(p("<a>there")))
+test("joinBackward",
+     doc(hr, p("<a>there")),
+     doc(p("there")))
+test("joinBackward",
+     doc(hr, blockquote(p("<a>there"))),
+     doc(blockquote(p("there"))))
+test("joinBackward",
      doc(p("<a>foo")),
      doc(p("foo")))
-test("delBackward",
-     doc(p("foo"), hr, p("<a>bar")),
-     doc(p("foo"), p("bar")))
-test("delBackward",
-     doc(ul(li(p("a")), li(p("<a>b")))),
-     doc(ul(li(p("a"), p("<a>b")))))
-test("delBackward",
-     doc(blockquote(p("<a>foo"))),
-     doc(p("foo")))
-test("delBackward",
-     doc(blockquote(p("foo"), p("<a>bar"), p("baz"))),
-     doc(blockquote(p("foo")), p("<a>bar"), blockquote(p("baz"))))
-test("delBackward",
+
+test("deleteSelection",
+     doc(p("f<a>o<b>o")),
+     doc(p("fo")))
+test("deleteSelection",
+     doc(p("f<a>oo"), p("ba<b>r")),
+     doc(p("fr")))
+
+test("deleteCharBefore",
+     doc(p("ba<a>r")),
+     doc(p("br")))
+test("deleteCharBefore",
      doc(p("fç̀<a>o")), // The c has two combining characters, which must be deleted along with it
      doc(p("fo")))
-test("delBackward",
+test("deleteCharBefore",
      doc(p("çç<a>ç")), // The combining characters in nearby characters must be left alone
      doc(p("çç")))
-test("delBackward",
+test("deleteCharBefore",
      doc(p("😅😆<a>😇😈")), // Must delete astral plane characters as one unit
      doc(p("😅😇😈")))
+
+test("deleteWordBefore",
+     doc(p("foo bar <a>baz")),
+     doc(p("foo baz")))
+test("deleteWordBefore",
+     doc(p("foo bar<a> baz")),
+     doc(p("foo  baz")))
+test("deleteWordBefore",
+     doc(p("foo ...<a>baz")),
+     doc(p("foo baz")))
+test("deleteWordBefore",
+     doc(p("<a>foo")),
+     doc(p("foo")))
+test("deleteWordBefore",
+     doc(p("foo   <a>bar")),
+     doc(p("foobar")))
 
 test("delForward",
      doc(p("f<a>o<b>o")),
@@ -151,22 +184,6 @@ test("delForward",
 test("delForward",
      doc(p("😅😆<a>😇😈")), // Must delete astral plane characters as one unit
      doc(p("😅😆😈")))
-
-test("delWordBackward",
-     doc(p("foo bar <a>baz")),
-     doc(p("foo baz")))
-test("delWordBackward",
-     doc(p("foo bar<a> baz")),
-     doc(p("foo  baz")))
-test("delWordBackward",
-     doc(p("foo ...<a>baz")),
-     doc(p("foo baz")))
-test("delWordBackward",
-     doc(p("<a>foo")),
-     doc(p("foo")))
-test("delWordBackward",
-     doc(p("foo   <a>bar")),
-     doc(p("foobar")))
 
 test("delWordForward",
      doc(p("foo<a> bar baz")),

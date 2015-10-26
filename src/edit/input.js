@@ -168,7 +168,7 @@ handlers.compositionupdate = (pm, e) => {
     pm.input.updatingComposition = true
     inputText(pm, info.range, info.data)
     pm.input.updatingComposition = false
-    info.range = new Range(info.range.from, info.range.from.shift(info.data.length))
+    info.range = new Range(info.range.from, info.range.from.move(info.data.length))
   }
 }
 

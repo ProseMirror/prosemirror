@@ -85,6 +85,7 @@ export class ProseMirror {
 
     this.updateDoc(transform.doc, transform)
     this.signal("transform", transform, options)
+    if (options.scrollIntoView) this.scrollIntoView()
     return transform
   }
 

@@ -44,7 +44,7 @@ export class Pos {
     return Pos.shorten(this.path, to, offset)
   }
 
-  shift(by) {
+  move(by) {
     return new Pos(this.path, this.offset + by)
   }
 

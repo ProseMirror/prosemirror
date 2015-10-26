@@ -81,7 +81,7 @@ class CompressionWorker {
             this.remap.addNextMap()
           }
           if (extra > 0) {
-            let start = mappedStep.from.shift(-extra)
+            let start = mappedStep.from.move(-extra)
             mappedStep = new Step("replace", start, mappedStep.to, start,
                                   {nodes: [], openLeft: 0, openRight: 0})
           }
