@@ -238,7 +238,7 @@ defineCommand("deleteSelection", {
 })
 
 function deleteBarrier(pm, cut) {
-  let target = pm.doc.path(cut.path).child(cut.offset - 1)
+  let around = pm.doc.path(cut.path), target = around.child(cut.offset - 1)
   for (let pos = cut, inner;; pos = inner) {
     let parent = pm.doc.path(pos.path)
     if (pos.offset >= parent.length) return false
@@ -256,6 +256,10 @@ function deleteBarrier(pm, cut) {
     if (diff || wrappers.length > 1)
       tr.step("ancestor", inner, new Pos(inner.path, after.maxOffset), null, {depth: diff + 1, wrappers})
     tr.join(cut)
+    if (wrappers.length > 1 && around.length > cut.offset + 1 &&
+        tr.doc.path(cut.path).length == around.length - 1 &&
+        around.child(cut.offset + 1).sameMarkup(target))
+      tr.join(cut)
     return pm.apply(tr, andScroll)
   }
 }
