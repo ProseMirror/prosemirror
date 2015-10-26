@@ -1,6 +1,6 @@
 import {HardBreak, BulletList, OrderedList, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
         StrongStyle, EmStyle, CodeStyle, LinkStyle, Image, NodeType, StyleType,
-        Pos, spanAtOrBefore, containsStyle, rangeHasStyle, siblingRange} from "../model"
+        Pos, spanAtOrBefore, containsStyle, rangeHasStyle} from "../model"
 import {joinPoint, canLift, alreadyHasBlockType} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
@@ -69,17 +69,23 @@ export function initCommands(schema) {
 
 export function defaultKeymap(pm) {
   let bindings = {}
-  function add(name, key) {
-    if (Array.isArray(key))
-      for (let i = 0; i < key.length; i++) bindings[key[i]] = name
-    else if (key)
-      bindings[key] = name
+  function add(command, key) {
+    if (Array.isArray(key)) {
+      for (let i = 0; i < key.length; i++) add(name, key[i])
+    } else if (key) {
+      let [_, name, rank = 50] = /^(.+?)(?:\((\d+)\))?$/.exec(key)
+      sortedInsert(bindings[name] || (bindings[name] = []), {command, rank},
+                   (a, b) => a.rank - b.rank)
+    }
   }
   for (let name in pm.commands) {
     let cmd = pm.commands[name]
     add(name, cmd.info.key)
     add(name, browser.mac ? cmd.info.macKey : cmd.info.pcKey)
   }
+
+  for (let key in bindings)
+    bindings[key] = bindings[key].map(b => b.command)
   return new Keymap(bindings)
 }
 
@@ -438,38 +444,46 @@ wrapCommand(BlockQuote, "BlockQuote", "block quote", {
   key: ["Alt-Right '>'", "Alt-Right '\"'"]
 })
 
-function fullySelectedRange(doc, from, to) {
-  if (from.offset > 0) return null
-  let range = siblingRange(doc, from, to)
-  if (Pos.after(doc, range.from).cmp(from) == 0 &&
-      Pos.before(doc, range.to).cmp(to) == 0)
-    return range
-}
-
-defineCommand("endBlock", { // FIXME rename
-  label: "End or split the current block",
+defineCommand("newlineInCode", {
+  label: "Insert newline",
   run(pm) {
-    pm.scrollIntoView()
-    let {from, to, empty} = pm.selection, tr
-    let blockFrom = pm.doc.path(from.path), blockTo = pm.doc.path(to.path)
-
-    // Insert newline if in code
-    if (blockFrom == blockTo && blockFrom.type.isCode && (!empty || to.offset < blockFrom.maxOffset))
+    let {from, to} = pm.selection, block
+    if (Pos.samePath(from.path, to.path) &&
+        (block = pm.doc.path(from.path)).type.isCode &&
+        to.offset < block.maxOffset) {
+      pm.scrollIntoView()
       return pm.apply(clearSel(pm).insertText(from, "\n"))
+    }
+    return false
+  },
+  info: {key: "Enter(10)"}
+})
 
-    // If selecting a whole block or range of blocks, lift them
-    let fullBlocks = fullySelectedRange(pm.doc, from, to)
-    if (fullBlocks && from.path[from.path.length - 1] > 0 &&
-        pm.apply(pm.tr.split(fullBlocks.from)) !== false)
+defineCommand("liftEmptyBlock", {
+  label: "Move current block up",
+  run(pm) {
+    let {head, empty} = pm.selection
+    if (!empty || head.offset > 0) return false
+    let block = pm.doc.path(head.path)
+    if (block.length != 0) return false
+    pm.scrollIntoView()
+    if (head.path[head.path.length - 1] > 0 &&
+        pm.apply(pm.tr.split(head.shorten())) !== false)
       return
-    if (fullBlocks && pm.apply(pm.tr.lift(fullBlocks.from, fullBlocks.to)) !== false)
-      return
+    return pm.apply(pm.tr.lift(head))
+  },
+  info: {key: "Enter(30)"}
+})
 
-    // Otherwise, split the current block
-    let type = to.offset == blockTo.maxOffset ? pm.schema.defaultTextblockType().create() : null
+defineCommand("splitBlock", {
+  label: "Split the current block",
+  run(pm) {
+    let {from, to} = pm.selection, block = pm.doc.path(to.path)
+    let type = to.offset == block.maxOffset ? pm.schema.defaultTextblockType().create() : null
+    pm.scrollIntoView()
     return pm.apply(clearSel(pm).split(from, 1, type))
   },
-  info: {key: "Enter"}
+  info: {key: "Enter(60)"}
 })
 
 function setType(pm, type, attrs) {

@@ -245,30 +245,38 @@ test("wrapBlockQuote",
      doc(blockquote(p("fo<a>o"))),
      doc(blockquote(blockquote(p("foo")))))
 
-test("endBlock",
+test("splitBlock",
      doc(p("foo<a>")),
      doc(p("foo"), p()))
-test("endBlock",
+test("splitBlock",
      doc(p("foo<a>bar")),
      doc(p("foo"), p("bar")))
-test("endBlock",
+test("splitBlock",
      doc(h1("foo<a>")),
      doc(h1("foo"), p()))
-test("endBlock",
+test("splitBlock",
      doc(h1("foo<a>bar")),
      doc(h1("foo"), h1("bar")))
-test("endBlock",
-     doc(pre("foo<a>bar")),
-     doc(pre("foo\nbar")))
-test("endBlock",
+test("splitBlock",
      doc(p("fo<a>ob<b>ar")),
      doc(p("fo"), p("ar")))
-test("endBlock",
+
+test("newlineInCode",
+     doc(pre("foo<a>bar")),
+     doc(pre("foo\nbar")))
+
+test("liftEmptyBlock",
      doc(blockquote(p("foo"), p("<a>"))),
      doc(blockquote(p("foo")), blockquote(p())))
-test("endBlock",
+test("liftEmptyBlock",
      doc(blockquote(p("foo")), blockquote(p("<a>"))),
      doc(blockquote(p("foo")), p("<a>")))
+test("liftEmptyBlock",
+     doc(ul(li(p("hi"), p("<a>")))),
+     doc(ul(li(p("hi")), li(p("<a>")))))
+test("liftEmptyBlock",
+     doc(ul(li(p("hi")), li(p("<a>")))),
+     doc(ul(li(p("hi"))), p()))
 
 test("makeH1",
      doc(p("fo<a>o")),

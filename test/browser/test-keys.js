@@ -1,10 +1,11 @@
 import {namespace} from "./def"
-import {doc, p} from "../build"
-import {cmp, is} from "../cmp"
+import {doc, p, ul, li, pre} from "../build"
+import {cmp, cmpNode, is} from "../cmp"
 import {defTest} from "../tests"
 
 import {dispatchKey} from "../../src/edit/input"
 import {Keymap} from "../../src/edit/keys"
+import {Pos} from "../../src/model"
 
 function trace(prop) { return pm => pm.mod[prop] = (pm.mod[prop] || 0) + 1 }
 
@@ -74,6 +75,20 @@ test("addKeymap_bottom", pm => {
   pm.removeKeymap(mapBot)
   dispatch(pm, "Ctrl-D")
   cmp(pm.mod.d, 1)
+})
+
+test("multiBindings", pm => {
+  dispatch(pm, "Enter")
+  cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def")))))
+  pm.setSelection(new Pos([1, 0, 0], 3))
+  dispatch(pm, "Enter")
+  cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def"), p()))))
+  dispatch(pm, "Enter")
+  cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def")), li(p()))))
+  dispatch(pm, "Enter")
+  cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def"))), p()))
+}, {
+  doc: doc(pre("abc"), ul(li(p("def"))))
 })
 
 defTest("keys_add_inconsistent", () => {
