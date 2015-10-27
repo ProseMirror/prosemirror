@@ -7,8 +7,8 @@ let doc = null
 
 // declare_global: window
 
-export function toDOM(node, options) {
-  doc = options && options.document || window.document
+export function toDOM(node, options = {}) {
+  doc = options.document || window.document
   return renderNodes(node.children, options)
 }
 
