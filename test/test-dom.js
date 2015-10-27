@@ -9,11 +9,11 @@ import {defaultSchema as schema} from "../src/model"
 import {toDOM} from "../src/serialize/dom"
 import {fromDOM} from "../src/parse/dom"
 
-function domFor(str) {
+export function domFor(str) {
   return (new xmlDOM.DOMParser).parseFromString("<!doctype html><html>" + str + "</html>")
 }
 
-function domText(dom) {
+export function domText(dom) {
   var out = "", ser = new xmlDOM.XMLSerializer
   for (var node = dom.documentElement.firstChild; node; node = node.nextSibling)
     out += ser.serializeToString(node)

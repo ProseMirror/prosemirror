@@ -16,7 +16,7 @@ defineStep("split", {
     let splitAt = pos.offset
     let newParent = parent.splice(offset, offset + 1,
                                   [target.copy(target.slice(0, splitAt)),
-                                   (step.param || target).copy(target.slice(splitAt))])
+                                   (step.param || target).copy(target.slice(splitAt), true)])
     let copy = doc.replaceDeep(parentPath, newParent)
 
     let dest = new Pos(parentPath.concat(offset + 1), 0)

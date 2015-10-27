@@ -21,7 +21,7 @@ export function sliceAfter(node, pos, depth = 0) {
   } else {
     content = node.slice(pos.offset)
   }
-  return node.copy(content)
+  return node.copy(content, true)
 }
 
 export function sliceBetween(node, from, to, collapse = true, depth = 0) {

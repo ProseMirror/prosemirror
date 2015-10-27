@@ -10,7 +10,7 @@ export class BlockQuote extends Block {}
 export class OrderedList extends Block {
   static get contains() { return "list_item" }
 }
-OrderedList.attributes = {order: new Attribute("1")}
+OrderedList.attributes = {order: new Attribute({default: "1"})}
 
 export class BulletList extends Block {
   static get contains() { return "list_item" }
@@ -25,7 +25,7 @@ export class HorizontalRule extends Block {
 }
 
 export class Heading extends Textblock {}
-Heading.attributes = {level: new Attribute("1")}
+Heading.attributes = {level: new Attribute({default: "1"})}
 
 export class CodeBlock extends Textblock {
   static get contains() { return "text" }
@@ -39,8 +39,8 @@ export class Paragraph extends Textblock {
 export class Image extends Inline {}
 Image.attributes = {
   src: new Attribute,
-  alt: new Attribute(""),
-  title: new Attribute("")
+  alt: new Attribute({default: ""}),
+  title: new Attribute({default: ""})
 }
 
 export class HardBreak extends Inline {}
@@ -60,7 +60,7 @@ export class LinkStyle extends StyleType {
 }
 LinkStyle.attributes = {
   href: new Attribute,
-  title: new Attribute("")
+  title: new Attribute({default: ""})
 }
 
 export class CodeStyle extends StyleType {
