@@ -66,8 +66,8 @@ class Context {
   addDOM(dom) {
     if (dom.nodeType == 3) {
       let value = dom.nodeValue
-      let top = this.top, block = top.isTextblock, last
-      if (/\S/.test(value) || block) {
+      let top = this.top, last
+      if (/\S/.test(value) || top.type.isTextblock) {
         value = value.replace(/\s+/g, " ")
         if (/^\s/.test(value) && (last = top.content[top.content.length - 1]) &&
             last.type.name == "text" && /\s$/.test(last.text))

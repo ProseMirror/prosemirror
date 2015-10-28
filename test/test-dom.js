@@ -114,3 +114,7 @@ recover("find_place",
 recover("move_up",
         "<p>hello<hr/>bye</p>",
         doc(p("hello"), hr, p("bye")))
+
+recover("dont_ignore_whitespace",
+        "<p><em>one</em> <strong>two</strong></p>",
+        doc(p(em("one"), " ", strong("two"))))
