@@ -79,8 +79,11 @@ class InlineMenu {
  */
 function topCenterOfSelection() {
   let rects = window.getSelection().getRangeAt(0).getClientRects()
-  let {left, right, top} = rects[0]
-  for (let i = 1; i < rects.length; i++) {
+  let {left, right, top} = rects[0], i = 1
+  while (left == right && rects.length > i) {
+    ;({left, right, top} = rects[i++])
+  }
+  for (; i < rects.length; i++) {
     if (rects[i].top < rects[0].bottom - 1 &&
         // Chrome bug where bogus rectangles are inserted at span boundaries
         (i == rects.length - 1 || Math.abs(rects[i + 1].left - rects[i].left) > 1)) {
