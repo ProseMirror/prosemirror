@@ -10,7 +10,7 @@ export function fromMarkdown(schema, text) {
   let state = new State(schema, tokens), doc
   state.parseTokens(tokens)
   do { doc = state.closeNode() } while (state.stack.length)
-  if (!Pos.start(doc)) doc = doc.splice(0, 0, [schema.node("paragraph")])
+  if (!Pos.start(doc)) doc = doc.splice(0, 0, [schema.defaultTextblockType().create()])
   return doc
 }
 

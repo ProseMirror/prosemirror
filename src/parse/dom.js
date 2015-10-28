@@ -12,7 +12,7 @@ export function fromDOM(schema, dom, options) {
   context.addAll(start, end, true)
   let doc
   while (context.stack.length) doc = context.leave()
-  if (!Pos.start(doc)) doc = doc.splice(0, 0, [schema.node("paragraph")])
+  if (!Pos.start(doc)) doc = doc.splice(0, 0, [schema.defaultTextblockType().create()])
   return doc
 }
 
@@ -79,7 +79,7 @@ class Context {
     } else if (!this.parseNodeType(dom)) {
       this.addAll(dom.firstChild, null)
       let name = dom.nodeName.toLowerCase()
-      if (blockElements.hasOwnProperty(name) && this.top.type == this.schema.nodes.paragraph)
+      if (blockElements.hasOwnProperty(name) && this.top.type == this.schema.defaultTextblockType())
         this.closing = true
     }
   }
