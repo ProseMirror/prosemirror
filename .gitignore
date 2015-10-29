@@ -3,3 +3,4 @@
 /dist/*
 /notes.txt
 /demo/*-built.js
+webpack.config.js
