@@ -152,6 +152,35 @@ export class BlockNode extends Node {
   }
 
   get isBlock() { return true }
+
+  nodesBetween(from, to, f, depth = 0) {
+    if (f(this, from, to, depth) === false) return
+
+    let start, end, endPartial = to && to.depth > depth, endOff = endPartial ? to.path[depth] : to ? to.offset : this.length
+    if (!from) {
+      start = 0
+    } else if (from.depth == depth) {
+      start = from.offset
+    } else {
+      start = from.path[depth] + 1
+      let passTo = null
+      if (endPartial && endOff == start - 1) {
+        passTo = to
+        endPartial = false
+      }
+      this.child(start - 1).nodesBetween(from, passTo, f, depth + 1)
+    }
+    for (let i = 0; i < endOff; i++)
+      this.child(i).nodesBetween(null, null, f, depth + 1)
+    if (endPartial)
+      this.child(endOff).nodesBetween(null, to, f, depth + 1)
+  }    
+
+  inlineNodesBetween(from, to, f, depth = 0) {
+    this.nodesBetween(from, to, (node, from, to) => {
+      if (node.isInline) f(node, from && from.offset, to && to.offset)
+    })
+  }
 }
 
 export class TextblockNode extends BlockNode {
@@ -213,6 +242,8 @@ export class InlineNode extends Node {
   toString() { return this.type.name }
 
   get isInline() { return true }
+
+  nodesBetween(from, to, f, depth) { f(this, from, to, depth) }
 }
 
 export class TextNode extends InlineNode {
