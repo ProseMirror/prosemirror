@@ -94,13 +94,13 @@ class InputRules {
 
 function getContext(doc, pos) {
   let parent = doc.path(pos.path)
-  let isPlain = parent.type.plainText
+  let isCode = parent.type.isCode
   let textBefore = ""
   for (let offset = 0, i = 0; offset < pos.offset;) {
     let child = parent.child(i++), size = child.offset
     textBefore += offset + size > pos.offset ? child.text.slice(0, pos.offset - offset) : child.text
     if (offset + size >= pos.offset) {
-      if (child.styles.some(st => st.type.name == "code")) // FIXME generalize?
+      if (child.styles.some(st => st.type.isCode))
         isPlain = true
       break
     }

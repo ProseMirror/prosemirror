@@ -65,6 +65,7 @@ LinkStyle.attributes = {
 
 export class CodeStyle extends StyleType {
   static get rank() { return 101 }
+  get isCode() { return true }
 }
 
 const defaultSpec = new SchemaSpec({
