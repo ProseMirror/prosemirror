@@ -101,10 +101,10 @@ function getContext(doc, pos) {
     textBefore += offset + size > pos.offset ? child.text.slice(0, pos.offset - offset) : child.text
     if (offset + size >= pos.offset) {
       if (child.styles.some(st => st.type.isCode))
-        isPlain = true
+        isCode = true
       break
     }
     offset += size
   }
-  return {textBefore, isPlain}
+  return {textBefore, isCode}
 }

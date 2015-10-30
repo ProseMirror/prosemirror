@@ -83,12 +83,6 @@ export function blocksBetween(doc, from, to, f) {
   scan(doc, from, to)
 }
 
-export function isPlainText(node) {
-  if (node.length == 0) return true
-  let child = node.firstChild
-  return node.length == 1 && child.isText && child.styles.length == 0
-}
-
 function canBeJoined(node, offset, depth) {
   if (!depth || offset == 0 || offset == node.length) return false
   let left = node.child(offset - 1), right = node.child(offset)

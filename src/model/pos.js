@@ -32,7 +32,10 @@ export class Pos {
     return true
   }
 
-  cmp(other) { return Pos.cmp(this.path, this.offset, other.path, other.offset) }
+  cmp(other) {
+    if (other == this) return 0
+    return Pos.cmp(this.path, this.offset, other.path, other.offset)
+  }
 
   static shorten(path, to = null, offset = 0) {
     if (to == null) to = path.length - 1

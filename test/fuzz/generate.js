@@ -26,7 +26,7 @@ function childTypes(type, omit) {
   let contains = type.contains, result = []
   for (var name in schema.nodes) {
     let cur = schema.nodes[name]
-    if (type.canContain(cur.type) && cur != omit) result.content.push(cur)
+    if (type.canContain(cur) && cur != omit) result.content.push(cur)
   }
   return result
 }
@@ -43,7 +43,7 @@ function fillNode(node, fuel) {
 }
 
 function fillNodeInline(node, fuel) {
-  if (node.type.plainText || Math.random() < .6) {
+  if (!node.type.containsStyles || Math.random() < .6) {
     node.content.push(schema.text(randomText(40)))
   } else {
     let types = childTypes(node.type, schema.nodes.text)

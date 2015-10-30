@@ -41,19 +41,13 @@ class InlineMenu {
     this.pm.off("blur", this.updateFunc)
   }
 
-  inPlainText(sel) {
-    let start = this.pm.doc.path(sel.from.path)
-    let end = this.pm.doc.path(sel.to.path)
-    return start.type.plainText && end.type.plainText
-  }
-
   update() {
     if (this.menu.active) return
 
     let sel = this.pm.selection, link
     if (!this.pm.hasFocus())
       this.tooltip.close()
-    else if (!sel.empty && !this.inPlainText(sel))
+    else if (!sel.empty)
       this.menu.show(this.items, topCenterOfSelection())
     else if (this.showLinks && (link = this.linkUnderCursor()))
       this.showLink(link, this.pm.coordsAtPos(sel.head))

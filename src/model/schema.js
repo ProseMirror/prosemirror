@@ -44,7 +44,6 @@ export class NodeType {
       if (attrs[attr].mustRecompute) this.mustRecompute = true
   }
 
-  get plainText() { return this.contains == "text" }
   get configurable() { return true }
   get isTextblock() { return false }
   get isBlock() { return false }
@@ -52,17 +51,18 @@ export class NodeType {
 
   static get kind() { return "." }
 
-  canContain(type) {
+  canContain(node) {
+    return this.canContainType(node.type)
+  }
+
+  canContainType(type) {
     return this.schema.subKind(type.name, this.contains)
   }
 
-  canContainContent(node) {
-    return this.schema.subKind(node.type.contains, this.contains)
-  }
-
-  canContainChildren(node) {
+  canContainChildren(node, liberal) {
+    if (!liberal && !this.schema.subKind(node.type.contains, this.contains)) return false
     for (let i = 0; i < node.length; i++)
-      if (!this.canContain(node.child(i).type)) return false
+      if (!this.canContain(node.child(i))) return false
     return true
   }
 
@@ -77,7 +77,7 @@ export class NodeType {
   }
 
   findConnection(other) {
-    if (this.canContain(other)) return []
+    if (this.canContainType(other)) return []
 
     let seen = Object.create(null)
     let active = [{from: this, via: []}]
@@ -85,9 +85,9 @@ export class NodeType {
       let current = active.shift()
       for (let name in this.schema.nodes) {
         let type = this.schema.nodeType(name)
-        if (!(type.contains in seen) && current.from.canContain(type)) {
+        if (!(type.contains in seen) && current.from.canContainType(type)) {
           let via = current.via.concat(type)
-          if (type.canContain(other)) return via
+          if (type.canContainType(other)) return via
           active.push({from: type, via: via})
           seen[type.contains] = true
         }
@@ -142,7 +142,20 @@ export class Block extends NodeType {
 export class Textblock extends Block {
   get instance() { return TextblockNode }
   static get contains() { return "inline" }
+  get containsStyles() { return true }
   get isTextblock() { return true }
+
+  canContain(node) {
+    return super.canContain(node) && node.styles.every(s => this.canContainStyle(s))
+  }
+
+  canContainStyle(type) {
+    let contains = this.containsStyles
+    if (contains === true) return true
+    if (contains) for (let i = 0; i < contains.length; i++)
+      if (contains[i] == type.name) return true
+    return false
+  }
 }
 
 export class Inline extends NodeType {

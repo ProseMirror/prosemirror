@@ -29,6 +29,7 @@ Heading.attributes = {level: new Attribute({default: "1"})}
 
 export class CodeBlock extends Textblock {
   static get contains() { return "text" }
+  get containsStyles() { return false }
   get isCode() { return true }
 }
 

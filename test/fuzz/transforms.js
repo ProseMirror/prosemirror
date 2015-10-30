@@ -108,7 +108,7 @@ tests.insert = (doc, positions) => {
   let img = schema.node("image", {src: "http://image2"})
   for (let i = 0; i < positions.length; i++) {
     let pos = positions[i], node = doc.path(pos.path)
-    if (node.type.canContain(para.type))
+    if (node.type.canContain(para))
       runTest("insert", doc, {pos: pos, node: para})
     else if (node.isTextblock)
       runTest("insert", doc, {pos: pos, node: img})
@@ -247,6 +247,6 @@ tests.setBlockType = (doc, _, blockPositions) => {
 
 run.setBlockType = (tr, info) => {
   tr.setBlockType(info.from, info.to, info.node)
-  if (!info.node.type.plainText)
+  if (info.node.type.containsStyles)
     cmp(nodeSize(tr.doc), docSize(tr.docs[0]), "setBlockType doesn't change size")
 }

@@ -110,12 +110,36 @@ HardBreak.attachCommand("insertHardBreak", type => ({
   info: {key: ["Mod-Enter", "Shift-Enter"]}
 }))
 
-function inlineActive(pm, type) {
+function inlineStyleActive(pm, type) {
   let sel = pm.selection
   if (sel.empty)
     return containsStyle(pm.activeStyles(), type)
   else
     return rangeHasStyle(pm.doc, sel.from, sel.to, type)
+}
+
+function canAddInline(pm, type) {
+  let {from, to, empty} = pm.selection
+  if (empty)
+    return !containsStyle(pm.activeStyles(), type) && pm.doc.path(from.path).type.canContainStyle(type)
+  let can = false
+  pm.doc.nodesBetween(from, to, node => {
+    if (can || node.isTextblock && !node.type.canContainStyle(type)) return false
+    if (node.isInline && !containsStyle(node.styles, type)) can = true
+  })
+  return can
+}
+
+function inlineStyleApplies(pm, type) {
+  let {from, to} = pm.selection
+  let relevant = false
+  pm.doc.nodesBetween(from, to, node => {
+    if (node.isTextblock) {
+      if (node.type.canContainStyle(type)) relevant = true
+      return false
+    }
+  })
+  return relevant
 }
 
 function generateStyleCommands(type, name, labelName, info) {
@@ -124,16 +148,18 @@ function generateStyleCommands(type, name, labelName, info) {
   type.attachCommand("set" + cap, type => ({
     label: "Set " + labelName,
     run(pm) { pm.setStyle(type.create(), true) },
-    select(pm) { return inlineActive(pm, type) }
+    select(pm) { return canAddInline(pm, type) }
   }))
   type.attachCommand("unset" + cap, type => ({
     label: "Remove " + labelName,
-    run(pm) { pm.setStyle(type.create(), false) }
+    run(pm) { pm.setStyle(type.create(), false) },
+    select(pm) { return inlineStyleActive(pm, type) }
   }))
   type.attachCommand(name, type => ({
     label: "Toggle " + labelName,
     run(pm) { pm.setStyle(type.create(), null) },
-    active(pm) { return inlineActive(pm, type) },
+    active(pm) { return inlineStyleActive(pm, type) },
+    select(pm) { return inlineStyleApplies(pm, type) },
     info
   }))
 }
@@ -159,7 +185,9 @@ generateStyleCommands(CodeStyle, "code", null, {
 LinkStyle.attachCommand("unlink", type => ({
   label: "Unlink",
   run(pm) { pm.setStyle(type, false) },
-  select(pm) { return inlineActive(pm, type) }
+  select(pm) { return inlineStyleActive(pm, type) },
+  active() { return true },
+  info: {menuGroup: "inline", menuRank: 30}
 }))
 LinkStyle.attachCommand("link", type => ({
   label: "Add link",
@@ -168,6 +196,7 @@ LinkStyle.attachCommand("link", type => ({
     {name: "Target", type: "text"},
     {name: "Title", type: "text", default: ""}
   ],
+  select(pm) { return inlineStyleApplies(pm, type) && !inlineStyleActive(pm, type) },
   info: {menuGroup: "inline", menuRank: 30}
 }))
 
@@ -183,6 +212,9 @@ Image.attachCommand("insertImage", type => ({
     {name: "Description / alternative text", type: "text", default: ""},
     {name: "Title", type: "text", default: ""}
   ],
+  select(pm) {
+    return pm.doc.path(pm.selection.from.path).type.canContainType(type)
+  },
   info: {menuGroup: "inline", menuRank: 40}
 }))
 
@@ -244,7 +276,7 @@ function deleteBarrier(pm, cut) {
     if (pos.offset >= parent.length) return false
     let after = parent.child(pos.offset), wrappers, conn
     inner = new Pos(pos.path.concat(pos.offset), 0)
-    if (target.type.canContainContent(after))
+    if (target.type.canContainChildren(after))
       wrappers = [after]
     else if (conn = target.type.findConnection(after.type))
       wrappers = [target, ...conn.map(t => t.create()), after]
@@ -519,20 +551,21 @@ blockTypeCommand(Heading, "makeH4", "heading 4", {level: 4}, "Mod-H '4'")
 blockTypeCommand(Heading, "makeH5", "heading 5", {level: 5}, "Mod-H '5'")
 blockTypeCommand(Heading, "makeH6", "heading 6", {level: 6}, "Mod-H '6'")
 
-blockTypeCommand(Paragraph, "makeParagraph", "paragraph", "Mod-P")
-blockTypeCommand(CodeBlock, "makeCodeBlock", "code block", "Mod-\\")
+blockTypeCommand(Paragraph, "makeParagraph", "paragraph", null, "Mod-P")
+blockTypeCommand(CodeBlock, "makeCodeBlock", "code block", null, "Mod-\\")
 
 function insertOpaqueBlock(pm, type, attrs) {
   let pos = pm.selection.from
   let tr = clearSel(pm)
   let parent = tr.doc.path(pos.shorten().path)
-  if (!parent.type.canContain(type)) return false
+  let node = type.create(attrs)
+  if (!parent.type.canContain(node)) return false
   let off = 0
   if (pos.offset) {
     tr.split(pos)
     off = 1
   }
-  return pm.apply(tr.insert(pos.shorten(null, off), pm.schema.node(type, attrs)), andScroll)
+  return pm.apply(tr.insert(pos.shorten(null, off), node), andScroll)
 }
 
 HorizontalRule.attachCommand("insertHorizontalRule", type => ({

@@ -50,7 +50,7 @@ export function sizeBetween(doc, from, to) {
 export function checkInvariants(node) {
   for (let i = 0; i < node.length; i++) {
     let child = node.child(i)
-    if (node.type.canContain(child.type))
+    if (node.type.canContain(child))
       throw new Error(child.type.name + " node in " + node.type.name)
     if (node.isTextblock && child.isText) {
       if (i) {

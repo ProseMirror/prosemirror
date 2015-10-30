@@ -31,6 +31,7 @@ export function replace(node, from, to, root, repl, depth = 0) {
   if (depth == root.length) {
     let before = sliceBefore(node, from, depth)
     let after = sliceAfter(node, to, depth), result
+    if (!repl.nodes.every(n => before.type.canContain(n))) return null
     if (repl.nodes.length)
       result = before.append(repl.nodes, Math.min(repl.openLeft, from.depth - depth))
                      .append(after.children, Math.min(repl.openRight, to.depth - depth))
@@ -39,8 +40,9 @@ export function replace(node, from, to, root, repl, depth = 0) {
     return {doc: result, moved: findMovedChunks(node, to, result, depth)}
   } else {
     let pos = root[depth]
-    let {doc, moved} = replace(node.child(pos), from, to, root, repl, depth + 1)
-    return {doc: node.replace(pos, doc), moved}
+    let result = replace(node.child(pos), from, to, root, repl, depth + 1)
+    if (!result) return null
+    return {doc: node.replace(pos, result.doc), moved: result.moved}
   }
 }
 
@@ -110,7 +112,7 @@ function buildInserted(nodesLeft, source, start, end) {
     let outside = searchRight <= same
     for (let i = searchLeft; i >= 0; i--) {
       let left = nodesLeft[i]
-      if (outside ? left.type.canContainContent(node) : left.type == type) {
+      if (outside ? left.type.canContainChildren(node) : left.type == type) {
         matched = i
         break
       }

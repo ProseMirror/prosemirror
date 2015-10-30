@@ -22,7 +22,7 @@ insertCSS(`
   font-family: ProseMirror-icons;
   content: "\ue60a";
 }
-.ProseMirror-icon-link:after {
+.ProseMirror-icon-link:after, .ProseMirror-icon-unlink:after {
   font-family: ProseMirror-icons;
   content: "\ue608";
 }

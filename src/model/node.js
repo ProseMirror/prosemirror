@@ -153,32 +153,41 @@ export class BlockNode extends Node {
 
   get isBlock() { return true }
 
-  nodesBetween(from, to, f, depth = 0) {
-    if (f(this, from, to, depth) === false) return
+  // FIXME change arg order to f?
+  nodesBetween(from, to, f, path = [], parent = null) {
+    if (f(this, from, to, path, parent) === false) return
 
-    let start, end, endPartial = to && to.depth > depth, endOff = endPartial ? to.path[depth] : to ? to.offset : this.length
+    let start, endPartial = to && to.depth > path.length
+    let end = endPartial ? to.path[path.length] : to ? to.offset : this.length
     if (!from) {
       start = 0
-    } else if (from.depth == depth) {
+    } else if (from.depth == path.length) {
       start = from.offset
     } else {
-      start = from.path[depth] + 1
+      start = from.path[path.length] + 1
       let passTo = null
-      if (endPartial && endOff == start - 1) {
+      if (endPartial && end == start - 1) {
         passTo = to
         endPartial = false
       }
-      this.child(start - 1).nodesBetween(from, passTo, f, depth + 1)
+      this.enterNode(start - 1, from, passTo, path, f)
     }
-    for (let i = 0; i < endOff; i++)
-      this.child(i).nodesBetween(null, null, f, depth + 1)
+    for (let i = start; i < end; i++)
+      this.enterNode(i, null, null, path, f)
     if (endPartial)
-      this.child(endOff).nodesBetween(null, to, f, depth + 1)
-  }    
+      this.enterNode(end, null, to, path, f)
+  }
 
-  inlineNodesBetween(from, to, f, depth = 0) {
-    this.nodesBetween(from, to, (node, from, to) => {
-      if (node.isInline) f(node, from && from.offset, to && to.offset)
+  enterNode(index, from, to, path, f) {
+    path.push(index)
+    this.child(index).nodesBetween(from, to, f, path, this)
+    path.pop()
+  }
+
+  inlineNodesBetween(from, to, f) {
+    this.nodesBetween(from, to, (node, from, to, path, parent, offset) => {
+      if (node.isInline)
+        f(node, from ? from.offset : offset, to ? to.offset : offset + node.offset, path, parent)
     })
   }
 }
@@ -214,6 +223,19 @@ export class TextblockNode extends BlockNode {
   }
 
   get isTextblock() { return true }
+
+  nodesBetween(from, to, f, path, parent) {
+    if (f(this, from, to, path, parent) === false) return
+    let start = from ? from.offset : 0, end = to ? to.offset : this.maxOffset
+    if (start == end) return
+    for (let offset = 0, i = 0; i < this.length; i++) {
+      let child = this.child(i), endOffset = offset + child.offset
+      if (endOffset >= start)
+        f(child, offset < start ? from : null, endOffset > end ? to : null, path, this, offset)
+      if (endOffset >= end) break
+      offset = endOffset
+    }
+  }
 }
 
 export class InlineNode extends Node {
@@ -242,8 +264,6 @@ export class InlineNode extends Node {
   toString() { return this.type.name }
 
   get isInline() { return true }
-
-  nodesBetween(from, to, f, depth) { f(this, from, to, depth) }
 }
 
 export class TextNode extends InlineNode {

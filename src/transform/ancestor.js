@@ -2,7 +2,7 @@ import {Pos, compareMarkup, siblingRange} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
-import {isFlatRange, blocksBetween, isPlainText} from "./tree"
+import {isFlatRange, blocksBetween} from "./tree"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 
 defineStep("ancestor", {
@@ -23,15 +23,15 @@ defineStep("ancestor", {
     let parentSize = parent.length
     if (wrappers.length) {
       let lastWrapper = wrappers[wrappers.length - 1]
-      if (!parent.type.canContain(wrappers[0].type) ||
-          !lastWrapper.type.canContainChildren(inner))
+      if (!parent.type.canContain(wrappers[0]) ||
+          !lastWrapper.type.canContainChildren(inner, true))
         return null
       let node = null
       for (let i = wrappers.length - 1; i >= 0; i--)
         node = wrappers[i].copy(node ? [node] : inner.slice(from.offset, to.offset))
       newParent = parent.splice(start, end, [node])
     } else {
-      if (!parent.type.canContainChildren(inner)) return null
+      if (!parent.type.canContainChildren(inner, true)) return null
       newParent = parent.splice(start, end, inner.children)
     }
     let copy = doc.replaceDeep(toParent, newParent)
@@ -81,7 +81,7 @@ function canBeLifted(doc, range) {
   for (;;) {
     let parentDepth = -1
     for (let node = doc, i = 0; i < range.from.path.length; i++) {
-      if (content.every(inner => node.type.canContainContent(inner)))
+      if (content.every(inner => node.type.canContainChildren(inner)))
         parentDepth = i
       node = node.child(range.from.path[i])
     }
@@ -193,8 +193,8 @@ function maybeInheritAttrs(node, wrap) {
 Transform.prototype.setBlockType = function(from, to, wrapNode) {
   blocksBetween(this.doc, from, to || from, (node, path) => {
     path = path.slice()
-    if (wrapNode.type.plainText && !isPlainText(node))
-      this.clearMarkup(new Pos(path, 0), new Pos(path, node.maxOffset))
+    // Ensure all markup that isn't allowed in the new node type is cleared
+    this.clearMarkup(new Pos(path, 0), new Pos(path, node.maxOffset), wrapNode.type)
     this.step("ancestor", new Pos(path, 0), new Pos(path, this.doc.path(path).maxOffset),
               null, {depth: 1, wrappers: [maybeInheritAttrs(node, wrapNode)]})
   })

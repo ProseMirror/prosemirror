@@ -2,12 +2,12 @@ import {Pos, containsStyle, StyleType} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
-import {copyInline, copyStructure, forSpansBetween} from "./tree"
+import {copyInline, copyStructure} from "./tree"
 
 defineStep("addStyle", {
   apply(doc, step) {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
-      if (node.type.plainText) return node
+      if (!node.type.canContainStyle(step.param)) return node
       return copyInline(node, from, to, node => {
         return node.styled(step.param.addToSet(node.styles))
       })
@@ -27,8 +27,8 @@ defineStep("addStyle", {
 
 Transform.prototype.addStyle = function(from, to, st) {
   let removed = [], added = [], removing = null, adding = null
-  forSpansBetween(this.doc, from, to, (span, path, start, end) => {
-    if (st.isInSet(span.styles)) {
+  this.doc.inlineNodesBetween(from, to, (span, start, end, path, parent) => {
+    if (st.isInSet(span.styles) || !parent.type.canContainStyle(st.type)) {
       adding = removing = null
     } else {
       path = path.slice()
@@ -77,7 +77,7 @@ defineStep("removeStyle", {
 
 Transform.prototype.removeStyle = function(from, to, st = null) {
   let matched = [], step = 0
-  forSpansBetween(this.doc, from, to, (span, path, start, end) => {
+  this.doc.inlineNodesBetween(from, to, (span, start, end, path) => {
     step++
     let toRemove = null
     if (st instanceof StyleType) {
@@ -109,16 +109,23 @@ Transform.prototype.removeStyle = function(from, to, st = null) {
   return this
 }
 
-Transform.prototype.clearMarkup = function(from, to) {
-  let steps = []
-  forSpansBetween(this.doc, from, to, (span, path, start, end) => {
-    if (!span.isText) {
+Transform.prototype.clearMarkup = function(from, to, newParent) {
+  let delSteps = [] // Must be accumulated and applied in inverse order
+  this.doc.inlineNodesBetween(from, to, (span, start, end, path) => {
+    if (newParent ? !newParent.canContainType(span.type) : !span.isText) {
       path = path.slice()
       let from = new Pos(path, start)
-      steps.unshift(new Step("replace", from, new Pos(path, end), from))
+      delSteps.push(new Step("replace", from, new Pos(path, end), from))
+      return
+    }
+    for (let i = 0; i < span.styles.length; i++) {
+      let st = span.styles[i]
+      if (!newParent || !newParent.canContainStyle(st.type)) {
+        path = path.slice()
+        this.step("removeStyle", new Pos(path, start), new Pos(path, end), null, st)
+      }
     }
   })
-  this.removeStyle(from.to)
-  steps.forEach(s => this.step(s))
+  for (let i = delSteps.length - 1; i >= 0; i--) this.step(delSteps[i])
   return this
 }

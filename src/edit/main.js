@@ -220,6 +220,7 @@ export class ProseMirror {
     if (sel.empty) {
       let styles = this.activeStyles()
       if (to == null) to = !containsStyle(styles, st.type)
+      if (to && !this.doc.path(sel.head.path).type.canContainStyle(st.type)) return
       this.input.storedStyles = to ? st.addToSet(styles) : removeStyle(styles, st.type)
       this.signal("activeStyleChange")
     } else {

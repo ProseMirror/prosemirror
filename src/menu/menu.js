@@ -36,7 +36,7 @@ export class Menu {
       if (pieces[i] == separator && (i == 0 || i == pieces.length - 1 || pieces[i + 1] == separator))
         pieces.splice(i--, 1)
 
-    if (!pieces) return this.display.clear()
+    if (!pieces.length) return this.display.clear()
 
     this.stack.push(pieces)
     this.draw(displayInfo)

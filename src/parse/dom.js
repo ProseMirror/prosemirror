@@ -113,7 +113,7 @@ class Context {
   }
 
   insert(node) {
-    if (this.top.type.canContain(node.type)) {
+    if (this.top.type.canContain(node)) {
       this.doClose()
     } else {
       for (let i = this.stack.length - 1; i >= 0; i--) {
