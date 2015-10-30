@@ -128,9 +128,7 @@ export class ProseMirror {
     this.input.maybeAbortComposition()
     this.ranges.transform(mapping)
     this.doc = doc
-    let range = this.sel.range
-    this.sel.setAndSignal(new Range(mapping.map(range.anchor).pos,
-                                    mapping.map(range.head).pos))
+    this.sel.map(mapping)
     this.signal("change")
   }
 

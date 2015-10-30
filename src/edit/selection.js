@@ -1,4 +1,4 @@
-import {Pos} from "../model"
+import {Pos, spanAtOrBefore} from "../model"
 
 import {contains, browser} from "../dom"
 
@@ -7,8 +7,10 @@ export class Selection {
     this.pm = pm
     this.polling = null
     this.lastAnchorNode = this.lastHeadNode = this.lastAnchorOffset = this.lastHeadOffset = null
+    this.lastNode = null
     let start = Pos.start(pm.doc)
     this.range = new Range(start, start)
+    this.nodeFrom = this.nodeTo = null
     pm.content.addEventListener("focus", () => this.receivedFocus())
   }
 
@@ -19,7 +21,49 @@ export class Selection {
 
   set(range, clearLast) {
     this.range = range
+    this.nodeFrom = this.nodeTo = null
     if (clearLast !== false) this.lastAnchorNode = null
+  }
+
+  setNode(pos) {
+    let parent = this.pm.doc.path(pos.path), from = pos, to = pos.move(1)
+    let rangeFrom = from, rangeTo = to
+    if (!parent.isTextblock) {
+      rangeFrom = Pos.after(this.pm.doc, from)
+      rangeTo = Pos.before(this.pm.doc, to) || rangeFrom
+      if (!rangeFrom) rangeFrom = rangeTo
+      if (rangeFrom.cmp(rangeTo) > 0) rangeTo = rangeFrom
+    }
+    this.set(new Range(rangeFrom, rangeTo))
+    this.nodeFrom = from
+    this.nodeTo = to
+  }
+
+  setNodeAndSignal(pos) {
+    this.setNode(pos)
+    this.pm.signal("selectionChange")
+  }
+
+  selectedNode() {
+    if (!this.nodeFrom) return null
+    let parent = this.pm.doc.path(this.nodeFrom.path)
+    if (parent.isTextblock)
+      return spanAtOrBefore(parent, this.nodeFrom.offset + 1)
+    else
+      return parent.child(this.nodeFrom.offset)
+  }
+
+  map(mapping) {
+    if (this.nodeFrom) {
+      let newFrom = mapping.map(this.nodeFrom, 1).pos
+      let newTo = mapping.map(this.nodeFrom, -1).pos
+      if (newTo.cmp(newFrom.move(1)) == 0) {
+        this.setNodeAndSignal(newFrom)
+        return
+      }
+    }
+    this.setAndSignal(new Range(mapping.map(this.range.anchor).pos,
+                                mapping.map(this.range.head).pos))
   }
 
   poll(force) {
@@ -37,11 +81,44 @@ export class Selection {
                                          headInline ? head: moveInline(this.pm.doc, head, this.range.head)), false)
       if (this.range.anchor.cmp(anchor) || this.range.head.cmp(head))
         this.toDOM(true)
+      else
+        this.clearNode()
       return true
     }
   }
 
   toDOM(force, takeFocus) {
+    // FIXME maybe create invisible (styled) DOM range anyway? to make copy/paste/etc work
+    if (this.nodeFrom)
+      this.nodeToDOM(force, takeFocus)
+    else
+      this.rangeToDOM(force, takeFocus)
+  }
+
+  nodeToDOM(_force, takeFocus) {
+    window.getSelection().removeAllRanges()
+    if (takeFocus) this.pm.content.focus()
+    let pos = this.nodeFrom, node = this.selectedNode, dom
+    if (node.isInline)
+      dom = findByOffset(resolvePath(this.pm.content, pos.path), pos.offset, true).node
+    else
+      dom = resolvePath(this.pm.content, pos.path.concat(pos.offset))
+    if (dom == this.lastNode) return
+    this.clearNode()
+    addNodeSelection(node, dom)
+    this.lastNode = dom
+  }
+
+  clearNode() {
+    if (this.lastNode) {
+      clearNodeSelection(this.lastNode)
+      this.lastNode = null
+    }
+  }
+
+  rangeToDOM(force, takeFocus) {
+    this.clearNode()
+
     let sel = window.getSelection()
     if (!hasFocus(this.pm)) {
       if (!takeFocus) return
@@ -85,6 +162,14 @@ export class Selection {
     }
     this.polling = setTimeout(poll, 20)
   }
+}
+
+function clearNodeSelection(dom) {
+  dom.classList.remove("ProseMirror-selectednode")
+}
+
+function addNodeSelection(_node, dom) {
+  dom.classList.add("ProseMirror-selectednode")
 }
 
 function windowRect() {
@@ -191,13 +276,13 @@ export function resolvePath(parent, path) {
   return node
 }
 
-function findByOffset(node, offset) {
+function findByOffset(node, offset, after) {
   function search(node, domOffset) {
     if (node.nodeType != 1) return
     let range = node.getAttribute("pm-span")
     if (range) {
       let [_, from, to] = /(\d+)-(\d+)/.exec(range)
-      if (+to >= offset)
+      if (after ? +from == offset : +to >= offset)
         return {node: node, parent: node.parentNode, offset: domOffset,
                 innerOffset: offset - +from}
     } else {

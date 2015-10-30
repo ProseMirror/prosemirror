@@ -38,6 +38,14 @@ insertCSS(`
   white-space: pre-wrap;
 }
 
+.ProseMirror-selectednode {
+  outline: 2px solid #8cf;
+}
+
+img.ProseMirror-selectednode::selection {
+  background: transparent;
+}
+
 .ProseMirror-content p:first-child,
 .ProseMirror-content h1:first-child,
 .ProseMirror-content h2:first-child,
