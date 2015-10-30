@@ -2,7 +2,7 @@ import {Pos, compareMarkup, siblingRange} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
-import {isFlatRange, blocksBetween} from "./tree"
+import {isFlatRange} from "./tree"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 
 defineStep("ancestor", {
@@ -169,8 +169,11 @@ Transform.prototype.wrap = function(from, to, node) {
 export function alreadyHasBlockType(doc, from, to, type, attrs) {
   let found = false
   if (!attrs) attrs = {}
-  blocksBetween(doc, from, to || from, node => {
-    if (!compareMarkup(node.type, type, node.attrs, attrs)) found = true
+  doc.nodesBetween(from, to || from, node => {
+    if (node.isTextblock) {
+      if (!compareMarkup(node.type, type, node.attrs, attrs)) found = true
+      return false
+    }
   })
   return found
 }
@@ -191,12 +194,15 @@ function maybeInheritAttrs(node, wrap) {
 }
 
 Transform.prototype.setBlockType = function(from, to, wrapNode) {
-  blocksBetween(this.doc, from, to || from, (node, path) => {
-    path = path.slice()
-    // Ensure all markup that isn't allowed in the new node type is cleared
-    this.clearMarkup(new Pos(path, 0), new Pos(path, node.maxOffset), wrapNode.type)
-    this.step("ancestor", new Pos(path, 0), new Pos(path, this.doc.path(path).maxOffset),
-              null, {depth: 1, wrappers: [maybeInheritAttrs(node, wrapNode)]})
+  this.doc.nodesBetween(from, to || from, (node, path) => {
+    if (node.isTextblock) {
+      path = path.slice()
+      // Ensure all markup that isn't allowed in the new node type is cleared
+      this.clearMarkup(new Pos(path, 0), new Pos(path, node.maxOffset), wrapNode.type)
+      this.step("ancestor", new Pos(path, 0), new Pos(path, this.doc.path(path).maxOffset),
+                null, {depth: 1, wrappers: [maybeInheritAttrs(node, wrapNode)]})
+      return false
+    }
   })
   return this
 }

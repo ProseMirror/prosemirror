@@ -153,9 +153,8 @@ export class BlockNode extends Node {
 
   get isBlock() { return true }
 
-  // FIXME change arg order to f?
   nodesBetween(from, to, f, path = [], parent = null) {
-    if (f(this, from, to, path, parent) === false) return
+    if (f(this, path, from, to, parent) === false) return
 
     let start, endPartial = to && to.depth > path.length
     let end = endPartial ? to.path[path.length] : to ? to.offset : this.length
@@ -185,7 +184,7 @@ export class BlockNode extends Node {
   }
 
   inlineNodesBetween(from, to, f) {
-    this.nodesBetween(from, to, (node, from, to, path, parent, offset) => {
+    this.nodesBetween(from, to, (node, path, from, to, parent, offset) => {
       if (node.isInline)
         f(node, from ? from.offset : offset, to ? to.offset : offset + node.offset, path, parent)
     })
@@ -225,13 +224,13 @@ export class TextblockNode extends BlockNode {
   get isTextblock() { return true }
 
   nodesBetween(from, to, f, path, parent) {
-    if (f(this, from, to, path, parent) === false) return
+    if (f(this, path, from, to, parent) === false) return
     let start = from ? from.offset : 0, end = to ? to.offset : this.maxOffset
     if (start == end) return
     for (let offset = 0, i = 0; i < this.length; i++) {
       let child = this.child(i), endOffset = offset + child.offset
       if (endOffset >= start)
-        f(child, offset < start ? from : null, endOffset > end ? to : null, path, this, offset)
+        f(child, path, offset < start ? from : null, endOffset > end ? to : null, this, offset)
       if (endOffset >= end) break
       offset = endOffset
     }
