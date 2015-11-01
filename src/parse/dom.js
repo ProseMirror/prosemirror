@@ -19,7 +19,7 @@ export function fromDOM(schema, dom, options) {
 defineSource("dom", fromDOM)
 
 export function fromHTML(schema, html, options) {
-  let wrap = options.document.createElement("div")
+  let wrap = (options && options.document || window.document).createElement("div")
   wrap.innerHTML = html
   return fromDOM(schema, wrap, options)
 }
