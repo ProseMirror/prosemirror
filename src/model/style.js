@@ -8,6 +8,7 @@ export class StyleMarker {
     if (this.type.instance) return this.type.name
     let obj = {_: this.type.name}
     for (let attr in this.attrs) obj[attr] = this.attrs[attr]
+    return obj
   }
 
   addToSet(set) {
