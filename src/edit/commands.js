@@ -458,6 +458,7 @@ defineCommand("lift", {
   }
 })
 
+// FIXME add select method
 function wrapCommand(type, name, labelName, info) {
   type.attachCommand("wrap" + name, type => ({
     label: "Wrap in " + labelName,
