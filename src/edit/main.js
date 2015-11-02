@@ -6,7 +6,7 @@ import {Transform} from "../transform"
 import sortedInsert from "../util/sortedinsert"
 
 import {parseOptions, initOptions, setOption} from "./options"
-import {Selection, Range, posAtCoords, coordsAtPos, scrollIntoView, hasFocus} from "./selection"
+import {Selection, Range, posAtCoords, posFromDOM, coordsAtPos, scrollIntoView, hasFocus} from "./selection"
 import {requestAnimationFrame, elt} from "../dom"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
@@ -246,6 +246,11 @@ export class ProseMirror {
     return posAtCoords(this, coords)
   }
 
+  posFromDOM(element, offset) {
+    // FIXME do some input checking
+    return posFromDOM(this, element, offset)
+  }
+
   coordsAtPos(pos) {
     this.checkPos(pos)
     return coordsAtPos(this, pos)
@@ -257,9 +262,9 @@ export class ProseMirror {
     this.operation.scrollIntoView = pos
   }
 
-  execCommand(name) {
+  execCommand(name, params) {
     let cmd = this.commands[name]
-    return !!(cmd && cmd.exec(this) !== false)
+    return !!(cmd && cmd.exec(this, params) !== false)
   }
 }
 

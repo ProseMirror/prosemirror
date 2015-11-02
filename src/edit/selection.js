@@ -72,9 +72,9 @@ export class Selection {
     if (force || sel.anchorNode != this.lastAnchorNode || sel.anchorOffset != this.lastAnchorOffset ||
         sel.focusNode != this.lastHeadNode || sel.focusOffset != this.lastHeadOffset) {
       let {pos: anchor, inline: anchorInline} =
-          posFromDOM(this.pm, sel.anchorNode, sel.anchorOffset, force)
+          posFromDOMInner(this.pm, sel.anchorNode, sel.anchorOffset, force)
       let {pos: head, inline: headInline} =
-          posFromDOM(this.pm, sel.focusNode, sel.focusOffset, force)
+          posFromDOMInner(this.pm, sel.focusNode, sel.focusOffset, force)
       this.lastAnchorNode = sel.anchorNode; this.lastAnchorOffset = sel.anchorOffset
       this.lastHeadNode = sel.focusNode; this.lastHeadOffset = sel.focusOffset
       this.pm.sel.setAndSignal(new Range(anchorInline ? anchor : moveInline(this.pm.doc, anchor, this.range.anchor),
@@ -210,7 +210,7 @@ function scanOffset(node, parent) {
   return 0
 }
 
-function posFromDOM(pm, node, domOffset, force) {
+function posFromDOMInner(pm, node, domOffset, force) {
   if (!force && pm.operation && pm.doc != pm.operation.doc)
     throw new Error("Fetching a position from an outdated DOM structure")
 
@@ -243,6 +243,15 @@ function posFromDOM(pm, node, domOffset, force) {
   }
   if (offset == null) offset = scanOffset(prev, node)
   return {pos: new Pos(path, offset), inline}
+}
+
+export function posFromDOM(pm, node, offset) {
+  if (offset == null) {
+    offset = Array.prototype.indexOf.call(node.parentNode.childNodes, node)
+    node = node.parentNode
+  }
+  let {pos, inline} = posFromDOMInner(pm, node, offset)
+  return inline ? pos : moveInline(pm.doc, pos, pos)
 }
 
 function moveInline(doc, pos, from) {
@@ -355,8 +364,7 @@ export function posAtCoords(pm, coords) {
     offset = offsetInElement(element, coords)
   }
 
-  let {pos, inline} = posFromDOM(pm, element, offset)
-  return inline ? pos : moveInline(pm.doc, pos, pos)
+  return posFromDOM(pm, element, offset)
 }
 
 /**
@@ -443,7 +451,11 @@ function offsetInTextNode(text, coords) {
 
 function offsetInElement(element, coords) {
   let rects = []
-  for (let child = element.firstChild; child; child = child.nextSibling)
-    rects.push(child.getBoundingClientRect())
+  for (let child = element.firstChild; child; child = child.nextSibling) {
+    if (child.getBoundingClientRect)
+      rects.push(child.getBoundingClientRect())
+    else
+      rects.push(null)
+  }
   return offsetInRects(coords, rects)
 }

@@ -125,7 +125,7 @@ function renderSelect(item, menu) {
   return dom
 }
 
-function showSelectMenu(pm, item, dom) {
+export function showSelectMenu(pm, item, dom) {
   let param = item.params[0]
   let options = param.options.call ? param.options(pm) : param.options
   let menu = elt("div", {class: "ProseMirror-select-menu"}, options.map(o => {
