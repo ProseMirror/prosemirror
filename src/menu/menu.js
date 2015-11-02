@@ -165,7 +165,9 @@ function buildParamForm(command) {
   let fields = command.params.map((param, i) => {
     let field, name = "field_" + i
     if (param.type == "text")
-      field = elt("input", {name, type: "text", placeholder: param.name, size: 40, autocomplete: "off"})
+      field = elt("input", {name, type: "text",
+                            placeholder: param.name,
+                            autocomplete: "off"})
     else if (param.type == "select")
       field = elt("select", {name}, (param.options.call ? param.options(pm) : param.options)
                   .map(o => elt("option", {value: o.value, selected: o == param.default}, o.label)))
@@ -284,6 +286,8 @@ insertCSS(`
   margin: 0 -4px;
   line-height: 1;
   white-space: pre;
+}
+.ProseMirror-tooltip .ProseMirror-menu {
   width: -webkit-fit-content;
   width: fit-content;
 }
