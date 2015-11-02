@@ -321,7 +321,8 @@ function buildAttrs(attrSpec, attrs, arg1, arg2) {
  * Document schema class.
  */
 export class Schema {
-  constructor(spec) {
+  constructor(spec, styles) {
+    if (!(spec instanceof SchemaSpec)) spec = new SchemaSpec(spec, styles)
     this.spec = spec
     this.kinds = Object.create(null)
     this.nodes = NodeType.compile(spec.nodes, this)
