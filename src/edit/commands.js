@@ -1,7 +1,7 @@
 import {HardBreak, BulletList, OrderedList, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
         StrongStyle, EmStyle, CodeStyle, LinkStyle, Image, NodeType, StyleType,
         Pos, spanAtOrBefore, containsStyle, rangeHasStyle} from "../model"
-import {joinPoint, canLift, alreadyHasBlockType} from "../transform"
+import {joinPoint, canLift, canWrap, alreadyHasBlockType} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
 
@@ -458,13 +458,16 @@ defineCommand("lift", {
   }
 })
 
-// FIXME add select method
 function wrapCommand(type, name, labelName, info) {
   type.attachCommand("wrap" + name, type => ({
     label: "Wrap in " + labelName,
     run(pm) {
       let sel = pm.selection
       return pm.apply(pm.tr.wrap(sel.from, sel.to, type.create()), andScroll)
+    },
+    select(pm) {
+      let {from, to} = pm.selection
+      return canWrap(pm.doc, from, to, type.create())
     },
     info
   }))
@@ -600,6 +603,7 @@ defineCommand("redo", {
 defineCommand("textblockType", {
   label: "Change block type",
   run(pm, type) {
+    // FIXME do nothing if type is current type
     let sel = pm.selection
     return pm.apply(pm.tr.setBlockType(sel.from, sel.to, type))
   },
