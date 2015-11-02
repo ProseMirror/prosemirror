@@ -100,11 +100,13 @@ function renderIcon(command, menu) {
                 elt("span", {class: "ProseMirror-menuicon ProseMirror-icon-" + command.name}))
   dom.addEventListener("mousedown", e => {
     e.preventDefault(); e.stopPropagation()
-    if (command.params.length) {
-      menu.enter(readParams(command))
-    } else {
+    if (!command.params.length) {
       command.exec(menu.pm)
       menu.reset()
+    } else if (command.params.length == 1 && command.params[0].type == "select") {
+      showSelectMenu(menu.pm, command, dom)
+    } else {
+      menu.enter(readParams(command))
     }
   })
   return dom
@@ -164,6 +166,9 @@ function buildParamForm(command) {
     let field, name = "field_" + i
     if (param.type == "text")
       field = elt("input", {name, type: "text", placeholder: param.name, size: 40, autocomplete: "off"})
+    else if (param.type == "select")
+      field = elt("select", {name}, (param.options.call ? param.options(pm) : param.options)
+                  .map(o => elt("option", {value: o.value, selected: o == param.default}, o.label)))
     else // FIXME more types
       throw new Error("Unsupported parameter type: " + param.type)
     return elt("div", null, field)
