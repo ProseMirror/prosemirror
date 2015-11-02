@@ -59,9 +59,9 @@ export class NodeType {
     return this.schema.subKind(type.name, this.contains)
   }
 
-  canContainChildren(node, liberal) {
+  canContainChildren(node, liberal, from = 0, to = node.length) {
     if (!liberal && !this.schema.subKind(node.type.contains, this.contains)) return false
-    for (let i = 0; i < node.length; i++)
+    for (let i = from; i < to; i++)
       if (!this.canContain(node.child(i))) return false
     return true
   }

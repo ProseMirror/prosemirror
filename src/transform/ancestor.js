@@ -24,8 +24,8 @@ defineStep("ancestor", {
     if (wrappers.length) {
       let lastWrapper = wrappers[wrappers.length - 1]
       if (!parent.type.canContain(wrappers[0]) ||
-          !lastWrapper.type.canContainChildren(inner, true))
-        return null
+          !lastWrapper.type.canContainChildren(inner, true, from.offset, to.offset))
+        return console.log(lastWrapper.type, inner), null
       let node = null
       for (let i = wrappers.length - 1; i >= 0; i--)
         node = wrappers[i].copy(node ? [node] : inner.slice(from.offset, to.offset))
