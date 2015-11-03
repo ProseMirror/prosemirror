@@ -284,17 +284,9 @@ function deleteBarrier(pm, cut) {
     if (pm.apply(tr) !== false) return
   }
 
-  let insideAfter = Pos.after(pm.doc, cut)
-  if (!insideAfter)
-    return false
-  if (insideAfter.depth > cut.depth + 1 && pm.apply(pm.tr.lift(insideAfter)) !== false)
-    return
-
-  let insideBefore = Pos.before(pm.doc, cut)
-  if (insideBefore)
-    return pm.apply(pm.tr.delete(insideBefore, insideAfter))
-  else
-    return false
+  let inner = Pos.after(pm.doc, cut)
+  if (!inner) return false
+  return inner.depth > cut.depth + 1 && pm.apply(pm.tr.lift(inner))
 }
 
 defineCommand("joinBackward", {
