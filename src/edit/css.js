@@ -72,15 +72,15 @@ img.ProseMirror-selectednode::selection {
   padding-right: 8px;
 }
 
-.ProseMirror-content ul li:before { content: "●" }
-.ProseMirror-content ul ul li:before { content: "○" }
-.ProseMirror-content ul ul ul li:before { content: "◾" }
+.ProseMirror-content ul > li:before { content: "●" }
+.ProseMirror-content ul ul > li:before { content: "○" }
+.ProseMirror-content ul ul ul > li:before { content: "◾" }
 
 .ProseMirror-content ol {
   counter-reset: prosemirror-list;
 }
 
-.ProseMirror-content ol li:before {
+.ProseMirror-content ol > li:before {
   counter-increment: prosemirror-list;
   content: counter(prosemirror-list) ".";
 }
