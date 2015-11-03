@@ -510,8 +510,6 @@ defineCommand("liftEmptyBlock", {
   run(pm) {
     let {head, empty} = pm.selection
     if (!empty || head.offset > 0) return false
-    let block = pm.doc.path(head.path)
-    if (block.length != 0) return false
     if (head.path[head.path.length - 1] > 0 &&
         pm.apply(pm.tr.split(head.shorten())) !== false)
       return
