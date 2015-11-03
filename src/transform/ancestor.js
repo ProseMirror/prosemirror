@@ -11,24 +11,25 @@ defineStep("ancestor", {
     if (!isFlatRange(from, to)) return null
     let toParent = from.path, start = from.offset, end = to.offset
     let depth = step.param.depth || 0, wrappers = step.param.wrappers || []
-    if (!depth && wrappers.length == 0) return null
+    let inner = doc.path(from.path)
     for (let i = 0; i < depth; i++) {
       if (start > 0 || end < doc.path(toParent).maxOffset || toParent.length == 0) return null
       start = toParent[toParent.length - 1]
       end = start + 1
       toParent = toParent.slice(0, toParent.length - 1)
     }
+    if (depth == 0 && wrappers.length == 0) return null
 
-    let parent = doc.path(toParent), inner = doc.path(from.path), newParent
-    let parentSize = parent.length
+    let parent = doc.path(toParent), parentSize = parent.length, newParent
     if (wrappers.length) {
       let lastWrapper = wrappers[wrappers.length - 1]
+      let content = inner.slice(from.offset, to.offset)
       if (!parent.type.canContain(wrappers[0]) ||
-          !lastWrapper.type.canContainChildren(inner, true, from.offset, to.offset))
+          !content.every(n => lastWrapper.type.canContain(n)))
         return console.log(lastWrapper.type, inner), null
       let node = null
       for (let i = wrappers.length - 1; i >= 0; i--)
-        node = wrappers[i].copy(node ? [node] : inner.slice(from.offset, to.offset))
+        node = wrappers[i].copy(node ? [node] : content)
       newParent = parent.splice(start, end, [node])
     } else {
       if (!parent.type.canContainChildren(inner, true)) return null
