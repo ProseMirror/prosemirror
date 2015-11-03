@@ -10,7 +10,7 @@ export class Selection {
     this.lastNode = null
     let start = Pos.start(pm.doc)
     this.range = new Range(start, start)
-    this.nodeFrom = this.nodeTo = null
+    this.node = null
     pm.content.addEventListener("focus", () => this.receivedFocus())
   }
 
@@ -21,22 +21,21 @@ export class Selection {
 
   set(range, clearLast) {
     this.range = range
-    this.nodeFrom = this.nodeTo = null
+    this.node = null
     if (clearLast !== false) this.lastAnchorNode = null
   }
 
   setNode(pos) {
-    let parent = this.pm.doc.path(pos.path), from = pos, to = pos.move(1)
-    let rangeFrom = from, rangeTo = to
+    let parent = this.pm.doc.path(pos.path)
+    let rangeFrom = pos, rangeTo = pos.move(1)
     if (!parent.isTextblock) {
-      rangeFrom = Pos.after(this.pm.doc, from)
-      rangeTo = Pos.before(this.pm.doc, to) || rangeFrom
+      rangeFrom = Pos.after(this.pm.doc, rangeFrom)
+      rangeTo = Pos.before(this.pm.doc, rangeTo) || rangeFrom
       if (!rangeFrom) rangeFrom = rangeTo
       if (rangeFrom.cmp(rangeTo) > 0) rangeTo = rangeFrom
     }
-    this.set(new Range(rangeFrom, rangeTo))
-    this.nodeFrom = from
-    this.nodeTo = to
+    this.set(new Range(rangeFrom, rangeTo), false)
+    this.node = pos
   }
 
   setNodeAndSignal(pos) {
@@ -45,18 +44,18 @@ export class Selection {
   }
 
   selectedNode() {
-    if (!this.nodeFrom) return null
-    let parent = this.pm.doc.path(this.nodeFrom.path)
+    if (!this.node) return null
+    let parent = this.pm.doc.path(this.node.path)
     if (parent.isTextblock)
-      return spanAtOrBefore(parent, this.nodeFrom.offset + 1)
+      return spanAtOrBefore(parent, this.node.offset + 1)
     else
-      return parent.child(this.nodeFrom.offset)
+      return parent.child(this.node.offset)
   }
 
   map(mapping) {
-    if (this.nodeFrom) {
-      let newFrom = mapping.map(this.nodeFrom, 1).pos
-      let newTo = mapping.map(this.nodeFrom, -1).pos
+    if (this.node) {
+      let newFrom = mapping.map(this.node, 1).pos
+      let newTo = mapping.map(this.node, -1).pos
       if (newTo.cmp(newFrom.move(1)) == 0) {
         this.setNodeAndSignal(newFrom)
         return
@@ -88,8 +87,7 @@ export class Selection {
   }
 
   toDOM(force, takeFocus) {
-    // FIXME maybe create invisible (styled) DOM range anyway? to make copy/paste/etc work
-    if (this.nodeFrom)
+    if (this.node)
       this.nodeToDOM(force, takeFocus)
     else
       this.rangeToDOM(force, takeFocus)
@@ -98,7 +96,7 @@ export class Selection {
   nodeToDOM(_force, takeFocus) {
     window.getSelection().removeAllRanges()
     if (takeFocus) this.pm.content.focus()
-    let pos = this.nodeFrom, node = this.selectedNode, dom
+    let pos = this.node, node = this.selectedNode, dom
     if (node.isInline)
       dom = findByOffset(resolvePath(this.pm.content, pos.path), pos.offset, true).node
     else

@@ -272,7 +272,7 @@ defineCommand("deleteSelection", {
 function deleteBarrier(pm, cut) {
   let around = pm.doc.path(cut.path)
   let before = around.child(cut.offset - 1), after = around.child(cut.offset)
-  if (before.type.canContainChildren(after) && pm.apply(pm.tr.join(cut)) !== false)
+  if (before.type.canContainChildren(after) && pm.apply(pm.tr.join(cut), andScroll) !== false)
     return
 
   let conn
@@ -281,12 +281,11 @@ function deleteBarrier(pm, cut) {
     tr.step("ancestor", cut, end, null, {wrappers: [before, ...conn.map(t => t.create())]})
     tr.join(end)
     tr.join(cut)
-    if (pm.apply(tr) !== false) return
+    if (pm.apply(tr, andScroll) !== false) return
   }
 
   let inner = Pos.after(pm.doc, cut)
-  if (!inner) return false
-  return inner.depth > cut.depth + 1 && pm.apply(pm.tr.lift(inner))
+  return !inner ? false : pm.apply(pm.tr.lift(inner), andScroll)
 }
 
 defineCommand("joinBackward", {
@@ -311,11 +310,7 @@ defineCommand("joinBackward", {
       return pm.apply(pm.tr.delete(cut.move(-1), cut), andScroll)
 
     // Apply the joining algorithm
-    if (deleteBarrier(pm, cut) !== false)
-      return
-
-    // As fallback, try a lift
-    return pm.apply(pm.tr.lift(head), andScroll)
+    return deleteBarrier(pm, cut)
   },
   info: {key: ["Backspace(30)", "Mod-Backspace(30)"]}
 })
@@ -634,3 +629,26 @@ function currentTextblockType(pm) {
   for (let i = 0; i < types.length; i++)
     if (types[i].value.sameMarkup(focusNode)) return types[i]
 }
+
+function nodeAboveSelection(pm) {
+  let node = pm.selectedNodePath
+  if (node) return node.depth && node.shorten()
+
+  let {head, anchor} = pm.selection, i = 0
+  for (; i < head.depth && i < anchor.depth; i++)
+    if (head.path[i] != anchor.path[i]) break;
+  return i == 0 ? false : head.shorten(i - 1)
+}
+
+defineCommand("selectParent", {
+  label: "Select parent node",
+  run(pm) {
+    let node = nodeAboveSelection(pm)
+    if (!node) return false
+    pm.setNodeSelection(node)
+  },
+  select(pm) {
+    return nodeAboveSelection(pm)
+  },
+  info: {key: "Esc"}
+})

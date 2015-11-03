@@ -66,6 +66,16 @@ export class ProseMirror {
     return this.sel.range
   }
 
+  get selectedNode() {
+    this.ensureOperation()
+    return this.sel.selectedNode()
+  }
+
+  get selectedNodePath() {
+    this.ensureOperation()
+    return this.sel.node
+  }
+
   get selectedDoc() {
     let sel = this.selection
     return sliceBetween(this.doc, sel.from, sel.to)
@@ -150,6 +160,11 @@ export class ProseMirror {
       this.sel.setAndSignal(range)
   }
 
+  setNodeSelection(pos) {
+    this.checkPos(pos, false)
+    this.sel.setNodeAndSignal(pos)
+  }
+
   ensureOperation() {
     if (!this.operation) {
       if (!this.input.suppressPolling) this.sel.poll()
@@ -176,7 +191,8 @@ export class ProseMirror {
       else redraw(this, this.ranges.dirty, this.doc, op.doc)
       this.ranges.resetDirty()
     }
-    if ((docChanged || op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head)) &&
+    if ((docChanged || op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head) ||
+         (op.selNode ? !this.sel.node || this.sel.node.cmp(op.selNode) : this.sel.node)) &&
         !this.input.composing)
       this.sel.toDOM(docChanged, op.focus)
     if (op.scrollIntoView !== false)
@@ -276,6 +292,7 @@ class Operation {
   constructor(pm) {
     this.doc = pm.doc
     this.sel = pm.sel.range
+    this.selNode = pm.sel.node
     this.scrollIntoView = false
     this.focus = false
     this.fullRedraw = !!pm.input.composing
