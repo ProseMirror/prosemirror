@@ -368,7 +368,7 @@ export class Schema {
   nodeFromJSON(json) {
     let type = this.nodeType(json.type)
     return type.create(json.attrs,
-                       json.text || (json.content && json.content.map(this.nodeFromJSON)),
+                       typeof json.text == "string" ? json.text : (json.content && json.content.map(this.nodeFromJSON)),
                        json.styles && json.styles.map(this.styleFromJSON))
   }
 
