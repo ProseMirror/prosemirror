@@ -398,7 +398,7 @@ defineCommand("deleteCharAfter", {
   label: "Delete a character after the cursor",
   run(pm) {
     let {head, empty} = pm.selection
-    if (!empty || head.offset == 0) return false
+    if (!empty || head.offset == pm.doc.path(head.path).maxOffset) return false
     let to = moveForward(pm.doc.path(head.path), head.offset, "char")
     return pm.apply(pm.tr.delete(head, new Pos(head.path, to)), andScroll)
   },
@@ -409,7 +409,7 @@ defineCommand("deleteWordAfter", {
   label: "Delete a character after the cursor",
   run(pm) {
     let {head, empty} = pm.selection
-    if (!empty || head.offset == 0) return false
+    if (!empty || head.offset == pm.doc.path(head.path).maxOffset) return false
     let to = moveForward(pm.doc.path(head.path), head.offset, "word")
     return pm.apply(pm.tr.delete(head, new Pos(head.path, to)), andScroll)
   },
