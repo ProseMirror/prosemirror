@@ -270,30 +270,31 @@ defineCommand("deleteSelection", {
 })
 
 function deleteBarrier(pm, cut) {
-  let around = pm.doc.path(cut.path), target = around.child(cut.offset - 1)
-  for (let pos = cut, inner;; pos = inner) {
-    let parent = pm.doc.path(pos.path)
-    if (pos.offset >= parent.length) return false
-    let after = parent.child(pos.offset), wrappers, conn
-    inner = new Pos(pos.path.concat(pos.offset), 0)
-    if (target.type.canContainChildren(after))
-      wrappers = [after]
-    else if (conn = target.type.findConnection(after.type))
-      wrappers = [target, ...conn.map(t => t.create()), after]
-    else
-      continue
+  let around = pm.doc.path(cut.path)
+  let before = around.child(cut.offset - 1), after = around.child(cut.offset)
+  if (before.type.canContainChildren(after) && pm.apply(pm.tr.join(cut)) !== false)
+    return
 
-    let tr = pm.tr, diff = pos.depth - cut.depth
-    if (diff) tr.splitIfNeeded(pos.move(1), diff)
-    if (diff || wrappers.length > 1)
-      tr.step("ancestor", inner, new Pos(inner.path, after.maxOffset), null, {depth: diff + 1, wrappers})
+  let conn
+  if (after.isTextblock && (conn = before.type.findConnection(after.type))) {
+    let tr = pm.tr, end = cut.move(1)
+    tr.step("ancestor", cut, end, null, {wrappers: [before, ...conn.map(t => t.create())]})
+    tr.join(end)
     tr.join(cut)
-    if (wrappers.length > 1 && around.length > cut.offset + 1 &&
-        tr.doc.path(cut.path).length == around.length - 1 &&
-        around.child(cut.offset + 1).sameMarkup(target))
-      tr.join(cut)
-    return pm.apply(tr, andScroll)
+    if (pm.apply(tr) !== false) return
   }
+
+  let insideAfter = Pos.after(pm.doc, cut)
+  if (!insideAfter)
+    return false
+  if (insideAfter.depth > cut.depth + 1 && pm.apply(pm.tr.lift(insideAfter)) !== false)
+    return
+
+  let insideBefore = Pos.before(pm.doc, cut)
+  if (insideBefore)
+    return pm.apply(pm.tr.delete(insideBefore, insideAfter))
+  else
+    return false
 }
 
 defineCommand("joinBackward", {

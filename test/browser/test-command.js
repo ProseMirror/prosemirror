@@ -89,7 +89,7 @@ test("joinBackward",
      doc(p("hithere")))
 test("joinBackward",
      doc(p("hi"), blockquote(p("<a>there"))),
-     doc(p("hithere")))
+     doc(p("hi"), p("there")))
 test("joinBackward",
      doc(blockquote(p("hi")), blockquote(p("<a>there"))),
      doc(blockquote(p("hi"), p("there"))))
@@ -183,7 +183,7 @@ test("joinForward",
      doc(blockquote(p("hi"), p("there"))))
 test("joinForward",
      doc(p("foo<a>"), blockquote(p("bar"))),
-     doc(p("foobar")))
+     doc(p("foo"), p("bar")))
 test("joinForward",
      doc(ul(li(p("hi<a>"))), ul(li(p("there")))),
      doc(ul(li(p("hi")), li(p("there")))))

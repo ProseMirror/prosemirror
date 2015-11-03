@@ -161,7 +161,7 @@ function renderItem(item, menu) {
   else return item.display(menu)
 }
 
-function buildParamForm(command) {
+function buildParamForm(pm, command) {
   let fields = command.params.map((param, i) => {
     let field, name = "field_" + i
     if (param.type == "text")
@@ -190,7 +190,7 @@ function gatherParams(command, form, pm) {
 }
 
 function paramForm(pm, command, callback) {
-  let form = buildParamForm(command), done = false
+  let form = buildParamForm(pm, command), done = false
 
   let finish = result => {
     if (!done) {
