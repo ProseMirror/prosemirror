@@ -152,6 +152,7 @@ insertCSS(`
   position: absolute;
   border-bottom: 1px solid silver;
   background: white;
+  z-index: 10;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
   overflow: hidden;

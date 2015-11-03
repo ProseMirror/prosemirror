@@ -56,4 +56,33 @@ img.ProseMirror-selectednode::selection {
   margin-top: .3em;
 }
 
+.ProseMirror-content ul, .ProseMirror-content ol {
+  padding-left: 0;
+}
+
+.ProseMirror-content li {
+  list-style-type: none;
+  padding-left: 32px;
+  position: relative;
+}
+
+.ProseMirror-content li:before {
+  position: absolute;
+  right: calc(100% - 32px);
+  padding-right: 8px;
+}
+
+.ProseMirror-content ul li:before { content: "●" }
+.ProseMirror-content ul ul li:before { content: "○" }
+.ProseMirror-content ul ul ul li:before { content: "◾" }
+
+.ProseMirror-content ol {
+  counter-reset: prosemirror-list;
+}
+
+.ProseMirror-content ol li:before {
+  counter-increment: prosemirror-list;
+  content: counter(prosemirror-list) ".";
+}
+
 `)
