@@ -365,6 +365,13 @@ export function posAtCoords(pm, coords) {
   return posFromDOM(pm, element, offset)
 }
 
+function textRect(node, from, to) {
+  let range = document.createRange()
+  range.setEnd(node, to)
+  range.setStart(node, to)
+  return range.getBoundingClientRect()
+}
+
 /**
  * Given a position in the document model, get a bounding box of the character at
  * that position, relative to the window.
@@ -377,12 +384,10 @@ export function coordsAtPos(pm, pos) {
   let {node, offset} = DOMFromPos(pm.content, pos)
   let rect
   if (node.nodeType == 3 && node.nodeValue) {
-    let range = document.createRange()
-    range.setEnd(node, offset ? offset : offset + 1)
-    range.setStart(node, offset ? offset - 1 : offset)
-    rect = range.getBoundingClientRect()
+    rect = textRect(node, offset ? offset - 1 : offset, offset ? offset : offset + 1)
   } else if (node.nodeType == 1 && node.firstChild) {
-    rect = node.childNodes[offset ? offset - 1 : offset].getBoundingClientRect()
+    let child = node.childNodes[offset ? offset - 1 : offset]
+    rect = child.nodeType == 3 ? textRect(child, 0, child.nodeValue.length) : child.getBoundingClientRect()
     // BR nodes are likely to return a useless empty rectangle. Try
     // the node on the other side in that case.
     if (rect.left == rect.right && offset && offset < node.childNodes.length) {
