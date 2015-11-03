@@ -62,6 +62,7 @@ export class ProseMirror {
    * @return {Range} The instance of the editor's selection range.
    */
   get selection() {
+    // FIXME only start an op when selection actually changed?
     this.ensureOperation()
     return this.sel.range
   }
@@ -167,7 +168,7 @@ export class ProseMirror {
 
   ensureOperation() {
     if (!this.operation) {
-      if (!this.input.suppressPolling) this.sel.poll()
+      this.sel.beforeStartOp()
       this.operation = new Operation(this)
     }
     if (!this.flushScheduled) {
@@ -194,7 +195,7 @@ export class ProseMirror {
     if ((docChanged || op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head) ||
          (op.selNode ? !this.sel.node || this.sel.node.cmp(op.selNode) : this.sel.node)) &&
         !this.input.composing)
-      this.sel.toDOM(docChanged, op.focus)
+      this.sel.toDOM(op.focus)
     if (op.scrollIntoView !== false)
       scrollIntoView(this, op.scrollIntoView)
     if (docChanged) this.signal("draw")
@@ -251,7 +252,7 @@ export class ProseMirror {
 
   focus() {
     if (this.operation) this.operation.focus = true
-    else this.sel.toDOM(false, true)
+    else this.sel.toDOM(true)
   }
 
   hasFocus() {

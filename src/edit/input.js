@@ -129,10 +129,12 @@ handlers.keydown = (pm, e) => {
   if (pm.input.composing) return
   let name = keyName(e)
   if (name) dispatchKey(pm, name, e)
+  pm.sel.pollForUpdate()
 }
 
 handlers.keyup = (pm, e) => {
   if (e.keyCode == 16) pm.input.shiftKey = false
+  pm.sel.pollForUpdate()
 }
 
 function inputText(pm, range, text) {
@@ -151,6 +153,18 @@ handlers.keypress = (pm, e) => {
   if (dispatchKey(pm, "'" + ch + "'", e)) return
   inputText(pm, pm.selection, ch)
   e.preventDefault()
+}
+
+handlers.mouseup = handlers.mousedown = handlers.touchdown = handlers.touchup = pm => {
+  pm.sel.pollForUpdate()
+}
+
+handlers.mousemove = (pm, e) => {
+  if (e.which || e.button) pm.sel.pollForUpdate()
+}
+
+handlers.touchup = pm => {
+  pm.sel.pollForUpdate()
 }
 
 /**
@@ -216,10 +230,9 @@ handlers.input = (pm) => {
     return
   }
 
-  pm.input.suppressPolling = true
   applyDOMChange(pm)
-  pm.input.suppressPolling = false
-  pm.sel.poll(true)
+  // FIXME use our own idea of the selection?
+  pm.sel.pollForUpdate()
   pm.scrollIntoView()
 }
 

@@ -5,12 +5,16 @@ import {contains, browser} from "../dom"
 export class Selection {
   constructor(pm) {
     this.pm = pm
-    this.polling = null
-    this.lastAnchorNode = this.lastHeadNode = this.lastAnchorOffset = this.lastHeadOffset = null
-    this.lastNode = null
+
     let start = Pos.start(pm.doc)
     this.range = new Range(start, start)
     this.node = null
+
+    this.pollState = null
+    this.pollTimeout = null
+    this.lastAnchorNode = this.lastHeadNode = this.lastAnchorOffset = this.lastHeadOffset = null
+    this.lastNode = null
+
     pm.content.addEventListener("focus", () => this.receivedFocus())
   }
 
@@ -65,35 +69,66 @@ export class Selection {
                                 mapping.map(this.range.head).pos))
   }
 
-  poll(force) {
-    if (this.pm.input.composing || !hasFocus(this.pm)) return
-    let sel = getSelection()
-    if (force || sel.anchorNode != this.lastAnchorNode || sel.anchorOffset != this.lastAnchorOffset ||
-        sel.focusNode != this.lastHeadNode || sel.focusOffset != this.lastHeadOffset) {
-      let {pos: anchor, inline: anchorInline} =
-          posFromDOMInner(this.pm, sel.anchorNode, sel.anchorOffset, force)
-      let {pos: head, inline: headInline} =
-          posFromDOMInner(this.pm, sel.focusNode, sel.focusOffset, force)
-      this.lastAnchorNode = sel.anchorNode; this.lastAnchorOffset = sel.anchorOffset
-      this.lastHeadNode = sel.focusNode; this.lastHeadOffset = sel.focusOffset
-      this.pm.sel.setAndSignal(new Range(anchorInline ? anchor : moveInline(this.pm.doc, anchor, this.range.anchor),
-                                         headInline ? head: moveInline(this.pm.doc, head, this.range.head)), false)
-      if (this.range.anchor.cmp(anchor) || this.range.head.cmp(head))
-        this.toDOM(true)
-      else
-        this.clearNode()
-      return true
+  pollForUpdate() {
+    clearTimeout(this.pollTimeout)
+    this.pollState = "update"
+    let n = 0, check = () => {
+      if (this.readUpdate()) {
+        this.pollState = null
+        this.pollToSync()
+      } else if (++n == 1) {
+        this.pollTimeout = setTimeout(check, 50)
+      }
     }
+    this.pollTimeout = setTimeout(check, 20)
   }
 
-  toDOM(force, takeFocus) {
+  domChanged() {
+    let sel = getSelection()
+    return sel.anchorNode != this.lastAnchorNode || sel.anchorOffset != this.lastAnchorOffset ||
+      sel.focusNode != this.lastHeadNode || sel.focusOffset != this.lastHeadOffset
+  }
+
+  readUpdate() {
+    if (this.pm.input.composing || !hasFocus(this.pm) || !this.domChanged()) return false
+
+    let sel = getSelection()
+    let anchor = posFromDOM(this.pm, sel.anchorNode, sel.anchorOffset)
+    let head = posFromDOM(this.pm, sel.focusNode, sel.focusOffset)
+    this.lastAnchorNode = sel.anchorNode; this.lastAnchorOffset = sel.anchorOffset
+    this.lastHeadNode = sel.focusNode; this.lastHeadOffset = sel.focusOffset
+    this.setAndSignal(new Range(anchor, head))
+    this.toDOM()
+    return true
+  }
+
+  pollToSync() {
+    if (this.pollState) return
+    this.pollState = "sync"
+    let sync = () => {
+      if (document.activeElement != this.pm.content) {
+        this.pollState = null
+      } else {
+        this.syncDOM()
+        this.pollTimeout = setTimeout(sync, 200)
+      }
+    }
+    this.pollTimeout = setTimeout(sync, 200)
+  }
+
+  syncDOM() {
+    if (!this.pm.input.composing && hasFocus(this.pm) && this.domChanged())
+      this.toDOM()
+  }
+
+  toDOM(takeFocus) {
     if (this.node)
-      this.nodeToDOM(force, takeFocus)
+      this.nodeToDOM(takeFocus)
     else
-      this.rangeToDOM(force, takeFocus)
+      this.rangeToDOM(takeFocus)
   }
 
-  nodeToDOM(_force, takeFocus) {
+  nodeToDOM(takeFocus) {
     window.getSelection().removeAllRanges()
     if (takeFocus) this.pm.content.focus()
     let pos = this.node, node = this.selectedNode, dom
@@ -114,7 +149,7 @@ export class Selection {
     }
   }
 
-  rangeToDOM(force, takeFocus) {
+  rangeToDOM(takeFocus) {
     this.clearNode()
 
     let sel = window.getSelection()
@@ -123,10 +158,7 @@ export class Selection {
       // See https://bugzilla.mozilla.org/show_bug.cgi?id=921444
       else if (browser.gecko) this.pm.content.focus()
     }
-    if (!force &&
-        sel.anchorNode == this.lastAnchorNode && sel.anchorOffset == this.lastAnchorOffset &&
-        sel.focusNode == this.lastHeadNode && sel.focusOffset == this.lastHeadOffset)
-      return
+    if (!this.domChanged()) return
 
     let range = document.createRange()
     let content = this.pm.content
@@ -151,14 +183,18 @@ export class Selection {
   }
 
   receivedFocus() {
-    let poll = () => {
-      if (document.activeElement == this.pm.content) {
-        if (!this.pm.operation) this.poll()
-        clearTimeout(this.polling)
-        this.polling = setTimeout(poll, 50)
-      }
+    if (!this.pollState) this.pollToSync()
+  }
+
+  beforeStartOp() {
+    if (this.pollState == "update") {
+      clearTimeout(this.pollTimeout)
+      this.pollState = null
+      this.pollToSync()
+      this.readUpdate()
+    } else {
+      this.syncDOM()
     }
-    this.polling = setTimeout(poll, 20)
   }
 }
 
