@@ -267,7 +267,8 @@ export class InlineNode extends Node {
 
 export class TextNode extends InlineNode {
   constructor(type, attrs, content, styles) {
-    if (typeof content != "string") throw new Error("Passing non-string as text node content")
+    if (typeof content != "string" || !content)
+      throw new Error("Text node content must be a non-empty string")
     super(type, attrs, null, styles)
     this.text = content
   }
