@@ -70,7 +70,7 @@ export class Selection {
   }
 
   pollForUpdate() {
-    if (this.pm.input.composing) return;
+    if (this.pm.input.composing) return
     clearTimeout(this.pollTimeout)
     this.pollState = "update"
     let n = 0, check = () => {
@@ -413,7 +413,7 @@ export function posAtCoords(pm, coords) {
 function textRect(node, from, to) {
   let range = document.createRange()
   range.setEnd(node, to)
-  range.setStart(node, to)
+  range.setStart(node, from)
   return range.getBoundingClientRect()
 }
 

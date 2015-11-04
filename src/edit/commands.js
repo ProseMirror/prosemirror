@@ -636,7 +636,7 @@ function nodeAboveSelection(pm) {
 
   let {head, anchor} = pm.selection, i = 0
   for (; i < head.depth && i < anchor.depth; i++)
-    if (head.path[i] != anchor.path[i]) break;
+    if (head.path[i] != anchor.path[i]) break
   return i == 0 ? false : head.shorten(i - 1)
 }
 
