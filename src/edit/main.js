@@ -163,6 +163,7 @@ export class ProseMirror {
 
   setNodeSelection(pos) {
     this.checkPos(pos, false)
+    this.input.maybeAbortComposition()
     this.sel.setNodeAndSignal(pos)
   }
 
@@ -186,16 +187,19 @@ export class ProseMirror {
     if (!op || !document.body.contains(this.wrapper)) return
     this.operation = null
 
-    let docChanged = op.doc != this.doc || this.ranges.dirty.size
-    if (docChanged && !this.input.composing) {
+    let docChanged = op.doc != this.doc || this.ranges.dirty.size, redrawn = false
+    if (!this.input.composing && (docChanged || op.composingAtStart)) {
       if (op.fullRedraw) draw(this, this.doc) // FIXME only redraw target block composition
       else redraw(this, this.ranges.dirty, this.doc, op.doc)
       this.ranges.resetDirty()
+      redrawn = true
     }
-    if ((docChanged || op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head) ||
+    if ((redrawn ||
+         op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head) ||
          (op.selNode ? !this.sel.node || this.sel.node.cmp(op.selNode) : this.sel.node)) &&
-        !this.input.composing)
+        !this.input.composing) {
       this.sel.toDOM(op.focus)
+    }
     if (op.scrollIntoView !== false)
       scrollIntoView(this, op.scrollIntoView)
     if (docChanged) this.signal("draw")
@@ -263,9 +267,12 @@ export class ProseMirror {
     return posAtCoords(this, coords)
   }
 
-  posFromDOM(element, offset) {
+  posFromDOM(element, offset, textblock) {
     // FIXME do some input checking
-    return posFromDOM(this, element, offset)
+    let pos = posFromDOM(this, element, offset)
+    if (textblock !== false && !this.doc.path(pos.path).isTextblock)
+      pos = Pos.near(this.doc, pos)
+    return pos
   }
 
   coordsAtPos(pos) {
@@ -296,6 +303,7 @@ class Operation {
     this.selNode = pm.sel.node
     this.scrollIntoView = false
     this.focus = false
-    this.fullRedraw = !!pm.input.composing
+    this.fullRedraw = false
+    this.composingAtStart = !!pm.input.composing
   }
 }

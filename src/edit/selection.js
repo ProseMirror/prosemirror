@@ -70,10 +70,15 @@ export class Selection {
   }
 
   pollForUpdate() {
+    if (this.pm.input.composing) return;
     clearTimeout(this.pollTimeout)
     this.pollState = "update"
     let n = 0, check = () => {
-      if (this.readUpdate()) {
+      if (this.pm.input.composing) {
+        // Abort
+      } else if (this.pm.operation) {
+        this.pollTimeout = setTimeout(check, 20)
+      } else if (this.readUpdate()) {
         this.pollState = null
         this.pollToSync()
       } else if (++n == 1) {
@@ -93,11 +98,12 @@ export class Selection {
     if (this.pm.input.composing || !hasFocus(this.pm) || !this.domChanged()) return false
 
     let sel = getSelection()
-    let anchor = posFromDOM(this.pm, sel.anchorNode, sel.anchorOffset)
-    let head = posFromDOM(this.pm, sel.focusNode, sel.focusOffset)
+    let anchor = posFromDOMInner(this.pm, sel.anchorNode, sel.anchorOffset)
+    let head = posFromDOMInner(this.pm, sel.focusNode, sel.focusOffset)
     this.lastAnchorNode = sel.anchorNode; this.lastAnchorOffset = sel.anchorOffset
     this.lastHeadNode = sel.focusNode; this.lastHeadOffset = sel.focusOffset
-    this.setAndSignal(new Range(anchor, head))
+    this.setAndSignal(new Range(moveToTextblock(this.pm.doc, anchor, this.range.anchor),
+                                moveToTextblock(this.pm.doc, head, this.range.head)))
     this.toDOM()
     return true
   }
@@ -109,7 +115,7 @@ export class Selection {
       if (document.activeElement != this.pm.content) {
         this.pollState = null
       } else {
-        this.syncDOM()
+        if (!this.pm.operation && !this.pm.input.composing) this.syncDOM()
         this.pollTimeout = setTimeout(sync, 200)
       }
     }
@@ -187,11 +193,10 @@ export class Selection {
   }
 
   beforeStartOp() {
-    if (this.pollState == "update") {
+    if (this.pollState == "update" && this.readUpdate()) {
       clearTimeout(this.pollTimeout)
       this.pollState = null
       this.pollToSync()
-      this.readUpdate()
     } else {
       this.syncDOM()
     }
@@ -227,56 +232,62 @@ export class Range {
   get from() { return this.inverted ? this.head : this.anchor }
   get to() { return this.inverted ? this.anchor : this.head }
   get empty() { return this.anchor.cmp(this.head) == 0 }
+  cmp(other) { return this.anchor.cmp(other.anchor) || this.head.cmp(other.head) }
 }
 
-function attr(node, name) {
-  return node.nodeType == 1 && node.getAttribute(name)
-}
-
-function scanOffset(node, parent) {
-  for (var scan = node ? node.previousSibling : parent.lastChild; scan; scan = scan.previousSibling) {
-    let tag, range
-    if (tag = attr(scan, "pm-path"))
-      return +tag + 1
-    else if (range = attr(scan, "pm-span"))
-      return +/-(\d+)/.exec(range)[1]
+function pathFromNode(node) {
+  let path = []
+  for (;;) {
+    let attr = node.getAttribute("pm-path")
+    if (!attr) return path
+    path.unshift(+attr)
+    node = node.parentNode
   }
-  return 0
 }
 
-function posFromDOMInner(pm, node, domOffset, force) {
-  if (!force && pm.operation && pm.doc != pm.operation.doc)
+function posFromDOMInner(pm, node, domOffset, loose) {
+  if (!loose && pm.operation && pm.doc != pm.operation.doc)
     throw new Error("Fetching a position from an outdated DOM structure")
 
-  let path = [], inText = false, offset = null, inline = false, prev
+  let extraOffset = 0, tag
+  for (;;) {
+    if (node.nodeType == 3)
+      extraOffset += domOffset
+    else if (node.hasAttribute("pm-path") || node == pm.content)
+      break
+    else if (tag = node.getAttribute("pm-span-offset"))
+      extraOffset += +tag
 
-  if (node.nodeType == 3) {
-    inText = true
-    prev = node
-    node = node.parentNode
-  } else {
-    prev = node.childNodes[domOffset]
+    let parent = node.parentNode
+    domOffset = Array.prototype.indexOf.call(parent.childNodes, node) +
+      (node.nodeType != 3 && domOffset == node.childNodes.length ? 1 : 0)
+    node = parent
   }
 
-  for (let cur = node; cur != pm.content; prev = cur, cur = cur.parentNode) {
-    let tag, range
-    if (tag = cur.getAttribute("pm-path")) {
-      path.unshift(+tag)
-      if (offset == null)
-        offset = scanOffset(prev, cur)
-    } else if (range = cur.getAttribute("pm-span")) {
-      let [_, from, to] = /(\d+)-(\d+)/.exec(range)
-      if (inText)
-        offset = +from + domOffset
-      else
-        offset = domOffset ? +to : +from
-      inline = true
-    } else if (inText && (tag = cur.getAttribute("pm-span-offset"))) {
-      domOffset += +tag
+  let offset = 0
+  for (let i = domOffset - 1; i >= 0; i--) {
+    let child = node.childNodes[i]
+    if (child.nodeType == 3) {
+      if (loose) extraOffset += child.nodeValue.length
+    } else if (tag = child.getAttribute("pm-span")) {
+      offset = +/^\d+-(\d+)/.exec(tag)[1]
+      break
+    } else if (tag = child.getAttribute("pm-path")) {
+      offset = +tag + 1
+      extraOffset = 0
+      break
+    } else if (loose) {
+      extraOffset += child.textContent.length
     }
   }
-  if (offset == null) offset = scanOffset(prev, node)
-  return {pos: new Pos(path, offset), inline}
+  return new Pos(pathFromNode(node), offset + extraOffset)
+}
+
+function moveToTextblock(doc, pos, old) {
+  if (doc.path(pos.path).isTextblock) return pos
+  let dir = pos.cmp(old)
+  return (dir < 0 ? Pos.before(doc, pos) : Pos.after(doc, pos)) ||
+    (dir >= 0 ? Pos.before(doc, pos) : Pos.after(doc, pos))
 }
 
 export function posFromDOM(pm, node, offset) {
@@ -284,16 +295,14 @@ export function posFromDOM(pm, node, offset) {
     offset = Array.prototype.indexOf.call(node.parentNode.childNodes, node)
     node = node.parentNode
   }
-  let {pos, inline} = posFromDOMInner(pm, node, offset)
-  return inline ? pos : moveInline(pm.doc, pos, pos)
+  return posFromDOMInner(pm, node, offset)
 }
 
-function moveInline(doc, pos, from) {
-  let dir = pos.cmp(from)
-  let found = dir < 0 ? Pos.before(doc, pos) : Pos.after(doc, pos)
-  if (!found)
-    found = dir >= 0 ? Pos.before(doc, pos) : Pos.after(doc, pos)
-  return found
+export function rangeFromDOMLoose(pm) {
+  if (!hasFocus(pm)) return null
+  let sel = getSelection()
+  return new Range(posFromDOMInner(pm, sel.anchorNode, sel.anchorOffset, true),
+                   posFromDOMInner(pm, sel.focusNode, sel.focusOffset, true))
 }
 
 export function findByPath(node, n, fromEnd) {

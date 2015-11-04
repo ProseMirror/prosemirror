@@ -10,7 +10,7 @@ import {isModifierKey, lookupKey, keyName} from "./keys"
 import {dangerousKeys} from "./dangerouskeys"
 import {browser, addClass, rmClass} from "../dom"
 import {applyDOMChange, textContext, textInContext} from "./domchange"
-import {Range, coordsAtPos} from "./selection"
+import {Range, coordsAtPos, rangeFromDOMLoose} from "./selection"
 
 let stopSeq = null
 
@@ -155,16 +155,12 @@ handlers.keypress = (pm, e) => {
   e.preventDefault()
 }
 
-handlers.mouseup = handlers.mousedown = handlers.touchdown = handlers.touchup = pm => {
+handlers.mousedown = handlers.touchdown = pm => {
   pm.sel.pollForUpdate()
 }
 
 handlers.mousemove = (pm, e) => {
   if (e.which || e.button) pm.sel.pollForUpdate()
-}
-
-handlers.touchup = pm => {
-  pm.sel.pollForUpdate()
 }
 
 /**
@@ -217,9 +213,11 @@ handlers.compositionend = (pm, e) => {
 function finishComposing(pm) {
   let info = pm.input.composing
   let text = textInContext(info.context, info.endData)
-  if (text != info.data) pm.ensureOperation()
+  let range = rangeFromDOMLoose(pm)
+  pm.ensureOperation()
   pm.input.composing = null
   if (text != info.data) inputText(pm, info.range, text)
+  if (range && range.cmp(pm.sel.range)) pm.setSelection(range)
 }
 
 handlers.input = (pm) => {

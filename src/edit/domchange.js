@@ -148,7 +148,7 @@ function nodeBefore(node) {
 }
 
 function scanText(start, end) {
-  let text = "", cur = start
+  let text = "", cur = nodeAfter(start)
   for (;;) {
     if (cur == end) return text
     if (!cur) return null
