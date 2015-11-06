@@ -270,7 +270,7 @@ function posFromDOMInner(pm, node, domOffset, loose) {
     if (child.nodeType == 3) {
       if (loose) extraOffset += child.nodeValue.length
     } else if (tag = child.getAttribute("pm-span")) {
-      offset = +/^\d+-(\d+)/.exec(tag)[1]
+      offset = parseSpan(tag).to
       break
     } else if (tag = child.getAttribute("pm-path")) {
       offset = +tag + 1
@@ -328,12 +328,17 @@ export function resolvePath(parent, path) {
   return node
 }
 
+function parseSpan(span) {
+  let [_, from, to] = /^(\d+)-(\d+)$/.exec(span)
+  return {from: +from, to: +to}
+}
+
 function findByOffset(node, offset, after) {
   function search(node, domOffset) {
     if (node.nodeType != 1) return
     let range = node.getAttribute("pm-span")
     if (range) {
-      let [_, from, to] = /(\d+)-(\d+)/.exec(range)
+      let {from, to} = parseSpan(range)
       if (after ? +from == offset : +to >= offset)
         return {node: node, parent: node.parentNode, offset: domOffset,
                 innerOffset: offset - +from}
@@ -467,25 +472,28 @@ export function scrollIntoView(pm, pos) {
   }
 }
 
-function offsetInRects(coords, rects) {
+// FIXME review, rename next 3 functions
+
+function offsetInRects(coords, rects, strict) {
   let {top: y, left: x} = coords
-  let minY = 1e5, minX = 1e5, offset = 0
+  let minY = 1e8, minX = 1e8, offset = 0
   for (let i = 0; i < rects.length; i++) {
     let rect = rects[i]
     if (!rect || (rect.top == 0 && rect.bottom == 0)) continue
     let dY = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0
     if (dY > minY) continue
-    if (dY < minY) { minY = dY; minX = 1e5 }
+    if (dY < minY) { minY = dY; minX = 1e8 }
     let dX = x < rect.left ? rect.left - x : x > rect.right ? x - rect.right : 0
     if (dX < minX) {
       minX = dX
       offset = Math.abs(x - rect.left) < Math.abs(x - rect.right) ? i : i + 1
     }
   }
+  if (strict && (minX || minY)) return null
   return offset
 }
 
-function offsetInTextNode(text, coords) {
+function offsetInTextNode(text, coords, strict) {
   let len = text.nodeValue.length
   let range = document.createRange()
   let rects = []
@@ -494,7 +502,7 @@ function offsetInTextNode(text, coords) {
     range.setStart(text, i)
     rects.push(range.getBoundingClientRect())
   }
-  return offsetInRects(coords, rects)
+  return offsetInRects(coords, rects, strict)
 }
 
 function offsetInElement(element, coords) {
@@ -506,4 +514,83 @@ function offsetInElement(element, coords) {
       rects.push(null)
   }
   return offsetInRects(coords, rects)
+}
+
+export function moveVertically(pm, pos, dir, goalX) {
+  let parent = pm.doc.path(pos.path), posCoords = coordsAtPos(pm, pos)
+  let coords = {left: goalX == null ? posCoords.left : goalX,
+                top: dir > 0 ? posCoords.bottom : posCoords.top}
+  if (parent.isTextblock) {
+    let inside = moveVerticallyInTextblock(resolvePath(pm.content, pos.path), parent, pos.path, coords, dir)
+    if (inside) return inside
+  }
+
+  for (;;) {
+    pos = pos.shorten(null, dir > 0 ? 1 : 0)
+    let found = moveVerticallyThrough(pm, pos, coords.left, dir)
+    if (found) return found
+    if (pos.depth == 0) break
+  }
+
+  return dir > 0 ? Pos.end(pm.doc) : Pos.start(pm.doc)
+}
+
+function findOffsetInText(dom, coords) {
+  if (dom.nodeType == 3) return offsetInTextNode(dom, coords, true)
+  for (let child = dom.firstChild; child; child = child.nextSibling) {
+    let inner = findOffsetInText(child, coords)
+    if (inner != null) {
+      let off = child.nodeType == 1 && child.getAttribute("pm-span-offset")
+      return inner + (off ? +off : 0)
+    }
+  }
+}
+
+function moveVerticallyInTextblock(dom, node, path, coords, dir) {
+  let closest = null, closestBox = null, minDist = 1e8
+  for (let child = dom.firstChild; child; child = child.nextSibling) {
+    if (child.nodeType != 1 || !child.hasAttribute("pm-span")) continue
+    let boxes = child.getClientRects()
+    for (let i = 0; i < boxes.length; i++) {
+      let box = boxes[i]
+      if (box.left > coords.left || box.right < coords.left) continue
+      let mid = (box.top + box.bottom) / 2
+      let dist = dir > 0 ? mid - coords.top : coords.top - mid
+      if (dist > 0 && dist < minDist) {
+        closest = child
+        closestBox = box
+        minDist = dist
+      }
+    }
+  }
+  if (!closest) return null
+
+  let span = parseSpan(closest.getAttribute("pm-span")), extraOffset = 0
+  let childNode = spanAtOrBefore(node, span.to).node
+  if (childNode.isText)
+    extraOffset = findOffsetInText(closest, {left: coords.left, top: (closestBox.top + closestBox.bottom) / 2}) || 0
+  else
+    extraOffset = coords.left > (closestBox.left + closestBox.right) / 2 ? 1 : 0
+  return new Pos(path, span.from + extraOffset)
+}
+
+function moveVerticallyThrough(pm, pos, left, dir) {
+  let node = pm.doc.path(pos.path)
+  for (let offset = pos.offset + (dir > 0 ? 0 : -1); dir > 0 ? offset < node.maxOffset : offset >= 0; offset += dir) {
+    let child = node.child(offset)
+    if (child.isTextblock) {
+      let path = pos.path.concat(offset)
+      let dom = resolvePath(pm.content, path)
+      let box = dom.getBoundingClientRect()
+      let inside = moveVerticallyInTextblock(dom, child, pos.path.concat(offset),
+                                             {left, top: dir > 0 ? box.top : box.bottom}, dir)
+      if (inside) return inside
+      return new Pos(path, left <= box.left ? 0 : child.maxOffset)
+    } else if (child.type.selectable && child.type.contains == null) {
+      return new Pos(pos.path, offset)
+    } else {
+      let inside = moveVerticallyThrough(pm, new Pos(pos.path.concat(offset), dir < 0 ? child.maxOffset : 0), left, dir)
+      if (inside) return inside
+    }
+  }
 }

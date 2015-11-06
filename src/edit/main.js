@@ -194,12 +194,13 @@ export class ProseMirror {
       this.ranges.resetDirty()
       redrawn = true
     }
+
     if ((redrawn ||
          op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head) ||
          (op.selNode ? !this.sel.node || this.sel.node.cmp(op.selNode) : this.sel.node)) &&
-        !this.input.composing) {
+        !this.input.composing)
       this.sel.toDOM(op.focus)
-    }
+
     if (op.scrollIntoView !== false)
       scrollIntoView(this, op.scrollIntoView)
     if (docChanged) this.signal("draw")

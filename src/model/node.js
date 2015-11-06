@@ -215,6 +215,7 @@ export class TextblockNode extends BlockNode {
     return this.copy(content)
   }
 
+  // FIXME cache?
   get maxOffset() {
     let sum = 0
     for (let i = 0; i < this.length; i++) sum += this.child(i).offset

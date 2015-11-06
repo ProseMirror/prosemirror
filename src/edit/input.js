@@ -10,7 +10,7 @@ import {isModifierKey, lookupKey, keyName} from "./keys"
 import {dangerousKeys} from "./dangerouskeys"
 import {browser, addClass, rmClass} from "../dom"
 import {applyDOMChange, textContext, textInContext} from "./domchange"
-import {Range, coordsAtPos, rangeFromDOMLoose} from "./selection"
+import {Range, coordsAtPos, rangeFromDOMLoose, posAtCoords} from "./selection"
 
 let stopSeq = null
 
@@ -128,13 +128,12 @@ handlers.keydown = (pm, e) => {
   if (e.keyCode == 16) pm.input.shiftKey = true
   if (pm.input.composing) return
   let name = keyName(e)
-  if (name) dispatchKey(pm, name, e)
+  if (name && dispatchKey(pm, name, e)) return
   pm.sel.pollForUpdate()
 }
 
 handlers.keyup = (pm, e) => {
   if (e.keyCode == 16) pm.input.shiftKey = false
-  pm.sel.pollForUpdate()
 }
 
 function inputText(pm, range, text) {
@@ -155,8 +154,15 @@ handlers.keypress = (pm, e) => {
   e.preventDefault()
 }
 
-handlers.mousedown = handlers.touchdown = pm => {
-  pm.sel.pollForUpdate()
+handlers.mousedown = (pm, e) => {
+  let pos = posAtCoords(pm, {left: e.clientX, top: e.clientY})
+  pm.setSelection(new Range(pos, pos))
+  pm.focus()
+  e.preventDefault()
+}
+
+handlers.touchdown = () => {
+  // FIXME
 }
 
 handlers.mousemove = (pm, e) => {

@@ -44,7 +44,9 @@ Image.attributes = {
   title: new Attribute({default: ""})
 }
 
-export class HardBreak extends Inline {}
+export class HardBreak extends Inline {
+  get selectable() { return false }
+}
 
 // Style types
 

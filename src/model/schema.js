@@ -49,6 +49,8 @@ export class NodeType {
   get isBlock() { return false }
   get isInline() { return false }
 
+  get selectable() { return true }
+
   static get kind() { return "." }
 
   canContain(node) {
@@ -167,6 +169,7 @@ export class Inline extends NodeType {
 
 export class Text extends Inline {
   get instance() { return TextNode }
+  get selectable() { return false }
 }
 
 // Attribute descriptors
