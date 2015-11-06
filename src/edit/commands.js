@@ -7,7 +7,7 @@ import sortedInsert from "../util/sortedinsert"
 
 import {charCategory, isExtendingChar} from "./char"
 import {Keymap} from "./keys"
-import {moveVertically} from "./selection"
+import {moveVertically, selectableNodeFrom} from "./selection"
 
 const globalCommands = Object.create(null)
 const paramHandlers = Object.create(null)
@@ -654,40 +654,7 @@ defineCommand("selectParent", {
   info: {key: "Esc"}
 })
 
-function selectNodeBefore(pm, pos) {
-  for (let i = pos.path.length - 1; i >= 0; i--) if (pos.path[i] > 0) {
-    let path = pos.path.slice(0, i), offset = pos.path[i] - 1
-    let node = pm.doc.path(path).child(offset)
-    while (node.length) {
-      path.push(offset)
-      node = node.child(offset = node.length - 1)
-    }
-    if (node.type.contains == null && node.type.selectable) {
-      pm.setNodeSelection(new Pos(path, offset))
-      return true
-    }
-  }
-}
-
-function selectNodeAfter(pm, pos) {
-  for (let i = pos.path.length - 1; i >= 0; i--) {
-    let point = pos.shorten(i, 1)
-    let parent = pm.doc.path(point.path)
-    if (point.offset < parent.length) {
-      let node = parent.child(point.offset)
-      while (node.length) {
-        node = node.firstChild
-        point = new Pos(point.path.concat(point.offset), 0)
-      }
-      if (node.type.contains == null && node.type.selectable) {
-        pm.setNodeSelection(point)
-        return true
-      }
-    }
-  }
-}
-
-// FIXME we'll need awareness of bidi motion here
+// FIXME we'll need some awareness of bidi motion here
 
 defineCommand("moveLeft", {
   label: "Move the cursor to the left",
@@ -699,10 +666,14 @@ defineCommand("moveLeft", {
     if (node && innerOffset == node.offset && node.type.selectable)
       return pm.setNodeSelection(head.move(-node.offset))
 
-    if (head.offset == 0 && selectNodeBefore(pm, head))
-      return
-
-    return false
+    if (head.offset > 0) return false
+    let selectable = selectableNodeFrom(pm.doc, head.shorten(), -1)
+    if (!selectable) return false
+    let selNode = pm.doc.path(selectable)
+    if (selNode.isTextblock)
+      pm.setSelection(new Pos(selectable, node.maxOffset))
+    else
+      pm.setNodeSelection(new Pos(selectable, 0).shorten())
   },
   info: {key: "Left"}
 })
@@ -716,12 +687,18 @@ defineCommand("moveRight", {
     if (head.offset < parent.maxOffset) {
       let {node, innerOffset} = spanAtOrBefore(parent, head.offset + 1)
       if (innerOffset == node.offset && node.type.selectable)
-        return pm.setNodeSelection(head.move(-node.offset))
-    } else if (selectNodeAfter(pm, head)) {
-      return
+        return pm.setNodeSelection(head)
+      else
+        return false
+    } else {
+      let selectable = selectableNodeFrom(pm.doc, head.shorten(null, 1), 1)
+      if (!selectable) return false
+      let node = pm.doc.path(selectable)
+      if (node.isTextblock)
+        pm.setSelection(new Pos(selectable, 0))
+      else
+        pm.setNodeSelection(new Pos(selectable, 0).shorten())
     }
-
-    return false
   },
   info: {key: "Right"}
 })

@@ -525,14 +525,22 @@ export function moveVertically(pm, pos, dir, goalX) {
     if (inside) return inside
   }
 
-  for (;;) {
-    pos = pos.shorten(null, dir > 0 ? 1 : 0)
-    let found = moveVerticallyThrough(pm, pos, coords.left, dir)
-    if (found) return found
-    if (pos.depth == 0) break
-  }
+  let selectable = selectableNodeFrom(pm.doc, pos.shorten(null, dir > 0 ? 1 : 0), dir)
+  if (!selectable) return dir > 0 ? Pos.end(pm.doc) : Pos.start(pm.doc)
 
-  return dir > 0 ? Pos.end(pm.doc) : Pos.start(pm.doc)
+  let node = pm.doc.path(selectable)
+  if (node.isTextblock) {
+    let dom = resolvePath(pm.content, selectable)
+    let box = dom.getBoundingClientRect()
+    let inside = moveVerticallyInTextblock(dom, node, selectable, {
+      left: coords.left,
+      top: dir > 0 ? box.top : box.bottom
+    }, dir)
+    if (inside) return inside
+    return new Pos(selectable, coords.left <= box.left ? 0 : node.maxOffset)
+  } else {
+    return new Pos(selectable.slice(0, selectable.length - 1), selectable[selectable.length - 1])
+  }
 }
 
 function findOffsetInText(dom, coords) {
@@ -574,23 +582,24 @@ function moveVerticallyInTextblock(dom, node, path, coords, dir) {
   return new Pos(path, span.from + extraOffset)
 }
 
-function moveVerticallyThrough(pm, pos, left, dir) {
-  let node = pm.doc.path(pos.path)
+function selectableNodeIn(doc, pos, dir) {
+  let node = doc.path(pos.path)
   for (let offset = pos.offset + (dir > 0 ? 0 : -1); dir > 0 ? offset < node.maxOffset : offset >= 0; offset += dir) {
     let child = node.child(offset)
-    if (child.isTextblock) {
-      let path = pos.path.concat(offset)
-      let dom = resolvePath(pm.content, path)
-      let box = dom.getBoundingClientRect()
-      let inside = moveVerticallyInTextblock(dom, child, pos.path.concat(offset),
-                                             {left, top: dir > 0 ? box.top : box.bottom}, dir)
-      if (inside) return inside
-      return new Pos(path, left <= box.left ? 0 : child.maxOffset)
-    } else if (child.type.selectable && child.type.contains == null) {
-      return new Pos(pos.path, offset)
-    } else {
-      let inside = moveVerticallyThrough(pm, new Pos(pos.path.concat(offset), dir < 0 ? child.maxOffset : 0), left, dir)
-      if (inside) return inside
-    }
+    if (child.isTextblock ||
+        child.type.selectable && child.type.contains == null)
+      return pos.path.concat(offset)
+
+    let inside = selectableNodeIn(doc, new Pos(pos.path.concat(offset), dir < 0 ? child.maxOffset : 0), dir)
+    if (inside) return inside
+  }
+}
+
+export function selectableNodeFrom(doc, pos, dir) {
+  for (;;) {
+    let found = selectableNodeIn(doc, pos, dir)
+    if (found) return found
+    if (pos.depth == 0) break
+    pos = pos.shorten(null, dir > 0 ? 1 : 0)
   }
 }
