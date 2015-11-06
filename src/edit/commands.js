@@ -7,7 +7,7 @@ import sortedInsert from "../util/sortedinsert"
 
 import {charCategory, isExtendingChar} from "./char"
 import {Keymap} from "./keys"
-import {moveVertically, selectableNodeFrom} from "./selection"
+import {moveVertically, selectableBlockFrom} from "./selection"
 
 const globalCommands = Object.create(null)
 const paramHandlers = Object.create(null)
@@ -667,7 +667,7 @@ defineCommand("moveLeft", {
       return pm.setNodeSelection(head.move(-node.offset))
 
     if (head.offset > 0) return false
-    let selectable = selectableNodeFrom(pm.doc, head.shorten(), -1)
+    let selectable = selectableBlockFrom(pm.doc, head.shorten(), -1)
     if (!selectable) return false
     let selNode = pm.doc.path(selectable)
     if (selNode.isTextblock)
@@ -691,7 +691,7 @@ defineCommand("moveRight", {
       else
         return false
     } else {
-      let selectable = selectableNodeFrom(pm.doc, head.shorten(null, 1), 1)
+      let selectable = selectableBlockFrom(pm.doc, head.shorten(null, 1), 1)
       if (!selectable) return false
       let node = pm.doc.path(selectable)
       if (node.isTextblock)
@@ -708,9 +708,9 @@ defineCommand("moveUp", {
   run(pm) {
     let sel = pm.selection
     if (!sel.empty) return pm.setSelection(sel.from)
-    let above = moveVertically(pm, sel.head, -1)
-    if (!above) return false
-    pm.setSelection(above)
+    let {pos, node} = moveVertically(pm, sel.head, -1)
+    if (node) pm.setNodeSelection(node)
+    else pm.setSelection(pos)
   },
   info: {key: "Up"}
 })
@@ -720,9 +720,9 @@ defineCommand("moveDown", {
   run(pm) {
     let sel = pm.selection
     if (!sel.empty) return pm.setSelection(sel.to)
-    let below = moveVertically(pm, sel.head, 1)
-    if (!below) return false
-    pm.setSelection(below)
+    let {pos, node} = moveVertically(pm, sel.head, 1)
+    if (node) pm.setNodeSelection(node)
+    else pm.setSelection(pos)
   },
   info: {key: "Down"}
 })

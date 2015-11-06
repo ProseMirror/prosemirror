@@ -36,7 +36,7 @@ export class Selection {
       if (!rangeFrom) rangeFrom = rangeTo
       if (rangeFrom.cmp(rangeTo) > 0) rangeTo = rangeFrom
     }
-    this.set(new SelectionRange(this.pm.doc, rangeFrom, rangeTo), pos)
+    this.set(new SelectionRange(this.pm.doc, rangeFrom, rangeTo, pos))
   }
 
   setNodeAndSignal(pos) {
@@ -286,8 +286,7 @@ function posFromDOMInner(pm, node, domOffset, loose) {
 function moveToTextblock(doc, pos, old) {
   if (doc.path(pos.path).isTextblock) return pos
   let dir = pos.cmp(old)
-  return (dir < 0 ? Pos.before(doc, pos) : Pos.after(doc, pos)) ||
-    (dir >= 0 ? Pos.before(doc, pos) : Pos.after(doc, pos))
+  return Pos.near(doc, pos, dir)
 }
 
 export function posFromDOM(pm, node, offset) {
@@ -401,6 +400,7 @@ export function hasFocus(pm) {
  * @param  {Object}      coords The x, y coordinates.
  * @return {Pos}
  */
+// FIXME fails on the space between lines
 export function posAtCoords(pm, coords) {
   let element = document.elementFromPoint(coords.left, coords.top + 1)
   if (!contains(pm.content, element)) return Pos.start(pm.doc)
@@ -473,21 +473,19 @@ export function scrollIntoView(pm, pos) {
   }
 }
 
-// FIXME review, rename next 3 functions
-
 function offsetInRects(coords, rects, strict) {
   let {top: y, left: x} = coords
   let minY = 1e8, minX = 1e8, offset = 0
   for (let i = 0; i < rects.length; i++) {
     let rect = rects[i]
-    if (!rect || (rect.top == 0 && rect.bottom == 0)) continue
-    let dY = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0
-    if (dY > minY) continue
-    if (dY < minY) { minY = dY; minX = 1e8 }
+    if (!rect || rect.top == rect.bottom) continue
     let dX = x < rect.left ? rect.left - x : x > rect.right ? x - rect.right : 0
-    if (dX < minX) {
-      minX = dX
-      offset = Math.abs(x - rect.left) < Math.abs(x - rect.right) ? i : i + 1
+    if (dX > minX) continue
+    if (dX < minX) { minX = dX; minY = 1e8 }
+    let dY = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0
+    if (dY < minY) {
+      minY = dY
+      offset = x < (rect.left + rect.right) / 2 ? i : i + 1
     }
   }
   if (strict && (minX || minY)) return null
@@ -526,8 +524,9 @@ export function moveVertically(pm, pos, dir, goalX) {
     if (inside) return inside
   }
 
-  let selectable = selectableNodeFrom(pm.doc, pos.shorten(null, dir > 0 ? 1 : 0), dir)
-  if (!selectable) return dir > 0 ? Pos.end(pm.doc) : Pos.start(pm.doc)
+  let selectable = selectableBlockFrom(pm.doc, pos.shorten(null, dir > 0 ? 1 : 0), dir)
+  if (!selectable)
+    return {pos: dir > 0 ? Pos.end(pm.doc) : Pos.start(pm.doc)}
 
   let node = pm.doc.path(selectable)
   if (node.isTextblock) {
@@ -538,9 +537,10 @@ export function moveVertically(pm, pos, dir, goalX) {
       top: dir > 0 ? box.top : box.bottom
     }, dir)
     if (inside) return inside
-    return new Pos(selectable, coords.left <= box.left ? 0 : node.maxOffset)
+    return {pos: new Pos(selectable, coords.left <= box.left ? 0 : node.maxOffset)}
   } else {
-    return new Pos(selectable.slice(0, selectable.length - 1), selectable[selectable.length - 1])
+    let pos = new Pos(selectable.slice(0, selectable.length - 1), selectable[selectable.length - 1])
+    return {pos: Pos.near(pm.doc, pos, dir), node: pos}
   }
 }
 
@@ -548,7 +548,7 @@ function findOffsetInText(dom, coords) {
   if (dom.nodeType == 3) return offsetInTextNode(dom, coords, true)
   for (let child = dom.firstChild; child; child = child.nextSibling) {
     let inner = findOffsetInText(child, coords)
-    if (inner != null) {
+    if (inner) {
       let off = child.nodeType == 1 && child.getAttribute("pm-span-offset")
       return inner + (off ? +off : 0)
     }
@@ -574,16 +574,18 @@ function moveVerticallyInTextblock(dom, node, path, coords, dir) {
   }
   if (!closest) return null
 
-  let span = parseSpan(closest.getAttribute("pm-span")), extraOffset = 0
+  let span = parseSpan(closest.getAttribute("pm-span")), extraOffset, nodeSelection = null
   let childNode = node.childAfter(span.from).node
-  if (childNode.isText)
+  if (childNode.isText) {
     extraOffset = findOffsetInText(closest, {left: coords.left, top: (closestBox.top + closestBox.bottom) / 2}) || 0
-  else
+  } else {
     extraOffset = coords.left > (closestBox.left + closestBox.right) / 2 ? 1 : 0
-  return new Pos(path, span.from + extraOffset)
+    node = new Pos(path, span.from)
+  }
+  return {pos: new Pos(path, span.from + extraOffset), node: nodeSelection}
 }
 
-function selectableNodeIn(doc, pos, dir) {
+function selectableBlockIn(doc, pos, dir) {
   let node = doc.path(pos.path)
   for (let offset = pos.offset + (dir > 0 ? 0 : -1); dir > 0 ? offset < node.maxOffset : offset >= 0; offset += dir) {
     let child = node.child(offset)
@@ -591,14 +593,14 @@ function selectableNodeIn(doc, pos, dir) {
         child.type.selectable && child.type.contains == null)
       return pos.path.concat(offset)
 
-    let inside = selectableNodeIn(doc, new Pos(pos.path.concat(offset), dir < 0 ? child.maxOffset : 0), dir)
+    let inside = selectableBlockIn(doc, new Pos(pos.path.concat(offset), dir < 0 ? child.maxOffset : 0), dir)
     if (inside) return inside
   }
 }
 
-export function selectableNodeFrom(doc, pos, dir) {
+export function selectableBlockFrom(doc, pos, dir) {
   for (;;) {
-    let found = selectableNodeIn(doc, pos, dir)
+    let found = selectableBlockIn(doc, pos, dir)
     if (found) return found
     if (pos.depth == 0) break
     pos = pos.shorten(null, dir > 0 ? 1 : 0)

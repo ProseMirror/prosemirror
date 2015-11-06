@@ -70,7 +70,9 @@ export class Pos {
   static before(node, pos) { return findBefore(node, pos, []) }
   static end(node) { return findRight(node, []) }
 
-  static near(node, pos) { return Pos.after(node, pos) || Pos.before(node, pos) }
+  static near(node, pos, bias) {
+    return (bias > 0 && Pos.after(node, pos)) || Pos.before(node, pos) || Pos.after(node, pos)
+  }
 }
 
 function findLeft(node, path) {

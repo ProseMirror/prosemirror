@@ -9,7 +9,8 @@ function testMotion(name, doc, positions, dir) {
   test(name, pm => {
     for (let i = 0; i < positions.length; i += 2) {
       let from = positions[i], to = positions[i + 1]
-      cmpStr(moveVertically(pm, from, dir), to, (dir > 0 ? "down" : "up") + " from " + from)
+      let result = moveVertically(pm, from, dir)
+      cmpStr(result.pos, to, (dir > 0 ? "down" : "up") + " from " + from)
     }
   }, {doc})
 }
