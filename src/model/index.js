@@ -1,5 +1,5 @@
 export {compareMarkup} from "./node"
-export {removeStyle, sameStyles, containsStyle} from "./style"
+export {removeStyle, sameStyles, containsStyle, spanStylesAt, rangeHasStyle} from "./style"
 
 export {SchemaSpec, Schema, SchemaError,
         NodeType, Block, Textblock, Inline, Text,
@@ -11,6 +11,5 @@ export {defaultSchema, Doc, BlockQuote, OrderedList, BulletList, ListItem,
 export {Pos} from "./pos"
 
 export {sliceBefore, sliceAfter, sliceBetween, siblingRange} from "./slice"
-export {spanStylesAt, rangeHasStyle} from "./inline"
 
 export {findDiffStart, findDiffEnd} from "./diff"
