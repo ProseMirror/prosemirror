@@ -11,6 +11,6 @@ export {defaultSchema, Doc, BlockQuote, OrderedList, BulletList, ListItem,
 export {Pos} from "./pos"
 
 export {sliceBefore, sliceAfter, sliceBetween, siblingRange} from "./slice"
-export {spanAtOrBefore, getSpan, spanStylesAt, rangeHasStyle} from "./inline"
+export {spanStylesAt, rangeHasStyle} from "./inline"
 
 export {findDiffStart, findDiffEnd} from "./diff"

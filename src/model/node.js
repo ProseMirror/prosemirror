@@ -192,6 +192,13 @@ export class BlockNode extends Node {
 }
 
 export class TextblockNode extends BlockNode {
+  constructor(type, attrs, content) {
+    super(type, attrs, content)
+    let maxOffset = 0
+    for (let i = 0; i < this.content.length; i++) maxOffset += this.content[i].offset
+    this._maxOffset = maxOffset
+  }
+
   slice(from, to = this.maxOffset) {
     let result = []
     if (from == to) return result
@@ -215,14 +222,9 @@ export class TextblockNode extends BlockNode {
     return this.copy(content)
   }
 
-  // FIXME cache?
-  get maxOffset() {
-    let sum = 0
-    for (let i = 0; i < this.length; i++) sum += this.child(i).offset
-    return sum
-  }
-
   get isTextblock() { return true }
+
+  get maxOffset() { return this._maxOffset }
 
   nodesBetween(from, to, f, path, parent) {
     if (f(this, path, from, to, parent) === false) return
@@ -235,6 +237,24 @@ export class TextblockNode extends BlockNode {
       if (endOffset >= end) break
       offset = endOffset
     }
+  }
+
+  childBefore(offset) {
+    if (offset == 0) return {node: null, index: 0, innerOffset: 0}
+    for (let i = 0; i < this.length; i++) {
+      let child = this.child(i)
+      offset -= child.offset
+      if (offset <= 0) return {node: child, index: i, innerOffset: offset + child.offset}
+    }
+  }
+
+  childAfter(offset) {
+    for (let i = 0; i < this.length; i++) {
+      let child = this.child(i), size = child.offset
+      if (offset < size) return {node: child, index: i, innerOffset: offset}
+      offset -= size
+    }
+    return {node: null, index: 0, innerOffset: 0}
   }
 }
 

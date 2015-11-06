@@ -1,4 +1,4 @@
-import {Pos, spanAtOrBefore} from "../model"
+import {Pos} from "../model"
 
 import {contains, browser} from "../dom"
 
@@ -51,7 +51,7 @@ export class Selection {
     if (!this.node) return null
     let parent = this.pm.doc.path(this.node.path)
     if (parent.isTextblock)
-      return spanAtOrBefore(parent, this.node.offset + 1).node
+      return parent.childAfter(this.node.offset).node
     else
       return parent.child(this.node.offset)
   }
@@ -574,7 +574,7 @@ function moveVerticallyInTextblock(dom, node, path, coords, dir) {
   if (!closest) return null
 
   let span = parseSpan(closest.getAttribute("pm-span")), extraOffset = 0
-  let childNode = spanAtOrBefore(node, span.to).node
+  let childNode = node.childAfter(span.from).node
   if (childNode.isText)
     extraOffset = findOffsetInText(closest, {left: coords.left, top: (closestBox.top + closestBox.bottom) / 2}) || 0
   else

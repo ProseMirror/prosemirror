@@ -1,6 +1,6 @@
 import {HardBreak, BulletList, OrderedList, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
         StrongStyle, EmStyle, CodeStyle, LinkStyle, Image, NodeType, StyleType,
-        Pos, spanAtOrBefore, containsStyle, rangeHasStyle} from "../model"
+        Pos, containsStyle, rangeHasStyle} from "../model"
 import {joinPoint, canLift, canWrap, alreadyHasBlockType} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
@@ -231,10 +231,10 @@ function moveBackward(parent, offset, by) {
   if (by != "char" && by != "word")
     throw new Error("Unknown motion unit: " + by)
 
-  let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
+  let {index, innerOffset} = parent.childBefore(offset)
   let cat = null, counted = 0
-  for (; nodeOffset >= 0; nodeOffset--, innerOffset = null) {
-    let child = parent.child(nodeOffset), size = child.offset
+  for (; index >= 0; index--, innerOffset = null) {
+    let child = parent.child(index), size = child.offset
     if (!child.isText) return cat ? offset : offset - 1
 
     if (by == "char") {
@@ -342,10 +342,10 @@ function moveForward(parent, offset, by) {
   if (by != "char" && by != "word")
     throw new Error("Unknown motion unit: " + by)
 
-  let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
+  let {index, innerOffset} = parent.childAfter(offset)
   let cat = null, counted = 0
-  for (; nodeOffset < parent.length; nodeOffset++, innerOffset = 0) {
-    let child = parent.child(nodeOffset), size = child.offset
+  for (; index < parent.length; index++, innerOffset = 0) {
+    let child = parent.child(index), size = child.offset
     if (!child.isText) return cat ? offset : offset + 1
 
     if (by == "char") {
@@ -662,7 +662,7 @@ defineCommand("moveLeft", {
     let {head, empty} = pm.selection
     if (!empty) return false
     let parent = pm.doc.path(head.path)
-    let {node, innerOffset} = spanAtOrBefore(parent, head.offset)
+    let {node, innerOffset} = parent.childBefore(head.offset)
     if (node && innerOffset == node.offset && node.type.selectable)
       return pm.setNodeSelection(head.move(-node.offset))
 
@@ -685,7 +685,7 @@ defineCommand("moveRight", {
     if (!empty) return false
     let parent = pm.doc.path(head.path)
     if (head.offset < parent.maxOffset) {
-      let {node, innerOffset} = spanAtOrBefore(parent, head.offset + 1)
+      let {node, innerOffset} = parent.childAfter(head.offset)
       if (innerOffset == node.offset && node.type.selectable)
         return pm.setNodeSelection(head)
       else
