@@ -10,7 +10,7 @@ import {isModifierKey, lookupKey, keyName} from "./keys"
 import {dangerousKeys} from "./dangerouskeys"
 import {browser, addClass, rmClass} from "../dom"
 import {applyDOMChange, textContext, textInContext} from "./domchange"
-import {Range, coordsAtPos, rangeFromDOMLoose, posAtCoords} from "./selection"
+import {SelectionRange, coordsAtPos, rangeFromDOMLoose, posAtCoords} from "./selection"
 
 let stopSeq = null
 
@@ -154,9 +154,10 @@ handlers.keypress = (pm, e) => {
   e.preventDefault()
 }
 
+// FIXME shift click, double-click, node selection
 handlers.mousedown = (pm, e) => {
   let pos = posAtCoords(pm, {left: e.clientX, top: e.clientY})
-  pm.setSelection(new Range(pos, pos))
+  pm.setSelection(new SelectionRange(pm.doc, pos, pos))
   pm.focus()
   e.preventDefault()
 }
@@ -183,7 +184,7 @@ class Composing {
       let path = range.head.path, line = pm.doc.path(path).textContent
       let found = line.indexOf(data, range.head.offset - data.length)
       if (found > -1 && found <= range.head.offset + data.length)
-        range = new Range(new Pos(path, found), new Pos(path, found + data.length))
+        range = new SelectionRange(pm.doc, new Pos(path, found), new Pos(path, found + data.length))
     }
     this.range = range
   }
@@ -203,7 +204,7 @@ handlers.compositionupdate = (pm, e) => {
     pm.input.updatingComposition = true
     inputText(pm, info.range, info.data)
     pm.input.updatingComposition = false
-    info.range = new Range(info.range.from, info.range.from.move(info.data.length))
+    info.range = new SelectionRange(pm.doc, info.range.from, info.range.from.move(info.data.length))
   }
 }
 
@@ -334,7 +335,7 @@ handlers.drop = (pm, e) => {
     }
     tr.replace(insertPos, insertPos, doc, Pos.start(doc), Pos.end(doc))
     pm.apply(tr)
-    pm.setSelection(new Range(insertPos, tr.map(insertPos).pos))
+    pm.setSelection(new SelectionRange(pm.doc, insertPos, tr.map(insertPos).pos))
     pm.focus()
   }
 

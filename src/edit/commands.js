@@ -632,7 +632,7 @@ function currentTextblockType(pm) {
 }
 
 function nodeAboveSelection(pm) {
-  let node = pm.selectedNodePath
+  let node = pm.selection.nodePos
   if (node) return node.depth && node.shorten()
 
   let {head, anchor} = pm.selection, i = 0

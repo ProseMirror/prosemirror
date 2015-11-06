@@ -6,7 +6,8 @@ import {Transform} from "../transform"
 import sortedInsert from "../util/sortedinsert"
 
 import {parseOptions, initOptions, setOption} from "./options"
-import {Selection, Range, posAtCoords, posFromDOM, coordsAtPos, scrollIntoView, hasFocus} from "./selection"
+import {Selection, SelectionRange, posAtCoords, posFromDOM, coordsAtPos,
+        scrollIntoView, hasFocus} from "./selection"
 import {requestAnimationFrame, elt} from "../dom"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
@@ -62,19 +63,8 @@ export class ProseMirror {
    * @return {Range} The instance of the editor's selection range.
    */
   get selection() {
-    // FIXME only start an op when selection actually changed?
     this.ensureOperation()
     return this.sel.range
-  }
-
-  get selectedNode() {
-    this.ensureOperation()
-    return this.sel.selectedNode()
-  }
-
-  get selectedNodePath() {
-    this.ensureOperation()
-    return this.sel.node
   }
 
   get selectedDoc() {
@@ -125,7 +115,7 @@ export class ProseMirror {
   setDoc(doc, sel) {
     if (!sel) {
       let start = Pos.start(doc)
-      sel = new Range(start, start)
+      sel = new SelectionRange(this.doc, start, start)
     }
     this.signal("beforeSetDoc", doc, sel)
     this.ensureOperation()
@@ -150,8 +140,8 @@ export class ProseMirror {
 
   setSelection(rangeOrAnchor, head) {
     let range = rangeOrAnchor
-    if (!(range instanceof Range))
-      range = new Range(rangeOrAnchor, head || rangeOrAnchor)
+    if (!(range instanceof SelectionRange))
+      range = new SelectionRange(this.doc, rangeOrAnchor, head || rangeOrAnchor)
     this.checkPos(range.head, true)
     this.checkPos(range.anchor, true)
     this.ensureOperation()
