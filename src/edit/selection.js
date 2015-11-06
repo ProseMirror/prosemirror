@@ -51,7 +51,7 @@ export class Selection {
     if (!this.node) return null
     let parent = this.pm.doc.path(this.node.path)
     if (parent.isTextblock)
-      return spanAtOrBefore(parent, this.node.offset + 1)
+      return spanAtOrBefore(parent, this.node.offset + 1).node
     else
       return parent.child(this.node.offset)
   }
@@ -137,7 +137,7 @@ export class Selection {
   nodeToDOM(takeFocus) {
     window.getSelection().removeAllRanges()
     if (takeFocus) this.pm.content.focus()
-    let pos = this.node, node = this.selectedNode, dom
+    let pos = this.node, node = this.selectedNode(), dom
     if (node.isInline)
       dom = findByOffset(resolvePath(this.pm.content, pos.path), pos.offset, true).node
     else
