@@ -256,6 +256,7 @@ function inline(dom, context, style) {
 LinkStyle.register("parseDOM", {tag: "a", parse: (dom, context, style) => {
   inline(dom, context, style.create({
     href: dom.getAttribute("href"),
+    name: dom.getAttribute("name"),
     title: dom.getAttribute("title")
   }))
 }})
