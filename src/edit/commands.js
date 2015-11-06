@@ -708,9 +708,10 @@ defineCommand("moveUp", {
   run(pm) {
     let sel = pm.selection
     if (!sel.empty) return pm.setSelection(sel.from)
-    let {pos, node} = moveVertically(pm, sel.head, -1)
+    let {pos, node, left} = moveVertically(pm, sel.head, -1, pm.sel.goalX)
     if (node) pm.setNodeSelection(node)
     else pm.setSelection(pos)
+    pm.sel.goalX = left
   },
   info: {key: "Up"}
 })
@@ -720,9 +721,10 @@ defineCommand("moveDown", {
   run(pm) {
     let sel = pm.selection
     if (!sel.empty) return pm.setSelection(sel.to)
-    let {pos, node} = moveVertically(pm, sel.head, 1)
+    let {pos, node, left} = moveVertically(pm, sel.head, 1, pm.sel.goalX)
     if (node) pm.setNodeSelection(node)
     else pm.setSelection(pos)
+    pm.sel.goalX = left
   },
   info: {key: "Down"}
 })

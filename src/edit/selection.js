@@ -8,6 +8,7 @@ export class Selection {
 
     let start = Pos.start(pm.doc)
     this.range = new SelectionRange(pm.doc, start, start)
+    this.goalColumn = null
 
     this.pollState = null
     this.pollTimeout = null
@@ -24,6 +25,7 @@ export class Selection {
 
   set(range, clearLast) {
     this.range = range
+    this.goalX = null
     if (clearLast !== false) this.lastAnchorNode = null
   }
 
@@ -526,7 +528,7 @@ export function moveVertically(pm, pos, dir, goalX) {
 
   let selectable = selectableBlockFrom(pm.doc, pos.shorten(null, dir > 0 ? 1 : 0), dir)
   if (!selectable)
-    return {pos: dir > 0 ? Pos.end(pm.doc) : Pos.start(pm.doc)}
+    return {pos: dir > 0 ? Pos.end(pm.doc) : Pos.start(pm.doc), left: coords.left}
 
   let node = pm.doc.path(selectable)
   if (node.isTextblock) {
@@ -537,10 +539,10 @@ export function moveVertically(pm, pos, dir, goalX) {
       top: dir > 0 ? box.top : box.bottom
     }, dir)
     if (inside) return inside
-    return {pos: new Pos(selectable, coords.left <= box.left ? 0 : node.maxOffset)}
+    return {pos: new Pos(selectable, coords.left <= box.left ? 0 : node.maxOffset), left: coords.left}
   } else {
     let pos = new Pos(selectable.slice(0, selectable.length - 1), selectable[selectable.length - 1])
-    return {pos: Pos.near(pm.doc, pos, dir), node: pos}
+    return {pos: Pos.near(pm.doc, pos, dir), node: pos, left: coords.left}
   }
 }
 
@@ -582,7 +584,7 @@ function moveVerticallyInTextblock(dom, node, path, coords, dir) {
     extraOffset = coords.left > (closestBox.left + closestBox.right) / 2 ? 1 : 0
     node = new Pos(path, span.from)
   }
-  return {pos: new Pos(path, span.from + extraOffset), node: nodeSelection}
+  return {pos: new Pos(path, span.from + extraOffset), left: coords.left, node: nodeSelection}
 }
 
 function selectableBlockIn(doc, pos, dir) {
