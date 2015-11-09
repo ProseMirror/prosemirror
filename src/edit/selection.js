@@ -597,22 +597,22 @@ function moveVerticallyInTextblock(dom, node, path, coords, dir) {
   return {pos: new Pos(path, span.from + extraOffset), left: coords.left, node: nodeSelection}
 }
 
-function selectableBlockIn(doc, pos, dir) {
+function selectableBlockIn(doc, pos, dir, text) {
   let node = doc.path(pos.path)
   for (let offset = pos.offset + (dir > 0 ? 0 : -1); dir > 0 ? offset < node.maxOffset : offset >= 0; offset += dir) {
     let child = node.child(offset)
     if (child.isTextblock ||
-        child.type.selectable && child.type.contains == null)
+        !text && child.type.selectable && child.type.contains == null)
       return pos.path.concat(offset)
 
-    let inside = selectableBlockIn(doc, new Pos(pos.path.concat(offset), dir < 0 ? child.maxOffset : 0), dir)
+    let inside = selectableBlockIn(doc, new Pos(pos.path.concat(offset), dir < 0 ? child.maxOffset : 0), dir, text)
     if (inside) return inside
   }
 }
 
-export function selectableBlockFrom(doc, pos, dir) {
+export function selectableBlockFrom(doc, pos, dir, text) {
   for (;;) {
-    let found = selectableBlockIn(doc, pos, dir)
+    let found = selectableBlockIn(doc, pos, dir, text)
     if (found) return found
     if (pos.depth == 0) break
     pos = pos.shorten(null, dir > 0 ? 1 : 0)

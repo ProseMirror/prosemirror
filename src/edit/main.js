@@ -187,7 +187,7 @@ export class ProseMirror {
 
     if ((redrawn ||
          op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head) ||
-         (op.selNode ? !this.sel.node || this.sel.node.cmp(op.selNode) : this.sel.node)) &&
+         (op.sel.nodePos ? !this.sel.range.nodePos || this.sel.range.nodePos.cmp(op.sel.nodePos) : this.sel.range.nodePos)) &&
         !this.input.composing)
       this.sel.toDOM(op.focus)
 
@@ -291,7 +291,6 @@ class Operation {
   constructor(pm) {
     this.doc = pm.doc
     this.sel = pm.sel.range
-    this.selNode = pm.sel.node
     this.scrollIntoView = false
     this.focus = false
     this.fullRedraw = false

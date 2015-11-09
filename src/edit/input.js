@@ -10,7 +10,7 @@ import {isModifierKey, lookupKey, keyName} from "./keys"
 import {dangerousKeys} from "./dangerouskeys"
 import {browser, addClass, rmClass} from "../dom"
 import {applyDOMChange, textContext, textInContext} from "./domchange"
-import {SelectionRange, coordsAtPos, rangeFromDOMLoose, posAtCoords, selectableNodeUnder} from "./selection"
+import {SelectionRange, coordsAtPos, rangeFromDOMLoose, selectableNodeUnder} from "./selection"
 
 let stopSeq = null
 
@@ -166,7 +166,7 @@ handlers.mousedown = (pm, e) => {
   }
 }
 
-handlers.touchdown = () => {
+handlers.touchdown = pm => {
   // FIXME
   pm.sel.pollForUpdate()
 }

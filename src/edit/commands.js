@@ -728,3 +728,50 @@ defineCommand("moveDown", {
   },
   info: {key: "Down"}
 })
+
+defineCommand("extendLeft", {
+  label: "Extend the selection to the left",
+  run(pm) {
+    let {head, anchor} = pm.selection
+    if (head.offset > 0) return false
+    let selectable = selectableBlockFrom(pm.doc, head.shorten(), -1, true)
+    if (selectable)
+      pm.setSelection(anchor, new Pos(selectable, pm.doc.path(selectable).maxOffset))
+  },
+  info: {key: "Shift-Left"}
+})
+
+defineCommand("extendRight", {
+  label: "Extend the selection to the right",
+  run(pm) {
+    let {head, anchor} = pm.selection
+    let node = pm.doc.path(head.path)
+    if (head.offset < node.maxOffset) return false
+    let selectable = selectableBlockFrom(pm.doc, head.shorten(null, 1), 1, true)
+    if (selectable)
+      pm.setSelection(anchor, new Pos(selectable, 0))
+  },
+  info: {key: "Shift-Right"}
+})
+
+defineCommand("extendUp", {
+  label: "Extend the selection up",
+  run(pm) {
+    let {head, anchor} = pm.selection
+    let {pos, left} = moveVertically(pm, head, -1, pm.sel.goalX)
+    pm.setSelection(anchor, pos)
+    pm.sel.goalX = left
+  },
+  info: {key: "Shift-Up"}
+})
+
+defineCommand("extendDown", {
+  label: "Extend the selection down",
+  run(pm) {
+    let {head, anchor} = pm.selection
+    let {pos, left} = moveVertically(pm, head, 1, pm.sel.goalX)
+    pm.setSelection(anchor, pos)
+    pm.sel.goalX = left
+  },
+  info: {key: "Shift-Down"}
+})
