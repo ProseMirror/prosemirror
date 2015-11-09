@@ -557,31 +557,47 @@ function findOffsetInText(dom, coords) {
   }
 }
 
-function moveVerticallyInTextblock(dom, node, path, coords, dir) {
-  let closest = null, closestBox = null, minDist = 1e8
+function findInInlineBoxes(dom, coords, dir) {
+  let lineTop, lineBot, closest, closestBox, minDist = 1e8
   for (let child = dom.firstChild; child; child = child.nextSibling) {
     if (child.nodeType != 1 || !child.hasAttribute("pm-span")) continue
     let boxes = child.getClientRects()
     for (let i = 0; i < boxes.length; i++) {
       let box = boxes[i]
-      if (box.left > coords.left || box.right < coords.left) continue
-      let mid = (box.top + box.bottom) / 2
-      let dist = dir > 0 ? mid - coords.top : coords.top - mid
-      if (dist > 0 && dist < minDist) {
+      if (lineTop != null && (lineTop < box.bottom || lineBot > box.top)) {
+        lineTop = Math.min(box.top, lineTop)
+        lineBot = Math.max(box.bottom, lineBot)
+      } else {
+        let mid = (box.top + box.bottom) / 2
+        if (dir > 0 ? mid < coords.top : mid > coords.top) continue
+        if (lineTop != null && (dir > 0 ? lineTop < mid : lineBot > mid)) continue
+        lineTop = box.top; lineBot = box.bottom
+        closest = closestBox = null
+        minDist = 1e8
+      }
+      let dX = box.left > coords.left ? box.left - coords.left : box.right < coords.left ? coords.left - box.right : 0
+      if (dX < minDist) {
+        minDist = dX
         closest = child
         closestBox = box
-        minDist = dist
       }
     }
   }
+  return {closest, box: closestBox}
+}
+
+function moveVerticallyInTextblock(dom, node, path, coords, dir) {
+  let {closest, box} = findInInlineBoxes(dom, coords, dir)
   if (!closest) return null
 
   let span = parseSpan(closest.getAttribute("pm-span")), extraOffset, nodeSelection = null
   let childNode = node.childAfter(span.from).node
   if (childNode.isText) {
-    extraOffset = findOffsetInText(closest, {left: coords.left, top: (closestBox.top + closestBox.bottom) / 2}) || 0
+    if (coords.left < box.left) extraOffset = 0
+    else if (coords.left > box.right) extraOffset = childNode.offset
+    else extraOffset = findOffsetInText(closest, {left: coords.left, top: (box.top + box.bottom) / 2}) || 0
   } else {
-    extraOffset = coords.left > (closestBox.left + closestBox.right) / 2 ? 1 : 0
+    extraOffset = coords.left > (box.left + box.right) / 2 ? 1 : 0
     node = new Pos(path, span.from)
   }
   return {pos: new Pos(path, span.from + extraOffset), left: coords.left, node: nodeSelection}
