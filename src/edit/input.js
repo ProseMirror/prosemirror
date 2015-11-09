@@ -156,7 +156,7 @@ handlers.keypress = (pm, e) => {
 
 // FIXME shift click, double-click, node selection
 handlers.mousedown = (pm, e) => {
-  let pos = posAtCoords(pm, {left: e.clientX, top: e.clientY})
+  let pos = Pos.near(pm.doc, posAtCoords(pm, {left: e.clientX, top: e.clientY}))
   pm.setSelection(new SelectionRange(pm.doc, pos, pos))
   pm.focus()
   e.preventDefault()

@@ -93,8 +93,8 @@ export class Selection {
     let head = posFromDOMInner(this.pm, sel.focusNode, sel.focusOffset)
     this.lastAnchorNode = sel.anchorNode; this.lastAnchorOffset = sel.anchorOffset
     this.lastHeadNode = sel.focusNode; this.lastHeadOffset = sel.focusOffset
-    this.setAndSignal(new SelectionRange(doc, moveToTextblock(doc, anchor, this.range.anchor),
-                                         moveToTextblock(doc, head, this.range.head)))
+    this.setAndSignal(new SelectionRange(doc, Pos.near(doc, anchor, anchor.cmp(this.range.anchor)),
+                                         Pos.near(doc, head, head.cmp(this.range.head))))
     this.toDOM()
     return true
   }
@@ -283,12 +283,6 @@ function posFromDOMInner(pm, node, domOffset, loose) {
     }
   }
   return new Pos(pathFromNode(node), offset + extraOffset)
-}
-
-function moveToTextblock(doc, pos, old) {
-  if (doc.path(pos.path).isTextblock) return pos
-  let dir = pos.cmp(old)
-  return Pos.near(doc, pos, dir)
 }
 
 export function posFromDOM(pm, node, offset) {
