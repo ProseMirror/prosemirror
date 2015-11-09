@@ -85,4 +85,21 @@ img.ProseMirror-selectednode::selection {
   content: counter(prosemirror-list) ".";
 }
 
+/* Add space around the hr to make clicking it easier */
+
+.ProseMirror-content hr {
+  position: relative;
+  height: 6px;
+  border: none;
+}
+
+.ProseMirror-content hr:after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  top: 2px;
+  border-top: 2px solid silver;
+}
+
 `)

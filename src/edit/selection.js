@@ -618,3 +618,19 @@ export function selectableBlockFrom(doc, pos, dir) {
     pos = pos.shorten(null, dir > 0 ? 1 : 0)
   }
 }
+
+export function selectableNodeUnder(pm, coords) {
+  let dom = document.elementFromPoint(coords.left, coords.top)
+  for (; dom && dom != pm.content; dom = dom.parentNode) {
+    if (dom.hasAttribute("pm-path")) {
+      let path = pathFromNode(dom)
+      let node = pm.doc.path(path)
+      return node.type.contains == null && node.type.selectable ? new Pos(path, 0).shorten() : null
+    } else if (dom.hasAttribute("pm-span-atom")) {
+      let path = pathFromNode(dom.parentNode)
+      let parent = pm.doc.path(path), span = parseSpan(dom.getAttribute("pm-span"))
+      let node = parent.childAfter(span.from).node
+      return node.type.selectable ? new Pos(path, span.from) : null
+    }
+  }
+}

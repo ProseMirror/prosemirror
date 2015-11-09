@@ -10,7 +10,7 @@ import {isModifierKey, lookupKey, keyName} from "./keys"
 import {dangerousKeys} from "./dangerouskeys"
 import {browser, addClass, rmClass} from "../dom"
 import {applyDOMChange, textContext, textInContext} from "./domchange"
-import {SelectionRange, coordsAtPos, rangeFromDOMLoose, posAtCoords} from "./selection"
+import {SelectionRange, coordsAtPos, rangeFromDOMLoose, posAtCoords, selectableNodeUnder} from "./selection"
 
 let stopSeq = null
 
@@ -154,16 +154,21 @@ handlers.keypress = (pm, e) => {
   e.preventDefault()
 }
 
-// FIXME shift click, double-click, node selection
 handlers.mousedown = (pm, e) => {
-  let pos = Pos.near(pm.doc, posAtCoords(pm, {left: e.clientX, top: e.clientY}))
-  pm.setSelection(new SelectionRange(pm.doc, pos, pos))
-  pm.focus()
-  e.preventDefault()
+  // FIXME ignore double- and triple-clicks, drags
+  let path = !pm.input.shiftKey && selectableNodeUnder(pm, {left: e.clientX, top: e.clientY})
+  if (path) {
+    pm.setNodeSelection(path)
+    pm.focus()
+    e.preventDefault()
+  } else {
+    pm.sel.pollForUpdate()
+  }
 }
 
 handlers.touchdown = () => {
   // FIXME
+  pm.sel.pollForUpdate()
 }
 
 handlers.mousemove = (pm, e) => {
