@@ -150,7 +150,12 @@ handlers.keypress = (pm, e) => {
   if (pm.input.composing || !e.charCode || e.ctrlKey && !e.altKey || browser.mac && e.metaKey) return
   let ch = String.fromCharCode(e.charCode)
   if (dispatchKey(pm, "'" + ch + "'", e)) return
-  inputText(pm, pm.selection, ch)
+  let sel = pm.selection
+  if (sel.nodePos && sel.node.contains == null) {
+    pm.apply(pm.tr.delete(sel.nodePos, sel.nodePos.move(1)))
+    sel = pm.selection
+  }
+  inputText(pm, sel, ch)
   e.preventDefault()
 }
 

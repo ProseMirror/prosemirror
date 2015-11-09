@@ -1,6 +1,6 @@
 import {HardBreak, BulletList, OrderedList, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
         StrongStyle, EmStyle, CodeStyle, LinkStyle, Image, NodeType, StyleType,
-        Pos, containsStyle, rangeHasStyle} from "../model"
+        Pos, containsStyle, rangeHasStyle, compareMarkup} from "../model"
 import {joinPoint, canLift, canWrap, alreadyHasBlockType} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
@@ -91,9 +91,12 @@ export function defaultKeymap(pm) {
 }
 
 function clearSel(pm) {
-  let sel = pm.selection, tr = pm.tr
-  if (!sel.empty) tr.delete(sel.from, sel.to)
-  return tr
+  let {empty, from, to, nodePos, node} = pm.selection, tr = pm.tr
+  if (nodePos && node.type.contains == null)
+    tr.delete(nodePos, nodePos.move(1))
+  else if (!empty)
+    tr.delete(from, to)
+  return {tr, head: tr.map(from).pos}
 }
 
 const andScroll = {scrollIntoView: true}
@@ -101,11 +104,11 @@ const andScroll = {scrollIntoView: true}
 HardBreak.attachCommand("insertHardBreak", type => ({
   label: "Insert hard break",
   run(pm) {
-    let tr = clearSel(pm), pos = pm.selection.from
-    if (pm.doc.path(pos.path).type.isCode)
-      tr.insertText(pos, "\n")
+    let {tr, head} = clearSel(pm)
+    if (pm.doc.path(head.path).type.isCode)
+      tr.insertText(head, "\n")
     else
-      tr.insert(pos, pm.schema.node(type))
+      tr.insert(head, pm.schema.node(type))
     pm.apply(tr, andScroll)
   },
   info: {key: ["Mod-Enter", "Shift-Enter"]}
@@ -204,9 +207,8 @@ LinkStyle.attachCommand("link", type => ({
 Image.attachCommand("insertImage", type => ({
   label: "Insert image",
   run(pm, src, alt, title) {
-    let sel = pm.selection, tr = pm.tr
-    tr.delete(sel.from, sel.to)
-    return pm.apply(tr.insertInline(sel.from, type.create({src, title, alt})))
+    let {tr, head} = clearSel(pm)
+    return pm.apply(tr.insertInline(head, type.create({src, title, alt})))
   },
   params: [
     {name: "Image URL", type: "text"},
@@ -262,9 +264,7 @@ function moveBackward(parent, offset, by) {
 defineCommand("deleteSelection", {
   label: "Delete the selection",
   run(pm) {
-    let {from, to, empty} = pm.selection
-    if (empty) return false
-    return pm.apply(pm.tr.delete(from, to), andScroll)
+    return pm.apply(clearSel(pm).tr, andScroll)
   },
   info: {key: ["Backspace(10)", "Delete(10)", "Mod-Backspace(10)", "Mod-Delete(10)"],
          macKey: ["Ctrl-H(10)", "Alt-Backspace(10)", "Ctrl-D(10)", "Ctrl-Alt-Backspace(10)", "Alt-Delete(10)", "Alt-D(10)"]}
@@ -292,8 +292,8 @@ function deleteBarrier(pm, cut) {
 defineCommand("joinBackward", {
   label: "Join with the block above",
   run(pm) {
-    let {head, empty} = pm.selection
-    if (!empty || head.offset > 0) return false
+    let {head, cursor} = pm.selection
+    if (!cursor || head.offset > 0) return false
 
     // Find the node before this one
     let before, cut
@@ -319,8 +319,8 @@ defineCommand("joinBackward", {
 defineCommand("deleteCharBefore", {
   label: "Delete a character before the cursor",
   run(pm) {
-    let {head, empty} = pm.selection
-    if (!empty || head.offset == 0) return false
+    let {head, cursor} = pm.selection
+    if (!cursor || head.offset == 0) return false
     let from = moveBackward(pm.doc.path(head.path), head.offset, "char")
     return pm.apply(pm.tr.delete(new Pos(head.path, from), head), andScroll)
   },
@@ -330,8 +330,8 @@ defineCommand("deleteCharBefore", {
 defineCommand("deleteWordBefore", {
   label: "Delete the word before the cursor",
   run(pm) {
-    let {head, empty} = pm.selection
-    if (!empty || head.offset == 0) return false
+    let {head, cursor} = pm.selection
+    if (!cursor || head.offset == 0) return false
     let from = moveBackward(pm.doc.path(head.path), head.offset, "word")
     return pm.apply(pm.tr.delete(new Pos(head.path, from), head), andScroll)
   },
@@ -370,8 +370,8 @@ function moveForward(parent, offset, by) {
 defineCommand("joinForward", {
   label: "Join with the block below",
   run(pm) {
-    let {head, empty} = pm.selection
-    if (!empty || head.offset < pm.doc.path(head.path).maxOffset) return false
+    let {head, cursor} = pm.selection
+    if (!cursor || head.offset < pm.doc.path(head.path).maxOffset) return false
 
     // Find the node after this one
     let after, cut
@@ -398,8 +398,8 @@ defineCommand("joinForward", {
 defineCommand("deleteCharAfter", {
   label: "Delete a character after the cursor",
   run(pm) {
-    let {head, empty} = pm.selection
-    if (!empty || head.offset == pm.doc.path(head.path).maxOffset) return false
+    let {head, cursor} = pm.selection
+    if (!cursor || head.offset == pm.doc.path(head.path).maxOffset) return false
     let to = moveForward(pm.doc.path(head.path), head.offset, "char")
     return pm.apply(pm.tr.delete(head, new Pos(head.path, to)), andScroll)
   },
@@ -409,8 +409,8 @@ defineCommand("deleteCharAfter", {
 defineCommand("deleteWordAfter", {
   label: "Delete a character after the cursor",
   run(pm) {
-    let {head, empty} = pm.selection
-    if (!empty || head.offset == pm.doc.path(head.path).maxOffset) return false
+    let {head, cursor} = pm.selection
+    if (!cursor || head.offset == pm.doc.path(head.path).maxOffset) return false
     let to = moveForward(pm.doc.path(head.path), head.offset, "word")
     return pm.apply(pm.tr.delete(head, new Pos(head.path, to)), andScroll)
   },
@@ -447,15 +447,21 @@ defineCommand("lift", {
   }
 })
 
+function wrappableRange(pm) {
+  let {from, to, nodePos} = pm.selection
+  if (nodePos) { from = nodePos; to = nodePos.move(1) }
+  return {from, to}
+}
+
 function wrapCommand(type, name, labelName, info) {
   type.attachCommand("wrap" + name, type => ({
     label: "Wrap in " + labelName,
     run(pm) {
-      let sel = pm.selection
-      return pm.apply(pm.tr.wrap(sel.from, sel.to, type.create()), andScroll)
+      let {from, to} = wrappableRange(pm)
+      return pm.apply(pm.tr.wrap(from, to, type.create()), andScroll)
     },
     select(pm) {
-      let {from, to} = pm.selection
+      let {from, to} = wrappableRange(pm)
       return canWrap(pm.doc, from, to, type.create())
     },
     info
@@ -483,11 +489,12 @@ wrapCommand(BlockQuote, "BlockQuote", "block quote", {
 defineCommand("newlineInCode", {
   label: "Insert newline",
   run(pm) {
-    let {from, to} = pm.selection, block
-    if (Pos.samePath(from.path, to.path) &&
+    let {from, to, nodePos} = pm.selection, block
+    if (!nodePos && Pos.samePath(from.path, to.path) &&
         (block = pm.doc.path(from.path)).type.isCode &&
         to.offset < block.maxOffset) {
-      return pm.apply(clearSel(pm).insertText(from, "\n"), andScroll)
+      let {tr, head} = clearSel(pm)
+      return pm.apply(tr.insertText(head, "\n"), andScroll)
     }
     return false
   },
@@ -497,8 +504,8 @@ defineCommand("newlineInCode", {
 defineCommand("liftEmptyBlock", {
   label: "Move current block up",
   run(pm) {
-    let {head, empty} = pm.selection
-    if (!empty || head.offset > 0) return false
+    let {head, cursor} = pm.selection
+    if (!cursor || head.offset > 0) return false
     if (head.path[head.path.length - 1] > 0 &&
         pm.apply(pm.tr.split(head.shorten())) !== false)
       return
@@ -510,16 +517,17 @@ defineCommand("liftEmptyBlock", {
 defineCommand("splitBlock", {
   label: "Split the current block",
   run(pm) {
-    let {from, to} = pm.selection, block = pm.doc.path(to.path)
+    let {from, to, node} = pm.selection, block = pm.doc.path(to.path)
+    if (node && node.isBlock) return false
     let type = to.offset == block.maxOffset ? pm.schema.defaultTextblockType().create() : null
-    return pm.apply(clearSel(pm).split(from, 1, type), andScroll)
+    return pm.apply(clearSel(pm).tr.split(from, 1, type), andScroll)
   },
   info: {key: "Enter(60)"}
 })
 
 function setType(pm, type, attrs) {
-  let sel = pm.selection
-  return pm.apply(pm.tr.setBlockType(sel.from, sel.to, pm.schema.node(type, attrs)), andScroll)
+  let {from, to} = pm.selection
+  return pm.apply(pm.tr.setBlockType(from, to, pm.schema.node(type, attrs)), andScroll)
 }
 
 function blockTypeCommand(type, name, labelName, attrs, key) {
@@ -528,8 +536,11 @@ function blockTypeCommand(type, name, labelName, attrs, key) {
     label: "Change to " + labelName,
     run(pm) { return setType(pm, type, attrs) },
     select(pm) {
-      let sel = pm.selection
-      return !alreadyHasBlockType(pm.doc, sel.from, sel.to, type, attrs)
+      let {from, to, node} = pm.selection
+      if (node)
+        return node.isTextblock && !compareMarkup(type, node.type, attrs, node.attrs)
+      else
+        return !alreadyHasBlockType(pm.doc, from, to, type, attrs)
     },
     info: {key}
   }))
@@ -546,17 +557,16 @@ blockTypeCommand(Paragraph, "makeParagraph", "paragraph", null, "Mod-P")
 blockTypeCommand(CodeBlock, "makeCodeBlock", "code block", null, "Mod-\\")
 
 function insertOpaqueBlock(pm, type, attrs) {
-  let pos = pm.selection.from
-  let tr = clearSel(pm)
-  let parent = tr.doc.path(pos.shorten().path)
+  let {tr, head} = clearSel(pm)
+  let parent = tr.doc.path(head.shorten().path)
   let node = type.create(attrs)
   if (!parent.type.canContain(node)) return false
   let off = 0
-  if (pos.offset) {
-    tr.split(pos)
+  if (head.offset) {
+    tr.split(head)
     off = 1
   }
-  return pm.apply(tr.insert(pos.shorten(null, off), node), andScroll)
+  return pm.apply(tr.insert(head.shorten(null, off), node), andScroll)
 }
 
 HorizontalRule.attachCommand("insertHorizontalRule", type => ({
@@ -593,6 +603,10 @@ defineCommand("textblockType", {
     // FIXME do nothing if type is current type
     let sel = pm.selection
     return pm.apply(pm.tr.setBlockType(sel.from, sel.to, type))
+  },
+  select(pm) {
+    let selectedNode = pm.sel.node
+    return !selectedNode || selectedNode.isTextblock
   },
   params: [
     {name: "Type", type: "select", options: listTextblockTypes, default: currentTextblockType, defaultLabel: "Type..."}
@@ -656,77 +670,64 @@ defineCommand("selectParent", {
 
 // FIXME we'll need some awareness of bidi motion here
 
+function selectableBlockFromSelection(pm, dir, text) {
+  let {head, nodePos} = pm.selection
+  let pos = nodePos ? (dir > 0 ? nodePos.move(1) : nodePos) : head.shorten(null, dir > 0 ? 1 : 0)
+  return selectableBlockFrom(pm.doc, pos, dir, text)
+}
+
+// FIXME make scrolling into view an option that can be passed to setSelection etc
+
 defineCommand("moveLeft", {
   label: "Move the cursor to the left",
   run(pm) {
-    let {head, empty} = pm.selection
+    let {head, empty, node} = pm.selection
     if (!empty) return false
     let parent = pm.doc.path(head.path)
-    let {node, innerOffset} = parent.childBefore(head.offset)
-    if (node && innerOffset == node.offset && node.type.selectable)
-      return pm.setNodeSelection(head.move(-node.offset))
 
-    if (head.offset > 0) return false
-    let selectable = selectableBlockFrom(pm.doc, head.shorten(), -1)
+    if (!node || !node.isBlock) {
+      let {node, innerOffset} = parent.childBefore(head.offset)
+      if (node && innerOffset == node.offset && node.type.selectable)
+        return pm.setNodeSelection(head.move(-node.offset))
+    }
+
+    if (!node && head.offset > 0) return false
+    let selectable = selectableBlockFromSelection(pm, -1)
     if (!selectable) return false
     let selNode = pm.doc.path(selectable)
     if (selNode.isTextblock)
-      pm.setSelection(new Pos(selectable, node.maxOffset))
+      pm.setSelection(new Pos(selectable, selNode.maxOffset))
     else
       pm.setNodeSelection(new Pos(selectable, 0).shorten())
+    pm.scrollIntoView()
   },
-  info: {key: "Left"}
+  info: {key: ["Left", "Mod-Left"]}
 })
 
 defineCommand("moveRight", {
   label: "Move the cursor to the right",
   run(pm) {
-    let {head, empty} = pm.selection
+    let {head, empty, node} = pm.selection
     if (!empty) return false
     let parent = pm.doc.path(head.path)
-    if (head.offset < parent.maxOffset) {
+    if ((!node || !node.isBlock) && head.offset < parent.maxOffset) {
       let {node, innerOffset} = parent.childAfter(head.offset)
       if (innerOffset == node.offset && node.type.selectable)
         return pm.setNodeSelection(head)
       else
         return false
     } else {
-      let selectable = selectableBlockFrom(pm.doc, head.shorten(null, 1), 1)
+      let selectable = selectableBlockFromSelection(pm, 1)
       if (!selectable) return false
       let node = pm.doc.path(selectable)
       if (node.isTextblock)
         pm.setSelection(new Pos(selectable, 0))
       else
         pm.setNodeSelection(new Pos(selectable, 0).shorten())
+      pm.scrollIntoView()
     }
   },
-  info: {key: "Right"}
-})
-
-defineCommand("moveUp", {
-  label: "Move the cursor up",
-  run(pm) {
-    let sel = pm.selection
-    if (!sel.empty) return pm.setSelection(sel.from)
-    let {pos, node, left} = moveVertically(pm, sel.head, -1, pm.sel.goalX)
-    if (node) pm.setNodeSelection(node)
-    else pm.setSelection(pos)
-    pm.sel.goalX = left
-  },
-  info: {key: "Up"}
-})
-
-defineCommand("moveDown", {
-  label: "Move the cursor down",
-  run(pm) {
-    let sel = pm.selection
-    if (!sel.empty) return pm.setSelection(sel.to)
-    let {pos, node, left} = moveVertically(pm, sel.head, 1, pm.sel.goalX)
-    if (node) pm.setNodeSelection(node)
-    else pm.setSelection(pos)
-    pm.sel.goalX = left
-  },
-  info: {key: "Down"}
+  info: {key: ["Right", "Mod-Right"]}
 })
 
 defineCommand("extendLeft", {
@@ -734,11 +735,12 @@ defineCommand("extendLeft", {
   run(pm) {
     let {head, anchor} = pm.selection
     if (head.offset > 0) return false
-    let selectable = selectableBlockFrom(pm.doc, head.shorten(), -1, true)
+    let selectable = selectableBlockFromSelection(pm, -1, true)
     if (selectable)
       pm.setSelection(anchor, new Pos(selectable, pm.doc.path(selectable).maxOffset))
+    pm.scrollIntoView()
   },
-  info: {key: "Shift-Left"}
+  info: {key: ["Shift-Left", "Shift-Mod-Left"]}
 })
 
 defineCommand("extendRight", {
@@ -747,20 +749,53 @@ defineCommand("extendRight", {
     let {head, anchor} = pm.selection
     let node = pm.doc.path(head.path)
     if (head.offset < node.maxOffset) return false
-    let selectable = selectableBlockFrom(pm.doc, head.shorten(null, 1), 1, true)
+    let selectable = selectableBlockFromSelection(pm.doc, 1, true)
     if (selectable)
       pm.setSelection(anchor, new Pos(selectable, 0))
+    pm.scrollIntoView()
   },
-  info: {key: "Shift-Right"}
+  info: {key: ["Shift-Right", "Shift-Mod-Right"]}
+})
+
+function moveVerticallyFromSelection(pm, dir) {
+  let {head, nodePos, node} = pm.selection
+  if (nodePos && node.type.contains == null) head = dir > 0 ? nodePos.move(1) : nodePos
+  return moveVertically(pm, head, dir, pm.sel.goalX)
+}
+
+defineCommand("moveUp", {
+  label: "Move the cursor up",
+  run(pm) {
+    if (!pm.selection.empty) return pm.setSelection(pm.selection.from)
+    let {pos, node, left} = moveVerticallyFromSelection(pm, -1)
+    if (node) pm.setNodeSelection(node)
+    else pm.setSelection(pos)
+    pm.sel.goalX = left
+    pm.scrollIntoView()
+  },
+  info: {key: "Up"}
+})
+
+defineCommand("moveDown", {
+  label: "Move the cursor down",
+  run(pm) {
+    if (!pm.selection.empty) return pm.setSelection(pm.selection.to)
+    let {pos, node, left} = moveVerticallyFromSelection(pm, 1)
+    if (node) pm.setNodeSelection(node)
+    else pm.setSelection(pos)
+    pm.sel.goalX = left
+    pm.scrollIntoView()
+  },
+  info: {key: "Down"}
 })
 
 defineCommand("extendUp", {
   label: "Extend the selection up",
   run(pm) {
-    let {head, anchor} = pm.selection
-    let {pos, left} = moveVertically(pm, head, -1, pm.sel.goalX)
-    pm.setSelection(anchor, pos)
+    let {pos, left} = moveVerticallyFromSelection(pm, -1)
+    pm.setSelection(pm.selection.anchor, pos)
     pm.sel.goalX = left
+    pm.scrollIntoView()
   },
   info: {key: "Shift-Up"}
 })
@@ -768,10 +803,10 @@ defineCommand("extendUp", {
 defineCommand("extendDown", {
   label: "Extend the selection down",
   run(pm) {
-    let {head, anchor} = pm.selection
-    let {pos, left} = moveVertically(pm, head, 1, pm.sel.goalX)
-    pm.setSelection(anchor, pos)
+    let {pos, left} = moveVerticallyFromSelection(pm, 1)
+    pm.setSelection(pm.selection.anchor, pos)
     pm.sel.goalX = left
+    pm.scrollIntoView()
   },
   info: {key: "Shift-Down"}
 })

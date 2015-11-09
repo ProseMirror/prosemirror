@@ -129,7 +129,7 @@ export class ProseMirror {
     this.input.maybeAbortComposition()
     this.ranges.transform(mapping)
     this.doc = doc
-    this.sel.map(mapping)
+    this.sel.setAndSignal(this.sel.map(mapping))
     this.signal("change")
   }
 
@@ -146,9 +146,7 @@ export class ProseMirror {
     this.checkPos(range.anchor, true)
     this.ensureOperation()
     this.input.maybeAbortComposition()
-    if (range.head.cmp(this.sel.range.head) ||
-        range.anchor.cmp(this.sel.range.anchor))
-      this.sel.setAndSignal(range)
+    if (range.cmp(this.sel.range)) this.sel.setAndSignal(range)
   }
 
   setNodeSelection(pos) {

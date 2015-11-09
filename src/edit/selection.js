@@ -56,8 +56,10 @@ export class Selection {
       else
         node = null
     }
-    this.setAndSignal(new SelectionRange(this.pm.doc, mapping.map(this.range.anchor).pos,
-                                         mapping.map(this.range.head).pos, node))
+    return new SelectionRange(this.pm.doc,
+                              Pos.near(this.pm.doc, mapping.map(this.range.anchor).pos, 1),
+                              Pos.near(this.pm.doc, mapping.map(this.range.head).pos, 1),
+                              node)
   }
 
   pollForUpdate() {
@@ -143,14 +145,13 @@ export class Selection {
     if (this.lastNode) {
       clearNodeSelection(this.lastNode)
       this.lastNode = null
+      return true
     }
   }
 
   rangeToDOM(takeFocus) {
-    this.clearNode()
-
     let sel = window.getSelection()
-    if (!hasFocus(this.pm)) {
+    if (!this.clearNode() && !hasFocus(this.pm)) {
       if (!takeFocus) return
       // See https://bugzilla.mozilla.org/show_bug.cgi?id=921444
       else if (browser.gecko) this.pm.content.focus()
@@ -225,7 +226,16 @@ export class SelectionRange {
   get from() { return this.inverted ? this.head : this.anchor }
   get to() { return this.inverted ? this.anchor : this.head }
   get empty() { return this.anchor.cmp(this.head) == 0 }
-  cmp(other) { return this.anchor.cmp(other.anchor) || this.head.cmp(other.head) }
+  cmp(other) {
+    if (this.nodePos) {
+      if (!other.nodePos) return 1
+      return this.nodePos.cmp(other.nodePos)
+    } else if (other.nodePos) {
+      return -1
+    } else {
+      return this.anchor.cmp(other.anchor) || this.head.cmp(other.head)
+    }
+  }
 
   get node() {
     if (!this.nodePos) return null
@@ -234,6 +244,9 @@ export class SelectionRange {
       return parent.childAfter(this.nodePos.offset).node
     else
       return parent.child(this.nodePos.offset)
+  }
+  get cursor() {
+    return !this.nodePos && this.empty
   }
 }
 
