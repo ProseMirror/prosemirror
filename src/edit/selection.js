@@ -442,23 +442,32 @@ function textRect(node, from, to) {
  */
 export function coordsAtPos(pm, pos) {
   let {node, offset} = DOMFromPos(pm.content, pos)
-  let rect
-  if (node.nodeType == 3 && node.nodeValue) {
-    rect = textRect(node, offset ? offset - 1 : offset, offset ? offset : offset + 1)
-  } else if (node.nodeType == 1 && node.firstChild) {
-    let child = node.childNodes[offset ? offset - 1 : offset]
-    rect = child.nodeType == 3 ? textRect(child, 0, child.nodeValue.length) : child.getBoundingClientRect()
-    // BR nodes are likely to return a useless empty rectangle. Try
-    // the node on the other side in that case.
-    if (rect.left == rect.right && offset && offset < node.childNodes.length) {
-      let otherRect = node.childNodes[offset].getBoundingClientRect()
-      if (otherRect.left != otherRect.right)
-        rect = {top: otherRect.top, bottom: otherRect.bottom, right: otherRect.left}
+  let side, rect
+  if (node.nodeType == 3) {
+    if (offset < node.nodeValue.length) {
+      rect = textRect(node, offset, offset + 1)
+      side = "left"
+    }
+    if ((!rect || rect.left == rect.right) && offset) {
+      rect = textRect(node, offset - 1, offset)
+      side = "right"
+    }
+  } else if (node.firstChild) {
+    if (offset < node.childNodes.length) {
+      let child = node.childNodes[offset]
+      rect = child.nodeType == 3 ? textRect(child, 0, child.nodeValue.length) : child.getBoundingClientRect()
+      side = "left"
+    }
+    if ((!rect || rect.left == rect.right) && offset) {
+      let child = node.childNodes[offset - 1]
+      rect = child.nodeType == 3 ? textRect(child, 0, child.nodeValue.length) : child.getBoundingClientRect()
+      side = "right"
     }
   } else {
     rect = node.getBoundingClientRect()
+    side = "left"
   }
-  let x = offset ? rect.right : rect.left
+  let x = rect[side]
   return {top: rect.top, bottom: rect.bottom, left: x, right: x}
 }
 
