@@ -558,7 +558,7 @@ function findInInlineBoxes(dom, coords, dir) {
     let boxes = child.getClientRects()
     for (let i = 0; i < boxes.length; i++) {
       let box = boxes[i]
-      if (lineTop != null && (lineTop < box.bottom || lineBot > box.top)) {
+      if (lineTop != null && lineTop < box.bottom && lineBot > box.top) {
         lineTop = Math.min(box.top, lineTop)
         lineBot = Math.max(box.bottom, lineBot)
       } else {

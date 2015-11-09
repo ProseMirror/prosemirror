@@ -77,6 +77,12 @@ up("through-list", doc(p("xxx"), ul(li(p("xxx"), p("xxx")), li(p("xxxxx")), li(p
    P(1, 0, 1, 0), P(1, 0, 0, 0),
    P(1, 0, 0, 3), P(0, 3))
 
+down("to-short-line", doc(p("xxx", br, "x"), p("xxx")),
+     P(0, 3), P(0, 5))
+
+up("to-short-line", doc(p("xxx"), p("x", br, "xxx")),
+   P(1, 5), P(1, 1))
+
 test("wrapped", pm => {
   pm.setSelection(P(0, 1))
   pm.execCommand("moveDown")
@@ -95,3 +101,15 @@ test("wrapped", pm => {
   pm.execCommand("moveUp")
   cmpStr(pm.selection.head, P(0, 1), "back to start")
 }, {doc: doc(p("xxx"), p(new Array(500).join("x ")), p("xxx"))})
+
+test("goal-column", pm => {
+  pm.setSelection(P(0, 3))
+  pm.execCommand("moveDown")
+  cmpStr(pm.selection.head, P(1, 1))
+  pm.execCommand("moveDown")
+  cmpStr(pm.selection.head, P(2, 3))
+  pm.execCommand("moveUp")
+  cmpStr(pm.selection.head, P(1, 1))
+  pm.execCommand("moveUp")
+  cmpStr(pm.selection.head, P(0, 3))
+}, {doc: doc(p("xxx"), p("x"), p("xxx"))})
