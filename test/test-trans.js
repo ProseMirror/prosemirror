@@ -1,5 +1,5 @@
-import {style, Node, Span} from "../src/model"
-import {Transform, invertStep, Remapping} from "../src/transform"
+import {defaultSchema as schema} from "../src/model"
+import {Transform, Remapping} from "../src/transform"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
@@ -12,7 +12,7 @@ function Tr(doc) { return new Transform(doc) }
 function invert(transform) {
   let doc = transform.doc, out = Tr(doc)
   for (let i = transform.steps.length - 1; i >= 0; i--)
-    out.step(invertStep(transform.steps[i], transform.docs[i], transform.maps[i]))
+    out.step(transform.steps[i].invert(transform.docs[i], transform.maps[i]))
   return out
 }
 
@@ -45,27 +45,27 @@ function add(name, doc, expect, style) {
 add("simple",
     doc(p("hello <a>there<b>!")),
     doc(p("hello ", strong("there"), "!")),
-    style.strong)
+    schema.style("strong"))
 add("double_bold",
     doc(p("hello ", strong("<a>there"), "!<b>")),
     doc(p("hello ", strong("there!"))),
-    style.strong)
+    schema.style("strong"))
 add("overlap",
     doc(p("one <a>two ", em("three<b> four"))),
     doc(p("one ", strong("two ", em("three")), em(" four"))),
-    style.strong)
+    schema.style("strong"))
 add("overwrite_link",
     doc(p("this is a ", a("<a>link<b>"))),
     doc(p("this is a ", a2("link"))),
-    style.link("http://bar"))
+    schema.style("link", {href: "http://bar"}))
 add("code",
     doc(p("before"), blockquote(p("the variable is called <a>i<b>")), p("after")),
     doc(p("before"), blockquote(p("the variable is called ", code("i"))), p("after")),
-    style.code)
+    schema.style("code"))
 add("across_blocks",
     doc(p("hi <a>this"), blockquote(p("is")), p("a docu<b>ment"), p("!")),
     doc(p("hi ", em("this")), blockquote(p(em("is"))), p(em("a docu"), "ment"), p("!")),
-    style.em)
+    schema.style("em"))
 
 function rem(name, doc, expect, style) {
   defTest("removeStyle_" + name, () => {
@@ -76,27 +76,27 @@ function rem(name, doc, expect, style) {
 rem("gap",
     doc(p(em("hello <a>world<b>!"))),
     doc(p(em("hello "), "world", em("!"))),
-    style.em)
+    schema.style("em"))
 rem("nothing_there",
     doc(p(em("hello"), " <a>world<b>!")),
     doc(p(em("hello"), " <a>world<b>!")),
-    style.em)
+    schema.style("em"))
 rem("from_nested",
     doc(p(em("one ", strong("<a>two<b>"), " three"))),
     doc(p(em("one two three"))),
-    style.strong)
+    schema.style("strong"))
 rem("unlink",
     doc(p("hello ", a("link"))),
     doc(p("hello link")),
-    style.link("http://foo"))
+    schema.style("link", {href: "http://foo"}))
 rem("other_link",
     doc(p("hello ", a("link"))),
     doc(p("hello ", a("link"))),
-    style.link("http://bar"))
+    schema.style("link", {href: "http://bar"}))
 rem("across_blocks",
     doc(blockquote(p(em("much <a>em")), p(em("here too"))), p("between", em("...")), p(em("end<b>"))),
     doc(blockquote(p(em("much "), "em"), p("here too")), p("between..."), p("end")),
-    style.em)
+    schema.style("em"))
 rem("all",
     doc(p("<a>hello, ", em("this is ", strong("much"), " ", a("markup<b>")))),
     doc(p("<a>hello, this is much markup")),
@@ -111,24 +111,24 @@ function ins(name, doc, expect, nodes) {
 ins("break",
     doc(p("hello<a>there")),
     doc(p("hello", br, "<a>there")),
-    new Span("hard_break"))
+    schema.node("hard_break"))
 ins("simple",
     doc(p("one"), "<a>", p("two<2>")),
     doc(p("one"), p(), "<a>", p("two<2>")),
-    new Node("paragraph"))
+    schema.node("paragraph"))
 ins("two",
     doc(p("one"), "<a>", p("two<2>")),
     doc(p("one"), p("hi"), hr, "<a>", p("two<2>")),
-    [new Node("paragraph", null, [new Span.text("hi")]),
-     new Node("horizontal_rule")])
+    [schema.node("paragraph", null, [schema.text("hi")]),
+     schema.node("horizontal_rule")])
 ins("end_of_blockquote",
     doc(blockquote(p("he<before>y"), "<a>"), p("after<after>")),
     doc(blockquote(p("he<before>y"), p()), p("after<after>")),
-    new Node("paragraph"))
+    schema.node("paragraph"))
 ins("start_of_blockquote",
     doc(blockquote("<a>", p("he<1>y")), p("after<2>")),
     doc(blockquote(p(), "<a>", p("he<1>y")), p("after<2>")),
-    new Node("paragraph"))
+    schema.node("paragraph"))
 
 function del(name, doc, expect) {
   defTest("delete_" + name, () => {
@@ -247,7 +247,7 @@ split("list_item",
 split("change_type",
       doc(h1("hell<a>o!")),
       doc(h1("hell"), p("<a>o!")),
-      {node: new Node("paragraph")})
+      {node: schema.node("paragraph")})
 
 function lift(name, doc, expect) {
   defTest("lift_" + name, () => {
@@ -298,31 +298,31 @@ function wrap(name, doc, expect, node) {
 wrap("simple",
      doc(p("one"), p("<a>two"), p("three")),
      doc(p("one"), blockquote(p("<a>two")), p("three")),
-     new Node("blockquote"))
+     schema.node("blockquote"))
 wrap("two",
      doc(p("one<1>"), p("<a>two"), p("<b>three"), p("four<4>")),
      doc(p("one<1>"), blockquote(p("<a>two"), p("three")), p("four<4>")),
-     new Node("blockquote"))
+     schema.node("blockquote"))
 wrap("list",
      doc(p("<a>one"), p("<b>two")),
      doc(ol(li(p("<a>one")), li(p("<b>two")))),
-     new Node("ordered_list"))
+     schema.node("ordered_list"))
 wrap("nested_list",
      doc(ol(li(p("<1>one")), li(p("<a>two"), p("<b>three")), li(p("<4>four")))),
      doc(ol(li(p("<1>one")), li(ol(li(p("<a>two")), li(p("<b>three")))), li(p("<4>four")))),
-     new Node("ordered_list"))
+     schema.node("ordered_list"))
 wrap("not_possible",
      doc(p("hi<a>")),
      doc(p("hi<a>")),
-     new Node("horizontal_rule"))
+     schema.node("horizontal_rule"))
 wrap("include_parent",
      doc(blockquote(p("<1>one"), p("two<a>")), p("three<b>")),
      doc(blockquote(blockquote(p("<1>one"), p("two<a>")), p("three<b>"))),
-     new Node("blockquote"))
+     schema.node("blockquote"))
 wrap("bullet_list",
      doc(p("x"), p("yyyy<a>y"), p("z")),
      doc(p("x"), ul(li(p("yyyy<a>y"))), p("z")),
-     new Node("bullet_list"))
+     schema.node("bullet_list"))
 
 function type(name, doc, expect, node) {
   defTest("setType_" + name, () => {
@@ -333,23 +333,23 @@ function type(name, doc, expect, node) {
 type("simple",
      doc(p("am<a> i")),
      doc(h2("am i")),
-     new Node("heading", {level: 2}))
+     schema.node("heading", {level: 2}))
 type("multiple",
      doc(h1("<a>hello"), p("there"), p("<b>you"), p("end")),
      doc(pre("hello"), pre("there"), pre("you"), p("end")),
-     new Node("code_block"))
+     schema.node("code_block"))
 type("inside",
      doc(blockquote(p("one<a>"), p("two<b>"))),
      doc(blockquote(h1("one<a>"), h1("two<b>"))),
-     new Node("heading", {level: 1}))
+     schema.node("heading", {level: 1}))
 type("clear_markup",
      doc(p("hello<a> ", em("world"))),
      doc(pre("hello world")),
-     new Node("code_block"))
+     schema.node("code_block"))
 type("only_clear_for_code_block",
      doc(p("hello<a> ", em("world"))),
      doc(h1("hello<a> ", em("world"))),
-     new Node("heading", {level: 1}))
+     schema.node("heading", {level: 1}))
 
 function repl(name, doc, source, expect) {
   defTest("replace_" + name, () => {

@@ -1,4 +1,4 @@
-import {Step, applyStep} from "./step"
+import {Step} from "./step"
 import {nullMap, MapResult} from "./map"
 
 export class TransformResult {
@@ -26,7 +26,7 @@ export class Transform {
   step(step, from, to, pos, param) {
     if (typeof step == "string")
       step = new Step(step, from, to, pos, param)
-    let result = applyStep(this.doc, step)
+    let result = step.apply(this.doc)
     if (result) {
       this.steps.push(step)
       this.maps.push(result.map)

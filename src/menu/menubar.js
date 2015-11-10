@@ -2,8 +2,7 @@ import {defineOption} from "../edit"
 import {elt} from "../dom"
 import {Debounced} from "../util/debounce"
 
-import {Menu} from "./menu"
-import {getItems, separatorItem} from "./items"
+import {Menu, commandGroups} from "./menu"
 
 import insertCSS from "insert-css"
 import "./icons"
@@ -64,8 +63,7 @@ class MenuBar {
     pm.on("change", this.updateFunc)
     pm.on("activeStyleChange", this.updateFunc)
 
-    this.menuItems = config && config.items ||
-      [...getItems("inline"), separatorItem, ...getItems("block"), ...getItems("history")]
+    this.menuItems = config && config.items || commandGroups(pm, "inline", "block", "history")
     this.update()
 
     this.floating = false
@@ -154,6 +152,7 @@ insertCSS(`
   position: absolute;
   border-bottom: 1px solid silver;
   background: white;
+  z-index: 10;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
   overflow: hidden;
@@ -171,11 +170,18 @@ insertCSS(`
   color: black;
   border: none;
   outline: none;
-  margin: 2px;
+  width: 100%;
+  box-sizing: -moz-border-box;
+  box-sizing: border-box;
 }
 
 .ProseMirror-menubar input[type="text"] {
   padding: 0 4px;
+}
+
+.ProseMirror-menubar form {
+  position: relative;
+  padding: 2px 4px;
 }
 
 .ProseMirror-menubar .ProseMirror-blocktype {
@@ -193,6 +199,8 @@ insertCSS(`
   position: relative;
   left: 100%;
   width: 100%;
+  box-sizing: -moz-border-box;
+  box-sizing: border-box;
   padding-left: 16px;
   background: white;
 }

@@ -1,9 +1,9 @@
-import {Node, Span, nodeTypes, Pos, style} from "../../src/model"
+import {defaultSchema as schema, Pos} from "../../src/model"
 import {Transform, joinPoint, canLift, canWrap} from "../../src/transform"
 import {cmp, cmpStr} from "../cmp"
 import {randomPos} from "./pos"
 import {createDoc, attrs} from "./generate"
-import {testTransform, sizeBetween} from "./test"
+import {testTransform, sizeBetween, nodeSize} from "./test"
 
 export const tests = Object.create(null)
 const run = Object.create(null)
@@ -32,7 +32,7 @@ function runTest(type, doc, info, simple) {
 export function runCase(n) {
   let cases = readFileSync(logFile, "utf8").split("\n")
   let data = JSON.parse(cases[n])
-  let doc = Node.fromJSON(data.doc), info = restoreObjs(data.info)
+  let doc = schema.fromJSON(data.doc), info = restoreObjs(data.info)
   console.log("running " + data.type, info)
   console.log("on " + doc)
   runTest(data.type, doc, info, true)
@@ -51,7 +51,7 @@ function restoreObjs(obj) {
       if (val.path) {
         obj[prop] = Pos.fromJSON(val)
       } else if (val.content) {
-        obj[prop] = Node.fromJSON(val)
+        obj[prop] = schema.fromJSON(val)
       } else {
         restoreObjs(val)
       }
@@ -64,7 +64,7 @@ let cachedSize = null, cachedSizeDoc = null
 function docSize(doc) {
   if (cachedSizeDoc == doc) return cachedSize
   cachedSizeDoc = doc
-  return cachedSize = doc.size
+  return cachedSize = nodeSize(doc)
 }
 
 let cachedStr = null, cachedStrDoc = null
@@ -81,12 +81,12 @@ tests.type = (doc, _, blockPositions) => {
 
 run.type = (tr, info) => {
   tr.insertText(info.pos, "°")
-  cmp(tr.doc.size, docSize(tr.docs[0]) + 1, "insert single char")
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]) + 1, "insert single char")
 }
 
 run.type = (tr, info) => {
   tr.insertText(info.pos, "°")
-  cmp(tr.doc.size, docSize(tr.docs[0]) + 1, "insert single char")
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]) + 1, "insert single char")
 }
 
 tests.delete = (doc, positions) => {
@@ -100,17 +100,17 @@ tests.delete = (doc, positions) => {
 run.delete = (tr, info) => {
   tr.delete(info.from, info.to)
   let delSize = sizeBetween(tr.docs[0], info.from, info.to)
-  cmp(tr.doc.size, docSize(tr.docs[0]) - delSize, "size reduced appropriately")
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]) - delSize, "size reduced appropriately")
 }
 
 tests.insert = (doc, positions) => {
-  let para = new Node("paragraph", null, [Span.text("Q")])
-  let img = new Span("image", {src: "http://image2"})
+  let para = schema.node("paragraph", null, [schema.text("Q")])
+  let img = schema.node("image", {src: "http://image2"})
   for (let i = 0; i < positions.length; i++) {
     let pos = positions[i], node = doc.path(pos.path)
-    if (node.type.contains == para.type.type)
+    if (node.type.canContain(para))
       runTest("insert", doc, {pos: pos, node: para})
-    else if (node.type.block)
+    else if (node.isTextblock)
       runTest("insert", doc, {pos: pos, node: img})
   }
 }
@@ -120,7 +120,7 @@ run.insert = (tr, info) => {
     tr.insertInline(info.pos, info.node)
   else
     tr.insert(info.pos, info.node)
-  cmp(tr.doc.size, docSize(tr.docs[0]) + 1, "added one character")
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]) + 1, "added one character")
 }
 
 tests.replace = (doc, positions) => {
@@ -137,7 +137,7 @@ tests.replace = (doc, positions) => {
 
 run.replace = (tr, info) => {
   tr.replace(info.from, info.to, info.source, info.start, info.end)
-  cmp(tr.doc.size, docSize(tr.docs[0]) - sizeBetween(tr.docs[0], info.from, info.to) +
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]) - sizeBetween(tr.docs[0], info.from, info.to) +
       sizeBetween(info.source, info.start, info.end), "replaced size matches")
 }
 
@@ -154,7 +154,7 @@ tests.join = (doc, positions) => {
 
 run.join = (tr, info) => {
   tr.join(info.pos)
-  cmp(tr.doc.size, docSize(tr.docs[0]), "join doesn't change length")
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]), "join doesn't change length")
 }
 
 tests.split = (doc, positions) => {
@@ -165,7 +165,7 @@ tests.split = (doc, positions) => {
 run.split = (tr, info) => {
   tr.split(info.pos, info.depth)
   if (tr.steps.length)
-    cmp(tr.doc.size, docSize(tr.docs[0]), "split doesn't change length")
+    cmp(nodeSize(tr.doc), docSize(tr.docs[0]), "split doesn't change length")
 }
 
 tests.style = (doc, _, blockPositions) => {
@@ -174,7 +174,10 @@ tests.style = (doc, _, blockPositions) => {
       let rnd = Math.random(), rnd2 = Math.random()
       let type = rnd < .33 ? "addStyle" : rnd < .66  ? "removeStyle" : "clearMarkup"
       let st = type != "clearMarkup" &&
-          rnd2 < .3 ? style.em : rnd2 < .6 ? style.strong : rnd2 < .8 ? style.link("http://p") : style.code
+          rnd2 < .3 ? schema.style("em")
+        : rnd2 < .6 ? schema.style("strong")
+        : rnd2 < .8 ? schema.style("link", {href: "http://p"})
+        : schema.style("code")
       runTest("style", doc, {type: type, from: blockPositions[i], to: blockPositions[j], style: st})
     }
   }
@@ -183,7 +186,7 @@ tests.style = (doc, _, blockPositions) => {
 run.style = (tr, info) => {
   tr[info.type](info.from, info.to, info.style)
   if (info.type != "clearMarkup")
-    cmp(tr.doc.size, docSize(tr.docs[0]), "style doesn't change length")
+    cmp(nodeSize(tr.doc), docSize(tr.docs[0]), "style doesn't change length")
 }
 
 tests.lift = (doc, _, blockPositions) => {
@@ -192,7 +195,7 @@ tests.lift = (doc, _, blockPositions) => {
     let from = blockPositions[i]
     let to = blockPositions[Math.floor(Math.random() * (blockPositions.length - i)) + i]
     let lift = canLift(doc, from, to), p
-    if (lift && (!last || (p = new Pos(lift.range.path, lift.range.from)).cmp(last))) {
+    if (lift && (!last || (p = lift.range.from).cmp(last))) {
       runTest("lift", doc, {from, to})
       last = p
     }
@@ -201,15 +204,15 @@ tests.lift = (doc, _, blockPositions) => {
 
 run.lift = (tr, info) => {
   tr.lift(info.from, info.to)
-  cmp(tr.doc.size, docSize(tr.docs[0]), "lift doesn't change size")
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]), "lift doesn't change size")
 }
 
 let blockTypes = [], wrapTypes = []
-for (let name in nodeTypes) {
-  let type = nodeTypes[name]
-  if (type.block)
+for (let name in schema.nodes) {
+  let type = schema.nodes[name]
+  if (type.isTextblock)
     blockTypes.push(type)
-  else if (type.contains != "span")
+  else if (type.contains)
     wrapTypes.push(type)
 }
 
@@ -219,9 +222,9 @@ tests.wrap = (doc, positions) => {
     let from = positions[i], p
     let to = positions[Math.floor(Math.random() * (positions.length - i)) + i]
     let type = wrapTypes[Math.floor(Math.random() * wrapTypes.length)]
-    let node = new Node(type, attrs[type.name])
+    let node = schema.node(type, attrs[type.name])
     let wrap = canWrap(doc, from, to, node)
-    if (wrap && (!last || (p = new Pos(wrap.range.path, wrap.range.from)).cmp(last))) {
+    if (wrap && (!last || (p = wrap.range.from).cmp(last))) {
       runTest("wrap", doc, {from, to, node})
       last = p
     }
@@ -230,7 +233,7 @@ tests.wrap = (doc, positions) => {
 
 run.wrap = (tr, info) => {
   tr.lift(info.from, info.to, info.node)
-  cmp(tr.doc.size, docSize(tr.docs[0]), "wrap doesn't change size")
+  cmp(nodeSize(tr.doc), docSize(tr.docs[0]), "wrap doesn't change size")
 }
 
 tests.setBlockType = (doc, _, blockPositions) => {
@@ -238,12 +241,12 @@ tests.setBlockType = (doc, _, blockPositions) => {
     let from = blockPositions[i]
     let to = blockPositions[Math.floor(Math.random() * blockPositions.length - i) + i]
     let type = blockTypes[Math.floor(Math.random() * blockTypes.length)]
-    runTest("setBlockType", doc, {from, to, node: new Node(type, attrs[type.name])})
+    runTest("setBlockType", doc, {from, to, node: schema.node(type, attrs[type.name])})
   }
 }
 
 run.setBlockType = (tr, info) => {
   tr.setBlockType(info.from, info.to, info.node)
-  if (!info.node.type.plainText)
-    cmp(tr.doc.size, docSize(tr.docs[0]), "setBlockType doesn't change size")
+  if (info.node.type.containsStyles)
+    cmp(nodeSize(tr.doc), docSize(tr.docs[0]), "setBlockType doesn't change size")
 }

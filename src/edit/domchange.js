@@ -1,5 +1,5 @@
 import {Pos, findDiffStart, findDiffEnd} from "../model"
-import {fromDOM} from "../convert/from_dom"
+import {fromDOM} from "../parse/dom"
 import {samePathDepth} from "../transform/tree"
 
 import {findByPath} from "./selection"
@@ -7,8 +7,8 @@ import {findByPath} from "./selection"
 function isAtEnd(node, pos, depth) {
   for (let i = depth || 0; i < pos.path.length; i++) {
     let n = pos.path[depth]
-    if (n < node.content.length - 1) return false
-    node = node.content[n]
+    if (n < node.length - 1) return false
+    node = node.child(n)
   }
   return pos.offset == node.maxOffset
 }
@@ -23,21 +23,21 @@ function parseNearSelection(pm) {
   let dom = pm.content, node = pm.doc
   let from = pm.selection.from, to = pm.selection.to
   for (let depth = 0;; depth++) {
-    let toNode = node.content[to.path[depth]]
+    let toNode = node.child(to.path[depth])
     let fromStart = isAtStart(from, depth + 1)
     let toEnd = isAtEnd(toNode, to, depth + 1)
-    if (fromStart || toEnd || from.path[depth] != to.path[depth] || toNode.type.block) {
+    if (fromStart || toEnd || from.path[depth] != to.path[depth] || toNode.isTextblock) {
       let startOffset = depth == from.depth ? from.offset : from.path[depth]
       if (fromStart && startOffset > 0) startOffset--
       let endOffset = depth == to.depth ? to.offset : to.path[depth] + 1
-      if (toEnd && endOffset < node.content.length - 1) endOffset++
-      let parsed = fromDOM(dom, {topNode: node.copy(), from: startOffset, to: dom.childNodes.length - (node.content.length - endOffset)})
-      parsed.content = node.content.slice(0, startOffset).concat(parsed.content).concat(node.content.slice(endOffset))
+      if (toEnd && endOffset < node.length - 1) endOffset++
+      let parsed = fromDOM(pm.schema, dom, {topNode: node.copy(),
+                                            from: startOffset,
+                                            to: dom.childNodes.length - (node.length - endOffset)})
+      parsed = parsed.copy(node.slice(0, startOffset).concat(parsed.children).concat(node.slice(endOffset)))
       for (let i = depth - 1; i >= 0; i--) {
         let wrap = pm.doc.path(from.path.slice(0, i))
-        let copy = wrap.copy(wrap.content.slice())
-        copy.content[from.path[i]] = parsed
-        parsed = copy
+        parsed = wrap.splice(from.path[i], from.path[i] + 1, [parsed])
       }
       return parsed
     }
@@ -63,7 +63,7 @@ function offsetBy(first, second, pos) {
   let same = samePathDepth(first, second)
   let firstEnd = same == first.depth, secondEnd = same == second.depth
   let off = (secondEnd ? second.offset : second.path[same]) - (firstEnd ? first.offset : first.path[same])
-  let shorter = firstEnd ? pos.shift(off) : pos.shorten(same, off)
+  let shorter = firstEnd ? pos.move(off) : pos.shorten(same, off)
   if (secondEnd) return shorter
   else return shorter.extend(new Pos(second.path.slice(same), second.offset))
 }
@@ -148,7 +148,7 @@ function nodeBefore(node) {
 }
 
 function scanText(start, end) {
-  let text = "", cur = start
+  let text = "", cur = nodeAfter(start)
   for (;;) {
     if (cur == end) return text
     if (!cur) return null

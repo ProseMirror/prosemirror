@@ -1,7 +1,6 @@
-import {Node} from "../model"
+import {defaultSchema} from "../model"
 
-import {defaultKeymap} from "./defaultkeymap"
-import {Keymap} from "./keys"
+import {defaultKeymap} from "./commands"
 
 class Option {
   constructor(defaultValue, update, updateOnInit) {
@@ -14,7 +13,9 @@ class Option {
 const options = {
   __proto__: null,
 
-  doc: new Option(new Node("doc", null, [new Node("paragraph")]), function(pm, value) {
+  schema: new Option(defaultSchema, false, false),
+
+  doc: new Option(null, function(pm, value) {
     pm.setDoc(value)
   }, false),
 
@@ -22,13 +23,15 @@ const options = {
 
   place: new Option(null),
 
-  keymap: new Option(defaultKeymap),
-
-  extraKeymap: new Option(new Keymap),
+  keymap: new Option(null, (pm, value) => {
+    if (!value) pm.options.keymap = defaultKeymap(pm)
+  }),
 
   historyDepth: new Option(50),
 
-  historyEventDelay: new Option(500)
+  historyEventDelay: new Option(500),
+
+  commandParamHandler: new Option("default")
 }
 
 export function defineOption(name, defaultValue, update, updateOnInit) {
@@ -59,8 +62,9 @@ export function initOptions(pm) {
 }
 
 export function setOption(pm, name, value) {
+  let desc = options[name]
+  if (desc.update === false) throw new Error("Option '" + name + "' can not be changed")
   let old = pm.options[name]
   pm.options[name] = value
-  let desc = options[name]
   if (desc.update) desc.update(pm, value, old, false)
 }

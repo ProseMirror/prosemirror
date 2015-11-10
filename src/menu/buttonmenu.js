@@ -4,8 +4,7 @@ import {resolvePath} from "../edit/selection"
 import {Debounced} from "../util/debounce"
 
 import {Tooltip} from "./tooltip"
-import {Menu, TooltipDisplay} from "./menu"
-import {getItems, separatorItem, forceFontLoad} from "./items"
+import {Menu, TooltipDisplay, forceFontLoad, commandGroups} from "./menu"
 
 import insertCSS from "insert-css"
 import "./icons"
@@ -36,8 +35,8 @@ class ButtonMenu {
     pm.on("change", this.updateFunc)
     pm.on("blur", this.updateFunc)
 
-    this.blockItems = getItems("block")
-    this.allItems = [...getItems("inline"), separatorItem, ...this.blockItems]
+    this.blockItems = commandGroups(pm, "block")
+    this.allItems = commandGroups(pm, "inline", "block")
 
     this.pm.content.addEventListener("keydown", this.closeFunc = () => this.tooltip.close())
     this.pm.content.addEventListener("mousedown", this.closeFunc)

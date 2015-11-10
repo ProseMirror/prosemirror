@@ -10,6 +10,14 @@ export class Step {
     this.param = param
   }
 
+  apply(doc) {
+    return steps[this.name].apply(doc, this)
+  }
+
+  invert(oldDoc, map) {
+    return steps[this.name].invert(this, oldDoc, map)
+  }
+
   toJSON() {
     let impl = steps[this.name]
     return {
@@ -21,29 +29,17 @@ export class Step {
     }
   }
 
-  static fromJSON(json) {
+  static fromJSON(schema, json) {
     let impl = steps[json.name]
     return new Step(
       json.name,
       json.from && Pos.fromJSON(json.from),
       json.to && Pos.fromJSON(json.to),
       json.pos && Pos.fromJSON(json.pos),
-      impl.paramFromJSON ? impl.paramFromJSON(json.param) : json.param)
+      impl.paramFromJSON ? impl.paramFromJSON(schema, json.param) : json.param)
   }
 }
 
 const steps = Object.create(null)
 
 export function defineStep(name, impl) { steps[name] = impl }
-
-export function applyStep(doc, step) {
-  if (!(step.name in steps))
-    throw new Error("Undefined transform " + step.name)
-
-  return steps[step.name].apply(doc, step)
-}
-
-export function invertStep(step, oldDoc, map) {
-  return steps[step.name].invert(step, oldDoc, map)
-}
-

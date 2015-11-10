@@ -1,11 +1,16 @@
-export {Node, Span, nodeTypes, NodeType, findConnection} from "./node"
+export {compareMarkup} from "./node"
+export {removeStyle, sameStyles, containsStyle} from "./style"
+
+export {SchemaSpec, Schema, SchemaError,
+        NodeType, Block, Textblock, Inline, Text,
+        StyleType, Attribute} from "./schema"
+export {defaultSchema, Doc, BlockQuote, OrderedList, BulletList, ListItem,
+        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
+        CodeStyle, EmStyle, StrongStyle, LinkStyle} from "./defaultschema"
+
 export {Pos} from "./pos"
 
-import * as style from "./style"
-export {style}
-
-export {sliceBefore, sliceAfter, sliceBetween} from "./slice"
-export {stitchTextNodes, clearMarkup, spanAtOrBefore, getSpan, spanStylesAt, rangeHasStyle,
-        splitSpansAt} from "./inline"
+export {sliceBefore, sliceAfter, sliceBetween, siblingRange} from "./slice"
+export {spanAtOrBefore, getSpan, spanStylesAt, rangeHasStyle} from "./inline"
 
 export {findDiffStart, findDiffEnd} from "./diff"

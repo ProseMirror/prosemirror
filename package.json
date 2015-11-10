@@ -22,14 +22,15 @@
     "xmldom": "^0.1.0",
     "babel": "^5.1.13",
     "babelify": "^6.0.2",
-    "watchify": "^3.2.0"
+    "watchify": "^3.2.0",
+    "blint": "^0.4.0"
   },
   "scripts": {
     "test": "node test/start.js",
-    "demo": "watchify -d --outfile demo/demo-built.js -t babelify demo/demo.js",
+    "demo": "watchify -d -v --outfile demo/demo-built.js -t babelify demo/demo.js",
     "browsertests": "watchify -d --outfile demo/test-built.js -t babelify demo/test.js",
-    "dist": "node_modules/.bin/babel -d dist src",
-    "dist-watch": "node_modules/.bin/babel -w -d dist src",
+    "dist": "babel -d dist src",
+    "dist-watch": "babel -w -d dist src",
     "lint": "blint --browser --ecmaVersion 6 --forbidSemicolons src"
   }
 }

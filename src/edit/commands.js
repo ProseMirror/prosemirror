@@ -1,25 +1,92 @@
-import {Span, Node, nodeTypes, Pos, style, spanAtOrBefore} from "../model"
-import {joinPoint} from "../transform"
+import {HardBreak, BulletList, OrderedList, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
+        StrongStyle, EmStyle, CodeStyle, LinkStyle, Image, NodeType, StyleType,
+        Pos, spanAtOrBefore, containsStyle, rangeHasStyle} from "../model"
+import {joinPoint, canLift, canWrap, alreadyHasBlockType} from "../transform"
+import {browser} from "../dom"
+import sortedInsert from "../util/sortedinsert"
 
-import {charCategory} from "./char"
+import {charCategory, isExtendingChar} from "./char"
+import {Keymap} from "./keys"
 
-const commands = Object.create(null)
+const globalCommands = Object.create(null)
+const paramHandlers = Object.create(null)
 
-export function registerCommand(name, func) {
-  commands[name] = func
+export function defineCommand(name, cmd) {
+  globalCommands[name] = cmd instanceof Command ? cmd : new Command(name, cmd)
 }
 
-export function execCommand(pm, name) {
-  let ext = pm.input.commandExtensions[name]
-  if (ext && ext.high) for (let i = 0; i < ext.high.length; i++)
-    if (ext.high[i](pm) !== false) return true
-  if (ext && ext.normal) for (let i = 0; i < ext.normal.length; i++)
-    if (ext.normal[i](pm) !== false) return true
-  let base = commands[name]
-  if (base && base(pm) !== false) return true
-  if (ext && ext.low) for (let i = 0; i < ext.low.length; i++)
-    if (ext.low[i](pm) !== false) return true
-  return false
+NodeType.attachCommand = StyleType.attachCommand = function(name, create) {
+  this.register("commands", {name, create})
+}
+
+export function defineParamHandler(name, handler) {
+  paramHandlers[name] = handler
+}
+
+function getParamHandler(pm) {
+  let option = pm.options.commandParamHandler
+  if (option && paramHandlers[option]) return paramHandlers[option]
+}
+
+export class Command {
+  constructor(name, options) {
+    this.name = name
+    this.label = options.label || name
+    this.run = options.run
+    this.params = options.params || []
+    this.select = options.select || (() => true)
+    this.active = options.active || (() => false)
+    this.info = options.info || {}
+    this.display = options.display || "icon"
+  }
+
+  exec(pm, params) {
+    if (!this.params.length) return this.run(pm)
+    if (params) return this.run(pm, ...params)
+    let handler = getParamHandler(pm)
+    if (handler) handler(pm, this, params => {
+      if (params) this.run(pm, ...params)
+    })
+    else return false
+  }
+}
+
+export function initCommands(schema) {
+  let result = Object.create(null)
+  for (let cmd in globalCommands) result[cmd] = globalCommands[cmd]
+  function fromTypes(types) {
+    for (let name in types) {
+      let type = types[name], cmds = type.commands
+      if (cmds) cmds.forEach(({name, create}) => {
+        result[name] = new Command(name, create(type))
+      })
+    }
+  }
+  fromTypes(schema.nodes)
+  fromTypes(schema.styles)
+  return result
+}
+
+export function defaultKeymap(pm) {
+  let bindings = {}
+  function add(command, key) {
+    if (Array.isArray(key)) {
+      for (let i = 0; i < key.length; i++) add(command, key[i])
+    } else if (key) {
+      let [_, name, rank = 50] = /^(.+?)(?:\((\d+)\))?$/.exec(key)
+      sortedInsert(bindings[name] || (bindings[name] = []), {command, rank},
+                   (a, b) => a.rank - b.rank)
+    }
+  }
+  for (let name in pm.commands) {
+    let cmd = pm.commands[name]
+    add(name, cmd.info.key)
+    add(name, browser.mac ? cmd.info.macKey : cmd.info.pcKey)
+  }
+
+  for (let key in bindings)
+    bindings[key] = bindings[key].map(b => b.command)
+  return new Keymap(bindings)
 }
 
 function clearSel(pm) {
@@ -28,80 +95,157 @@ function clearSel(pm) {
   return tr
 }
 
-commands.insertHardBreak = pm => {
-  pm.scrollIntoView()
-  let tr = clearSel(pm), pos = pm.selection.from
-  if (pm.doc.path(pos.path).type == nodeTypes.code_block)
-    tr.insertText(pos, "\n")
+const andScroll = {scrollIntoView: true}
+
+HardBreak.attachCommand("insertHardBreak", type => ({
+  label: "Insert hard break",
+  run(pm) {
+    let tr = clearSel(pm), pos = pm.selection.from
+    if (pm.doc.path(pos.path).type.isCode)
+      tr.insertText(pos, "\n")
+    else
+      tr.insert(pos, pm.schema.node(type))
+    pm.apply(tr, andScroll)
+  },
+  info: {key: ["Mod-Enter", "Shift-Enter"]}
+}))
+
+function inlineStyleActive(pm, type) {
+  let sel = pm.selection
+  if (sel.empty)
+    return containsStyle(pm.activeStyles(), type)
   else
-    tr.insert(pos, new Span("hard_break"))
-  return pm.apply(tr)
+    return rangeHasStyle(pm.doc, sel.from, sel.to, type)
 }
 
-commands.setStrong = pm => pm.setInlineStyle(style.strong, true)
-commands.unsetStrong = pm => pm.setInlineStyle(style.strong, false)
-commands.toggleStrong = pm => pm.setInlineStyle(style.strong, null)
-
-commands.setEm = pm => pm.setInlineStyle(style.em, true)
-commands.unsetEm = pm => pm.setInlineStyle(style.em, false)
-commands.toggleEm = pm => pm.setInlineStyle(style.em, null)
-
-commands.setCode = pm => pm.setInlineStyle(style.code, true)
-commands.unsetCode = pm => pm.setInlineStyle(style.code, false)
-commands.toggleCode = pm => pm.setInlineStyle(style.code, null)
-
-function blockBefore(pos) {
-  for (let i = pos.path.length - 1; i >= 0; i--) {
-    let offset = pos.path[i] - 1
-    if (offset >= 0) return new Pos(pos.path.slice(0, i), offset)
-  }
+function canAddInline(pm, type) {
+  let {from, to, empty} = pm.selection
+  if (empty)
+    return !containsStyle(pm.activeStyles(), type) && pm.doc.path(from.path).type.canContainStyle(type)
+  let can = false
+  pm.doc.nodesBetween(from, to, node => {
+    if (can || node.isTextblock && !node.type.canContainStyle(type)) return false
+    if (node.isInline && !containsStyle(node.styles, type)) can = true
+  })
+  return can
 }
 
-function delBlockBackward(pm, tr, pos) {
-  if (pos.depth == 1) { // Top level block, join with block above
-    let iBefore = Pos.before(pm.doc, new Pos([], pos.path[0]))
-    let bBefore = blockBefore(pos)
-    if (iBefore && bBefore) {
-      if (iBefore.cmp(bBefore) > 0) bBefore = null
-      else iBefore = null
+function inlineStyleApplies(pm, type) {
+  let {from, to} = pm.selection
+  let relevant = false
+  pm.doc.nodesBetween(from, to, node => {
+    if (node.isTextblock) {
+      if (node.type.canContainStyle(type)) relevant = true
+      return false
     }
-    if (iBefore) {
-      tr.delete(iBefore, pos)
-      let joinable = joinPoint(tr.doc, tr.map(pos).pos, 1)
-      if (joinable) tr.join(joinable)
-    } else if (bBefore) {
-      tr.delete(bBefore, bBefore.shift(1))
-    }
-  } else {
-    let last = pos.depth - 1
-    let parent = pm.doc.path(pos.path.slice(0, last))
-    let offset = pos.path[last]
-    // Top of list item below other list item
-    // Join with the one above
-    if (parent.type == nodeTypes.list_item &&
-        offset == 0 && pos.path[last - 1] > 0) {
-      tr.join(joinPoint(pm.doc, pos))
-    // Any other nested block, lift up
-    } else {
-      tr.lift(pos, pos)
-      let next = pos.depth - 2
-      // Split list item when we backspace back into it
-      if (next > 0 && offset > 0 &&
-          pm.doc.path(pos.path.slice(0, next)).type == nodeTypes.list_item)
-        tr.split(new Pos(pos.path.slice(0, next), pos.path[next] + 1))
-    }
-  }
+  })
+  return relevant
 }
 
+function generateStyleCommands(type, name, labelName, info) {
+  if (!labelName) labelName = name
+  let cap = name.charAt(0).toUpperCase() + name.slice(1)
+  type.attachCommand("set" + cap, type => ({
+    label: "Set " + labelName,
+    run(pm) { pm.setStyle(type.create(), true) },
+    select(pm) { return canAddInline(pm, type) }
+  }))
+  type.attachCommand("unset" + cap, type => ({
+    label: "Remove " + labelName,
+    run(pm) { pm.setStyle(type.create(), false) },
+    select(pm) { return inlineStyleActive(pm, type) }
+  }))
+  type.attachCommand(name, type => ({
+    label: "Toggle " + labelName,
+    run(pm) { pm.setStyle(type.create(), null) },
+    active(pm) { return inlineStyleActive(pm, type) },
+    select(pm) { return inlineStyleApplies(pm, type) },
+    info
+  }))
+}
+
+generateStyleCommands(StrongStyle, "strong", null, {
+  menuGroup: "inline",
+  menuRank: 20,
+  key: "Mod-B"
+})
+
+generateStyleCommands(EmStyle, "em", "emphasis", {
+  menuGroup: "inline",
+  menuRank: 21,
+  key: "Mod-I"
+})
+
+generateStyleCommands(CodeStyle, "code", null, {
+  menuGroup: "inline",
+  menuRank: 22,
+  key: "Mod-`"
+})
+
+LinkStyle.attachCommand("unlink", type => ({
+  label: "Unlink",
+  run(pm) { pm.setStyle(type, false) },
+  select(pm) { return inlineStyleActive(pm, type) },
+  active() { return true },
+  info: {menuGroup: "inline", menuRank: 30}
+}))
+LinkStyle.attachCommand("link", type => ({
+  label: "Add link",
+  run(pm, href, title) { pm.setStyle(type.create({href, title}), true) },
+  params: [
+    {name: "Target", type: "text"},
+    {name: "Title", type: "text", default: ""}
+  ],
+  select(pm) { return inlineStyleApplies(pm, type) && !inlineStyleActive(pm, type) },
+  info: {menuGroup: "inline", menuRank: 30}
+}))
+
+Image.attachCommand("insertImage", type => ({
+  label: "Insert image",
+  run(pm, src, alt, title) {
+    let sel = pm.selection, tr = pm.tr
+    tr.delete(sel.from, sel.to)
+    return pm.apply(tr.insertInline(sel.from, type.create({src, title, alt})))
+  },
+  params: [
+    {name: "Image URL", type: "text"},
+    {name: "Description / alternative text", type: "text", default: ""},
+    {name: "Title", type: "text", default: ""}
+  ],
+  select(pm) {
+    return pm.doc.path(pm.selection.from.path).type.canContainType(type)
+  },
+  info: {menuGroup: "inline", menuRank: 40}
+}))
+
+/**
+ * Get an offset moving backward from a current offset inside a node.
+ *
+ * @param  {Object} parent The parent node.
+ * @param  {int}    offset Offset to move from inside the node.
+ * @param  {string} by     Size to delete by. Either "char" or "word".
+ * @return {[type]}        [description]
+ */
 function moveBackward(parent, offset, by) {
-  if (by == "char") return offset - 1
-  if (by == "word") {
-    let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
-    let cat = null, counted = 0
-    for (; nodeOffset >= 0; nodeOffset--, innerOffset = null) {
-      let child = parent.content[nodeOffset], size = child.size
-      if (child.type != nodeTypes.text) return cat ? offset : offset - 1
+  if (by != "char" && by != "word")
+    throw new Error("Unknown motion unit: " + by)
 
+  let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
+  let cat = null, counted = 0
+  for (; nodeOffset >= 0; nodeOffset--, innerOffset = null) {
+    let child = parent.child(nodeOffset), size = child.offset
+    if (!child.isText) return cat ? offset : offset - 1
+
+    if (by == "char") {
+      for (let i = innerOffset == null ? size : innerOffset; i > 0; i--) {
+        if (!isExtendingChar(child.text.charAt(i - 1)))
+          return offset - 1
+        offset--
+      }
+    } else if (by == "word") {
+      // Work from the current position backwards through text of a singular
+      // character category (e.g. "cat" of "#!*") until reaching a character in a
+      // different category (i.e. the end of the word).
       for (let i = innerOffset == null ? size : innerOffset; i > 0; i--) {
         let nextCharCat = charCategory(child.text.charAt(i - 1))
         if (cat == null || counted == 1 && cat == "space") cat = nextCharCat
@@ -110,65 +254,106 @@ function moveBackward(parent, offset, by) {
         counted++
       }
     }
-    return offset
   }
-  throw new Error("Unknown motion unit: " + by)
+  return offset
 }
 
-function delBackward(pm, by) {
-  pm.scrollIntoView()
+defineCommand("deleteSelection", {
+  label: "Delete the selection",
+  run(pm) {
+    let {from, to, empty} = pm.selection
+    if (empty) return false
+    return pm.apply(pm.tr.delete(from, to), andScroll)
+  },
+  info: {key: ["Backspace(10)", "Delete(10)", "Mod-Backspace(10)", "Mod-Delete(10)"],
+         macKey: ["Ctrl-H(10)", "Alt-Backspace(10)", "Ctrl-D(10)", "Ctrl-Alt-Backspace(10)", "Alt-Delete(10)", "Alt-D(10)"]}
+})
 
-  let tr = pm.tr, sel = pm.selection, from = sel.from
-  if (!sel.empty)
-    tr.delete(from, sel.to)
-  else if (from.offset == 0)
-    delBlockBackward(pm, tr, from)
-  else
-    tr.delete(new Pos(from.path, moveBackward(pm.doc.path(from.path), from.offset, by)), from)
-  return pm.apply(tr)
-}
+function deleteBarrier(pm, cut) {
+  let around = pm.doc.path(cut.path)
+  let before = around.child(cut.offset - 1), after = around.child(cut.offset)
+  if (before.type.canContainChildren(after) && pm.apply(pm.tr.join(cut), andScroll) !== false)
+    return
 
-commands.delBackward = pm => delBackward(pm, "char")
-
-commands.delWordBackward = pm => delBackward(pm, "word")
-
-function blockAfter(doc, pos) {
-  let path = pos.path
-  while (path.length > 0) {
-    let end = path.length - 1
-    let offset = path[end] + 1
-    path = path.slice(0, end)
-    let node = doc.path(path)
-    if (offset < node.content.length)
-      return new Pos(path, offset)
-  }
-}
-
-function delBlockForward(pm, tr, pos) {
-  let lst = pos.depth - 1
-  let iAfter = Pos.after(pm.doc, new Pos(pos.path.slice(0, lst), pos.path[lst] + 1))
-  let bAfter = blockAfter(pm.doc, pos)
-  if (iAfter && bAfter) {
-    if (iAfter.cmp(bAfter.shift(1)) < 0) bAfter = null
-    else iAfter = null
+  let conn
+  if (after.isTextblock && (conn = before.type.findConnection(after.type))) {
+    let tr = pm.tr, end = cut.move(1)
+    tr.step("ancestor", cut, end, null, {wrappers: [before, ...conn.map(t => t.create())]})
+    tr.join(end)
+    tr.join(cut)
+    if (pm.apply(tr, andScroll) !== false) return
   }
 
-  if (iAfter) {
-    tr.delete(pos, iAfter)
-  } else if (bAfter) {
-    tr.delete(bAfter, bAfter.shift(1))
-  }
+  let inner = Pos.after(pm.doc, cut)
+  return !inner ? false : pm.apply(pm.tr.lift(inner), andScroll)
 }
+
+defineCommand("joinBackward", {
+  label: "Join with the block above",
+  run(pm) {
+    let {head, empty} = pm.selection
+    if (!empty || head.offset > 0) return false
+
+    // Find the node before this one
+    let before, cut
+    for (let i = head.path.length - 1; !before && i >= 0; i--) if (head.path[i] > 0) {
+      cut = head.shorten(i)
+      before = pm.doc.path(cut.path).child(cut.offset - 1)
+    }
+
+    // If there is no node before this, try to lift
+    if (!before)
+      return pm.apply(pm.tr.lift(head), andScroll)
+
+    // If the node doesn't allow children, delete it
+    if (before.type.contains == null)
+      return pm.apply(pm.tr.delete(cut.move(-1), cut), andScroll)
+
+    // Apply the joining algorithm
+    return deleteBarrier(pm, cut)
+  },
+  info: {key: ["Backspace(30)", "Mod-Backspace(30)"]}
+})
+
+defineCommand("deleteCharBefore", {
+  label: "Delete a character before the cursor",
+  run(pm) {
+    let {head, empty} = pm.selection
+    if (!empty || head.offset == 0) return false
+    let from = moveBackward(pm.doc.path(head.path), head.offset, "char")
+    return pm.apply(pm.tr.delete(new Pos(head.path, from), head), andScroll)
+  },
+  info: {key: "Backspace(60)", macKey: "Ctrl-H(40)"}
+})
+
+defineCommand("deleteWordBefore", {
+  label: "Delete the word before the cursor",
+  run(pm) {
+    let {head, empty} = pm.selection
+    if (!empty || head.offset == 0) return false
+    let from = moveBackward(pm.doc.path(head.path), head.offset, "word")
+    return pm.apply(pm.tr.delete(new Pos(head.path, from), head), andScroll)
+  },
+  info: {key: "Mod-Backspace(40)", macKey: "Alt-Backspace(40)"}
+})
 
 function moveForward(parent, offset, by) {
-  if (by == "char") return offset + 1
-  if (by == "word") {
-    let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
-    let cat = null, counted = 0
-    for (; nodeOffset < parent.content.length; nodeOffset++, innerOffset = 0) {
-      let child = parent.content[nodeOffset], size = child.size
-      if (child.type != nodeTypes.text) return cat ? offset : offset + 1
+  if (by != "char" && by != "word")
+    throw new Error("Unknown motion unit: " + by)
 
+  let {offset: nodeOffset, innerOffset} = spanAtOrBefore(parent, offset)
+  let cat = null, counted = 0
+  for (; nodeOffset < parent.length; nodeOffset++, innerOffset = 0) {
+    let child = parent.child(nodeOffset), size = child.offset
+    if (!child.isText) return cat ? offset : offset + 1
+
+    if (by == "char") {
+      for (let i = innerOffset; i < size; i++) {
+        if (!isExtendingChar(child.text.charAt(i + 1)))
+          return offset + 1
+        offset++
+      }
+    } else if (by == "word") {
       for (let i = innerOffset; i < size; i++) {
         let nextCharCat = charCategory(child.text.charAt(i))
         if (cat == null || counted == 1 && cat == "space") cat = nextCharCat
@@ -177,110 +362,293 @@ function moveForward(parent, offset, by) {
         counted++
       }
     }
-    return offset
   }
-  throw new Error("Unknown motion unit: " + by)
+  return offset
 }
 
-function delForward(pm, by) {
-  pm.scrollIntoView()
-  let tr = pm.tr, sel = pm.selection, from = sel.from
-  if (!sel.empty) {
-    tr.delete(from, sel.to)
-  } else {
-    let parent = pm.doc.path(from.path)
-    if (from.offset == parent.size)
-      delBlockForward(pm, tr, from)
-    else
-      tr.delete(from, new Pos(from.path, moveForward(parent, from.offset, by)))
+defineCommand("joinForward", {
+  label: "Join with the block below",
+  run(pm) {
+    let {head, empty} = pm.selection
+    if (!empty || head.offset < pm.doc.path(head.path).maxOffset) return false
+
+    // Find the node after this one
+    let after, cut
+    for (let i = head.path.length - 1; !after && i >= 0; i--) {
+      cut = head.shorten(i, 1)
+      let parent = pm.doc.path(cut.path)
+      if (cut.offset < parent.length)
+        after = parent.child(cut.offset)
+    }
+
+    // If there is no node after this, there's nothing to do
+    if (!after) return false
+
+    // If the node doesn't allow children, delete it
+    if (after.type.contains == null)
+      return pm.apply(pm.tr.delete(cut, cut.move(1)), andScroll)
+
+    // Apply the joining algorithm
+    return deleteBarrier(pm, cut)
+  },
+  info: {key: ["Delete(30)", "Mod-Delete(30)"]}
+})
+
+defineCommand("deleteCharAfter", {
+  label: "Delete a character after the cursor",
+  run(pm) {
+    let {head, empty} = pm.selection
+    if (!empty || head.offset == pm.doc.path(head.path).maxOffset) return false
+    let to = moveForward(pm.doc.path(head.path), head.offset, "char")
+    return pm.apply(pm.tr.delete(head, new Pos(head.path, to)), andScroll)
+  },
+  info: {key: "Delete(60)", macKey: "Ctrl-D(60)"}
+})
+
+defineCommand("deleteWordAfter", {
+  label: "Delete a character after the cursor",
+  run(pm) {
+    let {head, empty} = pm.selection
+    if (!empty || head.offset == pm.doc.path(head.path).maxOffset) return false
+    let to = moveForward(pm.doc.path(head.path), head.offset, "word")
+    return pm.apply(pm.tr.delete(head, new Pos(head.path, to)), andScroll)
+  },
+  info: {key: "Mod-Delete(40)", macKey: ["Ctrl-Alt-Backspace(40)", "Alt-Delete(40)", "Alt-D(40)"]}
+})
+
+defineCommand("join", {
+  label: "Join with above block",
+  run(pm) {
+    let point = joinPoint(pm.doc, pm.selection.head)
+    if (!point) return false
+    return pm.apply(pm.tr.join(point))
+  },
+  select(pm) { return joinPoint(pm.doc, pm.selection.head) },
+  info: {
+    menuGroup: "block", menuRank: 80,
+    key: "Alt-Up"
   }
-  return pm.apply(tr)
-}
+})
 
-commands.delForward = pm => delForward(pm, "char")
-
-commands.delWordForward = pm => delForward(pm, "word")
-
-function scrollAnd(pm, value) {
-  pm.scrollIntoView()
-  return value
-}
-
-commands.undo = pm => scrollAnd(pm, pm.history.undo())
-commands.redo = pm => scrollAnd(pm, pm.history.redo())
-
-commands.join = pm => {
-  let point = joinPoint(pm.doc, pm.selection.head)
-  if (!point) return false
-  return pm.apply(pm.tr.join(point))
-}
-
-commands.lift = pm => {
-  let sel = pm.selection
-  let result = pm.apply(pm.tr.lift(sel.from, sel.to))
-  if (result !== false) pm.scrollIntoView()
-  return result
-}
-
-function wrap(pm, type) {
-  let sel = pm.selection
-  pm.scrollIntoView()
-  return pm.apply(pm.tr.wrap(sel.from, sel.to, new Node(type)))
-}
-
-commands.wrapBulletList = pm => wrap(pm, "bullet_list")
-commands.wrapOrderedList = pm => wrap(pm, "ordered_list")
-commands.wrapBlockquote = pm => wrap(pm, "blockquote")
-
-commands.endBlock = pm => {
-  pm.scrollIntoView()
-  let pos = pm.selection.from
-  let tr = clearSel(pm)
-  let block = pm.doc.path(pos.path)
-  if (pos.depth > 1 && block.content.length == 0 &&
-      tr.lift(pos).steps.length) {
-    // Lift
-  } else if (block.type == nodeTypes.code_block && pos.offset < block.size) {
-    tr.insertText(pos, "\n")
-  } else {
-    let end = pos.depth - 1
-    let isList = end > 0 && pos.path[end] == 0 &&
-        pm.doc.path(pos.path.slice(0, end)).type == nodeTypes.list_item
-    let type = pos.offset == block.size ? new Node("paragraph") : null
-    tr.split(pos, isList ? 2 : 1, type)
+defineCommand("lift", {
+  label: "Lift out of enclosing block",
+  run(pm) {
+    let sel = pm.selection
+    return pm.apply(pm.tr.lift(sel.from, sel.to), andScroll)
+  },
+  select(pm) {
+    let sel = pm.selection
+    return canLift(pm.doc, sel.from, sel.to)
+  },
+  info: {
+    menuGroup: "block", menuRank: 75,
+    key: "Alt-Left"
   }
-  return pm.apply(tr)
+})
+
+function wrapCommand(type, name, labelName, info) {
+  type.attachCommand("wrap" + name, type => ({
+    label: "Wrap in " + labelName,
+    run(pm) {
+      let sel = pm.selection
+      return pm.apply(pm.tr.wrap(sel.from, sel.to, type.create()), andScroll)
+    },
+    select(pm) {
+      let {from, to} = pm.selection
+      return canWrap(pm.doc, from, to, type.create())
+    },
+    info
+  }))
 }
+
+wrapCommand(BulletList, "BulletList", "bullet list", {
+  menuGroup: "block",
+  menuRank: 40,
+  key: ["Alt-Right '*'", "Alt-Right '-'"]
+})
+
+wrapCommand(OrderedList, "OrderedList", "ordered list", {
+  menuGroup: "block",
+  menuRank: 41,
+  key: "Alt-Right '1'"
+})
+
+wrapCommand(BlockQuote, "BlockQuote", "block quote", {
+  menuGroup: "block",
+  menuRank: 45,
+  key: ["Alt-Right '>'", "Alt-Right '\"'"]
+})
+
+defineCommand("newlineInCode", {
+  label: "Insert newline",
+  run(pm) {
+    let {from, to} = pm.selection, block
+    if (Pos.samePath(from.path, to.path) &&
+        (block = pm.doc.path(from.path)).type.isCode &&
+        to.offset < block.maxOffset) {
+      return pm.apply(clearSel(pm).insertText(from, "\n"), andScroll)
+    }
+    return false
+  },
+  info: {key: "Enter(10)"}
+})
+
+defineCommand("liftEmptyBlock", {
+  label: "Move current block up",
+  run(pm) {
+    let {head, empty} = pm.selection
+    if (!empty || head.offset > 0) return false
+    if (head.path[head.path.length - 1] > 0 &&
+        pm.apply(pm.tr.split(head.shorten())) !== false)
+      return
+    return pm.apply(pm.tr.lift(head), andScroll)
+  },
+  info: {key: "Enter(30)"}
+})
+
+defineCommand("splitBlock", {
+  label: "Split the current block",
+  run(pm) {
+    let {from, to} = pm.selection, block = pm.doc.path(to.path)
+    let type = to.offset == block.maxOffset ? pm.schema.defaultTextblockType().create() : null
+    return pm.apply(clearSel(pm).split(from, 1, type), andScroll)
+  },
+  info: {key: "Enter(60)"}
+})
 
 function setType(pm, type, attrs) {
   let sel = pm.selection
-  pm.scrollIntoView()
-  return pm.apply(pm.tr.setBlockType(sel.from, sel.to, new Node(type, attrs)))
+  return pm.apply(pm.tr.setBlockType(sel.from, sel.to, pm.schema.node(type, attrs)), andScroll)
 }
 
-commands.makeH1 = pm => setType(pm, "heading", {level: 1})
-commands.makeH2 = pm => setType(pm, "heading", {level: 2})
-commands.makeH3 = pm => setType(pm, "heading", {level: 3})
-commands.makeH4 = pm => setType(pm, "heading", {level: 4})
-commands.makeH5 = pm => setType(pm, "heading", {level: 5})
-commands.makeH6 = pm => setType(pm, "heading", {level: 6})
+function blockTypeCommand(type, name, labelName, attrs, key) {
+  if (!attrs) attrs = {}
+  type.attachCommand(name, type => ({
+    label: "Change to " + labelName,
+    run(pm) { return setType(pm, type, attrs) },
+    select(pm) {
+      let sel = pm.selection
+      return !alreadyHasBlockType(pm.doc, sel.from, sel.to, type, attrs)
+    },
+    info: {key}
+  }))
+}
 
-commands.makeParagraph = pm => setType(pm, "paragraph")
-commands.makeCodeBlock = pm => setType(pm, "code_block")
+blockTypeCommand(Heading, "makeH1", "heading 1", {level: 1}, "Mod-H '1'")
+blockTypeCommand(Heading, "makeH2", "heading 2", {level: 2}, "Mod-H '2'")
+blockTypeCommand(Heading, "makeH3", "heading 3", {level: 3}, "Mod-H '3'")
+blockTypeCommand(Heading, "makeH4", "heading 4", {level: 4}, "Mod-H '4'")
+blockTypeCommand(Heading, "makeH5", "heading 5", {level: 5}, "Mod-H '5'")
+blockTypeCommand(Heading, "makeH6", "heading 6", {level: 6}, "Mod-H '6'")
+
+blockTypeCommand(Paragraph, "makeParagraph", "paragraph", null, "Mod-P")
+blockTypeCommand(CodeBlock, "makeCodeBlock", "code block", null, "Mod-\\")
 
 function insertOpaqueBlock(pm, type, attrs) {
-  type = nodeTypes[type]
-  pm.scrollIntoView()
   let pos = pm.selection.from
   let tr = clearSel(pm)
-  let parent = tr.doc.path(pos.path)
-  if (parent.type.type != type.type) return false
+  let parent = tr.doc.path(pos.shorten().path)
+  let node = type.create(attrs)
+  if (!parent.type.canContain(node)) return false
   let off = 0
   if (pos.offset) {
     tr.split(pos)
     off = 1
   }
-  return pm.apply(tr.insert(pos.shorten(null, off), new Node(type, attrs)))
+  return pm.apply(tr.insert(pos.shorten(null, off), node), andScroll)
 }
 
-commands.insertRule = pm => insertOpaqueBlock(pm, "horizontal_rule")
+HorizontalRule.attachCommand("insertHorizontalRule", type => ({
+  label: "Insert horizontal rule",
+  run(pm) { return insertOpaqueBlock(pm, type) },
+  info: {key: "Mod-Space"}
+}))
+
+defineCommand("undo", {
+  label: "Undo last change",
+  run(pm) { pm.scrollIntoView(); return pm.history.undo() },
+  select(pm) { return pm.history.canUndo() },
+  info: {
+    menuGroup: "history",
+    menuRank: 10,
+    key: "Mod-Z"
+  }
+})
+
+defineCommand("redo", {
+  label: "Redo last undone change",
+  run(pm) { pm.scrollIntoView(); return pm.history.redo() },
+  select(pm) { return pm.history.canRedo() },
+  info: {
+    menuGroup: "history",
+    menuRank: 20,
+    key: ["Mod-Y", "Shift-Mod-Z"]
+  }
+})
+
+defineCommand("textblockType", {
+  label: "Change block type",
+  run(pm, type) {
+    // FIXME do nothing if type is current type
+    let sel = pm.selection
+    return pm.apply(pm.tr.setBlockType(sel.from, sel.to, type))
+  },
+  params: [
+    {name: "Type", type: "select", options: listTextblockTypes, default: currentTextblockType, defaultLabel: "Type..."}
+  ],
+  display: "select",
+  info: {menuGroup: "block", menuRank: 10}
+})
+
+Paragraph.prototype.textblockTypes = [{label: "Normal", rank: 10}]
+CodeBlock.prototype.textblockTypes = [{label: "Code", rank: 20}]
+Heading.prototype.textblockTypes = [1, 2, 3, 4, 5, 6].map(n => ({label: "Head " + n, attrs: {level: n}, rank: 30 + n}))
+
+function listTextblockTypes(pm) {
+  let cached = pm.schema.cached.textblockTypes
+  if (cached) return cached
+
+  let found = []
+  for (let name in pm.schema.nodes) {
+    let type = pm.schema.nodes[name]
+    if (!type.textblockTypes) continue
+    for (let i = 0; i < type.textblockTypes.length; i++) {
+      let info = type.textblockTypes[i]
+      sortedInsert(found, {label: info.label, value: type.create(info.attrs), rank: info.rank},
+                   (a, b) => a.rank - b.rank)
+    }
+  }
+  return pm.schema.cached.textblockTypes = found
+}
+
+function currentTextblockType(pm) {
+  let sel = pm.selection
+  if (!Pos.samePath(sel.head.path, sel.anchor.path)) return null
+  let types = listTextblockTypes(pm)
+  let focusNode = pm.doc.path(pm.selection.head.path)
+  for (let i = 0; i < types.length; i++)
+    if (types[i].value.sameMarkup(focusNode)) return types[i]
+}
+
+function nodeAboveSelection(pm) {
+  let node = pm.selectedNodePath
+  if (node) return node.depth && node.shorten()
+
+  let {head, anchor} = pm.selection, i = 0
+  for (; i < head.depth && i < anchor.depth; i++)
+    if (head.path[i] != anchor.path[i]) break
+  return i == 0 ? false : head.shorten(i - 1)
+}
+
+defineCommand("selectParent", {
+  label: "Select parent node",
+  run(pm) {
+    let node = nodeAboveSelection(pm)
+    if (!node) return false
+    pm.setNodeSelection(node)
+  },
+  select(pm) {
+    return nodeAboveSelection(pm)
+  },
+  info: {key: "Esc"}
+})

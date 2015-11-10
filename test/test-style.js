@@ -1,80 +1,86 @@
-import {style, spanStylesAt} from "../src/model"
+import {sameStyles, spanStylesAt, defaultSchema as schema} from "../src/model"
 import {Failure} from "./failure"
 import {defTest} from "./tests"
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br} from "./build"
+import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, a, a2, br} from "./build"
 
 function assert(name, value) {
   if (!value) throw new Failure("Assertion failed: " + name)
 }
 
 function same(name, value, expected) {
-  assert(name, (Array.isArray(expected) ? style.sameSet : style.same)(value, expected))
+  assert(name, Array.isArray(expected) ? sameStyles(value, expected) : expected.eq(value))
 }
 
+let em_ = schema.style("em")
+let strong = schema.style("strong")
+let link = (href, title) => schema.style("link", {href, title})
+let code = schema.style("code")
+
 defTest("style_same", () => {
-  assert("empty", style.sameSet([], []))
-  assert("two", style.sameSet([style.em, style.strong], [style.em, style.strong]))
-  assert("diff set", !style.sameSet([style.em, style.strong], [style.em, style.code]))
-  assert("diff size", !style.sameSet([style.em, style.strong], [style.em, style.strong, style.code]))
-  assert("links", style.same(style.link("http://foo"), style.link("http://foo")))
-  assert("diff links", !style.same(style.link("http://foo"), style.link("http://bar")))
-  assert("diff title", !style.same(style.link("http://foo", "A"), style.link("http://foo", "B")))
-  assert("link in set", style.sameSet([style.link("http://foo"), style.code],
-                                      [style.link("http://foo"), style.code]))
-  assert("diff link in set", !style.sameSet([style.link("http://foo"), style.code],
-                                            [style.link("http://bar"), style.code]))
+  assert("empty", sameStyles([], []))
+  assert("two", sameStyles([em_, strong], [em_, strong]))
+  assert("diff set", !sameStyles([em_, strong], [em_, code]))
+  assert("diff size", !sameStyles([em_, strong], [em_, strong, code]))
+  assert("links", link("http://foo").eq(link("http://foo")))
+  assert("diff links", !link("http://foo").eq(link("http://bar")))
+  assert("diff title", !link("http://foo", "A").eq(link("http://foo", "B")))
+  assert("link in set", sameStyles([link("http://foo"), code],
+                                   [link("http://foo"), code]))
+  assert("diff link in set", !sameStyles([link("http://foo"), code],
+                                         [link("http://bar"), code]))
 })
 
 defTest("style_add", () => {
-  assert("from empty", style.add([], style.em), [style.em])
-  assert("duplicate", style.add([style.em], style.em), [style.em])
-  assert("at start", style.add([style.strong], style.em), [style.em, style.strong])
-  assert("at end", style.add([style.em], style.strong), [style.em, style.strong])
-  assert("replace link", style.add([style.em, style.link("http://foo")], style.link("http://bar")),
-         [style.em, style.link("http://bar")])
-  assert("same link", style.add([style.em, style.link("http://foo")], style.link("http://foo")),
-         [style.em, style.link("http://foo")])
-  assert("code at end", style.add([style.em, style.strong, style.link("http://foo")], style.code),
-         [style.em, style.strong, style.link("http://foo"), style.code])
+  assert("from empty", em_.addToSet([]), [em_])
+  assert("duplicate", em_.addToSet([em_]), [em_])
+  assert("at start", em_.addToSet([strong]), [em_, strong])
+  assert("at end", strong.addToSet([em_]), [em_, strong])
+  assert("replace link", link("http://bar").addToSet([em_, link("http://foo")]),
+         [em_, link("http://bar")])
+  assert("same link", link("http://foo").addToSet([em_, link("http://foo")]),
+         [em_, link("http://foo")])
+  assert("code at end", code.addToSet([em_, strong, link("http://foo")]),
+         [em_, strong, link("http://foo"), code])
+  assert("strong in middle", strong.addToSet([em_, code]), [em_, strong, code])
 })
 
 defTest("style_remove", () => {
-  assert("empty", style.remove([], style.em), [])
-  assert("single", style.remove([style.em], style.em), []),
-  assert("not in set", style.remove([style.em], style.strong), style.em)
-  assert("link", style.remove([style.link("http://foo")], style.link("http://foo")), [])
-  assert("different link", style.remove([style.link("http://foo")], style.link("http://foo", "title")),
-         [style.link("http://foo")])
+  assert("empty", em_.removeFromSet([]), [])
+  assert("single", em_.removeFromSet([em_]), []),
+  assert("not in set", strong.removeFromSet([em_]), [em_])
+  assert("link", link("http://foo").removeFromSet([link("http://foo")]), [])
+  assert("different link", link("http://foo", "title").removeFromSet([link("http://foo")]),
+         [link("http://foo")])
 })
 
 function has(name, doc, st, result) {
   defTest("has_style_" + name, function() {
-    if (style.contains(spanStylesAt(doc, doc.tag.a), st) != result)
+    if (st.isInSet(spanStylesAt(doc, doc.tag.a)) != result)
       throw new Failure("hasStyle(" + doc + ", " + doc.tag.a + ", " + st.type + ") returned " + !result)
   })
 }
 
 has("simple",
     doc(p(em("fo<a>o"))),
-    style.em,
+    em_,
     true)
 has("simple_not",
     doc(p(em("fo<a>o"))),
-    style.strong,
+    strong,
     false)
 has("after",
     doc(p(em("hi"), "<a> there")),
-    style.em,
+    em_,
     true)
 has("before",
     doc(p("one <a>", em("two"))),
-    style.em,
+    em_,
     false)
 has("start",
     doc(p(em("<a>one"))),
-    style.em,
+    em_,
     true)
 has("different_link",
     doc(p(a("li<a>nk"))),
-    style.link("http://baz"),
+    link("http://baz"),
     false)

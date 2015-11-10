@@ -1,20 +1,21 @@
-import {style} from "../model"
-import {defineTarget} from "./convert"
-
-// FIXME un-export, define proper extension mechanism
-export const render = Object.create(null), renderStyle = Object.create(null)
+import {Text, BlockQuote, OrderedList, BulletList, ListItem,
+        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
+        EmStyle, StrongStyle, LinkStyle, CodeStyle} from "../model"
+import {defineTarget} from "./index"
 
 let doc = null
 
-export function toDOM(node, options) {
-  doc = options.document
-  return renderNodes(node.content, options)
+// declare_global: window
+
+export function toDOM(node, options = {}) {
+  doc = options.document || window.document
+  return renderNodes(node.children, options)
 }
 
 defineTarget("dom", toDOM)
 
 export function toHTML(node, options) {
-  let wrap = options.document.createElement("div")
+  let wrap = (options && options.document || window.document).createElement("div")
   wrap.appendChild(toDOM(node, options))
   return wrap.innerHTML
 }
@@ -23,8 +24,8 @@ defineTarget("html", toHTML)
 
 export function renderNodeToDOM(node, options, offset) {
   let dom = renderNode(node, options, offset)
-  if (options.renderInlineFlat && node.type.type == "span") {
-    dom = wrapInlineFlat(node, dom)
+  if (options.renderInlineFlat && node.isInline) {
+    dom = wrapInlineFlat(node, dom, options)
     dom = options.renderInlineFlat(node, dom, offset) || dom
   }
   return dom
@@ -41,17 +42,17 @@ function elt(name, ...children) {
 
 function wrap(node, options, type) {
   let dom = elt(type || node.type.name)
-  if (node.type.contains != "span")
-    renderNodesInto(node.content, dom, options)
+  if (!node.isTextblock)
+    renderNodesInto(node.children, dom, options)
   else if (options.renderInlineFlat)
-    renderInlineContentFlat(node.content, dom, options)
+    renderInlineContentFlat(node.children, dom, options)
   else
-    renderInlineContent(node.content, dom, options)
+    renderInlineContent(node.children, dom, options)
   return dom
 }
 
 function wrapIn(type) {
-  return function(node, options) { return wrap(node, options, type) }
+  return (node, options) => wrap(node, options, type)
 }
 
 function renderNodes(nodes, options) {
@@ -61,8 +62,12 @@ function renderNodes(nodes, options) {
 }
 
 function renderNode(node, options, offset) {
-  let dom = render[node.type.name](node, options)
-  if (options.onRender)
+  let dom = node.type.serializeDOM(node, options)
+  for (let attr in node.type.attrs) {
+    let desc = node.type.attrs[attr]
+    if (desc.serializeDOM) desc.serializeDOM(dom, node.attrs[attr], options, node)
+  }
+  if (options.onRender && node.isBlock)
     dom = options.onRender(node, dom, offset) || dom
   return dom
 }
@@ -82,7 +87,7 @@ function renderInlineContent(nodes, where, options) {
     let node = nodes[i], styles = node.styles
     let keep = 0
     for (; keep < Math.min(active.length, styles.length); ++keep)
-      if (!style.same(active[keep], styles[keep])) break
+      if (!styles[keep].eq(active[keep])) break
     while (keep < active.length) {
       active.pop()
       top = top.parentNode
@@ -90,16 +95,25 @@ function renderInlineContent(nodes, where, options) {
     while (active.length < styles.length) {
       let add = styles[active.length]
       active.push(add)
-      top = top.appendChild(renderStyle[add.type](add))
+      top = top.appendChild(renderStyle(add, options))
     }
     top.appendChild(renderNode(node, options, i))
   }
 }
 
-function wrapInlineFlat(node, dom) {
+function renderStyle(marker, options) {
+  let dom = marker.type.serializeDOM(marker, options)
+  for (let attr in marker.type.attrs) {
+    let desc = marker.type.attrs[attr]
+    if (desc.serializeDOM) desc.serializeDOM(dom, marker.attrs[attr], options)
+  }
+  return dom
+}
+
+function wrapInlineFlat(node, dom, options) {
   let styles = node.styles
   for (let i = styles.length - 1; i >= 0; i--) {
-    let wrap = renderStyle[styles[i].type](styles[i])
+    let wrap = renderStyle(styles[i], options)
     wrap.appendChild(dom)
     dom = wrap
   }
@@ -110,88 +124,72 @@ function renderInlineContentFlat(nodes, where, options) {
   let offset = 0
   for (let i = 0; i < nodes.length; i++) {
     let node = nodes[i]
-    let dom = wrapInlineFlat(node, renderNode(node, options, i))
+    let dom = wrapInlineFlat(node, renderNode(node, options, i), options)
     dom = options.renderInlineFlat(node, dom, offset) || dom
     where.appendChild(dom)
-    offset += node.size
+    offset += node.offset
   }
+
   if (!nodes.length || nodes[nodes.length - 1].type.name == "hard_break")
     where.appendChild(elt("br")).setAttribute("pm-force-br", "true")
+  else if (where.lastChild.contentEditable == "false")
+    where.appendChild(doc.createTextNode(""))
 }
 
 // Block nodes
 
-render.blockquote = wrap
+function def(cls, method) { cls.prototype.serializeDOM = method }
 
-render.code_block = (node, options) => {
+def(BlockQuote, wrapIn("blockquote"))
+
+def(BulletList, wrapIn("ul"))
+
+def(OrderedList, (node, options) => {
+  let dom = wrap(node, options, "ol")
+  if (node.attrs.order > 1) dom.setAttribute("start", node.attrs.order)
+  return dom
+})
+
+def(ListItem, wrapIn("li"))
+
+def(HorizontalRule, () => elt("hr"))
+
+def(Paragraph, wrapIn("p"))
+
+def(Heading, (node, options) => wrap(node, options, "h" + node.attrs.level))
+
+def(CodeBlock, (node, options) => {
   let code = wrap(node, options, "code")
   if (node.attrs.params != null)
     code.className = "fence " + node.attrs.params.replace(/(^|\s+)/g, "$&lang-")
   return elt("pre", code)
-}
-
-render.heading = (node, options) => wrap(node, options, "h" + node.attrs.level)
-
-render.horizontal_rule = _node => elt("hr")
-
-render.bullet_list = (node, options) => {
-  let dom = wrap(node, options, "ul")
-  let bul = node.attrs.bullet
-  dom.setAttribute("class", bul == "+" ? "bullet_plus" : bul == "-" ? "bullet_dash" : "bullet_star")
-  if (node.attrs.tight) dom.setAttribute("class", "tight")
-  return dom
-}
-
-render.ordered_list = (node, options) => {
-  let dom = wrap(node, options, "ol")
-  if (node.attrs.order > 1) dom.setAttribute("start", node.attrs.order)
-  if (node.attrs.tight) dom.setAttribute("class", "tight")
-  return dom
-}
-
-render.list_item = wrapIn("li")
-
-render.paragraph = wrapIn("p")
-
-render.html_block = node => {
-  let dom = elt("div")
-  dom.innerHTML = node.attrs.html
-  dom.setAttribute("pm-html", "html_block")
-  return dom
-}
+})
 
 // Inline content
 
-render.text = node => doc.createTextNode(node.text)
+def(Text, node => doc.createTextNode(node.text))
 
-render.image = node => {
+def(Image, node => {
   let dom = elt("img")
   dom.setAttribute("src", node.attrs.src)
   if (node.attrs.title) dom.setAttribute("title", node.attrs.title)
   if (node.attrs.alt) dom.setAttribute("alt", node.attrs.alt)
   return dom
-}
+})
 
-render.hard_break = _node => elt("br")
-
-render.html_tag = node => {
-  let dom = elt("span")
-  dom.innerHTML = node.attrs.html
-  dom.setAttribute("pm-html", "html_tag")
-  return dom
-}
+def(HardBreak, () => elt("br"))
 
 // Inline styles
 
-renderStyle.em = () => elt("em")
+def(EmStyle, () => elt("em"))
 
-renderStyle.strong = () => elt("strong")
+def(StrongStyle, () => elt("strong"))
 
-renderStyle.code = () => elt("code")
+def(CodeStyle, () => elt("code"))
 
-renderStyle.link = style => {
+def(LinkStyle, style => {
   let dom = elt("a")
-  dom.setAttribute("href", style.href)
-  if (style.title) dom.setAttribute("title", style.title)
+  dom.setAttribute("href", style.attrs.href)
+  if (style.attrs.title) dom.setAttribute("title", style.attrs.title)
   return dom
-}
+})

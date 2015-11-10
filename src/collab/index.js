@@ -1,5 +1,4 @@
 import {defineOption, eventMixin} from "../edit"
-import {applyStep} from "../transform"
 
 import {rebaseSteps} from "./rebase"
 export {rebaseSteps}
@@ -67,7 +66,7 @@ class Collab {
   receive(steps) {
     let doc = this.versionDoc
     let maps = steps.map(step => {
-      let result = applyStep(doc, step)
+      let result = step.apply(doc)
       doc = result.doc
       return result.map
     })

@@ -1,34 +1,40 @@
-import {style, Span, nodeTypes, Pos} from "../model"
+import {Pos, containsStyle, StyleType} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
-import {copyInline, copyStructure, forSpansBetween} from "./tree"
+import {copyInline, copyStructure} from "./tree"
 
 defineStep("addStyle", {
   apply(doc, step) {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
-      if (node.type.plainText) return node
+      if (!node.type.canContainStyle(step.param)) return node
       return copyInline(node, from, to, node => {
-        return new Span(node.type, node.attrs, style.add(node.styles, step.param), node.text)
+        return node.styled(step.param.addToSet(node.styles))
       })
     }))
   },
   invert(step, _oldDoc, map) {
     return new Step("removeStyle", step.from, map.map(step.to).pos, null, step.param)
+  },
+  paramToJSON(param) {
+    return param.toJSON()
+  },
+  paramFromJSON(schema, json) {
+    return schema.styleFromJSON(json)
   }
 })
 
 
 Transform.prototype.addStyle = function(from, to, st) {
   let removed = [], added = [], removing = null, adding = null
-  forSpansBetween(this.doc, from, to, (span, path, start, end) => {
-    if (style.contains(span.styles, st)) {
+  this.doc.inlineNodesBetween(from, to, (span, start, end, path, parent) => {
+    if (st.isInSet(span.styles) || !parent.type.canContainStyle(st.type)) {
       adding = removing = null
     } else {
       path = path.slice()
-      let rm = style.containsType(span.styles, st.type)
+      let rm = containsStyle(span.styles, st.type)
       if (rm) {
-        if (removing && style.same(removing.param, rm)) {
+        if (removing && removing.param.eq(rm)) {
           removing.to = new Pos(path, end)
         } else {
           removing = new Step("removeStyle", new Pos(path, start), new Pos(path, end), null, rm)
@@ -54,26 +60,31 @@ defineStep("removeStyle", {
   apply(doc, step) {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       return copyInline(node, from, to, node => {
-        let styles = style.remove(node.styles, step.param)
-        return new Span(node.type, node.attrs, styles, node.text)
+        return node.styled(step.param.removeFromSet(node.styles))
       })
     }))
   },
   invert(step, _oldDoc, map) {
     return new Step("addStyle", step.from, map.map(step.to).pos, null, step.param)
+  },
+  paramToJSON(param) {
+    return param.toJSON()
+  },
+  paramFromJSON(schema, json) {
+    return schema.styleFromJSON(json)
   }
 })
 
 Transform.prototype.removeStyle = function(from, to, st = null) {
   let matched = [], step = 0
-  forSpansBetween(this.doc, from, to, (span, path, start, end) => {
+  this.doc.inlineNodesBetween(from, to, (span, start, end, path) => {
     step++
     let toRemove = null
-    if (typeof st == "string") {
-      let found = style.containsType(span.styles, st)
+    if (st instanceof StyleType) {
+      let found = containsStyle(span.styles, st)
       if (found) toRemove = [found]
     } else if (st) {
-      if (style.contains(span.styles, st)) toRemove = [st]
+      if (st.isInSet(span.styles)) toRemove = [st]
     } else {
       toRemove = span.styles
     }
@@ -83,7 +94,7 @@ Transform.prototype.removeStyle = function(from, to, st = null) {
         let rm = toRemove[i], found
         for (let j = 0; j < matched.length; j++) {
           let m = matched[j]
-          if (m.step == step - 1 && style.same(rm, matched[j].style)) found = m
+          if (m.step == step - 1 && rm.eq(matched[j].style)) found = m
         }
         if (found) {
           found.to = new Pos(path, end)
@@ -98,16 +109,23 @@ Transform.prototype.removeStyle = function(from, to, st = null) {
   return this
 }
 
-Transform.prototype.clearMarkup = function(from, to) {
-  let steps = []
-  forSpansBetween(this.doc, from, to, (span, path, start, end) => {
-    if (span.type != nodeTypes.text) {
+Transform.prototype.clearMarkup = function(from, to, newParent) {
+  let delSteps = [] // Must be accumulated and applied in inverse order
+  this.doc.inlineNodesBetween(from, to, (span, start, end, path) => {
+    if (newParent ? !newParent.canContainType(span.type) : !span.isText) {
       path = path.slice()
       let from = new Pos(path, start)
-      steps.unshift(new Step("replace", from, new Pos(path, end), from))
+      delSteps.push(new Step("replace", from, new Pos(path, end), from))
+      return
+    }
+    for (let i = 0; i < span.styles.length; i++) {
+      let st = span.styles[i]
+      if (!newParent || !newParent.canContainStyle(st.type)) {
+        path = path.slice()
+        this.step("removeStyle", new Pos(path, start), new Pos(path, end), null, st)
+      }
     }
   })
-  this.removeStyle(from.to)
-  steps.forEach(s => this.step(s))
+  for (let i = delSteps.length - 1; i >= 0; i--) this.step(delSteps[i])
   return this
 }

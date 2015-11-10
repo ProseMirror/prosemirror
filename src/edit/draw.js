@@ -1,5 +1,5 @@
-import {Pos, nodeTypes} from "../model"
-import {toDOM, renderNodeToDOM} from "../convert/to_dom"
+import {Pos} from "../model"
+import {toDOM, renderNodeToDOM} from "../serialize/dom"
 
 import {elt} from "../dom"
 
@@ -7,8 +7,9 @@ const nonEditable = {html_block: true, html_tag: true, horizontal_rule: true}
 
 function options(path, ranges) {
   return {
+    target: "editor",
     onRender(node, dom, offset) {
-      if (node.type.type != "span" && offset != null)
+      if (!node.isInline && offset != null)
         dom.setAttribute("pm-path", offset)
       if (nonEditable.hasOwnProperty(node.type.name))
         dom.contentEditable = false
@@ -16,7 +17,7 @@ function options(path, ranges) {
     },
     renderInlineFlat(node, dom, offset) {
       ranges.advanceTo(new Pos(path, offset))
-      let end = new Pos(path, offset + node.size)
+      let end = new Pos(path, offset + node.offset)
       let nextCut = ranges.nextChangeBefore(end)
 
       let inner = dom, wrapped
@@ -32,7 +33,7 @@ function options(path, ranges) {
       }
 
       dom.setAttribute("pm-span", offset + "-" + end.offset)
-      if (node.type != nodeTypes.text)
+      if (!node.isText)
         dom.setAttribute("pm-span-atom", "true")
 
       let inlineOffset = 0
@@ -85,10 +86,10 @@ export function redraw(pm, dirty, doc, prev) {
 
   function scan(dom, node, prev) {
     let status = [], inPrev = [], inNode = []
-    for (let i = 0, j = 0; i < prev.content.length && j < node.content.length; i++) {
-      let cur = prev.content[i], dirtyStatus = dirty.get(cur)
+    for (let i = 0, j = 0; i < prev.length && j < node.width; i++) {
+      let cur = prev.child(i), dirtyStatus = dirty.get(cur)
       status.push(dirtyStatus)
-      let matching = dirtyStatus ? -1 : node.content.indexOf(cur, j)
+      let matching = dirtyStatus ? -1 : node.children.indexOf(cur, j)
       if (matching > -1) {
         inNode[i] = matching
         inPrev[matching] = i
@@ -96,9 +97,9 @@ export function redraw(pm, dirty, doc, prev) {
       }
     }
 
-    if (node.type.contains == "span") {
-      let needsBR = node.content.length == 0 ||
-          node.content[node.content.length - 1].type == nodeTypes.hard_break
+    if (node.isTextblock) {
+      let needsBR = node.length == 0 ||
+          node.lastChild.type == node.type.schema.nodes.hard_break
       let last = dom.lastChild, hasBR = last && last.nodeType == 1 && last.hasAttribute("pm-force-br")
       if (needsBR && !hasBR)
         dom.appendChild(elt("br", {"pm-force-br": "true"}))
@@ -107,34 +108,34 @@ export function redraw(pm, dirty, doc, prev) {
     }
 
     let domPos = dom.firstChild, j = 0
-    let block = node.type.block
-    for (let i = 0, offset = 0; i < node.content.length; i++) {
-      let child = node.content[i]
+    let block = node.isTextblock
+    for (let i = 0, offset = 0; i < node.length; i++) {
+      let child = node.child(i)
       if (!block) path.push(i)
       let found = inPrev[i]
       let nodeLeft = true
       if (found > -1) {
         domPos = deleteNextNodes(dom, domPos, found - j)
         j = found
-      } else if (!block && j < prev.content.length && inNode[j] == null &&
-                 status[j] != 2 && child.sameMarkup(prev.content[j])) {
-        scan(domPos, child, prev.content[j])
+      } else if (!block && j < prev.length && inNode[j] == null &&
+                 status[j] != 2 && child.sameMarkup(prev.child(j))) {
+        scan(domPos, child, prev.child(j))
       } else {
         dom.insertBefore(renderNodeToDOM(child, options(path, ranges), block ? offset : i), domPos)
         nodeLeft = false
       }
       if (nodeLeft) {
         if (block)
-          domPos.setAttribute("pm-span", offset + "-" + (offset + child.size))
+          domPos.setAttribute("pm-span", offset + "-" + (offset + child.offset))
         else
           domPos.setAttribute("pm-path", i)
         domPos = domPos.nextSibling
         j++
       }
-      if (block) offset += child.size
+      if (block) offset += child.offset
       else path.pop()
     }
-    deleteNextNodes(dom, domPos, prev.content.length - j)
+    deleteNextNodes(dom, domPos, prev.length - j)
   }
   scan(pm.content, doc, prev)
 }

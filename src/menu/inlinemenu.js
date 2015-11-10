@@ -4,8 +4,7 @@ import {elt} from "../dom"
 import {Debounced} from "../util/debounce"
 
 import {Tooltip} from "./tooltip"
-import {getItems, forceFontLoad} from "./items"
-import {Menu, TooltipDisplay} from "./menu"
+import {Menu, TooltipDisplay, commandGroups, forceFontLoad} from "./menu"
 
 import insertCSS from "insert-css"
 
@@ -19,7 +18,7 @@ defineOption("inlineMenu", false, function(pm, value) {
 class InlineMenu {
   constructor(pm, config) {
     this.pm = pm
-    this.items = (config && config.items) || getItems("inline")
+    this.items = (config && config.items) || commandGroups(pm, "inline")
     this.showLinks = config ? config.showLinks !== false : true
     this.debounced = new Debounced(pm, 100, () => this.update())
 
@@ -42,19 +41,13 @@ class InlineMenu {
     this.pm.off("blur", this.updateFunc)
   }
 
-  inPlainText(sel) {
-    let start = this.pm.doc.path(sel.from.path)
-    let end = this.pm.doc.path(sel.to.path)
-    return start.type.plainText && end.type.plainText
-  }
-
   update() {
     if (this.menu.active) return
 
     let sel = this.pm.selection, link
     if (!this.pm.hasFocus())
       this.tooltip.close()
-    else if (!sel.empty && !this.inPlainText(sel))
+    else if (!sel.empty)
       this.menu.show(this.items, topCenterOfSelection())
     else if (this.showLinks && (link = this.linkUnderCursor()))
       this.showLink(link, this.pm.coordsAtPos(sel.head))
@@ -73,10 +66,18 @@ class InlineMenu {
   }
 }
 
+/**
+ * Get the x and y coordinates at the top center of the current DOM selection.
+ *
+ * @return {Object}
+ */
 function topCenterOfSelection() {
   let rects = window.getSelection().getRangeAt(0).getClientRects()
-  let {left, right, top} = rects[0]
-  for (let i = 1; i < rects.length; i++) {
+  let {left, right, top} = rects[0], i = 1
+  while (left == right && rects.length > i) {
+    ;({left, right, top} = rects[i++])
+  }
+  for (; i < rects.length; i++) {
     if (rects[i].top < rects[0].bottom - 1 &&
         // Chrome bug where bogus rectangles are inserted at span boundaries
         (i == rects.length - 1 || Math.abs(rects[i + 1].left - rects[i].left) > 1)) {

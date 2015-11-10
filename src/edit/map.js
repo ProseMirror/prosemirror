@@ -1,4 +1,4 @@
-export const Map = window.Map || class {
+export const Map = (typeof window !== 'undefined' && window.Map) || class {
   constructor() { this.content = [] }
   set(key, value) {
     let found = this.find(key)

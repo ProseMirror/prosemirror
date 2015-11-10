@@ -1,4 +1,5 @@
-import {Pos, Span, style, spanStylesAt} from "../model"
+import {Pos, spanStylesAt} from "../model"
+import {Keymap} from "../edit"
 
 export function addInputRules(pm, rules) {
   if (!pm.mod.interpretInput)
@@ -6,7 +7,7 @@ export function addInputRules(pm, rules) {
   pm.mod.interpretInput.addRules(rules)
 }
 
-export function removeInputRule(pm, rules) {
+export function removeInputRules(pm, rules) {
   let ii = pm.mod.interpretInput
   if (!ii) return
   ii.removeRules(rules)
@@ -32,13 +33,13 @@ class InputRules {
 
     pm.on("selectionChange", this.onSelChange = () => this.cancelVersion = null)
     pm.on("textInput", this.onTextInput = this.onTextInput.bind(this))
-    pm.extendCommand("delBackward", "high", this.delBackward = this.delBackward.bind(this))
+    pm.addKeymap(new Keymap({Backspace: pm => this.backspace(pm)}, {name: "inputRules"}), 20)
   }
 
   unregister() {
     this.pm.off("selectionChange", this.onSelChange)
     this.pm.off("textInput", this.onTextInput)
-    this.pm.unextendCommand("delBackward", "high", this.delBackward)
+    this.pm.removeKeymap("inputRules")
   }
 
   addRules(rules) {
@@ -71,7 +72,7 @@ class InputRules {
           let offset = pos.offset - (match[1] || match[0]).length
           let start = new Pos(pos.path, offset)
           let styles = spanStylesAt(this.pm.doc, pos)
-          this.pm.apply(this.pm.tr.delete(start, pos).insert(start, Span.text(rule.handler, styles)))
+          this.pm.apply(this.pm.tr.delete(start, pos).insert(start, this.pm.schema.text(rule.handler, styles)))
         } else {
           rule.handler(this.pm, match, pos)
         }
@@ -81,7 +82,7 @@ class InputRules {
     }
   }
 
-  delBackward() {
+  backspace() {
     if (this.cancelVersion) {
       this.pm.history.backToVersion(this.cancelVersion)
       this.cancelVersion = null
@@ -93,17 +94,17 @@ class InputRules {
 
 function getContext(doc, pos) {
   let parent = doc.path(pos.path)
-  let isPlain = parent.type.plainText
+  let isCode = parent.type.isCode
   let textBefore = ""
   for (let offset = 0, i = 0; offset < pos.offset;) {
-    let child = parent.content[i++], size = child.size
+    let child = parent.child(i++), size = child.offset
     textBefore += offset + size > pos.offset ? child.text.slice(0, pos.offset - offset) : child.text
     if (offset + size >= pos.offset) {
-      if (style.contains(child.styles, style.code))
-        isPlain = true
+      if (child.styles.some(st => st.type.isCode))
+        isCode = true
       break
     }
     offset += size
   }
-  return {textBefore, isPlain}
+  return {textBefore, isCode}
 }

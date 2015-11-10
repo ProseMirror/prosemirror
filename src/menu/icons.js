@@ -10,7 +10,7 @@ insertCSS(`
   font-family: ProseMirror-icons;
   content: "\uea46";
 }
-.ProseMirror-icon-image:after {
+.ProseMirror-icon-insertImage:after {
   font-family: ProseMirror-icons;
   content: "\ue606";
 }
@@ -22,7 +22,7 @@ insertCSS(`
   font-family: ProseMirror-icons;
   content: "\ue60a";
 }
-.ProseMirror-icon-link:after {
+.ProseMirror-icon-link:after, .ProseMirror-icon-unlink:after {
   font-family: ProseMirror-icons;
   content: "\ue608";
 }
@@ -31,22 +31,22 @@ insertCSS(`
   font-size: 110%;
   content: "\ue601";
 }
-.ProseMirror-icon-list-ol:after {
+.ProseMirror-icon-wrapOrderedList:after {
   font-family: ProseMirror-icons;
   font-size: 110%;
   content: "\ue604";
 }
-.ProseMirror-icon-list-ul:after {
+.ProseMirror-icon-wrapBulletList:after {
   font-family: ProseMirror-icons;
   font-size: 110%;
   content: "\ue603";
 }
-.ProseMirror-icon-quote:after {
+.ProseMirror-icon-wrapBlockQuote:after {
   font-family: ProseMirror-icons;
   font-size: 110%;
   content: "\ue602";
 }
-.ProseMirror-icon-hr:after {
+.ProseMirror-icon-insertHorizontalRule:after {
   font-family: ProseMirror-icons;
   content: "\ue600";
 }

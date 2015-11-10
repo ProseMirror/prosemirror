@@ -21,8 +21,8 @@ function add(value, target) {
 }
 
 
-const reqFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
-      window.webkitRequestAnimationFrame || window.msRequestAnimationFrame
+const reqFrame =  typeof window !== 'undefined' && (window.requestAnimationFrame || window.mozRequestAnimationFrame ||
+      window.webkitRequestAnimationFrame || window.msRequestAnimationFrame)
 
 export function requestAnimationFrame(f) {
   if (reqFrame) reqFrame(f)

@@ -119,21 +119,21 @@ export class RangeStore {
     for (let depth = 0, node = this.pm.doc;; depth++) {
       let fromEnd = depth == from.depth, toEnd = depth == to.depth
       if (!fromEnd && !toEnd && from.path[depth] == to.path[depth]) {
-        let child = node.content[from.path[depth]]
+        let child = node.child(from.path[depth])
         if (!dirty.has(child)) dirty.set(child, 1)
         node = child
       } else {
         let start = fromEnd ? from.offset : from.path[depth]
         let end = toEnd ? to.offset : to.path[depth] + 1
-        if (node.type.block) {
+        if (node.isTextblock) {
           for (let offset = 0, i = 0; offset < end; i++) {
-            let child = node.content[i]
-            offset += child.size
+            let child = node.child(i)
+            offset += child.offset
             if (offset > start) dirty.set(child, 2)
           }
         } else {
           for (let i = start; i < end; i++)
-            dirty.set(node.content[i], 2)
+            dirty.set(node.child(i), 2)
         }
         break
       }

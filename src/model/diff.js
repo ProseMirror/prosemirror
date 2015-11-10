@@ -1,29 +1,29 @@
 import {Pos} from "./pos"
-import {sameSet} from "./style"
+import {sameStyles} from "./style"
 
 export function findDiffStart(a, b, pathA = [], pathB = []) {
   let offset = 0
   for (let i = 0;; i++) {
-    if (i == a.content.length || i == b.content.length) {
-      if (a.content.length == b.content.length) return null
+    if (i == a.length || i == b.length) {
+      if (a.length == b.length) return null
       break
     }
-    let childA = a.content[i], childB = b.content[i]
+    let childA = a.child(i), childB = b.child(i)
     if (childA == childB) {
-      offset += a.type.block ? childA.text.length : 1
+      offset += a.isTextblock ? childA.offset : 1
       continue
     }
 
     if (!childA.sameMarkup(childB)) break
 
-    if (a.type.block) {
-      if (!sameSet(childA.styles, childB.styles)) break
-      if (childA.text != childB.text) {
+    if (a.isTextblock) {
+      if (!sameStyles(childA.styles, childB.styles)) break
+      if (childA.isText && childA.text != childB.text) {
         for (let j = 0; childA.text[j] == childB.text[j]; j++)
           offset++
         break
       }
-      offset += childA.text.length
+      offset += childA.offset
     } else {
       let inner = findDiffStart(childA, childB, pathA.concat(i), pathB.concat(i))
       if (inner) return inner
@@ -34,7 +34,7 @@ export function findDiffStart(a, b, pathA = [], pathB = []) {
 }
 
 export function findDiffEnd(a, b, pathA = [], pathB = []) {
-  let iA = a.content.length, iB = b.content.length
+  let iA = a.length, iB = b.length
   let offset = 0
 
   for (;; iA--, iB--) {
@@ -42,18 +42,18 @@ export function findDiffEnd(a, b, pathA = [], pathB = []) {
       if (iA == iB) return null
       break
     }
-    let childA = a.content[iA - 1], childB = b.content[iB - 1]
+    let childA = a.child(iA - 1), childB = b.child(iB - 1)
     if (childA == childB) {
-      offset += a.type.block ? childA.text.length : 1
+      offset += a.isTextblock ? childA.offset : 1
       continue
     }
 
     if (!childA.sameMarkup(childB)) break
 
-    if (a.type.block) {
-      if (!sameSet(childA.styles, childB.styles)) break
+    if (a.isTextblock) {
+      if (!sameStyles(childA.styles, childB.styles)) break
 
-      if (childA.text != childB.text) {
+      if (childA.isText && childA.text != childB.text) {
         let same = 0, minSize = Math.min(childA.text.length, childB.text.length)
         while (same < minSize && childA.text[childA.text.length - same - 1] == childB.text[childB.text.length - same - 1]) {
           same++
@@ -61,7 +61,7 @@ export function findDiffEnd(a, b, pathA = [], pathB = []) {
         }
         break
       }
-      offset += childA.text.length
+      offset += childA.offset
     } else {
       let inner = findDiffEnd(childA, childB, pathA.concat(iA - 1), pathB.concat(iB - 1))
       if (inner) return inner
