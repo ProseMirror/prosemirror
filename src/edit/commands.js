@@ -7,7 +7,7 @@ import sortedInsert from "../util/sortedinsert"
 
 import {charCategory, isExtendingChar} from "./char"
 import {Keymap} from "./keys"
-import {moveVertically, selectableBlockFrom} from "./selection"
+import {selectableBlockFrom, verticalMotionLeavesTextblock, setDOMSelectionToPos} from "./selection"
 
 const globalCommands = Object.create(null)
 const paramHandlers = Object.create(null)
@@ -655,7 +655,7 @@ function nodeAboveSelection(pm) {
   return i == 0 ? false : head.shorten(i - 1)
 }
 
-defineCommand("selectParent", {
+defineCommand("selectParentBlock", {
   label: "Select parent node",
   run(pm) {
     let node = nodeAboveSelection(pm)
@@ -671,142 +671,120 @@ defineCommand("selectParent", {
 // FIXME we'll need some awareness of bidi motion here
 
 function selectableBlockFromSelection(pm, dir, text) {
-  let {head, nodePos} = pm.selection
-  let pos = nodePos ? (dir > 0 ? nodePos.move(1) : nodePos) : head.shorten(null, dir > 0 ? 1 : 0)
+  let {head, nodePos, node} = pm.selection
+  let pos = node && !node.isInline ? (dir > 0 ? nodePos.move(1) : nodePos) : head.shorten(null, dir > 0 ? 1 : 0)
   return selectableBlockFrom(pm.doc, pos, dir, text)
+}
+
+function selectBlockHorizontally(pm, dir) {
+  let {head, empty, node, nodePos} = pm.selection
+  if (!empty && !node) return false
+
+  if (node && node.isInline) {
+    pm.setSelection(dir > 0 ? nodePos.move(1) : nodePos)
+    return true
+  }
+
+  let parent
+  if (!node && (parent = pm.doc.path(head.path)) &&
+      (dir > 0 ? head.offset < parent.maxOffset : head.offset)) {
+    let {node: nextNode, innerOffset} = dir > 0 ? parent.childAfter(head.offset) : parent.childBefore(head.offset)
+    if (nextNode && nextNode.type.selectable &&
+        (dir > 0 ? !innerOffset : innerOffset == nextNode.offset)) {
+      pm.setNodeSelection(dir < 0 ? head.move(-1) : head)
+      return true
+    }
+    return false
+  }
+
+  let nextBlock = selectableBlockFromSelection(pm, dir)
+  if (!nextBlock) return false
+  let nextNode = pm.doc.path(nextBlock)
+  if (!nextNode.isTextblock) {
+    pm.setNodeSelection(new Pos(nextBlock, 0).shorten())
+    return true
+  } else if (node) {
+    pm.setSelection(new Pos(nextBlock, dir < 0 ? nextNode.maxOffset : 0))
+    return true
+  }
+  return false
 }
 
 // FIXME make scrolling into view an option that can be passed to setSelection etc
 
-defineCommand("moveLeft", {
-  label: "Move the cursor to the left",
+defineCommand("selectBlockLeft", {
+  label: "Move the selection onto or out of the block to the left",
   run(pm) {
-    let {head, empty, node} = pm.selection
-    if (!empty) return false
-    let parent = pm.doc.path(head.path)
-
-    if (!node || !node.isBlock) {
-      let {node, innerOffset} = parent.childBefore(head.offset)
-      if (node && innerOffset == node.offset && node.type.selectable)
-        return pm.setNodeSelection(head.move(-node.offset))
-    }
-
-    if (!node && head.offset > 0) return false
-    let selectable = selectableBlockFromSelection(pm, -1)
-    if (!selectable) return false
-    let selNode = pm.doc.path(selectable)
-    if (selNode.isTextblock)
-      pm.setSelection(new Pos(selectable, selNode.maxOffset))
-    else
-      pm.setNodeSelection(new Pos(selectable, 0).shorten())
-    pm.scrollIntoView()
+    let done = selectBlockHorizontally(pm, -1)
+    if (done) pm.scrollIntoView()
+    return done
   },
   info: {key: ["Left", "Mod-Left"]}
 })
 
-defineCommand("moveRight", {
-  label: "Move the cursor to the right",
+defineCommand("selectBlockRight", {
+  label: "Move the selection onto or out of the block to the right",
   run(pm) {
-    let {head, empty, node} = pm.selection
-    if (!empty) return false
-    let parent = pm.doc.path(head.path)
-    if ((!node || !node.isBlock) && head.offset < parent.maxOffset) {
-      let {node, innerOffset} = parent.childAfter(head.offset)
-      if (innerOffset == node.offset && node.type.selectable)
-        return pm.setNodeSelection(head)
-      else
-        return false
-    } else {
-      let selectable = selectableBlockFromSelection(pm, 1)
-      if (!selectable) return false
-      let node = pm.doc.path(selectable)
-      if (node.isTextblock)
-        pm.setSelection(new Pos(selectable, 0))
-      else
-        pm.setNodeSelection(new Pos(selectable, 0).shorten())
-      pm.scrollIntoView()
-    }
+    let done = selectBlockHorizontally(pm, 1)
+    if (done) pm.scrollIntoView()
+    return done
   },
   info: {key: ["Right", "Mod-Right"]}
 })
 
-defineCommand("extendLeft", {
-  label: "Extend the selection to the left",
-  run(pm) {
-    let {head, anchor} = pm.selection
-    if (head.offset > 0) return false
-    let selectable = selectableBlockFromSelection(pm, -1, true)
-    if (selectable)
-      pm.setSelection(anchor, new Pos(selectable, pm.doc.path(selectable).maxOffset))
-    pm.scrollIntoView()
-  },
-  info: {key: ["Shift-Left", "Shift-Mod-Left"]}
-})
+function selectVertically(pm, dir) {
+  let {empty, head, nodePos, node} = pm.selection
+  if (!empty && !node) return false
 
-defineCommand("extendRight", {
-  label: "Extend the selection to the right",
-  run(pm) {
-    let {head, anchor} = pm.selection
-    let node = pm.doc.path(head.path)
-    if (head.offset < node.maxOffset) return false
-    let selectable = selectableBlockFromSelection(pm.doc, 1, true)
-    if (selectable)
-      pm.setSelection(anchor, new Pos(selectable, 0))
-    pm.scrollIntoView()
-  },
-  info: {key: ["Shift-Right", "Shift-Mod-Right"]}
-})
+  let leavingTextblock = true
+  if (!node || node.isInline) {
+    let pos = !node ? head : dir > 0 ? nodePos.move(1) : nodePos
+    leavingTextblock = verticalMotionLeavesTextblock(pm, pos, dir)
+  }
 
-function moveVerticallyFromSelection(pm, dir) {
-  let {head, nodePos, node} = pm.selection
-  if (nodePos && node.type.contains == null) head = dir > 0 ? nodePos.move(1) : nodePos
-  return moveVertically(pm, head, dir, pm.sel.goalX)
+  if (leavingTextblock) {
+    let next = selectableBlockFromSelection(pm, dir)
+    if (next && !pm.doc.path(next).isTextblock) {
+      pm.setNodeSelection(new Pos(next, 0).shorten())
+      if (!node) pm.sel.lastNonNodePos = head
+      return true
+    }
+  }
+
+  if (!node) return false
+
+  if (node.isInline) {
+    setDOMSelectionToPos(pm, nodePos)
+    return false
+  }
+
+  let beyond = dir < 0 ? Pos.after(pm.doc, nodePos.move(1)) : Pos.before(pm.doc, nodePos)
+  if (!beyond) {
+    pm.setSelection(Pos.near(pm.doc, dir < 0 ? nodePos.move(1) : nodePos))
+    return true
+  }
+  if (pm.sel.lastNonNodePos && Pos.samePath(pm.sel.lastNonNodePos.path, beyond.path))
+    beyond = pm.sel.lastNonNodePos
+  setDOMSelectionToPos(pm, beyond)
+  return false
 }
 
-defineCommand("moveUp", {
-  label: "Move the cursor up",
+defineCommand("selectBlockUp", {
+  label: "Move the selection onto or out of the block above",
   run(pm) {
-    if (!pm.selection.empty) return pm.setSelection(pm.selection.from)
-    let {pos, node, left} = moveVerticallyFromSelection(pm, -1)
-    if (node) pm.setNodeSelection(node)
-    else pm.setSelection(pos)
-    pm.sel.goalX = left
-    pm.scrollIntoView()
+    let done = selectVertically(pm, -1)
+    if (done !== false) pm.scrollIntoView()
+    return done
   },
   info: {key: "Up"}
 })
 
-defineCommand("moveDown", {
-  label: "Move the cursor down",
+defineCommand("selectBlockDown", {
+  label: "Move the selection onto or out of the block below",
   run(pm) {
-    if (!pm.selection.empty) return pm.setSelection(pm.selection.to)
-    let {pos, node, left} = moveVerticallyFromSelection(pm, 1)
-    if (node) pm.setNodeSelection(node)
-    else pm.setSelection(pos)
-    pm.sel.goalX = left
-    pm.scrollIntoView()
+    let done = selectVertically(pm, 1)
+    if (done !== false) pm.scrollIntoView()
+    return done
   },
   info: {key: "Down"}
-})
-
-defineCommand("extendUp", {
-  label: "Extend the selection up",
-  run(pm) {
-    let {pos, left} = moveVerticallyFromSelection(pm, -1)
-    pm.setSelection(pm.selection.anchor, pos)
-    pm.sel.goalX = left
-    pm.scrollIntoView()
-  },
-  info: {key: "Shift-Up"}
-})
-
-defineCommand("extendDown", {
-  label: "Extend the selection down",
-  run(pm) {
-    let {pos, left} = moveVerticallyFromSelection(pm, 1)
-    pm.setSelection(pm.selection.anchor, pos)
-    pm.sel.goalX = left
-    pm.scrollIntoView()
-  },
-  info: {key: "Shift-Down"}
 })

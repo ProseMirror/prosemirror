@@ -8,7 +8,7 @@ export class Selection {
 
     let start = Pos.start(pm.doc)
     this.range = new SelectionRange(pm.doc, start, start)
-    this.goalColumn = null
+    this.lastNonNodePos = null
 
     this.pollState = null
     this.pollTimeout = null
@@ -25,7 +25,7 @@ export class Selection {
 
   set(range, clearLast) {
     this.range = range
-    this.goalX = null
+    if (!range.nodePos) this.lastNonNodePos = null
     if (clearLast !== false) this.lastAnchorNode = null
   }
 
@@ -533,92 +533,6 @@ function offsetInElement(element, coords) {
   return offsetInRects(coords, rects)
 }
 
-export function moveVertically(pm, pos, dir, goalX) {
-  let parent = pm.doc.path(pos.path), posCoords = coordsAtPos(pm, pos)
-  let coords = {left: goalX == null ? posCoords.left : goalX,
-                top: dir > 0 ? posCoords.bottom : posCoords.top}
-  if (parent.isTextblock) {
-    let inside = moveVerticallyInTextblock(resolvePath(pm.content, pos.path), parent, pos.path, coords, dir)
-    if (inside) return inside
-  }
-
-  let selectable = selectableBlockFrom(pm.doc, pos.shorten(null, dir > 0 ? 1 : 0), dir)
-  if (!selectable)
-    return {pos: dir > 0 ? Pos.end(pm.doc) : Pos.start(pm.doc), left: coords.left}
-
-  let node = pm.doc.path(selectable)
-  if (node.isTextblock) {
-    let dom = resolvePath(pm.content, selectable)
-    let box = dom.getBoundingClientRect()
-    let inside = moveVerticallyInTextblock(dom, node, selectable, {
-      left: coords.left,
-      top: dir > 0 ? box.top : box.bottom
-    }, dir)
-    if (inside) return inside
-    return {pos: new Pos(selectable, coords.left <= box.left ? 0 : node.maxOffset), left: coords.left}
-  } else {
-    let pos = new Pos(selectable.slice(0, selectable.length - 1), selectable[selectable.length - 1])
-    return {pos: Pos.near(pm.doc, pos, dir), node: pos, left: coords.left}
-  }
-}
-
-function findOffsetInText(dom, coords) {
-  if (dom.nodeType == 3) return offsetInTextNode(dom, coords, true)
-  for (let child = dom.firstChild; child; child = child.nextSibling) {
-    let inner = findOffsetInText(child, coords)
-    if (inner) {
-      let off = child.nodeType == 1 && child.getAttribute("pm-span-offset")
-      return inner + (off ? +off : 0)
-    }
-  }
-}
-
-function findInInlineBoxes(dom, coords, dir) {
-  let lineTop, lineBot, closest, closestBox, minDist = 1e8
-  for (let child = dom.firstChild; child; child = child.nextSibling) {
-    if (child.nodeType != 1 || !child.hasAttribute("pm-span")) continue
-    let boxes = child.getClientRects()
-    for (let i = 0; i < boxes.length; i++) {
-      let box = boxes[i]
-      if (lineTop != null && lineTop < box.bottom && lineBot > box.top) {
-        lineTop = Math.min(box.top, lineTop)
-        lineBot = Math.max(box.bottom, lineBot)
-      } else {
-        let mid = (box.top + box.bottom) / 2
-        if (dir > 0 ? mid < coords.top : mid > coords.top) continue
-        if (lineTop != null && (dir > 0 ? lineTop < mid : lineBot > mid)) continue
-        lineTop = box.top; lineBot = box.bottom
-        closest = closestBox = null
-        minDist = 1e8
-      }
-      let dX = box.left > coords.left ? box.left - coords.left : box.right < coords.left ? coords.left - box.right : 0
-      if (dX < minDist) {
-        minDist = dX
-        closest = child
-        closestBox = box
-      }
-    }
-  }
-  return {closest, box: closestBox}
-}
-
-function moveVerticallyInTextblock(dom, node, path, coords, dir) {
-  let {closest, box} = findInInlineBoxes(dom, coords, dir)
-  if (!closest) return null
-
-  let span = parseSpan(closest.getAttribute("pm-span")), extraOffset, nodeSelection = null
-  let childNode = node.childAfter(span.from).node
-  if (childNode.isText) {
-    if (coords.left < box.left) extraOffset = 0
-    else if (coords.left > box.right) extraOffset = childNode.offset
-    else extraOffset = findOffsetInText(closest, {left: coords.left, top: (box.top + box.bottom) / 2}) || 0
-  } else {
-    extraOffset = coords.left > (box.left + box.right) / 2 ? 1 : 0
-    node = new Pos(path, span.from)
-  }
-  return {pos: new Pos(path, span.from + extraOffset), left: coords.left, node: nodeSelection}
-}
-
 function selectableBlockIn(doc, pos, dir, text) {
   let node = doc.path(pos.path)
   for (let offset = pos.offset + (dir > 0 ? 0 : -1); dir > 0 ? offset < node.maxOffset : offset >= 0; offset += dir) {
@@ -656,3 +570,28 @@ export function selectableNodeUnder(pm, coords) {
     }
   }
 }
+
+export function verticalMotionLeavesTextblock(pm, pos, dir) {
+  let dom = resolvePath(pm.content, pos.path)
+  let coords = coordsAtPos(pm, pos)
+  for (let child = dom.firstChild; child; child = child.nextSibling) {
+    let boxes = child.getClientRects()
+    for (let i = 0; i < boxes.length; i++) {
+      let box = boxes[i]
+      if (dir < 0 ? box.bottom < coords.top : box.top > coords.bottom)
+        return false
+    }
+  }
+  return true
+}
+
+export function setDOMSelectionToPos(pm, pos) {
+  let {node, offset} = DOMFromPos(pm.content, pos)
+  let range = document.createRange()
+  range.setEnd(node, offset)
+  range.setStart(node, offset)
+  let sel = getSelection()
+  sel.removeAllRanges()
+  sel.addRange(range)
+}
+
