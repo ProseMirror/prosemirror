@@ -732,7 +732,7 @@ defineCommand("selectBlockRight", {
   info: {key: ["Right", "Mod-Right"]}
 })
 
-function selectVertically(pm, dir) {
+function selectBlockVertically(pm, dir) {
   let {empty, head, nodePos, node} = pm.selection
   if (!empty && !node) return false
 
@@ -758,21 +758,23 @@ function selectVertically(pm, dir) {
     return false
   }
 
-  let beyond = dir < 0 ? Pos.after(pm.doc, nodePos.move(1)) : Pos.before(pm.doc, nodePos)
-  if (!beyond) {
-    pm.setSelection(Pos.near(pm.doc, dir < 0 ? nodePos.move(1) : nodePos))
-    return true
+  let last = pm.sel.lastNonNodePos
+  if (last) {
+    let beyond = dir < 0 ? Pos.after(pm.doc, nodePos.move(1)) : Pos.before(pm.doc, nodePos)
+    if (beyond && Pos.samePath(last.path, beyond.path)) {
+      setDOMSelectionToPos(pm, last)
+      return false
+    }
   }
-  if (pm.sel.lastNonNodePos && Pos.samePath(pm.sel.lastNonNodePos.path, beyond.path))
-    beyond = pm.sel.lastNonNodePos
-  setDOMSelectionToPos(pm, beyond)
-  return false
+
+  pm.setSelection(Pos.near(pm.doc, dir < 0 ? nodePos : nodePos.move(1), dir))
+  return true
 }
 
 defineCommand("selectBlockUp", {
   label: "Move the selection onto or out of the block above",
   run(pm) {
-    let done = selectVertically(pm, -1)
+    let done = selectBlockVertically(pm, -1)
     if (done !== false) pm.scrollIntoView()
     return done
   },
@@ -782,7 +784,7 @@ defineCommand("selectBlockUp", {
 defineCommand("selectBlockDown", {
   label: "Move the selection onto or out of the block below",
   run(pm) {
-    let done = selectVertically(pm, 1)
+    let done = selectBlockVertically(pm, 1)
     if (done !== false) pm.scrollIntoView()
     return done
   },
