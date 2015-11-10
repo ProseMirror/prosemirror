@@ -1,7 +1,7 @@
 import {HardBreak, BulletList, OrderedList, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
         StrongStyle, EmStyle, CodeStyle, LinkStyle, Image, NodeType, StyleType,
         Pos, containsStyle, rangeHasStyle, compareMarkup} from "../model"
-import {joinPoint, canLift, canWrap, alreadyHasBlockType} from "../transform"
+import {joinPoint, joinableBlocks, canLift, canWrap, alreadyHasBlockType} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
 
@@ -417,29 +417,61 @@ defineCommand("deleteWordAfter", {
   info: {key: "Mod-Delete(40)", macKey: ["Ctrl-Alt-Backspace(40)", "Alt-Delete(40)", "Alt-D(40)"]}
 })
 
-defineCommand("join", {
+function joinPointAbove(pm) {
+  let {nodePos, from} = pm.selection
+  if (nodePos) return joinableBlocks(pm.doc, nodePos) ? nodePos : null
+  else return joinPoint(pm.doc, from, -1)
+}
+
+defineCommand("joinUp", {
   label: "Join with above block",
   run(pm) {
-    let point = joinPoint(pm.doc, pm.selection.head)
+    let nodePos = pm.selection.nodePos
+    let point = joinPointAbove(pm)
     if (!point) return false
-    return pm.apply(pm.tr.join(point))
+    pm.apply(pm.tr.join(point))
+    if (nodePos) pm.setNodeSelection(nodePos.move(-1))
   },
-  select(pm) { return joinPoint(pm.doc, pm.selection.head) },
+  select(pm) { return joinPointAbove(pm) },
   info: {
     menuGroup: "block", menuRank: 80,
     key: "Alt-Up"
   }
 })
 
+function joinPointBelow(pm) {
+  let {nodePos, to} = pm.selection
+  if (nodePos) return joinableBlocks(pm.doc, nodePos.move(1)) ? nodePos.move(1) : null
+  else return joinPoint(pm.doc, to, 1)
+}
+
+defineCommand("joinDown", {
+  label: "Join with below block",
+  run(pm) {
+    let nodePos = pm.selection.nodePos
+    let point = joinPointBelow(pm)
+    if (!point) return false
+    pm.apply(pm.tr.join(point))
+    if (nodePos) pm.setNodeSelection(nodePos)
+  },
+  select(pm) { return joinPointBelow(pm) },
+  info: {key: "Alt-Down"}
+})
+
+function blockRange(pm) {
+  let {nodePos, from, to} = pm.selection
+  return nodePos ? {from: nodePos, to: nodePos.move(1)} : {from, to}
+}
+
 defineCommand("lift", {
   label: "Lift out of enclosing block",
   run(pm) {
-    let sel = pm.selection
-    return pm.apply(pm.tr.lift(sel.from, sel.to), andScroll)
+    let {from, to} = blockRange(pm)
+    return pm.apply(pm.tr.lift(from, to), andScroll)
   },
   select(pm) {
-    let sel = pm.selection
-    return canLift(pm.doc, sel.from, sel.to)
+    let {from, to} = blockRange(pm)
+    return canLift(pm.doc, from, to)
   },
   info: {
     menuGroup: "block", menuRank: 75,
@@ -447,21 +479,15 @@ defineCommand("lift", {
   }
 })
 
-function wrappableRange(pm) {
-  let {from, to, nodePos} = pm.selection
-  if (nodePos) { from = nodePos; to = nodePos.move(1) }
-  return {from, to}
-}
-
 function wrapCommand(type, name, labelName, info) {
   type.attachCommand("wrap" + name, type => ({
     label: "Wrap in " + labelName,
     run(pm) {
-      let {from, to} = wrappableRange(pm)
+      let {from, to} = blockRange(pm)
       return pm.apply(pm.tr.wrap(from, to, type.create()), andScroll)
     },
     select(pm) {
-      let {from, to} = wrappableRange(pm)
+      let {from, to} = blockRange(pm)
       return canWrap(pm.doc, from, to, type.create())
     },
     info

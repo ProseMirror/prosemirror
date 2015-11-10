@@ -50,7 +50,7 @@ export class Selection {
     let node = this.range.nodePos
     if (node) {
       let newFrom = mapping.map(node, 1).pos
-      let newTo = mapping.map(node, -1).pos
+      let newTo = mapping.map(node.move(1), -1).pos
       if (newTo.cmp(newFrom.move(1)) == 0)
         node = newFrom
       else

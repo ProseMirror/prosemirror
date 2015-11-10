@@ -6,7 +6,7 @@ insertCSS(`
   font-family: ProseMirror-icons;
   content: "\ue60c";
 }
-.ProseMirror-icon-join:after {
+.ProseMirror-icon-joinUp:after {
   font-family: ProseMirror-icons;
   content: "\uea46";
 }

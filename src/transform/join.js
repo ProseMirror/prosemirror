@@ -30,18 +30,20 @@ defineStep("join", {
   }
 })
 
+export function joinableBlocks(doc, pos) {
+  if (pos.offset == 0) return false
+  let parent = doc.path(pos.path)
+  if (parent.isTextblock || pos.offset == parent.length) return false
+  let type = parent.child(pos.offset - 1).type
+  return !type.isTextblock && type.contains && type == parent.child(pos.offset).type
+}
+
 export function joinPoint(doc, pos, dir = -1) {
-  let joinDepth = -1
-  for (let i = 0, parent = doc; i < pos.path.length; i++) {
-    let index = pos.path[i]
-    let type = parent.child(index).type
-    if (!type.isTextblock &&
-        (dir == -1 ? (index > 0 && parent.child(index - 1).type == type)
-                   : (index < parent.length - 1 && parent.child(index + 1).type == type)))
-      joinDepth = i
-    parent = parent.child(index)
+  for (;;) {
+    if (joinableBlocks(doc, pos)) return pos
+    if (pos.depth == 0) return null
+    pos = pos.shorten(null, dir < 0 ? 0 : 1)
   }
-  if (joinDepth > -1) return pos.shorten(joinDepth, dir == -1 ? 0 : 1)
 }
 
 Transform.prototype.join = function(at) {

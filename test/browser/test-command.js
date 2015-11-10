@@ -224,16 +224,16 @@ test("deleteWordAfter",
      doc(p("foo<a>   bar")),
      doc(p("foobar")))
 
-test("join",
+test("joinUp",
      doc(blockquote(p("foo")), blockquote(p("<a>bar"))),
      doc(blockquote(p("foo"), p("<a>bar"))))
-test("join",
+test("joinUp",
      doc(blockquote(p("<a>foo")), blockquote(p("bar"))),
      doc(blockquote(p("foo")), blockquote(p("bar"))))
-test("join",
+test("joinUp",
      doc(ul(li(p("foo"))), ul(li(p("<a>bar")))),
      doc(ul(li(p("foo")), li(p("bar")))))
-test("join",
+test("joinUp",
      doc(ul(li(p("foo")), li(p("<a>bar")))),
      doc(ul(li(p("foo"), p("bar")))))
 
