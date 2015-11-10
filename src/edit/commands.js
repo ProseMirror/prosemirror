@@ -264,7 +264,23 @@ function moveBackward(parent, offset, by) {
 defineCommand("deleteSelection", {
   label: "Delete the selection",
   run(pm) {
-    return pm.apply(clearSel(pm).tr, andScroll)
+    let {from, to, nodePos, node} = pm.selection
+    if (node && node.isBlock && pm.doc.path(nodePos.path).length > 1 &&
+        (Pos.before(pm.doc, nodePos) || Pos.after(pm.doc, nodePos.move(1)))) {
+      from = nodePos
+      to = nodePos.move(1)
+    }
+    if (from.cmp(to) == 0) return false
+    pm.apply(pm.tr.delete(from, to))
+    if (node && node.isBlock) {
+      let after = selectableBlockFrom(pm.doc, nodePos, 1), afterNode
+      if (!after)
+        pm.setSelection(Pos.before(pm.doc, from))
+      else if ((afterNode = pm.doc.path(after)).isTextblock)
+        pm.setSelection(new Pos(after, 0))
+      else
+        pm.setNodeSelection(new Pos(after, 0).shorten())
+    }
   },
   info: {key: ["Backspace(10)", "Delete(10)", "Mod-Backspace(10)", "Mod-Delete(10)"],
          macKey: ["Ctrl-H(10)", "Alt-Backspace(10)", "Ctrl-D(10)", "Ctrl-Alt-Backspace(10)", "Alt-Delete(10)", "Alt-D(10)"]}
@@ -696,10 +712,10 @@ defineCommand("selectParentBlock", {
 
 // FIXME we'll need some awareness of bidi motion here
 
-function selectableBlockFromSelection(pm, dir, text) {
+function selectableBlockFromSelection(pm, dir) {
   let {head, nodePos, node} = pm.selection
   let pos = node && !node.isInline ? (dir > 0 ? nodePos.move(1) : nodePos) : head.shorten(null, dir > 0 ? 1 : 0)
-  return selectableBlockFrom(pm.doc, pos, dir, text)
+  return selectableBlockFrom(pm.doc, pos, dir)
 }
 
 function selectBlockHorizontally(pm, dir) {

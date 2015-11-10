@@ -26,7 +26,7 @@ export function cmpNode(a, b, comment) {
 }
 
 export function cmpStr(a, b, comment) {
-  let as = a.toString(), bs = b.toString()
+  let as = String(a), bs = String(b)
   if (as != bs)
     throw new Failure("expected " + bs + ", got " + as + (comment ? " (" + comment + ")" : ""))
 }

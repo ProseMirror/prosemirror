@@ -533,22 +533,21 @@ function offsetInElement(element, coords) {
   return offsetInRects(coords, rects)
 }
 
-function selectableBlockIn(doc, pos, dir, text) {
+function selectableBlockIn(doc, pos, dir) {
   let node = doc.path(pos.path)
   for (let offset = pos.offset + (dir > 0 ? 0 : -1); dir > 0 ? offset < node.maxOffset : offset >= 0; offset += dir) {
     let child = node.child(offset)
-    if (child.isTextblock ||
-        !text && child.type.selectable && child.type.contains == null)
+    if (child.isTextblock || (child.type.selectable && child.type.contains == null))
       return pos.path.concat(offset)
 
-    let inside = selectableBlockIn(doc, new Pos(pos.path.concat(offset), dir < 0 ? child.maxOffset : 0), dir, text)
+    let inside = selectableBlockIn(doc, new Pos(pos.path.concat(offset), dir < 0 ? child.maxOffset : 0), dir)
     if (inside) return inside
   }
 }
 
-export function selectableBlockFrom(doc, pos, dir, text) {
+export function selectableBlockFrom(doc, pos, dir) {
   for (;;) {
-    let found = selectableBlockIn(doc, pos, dir, text)
+    let found = selectableBlockIn(doc, pos, dir)
     if (found) return found
     if (pos.depth == 0) break
     pos = pos.shorten(null, dir > 0 ? 1 : 0)
