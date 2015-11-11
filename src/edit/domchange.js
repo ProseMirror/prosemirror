@@ -1,4 +1,4 @@
-import {Pos, findDiffStart, findDiffEnd} from "../model"
+import {Pos, findDiffStart, findDiffEnd, siblingRange} from "../model"
 import {fromDOM} from "../parse/dom"
 import {samePathDepth} from "../transform/tree"
 
@@ -51,8 +51,10 @@ export function applyDOMChange(pm) {
   let changeStart = findDiffStart(pm.doc, updated)
   if (changeStart) {
     let changeEnd = findDiffEndConstrained(pm.doc, updated, changeStart)
+    // Mark nodes touched by this change as 'to be redrawn'
+    pm.markRangeDirty(siblingRange(pm.doc, changeStart.a, changeEnd.a))
+
     pm.tr.replace(changeStart.a, changeEnd.a, updated, changeStart.b, changeEnd.b).apply()
-    pm.operation.fullRedraw = true
     return true
   } else {
     return false

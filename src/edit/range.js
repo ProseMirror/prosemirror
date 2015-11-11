@@ -1,4 +1,3 @@
-import {Map} from "./map"
 import {eventMixin} from "./event"
 
 export class MarkedRange {
@@ -71,18 +70,13 @@ export class RangeStore {
     this.pm = pm
     this.ranges = []
     this.sorted = new RangeSorter
-    this.resetDirty()
-  }
-
-  resetDirty() {
-    this.dirty = new Map
   }
 
   addRange(range) {
     this.ranges.push(range)
     this.sorted.insert({type: "open", at: range.from, range: range})
     this.sorted.insert({type: "close", at: range.to, range: range})
-    this.markDisplayDirty(range)
+    this.pm.markRangeDirty(range)
   }
 
   removeRange(range) {
@@ -91,7 +85,7 @@ export class RangeStore {
       this.ranges.splice(found, 1)
       this.sorted.remove(range.from, range)
       this.sorted.remove(range.to, range)
-      this.markDisplayDirty(range)
+      this.pm.markRangeDirty(range)
       range.clear()
     }
   }
@@ -110,34 +104,6 @@ export class RangeStore {
       }
     }
     this.sorted.resort()
-  }
-
-  markDisplayDirty(range) {
-    this.pm.ensureOperation()
-    let dirty = this.dirty
-    let from = range.from, to = range.to
-    for (let depth = 0, node = this.pm.doc;; depth++) {
-      let fromEnd = depth == from.depth, toEnd = depth == to.depth
-      if (!fromEnd && !toEnd && from.path[depth] == to.path[depth]) {
-        let child = node.child(from.path[depth])
-        if (!dirty.has(child)) dirty.set(child, 1)
-        node = child
-      } else {
-        let start = fromEnd ? from.offset : from.path[depth]
-        let end = toEnd ? to.offset : to.path[depth] + 1
-        if (node.isTextblock) {
-          for (let offset = 0, i = 0; offset < end; i++) {
-            let child = node.child(i)
-            offset += child.offset
-            if (offset > start) dirty.set(child, 2)
-          }
-        } else {
-          for (let i = start; i < end; i++)
-            dirty.set(node.child(i), 2)
-        }
-        break
-      }
-    }
   }
 
   activeRangeTracker() {

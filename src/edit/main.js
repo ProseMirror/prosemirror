@@ -4,6 +4,7 @@ import {spanStylesAt, rangeHasStyle, sliceBetween, Pos, findDiffStart,
         containsStyle, removeStyle} from "../model"
 import {Transform} from "../transform"
 import sortedInsert from "../util/sortedinsert"
+import {Map} from "../util/map"
 
 import {parseOptions, initOptions, setOption} from "./options"
 import {Selection, SelectionRange, posAtCoords, posFromDOM, coordsAtPos,
@@ -50,6 +51,7 @@ export class ProseMirror {
 
     this.mod = Object.create(null)
     this.operation = null
+    this.dirtyNodes = new Map // Maps node object to 1 (re-scan content) or 2 (redraw entirely)
     this.flushScheduled = false
 
     this.sel = new Selection(this)
@@ -177,11 +179,10 @@ export class ProseMirror {
     if (!op || !document.body.contains(this.wrapper)) return
     this.operation = null
 
-    let docChanged = op.doc != this.doc || this.ranges.dirty.size, redrawn = false
+    let docChanged = op.doc != this.doc || this.dirtyNodes.size, redrawn = false
     if (!this.input.composing && (docChanged || op.composingAtStart)) {
-      if (op.fullRedraw) draw(this, this.doc) // FIXME only redraw target block composition
-      else redraw(this, this.ranges.dirty, this.doc, op.doc)
-      this.ranges.resetDirty()
+      redraw(this, this.dirtyNodes, this.doc, op.doc)
+      this.dirtyNodes.clear()
       redrawn = true
     }
 
@@ -302,6 +303,34 @@ export class ProseMirror {
     }
     return this.commandKeys[name] = null
   }
+
+  markRangeDirty(range) {
+    this.ensureOperation()
+    let dirty = this.dirtyNodes
+    let from = range.from, to = range.to
+    for (let depth = 0, node = this.doc;; depth++) {
+      let fromEnd = depth == from.depth, toEnd = depth == to.depth
+      if (!fromEnd && !toEnd && from.path[depth] == to.path[depth]) {
+        let child = node.child(from.path[depth])
+        if (!dirty.has(child)) dirty.set(child, 1)
+        node = child
+      } else {
+        let start = fromEnd ? from.offset : from.path[depth]
+        let end = toEnd ? to.offset : to.path[depth] + 1
+        if (node.isTextblock) {
+          for (let offset = 0, i = 0; offset < end; i++) {
+            let child = node.child(i)
+            offset += child.offset
+            if (offset > start) dirty.set(child, 2)
+          }
+        } else {
+          for (let i = start; i < end; i++)
+            dirty.set(node.child(i), 2)
+        }
+        break
+      }
+    }
+  }
 }
 
 const nullOptions = {}
@@ -314,7 +343,6 @@ class Operation {
     this.sel = pm.sel.range
     this.scrollIntoView = false
     this.focus = false
-    this.fullRedraw = false
     this.composingAtStart = !!pm.input.composing
   }
 }

@@ -165,7 +165,7 @@ handlers.mousedown = (pm, e) => {
   pm.sel.pollForUpdate()
 
   let now = Date.now(), multi = now - lastClick < 500
-  lastClick = now;
+  lastClick = now
   if (pm.input.shiftKey || multi) return
 
   let x = e.clientX, y = e.clientY
@@ -189,7 +189,6 @@ handlers.mousedown = (pm, e) => {
 }
 
 handlers.touchdown = pm => {
-  // FIXME
   pm.sel.pollForUpdate()
 }
 
@@ -222,6 +221,8 @@ handlers.compositionstart = (pm, e) => {
 
   pm.flush()
   pm.input.composing = new Composing(pm, e.data)
+  let above = pm.selection.head.shorten()
+  pm.markRangeDirty({from: above, to: above.move(1)})
 }
 
 handlers.compositionupdate = (pm, e) => {
@@ -263,8 +264,6 @@ handlers.input = (pm) => {
   }
 
   applyDOMChange(pm)
-  // FIXME use our own idea of the selection?
-  pm.sel.pollForUpdate()
   pm.scrollIntoView()
 }
 

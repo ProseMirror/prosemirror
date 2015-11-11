@@ -19,4 +19,7 @@ export const Map = window.Map || class {
   get size() {
     return this.content.length / 2
   }
+  clear() {
+    this.content.length = 0
+  }
 }
