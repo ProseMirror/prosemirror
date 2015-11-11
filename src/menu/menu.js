@@ -93,10 +93,16 @@ export class TooltipDisplay {
   }
 }
 
+function title(pm, command) {
+  let key = pm.keyForCommand(command.name)
+  return key ? command.label + " (" + key + ")" : command.label
+}
+
 function renderIcon(command, menu) {
   let iconClass = "ProseMirror-menuicon"
   if (command.active(menu.pm)) iconClass += " ProseMirror-menuicon-active"
-  let dom = elt("div", {class: iconClass, title: command.label},
+
+  let dom = elt("div", {class: iconClass, title: title(menu.pm, command)},
                 elt("span", {class: "ProseMirror-menuicon ProseMirror-icon-" + command.name}))
   dom.addEventListener("mousedown", e => {
     e.preventDefault(); e.stopPropagation()

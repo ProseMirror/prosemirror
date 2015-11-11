@@ -8,7 +8,7 @@ import sortedInsert from "../util/sortedinsert"
 import {parseOptions, initOptions, setOption} from "./options"
 import {Selection, SelectionRange, posAtCoords, posFromDOM, coordsAtPos,
         scrollIntoView, hasFocus} from "./selection"
-import {requestAnimationFrame, elt} from "../dom"
+import {requestAnimationFrame, elt, browser} from "../dom"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
 import {History} from "./history"
@@ -19,6 +19,7 @@ import {convertFrom} from "../parse"
 import {convertTo} from "../serialize"
 import {initCommands} from "./commands"
 import {RangeStore, MarkedRange} from "./range"
+import {normalizeKeyName} from "./keys"
 
 /**
  * ProseMirror editor class.
@@ -55,6 +56,7 @@ export class ProseMirror {
     this.input = new Input(this)
 
     this.commands = initCommands(this.schema)
+    this.commandKeys = Object.create(null)
 
     initOptions(this)
   }
@@ -278,6 +280,27 @@ export class ProseMirror {
   execCommand(name, params) {
     let cmd = this.commands[name]
     return !!(cmd && cmd.exec(this, params) !== false)
+  }
+
+  keyForCommand(name) {
+    let cached = this.commandKeys[name]
+    if (cached !== undefined) return cached
+
+    let cmd = this.commands[name]
+    if (!cmd) return this.commandKeys[name] = null
+    let key = cmd.info.key || (browser.mac ? cmd.info.macKey : cmd.info.pcKey)
+    if (key) {
+      key = normalizeKeyName(Array.isArray(key) ? key[0] : key)
+      let deflt = this.options.keymap.bindings[key]
+      if (Array.isArray(deflt) ? deflt.indexOf(name) > -1 : deflt == name)
+        return this.commandKeys[name] = key
+    }
+    for (let key in this.options.keymap.bindings) {
+      let bound = this.options.keymap.bindings[key]
+      if (Array.isArray(bound) ? bound.indexOf(name) > -1 : bound == name)
+        return this.commandKeys[name] = key
+    }
+    return this.commandKeys[name] = null
   }
 }
 
