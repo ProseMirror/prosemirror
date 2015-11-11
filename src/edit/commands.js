@@ -824,5 +824,3 @@ defineCommand("selectBlockDown", {
   },
   info: {key: "Down"}
 })
-
-// FIXME shift- ctrl- arrows, pageup, pagedown, etc, when a node is selected

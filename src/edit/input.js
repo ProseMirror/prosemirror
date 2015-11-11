@@ -7,7 +7,7 @@ import {toText} from "../serialize/text"
 import {knownSource, convertFrom} from "../parse"
 
 import {isModifierKey, lookupKey, keyName} from "./keys"
-import {dangerousKeys} from "./dangerouskeys"
+import {captureKeys} from "./capturekeys"
 import {browser, addClass, rmClass} from "../dom"
 import {applyDOMChange, textContext, textInContext} from "./domchange"
 import {SelectionRange, coordsAtPos, rangeFromDOMLoose, selectableNodeUnder} from "./selection"
@@ -108,7 +108,7 @@ export function dispatchKey(pm, name, e) {
   for (let i = 0; !result && i < pm.input.keymaps.length; i++)
     result = lookupKey(name, pm.input.keymaps[i].map, handle, pm)
   if (!result)
-    result = lookupKey(name, pm.options.keymap, handle, pm) || lookupKey(name, dangerousKeys, handle, pm)
+    result = lookupKey(name, pm.options.keymap, handle, pm) || lookupKey(name, captureKeys, handle, pm)
 
   // If the key should be used in sequence with the next key, store the keyname internally.
   if (result == "multi")

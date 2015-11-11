@@ -69,6 +69,10 @@ insertCSS(`
   border-top: 2px solid silver;
 }
 
+.ProseMirror-content img {
+  cursor: default;
+}
+
 /* Make sure li selections wrap around markers */
 
 .ProseMirror-content li {
