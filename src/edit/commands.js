@@ -707,7 +707,11 @@ defineCommand("selectParentBlock", {
   select(pm) {
     return nodeAboveSelection(pm)
   },
-  info: {key: "Esc"}
+  info: {
+    menuGroup: "block",
+    menuRank: 90,
+    key: "Esc"
+  }
 })
 
 // FIXME we'll need some awareness of bidi motion here

@@ -595,4 +595,3 @@ export function setDOMSelectionToPos(pm, pos) {
   sel.removeAllRanges()
   sel.addRange(range)
 }
-
