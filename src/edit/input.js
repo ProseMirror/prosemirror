@@ -141,7 +141,7 @@ function inputText(pm, range, text) {
   let styles = pm.input.storedStyles || spanStylesAt(pm.doc, range.from)
   let tr = pm.tr
   if (!range.empty) tr.delete(range.from, range.to)
-  pm.apply(tr.insert(range.from, pm.schema.text(text, styles)))
+  tr.insert(range.from, pm.schema.text(text, styles)).apply()
   pm.signal("textInput", text)
   pm.scrollIntoView()
 }
@@ -152,7 +152,7 @@ handlers.keypress = (pm, e) => {
   if (dispatchKey(pm, "'" + ch + "'", e)) return
   let sel = pm.selection
   if (sel.nodePos && sel.node.contains == null) {
-    pm.apply(pm.tr.delete(sel.nodePos, sel.nodePos.move(1)))
+    pm.tr.delete(sel.nodePos, sel.nodePos.move(1)).apply()
     sel = pm.selection
   }
   inputText(pm, sel, ch)
@@ -267,7 +267,7 @@ handlers.copy = handlers.cut = (pm, e) => {
     e.clipboardData.setData("text/html", lastCopied.html)
     e.clipboardData.setData("text/plain", lastCopied.text)
     if (e.type == "cut" && !sel.empty)
-      pm.apply(pm.tr.delete(sel.from, sel.to))
+      pm.tr.delete(sel.from, sel.to).apply()
   }
 }
 
@@ -290,7 +290,7 @@ handlers.paste = (pm, e) => {
     } else {
       doc = convertFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
     }
-    pm.apply(pm.tr.replace(sel.from, sel.to, doc, from || Pos.start(doc), to || Pos.end(doc)))
+    pm.tr.replace(sel.from, sel.to, doc, from || Pos.start(doc), to || Pos.end(doc)).apply()
     pm.scrollIntoView()
   }
 }
@@ -343,8 +343,7 @@ handlers.drop = (pm, e) => {
       tr.delete(sel.from, sel.to)
       insertPos = tr.map(insertPos).pos
     }
-    tr.replace(insertPos, insertPos, doc, Pos.start(doc), Pos.end(doc))
-    pm.apply(tr)
+    tr.replace(insertPos, insertPos, doc, Pos.start(doc), Pos.end(doc)).apply()
     pm.setSelection(new SelectionRange(pm.doc, insertPos, tr.map(insertPos).pos))
     pm.focus()
   }

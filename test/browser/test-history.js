@@ -4,7 +4,7 @@ import {cmp, cmpNode, P} from "../cmp"
 
 const test = namespace("history")
 
-function type(pm, text) { pm.apply(pm.tr.insertText(pm.selection.head, text)) }
+function type(pm, text) { pm.tr.insertText(pm.selection.head, text).apply() }
 
 function cut(pm) { pm.history.lastAddedAt = 0 }
 
@@ -44,8 +44,8 @@ test("multiple", pm => {
 
 test("unsynced", pm => {
   type(pm, "hello")
-  pm.apply(pm.tr.insertText(P(0, 0), "oops"), {addToHistory: false})
-  pm.apply(pm.tr.insertText(P(0, 9), "!"), {addToHistory: false})
+  pm.tr.insertText(P(0, 0), "oops").apply({addToHistory: false})
+  pm.tr.insertText(P(0, 9), "!").apply({addToHistory: false})
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p("oops!")))
 })
@@ -54,10 +54,10 @@ test("unsynced_complex", pm => {
   type(pm, "hello")
   cut(pm)
   type(pm, "!")
-  pm.apply(pm.tr.insertText(P(0, 0), "...."))
-  pm.apply(pm.tr.split(P(0, 2)))
+  pm.tr.insertText(P(0, 0), "....").apply()
+  pm.tr.split(P(0, 2)).apply()
   cmpNode(pm.doc, doc(p(".."), p("..hello!")))
-  pm.apply(pm.tr.split(P(0, 1)), {addToHistory: false})
+  pm.tr.split(P(0, 1)).apply({addToHistory: false})
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p("."), p("...hello")))
   pm.execCommand("undo")
@@ -67,7 +67,7 @@ test("unsynced_complex", pm => {
 test("overlapping", pm => {
   type(pm, "hello")
   cut(pm)
-  pm.apply(pm.tr.delete(P(0, 0), P(0, 5)))
+  pm.tr.delete(P(0, 0), P(0, 5)).apply()
   cmpNode(pm.doc, doc(p()))
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p("hello")))
@@ -79,7 +79,7 @@ test("overlapping_no_collapse", pm => {
   pm.history.allowCollapsing = false
   type(pm, "hello")
   cut(pm)
-  pm.apply(pm.tr.delete(P(0, 0), P(0, 5)))
+  pm.tr.delete(P(0, 0), P(0, 5)).apply()
   cmpNode(pm.doc, doc(p()))
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p("hello")))
@@ -91,7 +91,7 @@ test("overlapping_unsynced_delete", pm => {
   type(pm, "hi")
   cut(pm)
   type(pm, "hello")
-  pm.apply(pm.tr.delete(P(0, 0), P(0, 7)), {addToHistory: false})
+  pm.tr.delete(P(0, 0), P(0, 7)).apply({addToHistory: false})
   cmpNode(pm.doc, doc(p()))
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p()))
@@ -102,9 +102,9 @@ test("ping_pong", pm => {
   type(pm, " two")
   cut(pm)
   type(pm, " three")
-  pm.apply(pm.tr.insertText(P(0, 0), "zero "))
+  pm.tr.insertText(P(0, 0), "zero ").apply()
   cut(pm)
-  pm.apply(pm.tr.split(P(0, 0)))
+  pm.tr.split(P(0, 0)).apply()
   pm.setSelection(P(0, 0))
   type(pm, "top")
   for (let i = 0; i < 6; i++) {
@@ -119,15 +119,15 @@ test("ping_pong_unsynced", pm => {
   type(pm, "one")
   type(pm, " two")
   cut(pm)
-  pm.apply(pm.tr.insertText(pm.selection.head, "xxx"), {addToHistory: false})
+  pm.tr.insertText(pm.selection.head, "xxx").apply({addToHistory: false})
   type(pm, " three")
-  pm.apply(pm.tr.insertText(P(0, 0), "zero "))
+  pm.tr.insertText(P(0, 0), "zero ").apply()
   cut(pm)
-  pm.apply(pm.tr.split(P(0, 0)))
+  pm.tr.split(P(0, 0)).apply()
   pm.setSelection(P(0, 0))
   type(pm, "top")
-  pm.apply(pm.tr.insertText(P(0, 0), "yyy"), {addToHistory: false})
-  pm.apply(pm.tr.insertText(P(0, 6), "zzz"), {addToHistory: false})
+  pm.tr.insertText(P(0, 0), "yyy").apply({addToHistory: false})
+  pm.tr.insertText(P(0, 6), "zzz").apply({addToHistory: false})
   for (let i = 0; i < 6; i++) {
     let re = i % 2
     for (let j = 0; j < 4; j++)
@@ -143,7 +143,7 @@ test("compressable", pm => {
   type(pm, "one")
   type(pm, "two")
   type(pm, "three")
-  pm.apply(pm.tr.insertText(P(0, 13), "!"), {addToHistory: false})
+  pm.tr.insertText(P(0, 13), "!").apply({addToHistory: false})
   pm.history.done.startCompression(pm.doc)
   cmpNode(pm.doc, doc(p("XonetwothreeY!")))
   pm.execCommand("undo")

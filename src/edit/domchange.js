@@ -51,7 +51,7 @@ export function applyDOMChange(pm) {
   let changeStart = findDiffStart(pm.doc, updated)
   if (changeStart) {
     let changeEnd = findDiffEndConstrained(pm.doc, updated, changeStart)
-    pm.apply(pm.tr.replace(changeStart.a, changeEnd.a, updated, changeStart.b, changeEnd.b))
+    pm.tr.replace(changeStart.a, changeEnd.a, updated, changeStart.b, changeEnd.b).apply()
     pm.operation.fullRedraw = true
     return true
   } else {

@@ -43,10 +43,11 @@ function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
   let delPos = tr.map(pos).pos
   tr.delete(new Pos(delPos.path, 0), delPos)
   if (join) tr.join(before)
-  pm.apply(tr)
+  tr.apply()
 }
 
 function setAs(pm, pos, type, attrs) {
-  pm.apply(pm.tr.setBlockType(pos, pos, pm.schema.node(type, attrs))
-                .delete(new Pos(pos.path, 0), pos))
+  pm.tr.setBlockType(pos, pos, pm.schema.node(type, attrs))
+       .delete(new Pos(pos.path, 0), pos)
+       .apply()
 }

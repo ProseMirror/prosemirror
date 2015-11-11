@@ -55,7 +55,7 @@ function test(name, f, options, n) {
 }
 
 function type(pm, text, pos) {
-  pm.apply(pm.tr.insertText(pos || pm.selection.head, text))
+  pm.tr.insertText(pos || pm.selection.head, text).apply()
 }
 
 function cut(pm) { pm.history.lastAddedAt = 0 }

@@ -72,7 +72,9 @@ class InputRules {
           let offset = pos.offset - (match[1] || match[0]).length
           let start = new Pos(pos.path, offset)
           let styles = spanStylesAt(this.pm.doc, pos)
-          this.pm.apply(this.pm.tr.delete(start, pos).insert(start, this.pm.schema.text(rule.handler, styles)))
+          this.pm.tr.delete(start, pos)
+                    .insert(start, this.pm.schema.text(rule.handler, styles))
+                    .apply()
         } else {
           rule.handler(this.pm, match, pos)
         }

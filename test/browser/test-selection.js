@@ -92,7 +92,7 @@ test("change_event", pm => {
   cmp(received, 2, "changed back")
   pm.setOption("doc", doc(p("hi")))
   cmp(received, 2, "new doc")
-  pm.apply(pm.tr.insertText(P(0, 2), "you"))
+  pm.tr.insertText(P(0, 2), "you").apply()
   cmp(received, 3, "doc changed")
 }, {doc: doc(p("one"))})
 
@@ -145,13 +145,13 @@ test("coords_round_trip", pm => {
 })
 
 test("follow_change", pm => {
-  pm.apply(pm.tr.insertText(P(0, 0), "xy"))
+  pm.tr.insertText(P(0, 0), "xy").apply()
   cmpStr(pm.selection.head, P(0, 2))
   cmpStr(pm.selection.anchor, P(0, 2))
-  pm.apply(pm.tr.insertText(P(0, 0), "zq"))
+  pm.tr.insertText(P(0, 0), "zq").apply()
   cmpStr(pm.selection.head, P(0, 4))
   cmpStr(pm.selection.anchor, P(0, 4))
-  pm.apply(pm.tr.insertText(P(0, 6), "uv"))
+  pm.tr.insertText(P(0, 6), "uv").apply()
   cmpStr(pm.selection.head, P(0, 4))
   cmpStr(pm.selection.anchor, P(0, 4))
 }, {

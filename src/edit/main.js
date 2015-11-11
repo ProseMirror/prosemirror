@@ -95,7 +95,7 @@ export class ProseMirror {
   /**
    * @return {Transform} A new transform object.
    */
-  get tr() { return new Transform(this.doc) }
+  get tr() { return new EditorTransform(this) }
 
   setContent(value, format) {
     if (format) value = convertFrom(this.schema, value, format)
@@ -316,5 +316,36 @@ class Operation {
     this.focus = false
     this.fullRedraw = false
     this.composingAtStart = !!pm.input.composing
+  }
+}
+
+class EditorTransform extends Transform {
+  constructor(pm) {
+    super(pm.doc)
+    this.pm = pm
+  }
+
+  clearSelection() {
+    let {empty, from, to, nodePos, node} = this.pm.selection
+    if (nodePos && node.type.contains == null)
+      this.delete(nodePos, nodePos.move(1))
+    else if (!empty)
+      this.delete(from, to)
+    return this
+  }
+
+  type(text) {
+    let styles = (!this.steps.length && this.pm.input.storedStyles) || spanStylesAt(this.doc, this.selFrom)
+    this.clearSelection()
+    this.insert(this.selFrom, this.pm.schema.text(text, styles))
+    return this
+  }
+
+  get selHead() { return this.map(this.pm.selection.head).pos }
+  get selFrom() { return this.map(this.pm.selection.from).pos }
+  get selTo() { return this.map(this.pm.selection.to).pos }
+
+  apply(options) {
+    return this.pm.apply(this, options)
   }
 }

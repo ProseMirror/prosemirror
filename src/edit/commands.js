@@ -90,26 +90,17 @@ export function defaultKeymap(pm) {
   return new Keymap(bindings)
 }
 
-function clearSel(pm) {
-  let {empty, from, to, nodePos, node} = pm.selection, tr = pm.tr
-  if (nodePos && node.type.contains == null)
-    tr.delete(nodePos, nodePos.move(1))
-  else if (!empty)
-    tr.delete(from, to)
-  return {tr, head: tr.map(from).pos}
-}
-
 const andScroll = {scrollIntoView: true}
 
 HardBreak.attachCommand("insertHardBreak", type => ({
   label: "Insert hard break",
   run(pm) {
-    let {tr, head} = clearSel(pm)
+    let tr = pm.tr.clearSelection(), head = tr.selHead
     if (pm.doc.path(head.path).type.isCode)
       tr.insertText(head, "\n")
     else
       tr.insert(head, pm.schema.node(type))
-    pm.apply(tr, andScroll)
+    tr.apply(andScroll)
   },
   info: {key: ["Mod-Enter", "Shift-Enter"]}
 }))
@@ -207,8 +198,8 @@ LinkStyle.attachCommand("link", type => ({
 Image.attachCommand("insertImage", type => ({
   label: "Insert image",
   run(pm, src, alt, title) {
-    let {tr, head} = clearSel(pm)
-    return pm.apply(tr.insertInline(head, type.create({src, title, alt})))
+    let tr = pm.tr.clearSelection()
+    return tr.insertInline(tr.selHead, type.create({src, title, alt})).apply(andScroll)
   },
   params: [
     {name: "Image URL", type: "text"},
@@ -271,7 +262,7 @@ defineCommand("deleteSelection", {
       to = nodePos.move(1)
     }
     if (from.cmp(to) == 0) return false
-    pm.apply(pm.tr.delete(from, to))
+    pm.tr.delete(from, to).apply()
     if (node && node.isBlock) {
       let after = selectableBlockFrom(pm.doc, nodePos, 1)
       if (!after)
@@ -289,7 +280,7 @@ defineCommand("deleteSelection", {
 function deleteBarrier(pm, cut) {
   let around = pm.doc.path(cut.path)
   let before = around.child(cut.offset - 1), after = around.child(cut.offset)
-  if (before.type.canContainChildren(after) && pm.apply(pm.tr.join(cut), andScroll) !== false)
+  if (before.type.canContainChildren(after) && pm.tr.join(cut).apply(andScroll) !== false)
     return
 
   let conn
@@ -298,11 +289,11 @@ function deleteBarrier(pm, cut) {
     tr.step("ancestor", cut, end, null, {wrappers: [before, ...conn.map(t => t.create())]})
     tr.join(end)
     tr.join(cut)
-    if (pm.apply(tr, andScroll) !== false) return
+    if (tr.apply(andScroll) !== false) return
   }
 
   let inner = Pos.after(pm.doc, cut)
-  return !inner ? false : pm.apply(pm.tr.lift(inner), andScroll)
+  return !inner ? false : pm.tr.lift(inner).apply(andScroll)
 }
 
 defineCommand("joinBackward", {
@@ -320,11 +311,11 @@ defineCommand("joinBackward", {
 
     // If there is no node before this, try to lift
     if (!before)
-      return pm.apply(pm.tr.lift(head), andScroll)
+      return pm.tr.lift(head).apply(andScroll)
 
     // If the node doesn't allow children, delete it
     if (before.type.contains == null)
-      return pm.apply(pm.tr.delete(cut.move(-1), cut), andScroll)
+      return pm.tr.delete(cut.move(-1), cut).apply(andScroll)
 
     // Apply the joining algorithm
     return deleteBarrier(pm, cut)
@@ -338,7 +329,7 @@ defineCommand("deleteCharBefore", {
     let {head, cursor} = pm.selection
     if (!cursor || head.offset == 0) return false
     let from = moveBackward(pm.doc.path(head.path), head.offset, "char")
-    return pm.apply(pm.tr.delete(new Pos(head.path, from), head), andScroll)
+    return pm.tr.delete(new Pos(head.path, from), head).apply(andScroll)
   },
   info: {key: "Backspace(60)", macKey: "Ctrl-H(40)"}
 })
@@ -349,7 +340,7 @@ defineCommand("deleteWordBefore", {
     let {head, cursor} = pm.selection
     if (!cursor || head.offset == 0) return false
     let from = moveBackward(pm.doc.path(head.path), head.offset, "word")
-    return pm.apply(pm.tr.delete(new Pos(head.path, from), head), andScroll)
+    return pm.tr.delete(new Pos(head.path, from), head).apply(andScroll)
   },
   info: {key: "Mod-Backspace(40)", macKey: "Alt-Backspace(40)"}
 })
@@ -403,7 +394,7 @@ defineCommand("joinForward", {
 
     // If the node doesn't allow children, delete it
     if (after.type.contains == null)
-      return pm.apply(pm.tr.delete(cut, cut.move(1)), andScroll)
+      return pm.tr.delete(cut, cut.move(1)).apply(andScroll)
 
     // Apply the joining algorithm
     return deleteBarrier(pm, cut)
@@ -417,7 +408,7 @@ defineCommand("deleteCharAfter", {
     let {head, cursor} = pm.selection
     if (!cursor || head.offset == pm.doc.path(head.path).maxOffset) return false
     let to = moveForward(pm.doc.path(head.path), head.offset, "char")
-    return pm.apply(pm.tr.delete(head, new Pos(head.path, to)), andScroll)
+    return pm.tr.delete(head, new Pos(head.path, to)).apply(andScroll)
   },
   info: {key: "Delete(60)", macKey: "Ctrl-D(60)"}
 })
@@ -428,7 +419,7 @@ defineCommand("deleteWordAfter", {
     let {head, cursor} = pm.selection
     if (!cursor || head.offset == pm.doc.path(head.path).maxOffset) return false
     let to = moveForward(pm.doc.path(head.path), head.offset, "word")
-    return pm.apply(pm.tr.delete(head, new Pos(head.path, to)), andScroll)
+    return pm.tr.delete(head, new Pos(head.path, to)).apply(andScroll)
   },
   info: {key: "Mod-Delete(40)", macKey: ["Ctrl-Alt-Backspace(40)", "Alt-Delete(40)", "Alt-D(40)"]}
 })
@@ -445,7 +436,7 @@ defineCommand("joinUp", {
     let nodePos = pm.selection.nodePos
     let point = joinPointAbove(pm)
     if (!point) return false
-    pm.apply(pm.tr.join(point))
+    pm.tr.join(point).apply()
     if (nodePos) pm.setNodeSelection(nodePos.move(-1))
   },
   select(pm) { return joinPointAbove(pm) },
@@ -467,7 +458,7 @@ defineCommand("joinDown", {
     let nodePos = pm.selection.nodePos
     let point = joinPointBelow(pm)
     if (!point) return false
-    pm.apply(pm.tr.join(point))
+    pm.tr.join(point).apply()
     if (nodePos) pm.setNodeSelection(nodePos)
   },
   select(pm) { return joinPointBelow(pm) },
@@ -483,7 +474,7 @@ defineCommand("lift", {
   label: "Lift out of enclosing block",
   run(pm) {
     let {from, to} = blockRange(pm)
-    return pm.apply(pm.tr.lift(from, to), andScroll)
+    return pm.tr.lift(from, to).apply(andScroll)
   },
   select(pm) {
     let {from, to} = blockRange(pm)
@@ -500,7 +491,7 @@ function wrapCommand(type, name, labelName, info) {
     label: "Wrap in " + labelName,
     run(pm) {
       let {from, to} = blockRange(pm)
-      return pm.apply(pm.tr.wrap(from, to, type.create()), andScroll)
+      return pm.tr.wrap(from, to, type.create()).apply(andScroll)
     },
     select(pm) {
       let {from, to} = blockRange(pm)
@@ -535,8 +526,8 @@ defineCommand("newlineInCode", {
     if (!nodePos && Pos.samePath(from.path, to.path) &&
         (block = pm.doc.path(from.path)).type.isCode &&
         to.offset < block.maxOffset) {
-      let {tr, head} = clearSel(pm)
-      return pm.apply(tr.insertText(head, "\n"), andScroll)
+      let tr = pm.tr.clearSelection()
+      return tr.insertText(tr.selHead, "\n").apply(andScroll)
     }
     return false
   },
@@ -549,9 +540,9 @@ defineCommand("liftEmptyBlock", {
     let {head, cursor} = pm.selection
     if (!cursor || head.offset > 0) return false
     if (head.path[head.path.length - 1] > 0 &&
-        pm.apply(pm.tr.split(head.shorten())) !== false)
+        pm.tr.split(head.shorten()).apply() !== false)
       return
-    return pm.apply(pm.tr.lift(head), andScroll)
+    return pm.tr.lift(head).apply(andScroll)
   },
   info: {key: "Enter(30)"}
 })
@@ -562,14 +553,14 @@ defineCommand("splitBlock", {
     let {from, to, node} = pm.selection, block = pm.doc.path(to.path)
     if (node && node.isBlock) return false
     let type = to.offset == block.maxOffset ? pm.schema.defaultTextblockType().create() : null
-    return pm.apply(clearSel(pm).tr.split(from, 1, type), andScroll)
+    return pm.tr.clearSelection(pm).split(from, 1, type).apply(andScroll)
   },
   info: {key: "Enter(60)"}
 })
 
 function setType(pm, type, attrs) {
   let {from, to} = pm.selection
-  return pm.apply(pm.tr.setBlockType(from, to, pm.schema.node(type, attrs)), andScroll)
+  return pm.tr.setBlockType(from, to, pm.schema.node(type, attrs)).apply(andScroll)
 }
 
 function blockTypeCommand(type, name, labelName, attrs, key) {
@@ -599,7 +590,7 @@ blockTypeCommand(Paragraph, "makeParagraph", "paragraph", null, "Mod-P")
 blockTypeCommand(CodeBlock, "makeCodeBlock", "code block", null, "Mod-\\")
 
 function insertOpaqueBlock(pm, type, attrs) {
-  let {tr, head} = clearSel(pm)
+  let tr = pm.tr.clearSelection(), head = tr.selHead
   let parent = tr.doc.path(head.shorten().path)
   let node = type.create(attrs)
   if (!parent.type.canContain(node)) return false
@@ -608,7 +599,7 @@ function insertOpaqueBlock(pm, type, attrs) {
     tr.split(head)
     off = 1
   }
-  return pm.apply(tr.insert(head.shorten(null, off), node), andScroll)
+  return tr.insert(head.shorten(null, off), node).apply(andScroll)
 }
 
 HorizontalRule.attachCommand("insertHorizontalRule", type => ({
@@ -644,7 +635,7 @@ defineCommand("textblockType", {
   run(pm, type) {
     // FIXME do nothing if type is current type
     let sel = pm.selection
-    return pm.apply(pm.tr.setBlockType(sel.from, sel.to, type))
+    return pm.tr.setBlockType(sel.from, sel.to, type).apply()
   },
   select(pm) {
     let selectedNode = pm.sel.node
@@ -836,3 +827,5 @@ defineCommand("selectBlockDown", {
   },
   info: {key: "Down"}
 })
+
+// FIXME shift- ctrl- arrows, pageup, pagedown, etc, when a node is selected
