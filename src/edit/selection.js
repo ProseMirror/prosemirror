@@ -7,7 +7,7 @@ export class Selection {
     this.pm = pm
 
     let start = Pos.start(pm.doc)
-    this.range = new SelectionRange(pm.doc, start, start)
+    this.range = new TextSelection(start)
     this.lastNonNodePos = null
 
     this.pollState = null
@@ -29,37 +29,9 @@ export class Selection {
     if (clearLast !== false) this.lastAnchorNode = null
   }
 
-  setNode(pos) {
-    let parent = this.pm.doc.path(pos.path)
-    let rangeFrom = pos, rangeTo = pos.move(1)
-    if (!parent.isTextblock) {
-      rangeFrom = Pos.after(this.pm.doc, rangeFrom)
-      rangeTo = Pos.before(this.pm.doc, rangeTo) || rangeFrom
-      if (!rangeFrom) rangeFrom = rangeTo
-      if (rangeFrom.cmp(rangeTo) > 0) rangeTo = rangeFrom
-    }
-    this.set(new SelectionRange(this.pm.doc, rangeFrom, rangeTo, pos))
-  }
-
   setNodeAndSignal(pos) {
     this.setNode(pos)
     this.pm.signal("selectionChange")
-  }
-
-  map(mapping) {
-    let node = this.range.nodePos
-    if (node) {
-      let newFrom = mapping.map(node, 1).pos
-      let newTo = mapping.map(node.move(1), -1).pos
-      if (newTo.cmp(newFrom.move(1)) == 0)
-        node = newFrom
-      else
-        node = null
-    }
-    return new SelectionRange(this.pm.doc,
-                              Pos.near(this.pm.doc, mapping.map(this.range.anchor).pos, 1),
-                              Pos.near(this.pm.doc, mapping.map(this.range.head).pos, 1),
-                              node)
   }
 
   pollForUpdate() {
@@ -95,8 +67,8 @@ export class Selection {
     let head = posFromDOMInner(this.pm, sel.focusNode, sel.focusOffset)
     this.lastAnchorNode = sel.anchorNode; this.lastAnchorOffset = sel.anchorOffset
     this.lastHeadNode = sel.focusNode; this.lastHeadOffset = sel.focusOffset
-    this.setAndSignal(new SelectionRange(doc, Pos.near(doc, anchor, anchor.cmp(this.range.anchor)),
-                                         Pos.near(doc, head, head.cmp(this.range.head))))
+    this.setAndSignal(new TextSelection(Pos.near(doc, anchor, anchor.cmp(this.range.anchor)),
+                                        Pos.near(doc, head, head.cmp(this.range.head))))
     this.toDOM()
     return true
   }
@@ -208,45 +180,56 @@ function windowRect() {
           top: 0, bottom: window.innerHeight}
 }
 
+export class NodeSelection {
+  constructor(from, to, node) {
+    this.from = from
+    this.to = to
+    this.node = node
+  }
+
+  get empty() { return false }
+
+  eq(other) {
+    return other instanceof NodeSelection && !this.from.cmp(other.from)
+  }
+
+  map(doc, mapping) {
+    let from = mapping.map(this.from, 1).pos
+    let to = mapping.map(this.to, -1).pos
+    if (Pos.samePath(from.path, to.path) && from.offset == to.offset - 1) {
+      let parent = doc.path(from.path)
+      let node = parent.isTextblock ? parent.childAfter(from.offset).node : parent.child(from.offset)
+      if (node.type.selectable)
+        return new NodeSelection(from, to, node)
+    }
+    return new TextSelection(Pos.near(doc, from))
+  }
+}
+
 /**
- * Selection range class.
+ * Text selection range class.
  *
  * A range consists of a head (the active location of the cursor)
  * and an anchor (the start location of the selection).
  */
-export class SelectionRange {
-  constructor(doc, anchor, head, nodePos) {
-    this.doc = doc
+export class TextSelection {
+  constructor(anchor, head) {
     this.anchor = anchor
-    this.head = head
-    this.nodePos = nodePos
+    this.head = head || anchor
   }
 
   get inverted() { return this.anchor.cmp(this.head) > 0 }
   get from() { return this.inverted ? this.head : this.anchor }
   get to() { return this.inverted ? this.anchor : this.head }
   get empty() { return this.anchor.cmp(this.head) == 0 }
-  cmp(other) {
-    if (this.nodePos) {
-      if (!other.nodePos) return 1
-      return this.nodePos.cmp(other.nodePos)
-    } else if (other.nodePos) {
-      return -1
-    } else {
-      return this.anchor.cmp(other.anchor) || this.head.cmp(other.head)
-    }
+
+  eq(other) {
+    return other instanceof TextSelection && !other.head.cmp(this.head) && !other.anchor.cmp(this.anchor)
   }
 
-  get node() {
-    if (!this.nodePos) return null
-    let parent = this.doc.path(this.nodePos.path)
-    if (parent.isTextblock)
-      return parent.childAfter(this.nodePos.offset).node
-    else
-      return parent.child(this.nodePos.offset)
-  }
-  get cursor() {
-    return !this.nodePos && this.empty
+  map(doc, mapping) {
+    return new TextSelection(Pos.near(doc, mapping.map(this.anchor).pos, 1),
+                             Pos.near(doc, mapping.map(this.head).pos, 1))
   }
 }
 
@@ -309,9 +292,8 @@ export function posFromDOM(pm, node, offset) {
 export function rangeFromDOMLoose(pm) {
   if (!hasFocus(pm)) return null
   let sel = getSelection()
-  return new SelectionRange(pm.doc,
-                            posFromDOMInner(pm, sel.anchorNode, sel.anchorOffset, true),
-                            posFromDOMInner(pm, sel.focusNode, sel.focusOffset, true))
+  return new TextSelection(posFromDOMInner(pm, sel.anchorNode, sel.anchorOffset, true),
+                           posFromDOMInner(pm, sel.focusNode, sel.focusOffset, true))
 }
 
 export function findByPath(node, n, fromEnd) {

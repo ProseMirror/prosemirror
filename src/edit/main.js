@@ -7,7 +7,7 @@ import sortedInsert from "../util/sortedinsert"
 import {Map} from "../util/map"
 
 import {parseOptions, initOptions, setOption} from "./options"
-import {Selection, SelectionRange, posAtCoords, posFromDOM, coordsAtPos,
+import {Selection, TextSelection, NodeSelection, posAtCoords, posFromDOM, coordsAtPos,
         scrollIntoView, hasFocus} from "./selection"
 import {requestAnimationFrame, elt, browser} from "../dom"
 import {draw, redraw} from "./draw"
@@ -119,7 +119,7 @@ export class ProseMirror {
   setDoc(doc, sel) {
     if (!sel) {
       let start = Pos.start(doc)
-      sel = new SelectionRange(this.doc, start, start)
+      sel = new TextSelection(start)
     }
     this.signal("beforeSetDoc", doc, sel)
     this.ensureOperation()
@@ -133,7 +133,7 @@ export class ProseMirror {
     this.input.maybeAbortComposition()
     this.ranges.transform(mapping)
     this.doc = doc
-    this.sel.setAndSignal(this.sel.map(mapping))
+    this.sel.setAndSignal(this.sel.range.map(doc, mapping))
     this.signal("change")
   }
 
@@ -144,8 +144,8 @@ export class ProseMirror {
 
   setSelection(rangeOrAnchor, head) {
     let range = rangeOrAnchor
-    if (!(range instanceof SelectionRange))
-      range = new SelectionRange(this.doc, rangeOrAnchor, head || rangeOrAnchor)
+    if (!(range instanceof TextSelection))
+      range = new TextSelection(rangeOrAnchor, head)
     this.checkPos(range.head, true)
     this.checkPos(range.anchor, true)
     this.ensureOperation()
@@ -155,8 +155,12 @@ export class ProseMirror {
 
   setNodeSelection(pos) {
     this.checkPos(pos, false)
+    let parent = this.doc.path(pos.path)
+    if (pos.offset >= parent.maxOffset)
+      throw new Error("Trying to set a node selection at the end of a node")
+    let node = parent.isTextblock ? parent.childAfter(pos.offset).node : parent.child(pos.offset)
     this.input.maybeAbortComposition()
-    this.sel.setNodeAndSignal(pos)
+    this.sel.set(new NodeSelection(pos, pos.move(1), node)
   }
 
   ensureOperation() {
