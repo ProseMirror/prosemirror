@@ -160,7 +160,7 @@ export class ProseMirror {
       throw new Error("Trying to set a node selection at the end of a node")
     let node = parent.isTextblock ? parent.childAfter(pos.offset).node : parent.child(pos.offset)
     this.input.maybeAbortComposition()
-    this.sel.set(new NodeSelection(pos, pos.move(1), node)
+    this.sel.set(new NodeSelection(pos, pos.move(1), node))
   }
 
   ensureOperation() {
@@ -372,9 +372,16 @@ class EditorTransform extends Transform {
     return this
   }
 
-  get selHead() { return this.map(this.pm.selection.head).pos }
-  get selFrom() { return this.map(this.pm.selection.from).pos }
-  get selTo() { return this.map(this.pm.selection.to).pos }
+  get selHead() {
+    let head = this.pm.selection.head
+    return head && this.map(head).pos
+  }
+  get selFrom() {
+    return this.map(this.pm.selection.from).pos
+  }
+  get selTo() {
+    return this.map(this.pm.selection.to).pos
+  }
 
   apply(options) {
     return this.pm.apply(this, options)

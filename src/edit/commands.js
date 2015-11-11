@@ -255,16 +255,20 @@ function moveBackward(parent, offset, by) {
 defineCommand("deleteSelection", {
   label: "Delete the selection",
   run(pm) {
-    let {from, to, nodePos, node} = pm.selection
-    if (node && node.isBlock && pm.doc.path(nodePos.path).length > 1 &&
-        (Pos.before(pm.doc, nodePos) || Pos.after(pm.doc, nodePos.move(1)))) {
-      from = nodePos
-      to = nodePos.move(1)
+    let {from, to, node} = pm.selection
+    let deleteBlock = node && node.isBlock
+    if (deleteBlock && (pm.doc.path(from.path).length == 1 ||
+                        !(Pos.before(pm.doc, from) || Pos.after(pm.doc, to)))) {
+      // Can't delete this block without creating an invalid document
+      from = Pos.after(node, from, from.path)
+      if (!from) return false
+      to = Pos.before(node, to, to.path)
+      deleteBlock = false
     }
     if (from.cmp(to) == 0) return false
     pm.tr.delete(from, to).apply()
-    if (node && node.isBlock) {
-      let after = selectableBlockFrom(pm.doc, nodePos, 1)
+    if (deleteBlock) {
+      let after = selectableBlockFrom(pm.doc, to, 1)
       if (!after)
         pm.setSelection(Pos.before(pm.doc, from))
       else if (pm.doc.path(after).isTextblock)
@@ -299,8 +303,8 @@ function deleteBarrier(pm, cut) {
 defineCommand("joinBackward", {
   label: "Join with the block above",
   run(pm) {
-    let {head, cursor} = pm.selection
-    if (!cursor || head.offset > 0) return false
+    let {head, empty} = pm.selection
+    if (!empty || head.offset > 0) return false
 
     // Find the node before this one
     let before, cut
@@ -326,8 +330,8 @@ defineCommand("joinBackward", {
 defineCommand("deleteCharBefore", {
   label: "Delete a character before the cursor",
   run(pm) {
-    let {head, cursor} = pm.selection
-    if (!cursor || head.offset == 0) return false
+    let {head, empty} = pm.selection
+    if (!empty || head.offset == 0) return false
     let from = moveBackward(pm.doc.path(head.path), head.offset, "char")
     return pm.tr.delete(new Pos(head.path, from), head).apply(andScroll)
   },
@@ -337,8 +341,8 @@ defineCommand("deleteCharBefore", {
 defineCommand("deleteWordBefore", {
   label: "Delete the word before the cursor",
   run(pm) {
-    let {head, cursor} = pm.selection
-    if (!cursor || head.offset == 0) return false
+    let {head, empty} = pm.selection
+    if (!empty || head.offset == 0) return false
     let from = moveBackward(pm.doc.path(head.path), head.offset, "word")
     return pm.tr.delete(new Pos(head.path, from), head).apply(andScroll)
   },
@@ -377,8 +381,8 @@ function moveForward(parent, offset, by) {
 defineCommand("joinForward", {
   label: "Join with the block below",
   run(pm) {
-    let {head, cursor} = pm.selection
-    if (!cursor || head.offset < pm.doc.path(head.path).maxOffset) return false
+    let {head, empty} = pm.selection
+    if (!empty || head.offset < pm.doc.path(head.path).maxOffset) return false
 
     // Find the node after this one
     let after, cut
@@ -405,8 +409,8 @@ defineCommand("joinForward", {
 defineCommand("deleteCharAfter", {
   label: "Delete a character after the cursor",
   run(pm) {
-    let {head, cursor} = pm.selection
-    if (!cursor || head.offset == pm.doc.path(head.path).maxOffset) return false
+    let {head, empty} = pm.selection
+    if (!empty || head.offset == pm.doc.path(head.path).maxOffset) return false
     let to = moveForward(pm.doc.path(head.path), head.offset, "char")
     return pm.tr.delete(head, new Pos(head.path, to)).apply(andScroll)
   },
@@ -416,8 +420,8 @@ defineCommand("deleteCharAfter", {
 defineCommand("deleteWordAfter", {
   label: "Delete a character after the cursor",
   run(pm) {
-    let {head, cursor} = pm.selection
-    if (!cursor || head.offset == pm.doc.path(head.path).maxOffset) return false
+    let {head, empty} = pm.selection
+    if (!empty || head.offset == pm.doc.path(head.path).maxOffset) return false
     let to = moveForward(pm.doc.path(head.path), head.offset, "word")
     return pm.tr.delete(head, new Pos(head.path, to)).apply(andScroll)
   },
@@ -425,19 +429,19 @@ defineCommand("deleteWordAfter", {
 })
 
 function joinPointAbove(pm) {
-  let {nodePos, from} = pm.selection
-  if (nodePos) return joinableBlocks(pm.doc, nodePos) ? nodePos : null
+  let {node, from} = pm.selection
+  if (node) return joinableBlocks(pm.doc, from) ? from : null
   else return joinPoint(pm.doc, from, -1)
 }
 
 defineCommand("joinUp", {
   label: "Join with above block",
   run(pm) {
-    let nodePos = pm.selection.nodePos
+    let node = pm.selection.node
     let point = joinPointAbove(pm)
     if (!point) return false
     pm.tr.join(point).apply()
-    if (nodePos) pm.setNodeSelection(nodePos.move(-1))
+    if (node) pm.setNodeSelection(point.move(-1))
   },
   select(pm) { return joinPointAbove(pm) },
   info: {
@@ -447,37 +451,32 @@ defineCommand("joinUp", {
 })
 
 function joinPointBelow(pm) {
-  let {nodePos, to} = pm.selection
-  if (nodePos) return joinableBlocks(pm.doc, nodePos.move(1)) ? nodePos.move(1) : null
+  let {node, to} = pm.selection
+  if (node) return joinableBlocks(pm.doc, to) ? to : null
   else return joinPoint(pm.doc, to, 1)
 }
 
 defineCommand("joinDown", {
   label: "Join with below block",
   run(pm) {
-    let nodePos = pm.selection.nodePos
+    let node = pm.selection.node
     let point = joinPointBelow(pm)
     if (!point) return false
     pm.tr.join(point).apply()
-    if (nodePos) pm.setNodeSelection(nodePos)
+    if (node) pm.setNodeSelection(point) // FIXME needed?
   },
   select(pm) { return joinPointBelow(pm) },
   info: {key: "Alt-Down"}
 })
 
-function blockRange(pm) {
-  let {nodePos, from, to} = pm.selection
-  return nodePos ? {from: nodePos, to: nodePos.move(1)} : {from, to}
-}
-
 defineCommand("lift", {
   label: "Lift out of enclosing block",
   run(pm) {
-    let {from, to} = blockRange(pm)
+    let {from, to} = pm.selection
     return pm.tr.lift(from, to).apply(andScroll)
   },
   select(pm) {
-    let {from, to} = blockRange(pm)
+    let {from, to} = pm.selection
     return canLift(pm.doc, from, to)
   },
   info: {
@@ -490,11 +489,11 @@ function wrapCommand(type, name, labelName, info) {
   type.attachCommand("wrap" + name, type => ({
     label: "Wrap in " + labelName,
     run(pm) {
-      let {from, to} = blockRange(pm)
+      let {from, to} = pm.selection
       return pm.tr.wrap(from, to, type.create()).apply(andScroll)
     },
     select(pm) {
-      let {from, to} = blockRange(pm)
+      let {from, to} = pm.selection
       return canWrap(pm.doc, from, to, type.create())
     },
     info
@@ -522,8 +521,8 @@ wrapCommand(BlockQuote, "BlockQuote", "block quote", {
 defineCommand("newlineInCode", {
   label: "Insert newline",
   run(pm) {
-    let {from, to, nodePos} = pm.selection, block
-    if (!nodePos && Pos.samePath(from.path, to.path) &&
+    let {from, to, node} = pm.selection, block
+    if (!node && Pos.samePath(from.path, to.path) &&
         (block = pm.doc.path(from.path)).type.isCode &&
         to.offset < block.maxOffset) {
       let tr = pm.tr.clearSelection()
@@ -537,8 +536,8 @@ defineCommand("newlineInCode", {
 defineCommand("liftEmptyBlock", {
   label: "Move current block up",
   run(pm) {
-    let {head, cursor} = pm.selection
-    if (!cursor || head.offset > 0) return false
+    let {head, empty} = pm.selection
+    if (!empty || head.offset > 0) return false
     if (head.path[head.path.length - 1] > 0 &&
         pm.tr.split(head.shorten()).apply() !== false)
       return
@@ -558,16 +557,14 @@ defineCommand("splitBlock", {
   info: {key: "Enter(60)"}
 })
 
-function setType(pm, type, attrs) {
-  let {from, to} = pm.selection
-  return pm.tr.setBlockType(from, to, pm.schema.node(type, attrs)).apply(andScroll)
-}
-
 function blockTypeCommand(type, name, labelName, attrs, key) {
   if (!attrs) attrs = {}
   type.attachCommand(name, type => ({
     label: "Change to " + labelName,
-    run(pm) { return setType(pm, type, attrs) },
+    run(pm) {
+      let {from, to} = pm.selection
+      return pm.tr.setBlockType(from, to, pm.schema.node(type, attrs)).apply(andScroll)
+    },
     select(pm) {
       let {from, to, node} = pm.selection
       if (node)
@@ -633,12 +630,12 @@ defineCommand("redo", {
 defineCommand("textblockType", {
   label: "Change block type",
   run(pm, type) {
-    let sel = pm.selection
-    return pm.tr.setBlockType(sel.from, sel.to, type).apply()
+    let {from, to} = pm.selection
+    return pm.tr.setBlockType(from, to, type).apply()
   },
   select(pm) {
-    let selectedNode = pm.sel.node
-    return !selectedNode || selectedNode.isTextblock
+    let {node} = pm.selection
+    return !node || node.isTextblock
   },
   params: [
     {name: "Type", type: "select", options: listTextblockTypes, default: currentTextblockType, defaultLabel: "Type..."}
@@ -669,22 +666,24 @@ function listTextblockTypes(pm) {
 }
 
 function currentTextblockType(pm) {
-  let sel = pm.selection
-  if (!Pos.samePath(sel.head.path, sel.anchor.path)) return null
+  let {from, to, node} = pm.selection
+  if (!node || node.isInline) {
+    if (!Pos.samePath(from.path, to.path)) return null
+    node = pm.doc.path(node)
+  } else if (!node.isTextblock) {
+    return null
+  }
   let types = listTextblockTypes(pm)
-  let focusNode = pm.doc.path(pm.selection.head.path)
   for (let i = 0; i < types.length; i++)
-    if (types[i].value.sameMarkup(focusNode)) return types[i]
+    if (types[i].value.sameMarkup(node)) return types[i]
 }
 
 function nodeAboveSelection(pm) {
-  let node = pm.selection.nodePos
-  if (node) return node.depth && node.shorten()
-
-  let {head, anchor} = pm.selection, i = 0
-  for (; i < head.depth && i < anchor.depth; i++)
-    if (head.path[i] != anchor.path[i]) break
-  return i == 0 ? false : head.shorten(i - 1)
+  let sel = pm.selection, i = 0
+  if (sel.node) return !!sel.from.depth && sel.from.shorten()
+  for (; i < sel.head.depth && i < sel.anchor.depth; i++)
+    if (sel.head.path[i] != sel.anchor.path[i]) break
+  return i == 0 ? false : sel.head.shorten(i - 1)
 }
 
 defineCommand("selectParentBlock", {
@@ -707,27 +706,27 @@ defineCommand("selectParentBlock", {
 // FIXME we'll need some awareness of bidi motion when determining block start and end
 
 function selectableBlockFromSelection(pm, dir) {
-  let {head, nodePos, node} = pm.selection
-  let pos = node && !node.isInline ? (dir > 0 ? nodePos.move(1) : nodePos) : head.shorten(null, dir > 0 ? 1 : 0)
+  let {from, to, node} = pm.selection
+  let pos = node && node.isBlock ? (dir > 0 ? to : from) : from.shorten(null, dir > 0 ? 1 : 0)
   return selectableBlockFrom(pm.doc, pos, dir)
 }
 
 function selectBlockHorizontally(pm, dir) {
-  let {head, empty, node, nodePos} = pm.selection
+  let {empty, node, from, to} = pm.selection
   if (!empty && !node) return false
 
   if (node && node.isInline) {
-    pm.setSelection(dir > 0 ? nodePos.move(1) : nodePos)
+    pm.setSelection(dir > 0 ? to : from)
     return true
   }
 
   let parent
-  if (!node && (parent = pm.doc.path(head.path)) &&
-      (dir > 0 ? head.offset < parent.maxOffset : head.offset)) {
-    let {node: nextNode, innerOffset} = dir > 0 ? parent.childAfter(head.offset) : parent.childBefore(head.offset)
+  if (!node && (parent = pm.doc.path(from.path)) &&
+      (dir > 0 ? from.offset < parent.maxOffset : from.offset)) {
+    let {node: nextNode, innerOffset} = dir > 0 ? parent.childAfter(from.offset) : parent.childBefore(from.offset)
     if (nextNode && nextNode.type.selectable &&
         (dir > 0 ? !innerOffset : innerOffset == nextNode.offset)) {
-      pm.setNodeSelection(dir < 0 ? head.move(-1) : head)
+      pm.setNodeSelection(dir < 0 ? from.move(-1) : from)
       return true
     }
     return false
@@ -767,20 +766,18 @@ defineCommand("selectBlockRight", {
 })
 
 function selectBlockVertically(pm, dir) {
-  let {empty, head, nodePos, node} = pm.selection
+  let {empty, node, from, to} = pm.selection
   if (!empty && !node) return false
 
   let leavingTextblock = true
-  if (!node || node.isInline) {
-    let pos = !node ? head : dir > 0 ? nodePos.move(1) : nodePos
-    leavingTextblock = verticalMotionLeavesTextblock(pm, pos, dir)
-  }
+  if (!node || node.isInline)
+    leavingTextblock = verticalMotionLeavesTextblock(pm, dir > 0 ? to : from, dir)
 
   if (leavingTextblock) {
     let next = selectableBlockFromSelection(pm, dir)
     if (next && !pm.doc.path(next).isTextblock) {
       pm.setNodeSelection(Pos.from(next))
-      if (!node) pm.sel.lastNonNodePos = head
+      if (!node) pm.sel.lastNonNodePos = from
       return true
     }
   }
@@ -788,20 +785,20 @@ function selectBlockVertically(pm, dir) {
   if (!node) return false
 
   if (node.isInline) {
-    setDOMSelectionToPos(pm, nodePos)
+    setDOMSelectionToPos(pm, from)
     return false
   }
 
   let last = pm.sel.lastNonNodePos
   if (last) {
-    let beyond = dir < 0 ? Pos.after(pm.doc, nodePos.move(1)) : Pos.before(pm.doc, nodePos)
+    let beyond = dir < 0 ? Pos.after(pm.doc, to) : Pos.before(pm.doc, from)
     if (beyond && Pos.samePath(last.path, beyond.path)) {
       setDOMSelectionToPos(pm, last)
       return false
     }
   }
 
-  pm.setSelection(Pos.near(pm.doc, dir < 0 ? nodePos : nodePos.move(1), dir))
+  pm.setSelection(Pos.near(pm.doc, dir < 0 ? from : to, dir))
   return true
 }
 
