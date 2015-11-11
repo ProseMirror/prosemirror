@@ -1,12 +1,10 @@
 import {defineOption} from "../edit"
 import {spanStylesAt} from "../model"
-import {elt} from "../dom"
+import {elt, insertCSS} from "../dom"
 import {Debounced} from "../util/debounce"
 
 import {Tooltip} from "./tooltip"
 import {Menu, TooltipDisplay, commandGroups, forceFontLoad} from "./menu"
-
-import insertCSS from "insert-css"
 
 const classPrefix = "ProseMirror-inlinemenu"
 

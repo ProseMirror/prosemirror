@@ -15,7 +15,6 @@
     "url": "git://github.com/prosemirror/prosemirror.git"
   },
   "dependencies": {
-    "insert-css": "^0.2.0",
     "markdown-it": "^4.0.0"
   },
   "devDependencies": {

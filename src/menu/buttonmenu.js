@@ -1,12 +1,11 @@
 import {defineOption} from "../edit"
-import {elt} from "../dom"
+import {elt, insertCSS} from "../dom"
 import {resolvePath} from "../edit/selection"
 import {Debounced} from "../util/debounce"
 
 import {Tooltip} from "./tooltip"
 import {Menu, TooltipDisplay, forceFontLoad, commandGroups} from "./menu"
 
-import insertCSS from "insert-css"
 import "./icons"
 
 const classPrefix = "ProseMirror-buttonmenu"

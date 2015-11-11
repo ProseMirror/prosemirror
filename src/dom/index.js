@@ -65,3 +65,9 @@ export function contains(parent, child) {
     child = child.parentNode
   return child && parent.contains(child)
 }
+
+export function insertCSS(css) {
+  var style = document.createElement("style");
+  style.textContent = css
+  document.head.insertBefore(style, document.head.firstChild)
+}

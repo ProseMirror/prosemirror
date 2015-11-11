@@ -1,10 +1,8 @@
 import {defineOption} from "../edit"
-import {elt} from "../dom"
+import {elt, insertCSS} from "../dom"
 import {Debounced} from "../util/debounce"
 
 import {Menu, commandGroups} from "./menu"
-
-import insertCSS from "insert-css"
 import "./icons"
 
 defineOption("menuBar", false, function(pm, value) {
