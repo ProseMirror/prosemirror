@@ -1,6 +1,6 @@
 import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmStyle, StrongStyle, LinkStyle, CodeStyle} from "../model"
+        EmStyle, StrongStyle, LinkStyle, CodeStyle, Pos} from "../model"
 import {defineTarget} from "./index"
 
 let doc = null
@@ -142,6 +142,11 @@ function def(cls, method) { cls.prototype.serializeDOM = method }
 
 def(BlockQuote, wrapIn("blockquote"))
 
+BlockQuote.prototype.clicked = (_, path, dom, coords) => {
+  let box = dom.getBoundingClientRect()
+  if (coords.left < box.left + 15) return Pos.from(path)
+}
+
 def(BulletList, wrapIn("ul"))
 
 def(OrderedList, (node, options) => {
@@ -149,6 +154,16 @@ def(OrderedList, (node, options) => {
   if (node.attrs.order > 1) dom.setAttribute("start", node.attrs.order)
   return dom
 })
+
+OrderedList.prototype.clicked = BulletList.prototype.clicked = (_, path, dom, coords) => {
+  let box = dom.getBoundingClientRect()
+  if (coords.left > box.left + 28) return null
+  for (let i = 0; i < dom.childNodes.length; i++) {
+    let childBox = dom.childNodes[i].getBoundingClientRect()
+    if (childBox.top <= coords.top && childBox.bottom >= coords.top)
+      return new Pos(path, i)
+  }
+}
 
 def(ListItem, wrapIn("li"))
 

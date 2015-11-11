@@ -560,7 +560,9 @@ export function selectableNodeUnder(pm, coords) {
     if (dom.hasAttribute("pm-path")) {
       let path = pathFromNode(dom)
       let node = pm.doc.path(path)
-      return node.type.contains == null && node.type.selectable ? new Pos(path, 0).shorten() : null
+      // Leaf nodes are implicitly clickable
+      if (node.type.contains == null && node.type.selectable) return Pos.from(path)
+      return node.type.clicked ? node.type.clicked(node, path, dom, coords) : null
     } else if (dom.hasAttribute("pm-span-atom")) {
       let path = pathFromNode(dom.parentNode)
       let parent = pm.doc.path(path), span = parseSpan(dom.getAttribute("pm-span"))

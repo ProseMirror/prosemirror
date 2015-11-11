@@ -273,10 +273,10 @@ defineCommand("deleteSelection", {
     if (from.cmp(to) == 0) return false
     pm.apply(pm.tr.delete(from, to))
     if (node && node.isBlock) {
-      let after = selectableBlockFrom(pm.doc, nodePos, 1), afterNode
+      let after = selectableBlockFrom(pm.doc, nodePos, 1)
       if (!after)
         pm.setSelection(Pos.before(pm.doc, from))
-      else if ((afterNode = pm.doc.path(after)).isTextblock)
+      else if (pm.doc.path(after).isTextblock)
         pm.setSelection(new Pos(after, 0))
       else
         pm.setNodeSelection(new Pos(after, 0).shorten())

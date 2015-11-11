@@ -73,6 +73,7 @@ insertCSS(`
 
 .ProseMirror-content li {
   position: relative;
+  pointer-events: none; /* Don't do weird stuff with marker clicks */
 }
 
 li.ProseMirror-selectednode {
@@ -85,6 +86,7 @@ li.ProseMirror-selectednode:after {
   left: -32px;
   right: -2px; top: -2px; bottom: -2px;
   border: 2px solid #8cf;
+  pointer-events: none;
 }
 
 
