@@ -357,9 +357,10 @@ class EditorTransform extends Transform {
     let {empty, from, to, node} = this.pm.selection
     if (empty) return this
     if (node && node.type.contains != null) {
-      from = Pos.after(node, from, from.path)
+      let path = from.path.concat(from.offset)
+      from = Pos.start(node, path)
       if (!from) return this
-      to = Pos.before(node, to, to.path)
+      to = Pos.end(node, path)
     }
     this.delete(from, to)
     return this

@@ -260,15 +260,16 @@ defineCommand("deleteSelection", {
     if (deleteBlock && (pm.doc.path(from.path).length == 1 ||
                         !(Pos.before(pm.doc, from) || Pos.after(pm.doc, to)))) {
       // Can't delete this block without creating an invalid document
-      from = Pos.after(node, from, from.path)
+      let path = from.path.concat(from.offset)
+      from = Pos.start(node, path)
       if (!from) return false
-      to = Pos.before(node, to, to.path)
+      to = Pos.end(node, path)
       deleteBlock = false
     }
     if (from.cmp(to) == 0) return false
     pm.tr.delete(from, to).apply()
-    if (deleteBlock) {
-      let after = selectableBlockFrom(pm.doc, to, 1)
+    if (node) {
+      let after = selectableBlockFrom(pm.doc, deleteBlock ? from : from.shorten(), 1)
       if (!after)
         pm.setSelection(Pos.before(pm.doc, from))
       else if (pm.doc.path(after).isTextblock)
@@ -463,7 +464,7 @@ defineCommand("joinDown", {
     let point = joinPointBelow(pm)
     if (!point) return false
     pm.tr.join(point).apply()
-    if (node) pm.setNodeSelection(point) // FIXME needed?
+    if (node) pm.setNodeSelection(point.move(-1))
   },
   select(pm) { return joinPointBelow(pm) },
   info: {key: "Alt-Down"}

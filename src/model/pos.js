@@ -69,11 +69,11 @@ export class Pos {
 
   static fromJSON(json) { return new Pos(json.path, json.offset) }
 
-  static after(node, pos, path) { return findAfter(node, pos, path || []) }
-  static start(node) { return findLeft(node, []) }
+  static after(node, pos) { return findAfter(node, pos, []) }
+  static start(node, path) { return findLeft(node, path ? path.slice() : []) }
 
-  static before(node, pos, path) { return findBefore(node, pos, path || []) }
-  static end(node) { return findRight(node, []) }
+  static before(node, pos) { return findBefore(node, pos, []) }
+  static end(node, path) { return findRight(node, path ? path.slice() : []) }
 
   static near(node, pos, bias) {
     return (bias > 0 && Pos.after(node, pos)) || Pos.before(node, pos) || Pos.after(node, pos)

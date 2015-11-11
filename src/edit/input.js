@@ -252,7 +252,7 @@ function finishComposing(pm) {
   pm.ensureOperation()
   pm.input.composing = null
   if (text != info.data) inputText(pm, info.range, text)
-  if (range && range.cmp(pm.sel.range)) pm.setSelection(range)
+  if (range && !range.eq(pm.sel.range)) pm.setSelection(range)
 }
 
 handlers.input = (pm) => {
