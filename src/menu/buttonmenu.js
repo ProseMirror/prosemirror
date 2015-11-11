@@ -70,7 +70,8 @@ class ButtonMenu {
   }
 
   alignButton() {
-    let blockElt = resolvePath(this.pm.content, this.pm.selection.from.path)
+    let {from, node} = this.pm.selection
+    let blockElt = resolvePath(this.pm.content, node ? from.path.concat(from.offset) : from.path)
     let {top} = blockElt.getBoundingClientRect()
     let around = this.pm.wrapper.getBoundingClientRect()
     this.hamburger.style.top = Math.max(top - this.hamburger.offsetHeight - 2 - around.top, 7) + "px"

@@ -55,6 +55,7 @@ class InputRules {
 
   onTextInput(text) {
     let pos = this.pm.selection.head
+    if (!pos) return
 
     let textBefore, isCode
     let lastCh = text[text.length - 1]

@@ -54,7 +54,9 @@ class InlineMenu {
   }
 
   linkUnderCursor() {
-    let styles = spanStylesAt(this.pm.doc, this.pm.selection.head)
+    let head = this.pm.selection.head
+    if (!head) return null
+    let styles = spanStylesAt(this.pm.doc, head)
     return styles.reduce((found, st) => found || (st.type == "link" && st), null)
   }
 

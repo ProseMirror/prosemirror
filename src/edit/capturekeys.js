@@ -5,7 +5,7 @@ import {Keymap} from "./keys"
 function nothing() {}
 
 function ensureSelection(pm) {
-  if (pm.selection.nodePos) setDOMSelectionToPos(pm, pm.selection.from)
+  if (pm.selection.node) setDOMSelectionToPos(pm, pm.selection.from)
   return false
 }
 

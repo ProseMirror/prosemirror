@@ -669,7 +669,7 @@ function currentTextblockType(pm) {
   let {from, to, node} = pm.selection
   if (!node || node.isInline) {
     if (!Pos.samePath(from.path, to.path)) return null
-    node = pm.doc.path(node)
+    node = pm.doc.path(from.path)
   } else if (!node.isTextblock) {
     return null
   }

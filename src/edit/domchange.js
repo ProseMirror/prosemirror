@@ -21,7 +21,7 @@ function isAtStart(pos, depth) {
 
 function parseNearSelection(pm) {
   let dom = pm.content, node = pm.doc
-  let from = pm.selection.from, to = pm.selection.to
+  let {from, to} = pm.selection
   for (let depth = 0;; depth++) {
     let toNode = node.child(to.path[depth])
     let fromStart = isAtStart(from, depth + 1)

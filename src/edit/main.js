@@ -150,7 +150,7 @@ export class ProseMirror {
     this.checkPos(range.anchor, true)
     this.ensureOperation()
     this.input.maybeAbortComposition()
-    if (range.cmp(this.sel.range)) this.sel.setAndSignal(range)
+    if (!range.eq(this.sel.range)) this.sel.setAndSignal(range)
   }
 
   setNodeSelection(pos) {
@@ -190,10 +190,7 @@ export class ProseMirror {
       redrawn = true
     }
 
-    if ((redrawn ||
-         op.sel.anchor.cmp(this.sel.range.anchor) || op.sel.head.cmp(this.sel.range.head) ||
-         (op.sel.nodePos ? !this.sel.range.nodePos || this.sel.range.nodePos.cmp(op.sel.nodePos) : this.sel.range.nodePos)) &&
-        !this.input.composing)
+    if ((redrawn || !op.sel.eq(this.sel.range)) && !this.input.composing)
       this.sel.toDOM(op.focus)
 
     if (op.scrollIntoView !== false)
@@ -357,11 +354,14 @@ class EditorTransform extends Transform {
   }
 
   clearSelection() {
-    let {empty, from, to, nodePos, node} = this.pm.selection
-    if (nodePos && node.type.contains == null)
-      this.delete(nodePos, nodePos.move(1))
-    else if (!empty)
-      this.delete(from, to)
+    let {empty, from, to, node} = this.pm.selection
+    if (empty) return this
+    if (node && node.type.contains != null) {
+      from = Pos.after(node, from, from.path)
+      if (!from) return this
+      to = Pos.before(node, to, to.path)
+    }
+    this.delete(from, to)
     return this
   }
 

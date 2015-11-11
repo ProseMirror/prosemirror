@@ -151,8 +151,8 @@ handlers.keypress = (pm, e) => {
   let ch = String.fromCharCode(e.charCode)
   if (dispatchKey(pm, "'" + ch + "'", e)) return
   let sel = pm.selection
-  if (sel.nodePos && sel.node.contains == null) {
-    pm.tr.delete(sel.nodePos, sel.nodePos.move(1)).apply()
+  if (sel.node && sel.node.contains == null) {
+    pm.tr.delete(sel.from, sel.to).apply()
     sel = pm.selection
   }
   inputText(pm, sel, ch)
@@ -270,10 +270,10 @@ handlers.input = (pm) => {
 let lastCopied = null
 
 handlers.copy = handlers.cut = (pm, e) => {
-  let sel = pm.selection
-  if (sel.empty) return
+  let {from, to, empty} = pm.selection
+  if (empty) return
   let fragment = pm.selectedDoc
-  lastCopied = {doc: pm.doc, from: sel.from, to: sel.to,
+  lastCopied = {doc: pm.doc, from, to,
                 html: toHTML(fragment, {target: "copy"}),
                 text: toText(fragment)}
 
@@ -282,8 +282,9 @@ handlers.copy = handlers.cut = (pm, e) => {
     e.clipboardData.clearData()
     e.clipboardData.setData("text/html", lastCopied.html)
     e.clipboardData.setData("text/plain", lastCopied.text)
-    if (e.type == "cut" && !sel.empty)
-      pm.tr.delete(sel.from, sel.to).apply()
+    // FIXME ensure invariants are maintained in case of node selection
+    if (e.type == "cut" && !empty)
+      pm.tr.delete(from, to).apply()
   }
 }
 
@@ -306,6 +307,7 @@ handlers.paste = (pm, e) => {
     } else {
       doc = convertFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
     }
+    // FIXME ensure that this doesn't violate invariants when a node is selected
     pm.tr.replace(sel.from, sel.to, doc, from || Pos.start(doc), to || Pos.end(doc)).apply()
     pm.scrollIntoView()
   }
@@ -355,12 +357,11 @@ handlers.drop = (pm, e) => {
     let insertPos = pm.posAtCoords({left: e.clientX, top: e.clientY})
     let tr = pm.tr
     if (pm.input.draggingFrom && !e.ctrlKey) {
-      let sel = pm.selection
-      tr.delete(sel.from, sel.to)
+      tr.clearSelection()
       insertPos = tr.map(insertPos).pos
     }
     tr.replace(insertPos, insertPos, doc, Pos.start(doc), Pos.end(doc)).apply()
-    pm.setSelection(new TextSelection(insertPos, tr.map(insertPos).pos))
+    pm.setSelection(insertPos, tr.map(insertPos).pos)
     pm.focus()
   }
 

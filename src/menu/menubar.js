@@ -120,7 +120,9 @@ class MenuBar {
   }
 
   scrollCursorIfNeeded() {
-    let cursorPos = this.pm.coordsAtPos(this.pm.selection.head)
+    let head = this.pm.selection.head
+    if (!head) return
+    let cursorPos = this.pm.coordsAtPos(head)
     let menuRect = this.menuElt.getBoundingClientRect()
     if (cursorPos.top < menuRect.bottom && cursorPos.bottom > menuRect.top) {
       let scrollable = findWrappingScrollable(this.pm.wrapper)

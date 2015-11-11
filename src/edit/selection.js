@@ -67,8 +67,9 @@ export class Selection {
     let head = posFromDOMInner(this.pm, sel.focusNode, sel.focusOffset)
     this.lastAnchorNode = sel.anchorNode; this.lastAnchorOffset = sel.anchorOffset
     this.lastHeadNode = sel.focusNode; this.lastHeadOffset = sel.focusOffset
-    this.setAndSignal(new TextSelection(Pos.near(doc, anchor, anchor.cmp(this.range.anchor)),
-                                        Pos.near(doc, head, head.cmp(this.range.head))))
+    let prevAnchor = this.range.anchor, prevHead = this.range.head
+    this.setAndSignal(new TextSelection(Pos.near(doc, anchor, prevAnchor && anchor.cmp(prevAnchor)),
+                                        Pos.near(doc, head, prevHead && head.cmp(prevHead))))
     this.toDOM()
     return true
   }
@@ -93,7 +94,7 @@ export class Selection {
   }
 
   toDOM(takeFocus) {
-    if (this.range.nodePos)
+    if (this.range instanceof NodeSelection)
       this.nodeToDOM(takeFocus)
     else
       this.rangeToDOM(takeFocus)
@@ -102,7 +103,7 @@ export class Selection {
   nodeToDOM(takeFocus) {
     window.getSelection().removeAllRanges()
     if (takeFocus) this.pm.content.focus()
-    let pos = this.range.nodePos, node = this.range.node, dom
+    let pos = this.range.from, node = this.range.node, dom
     if (node.isInline)
       dom = findByOffset(resolvePath(this.pm.content, pos.path), pos.offset, true).node
     else
@@ -456,7 +457,7 @@ export function coordsAtPos(pm, pos) {
 const scrollMargin = 5
 
 export function scrollIntoView(pm, pos) {
-  if (!pos) pos = pm.sel.range.head
+  if (!pos) pos = pm.sel.range.head || pm.sel.range.from
   let coords = coordsAtPos(pm, pos)
   for (let parent = pm.content;; parent = parent.parentNode) {
     let atBody = parent == document.body
