@@ -633,7 +633,6 @@ defineCommand("redo", {
 defineCommand("textblockType", {
   label: "Change block type",
   run(pm, type) {
-    // FIXME do nothing if type is current type
     let sel = pm.selection
     return pm.tr.setBlockType(sel.from, sel.to, type).apply()
   },

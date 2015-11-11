@@ -196,7 +196,7 @@ function maybeInheritAttrs(node, wrap) {
 
 Transform.prototype.setBlockType = function(from, to, wrapNode) {
   this.doc.nodesBetween(from, to || from, (node, path) => {
-    if (node.isTextblock) {
+    if (node.isTextblock && !node.sameMarkup(wrapNode)) {
       path = path.slice()
       // Ensure all markup that isn't allowed in the new node type is cleared
       this.clearMarkup(new Pos(path, 0), new Pos(path, node.maxOffset), wrapNode.type)

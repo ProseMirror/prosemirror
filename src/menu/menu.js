@@ -367,7 +367,7 @@ insertCSS(`
   background: #444;
   color: white;
   padding: 2px 2px;
-  z-index: 5;
+  z-index: 15;
 }
 .ProseMirror-select-menu div {
   cursor: pointer;
