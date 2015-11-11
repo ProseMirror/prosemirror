@@ -270,7 +270,7 @@ defineCommand("deleteSelection", {
       else if (pm.doc.path(after).isTextblock)
         pm.setSelection(new Pos(after, 0))
       else
-        pm.setNodeSelection(new Pos(after, 0).shorten())
+        pm.setNodeSelection(Pos.from(after))
     }
   },
   info: {key: ["Backspace(10)", "Delete(10)", "Mod-Backspace(10)", "Mod-Delete(10)"],
@@ -704,7 +704,7 @@ defineCommand("selectParentBlock", {
   }
 })
 
-// FIXME we'll need some awareness of bidi motion here
+// FIXME we'll need some awareness of bidi motion when determining block start and end
 
 function selectableBlockFromSelection(pm, dir) {
   let {head, nodePos, node} = pm.selection
@@ -737,7 +737,7 @@ function selectBlockHorizontally(pm, dir) {
   if (!nextBlock) return false
   let nextNode = pm.doc.path(nextBlock)
   if (!nextNode.isTextblock) {
-    pm.setNodeSelection(new Pos(nextBlock, 0).shorten())
+    pm.setNodeSelection(Pos.from(nextBlock))
     return true
   } else if (node) {
     pm.setSelection(new Pos(nextBlock, dir < 0 ? nextNode.maxOffset : 0))
@@ -745,8 +745,6 @@ function selectBlockHorizontally(pm, dir) {
   }
   return false
 }
-
-// FIXME make scrolling into view an option that can be passed to setSelection etc
 
 defineCommand("selectBlockLeft", {
   label: "Move the selection onto or out of the block to the left",
@@ -781,7 +779,7 @@ function selectBlockVertically(pm, dir) {
   if (leavingTextblock) {
     let next = selectableBlockFromSelection(pm, dir)
     if (next && !pm.doc.path(next).isTextblock) {
-      pm.setNodeSelection(new Pos(next, 0).shorten())
+      pm.setNodeSelection(Pos.from(next))
       if (!node) pm.sel.lastNonNodePos = head
       return true
     }

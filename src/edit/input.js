@@ -159,16 +159,33 @@ handlers.keypress = (pm, e) => {
   e.preventDefault()
 }
 
+let lastClick = 0
+
 handlers.mousedown = (pm, e) => {
-  // FIXME ignore double- and triple-clicks, drags
-  let path = !pm.input.shiftKey && selectableNodeUnder(pm, {left: e.clientX, top: e.clientY})
-  if (path) {
-    pm.setNodeSelection(path)
-    pm.focus()
-    e.preventDefault()
-  } else {
-    pm.sel.pollForUpdate()
+  pm.sel.pollForUpdate()
+
+  let now = Date.now(), multi = now - lastClick < 500
+  lastClick = now;
+  if (pm.input.shiftKey || multi) return
+
+  let x = e.clientX, y = e.clientY
+  let done = () => {
+    removeEventListener("mouseup", up)
+    removeEventListener("mousemove", move)
   }
+  let up = () => {
+    done()
+    let path = selectableNodeUnder(pm, {left: e.clientX, top: e.clientY})
+    if (path) {
+      pm.setNodeSelection(path)
+      pm.focus()
+    }
+  }
+  let move = e => {
+    if (Math.abs(x - e.clientX) > 4 || Math.abs(y - e.clientY) > 4) done()
+  }
+  addEventListener("mouseup", up)
+  addEventListener("mousemove", move)
 }
 
 handlers.touchdown = pm => {
