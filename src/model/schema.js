@@ -199,7 +199,7 @@ export class StyleType {
 
   create(attrs) {
     if (!attrs && this.instance) return this.instance
-    return new StyleMarker(this, buildAttrs(this.attrs, attrs, this))
+    return new StyleMarker(this, buildAttrs(this.attrs, attrs, this, attrs))
   }
 
   static getOrder(styles) {

@@ -204,7 +204,8 @@ def(CodeStyle, () => elt("code"))
 
 def(LinkStyle, style => {
   let dom = elt("a")
-  dom.setAttribute("href", style.attrs.href)
+  if (style.attrs.href) dom.setAttribute("href", style.attrs.href)
+  if (style.attrs.name) dom.setAttribute("name", style.attrs.name)
   if (style.attrs.title) dom.setAttribute("title", style.attrs.title)
   return dom
 })

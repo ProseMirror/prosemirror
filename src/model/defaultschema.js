@@ -1,5 +1,5 @@
 import {SchemaSpec, Schema, Block, Textblock, Inline, Text,
-        Attribute, StyleType} from "./schema"
+        Attribute, StyleType, SchemaError} from "./schema"
 
 export class Doc extends Block {
   static get kind() { return "." }
@@ -62,8 +62,13 @@ export class LinkStyle extends StyleType {
   static get rank() { return  53 }
 }
 LinkStyle.attributes = {
-  href: new Attribute,
-  title: new Attribute({default: ""})
+  href: new Attribute({default: ""}),
+  name: new Attribute({compute: function(arg1, attrs){
+	  if (!attrs.href) {
+		SchemaError.raise("No value supplied for attribute name and href")
+	  }
+  }}),
+  title: new Attribute({default: ""}),
 }
 
 export class CodeStyle extends StyleType {
