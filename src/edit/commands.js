@@ -142,17 +142,17 @@ function generateStyleCommands(type, name, labelName, info) {
   let cap = name.charAt(0).toUpperCase() + name.slice(1)
   type.attachCommand("set" + cap, type => ({
     label: "Set " + labelName,
-    run(pm) { pm.setStyle(type.create(), true) },
+    run(pm) { pm.setStyle(type, true) },
     select(pm) { return canAddInline(pm, type) }
   }))
   type.attachCommand("unset" + cap, type => ({
     label: "Remove " + labelName,
-    run(pm) { pm.setStyle(type.create(), false) },
+    run(pm) { pm.setStyle(type, false) },
     select(pm) { return inlineStyleActive(pm, type) }
   }))
   type.attachCommand(name, type => ({
     label: "Toggle " + labelName,
-    run(pm) { pm.setStyle(type.create(), null) },
+    run(pm) { pm.setStyle(type, null) },
     active(pm) { return inlineStyleActive(pm, type) },
     select(pm) { return inlineStyleApplies(pm, type) },
     info
@@ -186,7 +186,7 @@ LinkStyle.attachCommand("unlink", type => ({
 }))
 LinkStyle.attachCommand("link", type => ({
   label: "Add link",
-  run(pm, href, title) { pm.setStyle(type.create({href, title}), true) },
+  run(pm, href, title) { pm.setStyle(type, true, {href, title}) },
   params: [
     {name: "Target", type: "text"},
     {name: "Title", type: "text", default: ""}

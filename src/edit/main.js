@@ -225,20 +225,19 @@ export class ProseMirror {
     this.ranges.removeRange(range)
   }
 
-  // FIXME stop requiring marker instance?
-  setStyle(st, to) {
+  setStyle(type, to, attrs) {
     let sel = this.selection
     if (sel.empty) {
       let styles = this.activeStyles()
-      if (to == null) to = !containsStyle(styles, st.type)
-      if (to && !this.doc.path(sel.head.path).type.canContainStyle(st.type)) return
-      this.input.storedStyles = to ? st.addToSet(styles) : removeStyle(styles, st.type)
+      if (to == null) to = !containsStyle(styles, type)
+      if (to && !this.doc.path(sel.head.path).type.canContainStyle(type)) return
+      this.input.storedStyles = to ? type.create(attrs).addToSet(styles) : removeStyle(styles, type)
       this.signal("activeStyleChange")
     } else {
-      if (to != null ? to : !rangeHasStyle(this.doc, sel.from, sel.to, st.type))
-        this.apply(this.tr.addStyle(sel.from, sel.to, st))
+      if (to != null ? to : !rangeHasStyle(this.doc, sel.from, sel.to, type))
+        this.apply(this.tr.addStyle(sel.from, sel.to, type.create(attrs)))
       else
-        this.apply(this.tr.removeStyle(sel.from, sel.to, st.type))
+        this.apply(this.tr.removeStyle(sel.from, sel.to, type))
     }
   }
 
@@ -260,7 +259,7 @@ export class ProseMirror {
   }
 
   posFromDOM(element, offset, textblock) {
-    // FIXME do some input checking
+    if (!this.content.contains(element)) return Pos.start(this.doc)
     let pos = posFromDOM(this, element, offset)
     if (textblock !== false && !this.doc.path(pos.path).isTextblock)
       pos = Pos.near(this.doc, pos)
