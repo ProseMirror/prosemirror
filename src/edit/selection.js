@@ -107,7 +107,7 @@ export class Selection {
     if (node.isInline)
       dom = findByOffset(resolvePath(this.pm.content, pos.path), pos.offset, true).node
     else
-      dom = resolvePath(this.pm.content, pos.path.concat(pos.offset))
+      dom = resolvePath(this.pm.content, pos.toPath())
     if (dom == this.lastNode) return
     this.clearNode()
     addNodeSelection(node, dom)
@@ -203,7 +203,13 @@ export class NodeSelection {
       if (node.type.selectable)
         return new NodeSelection(from, to, node)
     }
-    return new TextSelection(Pos.near(doc, from))
+    if (doc.path(from.path).isTextblock)
+      return new TextSelection(from)
+    let path = selectableBlockFrom(doc, from, 1), node
+    if (path && !(node = doc.path(path)).isTextblock)
+      return new NodeSelection(from = Pos.from(path), from.move(1), node)
+    else
+      return new TextSelection(path ? new Pos(path, 0) : Pos.before(doc, head))
   }
 }
 
@@ -229,8 +235,17 @@ export class TextSelection {
   }
 
   map(doc, mapping) {
-    return new TextSelection(Pos.near(doc, mapping.map(this.anchor).pos, 1),
-                             Pos.near(doc, mapping.map(this.head).pos, 1))
+    let head = mapping.map(this.head).pos
+    if (!doc.path(head.path).isTextblock) {
+      let path = selectableBlockFrom(doc, head, 1), node
+      if (!path)
+        head = Pos.before(doc, head)
+      else if ((node = doc.path(path)).isTextblock)
+        head = new Pos(path, 0)
+      else
+        return new NodeSelection(head = Pos.from(path), head.move(1), node)
+    }
+    return new TextSelection(head, Pos.near(doc, mapping.map(this.anchor).pos, 1))
   }
 }
 
@@ -326,17 +341,19 @@ function parseSpan(span) {
 }
 
 function findByOffset(node, offset, after) {
-  function search(node, domOffset) {
-    if (node.nodeType != 1) return
-    let range = node.getAttribute("pm-span")
-    if (range) {
-      let {from, to} = parseSpan(range)
-      if (after ? +from == offset : +to >= offset)
-        return {node: node, parent: node.parentNode, offset: domOffset,
-                innerOffset: offset - +from}
-    } else {
-      for (let ch = node.firstChild, i = 0; ch; ch = ch.nextSibling, i++) {
-        let result = search(ch, i)
+  function search(node) {
+    for (let ch = node.firstChild, i = 0, attr; ch; ch = ch.nextSibling, i++) {
+      if (ch.nodeType != 1) continue
+      if (attr = ch.getAttribute("pm-span")) {
+        let {from, to} = parseSpan(attr)
+        if (after ? from == offset : to >= offset)
+          return {node: ch, offset: i, innerOffset: offset - from}
+      } else if (attr = ch.getAttribute("pm-path")) {
+        let diff = offset - +attr
+        if (diff == 0 || (after && diff == 1))
+          return {node: ch, offset: i, innerOffset: diff}
+      } else {
+        let result = search(ch)
         if (result) return result
       }
     }
@@ -375,7 +392,7 @@ function DOMFromPos(parent, pos) {
   let found = findByOffset(node, pos.offset), inner
   if (!found) return {node: node, offset: 0}
   if (found.node.hasAttribute("pm-span-atom") || !(inner = leafAt(found.node, found.innerOffset)))
-    return {node: found.parent, offset: found.offset + (found.innerOffset ? 1 : 0)}
+    return {node: found.node.parentNode, offset: found.offset + (found.innerOffset ? 1 : 0)}
   else
     return inner
 }

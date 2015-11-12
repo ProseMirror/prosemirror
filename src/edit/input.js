@@ -375,7 +375,7 @@ handlers.drop = (pm, e) => {
     let insertPos = pm.posAtCoords({left: e.clientX, top: e.clientY})
     let tr = pm.tr
     if (pm.input.draggingFrom && !e.ctrlKey) {
-      tr.clearSelection()
+      tr.deleteSelection()
       insertPos = tr.map(insertPos).pos
     }
     tr.replace(insertPos, insertPos, doc, Pos.start(doc), Pos.end(doc)).apply()

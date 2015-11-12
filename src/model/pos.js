@@ -51,6 +51,10 @@ export class Pos {
     return new Pos(this.path, this.offset + by)
   }
 
+  toPath(offset = 0) {
+    return this.path.concat(this.offset + offset)
+  }
+
   extend(pos) {
     let path = this.path.slice(), add = this.offset
     for (let i = 0; i < pos.path.length; i++) {

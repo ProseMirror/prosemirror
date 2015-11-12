@@ -95,12 +95,13 @@ const andScroll = {scrollIntoView: true}
 HardBreak.attachCommand("insertHardBreak", type => ({
   label: "Insert hard break",
   run(pm) {
-    let tr = pm.tr.clearSelection(), head = tr.selHead
-    if (pm.doc.path(head.path).type.isCode)
-      tr.insertText(head, "\n")
+    let {node, from} = pm.selection
+    if (node && node.isBlock)
+      return false
+    else if (pm.doc.path(from.path).type.isCode)
+      return pm.typeText("\n").apply(andScroll)
     else
-      tr.insert(head, pm.schema.node(type))
-    tr.apply(andScroll)
+      return pm.replaceSelection(type.create()).apply(andScroll)
   },
   key: ["Mod-Enter", "Shift-Enter"]
 }))
@@ -202,8 +203,7 @@ LinkStyle.attachCommand("link", type => ({
 Image.attachCommand("insertImage", type => ({
   label: "Insert image",
   run(pm, src, alt, title) {
-    let tr = pm.tr.clearSelection()
-    return tr.insertInline(tr.selHead, type.create({src, title, alt})).apply(andScroll)
+    return pm.replaceSelection(type.create({src, title, alt})).apply(andScroll)
   },
   params: [
     {name: "Image URL", type: "text"},
@@ -265,28 +265,7 @@ function moveBackward(parent, offset, by) {
 defineCommand("deleteSelection", {
   label: "Delete the selection",
   run(pm) {
-    let {from, to, node} = pm.selection
-    let deleteBlock = node && node.isBlock
-    if (deleteBlock && (pm.doc.path(from.path).length == 1 ||
-                        !(Pos.before(pm.doc, from) || Pos.after(pm.doc, to)))) {
-      // Can't delete this block without creating an invalid document
-      let path = from.path.concat(from.offset)
-      from = Pos.start(node, path)
-      if (!from) return false
-      to = Pos.end(node, path)
-      deleteBlock = false
-    }
-    if (from.cmp(to) == 0) return false
-    pm.tr.delete(from, to).apply()
-    if (node) {
-      let after = selectableBlockFrom(pm.doc, deleteBlock ? from : from.shorten(), 1)
-      if (!after)
-        pm.setSelection(Pos.before(pm.doc, from))
-      else if (pm.doc.path(after).isTextblock)
-        pm.setSelection(new Pos(after, 0))
-      else
-        pm.setNodeSelection(Pos.from(after))
-    }
+    return pm.replaceSelection().apply(andScroll)
   },
   key: ["Backspace(10)", "Delete(10)", "Mod-Backspace(10)", "Mod-Delete(10)"],
   macKey: ["Ctrl-H(10)", "Alt-Backspace(10)", "Ctrl-D(10)", "Ctrl-Alt-Backspace(10)", "Alt-Delete(10)", "Alt-D(10)"]
@@ -538,11 +517,10 @@ defineCommand("newlineInCode", {
     let {from, to, node} = pm.selection, block
     if (!node && Pos.samePath(from.path, to.path) &&
         (block = pm.doc.path(from.path)).type.isCode &&
-        to.offset < block.maxOffset) {
-      let tr = pm.tr.clearSelection()
-      return tr.insertText(tr.selHead, "\n").apply(andScroll)
-    }
-    return false
+        to.offset < block.maxOffset)
+      return pm.typeText("\n").apply(andScroll)
+    else
+      return false
   },
   key: "Enter(10)"
 })
@@ -566,7 +544,7 @@ defineCommand("splitBlock", {
     let {from, to, node} = pm.selection, block = pm.doc.path(to.path)
     if (node && node.isBlock) return false
     let type = to.offset == block.maxOffset ? pm.schema.defaultTextblockType().create() : null
-    return pm.tr.clearSelection(pm).split(from, 1, type).apply(andScroll)
+    return pm.tr.delete(from, to).split(from, 1, type).apply(andScroll)
   },
   key: "Enter(60)"
 })
@@ -600,22 +578,11 @@ blockTypeCommand(Heading, "makeH6", "heading 6", {level: 6}, "Mod-H '6'")
 blockTypeCommand(Paragraph, "makeParagraph", "paragraph", null, "Mod-P")
 blockTypeCommand(CodeBlock, "makeCodeBlock", "code block", null, "Mod-\\")
 
-function insertOpaqueBlock(pm, type, attrs) {
-  let tr = pm.tr.clearSelection(), head = tr.selHead
-  let parent = tr.doc.path(head.shorten().path)
-  let node = type.create(attrs)
-  if (!parent.type.canContain(node)) return false
-  let off = 0
-  if (head.offset) {
-    tr.split(head)
-    off = 1
-  }
-  return tr.insert(head.shorten(null, off), node).apply(andScroll)
-}
-
 HorizontalRule.attachCommand("insertHorizontalRule", type => ({
   label: "Insert horizontal rule",
-  run(pm) { return insertOpaqueBlock(pm, type) },
+  run(pm) {
+    return pm.replaceSelection(type.create()).apply(andScroll)
+  },
   key: "Mod-Space"
 }))
 

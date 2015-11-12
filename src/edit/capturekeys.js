@@ -1,3 +1,5 @@
+import {Pos} from "../model"
+
 import {setDOMSelectionToPos} from "./selection"
 import {browser} from "../dom"
 import {Keymap} from "./keys"
@@ -5,7 +7,8 @@ import {Keymap} from "./keys"
 function nothing() {}
 
 function ensureSelection(pm) {
-  if (pm.selection.node) setDOMSelectionToPos(pm, pm.selection.from)
+  if (pm.selection.node)
+    setDOMSelectionToPos(pm, Pos.near(pm.doc, pm.selection.from, 1))
   return false
 }
 
@@ -45,6 +48,7 @@ let keys = {
   keys[key] = keys["Shift-" + key] = keys["Mod-" + key] = keys["Shift-Mod-" + key] =
     keys["Alt-" + key] = keys["Shift-Alt-" + key] = ensureSelection
 })
+;["Left", "Mod-Left", "Right", "Mod-Right", "Up", "Down"].forEach(key => delete keys[key])
 
 if (browser.mac)
   keys["Ctrl-F"] = keys["Ctrl-B"] = keys["Ctrl-P"] = keys["Ctrl-N"] =

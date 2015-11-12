@@ -172,7 +172,8 @@ function moveText(tr, doc, before, after) {
  * @return this
  */
 Transform.prototype.delete = function(from, to) {
-  return this.replace(from, to)
+  if (from.cmp(to)) this.replace(from, to)
+  return this
 }
 
 /**
@@ -224,6 +225,13 @@ Transform.prototype.replace = function(from, to, source, start, end) {
   return this
 }
 
+Transform.prototype.replaceWith = function(from, to, nodes) {
+  if (!Array.isArray(nodes)) nodes = [nodes]
+  if (!Pos.samePath(from.path, to.path)) return this
+  this.step("replace", from, to, from, {nodes: nodes, openLeft: 0, openRight: 0})
+  return this
+}
+
 /**
  * Insert a node at a given position.
  *
@@ -232,10 +240,7 @@ Transform.prototype.replace = function(from, to, source, start, end) {
  * @return {this}
  */
 Transform.prototype.insert = function(pos, nodes) {
-  if (!Array.isArray(nodes)) nodes = [nodes]
-  this.step("replace", pos, pos, pos,
-            {nodes: nodes, openLeft: 0, openRight: 0})
-  return this
+  return this.replaceWith(pos, pos, nodes)
 }
 
 Transform.prototype.insertInline = function(pos, nodes) {
