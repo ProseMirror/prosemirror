@@ -43,11 +43,11 @@ export class Selection {
         // Abort
       } else if (this.pm.operation) {
         this.pollTimeout = setTimeout(check, 20)
-      } else if (this.readUpdate()) {
+      } else if (!this.readUpdate() && ++n == 1) {
+        this.pollTimeout = setTimeout(check, 50)
+      } else {
         this.pollState = null
         this.pollToSync()
-      } else if (++n == 1) {
-        this.pollTimeout = setTimeout(check, 50)
       }
     }
     this.pollTimeout = setTimeout(check, 20)
