@@ -26,6 +26,7 @@ insertCSS(`
 
 .ProseMirror-content ul, .ProseMirror-content ol {
   padding-left: 30px;
+  cursor: default;
 }
 
 .ProseMirror-content blockquote {

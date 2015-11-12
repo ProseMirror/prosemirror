@@ -57,11 +57,11 @@ class InlineMenu {
     let head = this.pm.selection.head
     if (!head) return null
     let styles = spanStylesAt(this.pm.doc, head)
-    return styles.reduce((found, st) => found || (st.type == "link" && st), null)
+    return styles.reduce((found, st) => found || (st.type.name == "link" && st), null)
   }
 
   showLink(link, pos) {
-    let node = elt("div", {class: classPrefix + "-linktext"}, elt("a", {href: link.href, title: link.title}, link.href))
+    let node = elt("div", {class: classPrefix + "-linktext"}, elt("a", {href: link.attrs.href, title: link.attrs.title}, link.attrs.href))
     this.tooltip.open(node, pos)
   }
 }
