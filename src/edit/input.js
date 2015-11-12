@@ -10,7 +10,7 @@ import {isModifierKey, lookupKey, keyName} from "./keys"
 import {captureKeys} from "./capturekeys"
 import {browser, addClass, rmClass} from "../dom"
 import {applyDOMChange, textContext, textInContext} from "./domchange"
-import {TextSelection, coordsAtPos, rangeFromDOMLoose, selectableNodeUnder} from "./selection"
+import {TextSelection, coordsAtPos, rangeFromDOMLoose, selectableNodeAbove} from "./selection"
 
 let stopSeq = null
 
@@ -159,9 +159,27 @@ handlers.keypress = (pm, e) => {
   e.preventDefault()
 }
 
+function selectClickedNode(pm, e) {
+  let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY}, true)
+  if (!pos) return pm.sel.pollForUpdate()
+
+  let {node, from} = pm.selection
+  if (node && pos.depth >= from.depth && pos.shorten(from.depth).cmp(from) == 0) {
+    if (from.depth == 0) return pm.sel.pollForUpdate()
+    pos = from.shorten()
+  }
+
+  pm.setNodeSelection(pos)
+  pm.focus()
+  e.preventDefault()
+}
+
 let lastClick = 0
 
 handlers.mousedown = (pm, e) => {
+  if (e.ctrlKey)
+    return selectClickedNode(pm, e)
+
   pm.sel.pollForUpdate()
 
   let now = Date.now(), multi = now - lastClick < 500
@@ -175,9 +193,9 @@ handlers.mousedown = (pm, e) => {
   }
   let up = () => {
     done()
-    let path = selectableNodeUnder(pm, {left: e.clientX, top: e.clientY})
-    if (path) {
-      pm.setNodeSelection(path)
+    let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY})
+    if (pos) {
+      pm.setNodeSelection(pos)
       pm.focus()
     }
   }

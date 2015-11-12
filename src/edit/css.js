@@ -80,6 +80,9 @@ insertCSS(`
   position: relative;
   pointer-events: none; /* Don't do weird stuff with marker clicks */
 }
+.ProseMirror-content li > * {
+  pointer-events: auto;
+}
 
 li.ProseMirror-selectednode {
   outline: none;

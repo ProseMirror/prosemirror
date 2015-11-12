@@ -537,15 +537,19 @@ export function selectableBlockFrom(doc, pos, dir) {
   }
 }
 
-export function selectableNodeUnder(pm, coords) {
-  let dom = document.elementFromPoint(coords.left, coords.top)
+export function selectableNodeAbove(pm, dom, coords, liberal) {
   for (; dom && dom != pm.content; dom = dom.parentNode) {
     if (dom.hasAttribute("pm-path")) {
       let path = pathFromNode(dom)
       let node = pm.doc.path(path)
       // Leaf nodes are implicitly clickable
-      if (node.type.contains == null && node.type.selectable) return Pos.from(path)
-      return node.type.clicked ? node.type.clicked(node, path, dom, coords) : null
+      if (node.type.clicked) {
+        let result = node.type.clicked(node, path, dom, coords)
+        if (result) return result
+      }
+      if ((liberal || node.type.contains == null) && node.type.selectable)
+        return Pos.from(path)
+      return null
     } else if (dom.hasAttribute("pm-span-atom")) {
       let path = pathFromNode(dom.parentNode)
       let parent = pm.doc.path(path), span = parseSpan(dom.getAttribute("pm-span"))
