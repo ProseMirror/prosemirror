@@ -6,7 +6,6 @@ import {defaultSchema as schema} from "../src/model"
 import "../src/inputrules/autoinput"
 import "../src/menu/inlinemenu"
 import "../src/menu/menubar"
-import "../src/menu/buttonmenu"
 import "../src/collab"
 
 let te = document.querySelector("#content")
@@ -46,7 +45,6 @@ function makeEditor(where, collab) {
     autoInput: true,
     inlineMenu: true,
     menuBar: {float: true},
-    buttonMenu: {followCursor: true},
     doc: doc,
     collab: collab
   })

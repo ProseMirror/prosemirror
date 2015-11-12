@@ -17,6 +17,7 @@ class InlineMenu {
   constructor(pm, config) {
     this.pm = pm
     this.items = (config && config.items) || commandGroups(pm, "inline")
+    this.nodeItems = (config && config.nodeItems) || commandGroups(pm, "block")
     this.showLinks = config ? config.showLinks !== false : true
     this.debounced = new Debounced(pm, 100, () => this.update())
 
@@ -42,13 +43,15 @@ class InlineMenu {
   update() {
     if (this.menu.active) return
 
-    let sel = this.pm.selection, link
+    let {empty, node, head} = this.pm.selection, link
     if (!this.pm.hasFocus())
       this.tooltip.close()
-    else if (!sel.empty)
-      this.menu.show(this.items, topCenterOfSelection())
+    else if (node && node.isBlock)
+      this.menu.show(this.nodeItems, topOfNodeSelection(this.pm))
+    else if (!empty)
+      this.menu.show(this.items, node ? topOfNodeSelection(this.pm) : topCenterOfSelection())
     else if (this.showLinks && (link = this.linkUnderCursor()))
-      this.showLink(link, this.pm.coordsAtPos(sel.head))
+      this.showLink(link, this.pm.coordsAtPos(head))
     else
       this.tooltip.close()
   }
@@ -87,6 +90,13 @@ function topCenterOfSelection() {
     }
   }
   return {top, left: (left + right) / 2}
+}
+
+function topOfNodeSelection(pm) {
+  let selected = pm.content.querySelector(".ProseMirror-selectednode")
+  if (!selected) return {left: 0, top: 0}
+  let box = selected.getBoundingClientRect()
+  return {left: Math.min((box.left + box.right) / 2, box.left + 20), top: box.top}
 }
 
 insertCSS(`

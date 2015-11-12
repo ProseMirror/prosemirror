@@ -160,7 +160,7 @@ export class ProseMirror {
       throw new Error("Trying to set a node selection at the end of a node")
     let node = parent.isTextblock ? parent.childAfter(pos.offset).node : parent.child(pos.offset)
     this.input.maybeAbortComposition()
-    this.sel.set(new NodeSelection(pos, pos.move(1), node))
+    this.sel.setAndSignal(new NodeSelection(pos, pos.move(1), node))
   }
 
   ensureOperation() {
@@ -252,7 +252,10 @@ export class ProseMirror {
   }
 
   hasFocus() {
-    return hasFocus(this)
+    if (this.sel.range instanceof NodeSelection)
+      return document.activeElement == this.content
+    else
+      return hasFocus(this)
   }
 
   posAtCoords(coords) {
