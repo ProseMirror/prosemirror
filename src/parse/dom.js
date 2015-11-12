@@ -254,10 +254,9 @@ function inline(dom, context, style) {
 }
 
 LinkStyle.register("parseDOM", {tag: "a", parse: (dom, context, style) => {
-  inline(dom, context, style.create({
-    href: dom.getAttribute("href"),
-    title: dom.getAttribute("title")
-  }))
+  let href = dom.getAttribute("href")
+  if (!href) return false
+  inline(dom, context, style.create({href, title: dom.getAttribute("title")}))
 }})
 
 EmStyle.register("parseDOM", {tag: "i", parse: inline})
