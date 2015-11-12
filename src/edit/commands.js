@@ -209,7 +209,15 @@ Image.attachCommand("insertImage", type => ({
   select(pm) {
     return pm.doc.path(pm.selection.from.path).type.canContainType(type)
   },
-  info: {menuGroup: "inline", menuRank: 40}
+  info: {
+    menuGroup: "inline",
+    menuRank: 40,
+    prefillParams(pm) {
+      let {node} = pm.selection
+      if (node && node.type == type)
+        return [node.attrs.src, node.attrs.alt, node.attrs.title]
+    }
+  }
 }))
 
 /**

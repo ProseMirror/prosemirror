@@ -1,3 +1,5 @@
+// FIXME move this into core
+
 export class Debounced {
   constructor(pm, delay, f) {
     this.pm = pm
