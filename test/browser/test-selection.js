@@ -1,6 +1,6 @@
 import {namespace} from "./def"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, img, strong, code, a, a2, br, hr} from "../build"
-import {cmp, gt, cmpStr, P} from "../cmp"
+import {cmp, cmpNode, gt, cmpStr, P} from "../cmp"
 import {allPositions} from "../fuzz/pos"
 
 const test = namespace("selection")
@@ -156,4 +156,17 @@ test("follow_change", pm => {
   cmpStr(pm.selection.anchor, P(0, 4))
 }, {
   doc: doc(p("hi"))
+})
+
+test("replace_with_block", pm => {
+  pm.setSelection(P(0, 3))
+  pm.replaceSelection(pm.schema.node("horizontal_rule")).apply()
+  cmpNode(pm.doc, doc(p("foo"), hr, p("bar")), "split paragraph")
+  cmpStr(pm.selection.head, P(2, 0), "moved after rule")
+  pm.setSelection(P(2, 3))
+  pm.replaceSelection(pm.schema.node("horizontal_rule")).apply()
+  cmpNode(pm.doc, doc(p("foo"), hr, p("bar"), hr), "inserted after")
+  cmpStr(pm.selection.head, P(2, 3), "stayed in paragraph")
+}, {
+  doc: doc(p("foobar"))
 })

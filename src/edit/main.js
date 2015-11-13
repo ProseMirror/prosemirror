@@ -379,7 +379,7 @@ function replaceSelectionInline(pm, newNode, inheritStyles) {
     tr.delete(from, to)
     insertPos = from
   } else if (insertPos = Pos.start(node, from.toPath())) {
-    tr.delete(insertPos, Pos.end(node, to.Path()))
+    tr.delete(insertPos, Pos.end(node, from.toPath()))
   } else {
     let para = pm.schema.defaultTextblockType()
     let parent = pm.doc.path(from.path)

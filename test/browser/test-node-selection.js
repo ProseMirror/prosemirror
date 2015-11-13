@@ -1,6 +1,6 @@
 import {namespace} from "./def"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, img, strong, code, a, a2, br, hr} from "../build"
-import {cmp, cmpStr, cmpNode, P} from "../cmp"
+import {cmp, cmpStr, cmpNode, is, P} from "../cmp"
 
 const test = namespace("node-selection")
 
@@ -120,8 +120,6 @@ test("delete-block", pm => {
   pm.setNodeSelection(P(0, 0, 0))
   pm.execCommand("deleteSelection")
   cmpNode(pm.doc, doc(ul(li(p()), li(p("baz")))), "don't delete only child")
-  cmp(pm.selection.node, undefined, "lose node selection")
-  cmpStr(pm.selection.head, P(0, 0, 0, 0), "still in paragraph")
   pm.setNodeSelection(P(0, 1))
   pm.execCommand("deleteSelection")
   cmpNode(pm.doc, doc(ul(li(p()))), "delete list item")
@@ -137,3 +135,50 @@ test("delete-hr", pm => {
   cmpNode(pm.doc, doc(p("a"), p("b")), "deleted second hr")
   cmpStr(pm.selection.head, P(1, 0), "moved to paragraph")
 }, {doc: doc(p("a"), hr, hr, p("b"))})
+
+test("delete-selection", pm => {
+  pm.setNodeSelection(P(0, 3))
+  pm.replaceSelection(null).apply()
+  cmpNode(pm.doc, doc(p("foobar"), blockquote(p("hi")), p("ay")), "deleted img")
+  cmpStr(pm.selection.head, P(0, 3), "cursor at img")
+  pm.setNodeSelection(P(1, 0))
+  pm.replaceSelection(null).apply()
+  cmpNode(pm.doc, doc(p("foobar"), blockquote(p()), p("ay")), "deleted content")
+  cmpStr(pm.selection.from, P(1, 0), "cursor stays at block")
+  pm.setNodeSelection(P(1))
+  pm.replaceSelection(null).apply()
+  cmpNode(pm.doc, doc(p("foobar"), p("ay")), "deleted blockquote")
+  cmpStr(pm.selection.from, P(1, 0), "cursor moved ahead")
+  pm.setNodeSelection(P(1))
+  pm.replaceSelection(null).apply()
+  cmpNode(pm.doc, doc(p("foobar")), "deleted paragraph")
+  cmpStr(pm.selection.from, P(0, 6), "cursor moved back")
+}, {doc: doc(p("foo", img, "bar"), blockquote(p("hi")), p("ay"))})
+
+test("replace-selection-inline", pm => {
+  pm.setNodeSelection(P(0, 3))
+  pm.replaceSelection(pm.schema.node("hard_break")).apply()
+  cmpNode(pm.doc, doc(p("foo", br, "bar", img, "baz")), "replaced with br")
+  cmpStr(pm.selection.head, P(0, 4), "after inserted node")
+  is(pm.selection.empty, "empty selection")
+  pm.setNodeSelection(P(0, 7))
+  pm.replaceSelection(pm.schema.text("abc")).apply()
+  cmpNode(pm.doc, doc(p("foo", br, "barabcbaz")), "replaced with text")
+  cmpStr(pm.selection.head, P(0, 10), "after text")
+  is(pm.selection.empty, "again empty selection")
+  pm.setNodeSelection(P(0))
+  pm.replaceSelection(pm.schema.text("xyz")).apply()
+  cmpNode(pm.doc, doc(p("xyz")), "replaced all of paragraph")
+}, {doc: doc(p("foo", img, "bar", img, "baz"))})
+
+test("replace-selection-block", pm => {
+  pm.setNodeSelection(P(1))
+  pm.replaceSelection(pm.schema.node("code_block")).apply()
+  cmpNode(pm.doc, doc(p("abc"), pre(), hr, blockquote(p("ow"))), "replace with code block")
+  cmpStr(pm.selection.from, P(2), "moved to hr")
+  cmp(pm.replaceSelection(pm.schema.node("list_item")).apply(), false, "can't replace with non-fitting")
+  pm.setNodeSelection(P(3))
+  pm.replaceSelection(pm.schema.node("paragraph")).apply()
+  cmpNode(pm.doc, doc(p("abc"), pre(), hr, p()), "replace with paragraph")
+  cmpStr(pm.selection.head, P(3, 0))
+}, {doc: doc(p("abc"), hr, hr, blockquote(p("ow")))})
