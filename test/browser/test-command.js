@@ -235,6 +235,31 @@ test("joinUp",
 test("joinUp",
      doc(ul(li(p("foo")), li(p("<a>bar")))),
      doc(ul(li(p("foo"), p("bar")))))
+test("joinUp",
+     doc(ul(li(p("foo")), li("<a>", p("bar")))),
+     doc(ul(li(p("foo")), li(p("bar")))))
+test("joinUp",
+     doc(ul(li(p("foo")), "<a>", li(p("bar")))),
+     doc(ul(li(p("foo"), p("bar")))))
+
+test("joinDown",
+     doc(blockquote(p("foo<a>")), blockquote(p("bar"))),
+     doc(blockquote(p("foo"), p("<a>bar"))))
+test("joinDown",
+     doc(blockquote(p("foo")), blockquote(p("<a>bar"))),
+     doc(blockquote(p("foo")), blockquote(p("bar"))))
+test("joinDown",
+     doc(ul(li(p("foo<a>"))), ul(li(p("bar")))),
+     doc(ul(li(p("foo")), li(p("bar")))))
+test("joinDown",
+     doc(ul(li(p("<a>foo")), li(p("bar")))),
+     doc(ul(li(p("foo"), p("bar")))))
+test("joinDown",
+     doc(ul(li("<a>", p("foo")), li(p("bar")))),
+     doc(ul(li(p("foo")), li(p("bar")))))
+test("joinDown",
+     doc(ul("<a>", li(p("foo")), li(p("bar")))),
+     doc(ul(li(p("foo"), p("bar")))))
 
 test("lift",
      doc(blockquote(p("<a>foo"))),
