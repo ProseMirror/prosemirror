@@ -403,7 +403,8 @@ function replaceSelectionBlock(pm, newNode) {
   let {node, from, to} = pm.selection, tr = pm.tr
   if (node && node.isBlock) {
     let parent = tr.doc.path(from.path)
-    if (parent.type.canContain(newNode))
+    if (parent.type.canContain(newNode) &&
+        (Pos.start(newNode) || Pos.before(pm.doc, from) || Pos.after(pm.doc, to)))
       return tr.replaceWith(from, to, newNode)
     else
       return tr

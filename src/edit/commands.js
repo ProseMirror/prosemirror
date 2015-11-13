@@ -554,9 +554,13 @@ defineCommand("splitBlock", {
   label: "Split the current block",
   run(pm) {
     let {from, to, node} = pm.selection, block = pm.doc.path(to.path)
-    if (node && node.isBlock) return false
-    let type = to.offset == block.maxOffset ? pm.schema.defaultTextblockType().create() : null
-    return pm.tr.delete(from, to).split(from, 1, type).apply(andScroll)
+    if (node && node.isBlock) {
+      if (!from.offset) return false
+      return pm.tr.split(from).apply(andScroll)
+    } else {
+      let type = to.offset == block.maxOffset ? pm.schema.defaultTextblockType().create() : null
+      return pm.tr.delete(from, to).split(from, 1, type).apply(andScroll)
+    }
   },
   key: "Enter(60)"
 })

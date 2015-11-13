@@ -276,6 +276,9 @@ test("lift",
 test("lift",
      doc(blockquote(ul(li(p("foo<a>"))))),
      doc(blockquote(p("foo<a>"))))
+test("lift",
+     doc(blockquote("<a>", ul(li(p("foo"))))),
+     doc(ul(li(p("foo")))))
 
 test("wrapBulletList",
      doc(p("<a>foo")),
@@ -305,6 +308,9 @@ test("wrapBlockQuote",
 test("wrapBlockQuote",
      doc(blockquote(p("fo<a>o"))),
      doc(blockquote(blockquote(p("foo")))))
+test("wrapBlockQuote",
+     doc("<a>", ul(li(p("foo")))),
+     doc(blockquote(ul(li(p("foo"))))))
 
 test("splitBlock",
      doc(p("foo<a>")),
@@ -321,6 +327,12 @@ test("splitBlock",
 test("splitBlock",
      doc(p("fo<a>ob<b>ar")),
      doc(p("fo"), p("ar")))
+test("splitBlock",
+     doc(ol(li(p("a")), "<a>", li(p("b")), li(p("c")))),
+     doc(ol(li(p("a"))), ol(li(p("b")), li(p("c")))))
+test("splitBlock",
+     doc(ol("<a>", li(p("a")), li(p("b")), li(p("c")))),
+     doc(ol(li(p("a")), li(p("b")), li(p("c")))))
 
 test("newlineInCode",
      doc(pre("foo<a>bar")),
@@ -359,6 +371,9 @@ test("makeParagraph",
 test("makeParagraph",
      doc(h1("fo<a>o", em("bar"))),
      doc(p("foo", em("bar"))))
+test("makeParagraph",
+     doc("<a>", h1("foo")),
+     doc(p("foo")))
 
 test("makeCodeBlock",
      doc(h1("fo<a>o")),
@@ -379,3 +394,9 @@ test("insertHorizontalRule",
 test("insertHorizontalRule",
      doc(p("fo<a>o"), p("b<b>ar")),
      doc(p("fo"), hr, p("ar")))
+test("insertHorizontalRule",
+     doc("<a>", p("foo"), p("bar")),
+     doc(hr, p("bar")))
+test("insertHorizontalRule",
+     doc("<a>", p("bar")),
+     doc(p("bar")))
