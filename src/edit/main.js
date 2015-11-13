@@ -174,10 +174,12 @@ export class ProseMirror {
   }
 
   ensureOperation() {
-    if (!this.operation) {
-      this.sel.beforeStartOp()
-      this.operation = new Operation(this)
-    }
+    return this.operation || this.startOperation()
+  }
+
+  startOperation() {
+    this.sel.beforeStartOp()
+    this.operation = new Operation(this)
     if (!this.flushScheduled) {
       requestAnimationFrame(() => {
         this.flushScheduled = false
