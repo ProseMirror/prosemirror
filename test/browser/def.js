@@ -5,13 +5,19 @@ let tempPMs = null
 
 export function tempEditors(options) {
   let space = document.querySelector("#workspace")
-  if (tempPMs) tempPMs.forEach(pm => space.removeChild(pm.wrapper))
+  if (tempPMs) {
+    tempPMs.forEach(pm => space.removeChild(pm.wrapper))
+    tempPMs = null
+  }
   return tempPMs = options.map(options => {
     if (!options) options = {}
     options.place = space
     let pm = new ProseMirror(options)
-    if (options.doc && options.doc.tag && options.doc.tag.a)
-      pm.setSelection(options.doc.tag.a, options.doc.tag.b)
+    let a = options.doc && options.doc.tag && options.doc.tag.a
+    if (a) {
+      if (options.doc.path(a.path).isTextblock) pm.setSelection(a, options.doc.tag.b)
+      else pm.setNodeSelection(a)
+    }
     return pm
   })
 }

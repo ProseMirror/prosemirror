@@ -525,6 +525,18 @@ defineCommand("newlineInCode", {
   key: "Enter(10)"
 })
 
+defineCommand("createParagraphNear", {
+  label: "Create a paragraph near the selected leaf block",
+  run(pm) {
+    let {from, to, node} = pm.selection
+    if (!node || !node.isBlock || node.type.contains) return false
+    let side = from.offset ? to : from
+    pm.tr.insert(side, pm.schema.defaultTextblockType().create()).apply(andScroll)
+    pm.setSelection(new Pos(side.toPath(), 0))
+  },
+  key: "Enter(20)"
+})
+
 defineCommand("liftEmptyBlock", {
   label: "Move current block up",
   run(pm) {

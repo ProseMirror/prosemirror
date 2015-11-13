@@ -9,7 +9,6 @@ function test(cmd, before, after) {
   let known = used[cmd] || 0
   defTest("command_" + cmd + (known ? "_" + (known + 1) : ""), () => {
     let pm = tempEditor({doc: before})
-    pm.setSelection(before.tag.a, before.tag.b || before.tag.a)
     pm.execCommand(cmd)
     cmpNode(pm.doc, after)
   })
@@ -314,6 +313,13 @@ test("liftEmptyBlock",
 test("liftEmptyBlock",
      doc(ul(li(p("hi")), li(p("<a>")))),
      doc(ul(li(p("hi"))), p()))
+
+test("createParagraphNear",
+     doc("<a>", hr),
+     doc(p(), hr))
+test("createParagraphNear",
+     doc(p(), "<a>", hr),
+     doc(p(), hr, p()))
 
 test("makeH1",
      doc(p("fo<a>o")),
