@@ -59,18 +59,28 @@ export class Selection {
       sel.focusNode != this.lastHeadNode || sel.focusOffset != this.lastHeadOffset
   }
 
+  storeDOMState() {
+    let sel = getSelection()
+    this.lastAnchorNode = sel.anchorNode; this.lastAnchorOffset = sel.anchorOffset
+    this.lastHeadNode = sel.focusNode; this.lastHeadOffset = sel.focusOffset
+  }
+
   readUpdate() {
     if (this.pm.input.composing || !hasFocus(this.pm) || !this.domChanged()) return false
 
     let sel = getSelection(), doc = this.pm.doc
     let anchor = posFromDOMInner(this.pm, sel.anchorNode, sel.anchorOffset)
     let head = posFromDOMInner(this.pm, sel.focusNode, sel.focusOffset)
-    this.lastAnchorNode = sel.anchorNode; this.lastAnchorOffset = sel.anchorOffset
-    this.lastHeadNode = sel.focusNode; this.lastHeadOffset = sel.focusOffset
     let prevAnchor = this.range.anchor, prevHead = this.range.head
-    this.setAndSignal(new TextSelection(Pos.near(doc, anchor, prevAnchor && anchor.cmp(prevAnchor)),
-                                        Pos.near(doc, head, prevHead && head.cmp(prevHead))))
-    this.toDOM()
+    let newHead = Pos.near(doc, anchor, prevAnchor && anchor.cmp(prevAnchor))
+    let newAnchor = Pos.near(doc, head, prevHead && head.cmp(prevHead))
+    this.setAndSignal(new TextSelection(newAnchor, newHead))
+    if (newHead.cmp(head) || newAnchor.cmp(anchor)) {
+      this.toDOM()
+    } else {
+      this.clearNode()
+      this.storeDOMState()
+    }
     return true
   }
 
@@ -148,9 +158,7 @@ export class Selection {
     sel.addRange(range)
     if (sel.extend)
       sel.extend(head.node, head.offset)
-
-    this.lastAnchorNode = anchor.node; this.lastAnchorOffset = anchor.offset
-    this.lastHeadNode = head.node; this.lastHeadOffset = head.offset
+    this.storeDOMState()
   }
 
   receivedFocus() {
@@ -209,7 +217,7 @@ export class NodeSelection {
     if (path && !(node = doc.path(path)).isTextblock)
       return new NodeSelection(from = Pos.from(path), from.move(1), node)
     else
-      return new TextSelection(path ? new Pos(path, 0) : Pos.before(doc, head))
+      return new TextSelection(path ? new Pos(path, 0) : Pos.before(doc, from))
   }
 }
 
