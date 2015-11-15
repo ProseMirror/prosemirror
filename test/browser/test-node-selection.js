@@ -4,7 +4,7 @@ import {cmp, cmpStr, cmpNode, is, P} from "../cmp"
 
 const test = namespace("node-selection")
 
-test("parent-block", pm => {
+test("parent_block", pm => {
   pm.setSelection(P(0, 0, 1, 1))
   pm.execCommand("selectParentBlock")
   cmpStr(pm.selection.from, P(0, 0, 1), "to paragraph")
@@ -16,7 +16,7 @@ test("parent-block", pm => {
   cmpStr(pm.selection.from, P(0), "stop at toplevel")
 }, {doc: doc(ul(li(p("foo"), p("bar")), li(p("baz"))))})
 
-test("through-inline-node", pm => {
+test("through_inline_node", pm => {
   pm.setSelection(P(0, 3))
   pm.execCommand("selectBlockRight")
   cmpStr(pm.selection.from, P(0, 3), "moved right onto image")
@@ -30,7 +30,7 @@ test("through-inline-node", pm => {
   cmpStr(pm.selection.anchor, P(0, 3), "moved left past'")
 }, {doc: doc(p("foo", img, "bar"))})
 
-test("onto-block", pm => {
+test("onto_block", pm => {
   pm.setSelection(P(0, 5))
   pm.execCommand("selectBlockDown")
   cmpStr(pm.selection.from, P(1), "moved down onto hr")
@@ -39,7 +39,7 @@ test("onto-block", pm => {
   cmpStr(pm.selection.from, P(1), "moved up onto hr")
 }, {doc: doc(p("hello"), hr, ul(li(p("there"))))})
 
-test("through-double-block", pm => {
+test("through_double_block", pm => {
   pm.setSelection(P(0, 0, 5))
   pm.execCommand("selectBlockDown")
   cmpStr(pm.selection.from, P(1), "moved down onto hr")
@@ -52,7 +52,7 @@ test("through-double-block", pm => {
   cmpStr(pm.selection.from, P(1), "moved up onto hr")
 }, {doc: doc(blockquote(p("hello")), hr, hr, p("there"))})
 
-test("horizontally-through-block", pm => {
+test("horizontally_through_block", pm => {
   pm.setSelection(P(0, 3))
   pm.execCommand("selectBlockRight")
   cmpStr(pm.selection.from, P(1), "right into first hr")
@@ -68,7 +68,7 @@ test("horizontally-through-block", pm => {
   cmpStr(pm.selection.head, P(0, 3), "left out of hr")
 }, {doc: doc(p("foo"), hr, hr, p("bar"))})
 
-test("block-out-of-image", pm => {
+test("block_out_of_image", pm => {
   pm.setNodeSelection(P(0, 3))
   pm.execCommand("selectBlockDown")
   cmpStr(pm.selection.from, P(1), "down into hr")
@@ -77,7 +77,7 @@ test("block-out-of-image", pm => {
   cmpStr(pm.selection.from, P(1), "up into hr")
 }, {doc: doc(p("foo", img), hr, p(img, "bar"))})
 
-test("lift-preserves", pm => {
+test("lift_preserves", pm => {
   pm.setNodeSelection(P(0, 0, 0, 0))
   pm.execCommand("lift")
   cmpNode(pm.doc, doc(ul(li(p("hi")))), "lifted")
@@ -87,14 +87,14 @@ test("lift-preserves", pm => {
   cmpStr(pm.selection.from, P(0), "preserved selection again")
 }, {doc: doc(ul(li(blockquote(p("hi")))))})
 
-test("lift-at-selection-level", pm => {
+test("lift_at_selection_level", pm => {
   pm.setNodeSelection(P(0, 0))
   pm.execCommand("lift")
   cmpNode(pm.doc, doc(ul(li(p("a")), li(p("b")))), "lifted list")
   cmpStr(pm.selection.from, P(0), "preserved selection")
 }, {doc: doc(blockquote(ul(li(p("a")), li(p("b")))))})
 
-test("join-precisely-down", pm => {
+test("join_precisely_down", pm => {
   pm.setNodeSelection(P(0, 0))
   cmp(pm.execCommand("joinDown"), false, "don't join parent")
   pm.setNodeSelection(P(0))
@@ -103,7 +103,7 @@ test("join-precisely-down", pm => {
   cmpStr(pm.selection.from, P(0), "selected joined node")
 }, {doc: doc(blockquote(p("foo")), blockquote(p("bar")))})
 
-test("join-precisely-up", pm => {
+test("join_precisely_up", pm => {
   pm.setNodeSelection(P(1, 0))
   cmp(pm.execCommand("joinUp"), false, "don't join parent")
   pm.setNodeSelection(P(1))
@@ -112,7 +112,7 @@ test("join-precisely-up", pm => {
   cmpStr(pm.selection.from, P(0), "selected joined node")
 }, {doc: doc(blockquote(p("foo")), blockquote(p("bar")))})
 
-test("delete-block", pm => {
+test("delete_block", pm => {
   pm.setNodeSelection(P(0))
   pm.execCommand("deleteSelection")
   cmpNode(pm.doc, doc(ul(li(p("bar")), li(p("baz")))), "paragraph vanished")
@@ -126,7 +126,7 @@ test("delete-block", pm => {
   cmpStr(pm.selection.head, P(0, 0, 0, 0), "back to paragraph above")
 }, {doc: doc(p("foo"), ul(li(p("bar")), li(p("baz"))))})
 
-test("delete-hr", pm => {
+test("delete_hr", pm => {
   pm.setNodeSelection(P(1))
   pm.execCommand("deleteSelection")
   cmpNode(pm.doc, doc(p("a"), hr, p("b")), "deleted first hr")
@@ -136,7 +136,7 @@ test("delete-hr", pm => {
   cmpStr(pm.selection.head, P(1, 0), "moved to paragraph")
 }, {doc: doc(p("a"), hr, hr, p("b"))})
 
-test("delete-selection", pm => {
+test("delete_selection", pm => {
   pm.setNodeSelection(P(0, 3))
   pm.replaceSelection(null).apply()
   cmpNode(pm.doc, doc(p("foobar"), blockquote(p("hi")), p("ay")), "deleted img")
@@ -155,7 +155,7 @@ test("delete-selection", pm => {
   cmpStr(pm.selection.from, P(0, 6), "cursor moved back")
 }, {doc: doc(p("foo", img, "bar"), blockquote(p("hi")), p("ay"))})
 
-test("replace-selection-inline", pm => {
+test("replace_selection_inline", pm => {
   pm.setNodeSelection(P(0, 3))
   pm.replaceSelection(pm.schema.node("hard_break")).apply()
   cmpNode(pm.doc, doc(p("foo", br, "bar", img, "baz")), "replaced with br")
@@ -171,7 +171,7 @@ test("replace-selection-inline", pm => {
   cmpNode(pm.doc, doc(p("xyz")), "replaced all of paragraph")
 }, {doc: doc(p("foo", img, "bar", img, "baz"))})
 
-test("replace-selection-block", pm => {
+test("replace_selection_block", pm => {
   pm.setNodeSelection(P(1))
   pm.replaceSelection(pm.schema.node("code_block")).apply()
   cmpNode(pm.doc, doc(p("abc"), pre(), hr, blockquote(p("ow"))), "replace with code block")
