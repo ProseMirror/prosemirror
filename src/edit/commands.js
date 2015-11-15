@@ -99,9 +99,9 @@ HardBreak.attachCommand("insertHardBreak", type => ({
     if (node && node.isBlock)
       return false
     else if (pm.doc.path(from.path).type.isCode)
-      return pm.typeText("\n").apply(andScroll)
+      return pm.tr.typeText("\n").apply(andScroll)
     else
-      return pm.replaceSelection(type.create()).apply(andScroll)
+      return pm.tr.replaceSelection(type.create()).apply(andScroll)
   },
   key: ["Mod-Enter", "Shift-Enter"]
 }))
@@ -203,7 +203,7 @@ LinkStyle.attachCommand("link", type => ({
 Image.attachCommand("insertImage", type => ({
   label: "Insert image",
   run(pm, src, alt, title) {
-    return pm.replaceSelection(type.create({src, title, alt})).apply(andScroll)
+    return pm.tr.replaceSelection(type.create({src, title, alt})).apply(andScroll)
   },
   params: [
     {name: "Image URL", type: "text"},
@@ -265,7 +265,7 @@ function moveBackward(parent, offset, by) {
 defineCommand("deleteSelection", {
   label: "Delete the selection",
   run(pm) {
-    return pm.replaceSelection().apply(andScroll)
+    return pm.tr.replaceSelection().apply(andScroll)
   },
   key: ["Backspace(10)", "Delete(10)", "Mod-Backspace(10)", "Mod-Delete(10)"],
   macKey: ["Ctrl-H(10)", "Alt-Backspace(10)", "Ctrl-D(10)", "Ctrl-Alt-Backspace(10)", "Alt-Delete(10)", "Alt-D(10)"]
@@ -518,7 +518,7 @@ defineCommand("newlineInCode", {
     if (!node && Pos.samePath(from.path, to.path) &&
         (block = pm.doc.path(from.path)).type.isCode &&
         to.offset < block.maxOffset)
-      return pm.typeText("\n").apply(andScroll)
+      return pm.tr.typeText("\n").apply(andScroll)
     else
       return false
   },
@@ -597,7 +597,7 @@ blockTypeCommand(CodeBlock, "makeCodeBlock", "code block", null, "Mod-\\")
 HorizontalRule.attachCommand("insertHorizontalRule", type => ({
   label: "Insert horizontal rule",
   run(pm) {
-    return pm.replaceSelection(type.create()).apply(andScroll)
+    return pm.tr.replaceSelection(type.create()).apply(andScroll)
   },
   key: "Mod-Space"
 }))

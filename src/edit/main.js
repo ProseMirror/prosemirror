@@ -100,41 +100,6 @@ export class ProseMirror {
    */
   get tr() { return new EditorTransform(this) }
 
-  replaceSelection(node, inheritStyles) {
-    let {empty, from, to, node: selNode} = this.selection, parent
-    if (node && node.isInline && inheritStyles !== false) {
-      let styles = empty ? this.input.storedStyles : spanStylesAt(this.doc, from)
-      node = node.type.create(node.attrs, node.text, styles)
-    }
-
-    if (selNode && selNode.isTextblock && node && node.isInline) {
-      // Putting inline stuff onto a selected textblock puts it inside
-      from = new Pos(from.toPath(), 0)
-      to = new Pos(from.path, selNode.maxOffset)
-    } else if (selNode) {
-      // This node can not simply be removed/replaced. Remove its parent as well
-      while (from.depth && from.offset == 0 && (parent = this.doc.path(from.path)) &&
-             from.offset == parent.maxOffset - 1 &&
-             !parent.type.canBeEmpty && !(node && parent.type.canContain(node))) {
-        from = from.shorten()
-        to = to.shorten(null, 1)
-      }
-    } else if (node && node.isBlock && this.doc.path(from.path.slice(0, from.depth - 1)).type.canContain(node)) {
-      // Inserting a block node into a textblock. Try to insert it above by splitting the textblock
-      let tr = this.tr.delete(from, to)
-      let parent = tr.doc.path(from.path)
-      if (from.offset && from.offset != parent.maxOffset) tr.split(from)
-      return tr.insert(from.shorten(null, from.offset ? 1 : 0), node)
-    }
-
-    if (node) return this.tr.replaceWith(from, to, node)
-    else return this.tr.delete(from, to)
-  }
-
-  typeText(text) {
-    return this.replaceSelection(this.schema.text(text), true)
-  }
-
   setContent(value, format) {
     if (format) value = convertFrom(this.schema, value, format)
     this.setDoc(value)
@@ -390,5 +355,48 @@ class EditorTransform extends Transform {
 
   apply(options) {
     return this.pm.apply(this, options)
+  }
+
+  get selection() {
+    return this.steps.length ? this.pm.selection.map(this) : this.pm.selection
+  }
+
+  replaceSelection(node, inheritStyles) {
+    let {empty, from, to, node: selNode} = this.selection, parent
+    if (node && node.isInline && inheritStyles !== false) {
+      let styles = empty ? this.pm.input.storedStyles : spanStylesAt(this.doc, from)
+      node = node.type.create(node.attrs, node.text, styles)
+    }
+
+    if (selNode && selNode.isTextblock && node && node.isInline) {
+      // Putting inline stuff onto a selected textblock puts it inside
+      from = new Pos(from.toPath(), 0)
+      to = new Pos(from.path, selNode.maxOffset)
+    } else if (selNode) {
+      // This node can not simply be removed/replaced. Remove its parent as well
+      while (from.depth && from.offset == 0 && (parent = this.doc.path(from.path)) &&
+             from.offset == parent.maxOffset - 1 &&
+             !parent.type.canBeEmpty && !(node && parent.type.canContain(node))) {
+        from = from.shorten()
+        to = to.shorten(null, 1)
+      }
+    } else if (node && node.isBlock && this.doc.path(from.path.slice(0, from.depth - 1)).type.canContain(node)) {
+      // Inserting a block node into a textblock. Try to insert it above by splitting the textblock
+      this.delete(from, to)
+      let parent = this.doc.path(from.path)
+      if (from.offset && from.offset != parent.maxOffset) this.split(from)
+      return this.insert(from.shorten(null, from.offset ? 1 : 0), node)
+    }
+
+    if (node) return this.replaceWith(from, to, node)
+    else return this.delete(from, to)
+  }
+
+  deleteSelection() {
+    return this.replaceSelection()
+  }
+
+  typeText(text) {
+    return this.replaceSelection(this.pm.schema.text(text), true)
   }
 }

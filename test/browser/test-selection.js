@@ -160,11 +160,11 @@ test("follow_change", pm => {
 
 test("replace_with_block", pm => {
   pm.setSelection(P(0, 3))
-  pm.replaceSelection(pm.schema.node("horizontal_rule")).apply()
+  pm.tr.replaceSelection(pm.schema.node("horizontal_rule")).apply()
   cmpNode(pm.doc, doc(p("foo"), hr, p("bar")), "split paragraph")
   cmpStr(pm.selection.head, P(2, 0), "moved after rule")
   pm.setSelection(P(2, 3))
-  pm.replaceSelection(pm.schema.node("horizontal_rule")).apply()
+  pm.tr.replaceSelection(pm.schema.node("horizontal_rule")).apply()
   cmpNode(pm.doc, doc(p("foo"), hr, p("bar"), hr), "inserted after")
   cmpStr(pm.selection.head, P(2, 3), "stayed in paragraph")
 }, {
