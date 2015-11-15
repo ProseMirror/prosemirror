@@ -71,19 +71,28 @@ export class BlockNode extends Node {
     return this.replace(pos, this.child(pos).replaceDeep(path, node, depth + 1))
   }
 
-  append(nodes, joinDepth = 0) {
+  append(nodes, joinLeft = 0, joinRight = 0) {
     if (!nodes.length) return this
     if (!this.length) return this.copy(nodes)
 
     let last = this.length - 1, content = this.content.slice(0, last)
     let before = this.content[last], after = nodes[0]
-    if (joinDepth && before.sameMarkup(after)) {
-      content.push(before.append(after.content, joinDepth - 1))
-    } else {
-      content.push(before, after)
-    }
+    if (joinLeft > 0 && joinRight > 0 && before.sameMarkup(after))
+      content.push(before.append(after.content, joinLeft - 1, joinRight - 1))
+    else
+      content.push(before.close(joinLeft - 1, "end"), after.close(joinRight - 1, "start"))
     for (let i = 1; i < nodes.length; i++) content.push(nodes[i])
     return this.copy(content)
+  }
+
+  close(depth, side) {
+    if (depth == 0 && this.length == 0 && !this.type.canBeEmpty)
+      return this.copy(this.type.defaultContent())
+    if (depth < 0) return this
+    let off = side == "start" ? 0 : this.maxOffset - 1, child = this.child(off)
+    let closed = child.close(depth - 1, side)
+    if (closed == child) return this
+    return this.replace(off, closed)
   }
 
   get maxOffset() { return this.length }
@@ -220,6 +229,10 @@ export class TextblockNode extends BlockNode {
     if (merged = content[last].maybeMerge(content[last + 1]))
       content.splice(last, 2, merged)
     return this.copy(content)
+  }
+
+  close() {
+    return this
   }
 
   get isTextblock() { return true }

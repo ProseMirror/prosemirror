@@ -141,7 +141,7 @@ del("simple",
     doc(p("<1>one"), "<a><2>", p("<3>three")))
 del("only_child",
     doc(blockquote("<a>", p("hi"), "<b>"), p("x")),
-    doc(blockquote(), p("x")))
+    doc(blockquote(p()), p("x")))
 del("outside_path",
     doc(blockquote(p("a"), "<a>", p("b"), "<b>"), p("c<1>")),
     doc(blockquote(p("a")), p("c<1>")))
@@ -248,6 +248,13 @@ split("change_type",
       doc(h1("hell<a>o!")),
       doc(h1("hell"), p("<a>o!")),
       {node: schema.node("paragraph")})
+split("invalid_start",
+      doc(blockquote("<a>", p("x"))),
+      doc(blockquote(p("x"))))
+split("invalid_end",
+      doc(blockquote(p("x"), "<a>")),
+      doc(blockquote(p("x"))))
+      
 
 function lift(name, doc, expect) {
   defTest("lift_" + name, () => {
@@ -354,7 +361,7 @@ type("only_clear_for_code_block",
 function repl(name, doc, source, expect) {
   defTest("replace_" + name, () => {
     let tr = source ? Tr(doc).replace(doc.tag.a, doc.tag.b || doc.tag.a,
-                                            source, source && source.tag.a, source && source.tag.b)
+                                      source, source && source.tag.a, source && source.tag.b)
                     : Tr(doc).delete(doc.tag.a, doc.tag.b)
     testTransform(doc, expect, tr)
   })
@@ -444,3 +451,23 @@ repl("join_inequal",
      doc(h1("hello<a>"), p("<b>you<1>")),
      null,
      doc(h1("hello<a><b>you<1>")))
+repl("delete_whole_doc",
+     doc("<a>", h1("hi"), p("you"), "<b>"),
+     null,
+     doc(p()))
+repl("cut_empty_node_before",
+     doc(blockquote("<a>", p("hi")), p("b<b>x")),
+     doc(p("<a>hi<b>")),
+     doc(blockquote(p("hix"))))
+repl("cut_empty_node_after",
+     doc(p("x<a>hi"), blockquote(p("yy"), "<b>"), p("c")),
+     doc(p("<a>hi<b>")),
+     doc(p("xhi"), blockquote(p()), p("c")))
+repl("cut_empty_node_at_start",
+     doc(p("<a>x")),
+     doc(blockquote(p("hi"), "<a>"), p("b<b>")),
+     doc(p("bx")))
+repl("cut_empty_node_at_end",
+     doc(p("<a>x")),
+     doc(p("b<a>"), blockquote("<b>", p("hi"))),
+     doc(p(), blockquote(p()), p("x")))

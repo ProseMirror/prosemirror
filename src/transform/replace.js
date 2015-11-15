@@ -33,10 +33,12 @@ export function replace(node, from, to, root, repl, depth = 0) {
     let after = sliceAfter(node, to, depth), result
     if (!repl.nodes.every(n => before.type.canContain(n))) return null
     if (repl.nodes.length)
-      result = before.append(repl.nodes, Math.min(repl.openLeft, from.depth - depth))
-                     .append(after.children, Math.min(repl.openRight, to.depth - depth))
+      result = before.append(repl.nodes, from.depth - depth, repl.openLeft)
+                     .append(after.children, repl.openRight, to.depth - depth)
     else
-      result = before.append(after.children, Math.min(to.depth, from.depth) - depth)
+      result = before.append(after.children, from.depth - depth, to.depth - depth)
+    if (!result.length && !result.type.canBeEmpty)
+      result = result.copy(result.type.defaultContent())
     return {doc: result, moved: findMovedChunks(node, to, result, depth)}
   } else {
     let pos = root[depth]

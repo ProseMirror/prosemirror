@@ -150,9 +150,9 @@ export class Block extends NodeType {
 
   get canBeEmpty() { return this.contains == null }
 
-  defaultContent(content) {
+  defaultContent() {
     let inner = this.schema.defaultTextblockType().create()
-    let conn = this.findConnection(content.type)
+    let conn = this.findConnection(inner.type)
     if (!conn) SchemaError.raise("Can't create default content for " + this.name)
     for (let i = conn.length - 1; i >= 0; i--) inner = conn[i].create(null, [inner])
     return [inner]
