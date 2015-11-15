@@ -39,15 +39,10 @@ export class NodeType {
     this.attrs = attrs
     this.schema = schema
     this.defaultAttrs = null
-    this.mustRecompute = false
-    for (let attr in attrs)
-      if (attrs[attr].mustRecompute) this.mustRecompute = true
   }
 
   get configurable() { return true }
   get isTextblock() { return false }
-  get isBlock() { return false }
-  get isInline() { return false }
 
   get selectable() { return true }
 
@@ -66,16 +61,6 @@ export class NodeType {
     for (let i = 0; i < node.length; i++)
       if (!this.canContain(node.child(i))) return false
     return true
-  }
-
-  recomputeAttrs(attrs, content) {
-    if (!this.mustRecompute) return attrs
-    let copy = Object.create(null)
-    for (let attr in attrs) {
-      let desc = this.attrs[attr]
-      copy[attr] = desc.mustRecompute ? desc.compute(this, content) : attrs[attr]
-    }
-    return copy
   }
 
   findConnection(other) {
@@ -184,7 +169,6 @@ export class Inline extends NodeType {
   get instance() { return InlineNode }
   static get contains() { return null }
   static get kind() { return "inline." }
-  get isInline() { return true }
 }
 
 export class Text extends Inline {
@@ -198,8 +182,6 @@ export class Attribute {
   constructor(options = {}) {
     this.default = options.default
     this.compute = options.compute
-    this.mustRecompute = options.mustRecompute
-    this.inheritable = options.inheritable
   }
 }
 

@@ -46,8 +46,8 @@ export class BlockNode extends Node {
     return this.type.name + "(" + this.content.join(", ") + ")"
   }
 
-  copy(content = null, recompute) {
-    return new this.constructor(this.type, recompute ? this.type.recomputeAttrs(this.attrs, content) : this.attrs, content)
+  copy(content = null) {
+    return new this.constructor(this.type, this.attrs, content)
   }
 
   slice(from, to = this.length) {

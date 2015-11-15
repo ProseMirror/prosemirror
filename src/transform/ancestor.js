@@ -181,21 +181,6 @@ export function alreadyHasBlockType(doc, from, to, type, attrs) {
   return found
 }
 
-function maybeInheritAttrs(node, wrap) {
-  let updated
-  for (let attr in node.type.attrs) {
-    if (node.type.attrs[attr].inheritable && wrap.type.attrs[attr] == node.type.attrs[attr]) {
-      if (!updated) {
-        let attrs = Object.create(null)
-        for (let p in wrap.attrs) attrs[p] = wrap.attrs[p]
-        updated = wrap.type.create(attrs)
-      }
-      updated.attrs[attr] = node.attrs[attr]
-    }
-  }
-  return updated || wrap
-}
-
 Transform.prototype.setBlockType = function(from, to, wrapNode) {
   this.doc.nodesBetween(from, to || from, (node, path) => {
     if (node.isTextblock && !node.sameMarkup(wrapNode)) {
@@ -203,7 +188,7 @@ Transform.prototype.setBlockType = function(from, to, wrapNode) {
       // Ensure all markup that isn't allowed in the new node type is cleared
       this.clearMarkup(new Pos(path, 0), new Pos(path, node.maxOffset), wrapNode.type)
       this.step("ancestor", new Pos(path, 0), new Pos(path, this.doc.path(path).maxOffset),
-                null, {depth: 1, wrappers: [maybeInheritAttrs(node, wrapNode)]})
+                null, {depth: 1, wrappers: [wrapNode]})
       return false
     }
   })

@@ -25,7 +25,7 @@ defineTarget("html", toHTML)
 export function renderNodeToDOM(node, options, offset) {
   let dom = renderNode(node, options, offset)
   if (options.renderInlineFlat && node.isInline) {
-    dom = wrapInlineFlat(node, dom, options)
+    dom = wrapInlineFlat(node, dom)
     dom = options.renderInlineFlat(node, dom, offset) || dom
   }
   return dom
@@ -63,10 +63,6 @@ function renderNodes(nodes, options) {
 
 function renderNode(node, options, offset) {
   let dom = node.type.serializeDOM(node, options)
-  for (let attr in node.type.attrs) {
-    let desc = node.type.attrs[attr]
-    if (desc.serializeDOM) desc.serializeDOM(dom, node.attrs[attr], options, node)
-  }
   if (options.onRender && node.isBlock)
     dom = options.onRender(node, dom, offset) || dom
   return dom
@@ -95,25 +91,16 @@ function renderInlineContent(nodes, where, options) {
     while (active.length < styles.length) {
       let add = styles[active.length]
       active.push(add)
-      top = top.appendChild(renderStyle(add, options))
+      top = top.appendChild(add.type.serializeDOM(add))
     }
     top.appendChild(renderNode(node, options, i))
   }
 }
 
-function renderStyle(marker, options) {
-  let dom = marker.type.serializeDOM(marker, options)
-  for (let attr in marker.type.attrs) {
-    let desc = marker.type.attrs[attr]
-    if (desc.serializeDOM) desc.serializeDOM(dom, marker.attrs[attr], options)
-  }
-  return dom
-}
-
-function wrapInlineFlat(node, dom, options) {
+function wrapInlineFlat(node, dom) {
   let styles = node.styles
   for (let i = styles.length - 1; i >= 0; i--) {
-    let wrap = renderStyle(styles[i], options)
+    let wrap = styles[i].type.serializeDOM(styles[i])
     wrap.appendChild(dom)
     dom = wrap
   }
@@ -124,7 +111,7 @@ function renderInlineContentFlat(nodes, where, options) {
   let offset = 0
   for (let i = 0; i < nodes.length; i++) {
     let node = nodes[i]
-    let dom = wrapInlineFlat(node, renderNode(node, options, i), options)
+    let dom = wrapInlineFlat(node, renderNode(node, options, i))
     dom = options.renderInlineFlat(node, dom, offset) || dom
     where.appendChild(dom)
     offset += node.offset

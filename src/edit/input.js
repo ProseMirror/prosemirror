@@ -290,7 +290,7 @@ handlers.copy = handlers.cut = (pm, e) => {
   if (empty) return
   let fragment = pm.selectedDoc
   lastCopied = {doc: pm.doc, from, to,
-                html: toHTML(fragment, {target: "copy"}),
+                html: toHTML(fragment),
                 text: toText(fragment)}
 
   if (e.clipboardData) {
@@ -330,7 +330,7 @@ handlers.paste = (pm, e) => {
     } else if (lastCopied && (lastCopied.html == html || lastCopied.text == txt)) {
       ;({doc, from, to} = lastCopied)
     } else if (html) {
-      doc = fromHTML(pm.schema, html, {source: "paste"})
+      doc = fromHTML(pm.schema, html)
     } else {
       doc = convertFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
     }
@@ -344,8 +344,8 @@ handlers.dragstart = (pm, e) => {
 
   let fragment = pm.selectedDoc
 
-  e.dataTransfer.setData("text/html", toHTML(fragment, {target: "copy"}))
-  e.dataTransfer.setData("text/plain", toText(fragment) + "??")
+  e.dataTransfer.setData("text/html", toHTML(fragment))
+  e.dataTransfer.setData("text/plain", toText(fragment))
   pm.input.draggingFrom = true
 }
 
@@ -377,7 +377,7 @@ handlers.drop = (pm, e) => {
 
   let html, txt, doc
   if (html = e.dataTransfer.getData("text/html"))
-    doc = fromHTML(pm.schema, html, {source: "paste"})
+    doc = fromHTML(pm.schema, html, {document})
   else if (txt = e.dataTransfer.getData("text/plain"))
     doc = convertFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
 

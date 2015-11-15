@@ -7,7 +7,6 @@ const nonEditable = {html_block: true, html_tag: true, horizontal_rule: true}
 
 function options(path, ranges) {
   return {
-    target: "editor",
     onRender(node, dom, offset) {
       if (!node.isInline && offset != null)
         dom.setAttribute("pm-path", offset)

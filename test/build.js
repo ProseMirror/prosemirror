@@ -1,14 +1,4 @@
-import {defaultSchema, Pos} from "../src/model"
-
-let schema = defaultSchema
-export function withSchema(sch, f) {
-  schema = sch
-  try {
-    return f()
-  } finally {
-    schema = defaultSchema
-  }
-}    
+import {defaultSchema as schema, Pos} from "../src/model"
 
 let inlineContext = null
 

@@ -24,7 +24,7 @@ export function childrenAfter(node, pos, depth = 0) {
 }
 
 export function sliceAfter(node, pos, depth = 0) {
-  return node.copy(childrenAfter(node, pos, depth), true)
+  return node.copy(childrenAfter(node, pos, depth))
 }
 
 export function childrenBetween(node, from, to, depth = 0) {
