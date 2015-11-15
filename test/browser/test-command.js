@@ -399,4 +399,4 @@ test("insertHorizontalRule",
      doc(hr, p("bar")))
 test("insertHorizontalRule",
      doc("<a>", p("bar")),
-     doc(p("bar")))
+     doc(hr))

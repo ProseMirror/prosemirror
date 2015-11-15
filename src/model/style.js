@@ -69,6 +69,7 @@ const empty = []
 
 export function spanStylesAt(doc, pos) {
   let parent = doc.path(pos.path)
+  if (!parent.isTextblock) return empty
   let node = parent.childBefore(pos.offset).node || parent.firstChild
   return node ? node.styles : empty
 }

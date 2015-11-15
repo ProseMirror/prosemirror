@@ -101,13 +101,38 @@ export class ProseMirror {
   get tr() { return new EditorTransform(this) }
 
   replaceSelection(node, inheritStyles) {
-    if (!node) return deleteSelection(this)
-    else if (node.isInline) return replaceSelectionInline(this, node, inheritStyles)
-    else return replaceSelectionBlock(this, node)
+    let {empty, from, to, node: selNode} = this.selection, parent
+    if (node && node.isInline && inheritStyles !== false) {
+      let styles = empty ? this.input.storedStyles : spanStylesAt(this.doc, from)
+      node = node.type.create(node.attrs, node.text, styles)
+    }
+
+    if (selNode && selNode.isTextblock && node && node.isInline) {
+      // Putting inline stuff onto a selected textblock puts it inside
+      from = new Pos(from.toPath(), 0)
+      to = new Pos(from.path, selNode.maxOffset)
+    } else if (selNode) {
+      // This node can not simply be removed/replaced. Remove its parent as well
+      while (from.depth && from.offset == 0 && (parent = this.doc.path(from.path)) &&
+             from.offset == parent.maxOffset - 1 &&
+             !parent.type.canBeEmpty && !(node && parent.type.canContain(node))) {
+        from = from.shorten()
+        to = to.shorten(null, 1)
+      }
+    } else if (node && node.isBlock && this.doc.path(from.path.slice(0, from.depth - 1)).type.canContain(node)) {
+      // Inserting a block node into a textblock. Try to insert it above by splitting the textblock
+      let tr = this.tr.delete(from, to)
+      let parent = tr.doc.path(from.path)
+      if (from.offset && from.offset != parent.maxOffset) tr.split(from)
+      return tr.insert(from.shorten(null, from.offset ? 1 : 0), node)
+    }
+
+    if (node) return this.tr.replaceWith(from, to, node)
+    else return this.tr.delete(from, to)
   }
 
   typeText(text) {
-    return replaceSelectionInline(this, this.schema.text(text), true)
+    return this.replaceSelection(this.schema.text(text), true)
   }
 
   setContent(value, format) {
@@ -366,67 +391,4 @@ class EditorTransform extends Transform {
   apply(options) {
     return this.pm.apply(this, options)
   }
-}
-
-function replaceSelectionInline(pm, newNode, inheritStyles) {
-  let {empty, from, to, node} = pm.selection, insertPos, tr = pm.tr
-  if (empty) {
-    insertPos = from
-  } else if (!node || node.isInline) {
-    tr.delete(from, to)
-    insertPos = from
-  } else if (insertPos = Pos.start(node, from.toPath())) {
-    tr.delete(insertPos, Pos.end(node, from.toPath()))
-  } else {
-    let para = pm.schema.defaultTextblockType()
-    let parent = pm.doc.path(from.path)
-    if (parent.type.canContainType(para)) {
-      tr.insert(to, para.create())
-      insertPos = new Pos(to.toPath(), 0)
-    } else {
-      return tr
-    }
-  }
-  if (inheritStyles !== false) {
-    let styles = empty ? pm.input.storedStyles : spanStylesAt(tr.doc, insertPos)
-    newNode = newNode.type.create(newNode.attrs, newNode.text, styles)
-  }
-  return tr.insert(insertPos, newNode)
-}
-
-function replaceSelectionBlock(pm, newNode) {
-  let {node, from, to} = pm.selection, tr = pm.tr
-  if (node && node.isBlock) {
-    let parent = tr.doc.path(from.path)
-    if (parent.type.canContain(newNode) &&
-        (Pos.start(newNode) || Pos.before(pm.doc, from) || Pos.after(pm.doc, to)))
-      return tr.replaceWith(from, to, newNode)
-    else
-      return tr
-  }
-
-  let parent = tr.doc.path(from.path.slice(0, from.path.length - 1))
-  if (!parent.type.canContain(newNode)) return this
-
-  tr.delete(from, to)
-  let newFrom = tr.map(from).pos
-  let newParent = tr.doc.path(newFrom.path)
-  if (newFrom.offset && newFrom.offset != newParent.maxOffset)
-    tr.split(newFrom)
-  return tr.insert(newFrom.shorten(null, newFrom.offset ? 1 : 0), newNode)
-}
-
-function deleteSelection(pm) {
-  let {from, to, node} = pm.selection
-  let deleteBlock = node && node.isBlock
-  if (deleteBlock && (pm.doc.path(from.path).length == 1 ||
-                      !(Pos.before(pm.doc, from) || Pos.after(pm.doc, to)))) {
-    // Can't delete this block without creating an invalid document
-    let path = from.toPath()
-    from = Pos.start(node, path)
-    if (!from) return false
-    to = Pos.end(node, path)
-    deleteBlock = false
-  }
-  return pm.tr.delete(from, to)
 }

@@ -24,7 +24,7 @@ export class SelectionState {
 
   set(range, clearLast) {
     this.range = range
-    if (!range.nodePos) this.lastNonNodePos = null
+    if (!range.node) this.lastNonNodePos = null
     if (clearLast !== false) this.lastAnchorNode = null
   }
 
@@ -560,7 +560,9 @@ export function findSelectionFrom(doc, pos, dir, text) {
 }
 
 export function findSelectionNear(doc, pos, bias = 1, text) {
-  return findSelectionFrom(doc, pos, bias, text) || findSelectionFrom(doc, pos, -bias, text)
+  let result = findSelectionFrom(doc, pos, bias, text) || findSelectionFrom(doc, pos, -bias, text)
+  if (!result) throw new Error("Searching for selection in invalid document " + doc)
+  return result
 }
 
 export function findSelectionAtStart(node, path = [], text) {
