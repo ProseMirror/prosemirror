@@ -14,7 +14,7 @@ defineStep("split", {
     let target = parent.child(offset), targetSize = target.maxOffset
 
     let splitAt = pos.offset
-    if ((splitAt == 0 && !target.type.canBeEmpty) ||
+    if ((splitAt == 0 && !target.type.canBeEmpty) || target.type.locked ||
         (splitAt == target.maxOffset) && !(step.param || target).type.canBeEmpty)
       return null
     let newParent = parent.splice(offset, offset + 1,

@@ -41,7 +41,7 @@ export class NodeType {
     this.defaultAttrs = null
   }
 
-  get configurable() { return true }
+  get locked() { return false }
   get isTextblock() { return false }
 
   get selectable() { return true }

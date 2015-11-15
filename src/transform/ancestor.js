@@ -21,12 +21,14 @@ defineStep("ancestor", {
     if (depth == 0 && wrappers.length == 0) return null
 
     let parent = doc.path(toParent), parentSize = parent.length, newParent
+    if (parent.type.locked) return null
     if (wrappers.length) {
       let lastWrapper = wrappers[wrappers.length - 1]
       let content = inner.slice(from.offset, to.offset)
       if (!parent.type.canContain(wrappers[0]) ||
           !content.every(n => lastWrapper.type.canContain(n)) ||
-          !inner.length && !lastWrapper.type.canBeEmpty)
+          !inner.length && !lastWrapper.type.canBeEmpty ||
+          lastWrapper.type.locked)
         return null
       let node = null
       for (let i = wrappers.length - 1; i >= 0; i--)
@@ -34,7 +36,8 @@ defineStep("ancestor", {
       newParent = parent.splice(start, end, [node])
     } else {
       if (!parent.type.canContainChildren(inner, true) ||
-          !inner.length && !parent.type.canBeEmpty) return null
+          !inner.length && start == 0 && end == parent.length && !parent.type.canBeEmpty)
+        return null
       newParent = parent.splice(start, end, inner.children)
     }
     let copy = doc.replaceDeep(toParent, newParent)
