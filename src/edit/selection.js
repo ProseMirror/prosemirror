@@ -6,8 +6,7 @@ export class SelectionState {
   constructor(pm) {
     this.pm = pm
 
-    let start = Pos.start(pm.doc)
-    this.range = new TextSelection(start)
+    this.range = findSelectionAtStart(pm.doc)
     this.lastNonNodePos = null
 
     this.pollState = null
@@ -72,10 +71,11 @@ export class SelectionState {
     let anchor = posFromDOMInner(this.pm, sel.anchorNode, sel.anchorOffset)
     let head = posFromDOMInner(this.pm, sel.focusNode, sel.focusOffset)
     let prevAnchor = this.range.anchor, prevHead = this.range.head
-    let newHead = Pos.near(doc, anchor, prevAnchor && anchor.cmp(prevAnchor))
-    let newAnchor = Pos.near(doc, head, prevHead && head.cmp(prevHead))
-    this.setAndSignal(new TextSelection(newAnchor, newHead))
-    if (newHead.cmp(head) || newAnchor.cmp(anchor)) {
+    let newSel = findSelectionNear(doc, head)
+    if (newSel instanceof TextSelection && doc.path(anchor.path).isTextblock)
+      newSel = new TextSelection(anchor, newSel.head)
+    this.setAndSignal(newSel)
+    if (newSel instanceof NodeSelection || prevHead.cmp(newSel.head) || prevAnchor.cmp(newSel.anchor)) {
       this.toDOM()
     } else {
       this.clearNode()
@@ -410,9 +410,10 @@ export function hasFocus(pm) {
  * @return {Pos}
  */
 // FIXME fails on the space between lines
+// FIXME reformulate as selectionAtCoords? So that it can't return null
 export function posAtCoords(pm, coords) {
   let element = document.elementFromPoint(coords.left, coords.top + 1)
-  if (!contains(pm.content, element)) return Pos.start(pm.doc)
+  if (!contains(pm.content, element)) return null
 
   let offset
   if (element.childNodes.length == 1 && element.firstChild.nodeType == 3) {
@@ -533,16 +534,16 @@ function offsetInElement(element, coords) {
   return offsetInRects(coords, rects)
 }
 
-function findSelectionIn(doc, path, offset, dir) {
+function findSelectionIn(doc, path, offset, dir, text) {
   let node = doc.path(path)
   if (node.isTextblock) return new TextSelection(new Pos(path, offset))
 
   for (let i = offset + (dir > 0 ? 0 : -1); dir > 0 ? i < node.maxOffset : i >= 0; i += dir) {
     let child = node.child(i)
-    if (child.type.contains == null && child.type.selectable)
+    if (!text && child.type.contains == null && child.type.selectable)
       return new NodeSelection(new Pos(path, i), new Pos(path, i + 1), child)
     path.push(i)
-    let inside = findSelectionIn(doc, path, dir < 0 ? child.maxOffset : 0, dir)
+    let inside = findSelectionIn(doc, path, dir < 0 ? child.maxOffset : 0, dir, text)
     if (inside) return inside
     path.pop()
   }
@@ -550,17 +551,25 @@ function findSelectionIn(doc, path, offset, dir) {
 
 // FIXME we'll need some awareness of bidi motion when determining block start and end
 
-export function findSelectionFrom(doc, pos, dir) {
+export function findSelectionFrom(doc, pos, dir, text) {
   for (let path = pos.path.slice(), offset = pos.offset;;) {
-    let found = findSelectionIn(doc, path, offset, dir)
+    let found = findSelectionIn(doc, path, offset, dir, text)
     if (found) return found
     if (!path.length) break
     offset = path.pop() + (dir > 0 ? 1 : 0)
   }
 }
 
-export function findSelectionNear(doc, pos, bias = 1) {
-  return findSelectionFrom(doc, pos, bias) || findSelectionFrom(doc, pos, -bias)
+export function findSelectionNear(doc, pos, bias = 1, text) {
+  return findSelectionFrom(doc, pos, bias, text) || findSelectionFrom(doc, pos, -bias, text)
+}
+
+export function findSelectionAtStart(node, path = [], text) {
+  return findSelectionIn(node, path.slice(), 0, 1, text)
+}
+
+export function findSelectionAtEnd(node, path = [], text) {
+  return findSelectionIn(node, path.slice(), node.maxOffset, -1, text)
 }
 
 export function selectableNodeAbove(pm, dom, coords, liberal) {

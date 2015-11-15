@@ -286,8 +286,8 @@ function deleteBarrier(pm, cut) {
     if (tr.apply(andScroll) !== false) return
   }
 
-  let inner = Pos.after(pm.doc, cut)
-  return !inner ? false : pm.tr.lift(inner).apply(andScroll)
+  let selAfter = findSelectionFrom(pm.doc, cut, 1)
+  return pm.tr.lift(selAfter.from, selAfter.to).apply(andScroll)
 }
 
 defineCommand("joinBackward", {
@@ -774,15 +774,12 @@ function selectBlockVertically(pm, dir) {
   }
 
   let last = pm.sel.lastNonNodePos
-  if (last) {
-    let beyond = dir < 0 ? Pos.after(pm.doc, to) : Pos.before(pm.doc, from)
-    if (beyond && Pos.samePath(last.path, beyond.path)) {
-      setDOMSelectionToPos(pm, last)
-      return false
-    }
+  let beyond = findSelectionFrom(pm.doc, dir < 0 ? from : to, dir)
+  if (last && beyond && Pos.samePath(last.path, beyond.from.path)) {
+    setDOMSelectionToPos(pm, last)
+    return false
   }
-
-  pm.setSelection(Pos.near(pm.doc, dir < 0 ? from : to, dir))
+  pm.setSelection(beyond)
   return true
 }
 

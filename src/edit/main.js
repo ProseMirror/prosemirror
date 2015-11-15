@@ -8,7 +8,8 @@ import {Map} from "../util/map"
 
 import {parseOptions, initOptions, setOption} from "./options"
 import {SelectionState, Selection, TextSelection, NodeSelection,
-        posAtCoords, posFromDOM, coordsAtPos, scrollIntoView, hasFocus} from "./selection"
+        posAtCoords, posFromDOM, coordsAtPos, scrollIntoView,
+        findSelectionAtStart, hasFocus} from "./selection"
 import {requestAnimationFrame, elt, browser} from "../dom"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
@@ -88,7 +89,7 @@ export class ProseMirror {
     if (transform.docs[0] != this.doc && findDiffStart(transform.docs[0], this.doc))
       throw new Error("Applying a transform that does not start with the current document")
 
-    this.updateDoc(transform.doc, transform)
+    this.updateDoc(transform.doc, transform, options.selection)
     this.signal("transform", transform, options)
     if (options.scrollIntoView) this.scrollIntoView()
     return transform
@@ -127,10 +128,7 @@ export class ProseMirror {
   }
 
   setDoc(doc, sel) {
-    if (!sel) {
-      let start = Pos.start(doc)
-      sel = new TextSelection(start)
-    }
+    if (!sel) sel = findSelectionAtStart(doc)
     this.signal("beforeSetDoc", doc, sel)
     this.ensureOperation()
     this.setDocInner(doc)
@@ -138,12 +136,12 @@ export class ProseMirror {
     this.signal("setDoc", doc, sel)
   }
 
-  updateDoc(doc, mapping) {
+  updateDoc(doc, mapping, selection) {
     this.ensureOperation()
     this.input.maybeAbortComposition()
     this.ranges.transform(mapping)
     this.doc = doc
-    this.sel.setAndSignal(this.sel.range.map(doc, mapping))
+    this.sel.setAndSignal(selection || this.sel.range.map(doc, mapping))
     this.signal("change")
   }
 

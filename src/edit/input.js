@@ -306,6 +306,18 @@ handlers.copy = handlers.cut = (pm, e) => {
   }
 }
 
+function docSide(doc, side) {
+  let path = []
+  for (let node = doc; node; node = side == "end" ? node.lastChild : node.firstChild) {
+    let nextOff = side == "end" ? node.maxOffset : 0
+    if (node.isTextblock)
+      return new Pos(path, nextOff)
+    if (node.type.contains == null && node.type.selectable)
+      return Pos.from(path)
+    path.push(nextOff)
+  }
+}
+
 handlers.paste = (pm, e) => {
   if (!e.clipboardData) return
   let sel = pm.selection
@@ -326,7 +338,7 @@ handlers.paste = (pm, e) => {
       doc = convertFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
     }
     // FIXME ensure that this doesn't violate invariants when a node is selected
-    pm.tr.replace(sel.from, sel.to, doc, from || Pos.start(doc), to || Pos.end(doc)).apply()
+    pm.tr.replace(sel.from, sel.to, doc, from || docSide(doc, "start"), to || docSide(doc, "end")).apply()
     pm.scrollIntoView()
   }
 }
@@ -346,6 +358,7 @@ handlers.dragend = pm => window.setTimeout(() => pm.input.dragginFrom = false, 5
 handlers.dragover = handlers.dragenter = (pm, e) => {
   e.preventDefault()
   let cursorPos = pm.posAtCoords({left: e.clientX, top: e.clientY})
+  if (!cursorPos) return
   let coords = coordsAtPos(pm, cursorPos)
   let rect = pm.wrapper.getBoundingClientRect()
   coords.top -= rect.top
@@ -362,6 +375,8 @@ handlers.dragover = handlers.dragenter = (pm, e) => {
 handlers.dragleave = pm => pm.input.dropTarget.style.display = ""
 
 handlers.drop = (pm, e) => {
+  pm.input.dropTarget.style.display = ""
+
   if (!e.dataTransfer) return
 
   let html, txt, doc
@@ -373,17 +388,16 @@ handlers.drop = (pm, e) => {
   if (doc) {
     e.preventDefault()
     let insertPos = pm.posAtCoords({left: e.clientX, top: e.clientY})
+    if (!insertPos) return
     let tr = pm.tr
     if (pm.input.draggingFrom && !e.ctrlKey) {
       tr.deleteSelection()
       insertPos = tr.map(insertPos).pos
     }
-    tr.replace(insertPos, insertPos, doc, Pos.start(doc), Pos.end(doc)).apply()
+    tr.replace(insertPos, insertPos, doc, docSide(doc, "start"), docSide(doc, "end")).apply()
     pm.setSelection(insertPos, tr.map(insertPos).pos)
     pm.focus()
   }
-
-  pm.input.dropTarget.style.display = ""
 }
 
 handlers.focus = pm => {

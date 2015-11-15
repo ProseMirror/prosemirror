@@ -1,14 +1,14 @@
-import {Pos} from "../model"
-
-import {setDOMSelectionToPos} from "./selection"
+import {setDOMSelectionToPos, findSelectionNear} from "./selection"
 import {browser} from "../dom"
 import {Keymap} from "./keys"
 
 function nothing() {}
 
 function ensureSelection(pm) {
-  if (pm.selection.node)
-    setDOMSelectionToPos(pm, Pos.near(pm.doc, pm.selection.from, 1))
+  if (pm.selection.node) {
+    let found = findSelectionNear(pm.doc, pm.selection.from, 1, true)
+    if (found) setDOMSelectionToPos(pm, found.head)
+  }
   return false
 }
 

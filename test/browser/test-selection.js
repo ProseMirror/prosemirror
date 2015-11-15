@@ -26,25 +26,25 @@ function setSel(node, offset) {
 }
 
 test("read", pm => {
-  function test(node, offset, expected) {
+  function test(node, offset, expected, comment) {
     setSel(node, offset)
     pm.sel.pollForUpdate()
-    cmpStr(pm.selection.head, expected)
+    cmpStr(pm.selection.head, expected, comment)
     pm.flush()
   }
   let one = findTextNode(pm.content, "one")
   let two = findTextNode(pm.content, "two")
-  test(one, 0, P(0, 0))
-  test(one, 1, P(0, 1))
-  test(one, 3, P(0, 3))
-  test(one.parentNode, 0, P(0, 0))
-  test(one.parentNode, 1, P(0, 3))
-  test(two, 0, P(2, 0, 0))
-  test(two, 3, P(2, 0, 3))
-  test(two.parentNode, 1, P(2, 0, 3))
-  test(pm.content, 1, P(0, 3))
-  test(pm.content, 2, P(2, 0, 0))
-  test(pm.content, 3, P(2, 0, 3))
+  test(one, 0, P(0, 0), "force 0:0")
+  test(one, 1, P(0, 1), "force 0:1")
+  test(one, 3, P(0, 3), "force 0:3")
+  test(one.parentNode, 0, P(0, 0), "force :0 from one")
+  test(one.parentNode, 1, P(0, 3), "force :1 from one")
+  test(two, 0, P(2, 0, 0), "force 1:0")
+  test(two, 3, P(2, 0, 3), "force 1:3")
+  test(two.parentNode, 1, P(2, 0, 3), "force :1 from two")
+  test(pm.content, 1, undefined, "force :1")
+  test(pm.content, 2, P(2, 0, 0), "force :2")
+  test(pm.content, 3, P(2, 0, 3), "force :3")
 }, {
   doc: doc(p("one"), hr, blockquote(p("two")))
 })
