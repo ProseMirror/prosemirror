@@ -7,8 +7,8 @@ import sortedInsert from "../util/sortedinsert"
 import {Map} from "../util/map"
 
 import {parseOptions, initOptions, setOption} from "./options"
-import {Selection, TextSelection, NodeSelection, posAtCoords, posFromDOM, coordsAtPos,
-        scrollIntoView, hasFocus} from "./selection"
+import {SelectionState, Selection, TextSelection, NodeSelection,
+        posAtCoords, posFromDOM, coordsAtPos, scrollIntoView, hasFocus} from "./selection"
 import {requestAnimationFrame, elt, browser} from "../dom"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
@@ -54,7 +54,7 @@ export class ProseMirror {
     this.dirtyNodes = new Map // Maps node object to 1 (re-scan content) or 2 (redraw entirely)
     this.flushScheduled = false
 
-    this.sel = new Selection(this)
+    this.sel = new SelectionState(this)
     this.input = new Input(this)
 
     this.commands = initCommands(this.schema)
@@ -154,10 +154,15 @@ export class ProseMirror {
 
   setSelection(rangeOrAnchor, head) {
     let range = rangeOrAnchor
-    if (!(range instanceof TextSelection))
+    if (!(range instanceof Selection))
       range = new TextSelection(rangeOrAnchor, head)
-    this.checkPos(range.head, true)
-    this.checkPos(range.anchor, true)
+    if (range instanceof TextSelection) {
+      this.checkPos(range.head, true)
+      this.checkPos(range.anchor, true)
+    } else {
+      this.checkPos(range.from, false)
+      this.checkPos(range.to, false)
+    }
     this.ensureOperation()
     this.input.maybeAbortComposition()
     if (!range.eq(this.sel.range)) this.sel.setAndSignal(range)

@@ -7,7 +7,7 @@ import sortedInsert from "../util/sortedinsert"
 
 import {charCategory, isExtendingChar} from "./char"
 import {Keymap} from "./keys"
-import {selectableBlockFrom, verticalMotionLeavesTextblock, setDOMSelectionToPos} from "./selection"
+import {findSelectionFrom, verticalMotionLeavesTextblock, setDOMSelectionToPos, NodeSelection} from "./selection"
 
 const globalCommands = Object.create(null)
 const paramHandlers = Object.create(null)
@@ -694,12 +694,10 @@ defineCommand("selectParentBlock", {
   key: "Esc"
 })
 
-// FIXME we'll need some awareness of bidi motion when determining block start and end
-
-function selectableBlockFromSelection(pm, dir) {
+function moveSelectionBlock(pm, dir) {
   let {from, to, node} = pm.selection
-  let pos = node && node.isBlock ? (dir > 0 ? to : from) : from.shorten(null, dir > 0 ? 1 : 0)
-  return selectableBlockFrom(pm.doc, pos, dir)
+  let side = dir > 0 ? to : from
+  return findSelectionFrom(pm.doc, node && node.isBlock ? side : side.shorten(null, dir > 0 ? 1 : 0), dir)
 }
 
 function selectBlockHorizontally(pm, dir) {
@@ -723,14 +721,9 @@ function selectBlockHorizontally(pm, dir) {
     return false
   }
 
-  let nextBlock = selectableBlockFromSelection(pm, dir)
-  if (!nextBlock) return false
-  let nextNode = pm.doc.path(nextBlock)
-  if (!nextNode.isTextblock) {
-    pm.setNodeSelection(Pos.from(nextBlock))
-    return true
-  } else if (node) {
-    pm.setSelection(new Pos(nextBlock, dir < 0 ? nextNode.maxOffset : 0))
+  let next = moveSelectionBlock(pm, dir)
+  if (next && (next instanceof NodeSelection || node)) {
+    pm.setSelection(next)
     return true
   }
   return false
@@ -765,9 +758,9 @@ function selectBlockVertically(pm, dir) {
     leavingTextblock = verticalMotionLeavesTextblock(pm, dir > 0 ? to : from, dir)
 
   if (leavingTextblock) {
-    let next = selectableBlockFromSelection(pm, dir)
-    if (next && !pm.doc.path(next).isTextblock) {
-      pm.setNodeSelection(Pos.from(next))
+    let next = moveSelectionBlock(pm, dir)
+    if (next && (next instanceof NodeSelection)) {
+      pm.setSelection(next)
       if (!node) pm.sel.lastNonNodePos = from
       return true
     }

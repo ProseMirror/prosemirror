@@ -2,7 +2,7 @@ import {Pos} from "../model"
 
 import {contains, browser} from "../dom"
 
-export class Selection {
+export class SelectionState {
   constructor(pm) {
     this.pm = pm
 
@@ -189,8 +189,11 @@ function windowRect() {
           top: 0, bottom: window.innerHeight}
 }
 
-export class NodeSelection {
+export class Selection {}
+
+export class NodeSelection extends Selection {
   constructor(from, to, node) {
+    super()
     this.from = from
     this.to = to
     this.node = node
@@ -211,13 +214,7 @@ export class NodeSelection {
       if (node.type.selectable)
         return new NodeSelection(from, to, node)
     }
-    if (doc.path(from.path).isTextblock)
-      return new TextSelection(from)
-    let path = selectableBlockFrom(doc, from, 1), node
-    if (path && !(node = doc.path(path)).isTextblock)
-      return new NodeSelection(from = Pos.from(path), from.move(1), node)
-    else
-      return new TextSelection(path ? new Pos(path, 0) : Pos.before(doc, from))
+    return findSelectionNear(doc, from)
   }
 }
 
@@ -227,8 +224,9 @@ export class NodeSelection {
  * A range consists of a head (the active location of the cursor)
  * and an anchor (the start location of the selection).
  */
-export class TextSelection {
+export class TextSelection extends Selection {
   constructor(anchor, head) {
+    super()
     this.anchor = anchor
     this.head = head || anchor
   }
@@ -244,16 +242,10 @@ export class TextSelection {
 
   map(doc, mapping) {
     let head = mapping.map(this.head).pos
-    if (!doc.path(head.path).isTextblock) {
-      let path = selectableBlockFrom(doc, head, 1), node
-      if (!path)
-        head = Pos.before(doc, head)
-      else if ((node = doc.path(path)).isTextblock)
-        head = new Pos(path, 0)
-      else
-        return new NodeSelection(head = Pos.from(path), head.move(1), node)
-    }
-    return new TextSelection(head, Pos.near(doc, mapping.map(this.anchor).pos, 1))
+    if (!doc.path(head.path).isTextblock)
+      return findSelectionNear(doc, head)
+    let anchor = mapping.map(this.anchor).pos
+    return new TextSelection(doc.path(anchor.path).isTextblock ? anchor : head, head)
   }
 }
 
@@ -541,25 +533,34 @@ function offsetInElement(element, coords) {
   return offsetInRects(coords, rects)
 }
 
-function selectableBlockIn(doc, pos, dir) {
-  let node = doc.path(pos.path)
-  for (let offset = pos.offset + (dir > 0 ? 0 : -1); dir > 0 ? offset < node.maxOffset : offset >= 0; offset += dir) {
-    let child = node.child(offset)
-    if (child.isTextblock || (child.type.selectable && child.type.contains == null))
-      return pos.path.concat(offset)
+function findSelectionIn(doc, path, offset, dir) {
+  let node = doc.path(path)
+  if (node.isTextblock) return new TextSelection(new Pos(path, offset))
 
-    let inside = selectableBlockIn(doc, new Pos(pos.path.concat(offset), dir < 0 ? child.maxOffset : 0), dir)
+  for (let i = offset + (dir > 0 ? 0 : -1); dir > 0 ? i < node.maxOffset : i >= 0; i += dir) {
+    let child = node.child(i)
+    if (child.type.contains == null && child.type.selectable)
+      return new NodeSelection(new Pos(path, i), new Pos(path, i + 1), child)
+    path.push(i)
+    let inside = findSelectionIn(doc, path, dir < 0 ? child.maxOffset : 0, dir)
     if (inside) return inside
+    path.pop()
   }
 }
 
-export function selectableBlockFrom(doc, pos, dir) {
-  for (;;) {
-    let found = selectableBlockIn(doc, pos, dir)
+// FIXME we'll need some awareness of bidi motion when determining block start and end
+
+export function findSelectionFrom(doc, pos, dir) {
+  for (let path = pos.path.slice(), offset = pos.offset;;) {
+    let found = findSelectionIn(doc, path, offset, dir)
     if (found) return found
-    if (pos.depth == 0) break
-    pos = pos.shorten(null, dir > 0 ? 1 : 0)
+    if (!path.length) break
+    offset = path.pop() + (dir > 0 ? 1 : 0)
   }
+}
+
+export function findSelectionNear(doc, pos, bias = 1) {
+  return findSelectionFrom(doc, pos, bias) || findSelectionFrom(doc, pos, -bias)
 }
 
 export function selectableNodeAbove(pm, dom, coords, liberal) {

@@ -2,7 +2,7 @@ import {namespace} from "./def"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, img, strong, code, a, a2, br, hr} from "../build"
 import {cmp, cmpStr, cmpNode, is, P} from "../cmp"
 
-const test = namespace("node-selection")
+const test = namespace("nodeselection")
 
 test("parent_block", pm => {
   pm.setSelection(P(0, 0, 1, 1))
