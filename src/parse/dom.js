@@ -1,7 +1,7 @@
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmStyle, StrongStyle, LinkStyle, CodeStyle,
-        compareMarkup, Pos} from "../model"
+        compareMarkup} from "../model"
 import {defineSource} from "./index"
 
 export function fromDOM(schema, dom, options) {
@@ -12,7 +12,6 @@ export function fromDOM(schema, dom, options) {
   context.addAll(start, end, true)
   let doc
   while (context.stack.length) doc = context.leave()
-  if (!Pos.start(doc)) doc = doc.splice(0, 0, [schema.defaultTextblockType().create()])
   return doc
 }
 

@@ -8,7 +8,7 @@ import {Map} from "../util/map"
 
 import {parseOptions, initOptions, setOption} from "./options"
 import {SelectionState, Selection, TextSelection, NodeSelection,
-        posAtCoords, posFromDOM, coordsAtPos, scrollIntoView,
+        posAtCoords, coordsAtPos, scrollIntoView,
         findSelectionAtStart, hasFocus} from "./selection"
 import {requestAnimationFrame, elt, browser} from "../dom"
 import {draw, redraw} from "./draw"
@@ -275,14 +275,6 @@ export class ProseMirror {
 
   posAtCoords(coords) {
     return posAtCoords(this, coords)
-  }
-
-  posFromDOM(element, offset, textblock) {
-    if (!this.content.contains(element)) return Pos.start(this.doc)
-    let pos = posFromDOM(this, element, offset)
-    if (textblock !== false && !this.doc.path(pos.path).isTextblock)
-      pos = Pos.near(this.doc, pos)
-    return pos
   }
 
   coordsAtPos(pos) {

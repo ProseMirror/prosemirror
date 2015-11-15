@@ -70,12 +70,11 @@ export class SelectionState {
     let sel = getSelection(), doc = this.pm.doc
     let anchor = posFromDOMInner(this.pm, sel.anchorNode, sel.anchorOffset)
     let head = posFromDOMInner(this.pm, sel.focusNode, sel.focusOffset)
-    let prevAnchor = this.range.anchor, prevHead = this.range.head
-    let newSel = findSelectionNear(doc, head)
+    let newSel = findSelectionNear(doc, head, this.range.head && this.range.head.cmp(head) < 0 ? -1 : 1)
     if (newSel instanceof TextSelection && doc.path(anchor.path).isTextblock)
       newSel = new TextSelection(anchor, newSel.head)
     this.setAndSignal(newSel)
-    if (newSel instanceof NodeSelection || prevHead.cmp(newSel.head) || prevAnchor.cmp(newSel.anchor)) {
+    if (newSel instanceof NodeSelection || newSel.head.cmp(head) || newSel.anchor.cmp(anchor)) {
       this.toDOM()
     } else {
       this.clearNode()

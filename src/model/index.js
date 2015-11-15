@@ -10,6 +10,8 @@ export {defaultSchema, Doc, BlockQuote, OrderedList, BulletList, ListItem,
 
 export {Pos} from "./pos"
 
-export {sliceBefore, sliceAfter, sliceBetween, siblingRange} from "./slice"
+export {sliceBefore, sliceAfter, sliceBetween,
+        childrenBefore, childrenAfter, childrenBetween,
+        siblingRange} from "./slice"
 
 export {findDiffStart, findDiffEnd} from "./diff"

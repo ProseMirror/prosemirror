@@ -66,9 +66,9 @@ export class Pos {
 
   toJSON() { return this }
 
-  static from(array) {
+  static from(array, extraOffset = 0) {
     if (!array.length) throw new Error("Can't create a pos from an empty array")
-    return new Pos(array.slice(0, array.length - 1), array[array.length - 1])
+    return new Pos(array.slice(0, array.length - 1), array[array.length - 1] + extraOffset)
   }
 
   static fromJSON(json) { return new Pos(json.path, json.offset) }

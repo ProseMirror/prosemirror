@@ -1,4 +1,4 @@
-import {Pos, spanStylesAt, sliceBefore, sliceAfter, sliceBetween} from "../model"
+import {Pos, spanStylesAt, sliceBefore, sliceAfter, sliceBetween, childrenBetween} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -66,10 +66,8 @@ defineStep("replace", {
   },
   invert(step, oldDoc, map) {
     let depth = step.pos.depth
-    let between = sliceBetween(oldDoc, step.from, step.to, false)
-    for (let i = 0; i < depth; i++) between = between.firstChild
     return new Step("replace", step.from, map.map(step.to).pos, step.from.shorten(depth), {
-      nodes: between.children,
+      nodes: childrenBetween(oldDoc.path(step.pos.path), step.from, step.to, depth),
       openLeft: step.from.depth - depth,
       openRight: step.to.depth - depth
     })
@@ -217,9 +215,20 @@ Transform.prototype.replace = function(from, to, source, start, end) {
   } else {
     nodesBefore = doc.path(root.path).pathNodes(from.path.slice(depth)).slice(1)
   }
-  if (nodesAfter.length != nodesBefore.length ||
-      !nodesAfter.every((n, i) => n.sameMarkup(nodesBefore[i]))) {
-    let before = Pos.before(docAfter, after.shorten(null, 0))
+
+  if (nodesBefore.length &&
+      (nodesAfter.length != nodesBefore.length ||
+       !nodesAfter.every((n, i) => n.sameMarkup(nodesBefore[i])))) {
+    let {path, offset} = after.shorten(root.depth), before
+    for (let node = docAfter.path(path), i = 0;; i++) {
+      if (i == nodesBefore.length) {
+        before = new Pos(path, offset)
+        break
+      }
+      path.push(offset - 1)
+      node = node.child(offset - 1)
+      offset = node.maxOffset
+    }
     moveText(this, docAfter, before, after)
   }
   return this
