@@ -64,7 +64,7 @@ class State {
   }
 
   addNode(type, attrs, content) {
-    let node = type.create(attrs, content)
+    let node = type.createAutoFill(attrs, content)
     this.push(node)
     return node
   }

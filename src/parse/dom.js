@@ -134,7 +134,7 @@ class Context {
   }
 
   insertFrom(dom, type, attrs, content, styles) {
-    return this.insert(type.create(this.parseAttrs(dom, type, attrs), content, styles))
+    return this.insert(type.createAutoFill(this.parseAttrs(dom, type, attrs), content, styles))
   }
 
   enter(type, attrs) {
@@ -144,7 +144,7 @@ class Context {
 
   leave() {
     let top = this.stack.pop()
-    let node = top.type.create(top.attrs, top.content)
+    let node = top.type.createAutoFill(top.attrs, top.content)
     if (this.stack.length) this.insert(node)
     return node
   }

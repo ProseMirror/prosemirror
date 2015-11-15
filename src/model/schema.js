@@ -106,6 +106,14 @@ export class NodeType {
     return new this.instance(this, this.buildAttrs(attrs, content), content, styles)
   }
 
+  createAutoFill(attrs, content, styles) {
+    if ((!content || content.length == 0) && !this.canBeEmpty)
+      content = this.defaultContent()
+    return this.create(attrs, content, styles)
+  }
+
+  get canBeEmpty() { return true }
+
   static compile(types, schema) {
     let result = Object.create(null)
     for (let name in types) {
@@ -139,6 +147,16 @@ export class Block extends NodeType {
   static get contains() { return "block" }
   static get kind() { return "block." }
   get isBlock() { return true }
+
+  get canBeEmpty() { return this.contains == null }
+
+  defaultContent(content) {
+    let inner = this.schema.defaultTextblockType().create()
+    let conn = this.findConnection(content.type)
+    if (!conn) SchemaError.raise("Can't create default content for " + this.name)
+    for (let i = conn.length - 1; i >= 0; i--) inner = conn[i].create(null, [inner])
+    return [inner]
+  }
 }
 
 export class Textblock extends Block {
@@ -158,6 +176,8 @@ export class Textblock extends Block {
       if (contains[i] == type.name) return true
     return false
   }
+
+  get canBeEmpty() { return true }
 }
 
 export class Inline extends NodeType {
