@@ -47,8 +47,9 @@ function runTests() {
   function logFailure(name, err) {
     ++failed
     let elt = document.querySelector("#output").appendChild(document.createElement("pre"))
-    let nm = elt.appendChild(document.createElement("span"))
+    let nm = elt.appendChild(document.createElement("a"))
     nm.className = "bad"
+    nm.href= "#" + name
     nm.textContent = name
     elt.appendChild(document.createTextNode(": " + err))
     if (!(err instanceof Failure))
