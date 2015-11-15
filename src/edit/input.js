@@ -140,9 +140,7 @@ function inputText(pm, range, text) {
   if (range.empty && !text) return false
   let styles = pm.input.storedStyles || spanStylesAt(pm.doc, range.from)
   let tr = pm.tr
-  if (!range.empty) tr.delete(range.from, range.to)
-  tr.insert(range.from, pm.schema.text(text, styles)).apply()
-  pm.signal("textInput", text)
+  tr.replaceWith(range.from, range.to, pm.schema.text(text, styles))
   pm.scrollIntoView()
 }
 
@@ -300,7 +298,6 @@ handlers.copy = handlers.cut = (pm, e) => {
     e.clipboardData.clearData()
     e.clipboardData.setData("text/html", lastCopied.html)
     e.clipboardData.setData("text/plain", lastCopied.text)
-    // FIXME ensure invariants are maintained in case of node selection
     if (e.type == "cut" && !empty)
       pm.tr.delete(from, to).apply()
   }
@@ -337,7 +334,6 @@ handlers.paste = (pm, e) => {
     } else {
       doc = convertFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
     }
-    // FIXME ensure that this doesn't violate invariants when a node is selected
     pm.tr.replace(sel.from, sel.to, doc, from || docSide(doc, "start"), to || docSide(doc, "end")).apply()
     pm.scrollIntoView()
   }
