@@ -209,7 +209,7 @@ function paramForm(pm, command, callback) {
 
   let submit = () => {
     // FIXME error messages
-    finish(gatherParams(pm, command, form, pm))
+    finish(gatherParams(pm, command, form))
   }
   form.addEventListener("submit", e => {
     e.preventDefault()
