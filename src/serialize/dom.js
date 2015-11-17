@@ -130,8 +130,8 @@ function def(cls, method) { cls.prototype.serializeDOM = method }
 def(BlockQuote, wrapIn("blockquote"))
 
 BlockQuote.prototype.clicked = (_, path, dom, coords) => {
-  let box = dom.getBoundingClientRect()
-  if (coords.left < box.left + 15) return Pos.from(path)
+  let childBox = dom.firstChild.getBoundingClientRect()
+  if (coords.left < childBox.left - 2) return Pos.from(path)
 }
 
 def(BulletList, wrapIn("ul"))
@@ -143,10 +143,11 @@ def(OrderedList, (node, options) => {
 })
 
 OrderedList.prototype.clicked = BulletList.prototype.clicked = (_, path, dom, coords) => {
-  let box = dom.getBoundingClientRect()
-  if (coords.left > box.left + 28) return null
   for (let i = 0; i < dom.childNodes.length; i++) {
-    let childBox = dom.childNodes[i].getBoundingClientRect()
+    let child = dom.childNodes[i]
+    if (!child.hasAttribute("pm-path")) continue
+    let childBox = child.getBoundingClientRect()
+    if (coords.left > childBox.left - 2) return null
     if (childBox.top <= coords.top && childBox.bottom >= coords.top)
       return new Pos(path, i)
   }

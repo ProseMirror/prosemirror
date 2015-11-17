@@ -97,5 +97,4 @@ li.ProseMirror-selectednode:after {
   pointer-events: none;
 }
 
-
 `)
