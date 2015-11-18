@@ -140,7 +140,7 @@ function inputText(pm, range, text) {
   if (range.empty && !text) return false
   let styles = pm.input.storedStyles || spanStylesAt(pm.doc, range.from)
   let tr = pm.tr
-  tr.replaceWith(range.from, range.to, pm.schema.text(text, styles))
+  tr.replaceWith(range.from, range.to, pm.schema.text(text, styles)).apply()
   pm.scrollIntoView()
 }
 
