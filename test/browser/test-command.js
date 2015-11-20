@@ -284,18 +284,30 @@ test("wrapBulletList",
      doc(p("<a>foo")),
      doc(ul(li(p("foo")))))
 test("wrapBulletList",
-     doc(ul(li(p("<a>foo")))),
-     doc(ul(li(ul(li(p("foo")))))))
+     doc(blockquote(p("<a>foo"))),
+     doc(blockquote(ul(li(p("foo"))))))
 test("wrapBulletList",
      doc(p("foo"), p("ba<a>r"), p("ba<b>z")),
      doc(p("foo"), ul(li(p("bar")), li(p("baz"))))) 
+test("wrapBulletList",
+     doc(ul(li(p("<a>foo")))),
+     doc(ul(li(p("foo")))))
+test("wrapBulletList",
+     doc(ol(li(p("<a>foo")))),
+     doc(ol(li(p("foo")))))
+test("wrapBulletList",
+     doc(ul(li(p("foo"), p("<a>bar")))),
+     doc(ul(li(p("foo"), ul(li(p("bar")))))))
+test("wrapBulletList",
+     doc(ul(li(p("foo")), li(p("<a>bar")), li(p("baz")))),
+     doc(ul(li(p("foo"), ul(li(p("bar")))), li(p("baz")))))
 
 test("wrapOrderedList",
      doc(p("<a>foo")),
      doc(ol(li(p("foo")))))
 test("wrapOrderedList",
-     doc(ol(li(p("<a>foo")))),
-     doc(ol(li(ol(li(p("foo")))))))
+     doc(blockquote(p("<a>foo"))),
+     doc(blockquote(ol(li(p("foo"))))))
 test("wrapOrderedList",
      doc(p("foo"), p("ba<a>r"), p("ba<b>z")),
      doc(p("foo"), ol(li(p("bar")), li(p("baz")))))

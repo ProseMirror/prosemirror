@@ -475,16 +475,33 @@ defineCommand("lift", {
   key: "Alt-Left"
 })
 
-function wrapCommand(type, name, labelName, info) {
+function isAtTopOfListItem(doc, from, to, listType) {
+  return Pos.samePath(from.path, to.path) &&
+    from.path.length >= 2 &&
+    from.path[from.path.length - 1] == 0 &&
+    listType.canContain(doc.path(from.path.slice(0, from.path.length - 1)))
+}
+
+function wrapCommand(type, name, labelName, isList, info) {
   type.attachCommand("wrap" + name, type => {
     let command = {
       label: "Wrap in " + labelName,
       run(pm) {
-        let {from, to} = pm.selection
-        return pm.tr.wrap(from, to, type.create()).apply(andScroll)
+        let {from, to, head} = pm.selection, doJoin = false
+        if (isList && head && isAtTopOfListItem(pm.doc, from, to, type)) {
+          // Don't do anything if this is the top of the list
+          if (from.path[from.path.length - 2] == 0) return false
+          doJoin = true
+        }
+        let tr = pm.tr.wrap(from, to, type.create())
+        if (doJoin) tr.join(from.shorten(from.depth - 2))
+        return tr.apply(andScroll)
       },
       select(pm) {
-        let {from, to} = pm.selection
+        let {from, to, head} = pm.selection
+        if (isList && head && isAtTopOfListItem(pm.doc, from, to, type) &&
+            from.path[from.path.length - 2] == 0)
+          return false
         return canWrap(pm.doc, from, to, type.create())
       }
     }
@@ -493,19 +510,19 @@ function wrapCommand(type, name, labelName, info) {
   })
 }
 
-wrapCommand(BulletList, "BulletList", "bullet list", {
+wrapCommand(BulletList, "BulletList", "bullet list", true, {
   menuGroup: "block",
   menuRank: 40,
   key: ["Alt-Right '*'", "Alt-Right '-'"]
 })
 
-wrapCommand(OrderedList, "OrderedList", "ordered list", {
+wrapCommand(OrderedList, "OrderedList", "ordered list", true, {
   menuGroup: "block",
   menuRank: 41,
   key: "Alt-Right '1'"
 })
 
-wrapCommand(BlockQuote, "BlockQuote", "block quote", {
+wrapCommand(BlockQuote, "BlockQuote", "block quote", false, {
   menuGroup: "block",
   menuRank: 45,
   key: ["Alt-Right '>'", "Alt-Right '\"'"]
