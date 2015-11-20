@@ -1,4 +1,4 @@
-import {HardBreak, BulletList, OrderedList, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
+import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
         StrongStyle, EmStyle, CodeStyle, LinkStyle, Image, NodeType, StyleType,
         Pos, containsStyle, rangeHasStyle, compareMarkup} from "../model"
 import {joinPoint, joinableBlocks, canLift, canWrap, alreadyHasBlockType} from "../transform"
@@ -581,6 +581,20 @@ defineCommand("splitBlock", {
   },
   key: "Enter(60)"
 })
+
+ListItem.attachCommand("splitListItem", type => ({
+  label: "Split the current list item",
+  run(pm) {
+    let {from, to, node, empty} = pm.selection
+    if (node && node.isBlock || from.path.length < 2 || !Pos.samePath(from.path, to.path) ||
+        empty && from.offset == 0) return false
+    let toParent = from.shorten(), grandParent = pm.doc.path(toParent.path)
+    if (grandParent.type != type) return false
+    let nextType = to.offset == grandParent.child(toParent.offset).maxOffset ? pm.schema.defaultTextblockType().create() : null
+    return pm.tr.delete(from, to).split(from, 2, nextType).apply(andScroll)
+  },
+  key: "Enter(50)"
+}))
 
 function blockTypeCommand(type, name, labelName, attrs, key) {
   if (!attrs) attrs = {}

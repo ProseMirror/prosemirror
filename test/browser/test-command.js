@@ -346,6 +346,19 @@ test("splitBlock",
      doc(ol("<a>", li(p("a")), li(p("b")), li(p("c")))),
      doc(ol(li(p("a")), li(p("b")), li(p("c")))))
 
+test("splitListItem",
+     doc(p("foo<a>bar")),
+     doc(p("foobar")))
+test("splitListItem",
+     doc("<a>", p("foobar")),
+     doc(p("foobar")))
+test("splitListItem",
+     doc(ul(li(p("foo<a>bar")))),
+     doc(ul(li(p("foo")), li(p("bar")))))
+test("splitListItem",
+     doc(ul(li(p("foo<a>ba<b>r")))),
+     doc(ul(li(p("foo")), li(p("r")))))
+
 test("newlineInCode",
      doc(pre("foo<a>bar")),
      doc(pre("foo\nbar")))
