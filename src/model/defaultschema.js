@@ -51,15 +51,15 @@ export class HardBreak extends Inline {
 // Style types
 
 export class EmStyle extends StyleType {
-  static get rank() { return  51 }
+  static get rank() { return 51 }
 }
 
 export class StrongStyle extends StyleType {
-  static get rank() { return  52 }
+  static get rank() { return 52 }
 }
 
 export class LinkStyle extends StyleType {
-  static get rank() { return  53 }
+  static get rank() { return 53 }
 }
 LinkStyle.attributes = {
   href: new Attribute,

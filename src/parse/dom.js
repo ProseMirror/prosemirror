@@ -76,8 +76,8 @@ class Context {
   }
 
   parseNodeType(dom) {
-    return this.tryParsers(this.nodeInfo[dom.nodeName.toLowerCase()], dom)
-      || this.tryParsers(this.nodeInfo._, dom)
+    return this.tryParsers(this.nodeInfo[dom.nodeName.toLowerCase()], dom) ||
+      this.tryParsers(this.nodeInfo._, dom)
   }
 
   addAll(from, to, sync) {
