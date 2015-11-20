@@ -49,6 +49,7 @@ class Context {
 
   addDOM(dom) {
     if (dom.nodeType == 3) {
+      // FIXME define a coherent strategy for dealing with trailing, leading, and multiple spaces (this isn't one)
       let value = dom.nodeValue
       let top = this.top, last
       if (/\S/.test(value) || top.type.isTextblock) {
@@ -56,7 +57,8 @@ class Context {
         if (/^\s/.test(value) && (last = top.content[top.content.length - 1]) &&
             last.type.name == "text" && /\s$/.test(last.text))
           value = value.slice(1)
-        this.insert(this.schema.text(value, this.styles))
+        if (value)
+          this.insert(this.schema.text(value, this.styles))
       }
     } else if (dom.nodeType != 1) {
       // Ignore non-text non-element nodes
@@ -203,7 +205,8 @@ CodeBlock.register("parseDOM", {tag: "pre", parse: (dom, context, type) => {
   } else {
     params = null
   }
-  context.insert(type.create({params: params}, [context.schema.text(dom.textContent)]))
+  let content = dom.textContent
+  context.insert(type.create({params: params}, content ? [context.schema.text(content)] : []))
 }})
 
 BulletList.register("parseDOM", {tag: "ul", parse: wrap})

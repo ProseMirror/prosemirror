@@ -118,3 +118,11 @@ recover("move_up",
 recover("dont_ignore_whitespace",
         "<p><em>one</em> <strong>two</strong></p>",
         doc(p(em("one"), " ", strong("two"))))
+
+recover("stay tab",
+        "<p> <b>&#09;</b></p>",
+        doc(p(" ")))
+
+recover("random spaces",
+        "<p><b>1 </b> </p>",
+        doc(p(strong("1 "))))
