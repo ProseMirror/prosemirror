@@ -20,7 +20,7 @@ const methods = {
   signalHandleable(type, ...values) {
     let arr = this._handlers && this._handlers[type]
     if (arr) for (let i = 0; i < arr.length; ++i) {
-      let  result = arr[i](...values)
+      let result = arr[i](...values)
       if (result !== false) return result
     }
     return false
