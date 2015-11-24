@@ -2,6 +2,7 @@ import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmStyle, StrongStyle, LinkStyle, CodeStyle, Pos} from "../model"
 import {defineTarget} from "./index"
+import {elt} from "../dom"
 
 let doc = null
 
@@ -27,15 +28,6 @@ export function renderNodeToDOM(node, options, offset) {
   if (options.renderInlineFlat && node.isInline) {
     dom = wrapInlineFlat(node, dom, options)
     dom = options.renderInlineFlat(node, dom, offset) || dom
-  }
-  return dom
-}
-
-function elt(name, ...children) {
-  let dom = doc.createElement(name)
-  for (let i = 0; i < children.length; i++) {
-    let child = children[i]
-    dom.appendChild(typeof child == "string" ? doc.createTextNode(child) : child)
   }
   return dom
 }
@@ -186,11 +178,12 @@ def(CodeBlock, (node, options) => {
 def(Text, node => doc.createTextNode(node.text))
 
 def(Image, node => {
-  let dom = elt("img")
-  dom.setAttribute("src", node.attrs.src)
-  if (node.attrs.title) dom.setAttribute("title", node.attrs.title)
-  if (node.attrs.alt) dom.setAttribute("alt", node.attrs.alt)
-  return dom
+  return elt("img", {
+    src: node.attrs.src,
+    alt: node.attrs.alt,
+    title: node.attrs.title,
+    contentEditable: false
+  })
 })
 
 def(HardBreak, () => elt("br"))
