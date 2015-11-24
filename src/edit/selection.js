@@ -479,14 +479,21 @@ export function scrollIntoView(pm, pos) {
   for (let parent = pm.content;; parent = parent.parentNode) {
     let atBody = parent == document.body
     let rect = atBody ? windowRect() : parent.getBoundingClientRect()
+    let moveX = 0, moveY = 0
     if (coords.top < rect.top)
-      parent.scrollTop -= rect.top - coords.top + scrollMargin
+      moveY =  -(rect.top - coords.top + scrollMargin)
     else if (coords.bottom > rect.bottom)
-      parent.scrollTop += coords.bottom - rect.bottom + scrollMargin
+      moveY = coords.bottom - rect.bottom + scrollMargin
     if (coords.left < rect.left)
-      parent.scrollLeft -= rect.left - coords.left + scrollMargin
+      moveX = -(rect.left - coords.left + scrollMargin)
     else if (coords.right > rect.right)
-      parent.scrollLeft += coords.right - rect.right + scrollMargin
+      moveX = coords.right - rect.right + scrollMargin
+    if (moveX || moveY) {
+      if (atBody) window.scrollBy(moveX, moveY)
+    } else {
+      if (moveY) parent.scrollTop += moveY
+      if (moveX) parent.scrollLeft += moveX
+    }
     if (atBody) break
   }
 }
