@@ -142,6 +142,7 @@ function inputText(pm, range, text) {
   let tr = pm.tr
   tr.replaceWith(range.from, range.to, pm.schema.text(text, styles)).apply()
   pm.scrollIntoView()
+  pm.signal("textInput", text)
 }
 
 handlers.keypress = (pm, e) => {
