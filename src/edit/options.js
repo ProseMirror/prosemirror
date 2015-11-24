@@ -31,7 +31,9 @@ const options = {
 
   historyEventDelay: new Option(500),
 
-  commandParamHandler: new Option("default")
+  commandParamHandler: new Option("default"),
+
+  label: new Option(null)
 }
 
 export function defineOption(name, defaultValue, update, updateOnInit) {
