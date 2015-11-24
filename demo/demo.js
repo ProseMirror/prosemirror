@@ -1,5 +1,5 @@
 import {ProseMirror} from "../src/edit/main"
-import {Pos, Node} from "../src/model"
+import {Pos, Node, LinkStyle} from "../src/model"
 import {fromDOM} from "../src/parse/dom"
 import {defaultSchema as schema} from "../src/model"
 
@@ -7,6 +7,21 @@ import "../src/inputrules/autoinput"
 import "../src/menu/inlinemenu"
 import "../src/menu/menubar"
 import "../src/collab"
+
+LinkStyle.attachCommand("insertLink", type => ({
+      label: "Insert a link",
+      run(pm, href, text, title) {
+        // Could not get replaceSelection to take the style directly :(
+        pm.setStyle(type, true, {href, title});
+        pm.tr.replaceSelection(pm.schema.text(text)).apply({scrollIntoView: true});
+        pm.setStyle(type, false);
+      },
+      params: [
+        {name: "Target", type: "text"},
+        {name: "Text", type: "text", default: ""},
+        {name: "Title", type: "text", default: ""}
+      ],
+    }))
 
 let te = document.querySelector("#content")
 te.style.display = "none"

@@ -47,6 +47,20 @@ class Context {
     return this.stack[this.stack.length - 1]
   }
 
+  parseAttrs(dom, type, attrs) {
+    for (let attr in type.attrs) {
+      let desc = type.attrs[attr]
+      if (desc.parseDOM && (!attrs || !Object.prototype.hasOwnProperty.call(attrs, attr))) {
+        let value = desc.parseDOM(dom, this.options, desc, type)
+        if (value != null) {
+          if (!attrs) attrs = {}
+          attrs[attr] = value
+        }
+      }
+    }
+    return attrs
+  }
+
   addDOM(dom) {
     if (dom.nodeType == 3) {
       // FIXME define a coherent strategy for dealing with trailing, leading, and multiple spaces (this isn't one)
@@ -73,7 +87,7 @@ class Context {
   tryParsers(parsers, dom) {
     if (parsers) for (let i = 0; i < parsers.length; i++) {
       let parser = parsers[i]
-      if (parser.parse(dom, this, parser.type) !== false) return true
+      if (parser.parse(dom, this, parser.type, null, this.options) !== false) return true
     }
   }
 
@@ -126,7 +140,11 @@ class Context {
 
   enter(type, attrs) {
     if (this.styles.length) this.styles = []
-    this.stack.push({type: type, attrs: attrs, content: []})
+    this.stack.push({type, attrs, content: []})
+  }
+
+  enterFrom(dom, type, attrs) {
+    this.enter(type, this.parseAttrs(dom, type, attrs))
   }
 
   leave() {
@@ -179,7 +197,7 @@ function summarizeNodeInfo(schema) {
 }
 
 function wrap(dom, context, type, attrs) {
-  context.enter(type, attrs)
+  context.enterFrom(dom, type, attrs)
   context.addAll(dom.firstChild, null, true)
   context.leave()
 }
@@ -205,8 +223,7 @@ CodeBlock.register("parseDOM", {tag: "pre", parse: (dom, context, type) => {
   } else {
     params = null
   }
-  let content = dom.textContent
-  context.insert(type.create({params: params}, content ? [context.schema.text(content)] : []))
+  context.insertFrom(dom, type, {params}, [context.schema.text(dom.textContent)])
 }})
 
 BulletList.register("parseDOM", {tag: "ul", parse: wrap})
@@ -220,15 +237,15 @@ ListItem.register("parseDOM", {tag: "li", parse: wrap})
 
 HardBreak.register("parseDOM", {tag: "br", parse: (dom, context, type) => {
   if (!dom.hasAttribute("pm-force-br"))
-    context.insert(type.create(null, null, context.styles))
+    context.insertFrom(dom, type, null, null, context.styles)
 }})
 
 Image.register("parseDOM", {tag: "img", parse: (dom, context, type) => {
-  context.insert(type.create({
+  context.insertFrom(dom, type, {
     src: dom.getAttribute("src"),
     title: dom.getAttribute("title") || null,
     alt: dom.getAttribute("alt") || null
-  }))
+  })
 }})
 
 // Inline style tokens
