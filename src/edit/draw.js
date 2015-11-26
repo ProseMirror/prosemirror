@@ -113,7 +113,7 @@ export function redraw(pm, dirty, doc, prev) {
       if (!block) path.push(i)
       let found = inPrev[i]
       let nodeLeft = true
-      if (found > -1) {
+      if (found != null) {
         domPos = deleteNextNodes(dom, domPos, found - j)
         j = found
       } else if (!block && j < prev.length && inNode[j] == null &&
