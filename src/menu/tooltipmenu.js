@@ -6,14 +6,14 @@ import {MenuUpdate} from "./update"
 import {Tooltip} from "./tooltip"
 import {Menu, TooltipDisplay, commandGroups, forceFontLoad} from "./menu"
 
-const classPrefix = "ProseMirror-inlinemenu"
+const classPrefix = "ProseMirror-tooltipmenu"
 
-defineOption("inlineMenu", false, function(pm, value) {
-  if (pm.mod.inlineMenu) pm.mod.inlineMenu.detach()
-  pm.mod.inlineMenu = value ? new InlineMenu(pm, value) : null
+defineOption("tooltipMenu", false, function(pm, value) {
+  if (pm.mod.tooltipMenu) pm.mod.tooltipMenu.detach()
+  pm.mod.tooltipMenu = value ? new TooltipMenu(pm, value) : null
 })
 
-class InlineMenu {
+class TooltipMenu {
   constructor(pm, config) {
     this.pm = pm
     this.items = (config && config.items) || commandGroups(pm, "inline")
@@ -97,13 +97,13 @@ function topOfNodeSelection(pm) {
 
 insertCSS(`
 
-.ProseMirror-inlinemenu-linktext a {
+.ProseMirror-tooltipmenu-linktext a {
   color: white;
   text-decoration: none;
   padding: 0 5px;
 }
 
-.ProseMirror-inlinemenu-linktext a:hover {
+.ProseMirror-tooltipmenu-linktext a:hover {
   text-decoration: underline;
 }
 
