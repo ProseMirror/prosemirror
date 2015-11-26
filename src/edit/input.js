@@ -307,12 +307,11 @@ handlers.copy = handlers.cut = (pm, e) => {
 function docSide(doc, side) {
   let path = []
   for (let node = doc; node; node = side == "end" ? node.lastChild : node.firstChild) {
-    let nextOff = side == "end" ? node.maxOffset : 0
     if (node.isTextblock)
-      return new Pos(path, nextOff)
+      return new Pos(path, side == "end" ? node.maxOffset : 0)
     if (node.type.contains == null && node.type.selectable)
       return Pos.from(path)
-    path.push(nextOff)
+    path.push(side == "end" ? node.maxOffset - 1 : 0)
   }
 }
 
