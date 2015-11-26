@@ -170,7 +170,7 @@ def(CodeBlock, (node, options) => {
   let code = wrap(node, options, "code")
   if (node.attrs.params != null)
     code.className = "fence " + node.attrs.params.replace(/(^|\s+)/g, "$&lang-")
-  return elt("pre", code)
+  return elt("pre", null, code)
 })
 
 // Inline content
