@@ -58,6 +58,7 @@ export class ProseMirror {
     this.flushScheduled = false
 
     this.sel = new SelectionState(this)
+    this.accurateSelection = false
     this.input = new Input(this)
 
     this.commands = initCommands(this.schema)
@@ -70,7 +71,7 @@ export class ProseMirror {
    * @return {Range} The instance of the editor's selection range.
    */
   get selection() {
-    this.ensureOperation()
+    if (!this.accurateSelection) this.ensureOperation()
     return this.sel.range
   }
 
@@ -186,9 +187,12 @@ export class ProseMirror {
   }
 
   flush() {
+    if (!document.body.contains(this.wrapper) || !this.operation) return
+    this.signal("flushing")
     let op = this.operation
-    if (!op || !document.body.contains(this.wrapper)) return
+    if (!op) return
     this.operation = null
+    this.accurateSelection = true
 
     let docChanged = op.doc != this.doc || this.dirtyNodes.size, redrawn = false
     if (!this.input.composing && (docChanged || op.composingAtStart)) {
@@ -204,6 +208,8 @@ export class ProseMirror {
       scrollIntoView(this, op.scrollIntoView)
     if (docChanged) this.signal("draw")
     this.signal("flush")
+    this.signal("flushed")
+    this.accurateSelection = false
   }
 
   setOption(name, value) { setOption(this, name, value) }

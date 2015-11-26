@@ -1,7 +1,7 @@
 import {defineOption} from "../edit"
 import {spanStylesAt} from "../model"
 import {elt, insertCSS} from "../dom"
-import {Debounced} from "../util/debounce"
+import {MenuUpdate} from "./update"
 
 import {Tooltip} from "./tooltip"
 import {Menu, TooltipDisplay, commandGroups, forceFontLoad} from "./menu"
@@ -19,41 +19,37 @@ class InlineMenu {
     this.items = (config && config.items) || commandGroups(pm, "inline")
     this.nodeItems = (config && config.nodeItems) || commandGroups(pm, "block")
     this.showLinks = config ? config.showLinks !== false : true
-    this.debounced = new Debounced(pm, 100, () => this.update())
-
-    pm.on("selectionChange", this.updateFunc = () => this.debounced.trigger())
-    pm.on("change", this.updateFunc)
-    pm.on("blur", this.updateFunc)
+    this.update = new MenuUpdate(pm, "change selectionChange blur", () => this.prepareUpdate())
 
     this.tooltip = new Tooltip(pm, "above")
-    this.menu = new Menu(pm, new TooltipDisplay(this.tooltip, this.updateFunc))
+    this.menu = new Menu(pm, new TooltipDisplay(this.tooltip, () => this.update.force()))
 
     forceFontLoad(pm)
   }
 
   detach() {
-    this.debounced.clear()
+    this.update.detach()
     this.tooltip.detach()
-
-    this.pm.off("selectionChange", this.updateFunc)
-    this.pm.off("change", this.updateFunc)
-    this.pm.off("blur", this.updateFunc)
   }
 
-  update() {
-    if (this.menu.active) return
+  prepareUpdate() {
+    if (this.menu.active) return null
 
     let {empty, node, head} = this.pm.selection, link
-    if (!this.pm.hasFocus())
-      this.tooltip.close()
-    else if (node && node.isBlock)
-      this.menu.show(this.nodeItems, topOfNodeSelection(this.pm))
-    else if (!empty)
-      this.menu.show(this.items, node ? topOfNodeSelection(this.pm) : topCenterOfSelection())
-    else if (this.showLinks && (link = this.linkUnderCursor()))
-      this.showLink(link, this.pm.coordsAtPos(head))
-    else
-      this.tooltip.close()
+    if (!this.pm.hasFocus()) {
+      return () => this.tooltip.close()
+    } else if (node && node.isBlock) {
+      let coords = topOfNodeSelection(this.pm)
+      return () => this.menu.show(this.nodeItems, coords)
+    } else if (!empty) {
+      let coords = node ? topOfNodeSelection(this.pm) : topCenterOfSelection()
+      return () => this.menu.show(this.items, coords)
+    } else if (this.showLinks && (link = this.linkUnderCursor())) {
+      let coords = this.pm.coordsAtPos(head)
+      return () => this.showLink(link, coords)
+    } else {
+      return () => this.tooltip.close()
+    }
   }
 
   linkUnderCursor() {
