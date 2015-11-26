@@ -37,7 +37,7 @@ function wrap(node, options, type) {
   if (!node.isTextblock)
     renderNodesInto(node.children, dom, options)
   else if (options.renderInlineFlat)
-    renderInlineContentFlat(node.children, dom, options)
+    renderInlineContentFlat(node, dom, options)
   else
     renderInlineContent(node.children, dom, options)
   return dom
@@ -112,17 +112,17 @@ function wrapInlineFlat(node, dom, options) {
   return dom
 }
 
-function renderInlineContentFlat(nodes, where, options) {
+function renderInlineContentFlat(node, where, options) {
   let offset = 0
-  for (let i = 0; i < nodes.length; i++) {
-    let node = nodes[i]
-    let dom = wrapInlineFlat(node, renderNode(node, options, i), options)
-    dom = options.renderInlineFlat(node, dom, offset) || dom
+  for (let i = 0; i < node.length; i++) {
+    let child = node.child(i)
+    let dom = wrapInlineFlat(child, renderNode(child, options, i), options)
+    dom = options.renderInlineFlat(child, dom, offset) || dom
     where.appendChild(dom)
-    offset += node.offset
+    offset += child.offset
   }
 
-  if (!nodes.length || nodes[nodes.length - 1].type.name == "hard_break")
+  if (!node.type.isCode && (!node.length || where.lastChild.nodeName == "BR"))
     where.appendChild(elt("br")).setAttribute("pm-force-br", "true")
   else if (where.lastChild.contentEditable == "false")
     where.appendChild(doc.createTextNode(""))
