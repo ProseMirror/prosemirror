@@ -1,6 +1,6 @@
 import {defineOption} from "../edit"
 import {elt, insertCSS} from "../dom"
-import {Debounced} from "../util/debounce"
+import {MenuUpdate} from "./update"
 
 import {Menu, commandGroups} from "./menu"
 import "./icons"
@@ -55,14 +55,11 @@ class MenuBar {
                        this.menuElt)
     pm.wrapper.insertBefore(this.wrapper, pm.wrapper.firstChild)
 
+    this.update = new MenuUpdate(pm, "selectionChange change activeStyleChange", () => this.prepareUpdate())
     this.menu = new Menu(pm, new BarDisplay(this.menuElt, () => this.resetMenu()))
-    this.debounced = new Debounced(pm, 100, () => this.update())
-    pm.on("selectionChange", this.updateFunc = () => this.debounced.trigger())
-    pm.on("change", this.updateFunc)
-    pm.on("activeStyleChange", this.updateFunc)
 
     this.menuItems = config && config.items || commandGroups(pm, "inline", "block", "history")
-    this.update()
+    this.update.force()
 
     this.floating = false
     if (config && config.float) {
@@ -78,20 +75,21 @@ class MenuBar {
   }
 
   detach() {
-    this.debounced.clear()
+    this.update.detach()
     this.wrapper.parentNode.removeChild(this.wrapper)
 
-    this.pm.off("selectionChange", this.updateFunc)
-    this.pm.off("change", this.updateFunc)
-    this.pm.off("activeStyleChange", this.updateFunc)
     if (this.scrollFunc)
       window.removeEventListener("scroll", this.scrollFunc)
   }
 
-  update() {
-    if (!this.menu.active) this.resetMenu()
-    if (this.floating) this.scrollCursorIfNeeded()
+  prepareUpdate() {
+    let scrollCursor = this.prepareScrollCursor()
+    return () => {
+      if (!this.menu.active) this.resetMenu()
+      if (scrollCursor) scrollCursor()
+    }
   }
+
   resetMenu() {
     this.menu.show(this.menuItems)
   }
@@ -119,14 +117,16 @@ class MenuBar {
     }
   }
 
-  scrollCursorIfNeeded() {
+  prepareScrollCursor() {
+    if (!this.floating) return null
     let head = this.pm.selection.head
-    if (!head) return
+    if (!head) return null
     let cursorPos = this.pm.coordsAtPos(head)
     let menuRect = this.menuElt.getBoundingClientRect()
     if (cursorPos.top < menuRect.bottom && cursorPos.bottom > menuRect.top) {
       let scrollable = findWrappingScrollable(this.pm.wrapper)
-      if (scrollable) scrollable.scrollTop -= (menuRect.bottom - cursorPos.top)
+      if (scrollable)
+        return () => scrollable.scrollTop -= (menuRect.bottom - cursorPos.top)
     }
   }
 }
