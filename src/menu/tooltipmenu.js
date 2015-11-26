@@ -16,9 +16,10 @@ defineOption("tooltipMenu", false, function(pm, value) {
 class TooltipMenu {
   constructor(pm, config) {
     this.pm = pm
-    this.items = (config && config.items) || commandGroups(pm, "inline")
-    this.nodeItems = (config && config.nodeItems) || commandGroups(pm, "block")
+    this.inlineItems = (config && config.inlineItems) || commandGroups(pm, "inline")
+    this.blockItems = (config && config.blockItems) || commandGroups(pm, "block")
     this.showLinks = config ? config.showLinks !== false : true
+    this.emptyBlockMenu = config && config.emptyBlockMenu
     this.update = new MenuUpdate(pm, "change selectionChange blur", () => this.prepareUpdate())
 
     this.tooltip = new Tooltip(pm, "above")
@@ -40,10 +41,13 @@ class TooltipMenu {
       return () => this.tooltip.close()
     } else if (node && node.isBlock) {
       let coords = topOfNodeSelection(this.pm)
-      return () => this.menu.show(this.nodeItems, coords)
+      return () => this.menu.show(this.blockItems, coords)
     } else if (!empty) {
       let coords = node ? topOfNodeSelection(this.pm) : topCenterOfSelection()
-      return () => this.menu.show(this.items, coords)
+      return () => this.menu.show(this.inlineItems, coords)
+    } else if (this.emptyBlockMenu && this.pm.doc.path(head.path).length == 0) {
+      let coords = this.pm.coordsAtPos(head)
+      return () => this.menu.show(this.blockItems, coords)
     } else if (this.showLinks && (link = this.linkUnderCursor())) {
       let coords = this.pm.coordsAtPos(head)
       return () => this.showLink(link, coords)

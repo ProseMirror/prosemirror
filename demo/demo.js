@@ -58,7 +58,7 @@ function makeEditor(where, collab) {
   return new ProseMirror({
     place: document.querySelector(where),
     autoInput: true,
-    tooltipMenu: true,
+    tooltipMenu: {emptyBlockMenu: true},
     menuBar: {float: true},
     doc: doc,
     collab: collab
