@@ -4,7 +4,7 @@ import {elt, insertCSS} from "../dom"
 import {MenuUpdate} from "./update"
 
 import {Tooltip} from "./tooltip"
-import {Menu, TooltipDisplay, commandGroups, forceFontLoad} from "./menu"
+import {Menu, TooltipDisplay, commandGroups} from "./menu"
 
 const classPrefix = "ProseMirror-tooltipmenu"
 
@@ -24,8 +24,6 @@ class TooltipMenu {
 
     this.tooltip = new Tooltip(pm, "above")
     this.menu = new Menu(pm, new TooltipDisplay(this.tooltip, () => this.update.force()))
-
-    forceFontLoad(pm)
   }
 
   detach() {

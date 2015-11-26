@@ -3,7 +3,6 @@ import {elt, insertCSS} from "../dom"
 import {MenuUpdate} from "./update"
 
 import {Menu, commandGroups} from "./menu"
-import "./icons"
 
 defineOption("menuBar", false, function(pm, value) {
   if (pm.mod.menuBar) pm.mod.menuBar.detach()
@@ -48,10 +47,8 @@ class MenuBar {
 
     this.menuElt = elt("div", {class: "ProseMirror-menubar-inner"})
     this.wrapper = elt("div", {class: "ProseMirror-menubar"},
-                       // Height-forcing placeholder
-                       elt("div", {class: "ProseMirror-menu", style: "visibility: hidden"},
-                           elt("div", {class: "ProseMirror-menuicon"},
-                               elt("span", {class: "ProseMirror-menuicon ProseMirror-icon-strong"}))),
+                       elt("div", {class: "ProseMirror-menu", style: "visibility: hiffdden; z-index: 100"},
+                           elt("span", {class: "ProseMirror-menuicon"}, "x")),
                        this.menuElt)
     pm.wrapper.insertBefore(this.wrapper, pm.wrapper.firstChild)
 
@@ -138,7 +135,6 @@ function findWrappingScrollable(node) {
 
 insertCSS(`
 .ProseMirror-menubar {
-  padding: 1px 4px;
   position: relative;
   margin-bottom: 3px;
   border-top-left-radius: inherit;
@@ -147,7 +143,7 @@ insertCSS(`
 
 .ProseMirror-menubar-inner {
   color: #666;
-  padding: 1px 4px;
+  padding: 1px 6px;
   top: 0; left: 0; right: 0;
   position: absolute;
   border-bottom: 1px solid silver;
