@@ -99,11 +99,9 @@ function title(pm, command) {
 }
 
 function renderIcon(command, menu) {
-  let iconClass = "ProseMirror-menuicon"
-  if (command.active(menu.pm)) iconClass += " ProseMirror-menuicon-active"
-
-  let dom = elt("span", {class: iconClass, title: title(menu.pm, command)},
-                resolveIcon(menu.pm, command))
+  let icon = resolveIcon(menu.pm, command)
+  if (command.active(menu.pm)) icon.className += " ProseMirror-icon-active"
+  let dom = elt("span", {class: "ProseMirror-menuicon", title: title(menu.pm, command)}, icon)
   dom.addEventListener("mousedown", e => {
     e.preventDefault(); e.stopPropagation()
     if (!command.params.length) {
@@ -315,15 +313,7 @@ insertCSS(`
 }
 
 .ProseMirror-menuicon {
-  padding: 0 8px;
-  line-height: 1.5em;
-  margin: 0 2px;
-  cursor: pointer;
-}
-
-.ProseMirror-menuicon-active {
-  background: #666;
-  border-radius: 4px;
+  margin: 0 7px;
 }
 
 .ProseMirror-menuseparator {
@@ -333,7 +323,7 @@ insertCSS(`
   content: "︙";
   opacity: 0.5;
   padding: 0 4px;
-  vertical-align: middle;
+  vertical-align: baseline;
 }
 
 .ProseMirror-select, .ProseMirror-select-menu {
@@ -345,7 +335,7 @@ insertCSS(`
 .ProseMirror-select {
   padding: 1px 12px 1px 4px;
   display: inline-block;
-  vertical-align: baseline;
+  vertical-align: middle;
   position: relative;
   cursor: pointer;
   margin: 0 8px;

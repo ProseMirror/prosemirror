@@ -48,7 +48,8 @@ class MenuBar {
     this.menuElt = elt("div", {class: "ProseMirror-menubar-inner"})
     this.wrapper = elt("div", {class: "ProseMirror-menubar"},
                        elt("div", {class: "ProseMirror-menu", style: "visibility: hiffdden; z-index: 100"},
-                           elt("span", {class: "ProseMirror-menuicon"}, "x")),
+                           elt("span", {class: "ProseMirror-menuicon"},
+                               elt("div", {class: "ProseMirror-icon"}, "x"))),
                        this.menuElt)
     pm.wrapper.insertBefore(this.wrapper, pm.wrapper.firstChild)
 
@@ -156,7 +157,7 @@ insertCSS(`
   border-top-right-radius: inherit;
 }
 
-.ProseMirror-menubar .ProseMirror-menuicon-active {
+.ProseMirror-menubar .ProseMirror-icon-active {
   background: #eee;
 }
 

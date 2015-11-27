@@ -7,20 +7,19 @@ const SVG = "http://www.w3.org/2000/svg"
 const XLINK = "http://www.w3.org/1999/xlink"
 
 export function getIcon(name, data) {
+  let node = document.createElement("div")
+  node.className = "ProseMirror-icon"
   if (data.path) {
     if (!svgBuilt[name]) buildSVG(name, data)
-    let node = document.createElementNS(SVG, "svg")
-    node.setAttribute("class", "ProseMirror-icon")
-    node.style.width = (data.width / data.height) + "em"
-    let use = node.appendChild(document.createElementNS(SVG, "use"))
+    let svg = node.appendChild(document.createElementNS(SVG, "svg"))
+    svg.style.width = (data.width / data.height) + "em"
+    let use = svg.appendChild(document.createElementNS(SVG, "use"))
     use.setAttributeNS(XLINK, "href", "#pm-icon-" + name)
-    return node
   } else {
-    let span = document.createElement("span")
-    span.textContent = data.text
-    if (data.css) span.style.cssText = data.css
-    return span
+    node.textContent = data.text
+    if (data.css) node.style.cssText = data.css
   }
+  return node
 }
 
 function buildSVG(name, data) {
@@ -40,8 +39,20 @@ function buildSVG(name, data) {
 
 insertCSS(`
 .ProseMirror-icon {
+  display: inline-block;
+  line-height: .8;
+  vertical-align: middle;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.ProseMirror-icon-active {
+  background: #666;
+  border-radius: 4px;
+}
+
+.ProseMirror-icon svg {
   fill: currentColor;
   height: 1em;
-  vertical-align: middle;
 }
 `)
