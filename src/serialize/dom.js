@@ -2,9 +2,21 @@ import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmStyle, StrongStyle, LinkStyle, CodeStyle, Pos} from "../model"
 import {defineTarget} from "./index"
-import {elt} from "../dom"
 
 let doc = null
+
+function elt(tag, attrs, ...args) {
+  let result = doc.createElement(tag)
+  if (attrs) for (let name in attrs) {
+    if (name == "style")
+      result.style.cssText = attrs[name]
+    else if (attrs[name])
+      result.setAttribute(name, attrs[name])
+  }
+  for (let i = 0; i < args.length; i++)
+    result.appendChild(typeof args[i] == "string" ? doc.createTextNode(args[i]) : args[i])
+  return result
+}
 
 // declare_global: window
 
@@ -177,14 +189,12 @@ def(CodeBlock, (node, options) => {
 
 def(Text, node => doc.createTextNode(node.text))
 
-def(Image, node => {
-  return elt("img", {
-    src: node.attrs.src,
-    alt: node.attrs.alt,
-    title: node.attrs.title,
-    contentEditable: false
-  })
-})
+def(Image, node => elt("img", {
+  src: node.attrs.src,
+  alt: node.attrs.alt,
+  title: node.attrs.title,
+  contentEditable: false
+}))
 
 def(HardBreak, () => elt("br"))
 
@@ -196,9 +206,5 @@ def(StrongStyle, () => elt("strong"))
 
 def(CodeStyle, () => elt("code"))
 
-def(LinkStyle, style => {
-  let dom = elt("a")
-  dom.setAttribute("href", style.attrs.href)
-  if (style.attrs.title) dom.setAttribute("title", style.attrs.title)
-  return dom
-})
+def(LinkStyle, style => elt("a", {href: style.attrs.href,
+                                  title: style.attrs.title}))

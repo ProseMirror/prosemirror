@@ -223,7 +223,8 @@ CodeBlock.register("parseDOM", {tag: "pre", parse: (dom, context, type) => {
   } else {
     params = null
   }
-  context.insertFrom(dom, type, {params}, [context.schema.text(dom.textContent)])
+  let text = dom.textContent
+  context.insertFrom(dom, type, {params}, text ? [context.schema.text(text)] : [])
 }})
 
 BulletList.register("parseDOM", {tag: "ul", parse: wrap})
