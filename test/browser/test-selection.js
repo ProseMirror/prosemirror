@@ -1,7 +1,29 @@
 import {namespace} from "./def"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, img, strong, code, a, a2, br, hr} from "../build"
 import {cmp, cmpNode, gt, cmpStr, P} from "../cmp"
-import {allPositions} from "../fuzz/pos"
+
+import {Pos} from "../../src/model"
+
+function allPositions(doc, block) {
+  let found = [], path = []
+  function scan(node) {
+    let p = path.slice()
+    if (node.isTextblock) {
+      let size = node.maxOffset
+      for (let i = 0; i <= size; i++) found.push(new Pos(p, i))
+    } else if (node.type.contains) {
+      for (let i = 0;; i++) {
+        if (!block) found.push(new Pos(p, i))
+        if (i == node.length) break
+        path.push(i)
+        scan(node.child(i))
+        path.pop()
+      }
+    }
+  }
+  scan(doc)
+  return found
+}
 
 const test = namespace("selection")
 
