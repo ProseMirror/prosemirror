@@ -358,6 +358,21 @@ type("only_clear_for_code_block",
      doc(h1("hello<a> ", em("world"))),
      schema.node("heading", {level: 1}))
 
+function nodeType(name, doc, expect, type, attrs) {
+  defTest("nodeType_" + name, () => {
+    testTransform(doc, expect, Tr(doc).setNodeType(doc.tag.a, schema.nodeType(type), attrs))
+  })
+}
+
+nodeType("valid",
+         doc("<a>", p("foo")),
+         doc(h1("foo")),
+         "heading", {level: 1})
+nodeType("invalid",
+         doc("<a>", p("foo")),
+         doc(p("foo")),
+         "blockquote")
+
 function repl(name, doc, source, expect) {
   defTest("replace_" + name, () => {
     let tr = source ? Tr(doc).replace(doc.tag.a, doc.tag.b || doc.tag.a,

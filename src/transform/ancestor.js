@@ -197,3 +197,11 @@ Transform.prototype.setBlockType = function(from, to, wrapNode) {
   })
   return this
 }
+
+Transform.prototype.setNodeType = function(pos, type, attrs) {
+  let node = this.doc.path(pos.path).child(pos.offset)
+  let path = pos.toPath()
+  this.step("ancestor", new Pos(path, 0), new Pos(path, node.maxOffset), null,
+            {depth: 1, wrappers: [type.create(attrs)]})
+  return this
+}
