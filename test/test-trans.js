@@ -213,7 +213,9 @@ join("inline",
 
 function split(name, doc, expect, args) {
   defTest("split_" + name, () => {
-    testTransform(doc, expect, Tr(doc).split(doc.tag.a, args && args.depth, args && args.node))
+    testTransform(doc, expect, Tr(doc).split(doc.tag.a, args && args.depth,
+                                             args && args.type && schema.nodeType(args.type),
+                                             args && args.attrs))
   })
 }
 
@@ -247,7 +249,7 @@ split("list_item",
 split("change_type",
       doc(h1("hell<a>o!")),
       doc(h1("hell"), p("<a>o!")),
-      {node: schema.node("paragraph")})
+      {type: "paragraph"})
 split("invalid_start",
       doc(blockquote("<a>", p("x"))),
       doc(blockquote(p("x"))))

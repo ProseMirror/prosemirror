@@ -612,7 +612,7 @@ defineCommand("splitBlock", {
       if (!from.offset) return false
       return pm.tr.split(from).apply(andScroll)
     } else {
-      let type = to.offset == block.maxOffset ? pm.schema.defaultTextblockType().create() : null
+      let type = to.offset == block.maxOffset ? pm.schema.defaultTextblockType() : null
       return pm.tr.delete(from, to).split(from, 1, type).apply(andScroll)
     }
   },
@@ -627,7 +627,7 @@ ListItem.attachCommand("splitListItem", type => ({
         empty && from.offset == 0) return false
     let toParent = from.shorten(), grandParent = pm.doc.path(toParent.path)
     if (grandParent.type != type) return false
-    let nextType = to.offset == grandParent.child(toParent.offset).maxOffset ? pm.schema.defaultTextblockType().create() : null
+    let nextType = to.offset == grandParent.child(toParent.offset).maxOffset ? pm.schema.defaultTextblockType() : null
     return pm.tr.delete(from, to).split(from, 2, nextType).apply(andScroll)
   },
   key: "Enter(50)"
