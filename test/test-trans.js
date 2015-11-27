@@ -296,67 +296,67 @@ lift("multiple_from_list_with_two_items",
      doc(ul(li(p("one<a>"), p("<half>half")), li(p("two<b>")), li(p("three<after>")))),
      doc(p("one<a>"), p("<half>half"), p("two<b>"), ul(li(p("three<after>")))))
 
-function wrap(name, doc, expect, node) {
+function wrap(name, doc, expect, type, attrs) {
   defTest("wrap_" + name, () => {
-    testTransform(doc, expect, Tr(doc).wrap(doc.tag.a, doc.tag.b, node))
+    testTransform(doc, expect, Tr(doc).wrap(doc.tag.a, doc.tag.b, schema.nodeType(type), attrs))
   })
 }
 
 wrap("simple",
      doc(p("one"), p("<a>two"), p("three")),
      doc(p("one"), blockquote(p("<a>two")), p("three")),
-     schema.node("blockquote"))
+     "blockquote")
 wrap("two",
      doc(p("one<1>"), p("<a>two"), p("<b>three"), p("four<4>")),
      doc(p("one<1>"), blockquote(p("<a>two"), p("three")), p("four<4>")),
-     schema.node("blockquote"))
+     "blockquote")
 wrap("list",
      doc(p("<a>one"), p("<b>two")),
      doc(ol(li(p("<a>one")), li(p("<b>two")))),
-     schema.node("ordered_list"))
+     "ordered_list")
 wrap("nested_list",
      doc(ol(li(p("<1>one")), li(p("<a>two"), p("<b>three")), li(p("<4>four")))),
      doc(ol(li(p("<1>one")), li(ol(li(p("<a>two")), li(p("<b>three")))), li(p("<4>four")))),
-     schema.node("ordered_list"))
+     "ordered_list")
 wrap("not_possible",
      doc(p("hi<a>")),
      doc(p("hi<a>")),
-     schema.node("horizontal_rule"))
+     "horizontal_rule")
 wrap("include_parent",
      doc(blockquote(p("<1>one"), p("two<a>")), p("three<b>")),
      doc(blockquote(blockquote(p("<1>one"), p("two<a>")), p("three<b>"))),
-     schema.node("blockquote"))
+     "blockquote")
 wrap("bullet_list",
      doc(p("x"), p("yyyy<a>y"), p("z")),
      doc(p("x"), ul(li(p("yyyy<a>y"))), p("z")),
-     schema.node("bullet_list"))
+     "bullet_list")
 
-function type(name, doc, expect, node) {
+function type(name, doc, expect, nodeType, attrs) {
   defTest("setType_" + name, () => {
-    testTransform(doc, expect, Tr(doc).setBlockType(doc.tag.a, doc.tag.b, node))
+    testTransform(doc, expect, Tr(doc).setBlockType(doc.tag.a, doc.tag.b, schema.nodeType(nodeType), attrs))
   })
 }
 
 type("simple",
      doc(p("am<a> i")),
      doc(h2("am i")),
-     schema.node("heading", {level: 2}))
+     "heading", {level: 2})
 type("multiple",
      doc(h1("<a>hello"), p("there"), p("<b>you"), p("end")),
      doc(pre("hello"), pre("there"), pre("you"), p("end")),
-     schema.node("code_block"))
+     "code_block")
 type("inside",
      doc(blockquote(p("one<a>"), p("two<b>"))),
      doc(blockquote(h1("one<a>"), h1("two<b>"))),
-     schema.node("heading", {level: 1}))
+     "heading", {level: 1})
 type("clear_markup",
      doc(p("hello<a> ", em("world"))),
      doc(pre("hello world")),
-     schema.node("code_block"))
+     "code_block")
 type("only_clear_for_code_block",
      doc(p("hello<a> ", em("world"))),
      doc(h1("hello<a> ", em("world"))),
-     schema.node("heading", {level: 1}))
+     "heading", {level: 1})
 
 function nodeType(name, doc, expect, type, attrs) {
   defTest("nodeType_" + name, () => {

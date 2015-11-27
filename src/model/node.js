@@ -336,8 +336,15 @@ export class TextNode extends InlineNode {
   get isText() { return true }
 }
 
+function isEmpty(obj) {
+  if (obj) for (let _ in obj) return false
+  return true
+}
+
 export function compareMarkup(typeA, typeB, attrsA, attrsB) {
   if (typeA != typeB) return false
+  if (isEmpty(attrsA)) return isEmpty(attrsB)
+  if (isEmpty(attrsB)) return false
   for (var prop in attrsA)
     if (attrsB[prop] !== attrsA[prop])
       return false

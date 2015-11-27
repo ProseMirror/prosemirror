@@ -223,7 +223,7 @@ tests.wrap = (doc, positions) => {
     let to = positions[Math.floor(Math.random() * (positions.length - i)) + i]
     let type = wrapTypes[Math.floor(Math.random() * wrapTypes.length)]
     let node = schema.node(type, attrs[type.name])
-    let wrap = canWrap(doc, from, to, node)
+    let wrap = canWrap(doc, from, to, type)
     if (wrap && (!last || (p = wrap.range.from).cmp(last))) {
       runTest("wrap", doc, {from, to, node})
       last = p
@@ -246,7 +246,7 @@ tests.setBlockType = (doc, _, blockPositions) => {
 }
 
 run.setBlockType = (tr, info) => {
-  tr.setBlockType(info.from, info.to, info.node)
+  tr.setBlockType(info.from, info.to, info.node.type, info.node.attrs)
   if (info.node.type.containsStyles)
     cmp(nodeSize(tr.doc), docSize(tr.docs[0]), "setBlockType doesn't change size")
 }

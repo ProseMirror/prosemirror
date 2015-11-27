@@ -189,7 +189,7 @@ generateStyleCommands(CodeStyle, "code", null, {
     width: 896, height: 1024,
     path: "M608 192l-96 96 224 224-224 224 96 96 288-320-288-320zM288 192l-288 320 288 320 96-96-224-224 224-224-96-96z"
   },
-  key: "Mod-`",
+  key: "Mod-`"
 })
 
 LinkStyle.attachCommand("unlink", type => ({
@@ -521,7 +521,7 @@ function wrapCommand(type, name, labelName, isList, info) {
           if (from.path[from.path.length - 2] == 0) return false
           doJoin = true
         }
-        let tr = pm.tr.wrap(from, to, type.create())
+        let tr = pm.tr.wrap(from, to, type)
         if (doJoin) tr.join(from.shorten(from.depth - 2))
         return tr.apply(andScroll)
       },
@@ -530,7 +530,7 @@ function wrapCommand(type, name, labelName, isList, info) {
         if (isList && head && isAtTopOfListItem(pm.doc, from, to, type) &&
             from.path[from.path.length - 2] == 0)
           return false
-        return canWrap(pm.doc, from, to, type.create())
+        return canWrap(pm.doc, from, to, type)
       }
     }
     for (let key in info) command[key] = info[key]
@@ -639,7 +639,7 @@ function blockTypeCommand(type, name, labelName, attrs, key) {
     label: "Change to " + labelName,
     run(pm) {
       let {from, to} = pm.selection
-      return pm.tr.setBlockType(from, to, pm.schema.node(type, attrs)).apply(andScroll)
+      return pm.tr.setBlockType(from, to, type, attrs).apply(andScroll)
     },
     select(pm) {
       let {from, to, node} = pm.selection
@@ -698,7 +698,7 @@ defineCommand("textblockType", {
   label: "Change block type",
   run(pm, type) {
     let {from, to} = pm.selection
-    return pm.tr.setBlockType(from, to, type).apply()
+    return pm.tr.setBlockType(from, to, type.type, type.attrs).apply()
   },
   select(pm) {
     let {node} = pm.selection
@@ -725,7 +725,7 @@ function listTextblockTypes(pm) {
     if (!type.textblockTypes) continue
     for (let i = 0; i < type.textblockTypes.length; i++) {
       let info = type.textblockTypes[i]
-      sortedInsert(found, {label: info.label, value: type.create(info.attrs), rank: info.rank},
+      sortedInsert(found, {label: info.label, value: {type, attrs: info.attrs}, rank: info.rank},
                    (a, b) => a.rank - b.rank)
     }
   }
@@ -741,8 +741,10 @@ function currentTextblockType(pm) {
     return null
   }
   let types = listTextblockTypes(pm)
-  for (let i = 0; i < types.length; i++)
-    if (types[i].value.sameMarkup(node)) return types[i]
+  for (let i = 0; i < types.length; i++) {
+    let tp = types[i], val = tp.value
+    if (compareMarkup(val.type, node.type, val.attrs, node.attrs)) return tp
+  }
 }
 
 function nodeAboveSelection(pm) {

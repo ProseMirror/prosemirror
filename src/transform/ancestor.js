@@ -148,21 +148,21 @@ Transform.prototype.lift = function(from, to = from) {
   return this
 }
 
-export function canWrap(doc, from, to, node) {
+export function canWrap(doc, from, to, type) {
   let range = siblingRange(doc, from, to || from)
   if (range.from.offset == range.to.offset) return null
   let parent = doc.path(range.from.path)
-  let around = parent.type.findConnection(node.type)
-  let inside = node.type.findConnection(parent.child(range.from.offset).type)
+  let around = parent.type.findConnection(type)
+  let inside = type.findConnection(parent.child(range.from.offset).type)
   if (around && inside) return {range, around, inside}
 }
 
-Transform.prototype.wrap = function(from, to, node) {
-  let can = canWrap(this.doc, from, to, node)
+Transform.prototype.wrap = function(from, to, type, wrapAttrs) {
+  let can = canWrap(this.doc, from, to, type)
   if (!can) return this
   let {range, around, inside} = can
-  let types = around.concat(node.type).concat(inside)
-  let attrs = around.map(() => null).concat(node.attrs).concat(inside.map(() => null))
+  let types = around.concat(type).concat(inside)
+  let attrs = around.map(() => null).concat(wrapAttrs).concat(inside.map(() => null))
   this.step("ancestor", range.from, range.to, null, {types, attrs})
   if (inside.length) {
     let toInner = range.from.path.slice()
@@ -186,14 +186,14 @@ export function alreadyHasBlockType(doc, from, to, type, attrs) {
   return found
 }
 
-Transform.prototype.setBlockType = function(from, to, wrapNode) {
+Transform.prototype.setBlockType = function(from, to, type, attrs) {
   this.doc.nodesBetween(from, to || from, (node, path) => {
-    if (node.isTextblock && !node.sameMarkup(wrapNode)) {
+    if (node.isTextblock && !compareMarkup(type, node.type, attrs, node.attrs)) {
       path = path.slice()
       // Ensure all markup that isn't allowed in the new node type is cleared
-      this.clearMarkup(new Pos(path, 0), new Pos(path, node.maxOffset), wrapNode.type)
+      this.clearMarkup(new Pos(path, 0), new Pos(path, node.maxOffset), type)
       this.step("ancestor", new Pos(path, 0), new Pos(path, this.doc.path(path).maxOffset),
-                null, {depth: 1, types: [wrapNode.type], attrs: [wrapNode.attrs]})
+                null, {depth: 1, types: [type], attrs: [attrs]})
       return false
     }
   })

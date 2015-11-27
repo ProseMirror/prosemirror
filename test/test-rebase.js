@@ -28,7 +28,7 @@ function text(pos, text) {
   return tr => tr.insertText(asPos(tr.doc, pos), text)
 }
 function wrap(from, to, type, attrs) {
-  return tr => tr.wrap(asPos(tr.doc, from), asPos(tr.doc, to), schema.node(type, attrs))
+  return tr => tr.wrap(asPos(tr.doc, from), asPos(tr.doc, to), schema.nodeType(type), attrs)
 }
 function rm(from, to) {
   return tr => tr.delete(asPos(tr.doc, from), asPos(tr.doc, to))
