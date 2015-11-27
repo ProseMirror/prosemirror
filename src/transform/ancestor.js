@@ -10,7 +10,7 @@ defineStep("ancestor", {
     let from = step.from, to = step.to
     if (!isFlatRange(from, to)) return null
     let toParent = from.path, start = from.offset, end = to.offset
-    let depth = step.param.depth || 0, wrappers = step.param.wrappers || []
+    let {depth = 0, types = [], attrs = []} = step.param
     let inner = doc.path(from.path)
     for (let i = 0; i < depth; i++) {
       if (start > 0 || end < doc.path(toParent).maxOffset || toParent.length == 0) return null
@@ -18,21 +18,21 @@ defineStep("ancestor", {
       end = start + 1
       toParent = toParent.slice(0, toParent.length - 1)
     }
-    if (depth == 0 && wrappers.length == 0) return null
+    if (depth == 0 && types.length == 0) return null
 
     let parent = doc.path(toParent), parentSize = parent.length, newParent
     if (parent.type.locked) return null
-    if (wrappers.length) {
-      let lastWrapper = wrappers[wrappers.length - 1]
+    if (types.length) {
+      let lastWrapper = types[types.length - 1]
       let content = inner.slice(from.offset, to.offset)
-      if (!parent.type.canContain(wrappers[0]) ||
-          !content.every(n => lastWrapper.type.canContain(n)) ||
-          !inner.length && !lastWrapper.type.canBeEmpty ||
-          lastWrapper.type.locked)
+      if (!parent.type.canContainType(types[0]) ||
+          !content.every(n => lastWrapper.canContain(n)) ||
+          !inner.length && !lastWrapper.canBeEmpty ||
+          lastWrapper.locked)
         return null
       let node = null
-      for (let i = wrappers.length - 1; i >= 0; i--)
-        node = wrappers[i].copy(node ? [node] : content)
+      for (let i = types.length - 1; i >= 0; i--)
+        node = types[i].create(attrs[i], node ? [node] : content)
       newParent = parent.splice(start, end, [node])
     } else {
       if (!parent.type.canContainChildren(inner, true) ||
@@ -43,11 +43,11 @@ defineStep("ancestor", {
     let copy = doc.replaceDeep(toParent, newParent)
 
     let toInner = toParent.slice()
-    for (let i = 0; i < wrappers.length; i++) toInner.push(i ? 0 : start)
-    let startOfInner = new Pos(toInner, wrappers.length ? 0 : start)
+    for (let i = 0; i < types.length; i++) toInner.push(i ? 0 : start)
+    let startOfInner = new Pos(toInner, types.length ? 0 : start)
     let replaced = null
-    let insertedSize = wrappers.length ? 1 : to.offset - from.offset
-    if (depth != wrappers.length || depth > 1 || wrappers.length > 1) {
+    let insertedSize = types.length ? 1 : to.offset - from.offset
+    if (depth != types.length || depth > 1 || types.length > 1) {
       let posBefore = new Pos(toParent, start)
       let posAfter1 = new Pos(toParent, end), posAfter2 = new Pos(toParent, start + insertedSize)
       let endOfInner = new Pos(toInner, startOfInner.offset + (to.offset - from.offset))
@@ -61,24 +61,27 @@ defineStep("ancestor", {
     return new TransformResult(copy, new PosMap(moved, replaced))
   },
   invert(step, oldDoc, map) {
-    let wrappers = []
+    let types = [], attrs = []
     if (step.param.depth) for (let i = 0; i < step.param.depth; i++) {
       let parent = oldDoc.path(step.from.path.slice(0, step.from.path.length - i))
-      wrappers.unshift(parent.copy())
+      types.unshift(parent.type)
+      attrs.unshift(parent.attrs)
     }
     let newFrom = map.map(step.from).pos
     let newTo = step.from.cmp(step.to) ? map.map(step.to, -1).pos : newFrom
     return new Step("ancestor", newFrom, newTo, null,
-                    {depth: step.param.wrappers ? step.param.wrappers.length : 0,
-                     wrappers: wrappers})
+                    {depth: step.param.types ? step.param.types.length : 0,
+                     types, attrs})
   },
   paramToJSON(param) {
     return {depth: param.depth,
-            wrappers: param.wrappers && param.wrappers.map(n => n.toJSON())}
+            types: param.types && param.types.map(t => t.name),
+            attrs: param.attrs}
   },
   paramFromJSON(schema, json) {
     return {depth: json.depth,
-            wrappers: json.wrappers && json.wrappers.map(schema.nodeFromJSON)}
+            wrappers: json.types && json.types.map(n => schema.nodeType(n)),
+            attrs: json.attrs}
   }
 })
 
@@ -158,10 +161,9 @@ Transform.prototype.wrap = function(from, to, node) {
   let can = canWrap(this.doc, from, to, node)
   if (!can) return this
   let {range, around, inside} = can
-  let wrappers = around.map(t => node.type.schema.node(t))
-                   .concat(node)
-                   .concat(inside.map(t => node.type.schema.node(t)))
-  this.step("ancestor", range.from, range.to, null, {wrappers})
+  let types = around.concat(node.type).concat(inside)
+  let attrs = around.map(() => null).concat(node.attrs).concat(inside.map(() => null))
+  this.step("ancestor", range.from, range.to, null, {types, attrs})
   if (inside.length) {
     let toInner = range.from.path.slice()
     for (let i = 0; i < around.length + inside.length + 1; i++)
@@ -191,7 +193,7 @@ Transform.prototype.setBlockType = function(from, to, wrapNode) {
       // Ensure all markup that isn't allowed in the new node type is cleared
       this.clearMarkup(new Pos(path, 0), new Pos(path, node.maxOffset), wrapNode.type)
       this.step("ancestor", new Pos(path, 0), new Pos(path, this.doc.path(path).maxOffset),
-                null, {depth: 1, wrappers: [wrapNode]})
+                null, {depth: 1, types: [wrapNode.type], attrs: [wrapNode.attrs]})
       return false
     }
   })
@@ -202,6 +204,6 @@ Transform.prototype.setNodeType = function(pos, type, attrs) {
   let node = this.doc.path(pos.path).child(pos.offset)
   let path = pos.toPath()
   this.step("ancestor", new Pos(path, 0), new Pos(path, node.maxOffset), null,
-            {depth: 1, wrappers: [type.create(attrs)]})
+            {depth: 1, types: [type], attrs: [attrs]})
   return this
 }

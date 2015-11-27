@@ -158,7 +158,8 @@ function moveText(tr, doc, before, after) {
   if (existing.length || wanted.length)
     tr.step("ancestor", start, end, null, {
       depth: existing.length,
-      wrappers: wanted.map(n => n.copy())
+      types: wanted.map(n => n.type),
+      attrs: wanted.map(n => n.attrs)
     })
   for (let i = root; i < before.path.length; i++)
     tr.join(before.shorten(i, 1))

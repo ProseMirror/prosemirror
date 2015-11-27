@@ -299,7 +299,8 @@ function deleteBarrier(pm, cut) {
   let conn
   if (after.isTextblock && (conn = before.type.findConnection(after.type))) {
     let tr = pm.tr, end = cut.move(1)
-    tr.step("ancestor", cut, end, null, {wrappers: [before, ...conn.map(t => t.create())]})
+    tr.step("ancestor", cut, end, null, {types: [before.type, ...conn],
+                                         attrs: [before.attrs, ...conn.map(() => null)]})
     tr.join(end)
     tr.join(cut)
     if (tr.apply(andScroll) !== false) return
