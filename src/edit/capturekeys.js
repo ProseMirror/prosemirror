@@ -18,6 +18,7 @@ function ensureSelection(pm) {
 // find a cursor (as opposed to a node selection) when pressed.
 
 let keys = {
+  "Esc": nothing,
   "Enter": nothing,
   "Mod-Enter": nothing,
   "Shift-Enter": nothing,
