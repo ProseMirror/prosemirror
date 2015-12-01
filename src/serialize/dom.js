@@ -3,161 +3,160 @@ import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         EmStyle, StrongStyle, LinkStyle, CodeStyle, Pos} from "../model"
 import {defineTarget} from "./index"
 
-let doc = null
-
-function elt(tag, attrs, ...args) {
-  let result = doc.createElement(tag)
-  if (attrs) for (let name in attrs) {
-    if (name == "style")
-      result.style.cssText = attrs[name]
-    else if (attrs[name])
-      result.setAttribute(name, attrs[name])
-  }
-  for (let i = 0; i < args.length; i++)
-    result.appendChild(typeof args[i] == "string" ? doc.createTextNode(args[i]) : args[i])
-  return result
-}
-
 // declare_global: window
 
+class DOMSerializer {
+  constructor(options) {
+    this.options = options || {}
+    this.doc = this.options.document || window.document
+  }
+
+  elt(tag, attrs, ...args) {
+    let result = this.doc.createElement(tag)
+    if (attrs) for (let name in attrs) {
+      if (name == "style")
+        result.style.cssText = attrs[name]
+      else if (attrs[name])
+        result.setAttribute(name, attrs[name])
+    }
+    for (let i = 0; i < args.length; i++)
+      result.appendChild(typeof args[i] == "string" ? doc.createTextNode(args[i]) : args[i])
+    return result
+  }
+
+  renderNode(node, offset) {
+    let dom = node.type.serializeDOM(node, this)
+    for (let attr in node.type.attrs) {
+      let desc = node.type.attrs[attr]
+      if (desc.serializeDOM) desc.serializeDOM(dom, node.attrs[attr], this, node)
+    }
+    if (options.onRender && node.isBlock)
+      dom = options.onRender(node, dom, offset) || dom
+    return dom
+  }
+
+  renderContent(node, where) {
+    if (!where) where = this.doc.createDocumentFragment()
+    if (!node.isTextblock)
+      this.renderBlocksInto(node, where)
+    else if (options.renderInlineFlat)
+      this.renderInlineFlatInto(node, where)
+    else
+      this.renderIndlineInto(node, where)
+    return where
+  }
+
+  renderBlocksInto(parent, where) {
+    for (let i = 0; i < parent.size; i++) {
+      if (this.options.path) this.options.path.push(i)
+      where.appendChild(this.renderNode(parent.get(i), i))
+      if (this.options.path) this.options.path.pop()
+    }
+  }
+
+  renderInlineInto(parent, where) {
+    let top = where
+    let active = []
+    parent.chunks((node, text, marks, start) => {
+      let keep = 0
+      for (; keep < Math.min(active.length, marks.length); ++keep)
+        if (!marks[keep].eq(active[keep])) break
+      while (keep < active.length) {
+        active.pop()
+        top = top.parentNode
+      }
+      while (active.length < marks.length) {
+        let add = mark[active.length]
+        active.push(add)
+        top = top.appendChild(this.renderMark(add))
+      }
+      top.appendChild(node ? this.renderNode(node, start) : this.doc.createTextNode(text))
+    })
+  }
+
+  renderInlineFlatInto(parent, where) {
+    parent.chunks((node, text, marks, start) => {
+      let dom = node ? this.renderNode(node, start) : this.doc.createTextNode(text)
+      dom = this.wrapInlineFlat(dom, marks)
+      dom = options.renderInlineFlat(node || text, dom, offset) || dom
+      where.appendChild(dom)
+    })
+    if (!parent.type.isCode && (!parent.length || where.lastChild.nodeName == "BR"))
+      where.appendChild(this.elt("br")).setAttribute("pm-force-br", "true")
+    else if (where.lastChild.contentEditable == "false")
+      where.appendChild(this.doc.createTextNode(""))
+  }
+
+  renderMark(mark) {
+    let dom = mark.type.serializeDOM(mark, this)
+    for (let attr in marker.type.attrs) {
+      let desc = marker.type.attrs[attr]
+      if (desc.serializeDOM) desc.serializeDOM(dom, mark.attrs[attr], this)
+    }
+    return dom
+  }
+
+  wrapInlineFlat(dom, marks) {
+    for (let i = marks.length - 1; i >= 0; i--) {
+      let wrap = this.renderMark(marks[i])
+      wrap.appendChild(dom)
+      dom = wrap
+    }
+    return dom
+  }
+
+  renderAs(node, tagName, tagAttrs) {
+    return this.renderContent(node, this.elt(tagName, tagAttrs))
+  }
+}
+
 export function toDOM(node, options = {}) {
-  doc = options.document || window.document
-  return renderNodes(node.children, options)
+  return new DOMSerializer(options).renderContent(node)
 }
 
 defineTarget("dom", toDOM)
 
 export function toHTML(node, options) {
-  let wrap = (options && options.document || window.document).createElement("div")
-  wrap.appendChild(toDOM(node, options))
+  let serializer = new DOMSerializer(options)
+  let wrap = serializer.elt("div")
+  wrap.appendChild(serializer.renderContent(node))
   return wrap.innerHTML
 }
 
 defineTarget("html", toHTML)
 
+export function renderTextToDOM(text, marks, options, offset) {
+  let serializer = new DOMSerializer(options)
+  let dom = serializer.wrapInlineFlat(serializer.dom.createTextNode(text), marks)
+  if (options.wrapInlineFlat) dom = options.wrapInlineFlat(text, dom, offset)
+  return dom
+}
+
 export function renderNodeToDOM(node, options, offset) {
-  let dom = renderNode(node, options, offset)
-  if (options.renderInlineFlat && node.isInline) {
-    dom = wrapInlineFlat(node, dom, options)
-    dom = options.renderInlineFlat(node, dom, offset) || dom
+  let serializer = new DOMSerializer(options)
+  let dom = serializer.renderNode(node, offset)
+  if (node.isInline) {
+    dom = serializer.wrapInlineFlat(dom, node.marks)
+    if (serializer.options.renderInlineFlat)
+      dom = optfions.renderInlineFlat(node, dom, offset) || dom
   }
   return dom
-}
-
-function wrap(node, options, type) {
-  let dom = elt(type || node.type.name)
-  if (!node.isTextblock)
-    renderNodesInto(node.children, dom, options)
-  else if (options.renderInlineFlat)
-    renderInlineContentFlat(node, dom, options)
-  else
-    renderInlineContent(node.children, dom, options)
-  return dom
-}
-
-function wrapIn(type) {
-  return (node, options) => wrap(node, options, type)
-}
-
-function renderNodes(nodes, options) {
-  let frag = doc.createDocumentFragment()
-  renderNodesInto(nodes, frag, options)
-  return frag
-}
-
-function renderNode(node, options, offset) {
-  let dom = node.type.serializeDOM(node, options)
-  for (let attr in node.type.attrs) {
-    let desc = node.type.attrs[attr]
-    if (desc.serializeDOM) desc.serializeDOM(dom, node.attrs[attr], options, node)
-  }
-  if (options.onRender && node.isBlock)
-    dom = options.onRender(node, dom, offset) || dom
-  return dom
-}
-
-function renderNodesInto(nodes, where, options) {
-  for (let i = 0; i < nodes.length; i++) {
-    if (options.path) options.path.push(i)
-    where.appendChild(renderNode(nodes[i], options, i))
-    if (options.path) options.path.pop()
-  }
-}
-
-function renderInlineContent(nodes, where, options) {
-  let top = where
-  let active = []
-  for (let i = 0; i < nodes.length; i++) {
-    let node = nodes[i], styles = node.styles
-    let keep = 0
-    for (; keep < Math.min(active.length, styles.length); ++keep)
-      if (!styles[keep].eq(active[keep])) break
-    while (keep < active.length) {
-      active.pop()
-      top = top.parentNode
-    }
-    while (active.length < styles.length) {
-      let add = styles[active.length]
-      active.push(add)
-      top = top.appendChild(renderStyle(add, options))
-    }
-    top.appendChild(renderNode(node, options, i))
-  }
-}
-
-function renderStyle(marker, options) {
-  let dom = marker.type.serializeDOM(marker, options)
-  for (let attr in marker.type.attrs) {
-    let desc = marker.type.attrs[attr]
-    if (desc.serializeDOM) desc.serializeDOM(dom, marker.attrs[attr], options)
-  }
-  return dom
-}
-
-function wrapInlineFlat(node, dom, options) {
-  let styles = node.styles
-  for (let i = styles.length - 1; i >= 0; i--) {
-    let wrap = renderStyle(styles[i], options)
-    wrap.appendChild(dom)
-    dom = wrap
-  }
-  return dom
-}
-
-function renderInlineContentFlat(node, where, options) {
-  let offset = 0
-  for (let i = 0; i < node.length; i++) {
-    let child = node.child(i)
-    let dom = wrapInlineFlat(child, renderNode(child, options, i), options)
-    dom = options.renderInlineFlat(child, dom, offset) || dom
-    where.appendChild(dom)
-    offset += child.offset
-  }
-
-  if (!node.type.isCode && (!node.length || where.lastChild.nodeName == "BR"))
-    where.appendChild(elt("br")).setAttribute("pm-force-br", "true")
-  else if (where.lastChild.contentEditable == "false")
-    where.appendChild(doc.createTextNode(""))
 }
 
 // Block nodes
 
 function def(cls, method) { cls.prototype.serializeDOM = method }
 
-def(BlockQuote, wrapIn("blockquote"))
+def(BlockQuote, (node, s) => s.renderAs(node, "blockquote"))
 
 BlockQuote.prototype.clicked = (_, path, dom, coords) => {
   let childBox = dom.firstChild.getBoundingClientRect()
   if (coords.left < childBox.left - 2) return Pos.from(path)
 }
 
-def(BulletList, wrapIn("ul"))
+def(BulletList, (node, s) => s.renderAs(node, "ul"))
 
-def(OrderedList, (node, options) => {
-  let dom = wrap(node, options, "ol")
-  if (node.attrs.order > 1) dom.setAttribute("start", node.attrs.order)
-  return dom
-})
+def(OrderedList, (node, s) => s.renderAs(node, "ol", {start: node.attrs.order}))
 
 OrderedList.prototype.clicked = BulletList.prototype.clicked = (_, path, dom, coords) => {
   for (let i = 0; i < dom.childNodes.length; i++) {
@@ -170,41 +169,39 @@ OrderedList.prototype.clicked = BulletList.prototype.clicked = (_, path, dom, co
   }
 }
 
-def(ListItem, wrapIn("li"))
+def(ListItem, (node, s) => s.renderAs(node, "li"))
 
-def(HorizontalRule, () => elt("hr"))
+def(HorizontalRule, (_, s) => s.elt("hr"))
 
-def(Paragraph, wrapIn("p"))
+def(Paragraph, (node, s) => s.renderAs(node, "p"))
 
-def(Heading, (node, options) => wrap(node, options, "h" + node.attrs.level))
+def(Heading, (node, s) => s.renderAs(node, "h" + node.attrs.level))
 
-def(CodeBlock, (node, options) => {
-  let code = wrap(node, options, "code")
+def(CodeBlock, (node, s) => {
+  let code = s.renderAs(node, "code")
   if (node.attrs.params != null)
     code.className = "fence " + node.attrs.params.replace(/(^|\s+)/g, "$&lang-")
-  return elt("pre", null, code)
+  return s.elt("pre", null, code)
 })
 
 // Inline content
 
-def(Text, node => doc.createTextNode(node.text))
-
-def(Image, node => elt("img", {
+def(Image, (node, s) => s.elt("img", {
   src: node.attrs.src,
   alt: node.attrs.alt,
   title: node.attrs.title,
   contentEditable: false
 }))
 
-def(HardBreak, () => elt("br"))
+def(HardBreak, (_, s) => s.elt("br"))
 
 // Inline styles
 
-def(EmStyle, () => elt("em"))
+def(EmStyle, (_, s) => s.elt("em"))
 
-def(StrongStyle, () => elt("strong"))
+def(StrongStyle, (_, s) => s.elt("strong"))
 
-def(CodeStyle, () => elt("code"))
+def(CodeStyle, (_, s) => s.elt("code"))
 
-def(LinkStyle, style => elt("a", {href: style.attrs.href,
-                                  title: style.attrs.title}))
+def(LinkStyle, (mark, s) => s.elt("a", {href: mark.attrs.href,
+                                        title: mark.attrs.title}))

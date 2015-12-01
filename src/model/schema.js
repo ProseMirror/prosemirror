@@ -1,4 +1,4 @@
-import {BlockNode, TextblockNode, InlineNode, TextNode} from "./node"
+import {Node, FlatSlice, TextSlice} from "./node"
 import {StyleMarker} from "./style"
 
 import {ProseMirrorError} from "../util/error"
@@ -42,7 +42,10 @@ export class NodeType {
   }
 
   get locked() { return false }
+  get isBlock() { return false }
   get isTextblock() { return false }
+  get isInline() { return false }
+  get isText() { return false }
 
   get selectable() { return true }
 
@@ -50,6 +53,13 @@ export class NodeType {
 
   canContain(node) {
     return this.canContainType(node.type)
+  }
+
+  canContainSlice(slice) {
+    if (slice.constructor != this.sliceType) return false
+    let ok = true
+    slice.nodes(n => { if (!this.canContain(n)) ok = false })
+    return ok
   }
 
   canContainType(type) {
@@ -87,8 +97,8 @@ export class NodeType {
     else return buildAttrs(this.attrs, attrs, this, content)
   }
 
-  create(attrs, content, styles) {
-    return new this.instance(this, this.buildAttrs(attrs, content), content, styles)
+  create(attrs, content, marks) {
+    return new Node(this, this.buildAttrs(attrs, content), content, marks)
   }
 
   createAutoFill(attrs, content, styles) {
@@ -100,6 +110,7 @@ export class NodeType {
   get canBeEmpty() { return true }
 
   static compile(types, schema) {
+    if (types.text) SchemaError.raise("Node name 'text' is reserved")
     let result = Object.create(null)
     for (let name in types) {
       let info = types[name]
@@ -124,11 +135,12 @@ export class NodeType {
   static register(prop, value) {
     ;(this.prototype[prop] || (this.prototype[prop] = [])).push(value)
   }
+
+  get sliceType() { return FlatSlice }
 }
 NodeType.attributes = {}
 
 export class Block extends NodeType {
-  get instance() { return BlockNode }
   static get contains() { return "block" }
   static get kind() { return "block." }
   get isBlock() { return true }
@@ -145,7 +157,6 @@ export class Block extends NodeType {
 }
 
 export class Textblock extends Block {
-  get instance() { return TextblockNode }
   static get contains() { return "inline" }
   get containsStyles() { return true }
   get isTextblock() { return true }
@@ -163,17 +174,19 @@ export class Textblock extends Block {
   }
 
   get canBeEmpty() { return true }
+
+  get sliceType() { return TextSlice }
 }
 
 export class Inline extends NodeType {
-  get instance() { return InlineNode }
   static get contains() { return null }
   static get kind() { return "inline." }
+  static get isInline() { return true }
 }
 
 export class Text extends Inline {
-  get instance() { return TextNode }
   get selectable() { return false }
+  static get isText() { return true }
 }
 
 // Attribute descriptors
@@ -331,11 +344,11 @@ export class Schema {
     this.spec = spec
     this.kinds = Object.create(null)
     this.nodes = NodeType.compile(spec.nodes, this)
+    this.text = this.nodes.text = new Text("text", null, Object.create(null), this)
     this.styles = StyleType.compile(spec.styles, this)
     this.cached = Object.create(null)
 
     this.node = this.node.bind(this)
-    this.text = this.text.bind(this)
     this.nodeFromJSON = this.nodeFromJSON.bind(this)
     this.styleFromJSON = this.styleFromJSON.bind(this)
   }
@@ -348,11 +361,7 @@ export class Schema {
     else if (type.schema != this)
       SchemaError.raise("Node type from different schema used (" + type.name + ")")
 
-    return type.create(attrs, content, styles)
-  }
-
-  text(text, styles) {
-    return this.nodes.text.create(null, text, styles)
+    return type.create(attrs, Slice.from(content), styles)
   }
 
   defaultTextblockType() {
@@ -371,10 +380,7 @@ export class Schema {
   }
 
   nodeFromJSON(json) {
-    let type = this.nodeType(json.type)
-    return type.create(json.attrs,
-                       json.text || (json.content && json.content.map(this.nodeFromJSON)),
-                       json.styles && json.styles.map(this.styleFromJSON))
+    return Node.fromJSON(this, json)
   }
 
   styleFromJSON(json) {

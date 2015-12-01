@@ -5,7 +5,7 @@ import {defineTarget} from "./index"
 
 export function toMarkdown(doc) {
   let state = new State()
-  state.renderNodes(doc.children)
+  state.renderContent(doc)
   return state.out
 }
 
@@ -92,42 +92,28 @@ class State {
     node.type.serializeMarkdown(this, node)
   }
 
-  renderNodes(nodes) {
-    for (let i = 0; i < nodes.length; i++)
-      this.render(nodes[i])
+  renderContent(node) {
+    for (let i = 0; i < node.size; i++) this.render(node.get(i))
   }
 
-  renderInline(nodes) {
-    let stack = []
-    for (let i = 0; i <= nodes.length; i++) {
-      let node = nodes[i]
-      let styles = node ? node.styles.slice() : []
-      if (stack.length && stack[stack.length - 1].type == "code" &&
-          (!styles.length || styles[styles.length - 1].type != "code")) {
-        this.text("`", false)
-        stack.pop()
+  renderInline(parent) {
+    let active = []
+    parent.chunks((node, text, marks) => {
+      let keep = 0
+      for (; keep < Math.min(active.length, marks.length); ++keep)
+        if (!marks[keep].eq(active[keep])) break
+      while (keep < active.length)
+        this.text(styleString(active.pop(), false), false)
+      while (active.length < marks.length) {
+        let add = mark[active.length]
+        active.push(add)
+        this.text(styleString(add, true), false)
       }
-      for (let j = 0; j < stack.length; j++) {
-        let cur = stack[j], found = false
-        for (let k = 0; k < styles.length; k++) {
-          if (styles[k].eq(stack[j])) {
-            styles.splice(k, 1)
-            found = true
-            break
-          }
-        }
-        if (!found) {
-          this.text(styleString(cur, false), false)
-          stack.splice(j--, 1)
-        }
-      }
-      for (let j = 0; j < styles.length; j++) {
-        let cur = styles[j]
-        stack.push(cur)
-        this.text(styleString(cur, true), false)
-      }
-      if (node) this.render(node)
-    }
+      if (text) this.text(text)
+      else this.render(node)
+    })
+    for (let i = active.lengh - 1; i >= 0; i--)
+      this.text(styleString(active[i], false), false)
   }
 
   renderList(node, delim, firstDelim) {
@@ -138,7 +124,7 @@ class State {
 
     let prevTight = this.inTightList
     this.inTightList = node.attrs.tight
-    for (let i = 0; i < node.length; i++) {
+    for (let i = 0; i < node.size; i++) {
       if (i && node.attrs.tight) this.flushClose(1)
       let item = node.child(i)
       this.wrapBlock(delim, firstDelim(i), node, () => this.render(item))
@@ -150,7 +136,7 @@ class State {
 function def(cls, method) { cls.prototype.serializeMarkdown = method }
 
 def(BlockQuote, (state, node) => {
-  state.wrapBlock("> ", null, node, () => state.renderNodes(node.children))
+  state.wrapBlock("> ", null, node, () => state.renderContent(node))
 })
 
 def(CodeBlock, (state, node) => {
@@ -167,7 +153,7 @@ def(CodeBlock, (state, node) => {
 
 def(Heading, (state, node) => {
   state.write(rep("#", node.attrs.level) + " ")
-  state.renderInline(node.children)
+  state.renderInline(node)
   state.closeBlock(node)
 })
 
@@ -182,7 +168,7 @@ def(BulletList, (state, node) => {
 
 def(OrderedList, (state, node) => {
   let start = Number(node.attrs.order || 1)
-  let maxW = String(start + node.length - 1).length
+  let maxW = String(start + node.size - 1).length
   let space = rep(" ", maxW + 2)
   state.renderList(node, space, i => {
     let nStr = String(start + i)
@@ -190,10 +176,10 @@ def(OrderedList, (state, node) => {
   })
 })
 
-def(ListItem, (state, node) => state.renderNodes(node.children))
+def(ListItem, (state, node) => state.renderContent(node))
 
 def(Paragraph, (state, node) => {
-  state.renderInline(node.children)
+  state.renderInline(node)
   state.closeBlock(node)
 })
 

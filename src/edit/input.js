@@ -1,4 +1,4 @@
-import {Pos, spanStylesAt} from "../model"
+import {Pos, Slice, spanStylesAt} from "../model"
 
 import {fromHTML} from "../parse/dom"
 import {elt} from "../dom"
@@ -141,7 +141,7 @@ function inputText(pm, range, text) {
   if (range.empty && !text) return false
   let styles = pm.input.storedStyles || spanStylesAt(pm.doc, range.from)
   let tr = pm.tr
-  tr.replaceWith(range.from, range.to, pm.schema.text(text, styles)).apply()
+  tr.replaceWith(range.from, range.to, Slice.text(text, styles)).apply()
   pm.scrollIntoView()
   pm.signal("textInput", text)
 }
@@ -316,7 +316,7 @@ handlers.paste = (pm, e) => {
     if (pm.input.shiftKey && txt) {
       let paragraphs = txt.split(/[\r\n]+/)
       let styles = spanStylesAt(pm.doc, sel.from)
-      doc = pm.schema.node("doc", null, paragraphs.map(s => pm.schema.node("paragraph", null, [pm.schema.text(s, styles)])))
+      doc = pm.schema.node("doc", null, paragraphs.map(s => pm.schema.node("paragraph", null, Slice.text(s, styles)]))
     } else if (lastCopied && (lastCopied.html == html || lastCopied.text == txt)) {
       ;({doc, from, to} = lastCopied)
     } else if (html) {

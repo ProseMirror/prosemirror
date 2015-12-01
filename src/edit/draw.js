@@ -1,5 +1,5 @@
 import {Pos} from "../model"
-import {toDOM, renderNodeToDOM} from "../serialize/dom"
+import {toDOM, renderNodeToDOM, renderTextToDOM} from "../serialize/dom"
 
 import {elt} from "../dom"
 
@@ -88,7 +88,7 @@ export function redraw(pm, dirty, doc, prev) {
     for (let i = 0, j = 0; i < prev.length && j < node.width; i++) {
       let cur = prev.child(i), dirtyStatus = dirty.get(cur)
       status.push(dirtyStatus)
-      let matching = dirtyStatus ? -1 : node.children.indexOf(cur, j)
+      let matching = dirtyStatus ? -1 : node.content.indexOf(cur, j)
       if (matching > -1) {
         inNode[i] = matching
         inPrev[matching] = i
@@ -106,35 +106,37 @@ export function redraw(pm, dirty, doc, prev) {
         dom.removeChild(last)
     }
 
-    let domPos = dom.firstChild, j = 0
-    let block = node.isTextblock
-    for (let i = 0, offset = 0; i < node.length; i++) {
-      let child = node.child(i)
-      if (!block) path.push(i)
-      let found = inPrev[i]
+    let domPos = dom.firstChild, prevIndex = 0, index = 0
+    let textblock = node.isTextblock
+    node.chunks((node, text, marks, offset) => {
+      path.push(offset)
+      let found = inPrev[index]
       let nodeLeft = true
       if (found != null) {
-        domPos = deleteNextNodes(dom, domPos, found - j)
-        j = found
-      } else if (!block && j < prev.length && inNode[j] == null &&
-                 status[j] != 2 && child.sameMarkup(prev.child(j))) {
-        scan(domPos, child, prev.child(j))
+        domPos = deleteNextNodes(dom, domPos, found - prevIndex)
+        prevIndex = found
+      } else if (node && prevIndex < prev.length && inNode[prevIndex] == null &&
+                 status[prevIndex] != 2 && node.sameMarkup(prev.atIndex(prevIndex))) {
+        scan(domPos, node, prev.atIndex(prevIndex))
       } else {
-        dom.insertBefore(renderNodeToDOM(child, options(path, ranges), block ? offset : i), domPos)
+        let opts = options(path, ranges)
+        let rendered = node ? renderNodeToDOM(node, opts, offset)
+                            : renderTextToDOM(text, marks, opts, offset)
+        dom.insertBefore(rendered, domPos)
         nodeLeft = false
       }
       if (nodeLeft) {
-        if (block)
-          domPos.setAttribute("pm-span", offset + "-" + (offset + child.offset))
+        if (textblock) // FIXME use path for inline nodes as well
+          domPos.setAttribute("pm-span", offset + "-" + (offset + (text ? text.length : 1)))
         else
           domPos.setAttribute("pm-path", i)
         domPos = domPos.nextSibling
-        j++
+        prevIndex++
       }
-      if (block) offset += child.offset
-      else path.pop()
+      path.pop()
+      ++index
     }
-    deleteNextNodes(dom, domPos, prev.length - j)
+    deleteNextNodes(dom, domPos, prev.length - prevIndex)
   }
   scan(pm.content, doc, prev)
 }

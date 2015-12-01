@@ -18,7 +18,7 @@ defineStep("join", {
     let targetPath = pFrom.slice(0, last)
     let target = doc.path(targetPath), oldSize = target.length
     if (target.type.locked) return null
-    let joined = before.append(after.children)
+    let joined = before.append(after.content)
     let copy = doc.replaceDeep(targetPath, target.splice(offset - 1, offset + 1, [joined]))
 
     let map = new PosMap([new MovedRange(step.to, after.maxOffset, step.from),

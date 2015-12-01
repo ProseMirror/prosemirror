@@ -69,15 +69,15 @@ const empty = []
 
 export function spanStylesAt(doc, pos) {
   let parent = doc.path(pos.path)
-  if (!parent.isTextblock) return empty
-  let node = parent.childBefore(pos.offset).node || parent.firstChild
-  return node ? node.styles : empty
+  if (!parent.isTextblock || !parent.size) return empty
+  let {node, marks} = parent.chunkBefore(pos.offset || 1)
+  return marks || node.marks
 }
 
 export function rangeHasStyle(doc, from, to, type) {
   let found = false
-  doc.inlineNodesBetween(from, to, node => {
-    if (containsStyle(node.styles, type)) found = true
+  doc.inlineMarksBetween(from, to, marks => {
+    if (containsStyle(marks, type)) found = true
   })
   return found
 }

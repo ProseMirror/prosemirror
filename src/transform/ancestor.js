@@ -38,7 +38,7 @@ defineStep("ancestor", {
       if (!parent.type.canContainChildren(inner, true) ||
           !inner.length && start == 0 && end == parent.length && !parent.type.canBeEmpty)
         return null
-      newParent = parent.splice(start, end, inner.children)
+      newParent = parent.splice(start, end, inner.content)
     }
     let copy = doc.replaceDeep(toParent, newParent)
 

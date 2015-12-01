@@ -247,21 +247,20 @@ Image.attachCommand("insertImage", type => ({
  * @param  {Object} parent The parent node.
  * @param  {int}    offset Offset to move from inside the node.
  * @param  {string} by     Size to delete by. Either "char" or "word".
- * @return {[type]}        [description]
  */
 function moveBackward(parent, offset, by) {
   if (by != "char" && by != "word")
     throw new Error("Unknown motion unit: " + by)
 
-  let {index, innerOffset} = parent.childBefore(offset)
   let cat = null, counted = 0
-  for (; index >= 0; index--, innerOffset = null) {
-    let child = parent.child(index), size = child.offset
-    if (!child.isText) return cat ? offset : offset - 1
+  for (;;) {
+    if (offset == 0) return offset
+    let {start, text} = parent.chunkBefore(offset)
+    if (!text) return cat ? offset : offset - 1
 
     if (by == "char") {
-      for (let i = innerOffset == null ? size : innerOffset; i > 0; i--) {
-        if (!isExtendingChar(child.text.charAt(i - 1)))
+      for (let i = offset - start; i > 0; i--) {
+        if (!isExtendingChar(text.charAt(i - 1)))
           return offset - 1
         offset--
       }
@@ -269,8 +268,8 @@ function moveBackward(parent, offset, by) {
       // Work from the current position backwards through text of a singular
       // character category (e.g. "cat" of "#!*") until reaching a character in a
       // different category (i.e. the end of the word).
-      for (let i = innerOffset == null ? size : innerOffset; i > 0; i--) {
-        let nextCharCat = charCategory(child.text.charAt(i - 1))
+      for (let i = offset - start; i > 0; i--) {
+        let nextCharCat = charCategory(text.charAt(i - 1))
         if (cat == null || counted == 1 && cat == "space") cat = nextCharCat
         else if (cat != nextCharCat) return offset
         offset--
@@ -278,7 +277,6 @@ function moveBackward(parent, offset, by) {
       }
     }
   }
-  return offset
 }
 
 defineCommand("deleteSelection", {
@@ -365,20 +363,20 @@ function moveForward(parent, offset, by) {
   if (by != "char" && by != "word")
     throw new Error("Unknown motion unit: " + by)
 
-  let {index, innerOffset} = parent.childAfter(offset)
   let cat = null, counted = 0
-  for (; index < parent.length; index++, innerOffset = 0) {
-    let child = parent.child(index), size = child.offset
-    if (!child.isText) return cat ? offset : offset + 1
+  for (;;) {
+    if (offset == parent.size) return offset
+    let {start, text} = parent.chunkAfter(offset)
+    if (!text) return cat ? offset : offset + 1
 
     if (by == "char") {
-      for (let i = innerOffset; i < size; i++) {
+      for (let i = offset - start; i < text.length; i++) {
         if (!isExtendingChar(child.text.charAt(i + 1)))
           return offset + 1
         offset++
       }
     } else if (by == "word") {
-      for (let i = innerOffset; i < size; i++) {
+      for (let i = offset - start; i < text.length; i++) {
         let nextCharCat = charCategory(child.text.charAt(i))
         if (cat == null || counted == 1 && cat == "space") cat = nextCharCat
         else if (cat != nextCharCat) return offset
@@ -387,7 +385,6 @@ function moveForward(parent, offset, by) {
       }
     }
   }
-  return offset
 }
 
 defineCommand("joinForward", {
@@ -788,9 +785,8 @@ function selectBlockHorizontally(pm, dir) {
   let parent
   if (!node && (parent = pm.doc.path(from.path)) &&
       (dir > 0 ? from.offset < parent.maxOffset : from.offset)) {
-    let {node: nextNode, innerOffset} = dir > 0 ? parent.childAfter(from.offset) : parent.childBefore(from.offset)
-    if (nextNode && nextNode.type.selectable &&
-        (dir > 0 ? !innerOffset : innerOffset == nextNode.offset)) {
+    let {node: nextNode, start} = dir > 0 ? parent.chunkAfter(from.offset) : parent.chunkBefore(from.offset)
+    if (nextNode && nextNode.type.selectable && start == from.offset + (dir > 0 ? 0 : 1)) {
       pm.setNodeSelection(dir < 0 ? from.move(-1) : from)
       return true
     }

@@ -1,172 +1,99 @@
 import {sameStyles} from "./style"
 
-const emptyArray = []
-
-/**
- * Document node class
- */
-export class Node {
-  constructor(type, attrs) {
-    this.type = type
-    this.attrs = attrs
+export class Slice {
+  append(other, joinLeft = 0, joinRight = 0) {
+    if (!this.size)
+      return joinRight ? slice.replace(0, slice.get(0).close(joinRight - 1, "start")) : slice
+    if (!other.size)
+      return joinLeft ? this.replace(this.size - 1, this.get(this.size - 1).close(joinLeft - 1, "end")) : this
+    return this.appendInner(other, joinLeft, joinRight)
   }
 
-  sameMarkup(other) {
-    return compareMarkup(this.type, other.type, this.attrs, other.attrs)
+  static fromJSON(schema, value) {
+    if (!value || !value.length) return emptySlice
+    let type = schema.nodes[value[0].type]
+    return type.isInline ? TextSlice.fromJSON(schema, value) : FlatSlice.fromJSON(schema, value)
   }
 
-  child(_) {
-    throw new Error("Trying to index non-block node " + this)
-  }
-  get length() { return 0 }
-
-  toJSON() {
-    let obj = {type: this.type.name}
-    for (let _ in this.attrs) {
-      obj.attrs = this.attrs
-      return obj
-    }
-    return obj
+  static from(nodes) {
+    if (!nodes) return emptySlice
+    if (nodes instanceof Slice) return nodes
+    if (!Array.isArray(nodes)) nodes = [nodes]
+    else if (!nodes.length) return emptySlice
+    return nodes[0].type.isInline ? TextSlice.from(nodes) : FlatSlice.from(nodes)
   }
 
-  get isBlock() { return false }
-  get isTextblock() { return false }
-  get isInline() { return false }
-  get isText() { return false }
+  static fromText(text, marks) {
+    if (!text) return emptySlice
+    return new TextSlice([new TextChunk(text, marks || emptyArray)])
+  }
 }
 
-export class BlockNode extends Node {
-  constructor(type, attrs, content, styles) {
-    if (styles) throw new Error("Constructing a block node with styles")
-    super(type, attrs)
-    this.content = content || emptyArray
+export class FlatSlice extends Slice {
+  constructor(content) {
+    super()
+    this.content = content
   }
 
-  toString() {
-    return this.type.name + "(" + this.content.join(", ") + ")"
+  indexOf(elt, start) { return this.content.indexOf(elt, start || 0) }
+  atIndex(i) { return this.content[i] }
+  get indexLength() { return this.content.length }
+
+  get size() { return this.content.length }
+
+  get(off) {
+    if (off < 0 || off >= this.content.length) throw new Error("Child index " + i + " out of range")
+    return this.content[off]
   }
 
-  copy(content = null) {
-    return new this.constructor(this.type, this.attrs, content)
+  nodes(f) {
+    for (let i = 0; i < this.content.length; i++)
+      f(this.content[i], i)
   }
 
-  slice(from, to = this.length) {
-    return this.content.slice(from, to)
+  chunkBefore(off) {
+    return {node: this.get(off - 1), start: off - 1}
+  }
+  chunkAfter(off) {
+    return {node: this.get(off), start: off}
   }
 
-  // FIXME maybe slice and splice returning different things is going to confuse
-  splice(from, to, replace) {
-    return new this.constructor(this.type, this.attrs, this.content.slice(0, from).concat(replace).concat(this.content.slice(to)))
+  chunks(f) {
+    for (let i = 0; i < this.content.length; i++)
+      f(this.content[i], null, this.content[i].marks, i, i + 1)
   }
 
-  replace(pos, node) {
-    let content = this.content.slice()
-    content[pos] = node
-    return this.copy(content)
+  slice(from, to = this.size) {
+    return new FlatSlice(this.content.slice(from, to))
   }
 
-  replaceDeep(path, node, depth = 0) {
-    if (depth == path.length) return node
-    let pos = path[depth]
-    return this.replace(pos, this.child(pos).replaceDeep(path, node, depth + 1))
+  replace(i, node) {
+    let copy = this.content.slice()
+    copy[i] = node
+    return new FlatSlice(copy)
   }
 
-  append(nodes, joinLeft = 0, joinRight = 0) {
-    if (!nodes.length) return this
-    if (!this.length) return this.copy(nodes)
-
-    let last = this.length - 1, content = this.content.slice(0, last)
-    let before = this.content[last], after = nodes[0]
+  // Assumes slice is same slice type
+  appendInner(slice, joinLeft, joinRight) {
+    let last = this.content.length - 1, content = this.content.slice(0, last)
+    let before = this.content[last], after = slice.content[0]
     if (joinLeft > 0 && joinRight > 0 && before.sameMarkup(after))
       content.push(before.append(after.content, joinLeft - 1, joinRight - 1))
     else
       content.push(before.close(joinLeft - 1, "end"), after.close(joinRight - 1, "start"))
-    for (let i = 1; i < nodes.length; i++) content.push(nodes[i])
-    return this.copy(content)
+    for (let i = 1; i < slice.content.length; i++) content.push(slice.content[i])
+    return new FlatSlice(content)
   }
 
   close(depth, side) {
-    if (depth == 0 && this.length == 0 && !this.type.canBeEmpty)
-      return this.copy(this.type.defaultContent())
-    if (depth < 0) return this
-    let off = side == "start" ? 0 : this.maxOffset - 1, child = this.child(off)
+    let off = side == "start" ? 0 : this.size - 1, child = this.content[off]
     let closed = child.close(depth - 1, side)
-    if (closed == child) return this
-    return this.replace(off, closed)
+    return closed == child ? null : this.replace(off, closed)
   }
 
-  get maxOffset() { return this.length }
-
-  get textContent() {
-    let text = ""
-    for (let i = 0; i < this.length; i++)
-      text += this.child(i).textContent
-    return text
-  }
-
-  /**
-   * Get the child node at a given index.
-   */
-  child(i) {
-    if (i < 0 || i >= this.length)
-      throw new Error("Index " + i + " out of range in " + this)
-    return this.content[i]
-  }
-
-  get firstChild() { return this.content[0] || null }
-  get lastChild() { return this.content[this.length - 1] || null }
-
-  get length() { return this.content.length }
-
-  get children() { return this.content }
-
-  /**
-   * Get a child node given a path.
-   *
-   * @param  {array} path
-   * @return {Node}
-   */
-  path(path) {
-    for (var i = 0, node = this; i < path.length; node = node.content[path[i]], i++) {}
-    return node
-  }
-
-  isValidPos(pos, requireInBlock) {
-    for (let i = 0, node = this;; i++) {
-      if (i == pos.path.length) {
-        if (requireInBlock && !node.isTextblock) return false
-        return pos.offset <= node.maxOffset
-      } else {
-        let n = pos.path[i]
-        if (n >= node.length || node.isTextblock) return false
-        node = node.child(n)
-      }
-    }
-  }
-
-  pathNodes(path) {
-    let nodes = []
-    for (var i = 0, node = this;; i++) {
-      nodes.push(node)
-      if (i == path.length) break
-      node = node.child(path[i])
-    }
-    return nodes
-  }
-
-  toJSON() {
-    let obj = super.toJSON()
-    obj.content = this.content.map(n => n.toJSON())
-    return obj
-  }
-
-  get isBlock() { return true }
-
-  nodesBetween(from, to, f, path = [], parent = null) {
-    if (f(this, path, from, to, parent) === false) return
-
+  between(from, to, onNode, onText, path, parent) {
     let start, endPartial = to && to.depth > path.length
-    let end = endPartial ? to.path[path.length] : to ? to.offset : this.length
+    let end = endPartial ? to.path[path.length] : to ? to.offset : this.size
     if (!from) {
       start = 0
     } else if (from.depth == path.length) {
@@ -178,162 +105,435 @@ export class BlockNode extends Node {
         passTo = to
         endPartial = false
       }
-      this.enterNode(start - 1, from, passTo, path, f)
+      this.betweenEnter(start - 1, from, passTo, path, onNode, onText, parent)
     }
     for (let i = start; i < end; i++)
-      this.enterNode(i, null, null, path, f)
+      this.betweenEnter(i, null, null, path, onNode, onText, parent)
     if (endPartial)
-      this.enterNode(end, null, to, path, f)
+      this.betweenEnter(end, null, to, path, onNode, onText, parent)
   }
 
-  enterNode(index, from, to, path, f) {
+  betweenEnter(index, from, to, path, onNode, onText, parent) {
     path.push(index)
-    this.child(index).nodesBetween(from, to, f, path, this)
+    this.get(index).nodesBetween(from, to, onNode, onText, path, parent)
     path.pop()
   }
 
-  inlineNodesBetween(from, to, f) {
-    this.nodesBetween(from, to, (node, path, from, to, parent, offset) => {
-      if (node.isInline)
-        f(node, from ? from.offset : offset, to ? to.offset : offset + node.offset, path, parent)
-    })
-  }
-}
-
-export class TextblockNode extends BlockNode {
-  constructor(type, attrs, content) {
-    super(type, attrs, content)
-    let maxOffset = 0
-    for (let i = 0; i < this.content.length; i++) maxOffset += this.content[i].offset
-    this._maxOffset = maxOffset
-  }
-
-  slice(from, to = this.maxOffset) {
-    let result = []
-    if (from == to) return result
-    for (let i = 0, offset = 0;; i++) {
-      let child = this.child(i), size = child.offset, end = offset + size
-      if (offset + size > from)
-        result.push(offset >= from && end <= to ? child : child.slice(Math.max(0, from - offset),
-                                                                      Math.min(size, to - offset)))
-      if (end >= to) return result
-      offset = end
-    }
-  }
-
-  append(nodes) {
-    if (!nodes.length) return this
-    if (!this.length) return this.copy(nodes)
-
-    let content = this.content.concat(nodes), last = this.length - 1, merged
-    if (merged = content[last].maybeMerge(content[last + 1]))
-      content.splice(last, 2, merged)
-    return this.copy(content)
-  }
-
-  close() {
-    return this
-  }
-
-  get isTextblock() { return true }
-
-  get maxOffset() { return this._maxOffset }
-
-  nodesBetween(from, to, f, path, parent) {
-    if (f(this, path, from, to, parent) === false) return
-    let start = from ? from.offset : 0, end = to ? to.offset : this.maxOffset
-    if (start == end) return
-    for (let offset = 0, i = 0; i < this.length; i++) {
-      let child = this.child(i), endOffset = offset + child.offset
-      if (endOffset >= start)
-        f(child, path, offset < start ? from : null, endOffset > end ? to : null, this, offset)
-      if (endOffset >= end) break
-      offset = endOffset
-    }
-  }
-
-  childBefore(offset) {
-    if (offset == 0) return {node: null, index: 0, innerOffset: 0}
-    for (let i = 0; i < this.length; i++) {
-      let child = this.child(i)
-      offset -= child.offset
-      if (offset <= 0) return {node: child, index: i, innerOffset: offset + child.offset}
-    }
-  }
-
-  childAfter(offset) {
-    for (let i = 0; i < this.length; i++) {
-      let child = this.child(i), size = child.offset
-      if (offset < size) return {node: child, index: i, innerOffset: offset}
-      offset -= size
-    }
-    return {node: null, index: 0, innerOffset: 0}
-  }
-}
-
-export class InlineNode extends Node {
-  constructor(type, attrs, content, styles) {
-    if (content) throw new Error("Can't create a span node with content")
-    super(type, attrs)
-    this.styles = styles || emptyArray
-  }
-
-  get offset() { return 1 }
-
-  get textContent() { return "" }
-
-  styled(styles) {
-    return new this.constructor(this.type, this.attrs, this.text, styles)
-  }
-
-  maybeMerge(_) { return null }
-
-  toJSON() {
-    let obj = super.toJSON()
-    if (this.styles.length) obj.styles = this.styles.map(s => s.toJSON())
-    return obj
-  }
-
-  toString() { return this.type.name }
-
-  get isInline() { return true }
-}
-
-export class TextNode extends InlineNode {
-  constructor(type, attrs, content, styles) {
-    if (typeof content != "string" || !content)
-      throw new Error("Text node content must be a non-empty string")
-    super(type, attrs, null, styles)
-    this.text = content
-  }
-
-  get offset() { return this.text.length }
-
-  get textContent() { return this.text }
-
-  maybeMerge(other) {
-    if (other.type == this.type && sameStyles(this.styles, other.styles))
-      return new TextNode(this.type, this.attrs, this.text + other.text, this.styles)
-  }
-
-  slice(from, to = this.offset) {
-    return new TextNode(this.type, this.attrs, this.text.slice(from, to), this.styles)
-  }
-
-  toString() {
-    let text = JSON.stringify(this.text)
-    for (let i = 0; i < this.styles.length; i++)
-      text = this.styles[i].type.name + "(" + text + ")"
+  get textContent() {
+    let text = ""
+    for (let i = 0; i < this.content.length; i++)
+      text += this.content[i].textContent
     return text
   }
 
+  toString() {
+    return this.content.join(", ")
+  }
+
   toJSON() {
-    let obj = super.toJSON()
-    obj.text = this.text
+    return this.map(n => n.toJSON())
+  }
+
+  static fromJSON(schema, json) {
+    if (!json) return emptySlice
+    return new FlatSlice(json.map(schema.nodeFromJSON))
+  }
+
+  static from(array) {
+    return new FlatSlice(array)
+  }
+}
+
+const emptyArray = []
+const emptySlice = new FlatSlice([])
+
+class TextChunk {
+  constructor(text, marks) {
+    this.text = text
+    this.marks = marks
+  }
+}
+
+export class TextSlice extends Slice {
+  constructor(content) {
+    super()
+    this.content = content
+    this.size = 0
+    for (let i = 0; i < content.length; i++) {
+      let elt = content[i]
+      if (elt instanceof TextChunk)
+        this.size += elt.text.length
+      else
+        this.size++
+    }
+  }
+
+  indexOf(elt, start) { return this.content.indexOf(elt, start || 0) }
+  atIndex(i) { return this.content[i] }
+  get indexLength() { return this.content.length }
+
+  get(i, parent) {
+    if (i < 0 || i >= this.size) throw new Error("Child index " + i + " out of range")
+    for (let i = 0, off = 0; i < this.content.length; i++) {
+      let elt = this.content[i]
+      if (elt instanceof TextChunk) {
+        let size = elt.text.length
+        if (off + size > i)
+          return new Node(parent.type.schema.text,
+                          {character: elt.text.charAt(i - off)}, null, elt.marks)
+        off += size
+      } else {
+        if (off == i) return elt
+        off++
+      }
+    }
+  }
+
+  nodes(f) {
+    for (let i = 0, off = 0; i < this.content.length; i++) {
+      let elt = this.content[i]
+      if (elt instanceof TextChunk)
+        off += elt.text.lengthlet end = off + elt.text.length
+      else
+        f(elt, off++)
+    }
+  }
+
+  chunkBefore(off) {
+    if (!off) throw new Error("No chunk before start of node")
+    for (let i = 0, count = off; i < this.content.length; i++) {
+      let elt = this.content[i]
+      if (elt instanceof TextChunk) {
+        let size = elt.text.length
+        count -= size
+        if (count <= 0) return {text: elt.text, marks: elt.marks, start: off + count}
+      } else {
+        --count
+        if (count == 0) return {node: elt, start: off - 1}
+      }
+    }
+  }
+ 
+  chunkAfter(off) {
+    if (i == this.size) throw new Error("No chunk after end of node")
+    for (let i = 0, count = off; i < this.content.length; i++) {
+      let elt = this.content[i]
+      if (elt instanceof TextChunk) {
+        let size = elt.text.length
+        if (count < size) return {text: elt.text, marks: elt.marks, start: off - count}
+        count -= size
+      } else {
+        if (!count) return {node: elt, start: off}
+        --count
+      }
+    }
+  }
+
+  chunks(f) {
+    for (let i = 0, off = 0; i < this.content.length; i++) {
+      let elt = this.content[i]
+      if (elt instanceof TextChunk) {
+        let end = off + elt.text.length
+        f(null, elt.text, elt.marks, off, end)
+        off = end
+      } else {
+        f(elt, null, elt.marks, off, off + 1)
+        ++off
+      }
+    }
+  }
+
+  slice(from, to = this.size) {
+    let result = []
+    if (from == to) return result
+    for (let i = 0, off = 0; off < to; i++) {
+      let elt = this.content[i]
+      if (elt instanceof TextChunk) {
+        let size = elt.text.length, end = off + size
+        if (end > from)
+          result.push(off >= from && end <= to ? elt : new TextChunk(elt.text.slice(Math.max(0, from - offset),
+                                                                                    Math.min(size, to - offset)), elt.marks))
+        off = end
+      } else {
+        if (off >= from) result.push(elt)
+        off++
+      }
+    }
+    return new TextSlice(result)
+  }
+
+  replace(i, node) {
+    if (node.type.isText)
+      node = new TextChunk(node.attrs.character, node.marks)
+    return this.slice(0, i).append(new TextSlice([node])).append(this.slice(i + 1))
+  }
+
+  appendInner(slice, joinLeft, joinRight) {
+    let last = this.content.length - 1, content = this.content.slice(0, last)
+    let before = this.content[last], after = slice.content[0]
+    if (before instanceof TextChunk && after instanceof TextChunk && sameStyles(before.marks, after.marks)) {
+      content.push(new TextChunk(before.text + after.text, before.marks))
+    } else {
+      content.push(before instanceof TextChunk ? before : before.close(joinLeft - 1, "end"),
+                   after instanceof TextChunk ? after : after.close(joinRight - 1, "start"))
+    }
+    for (let i = 1; i < slice.content.length; i++) content.push(slice.content[i])
+    return new TextSlice(content)
+  }
+
+  close(depth, side) {
+    let off = side == "start" ? 0 : this.content.length - 1, child = this.content[off]
+    if (child instanceof TextChunk) return null
+    let closed = child.close(depth - 1, side)
+    if (closed == child) return null
+    let copy = this.content.slice()
+    copy[off] = closed
+    return new TextSlice(copy)
+  }
+
+  between(from, to, onNode, onText, path, parent) {
+    let moreFrom = from && from.depth > path.length, moreTo = to && to.depth > path.length
+    let start = !from ? 0 : moreFrom ? from.path[path.length] : from.offset
+    let end = !to ? this.size : moreTo ? to.path[path.length] + 1 : to.offset
+    if (start == end) return
+    for (let i = 0, off = 0; i < this.content.length && off < end; i++) {
+      let elt = this.content[i]
+      if (elt instanceof TextChunk) {
+        let size = elt.text.length, endOff = off + size
+        if (end > start && onText) {
+          let chunkStart = Math.max(off, start), chunkEnd = Math.min(endOff, end)
+          let text = chunk.text.slice(chunkStart - off, chunkEnd - off)
+          onText(text, elt.marks, path, chunkStart, chunkEnd, parent)
+        }
+        off = end
+      } else {
+        if (off >= start) {
+          path.push(off)
+          elt.nodesBetween(moreFrom && off == start ? from, moreTo && off == end - 1, onNode, onText, path, parent)
+          path.pop()
+        }
+        off++
+      }
+    }
+  }
+
+  get textContent() {
+    let text = ""
+    for (let i = 0; i < this.content.length; i++) {
+      let elt = this.content[i]
+      if (elt instanceof TextChunk) text += elt.text
+      else text += elt.textContent
+    }
+    return text
+  }
+
+  toString() {
+    return this.content.map(elt => {
+      if (elt instanceof TextChunk) {
+        let text = JSON.stringify(elt.text)
+        for (let i = 0; i < elt.marks.length; i++)
+          text = elt.marks[i].type.name + "(" + text + ")"
+        return text
+      } else {
+        return elt.toString()
+      }
+    }).join(", ")
+  }
+
+  toJSON() {
+    return this.content.map(n => {
+      if (n instanceof TextChunk) {
+        let obj = {text: n.text}
+        if (n.marks) obj.marks = n.marks
+      } else {
+        return n.toJSON()
+      }
+    })
+  }
+
+  static fromJSON(schema, json) {
+    if (!json) return emptySlice
+    let result = []
+    for (let i = 0; i < json.length; i++) {
+      let elt = json[i]
+      result.push(elt.text ? new TextChunk(elt.text, elt.marks || emptyArray)
+                           : Node.fromJSON(schema, n))
+    }
+    return new TextSlice(result)
+  }
+
+  static from(nodes) {
+    nodes = nodes.slice()
+    let textChunk = null
+    for (let i = 0; i < nodes.length; i++) {
+      let child = nodes[i]
+      if (child.type.isText) {
+        if (textChunk && sameStyles(textChunk.marks, child.marks)) {
+          textChunk.text += child.attrs.character
+          nodes.splice(i--, 1)
+        } else {
+          textChunk = nodes[i] = new TextChunk(child.attrs.character, child.marks)
+        }
+      } else {
+        textChunk = null
+      }
+    }
+    return new TextSlice(nodes)
+  }
+}
+
+/**
+ * Document node class
+ */
+export class Node {
+  constructor(type, attrs, content, marks) {
+    this.type = type
+    this.attrs = attrs
+    this.content = content || emptySlice
+    this.marks = marks || emptyArray
+  }
+
+  get size() { return this.content.size }
+  get length() { return this.content.size } // FIXME remove
+  get maxOffset() { return this.content.size } // FIXME remove
+
+  child(i) { return this.content.get(i) } // FIXME remove
+  get(off) { return this.content.get(off, this) }
+  chunkBefore(off) { return this.content.chunkBefore(off) }
+  chunkAfter(off) { return this.content.chunkAfter(off) }
+
+  chunks(f) { this.content.chunks(f) }
+  nodes(f) { this.content.nodes(f) }
+  get textContent() { return this.content.textContent }
+
+  get firstChild() { return this.size ? this.get(0) : null }
+  get lastChild() { return this.size ? this.get(this.size - 1) : null }
+
+  sameMarkup(other) {
+    return compareMarkup(this.type, other.type, this.attrs, other.attrs)
+  }
+
+  copy(content = null) {
+    return new Node(this.type, this.attrs, content, this.marks)
+  }
+
+  mark(marks) {
+    return new Node(this.type, this.attrs, this.content, marks)
+  }
+
+  // FIXME remove or return a node
+  slice(from, to = this.size) {
+    return this.content.slice(from, to)
+  }
+
+  // FIXME remove? optimize?
+  splice(from, to, replace) {
+    return this.copy(this.content.slice(0, from).append(replace).concat(this.content.slice(to)))
+  }
+
+  append(slice, joinLeft = 0, joinRight = 0) {
+    return this.copy(this.content.append(slice, joinLeft, joinRight))
+  }
+
+  replace(pos, node) {
+    return this.copy(this.content(replace(pos, node)))
+  }
+
+  replaceDeep(path, node, depth = 0) {
+    if (depth == path.length) return node
+    let pos = path[depth]
+    return this.replace(pos, this.child(pos).replaceDeep(path, node, depth + 1))
+  }
+
+  close(depth, side) {
+    if (depth == 0 && this.size == 0 && !this.type.canBeEmpty)
+      return this.copy(this.type.defaultContent())
+    let closedContent
+    if (depth > 0 && (closedContent = this.content.close(depth - 1, side)))
+      return this.copy(closedContent)
+    return this
+  }
+
+  /**
+   * Get a child node given a path.
+   *
+   * @param  {array} path
+   * @return {Node}
+   */
+  path(path) {
+    for (var i = 0, node = this; i < path.length; node = node.get(path[i]), i++) {}
+    return node
+  }
+
+  pathNodes(path) {
+    let nodes = []
+    for (var i = 0, node = this;; i++) {
+      nodes.push(node)
+      if (i == path.length) break
+      node = node.get(path[i])
+    }
+    return nodes
+  }
+
+  isValidPos(pos, requireTextblock) {
+    for (let i = 0, node = this;; i++) {
+      if (i == pos.path.length) {
+        if (requireTextblock && !node.isTextblock) return false
+        return pos.offset <= node.maxOffset
+      } else {
+        let n = pos.path[i]
+        if (n >= node.size) return false
+        node = node.get(n)
+      }
+    }
+  }
+
+  nodesBetween(from, to, onNode, onText, path = [], parent = null) {
+    if (onNode && onNode(this, path, from, to, parent) === false) return
+    this.content.between(from, to, onNode, onText, path, this)
+  }
+
+  inlineMarksBetween(from, to, f) {
+    this.nodesBetween(from, to, (node, path, _from, _to, parent, offset) => {
+      if (node.isInline)
+        f(node.marks, node.type, path, offset, offset + 1, parent)
+    }, (_, marks, path, from, to, parent) {
+      f(marks, this.type.schema.text, path, from, to, parent) // FIXME clean accessor for text type
+    })
+  }
+
+  // FIXME remove these? more specific predicates?
+  get isBlock() { return this.type.isBlock }
+  get isTextblock() { return this.type.isTextblock }
+  get isInline() { return this.type.isInline }
+  get isText() { return this.type.isText }
+
+  toString() {
+    let content = this.content.toString()
+    if (this.type.isBlock)
+      return this.type.name + (content ? "(" + content + ")" : "")
+    else
+      return content
+  }
+
+  toJSON() {
+    let obj = {type: this.type.name}
+    for (let _ in this.attrs) {
+      obj.attrs = this.attrs
+      return obj
+    }
+    if (this.size)
+      obj.content = this.content.toJSON()
+    if (this.marks.length)
+      obj.marks = this.marks
     return obj
   }
 
-  get isText() { return true }
+  static fromJSON(schema, json) {
+    let type = schema.nodeType(json.type)
+    let content = type.sliceType.fromJSON(schema, json.content)
+    return type.create(json.attrs, slice, json.marks && json.marks.map(schema.markFromJSON))
+  }
 }
 
 function isEmpty(obj) {
@@ -341,6 +541,7 @@ function isEmpty(obj) {
   return true
 }
 
+// FIXME define whether this is supposed to take checked/built attrs
 export function compareMarkup(typeA, typeB, attrsA, attrsB) {
   if (typeA != typeB) return false
   if (isEmpty(attrsA)) return isEmpty(attrsB)

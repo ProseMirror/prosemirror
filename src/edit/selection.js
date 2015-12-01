@@ -209,8 +209,7 @@ export class NodeSelection extends Selection {
     let to = mapping.map(this.to, -1).pos
     if (Pos.samePath(from.path, to.path) && from.offset == to.offset - 1) {
       let parent = doc.path(from.path)
-      let node = parent.isTextblock ? parent.childAfter(from.offset).node : parent.child(from.offset)
-      if (node.type.selectable)
+      if (parent.get(from.offset).type.selectable)
         return new NodeSelection(from, to, node)
     }
     return findSelectionNear(doc, from)
@@ -596,8 +595,7 @@ export function selectableNodeAbove(pm, dom, coords, liberal) {
     } else if (dom.hasAttribute("pm-span-atom")) {
       let path = pathFromNode(dom.parentNode)
       let parent = pm.doc.path(path), span = parseSpan(dom.getAttribute("pm-span"))
-      let node = parent.childAfter(span.from).node
-      return node.type.selectable ? new Pos(path, span.from) : null
+      return parent.get(span.from).type.selectable ? new Pos(path, span.from) : null
     }
   }
 }

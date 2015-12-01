@@ -1,4 +1,4 @@
-export {compareMarkup} from "./node"
+export {compareMarkup, Slice, emptySlice} from "./node"
 export {removeStyle, sameStyles, containsStyle, spanStylesAt, rangeHasStyle} from "./style"
 
 export {SchemaSpec, Schema, SchemaError,

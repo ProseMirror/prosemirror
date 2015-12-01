@@ -27,12 +27,12 @@ defineStep("addStyle", {
 
 Transform.prototype.addStyle = function(from, to, st) {
   let removed = [], added = [], removing = null, adding = null
-  this.doc.inlineNodesBetween(from, to, (span, start, end, path, parent) => {
-    if (st.isInSet(span.styles) || !parent.type.canContainStyle(st.type)) {
+  this.doc.inlineMarksBetween(from, to, (marks, _, path, start, end, parent) => {
+    if (st.isInSet(marks) || !parent.type.canContainStyle(st.type)) {
       adding = removing = null
     } else {
       path = path.slice()
-      let rm = containsStyle(span.styles, st.type)
+      let rm = containsStyle(marks, st.type)
       if (rm) {
         if (removing && removing.param.eq(rm)) {
           removing.to = new Pos(path, end)
@@ -77,16 +77,16 @@ defineStep("removeStyle", {
 
 Transform.prototype.removeStyle = function(from, to, st = null) {
   let matched = [], step = 0
-  this.doc.inlineNodesBetween(from, to, (span, start, end, path) => {
+  this.doc.inlineMarksBetween(from, to, (marks, _, path, start, end) => {
     step++
     let toRemove = null
     if (st instanceof StyleType) {
-      let found = containsStyle(span.styles, st)
+      let found = containsStyle(marks, st)
       if (found) toRemove = [found]
     } else if (st) {
-      if (st.isInSet(span.styles)) toRemove = [st]
+      if (st.isInSet(marks)) toRemove = [st]
     } else {
-      toRemove = span.styles
+      toRemove = marks
     }
     if (toRemove && toRemove.length) {
       path = path.slice()
@@ -111,18 +111,18 @@ Transform.prototype.removeStyle = function(from, to, st = null) {
 
 Transform.prototype.clearMarkup = function(from, to, newParent) {
   let delSteps = [] // Must be accumulated and applied in inverse order
-  this.doc.inlineNodesBetween(from, to, (span, start, end, path) => {
-    if (newParent ? !newParent.canContainType(span.type) : !span.isText) {
+  this.doc.inlineMarksBetween(from, to, (marks, type, path, start, end) => {
+    if (newParent ? !newParent.canContainType(type) : type != this.doc.type.schema.nodeTypes.text) { // FIXME text type accessor
       path = path.slice()
       let from = new Pos(path, start)
       delSteps.push(new Step("replace", from, new Pos(path, end), from))
       return
     }
-    for (let i = 0; i < span.styles.length; i++) {
-      let st = span.styles[i]
-      if (!newParent || !newParent.canContainStyle(st.type)) {
+    for (let i = 0; i < marks.length; i++) {
+      let mark = marks[i]
+      if (!newParent || !newParent.canContainStyle(mark.type)) {
         path = path.slice()
-        this.step("removeStyle", new Pos(path, start), new Pos(path, end), null, st)
+        this.step("removeStyle", new Pos(path, start), new Pos(path, end), null, mark)
       }
     }
   })

@@ -164,7 +164,9 @@ export class ProseMirror {
     let parent = this.doc.path(pos.path)
     if (pos.offset >= parent.maxOffset)
       throw new Error("Trying to set a node selection at the end of a node")
-    let node = parent.isTextblock ? parent.childAfter(pos.offset).node : parent.child(pos.offset)
+    let node = parent.get(pos.offset)
+    if (!node.type.selectable)
+      throw new Error("Trying to select a non-selectable node")
     this.input.maybeAbortComposition()
     this.sel.setAndSignal(new NodeSelection(pos, pos.move(1), node))
   }
@@ -369,7 +371,7 @@ class EditorTransform extends Transform {
     return this.steps.length ? this.pm.selection.map(this) : this.pm.selection
   }
 
-  replaceSelection(node, inheritStyles) {
+  replaceSelection(node, content) {
     let {empty, from, to, node: selNode} = this.selection, parent
     if (node && node.isInline && inheritStyles !== false) {
       let styles = empty ? this.pm.input.storedStyles : spanStylesAt(this.doc, from)
