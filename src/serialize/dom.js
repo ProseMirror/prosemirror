@@ -20,7 +20,7 @@ class DOMSerializer {
         result.setAttribute(name, attrs[name])
     }
     for (let i = 0; i < args.length; i++)
-      result.appendChild(typeof args[i] == "string" ? doc.createTextNode(args[i]) : args[i])
+      result.appendChild(typeof args[i] == "string" ? this.doc.createTextNode(args[i]) : args[i])
     return result
   }
 
@@ -30,8 +30,8 @@ class DOMSerializer {
       let desc = node.type.attrs[attr]
       if (desc.serializeDOM) desc.serializeDOM(dom, node.attrs[attr], this, node)
     }
-    if (options.onRender && node.isBlock)
-      dom = options.onRender(node, dom, offset) || dom
+    if (this.options.onRender && node.isBlock)
+      dom = this.options.onRender(node, dom, offset) || dom
     return dom
   }
 
@@ -39,7 +39,7 @@ class DOMSerializer {
     if (!where) where = this.doc.createDocumentFragment()
     if (!node.isTextblock)
       this.renderBlocksInto(node, where)
-    else if (options.renderInlineFlat)
+    else if (this.options.renderInlineFlat)
       this.renderInlineFlatInto(node, where)
     else
       this.renderIndlineInto(node, where)
@@ -49,7 +49,7 @@ class DOMSerializer {
   renderBlocksInto(parent, where) {
     for (let i = 0; i < parent.size; i++) {
       if (this.options.path) this.options.path.push(i)
-      where.appendChild(this.renderNode(parent.get(i), i))
+      where.appendChild(this.renderNode(parent.child(i), i))
       if (this.options.path) this.options.path.pop()
     }
   }
@@ -57,31 +57,31 @@ class DOMSerializer {
   renderInlineInto(parent, where) {
     let top = where
     let active = []
-    parent.chunks((node, text, marks, start) => {
+    parent.forEach((node, offset) => {
       let keep = 0
-      for (; keep < Math.min(active.length, marks.length); ++keep)
-        if (!marks[keep].eq(active[keep])) break
+      for (; keep < Math.min(active.length, node.marks.length); ++keep)
+        if (!node.marks[keep].eq(active[keep])) break
       while (keep < active.length) {
         active.pop()
         top = top.parentNode
       }
-      while (active.length < marks.length) {
-        let add = mark[active.length]
+      while (active.length < node.marks.length) {
+        let add = node.marks[active.length]
         active.push(add)
         top = top.appendChild(this.renderMark(add))
       }
-      top.appendChild(node ? this.renderNode(node, start) : this.doc.createTextNode(text))
+      top.appendChild(this.renderNode(node, offset))
     })
   }
 
   renderInlineFlatInto(parent, where) {
-    parent.chunks((node, text, marks, start) => {
-      let dom = node ? this.renderNode(node, start) : this.doc.createTextNode(text)
-      dom = this.wrapInlineFlat(dom, marks)
-      dom = options.renderInlineFlat(node || text, dom, offset) || dom
+    parent.forEach((node, start) => {
+      let dom = this.renderNode(node, start)
+      dom = this.wrapInlineFlat(dom, node.marks)
+      dom = this.options.renderInlineFlat(node, dom, start) || dom
       where.appendChild(dom)
     })
-    if (!parent.type.isCode && (!parent.length || where.lastChild.nodeName == "BR"))
+    if (!parent.type.isCode && (!parent.size || where.lastChild.nodeName == "BR"))
       where.appendChild(this.elt("br")).setAttribute("pm-force-br", "true")
     else if (where.lastChild.contentEditable == "false")
       where.appendChild(this.doc.createTextNode(""))
@@ -89,8 +89,8 @@ class DOMSerializer {
 
   renderMark(mark) {
     let dom = mark.type.serializeDOM(mark, this)
-    for (let attr in marker.type.attrs) {
-      let desc = marker.type.attrs[attr]
+    for (let attr in mark.type.attrs) {
+      let desc = mark.type.attrs[attr]
       if (desc.serializeDOM) desc.serializeDOM(dom, mark.attrs[attr], this)
     }
     return dom
@@ -125,20 +125,13 @@ export function toHTML(node, options) {
 
 defineTarget("html", toHTML)
 
-export function renderTextToDOM(text, marks, options, offset) {
-  let serializer = new DOMSerializer(options)
-  let dom = serializer.wrapInlineFlat(serializer.dom.createTextNode(text), marks)
-  if (options.wrapInlineFlat) dom = options.wrapInlineFlat(text, dom, offset)
-  return dom
-}
-
 export function renderNodeToDOM(node, options, offset) {
   let serializer = new DOMSerializer(options)
   let dom = serializer.renderNode(node, offset)
   if (node.isInline) {
     dom = serializer.wrapInlineFlat(dom, node.marks)
     if (serializer.options.renderInlineFlat)
-      dom = optfions.renderInlineFlat(node, dom, offset) || dom
+      dom = options.renderInlineFlat(node, dom, offset) || dom
   }
   return dom
 }
@@ -185,6 +178,8 @@ def(CodeBlock, (node, s) => {
 })
 
 // Inline content
+
+def(Text, (node, s) => s.doc.createTextNode(node.text))
 
 def(Image, (node, s) => s.elt("img", {
   src: node.attrs.src,

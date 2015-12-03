@@ -17,12 +17,14 @@ export function fromMarkdown(schema, text) {
 
 defineSource("markdown", fromMarkdown)
 
+const noMarks = []
+
 class State {
   constructor(schema, tokens) {
     this.schema = schema
     this.stack = [{type: schema.nodes.doc, content: []}]
     this.tokens = tokens
-    this.styles = []
+    this.marks = noMarks
     this.tokenTypes = tokenTypeInfo(schema)
   }
 
@@ -37,17 +39,17 @@ class State {
 
   addText(text) {
     let nodes = this.top().content, last = nodes[nodes.length - 1]
-    let node = this.schema.text(text, this.styles), merged
+    let node = this.schema.text(text, this.marks), merged
     if (last && (merged = last.maybeMerge(node))) nodes[nodes.length - 1] = merged
     else nodes.push(node)
   }
 
   openInline(add) {
-    this.styles = add.addToSet(this.styles)
+    this.marks = add.addToSet(this.marks)
   }
 
   closeInline(rm) {
-    this.styles = removeStyle(this.styles, rm)
+    this.marks = removeStyle(this.marks, rm)
   }
 
   parseTokens(toks) {
@@ -58,7 +60,7 @@ class State {
   }
 
   addInline(type, text = null, attrs = null) {
-    let node = type.create(attrs, text, this.styles)
+    let node = type.create(attrs, text, this.marks)
     this.push(node)
     return node
   }
@@ -74,7 +76,7 @@ class State {
   }
 
   closeNode() {
-    if (this.styles.length) this.styles = []
+    if (this.marks.length) this.marks = noMarks
     let info = this.stack.pop()
     return this.addNode(info.type, info.attrs, info.content)
   }
@@ -122,7 +124,7 @@ function summarizeTokens(schema) {
   }
 
   for (let name in schema.nodes) read(schema.nodes[name])
-  for (let name in schema.styles) read(schema.styles[name])
+  for (let name in schema.marks) read(schema.marks[name])
   return tokens
 }
 

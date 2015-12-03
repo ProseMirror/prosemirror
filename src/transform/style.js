@@ -7,9 +7,9 @@ import {copyInline, copyStructure} from "./tree"
 defineStep("addStyle", {
   apply(doc, step) {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
-      if (!node.type.canContainStyle(step.param)) return node
+      if (!node.type.canContainMark(step.param)) return node
       return copyInline(node, from, to, node => {
-        return node.styled(step.param.addToSet(node.styles))
+        return node.mark(step.param.addToSet(node.marks))
       })
     }))
   },
@@ -27,11 +27,10 @@ defineStep("addStyle", {
 
 Transform.prototype.addStyle = function(from, to, st) {
   let removed = [], added = [], removing = null, adding = null
-  this.doc.inlineMarksBetween(from, to, (marks, _, path, start, end, parent) => {
-    if (st.isInSet(marks) || !parent.type.canContainStyle(st.type)) {
+  this.doc.inlineNodesBetween(from, to, ({marks}, path, start, end, parent) => {
+    if (st.isInSet(marks) || !parent.type.canContainMark(st.type)) {
       adding = removing = null
     } else {
-      path = path.slice()
       let rm = containsStyle(marks, st.type)
       if (rm) {
         if (removing && removing.param.eq(rm)) {
@@ -60,7 +59,7 @@ defineStep("removeStyle", {
   apply(doc, step) {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       return copyInline(node, from, to, node => {
-        return node.styled(step.param.removeFromSet(node.styles))
+        return node.mark(step.param.removeFromSet(node.marks))
       })
     }))
   },
@@ -77,7 +76,7 @@ defineStep("removeStyle", {
 
 Transform.prototype.removeStyle = function(from, to, st = null) {
   let matched = [], step = 0
-  this.doc.inlineMarksBetween(from, to, (marks, _, path, start, end) => {
+  this.doc.inlineNodesBetween(from, to, ({marks}, path, start, end) => {
     step++
     let toRemove = null
     if (st instanceof StyleType) {
@@ -111,7 +110,7 @@ Transform.prototype.removeStyle = function(from, to, st = null) {
 
 Transform.prototype.clearMarkup = function(from, to, newParent) {
   let delSteps = [] // Must be accumulated and applied in inverse order
-  this.doc.inlineMarksBetween(from, to, (marks, type, path, start, end) => {
+  this.doc.inlineNodesBetween(from, to, ({marks, type}, path, start, end) => {
     if (newParent ? !newParent.canContainType(type) : type != this.doc.type.schema.nodeTypes.text) { // FIXME text type accessor
       path = path.slice()
       let from = new Pos(path, start)
@@ -120,7 +119,7 @@ Transform.prototype.clearMarkup = function(from, to, newParent) {
     }
     for (let i = 0; i < marks.length; i++) {
       let mark = marks[i]
-      if (!newParent || !newParent.canContainStyle(mark.type)) {
+      if (!newParent || !newParent.canContainMark(mark.type)) {
         path = path.slice()
         this.step("removeStyle", new Pos(path, start), new Pos(path, end), null, mark)
       }

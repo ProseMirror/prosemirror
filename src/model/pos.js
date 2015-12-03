@@ -73,3 +73,20 @@ export class Pos {
 
   static fromJSON(json) { return new Pos(json.path, json.offset) }
 }
+
+export function siblingRange(doc, from, to) {
+  for (let i = 0, node = doc;; i++) {
+    if (node.isTextblock) {
+      let path = from.path.slice(0, i - 1), offset = from.path[i - 1]
+      return {from: new Pos(path, offset), to: new Pos(path, offset + 1)}
+    }
+    let fromEnd = i == from.path.length, toEnd = i == to.path.length
+    let left = fromEnd ? from.offset : from.path[i]
+    let right = toEnd ? to.offset : to.path[i]
+    if (fromEnd || toEnd || left != right) {
+      let path = from.path.slice(0, i)
+      return {from: new Pos(path, left), to: new Pos(path, right + (toEnd ? 0 : 1))}
+    }
+    node = node.child(left)
+  }
+}

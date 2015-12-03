@@ -93,24 +93,23 @@ class State {
   }
 
   renderContent(node) {
-    for (let i = 0; i < node.size; i++) this.render(node.get(i))
+    for (let i = 0; i < node.size; i++) this.render(node.child(i))
   }
 
   renderInline(parent) {
     let active = []
-    parent.chunks((node, text, marks) => {
+    parent.forEach(node => {
       let keep = 0
-      for (; keep < Math.min(active.length, marks.length); ++keep)
-        if (!marks[keep].eq(active[keep])) break
+      for (; keep < Math.min(active.length, node.marks.length); ++keep)
+        if (!node.marks[keep].eq(active[keep])) break
       while (keep < active.length)
         this.text(styleString(active.pop(), false), false)
-      while (active.length < marks.length) {
-        let add = mark[active.length]
+      while (active.length < node.marks.length) {
+        let add = node.marks[active.length]
         active.push(add)
         this.text(styleString(add, true), false)
       }
-      if (text) this.text(text)
-      else this.render(node)
+      this.render(node)
     })
     for (let i = active.lengh - 1; i >= 0; i--)
       this.text(styleString(active[i], false), false)

@@ -1,4 +1,4 @@
-import {Pos, compareMarkup, siblingRange} from "../model"
+import {Pos, Fragment, compareMarkup, siblingRange} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -13,30 +13,30 @@ defineStep("ancestor", {
     let {depth = 0, types = [], attrs = []} = step.param
     let inner = doc.path(from.path)
     for (let i = 0; i < depth; i++) {
-      if (start > 0 || end < doc.path(toParent).maxOffset || toParent.length == 0) return null
+      if (start > 0 || end < doc.path(toParent).size || toParent.length == 0) return null
       start = toParent[toParent.length - 1]
       end = start + 1
       toParent = toParent.slice(0, toParent.length - 1)
     }
     if (depth == 0 && types.length == 0) return null
 
-    let parent = doc.path(toParent), parentSize = parent.length, newParent
+    let parent = doc.path(toParent), parentSize = parent.size, newParent
     if (parent.type.locked) return null
     if (types.length) {
       let lastWrapper = types[types.length - 1]
       let content = inner.slice(from.offset, to.offset)
       if (!parent.type.canContainType(types[0]) ||
-          !content.every(n => lastWrapper.canContain(n)) ||
-          !inner.length && !lastWrapper.canBeEmpty ||
+          content.some(n => !lastWrapper.canContain(n)) ||
+          !inner.size && !lastWrapper.canBeEmpty ||
           lastWrapper.locked)
         return null
       let node = null
       for (let i = types.length - 1; i >= 0; i--)
-        node = types[i].create(attrs[i], node ? [node] : content)
-      newParent = parent.splice(start, end, [node])
+        node = types[i].create(attrs[i], node || content)
+      newParent = parent.splice(start, end, Fragment.from(node))
     } else {
-      if (!parent.type.canContainChildren(inner, true) ||
-          !inner.length && start == 0 && end == parent.length && !parent.type.canBeEmpty)
+      if (!parent.type.canContainFragment(inner.content) ||
+          !inner.size && start == 0 && end == parent.size && !parent.type.canBeEmpty)
         return null
       newParent = parent.splice(start, end, inner.content)
     }
@@ -90,7 +90,7 @@ function canBeLifted(doc, range) {
   for (;;) {
     let parentDepth = -1
     for (let node = doc, i = 0; i < range.from.path.length; i++) {
-      if (content.every(inner => node.type.canContainChildren(inner)))
+      if (!content.some(inner => !node.type.canContainChildren(inner)))
         parentDepth = i
       node = node.child(range.from.path[i])
     }
@@ -191,8 +191,8 @@ Transform.prototype.setBlockType = function(from, to, type, attrs) {
     if (node.isTextblock && !compareMarkup(type, node.type, attrs, node.attrs)) {
       path = path.slice()
       // Ensure all markup that isn't allowed in the new node type is cleared
-      this.clearMarkup(new Pos(path, 0), new Pos(path, node.maxOffset), type)
-      this.step("ancestor", new Pos(path, 0), new Pos(path, this.doc.path(path).maxOffset),
+      this.clearMarkup(new Pos(path, 0), new Pos(path, node.size), type)
+      this.step("ancestor", new Pos(path, 0), new Pos(path, this.doc.path(path).size),
                 null, {depth: 1, types: [type], attrs: [attrs]})
       return false
     }
@@ -203,7 +203,7 @@ Transform.prototype.setBlockType = function(from, to, type, attrs) {
 Transform.prototype.setNodeType = function(pos, type, attrs) {
   let node = this.doc.path(pos.path).child(pos.offset)
   let path = pos.toPath()
-  this.step("ancestor", new Pos(path, 0), new Pos(path, node.maxOffset), null,
+  this.step("ancestor", new Pos(path, 0), new Pos(path, node.size), null,
             {depth: 1, types: [type], attrs: [attrs]})
   return this
 }

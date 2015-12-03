@@ -1,4 +1,5 @@
-export {compareMarkup, Slice, emptySlice} from "./node"
+export {Node, compareMarkup} from "./node"
+export {Fragment, emptyFragment} from "./fragment"
 export {removeStyle, sameStyles, containsStyle, spanStylesAt, rangeHasStyle} from "./style"
 
 export {SchemaSpec, Schema, SchemaError,
@@ -8,10 +9,6 @@ export {defaultSchema, Doc, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         CodeStyle, EmStyle, StrongStyle, LinkStyle} from "./defaultschema"
 
-export {Pos} from "./pos"
-
-export {sliceBefore, sliceAfter, sliceBetween,
-        childrenBefore, childrenAfter, childrenBetween,
-        siblingRange} from "./slice"
+export {Pos, siblingRange} from "./pos"
 
 export {findDiffStart, findDiffEnd} from "./diff"

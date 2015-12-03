@@ -1,4 +1,4 @@
-import {Pos} from "../model"
+import {Pos, Fragment} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -11,16 +11,16 @@ defineStep("split", {
 
     let {path: parentPath, offset} = pos.shorten()
     let parent = doc.path(parentPath)
-    let target = parent.child(offset), targetSize = target.maxOffset
+    let target = parent.child(offset), targetSize = target.size
     let {type: typeAfter, attrs: attrsAfter} = step.param || target
 
     let splitAt = pos.offset
     if ((splitAt == 0 && !target.type.canBeEmpty) || target.type.locked ||
-        (splitAt == target.maxOffset) && !typeAfter.canBeEmpty)
+        (splitAt == target.size) && !typeAfter.canBeEmpty)
       return null
     let newParent = parent.splice(offset, offset + 1,
-                                  [target.copy(target.slice(0, splitAt)),
-                                   typeAfter.create(attrsAfter, target.slice(splitAt))])
+                                  Fragment.from([target.copy(target.slice(0, splitAt)),
+                                                 typeAfter.create(attrsAfter, target.slice(splitAt))]))
     let copy = doc.replaceDeep(parentPath, newParent)
 
     let dest = new Pos(parentPath.concat(offset + 1), 0)
@@ -54,7 +54,7 @@ Transform.prototype.split = function(pos, depth = 1, typeAfter, attrsAfter) {
 Transform.prototype.splitIfNeeded = function(pos, depth = 1) {
   for (let off = 0; off < depth; off++) {
     let here = pos.shorten(pos.depth - off)
-    if (here.offset && here.offset < this.doc.path(here.path).maxOffset)
+    if (here.offset && here.offset < this.doc.path(here.path).size)
       this.step("split", null, null, here)
   }
   return this

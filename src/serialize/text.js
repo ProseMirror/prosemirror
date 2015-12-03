@@ -3,10 +3,7 @@ import {defineTarget} from "./index"
 
 Block.prototype.serializeText = node => {
   let accum = ""
-  for (let i = 0; i < node.length; i++) {
-    let child = node.child(i)
-    accum += child.type.serializeText(child)
-  }
+  node.forEach(child => accum += child.type.serializeText(child))
   return accum
 }
 

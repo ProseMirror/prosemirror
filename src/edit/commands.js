@@ -64,7 +64,7 @@ export function initCommands(schema) {
     }
   }
   fromTypes(schema.nodes)
-  fromTypes(schema.styles)
+  fromTypes(schema.marks)
   return result
 }
 
@@ -117,11 +117,11 @@ function inlineStyleActive(pm, type) {
 function canAddInline(pm, type) {
   let {from, to, empty} = pm.selection
   if (empty)
-    return !containsStyle(pm.activeStyles(), type) && pm.doc.path(from.path).type.canContainStyle(type)
+    return !containsStyle(pm.activeStyles(), type) && pm.doc.path(from.path).type.canContainMark(type)
   let can = false
   pm.doc.nodesBetween(from, to, node => {
-    if (can || node.isTextblock && !node.type.canContainStyle(type)) return false
-    if (node.isInline && !containsStyle(node.styles, type)) can = true
+    if (can || node.isTextblock && !node.type.canContainMark(type)) return false
+    if (node.isInline && !containsStyle(node.marks, type)) can = true
   })
   return can
 }
@@ -131,7 +131,7 @@ function inlineStyleApplies(pm, type) {
   let relevant = false
   pm.doc.nodesBetween(from, to, node => {
     if (node.isTextblock) {
-      if (node.type.canContainStyle(type)) relevant = true
+      if (node.type.canContainMark(type)) relevant = true
       return false
     }
   })
@@ -255,12 +255,12 @@ function moveBackward(parent, offset, by) {
   let cat = null, counted = 0
   for (;;) {
     if (offset == 0) return offset
-    let {start, text} = parent.chunkBefore(offset)
-    if (!text) return cat ? offset : offset - 1
+    let {start, node} = parent.chunkBefore(offset)
+    if (!node.isText) return cat ? offset : offset - 1
 
     if (by == "char") {
       for (let i = offset - start; i > 0; i--) {
-        if (!isExtendingChar(text.charAt(i - 1)))
+        if (!isExtendingChar(node.text.charAt(i - 1)))
           return offset - 1
         offset--
       }
@@ -269,7 +269,7 @@ function moveBackward(parent, offset, by) {
       // character category (e.g. "cat" of "#!*") until reaching a character in a
       // different category (i.e. the end of the word).
       for (let i = offset - start; i > 0; i--) {
-        let nextCharCat = charCategory(text.charAt(i - 1))
+        let nextCharCat = charCategory(node.text.charAt(i - 1))
         if (cat == null || counted == 1 && cat == "space") cat = nextCharCat
         else if (cat != nextCharCat) return offset
         offset--
@@ -366,18 +366,18 @@ function moveForward(parent, offset, by) {
   let cat = null, counted = 0
   for (;;) {
     if (offset == parent.size) return offset
-    let {start, text} = parent.chunkAfter(offset)
-    if (!text) return cat ? offset : offset + 1
+    let {start, node} = parent.chunkAfter(offset)
+    if (!node.isText) return cat ? offset : offset + 1
 
     if (by == "char") {
-      for (let i = offset - start; i < text.length; i++) {
-        if (!isExtendingChar(child.text.charAt(i + 1)))
+      for (let i = offset - start; i < node.text.length; i++) {
+        if (!isExtendingChar(node.text.charAt(i + 1)))
           return offset + 1
         offset++
       }
     } else if (by == "word") {
-      for (let i = offset - start; i < text.length; i++) {
-        let nextCharCat = charCategory(child.text.charAt(i))
+      for (let i = offset - start; i < node.text.length; i++) {
+        let nextCharCat = charCategory(node.text.charAt(i))
         if (cat == null || counted == 1 && cat == "space") cat = nextCharCat
         else if (cat != nextCharCat) return offset
         offset++
@@ -391,14 +391,14 @@ defineCommand("joinForward", {
   label: "Join with the block below",
   run(pm) {
     let {head, empty} = pm.selection
-    if (!empty || head.offset < pm.doc.path(head.path).maxOffset) return false
+    if (!empty || head.offset < pm.doc.path(head.path).size) return false
 
     // Find the node after this one
     let after, cut
     for (let i = head.path.length - 1; !after && i >= 0; i--) {
       cut = head.shorten(i, 1)
       let parent = pm.doc.path(cut.path)
-      if (cut.offset < parent.length)
+      if (cut.offset < parent.size)
         after = parent.child(cut.offset)
     }
 
@@ -419,7 +419,7 @@ defineCommand("deleteCharAfter", {
   label: "Delete a character after the cursor",
   run(pm) {
     let {head, empty} = pm.selection
-    if (!empty || head.offset == pm.doc.path(head.path).maxOffset) return false
+    if (!empty || head.offset == pm.doc.path(head.path).size) return false
     let to = moveForward(pm.doc.path(head.path), head.offset, "char")
     return pm.tr.delete(head, new Pos(head.path, to)).apply(andScroll)
   },
@@ -431,7 +431,7 @@ defineCommand("deleteWordAfter", {
   label: "Delete a character after the cursor",
   run(pm) {
     let {head, empty} = pm.selection
-    if (!empty || head.offset == pm.doc.path(head.path).maxOffset) return false
+    if (!empty || head.offset == pm.doc.path(head.path).size) return false
     let to = moveForward(pm.doc.path(head.path), head.offset, "word")
     return pm.tr.delete(head, new Pos(head.path, to)).apply(andScroll)
   },
@@ -568,7 +568,7 @@ defineCommand("newlineInCode", {
     let {from, to, node} = pm.selection, block
     if (!node && Pos.samePath(from.path, to.path) &&
         (block = pm.doc.path(from.path)).type.isCode &&
-        to.offset < block.maxOffset)
+        to.offset < block.size)
       return pm.tr.typeText("\n").apply(andScroll)
     else
       return false
@@ -609,7 +609,7 @@ defineCommand("splitBlock", {
       if (!from.offset) return false
       return pm.tr.split(from).apply(andScroll)
     } else {
-      let type = to.offset == block.maxOffset ? pm.schema.defaultTextblockType() : null
+      let type = to.offset == block.size ? pm.schema.defaultTextblockType() : null
       return pm.tr.delete(from, to).split(from, 1, type).apply(andScroll)
     }
   },
@@ -624,7 +624,7 @@ ListItem.attachCommand("splitListItem", type => ({
         empty && from.offset == 0) return false
     let toParent = from.shorten(), grandParent = pm.doc.path(toParent.path)
     if (grandParent.type != type) return false
-    let nextType = to.offset == grandParent.child(toParent.offset).maxOffset ? pm.schema.defaultTextblockType() : null
+    let nextType = to.offset == grandParent.child(toParent.offset).size ? pm.schema.defaultTextblockType() : null
     return pm.tr.delete(from, to).split(from, 2, nextType).apply(andScroll)
   },
   key: "Enter(50)"
@@ -784,9 +784,9 @@ function selectBlockHorizontally(pm, dir) {
 
   let parent
   if (!node && (parent = pm.doc.path(from.path)) &&
-      (dir > 0 ? from.offset < parent.maxOffset : from.offset)) {
+      (dir > 0 ? from.offset < parent.size : from.offset)) {
     let {node: nextNode, start} = dir > 0 ? parent.chunkAfter(from.offset) : parent.chunkBefore(from.offset)
-    if (nextNode && nextNode.type.selectable && start == from.offset + (dir > 0 ? 0 : 1)) {
+    if (nextNode.type.selectable && start == from.offset + (dir > 0 ? 0 : 1)) {
       pm.setNodeSelection(dir < 0 ? from.move(-1) : from)
       return true
     }

@@ -1,11 +1,13 @@
+import {Fragment} from "../model"
+
 export function copyStructure(node, from, to, f, depth = 0) {
   if (node.isTextblock) {
     return f(node, from, to)
   } else {
-    if (!node.length) return node
+    if (!node.size) return node
     let start = from ? from.path[depth] : 0
     let end = to ? to.path[depth] : node.length - 1
-    let content = node.slice(0, start)
+    let content = []
     if (start == end) {
       content.push(copyStructure(node.child(start), from, to, f, depth + 1))
     } else {
@@ -14,20 +16,15 @@ export function copyStructure(node, from, to, f, depth = 0) {
         content.push(copyStructure(node.child(i), null, null, f, depth + 1))
       content.push(copyStructure(node.child(end), null, to, f, depth + 1))
     }
-    for (let i = end + 1; i < node.length; i++)
-      content.push(node.child(i))
-    return node.copy(content)
+    let fragment = node.slice(0, start).append(Fragment.fromArray(content)).append(node.slice(end + 1))
+    return node.copy(fragment)
   }
 }
 
 export function copyInline(node, from, to, f) {
   let start = from ? from.offset : 0
-  let end = to ? to.offset : node.maxOffset
-  let copied = node.slice(0, start).concat(node.slice(start, end).map(f)).concat(node.slice(end))
-  for (let i = copied.length - 2; i >= 0; i--) {
-    let merged = copied[i].maybeMerge(copied[i + 1])
-    if (merged) copied.splice(i, 2, merged)
-  }
+  let end = to ? to.offset : node.size
+  let copied = node.slice(0, start).append(node.slice(start, end).map(f)).append(node.slice(end))
   return node.copy(copied)
 }
 
@@ -55,9 +52,9 @@ export function replaceHasEffect(doc, from, to) {
         gapStart = from.path[depth] + 1
         for (let i = depth + 1, n = node.child(gapStart - 1); i <= from.path.length; i++) {
           if (i == from.path.length) {
-            if (from.offset < n.maxOffset) return true
+            if (from.offset < n.size) return true
           } else {
-            if (from.path[i] + 1 < n.maxOffset) return true
+            if (from.path[i] + 1 < n.size) return true
             n = n.child(from.path[i])
           }
         }

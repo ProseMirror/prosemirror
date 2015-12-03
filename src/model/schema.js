@@ -1,4 +1,5 @@
-import {Node, FlatSlice, TextSlice} from "./node"
+import {Node, TextNode} from "./node"
+import {Fragment} from "./fragment"
 import {StyleMarker} from "./style"
 
 import {ProseMirrorError} from "../util/error"
@@ -51,26 +52,33 @@ export class NodeType {
 
   static get kind() { return "." }
 
-  canContain(node) {
-    return this.canContainType(node.type)
+  canContainFragment(fragment) {
+    let ok = true
+    fragment.forEach(n => { if (!this.canContain(n)) ok = false })
+    return ok
   }
 
-  canContainSlice(slice) {
-    if (slice.constructor != this.sliceType) return false
-    let ok = true
-    slice.nodes(n => { if (!this.canContain(n)) ok = false })
-    return ok
+  canContain(node) {
+    if (!this.canContainType(node.type)) return false
+    for (let i = 0; i < node.marks.length; i++)
+      if (!this.canContainMark(node.marks[i])) return false
+    return true
+  }
+
+  canContainMark(mark) {
+    let contains = this.containsMarks
+    if (contains === true) return true
+    if (contains) for (let i = 0; i < contains.length; i++)
+      if (contains[i] == mark.name) return true
+    return false
   }
 
   canContainType(type) {
     return this.schema.subKind(type.name, this.contains)
   }
 
-  canContainChildren(node, liberal) {
-    if (!liberal && !this.schema.subKind(node.type.contains, this.contains)) return false
-    for (let i = 0; i < node.length; i++)
-      if (!this.canContain(node.child(i))) return false
-    return true
+  canContainChildren(node) {
+    return this.schema.subKind(node.type.contains, this.contains)
   }
 
   findConnection(other) {
@@ -98,7 +106,7 @@ export class NodeType {
   }
 
   create(attrs, content, marks) {
-    return new Node(this, this.buildAttrs(attrs, content), content, marks)
+    return new Node(this, this.buildAttrs(attrs, content), Fragment.from(content), marks)
   }
 
   createAutoFill(attrs, content, styles) {
@@ -110,7 +118,6 @@ export class NodeType {
   get canBeEmpty() { return true }
 
   static compile(types, schema) {
-    if (types.text) SchemaError.raise("Node name 'text' is reserved")
     let result = Object.create(null)
     for (let name in types) {
       let info = types[name]
@@ -135,8 +142,6 @@ export class NodeType {
   static register(prop, value) {
     ;(this.prototype[prop] || (this.prototype[prop] = [])).push(value)
   }
-
-  get sliceType() { return FlatSlice }
 }
 NodeType.attributes = {}
 
@@ -151,42 +156,31 @@ export class Block extends NodeType {
     let inner = this.schema.defaultTextblockType().create()
     let conn = this.findConnection(inner.type)
     if (!conn) SchemaError.raise("Can't create default content for " + this.name)
-    for (let i = conn.length - 1; i >= 0; i--) inner = conn[i].create(null, [inner])
-    return [inner]
+    for (let i = conn.length - 1; i >= 0; i--) inner = conn[i].create(null, inner)
+    return Fragment.from(inner)
   }
 }
 
 export class Textblock extends Block {
   static get contains() { return "inline" }
-  get containsStyles() { return true }
+  get containsMarks() { return true }
   get isTextblock() { return true }
-
-  canContain(node) {
-    return super.canContain(node) && node.styles.every(s => this.canContainStyle(s))
-  }
-
-  canContainStyle(type) {
-    let contains = this.containsStyles
-    if (contains === true) return true
-    if (contains) for (let i = 0; i < contains.length; i++)
-      if (contains[i] == type.name) return true
-    return false
-  }
-
   get canBeEmpty() { return true }
-
-  get sliceType() { return TextSlice }
 }
 
 export class Inline extends NodeType {
   static get contains() { return null }
   static get kind() { return "inline." }
-  static get isInline() { return true }
+  get isInline() { return true }
 }
 
 export class Text extends Inline {
   get selectable() { return false }
-  static get isText() { return true }
+  get isText() { return true }
+
+  create(attrs, content, marks) {
+    return new TextNode(this, this.buildAttrs(attrs, content), content, marks)
+  }
 }
 
 // Attribute descriptors
@@ -274,13 +268,13 @@ function overlayObj(obj, overlay) {
 }
 
 export class SchemaSpec {
-  constructor(nodes, styles) {
+  constructor(nodes, marks) {
     this.nodes = nodes ? copyObj(nodes, ensureWrapped) : Object.create(null)
-    this.styles = styles ? copyObj(styles, ensureWrapped) : Object.create(null)
+    this.marks = marks ? copyObj(marks, ensureWrapped) : Object.create(null)
   }
 
   updateNodes(nodes) {
-    return new SchemaSpec(overlayObj(this.nodes, nodes), this.styles)
+    return new SchemaSpec(overlayObj(this.nodes, nodes), this.marks)
   }
 
   addAttribute(filter, attrName, attrInfo) {
@@ -294,11 +288,11 @@ export class SchemaSpec {
         info.attributes[attrName] = attrInfo
       }
     }
-    return new SchemaSpec(copy, this.styles)
+    return new SchemaSpec(copy, this.marks)
   }
 
-  updateStyles(styles) {
-    return new SchemaSpec(this.nodes, overlayObj(this.styles, styles))
+  updateMarks(marks) {
+    return new SchemaSpec(this.nodes, overlayObj(this.marks, marks))
   }
 }
 
@@ -344,16 +338,16 @@ export class Schema {
     this.spec = spec
     this.kinds = Object.create(null)
     this.nodes = NodeType.compile(spec.nodes, this)
-    this.text = this.nodes.text = new Text("text", null, Object.create(null), this)
-    this.styles = StyleType.compile(spec.styles, this)
+    this.marks = StyleType.compile(spec.marks, this)
     this.cached = Object.create(null)
 
     this.node = this.node.bind(this)
+    this.text = this.text.bind(this)
     this.nodeFromJSON = this.nodeFromJSON.bind(this)
     this.styleFromJSON = this.styleFromJSON.bind(this)
   }
 
-  node(type, attrs, content, styles) {
+  node(type, attrs, content, marks) {
     if (typeof type == "string")
       type = this.nodeType(type)
     else if (!(type instanceof NodeType))
@@ -361,7 +355,11 @@ export class Schema {
     else if (type.schema != this)
       SchemaError.raise("Node type from different schema used (" + type.name + ")")
 
-    return type.create(attrs, Slice.from(content), styles)
+    return type.create(attrs, content, marks)
+  }
+
+  text(text, marks) {
+    return this.nodes.text.create(null, text, marks)
   }
 
   defaultTextblockType() {
@@ -375,7 +373,7 @@ export class Schema {
   }
 
   style(name, attrs) {
-    let spec = this.styles[name] || SchemaError.raise("No style named " + name)
+    let spec = this.marks[name] || SchemaError.raise("No mark named " + name)
     return spec.create(attrs)
   }
 

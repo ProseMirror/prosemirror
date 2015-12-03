@@ -7,10 +7,10 @@ import {findByPath} from "./selection"
 function isAtEnd(node, pos, depth) {
   for (let i = depth || 0; i < pos.path.length; i++) {
     let n = pos.path[depth]
-    if (n < node.length - 1) return false
+    if (n < node.size - 1) return false
     node = node.child(n)
   }
-  return pos.offset == node.maxOffset
+  return pos.offset == node.size
 }
 function isAtStart(pos, depth) {
   if (pos.offset > 0) return false
@@ -30,14 +30,14 @@ function parseNearSelection(pm) {
       let startOffset = depth == from.depth ? from.offset : from.path[depth]
       if (fromStart && startOffset > 0) startOffset--
       let endOffset = depth == to.depth ? to.offset : to.path[depth] + 1
-      if (toEnd && endOffset < node.length - 1) endOffset++
+      if (toEnd && endOffset < node.size - 1) endOffset++
       let parsed = fromDOM(pm.schema, dom, {topNode: node.copy(),
                                             from: startOffset,
-                                            to: dom.childNodes.length - (node.length - endOffset)})
+                                            to: dom.childNodes.length - (node.size - endOffset)})
       parsed = parsed.copy(node.content.slice(0, startOffset).append(parsed.content).append(node.content.slice(endOffset)))
       for (let i = depth - 1; i >= 0; i--) {
         let wrap = pm.doc.path(from.path.slice(0, i))
-        parsed = wrap.splice(from.path[i], from.path[i] + 1, [parsed])
+        parsed = wrap.replace(from.path[i], parsed)
       }
       return parsed
     }
@@ -48,9 +48,9 @@ function parseNearSelection(pm) {
 
 export function applyDOMChange(pm) {
   let updated = parseNearSelection(pm)
-  let changeStart = findDiffStart(pm.doc, updated)
+  let changeStart = findDiffStart(pm.doc.content, updated.content)
   if (changeStart) {
-    let changeEnd = findDiffEndConstrained(pm.doc, updated, changeStart)
+    let changeEnd = findDiffEndConstrained(pm.doc.content, updated.content, changeStart)
     // Mark nodes touched by this change as 'to be redrawn'
     pm.markRangeDirty(siblingRange(pm.doc, changeStart.a, changeEnd.a))
 
@@ -73,8 +73,8 @@ function offsetBy(first, second, pos) {
 function findDiffEndConstrained(a, b, start) {
   let end = findDiffEnd(a, b)
   if (!end) return end
-  if (end.a.cmp(start.a) < 0) return {a: start.a, b: offsetBy(end.a, start.a, end.b)}
-  if (end.b.cmp(start.b) < 0) return {a: offsetBy(end.b, start.b, end.a), b: start.b}
+  if (end.a.cmp(start) < 0) return {a: start, b: offsetBy(end.a, start, end.b)}
+  if (end.b.cmp(start) < 0) return {a: offsetBy(end.b, start, end.a), b: start}
   return end
 }
 

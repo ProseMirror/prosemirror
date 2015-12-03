@@ -1,3 +1,5 @@
+// FIXME rename to marks
+
 export class StyleMarker {
   constructor(type, attrs) {
     this.type = type
@@ -70,14 +72,13 @@ const empty = []
 export function spanStylesAt(doc, pos) {
   let parent = doc.path(pos.path)
   if (!parent.isTextblock || !parent.size) return empty
-  let {node, marks} = parent.chunkBefore(pos.offset || 1)
-  return marks || node.marks
+  return parent.chunkBefore(pos.offset || 1).marks
 }
 
 export function rangeHasStyle(doc, from, to, type) {
   let found = false
-  doc.inlineMarksBetween(from, to, marks => {
-    if (containsStyle(marks, type)) found = true
+  doc.nodesBetween(from, to, node => {
+    if (containsStyle(node.marks, type)) found = true
   })
   return found
 }

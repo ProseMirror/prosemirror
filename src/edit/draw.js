@@ -1,5 +1,5 @@
 import {Pos} from "../model"
-import {toDOM, renderNodeToDOM, renderTextToDOM} from "../serialize/dom"
+import {toDOM, renderNodeToDOM} from "../serialize/dom"
 
 import {elt} from "../dom"
 
@@ -20,7 +20,7 @@ function options(path, ranges) {
       let nextCut = ranges.nextChangeBefore(end)
 
       let inner = dom, wrapped
-      for (let i = 0; i < node.styles.length; i++) inner = inner.firstChild
+      for (let i = 0; i < node.marks.length; i++) inner = inner.firstChild
 
       if (dom.nodeType != 1) {
         dom = elt("span", null, dom)
@@ -88,7 +88,7 @@ export function redraw(pm, dirty, doc, prev) {
     for (let i = 0, j = 0; i < prev.length && j < node.width; i++) {
       let cur = prev.child(i), dirtyStatus = dirty.get(cur)
       status.push(dirtyStatus)
-      let matching = dirtyStatus ? -1 : node.content.indexOf(cur, j)
+      let matching = dirtyStatus ? -1 : node.content.chunkIndex(cur, j)
       if (matching > -1) {
         inNode[i] = matching
         inPrev[matching] = i
@@ -97,7 +97,7 @@ export function redraw(pm, dirty, doc, prev) {
     }
 
     if (node.isTextblock) {
-      let needsBR = node.length == 0 ||
+      let needsBR = node.size == 0 ||
           node.lastChild.type == node.type.schema.nodes.hard_break
       let last = dom.lastChild, hasBR = last && last.nodeType == 1 && last.hasAttribute("pm-force-br")
       if (needsBR && !hasBR)
@@ -108,7 +108,7 @@ export function redraw(pm, dirty, doc, prev) {
 
     let domPos = dom.firstChild, prevIndex = 0, index = 0
     let textblock = node.isTextblock
-    node.chunks((node, text, marks, offset) => {
+    node.forEach((node, offset) => {
       path.push(offset)
       let found = inPrev[index]
       let nodeLeft = true
@@ -116,26 +116,25 @@ export function redraw(pm, dirty, doc, prev) {
         domPos = deleteNextNodes(dom, domPos, found - prevIndex)
         prevIndex = found
       } else if (node && prevIndex < prev.length && inNode[prevIndex] == null &&
-                 status[prevIndex] != 2 && node.sameMarkup(prev.atIndex(prevIndex))) {
-        scan(domPos, node, prev.atIndex(prevIndex))
+                 status[prevIndex] != 2 && node.sameMarkup(prev.chunkAt(prevIndex))) {
+        scan(domPos, node, prev.chunkAt(prevIndex))
       } else {
         let opts = options(path, ranges)
-        let rendered = node ? renderNodeToDOM(node, opts, offset)
-                            : renderTextToDOM(text, marks, opts, offset)
+        let rendered = renderNodeToDOM(node, opts, offset)
         dom.insertBefore(rendered, domPos)
         nodeLeft = false
       }
       if (nodeLeft) {
         if (textblock) // FIXME use path for inline nodes as well
-          domPos.setAttribute("pm-span", offset + "-" + (offset + (text ? text.length : 1)))
+          domPos.setAttribute("pm-span", offset + "-" + (offset + node.width))
         else
-          domPos.setAttribute("pm-path", i)
+          domPos.setAttribute("pm-path", offset)
         domPos = domPos.nextSibling
         prevIndex++
       }
       path.pop()
       ++index
-    }
+    })
     deleteNextNodes(dom, domPos, prev.length - prevIndex)
   }
   scan(pm.content, doc, prev)

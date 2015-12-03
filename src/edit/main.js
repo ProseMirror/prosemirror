@@ -1,6 +1,6 @@
 import "./css"
 
-import {spanStylesAt, rangeHasStyle, sliceBetween, Pos, findDiffStart,
+import {spanStylesAt, rangeHasStyle, Pos, findDiffStart,
         containsStyle, removeStyle} from "../model"
 import {Transform} from "../transform"
 import sortedInsert from "../util/sortedinsert"
@@ -77,7 +77,7 @@ export class ProseMirror {
 
   get selectedDoc() {
     let sel = this.selection
-    return sliceBetween(this.doc, sel.from, sel.to)
+    return this.doc.sliceBetween(sel.from, sel.to)
   }
 
   get selectedText() {
@@ -162,9 +162,9 @@ export class ProseMirror {
   setNodeSelection(pos) {
     this.checkPos(pos, false)
     let parent = this.doc.path(pos.path)
-    if (pos.offset >= parent.maxOffset)
+    if (pos.offset >= parent.size)
       throw new Error("Trying to set a node selection at the end of a node")
-    let node = parent.get(pos.offset)
+    let node = parent.child(pos.offset)
     if (!node.type.selectable)
       throw new Error("Trying to select a non-selectable node")
     this.input.maybeAbortComposition()
@@ -246,7 +246,7 @@ export class ProseMirror {
     if (sel.empty) {
       let styles = this.activeStyles()
       if (to == null) to = !containsStyle(styles, type)
-      if (to && !this.doc.path(sel.head.path).type.canContainStyle(type)) return
+      if (to && !this.doc.path(sel.head.path).type.canContainMark(type)) return
       this.input.storedStyles = to ? type.create(attrs).addToSet(styles) : removeStyle(styles, type)
       this.signal("activeStyleChange")
     } else {
@@ -371,7 +371,7 @@ class EditorTransform extends Transform {
     return this.steps.length ? this.pm.selection.map(this) : this.pm.selection
   }
 
-  replaceSelection(node, content) {
+  replaceSelection(node, inheritStyles) {
     let {empty, from, to, node: selNode} = this.selection, parent
     if (node && node.isInline && inheritStyles !== false) {
       let styles = empty ? this.pm.input.storedStyles : spanStylesAt(this.doc, from)
@@ -381,11 +381,11 @@ class EditorTransform extends Transform {
     if (selNode && selNode.isTextblock && node && node.isInline) {
       // Putting inline stuff onto a selected textblock puts it inside
       from = new Pos(from.toPath(), 0)
-      to = new Pos(from.path, selNode.maxOffset)
+      to = new Pos(from.path, selNode.size)
     } else if (selNode) {
       // This node can not simply be removed/replaced. Remove its parent as well
       while (from.depth && from.offset == 0 && (parent = this.doc.path(from.path)) &&
-             from.offset == parent.maxOffset - 1 &&
+             from.offset == parent.size - 1 &&
              !parent.type.canBeEmpty && !(node && parent.type.canContain(node))) {
         from = from.shorten()
         to = to.shorten(null, 1)
@@ -394,7 +394,7 @@ class EditorTransform extends Transform {
       // Inserting a block node into a textblock. Try to insert it above by splitting the textblock
       this.delete(from, to)
       let parent = this.doc.path(from.path)
-      if (from.offset && from.offset != parent.maxOffset) this.split(from)
+      if (from.offset && from.offset != parent.size) this.split(from)
       return this.insert(from.shorten(null, from.offset ? 1 : 0), node)
     }
 

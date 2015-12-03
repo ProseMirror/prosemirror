@@ -1,4 +1,4 @@
-import {Pos} from "../model"
+import {Pos, Fragment} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -8,8 +8,8 @@ defineStep("join", {
   apply(doc, step) {
     let before = doc.path(step.from.path)
     let after = doc.path(step.to.path)
-    if (step.from.offset < before.maxOffset || step.to.offset > 0 ||
-        !before.type.canContainChildren(after, true)) return null
+    if (step.from.offset < before.size || step.to.offset > 0 ||
+        !before.type.canContainFragment(after.content)) return null
     let pFrom = step.from.path, pTo = step.to.path
     let last = pFrom.length - 1, offset = pFrom[last] + 1
     if (pFrom.length != pTo.length || pFrom.length == 0 || offset != pTo[last]) return null
@@ -19,9 +19,9 @@ defineStep("join", {
     let target = doc.path(targetPath), oldSize = target.length
     if (target.type.locked) return null
     let joined = before.append(after.content)
-    let copy = doc.replaceDeep(targetPath, target.splice(offset - 1, offset + 1, [joined]))
+    let copy = doc.replaceDeep(targetPath, target.splice(offset - 1, offset + 1, Fragment.from(joined)))
 
-    let map = new PosMap([new MovedRange(step.to, after.maxOffset, step.from),
+    let map = new PosMap([new MovedRange(step.to, after.size, step.from),
                           new MovedRange(new Pos(targetPath, offset + 1), oldSize - offset - 1, new Pos(targetPath, offset))],
                          [new ReplacedRange(step.from, step.to, step.from, step.from, step.to.shorten())])
     return new TransformResult(copy, map)
@@ -34,7 +34,7 @@ defineStep("join", {
 export function joinableBlocks(doc, pos) {
   if (pos.offset == 0) return false
   let parent = doc.path(pos.path)
-  if (parent.isTextblock || pos.offset == parent.length) return false
+  if (parent.isTextblock || pos.offset == parent.size) return false
   let type = parent.child(pos.offset - 1).type
   return !type.isTextblock && type.contains && type == parent.child(pos.offset).type
 }
@@ -49,8 +49,8 @@ export function joinPoint(doc, pos, dir = -1) {
 
 Transform.prototype.join = function(at) {
   let parent = this.doc.path(at.path)
-  if (at.offset == 0 || at.offset == parent.length || parent.isTextblock) return this
-  this.step("join", new Pos(at.path.concat(at.offset - 1), parent.child(at.offset - 1).maxOffset),
+  if (at.offset == 0 || at.offset == parent.size || parent.isTextblock) return this
+  this.step("join", new Pos(at.path.concat(at.offset - 1), parent.child(at.offset - 1).size),
             new Pos(at.path.concat(at.offset), 0))
   return this
 }

@@ -208,9 +208,8 @@ export class NodeSelection extends Selection {
     let from = mapping.map(this.from, 1).pos
     let to = mapping.map(this.to, -1).pos
     if (Pos.samePath(from.path, to.path) && from.offset == to.offset - 1) {
-      let parent = doc.path(from.path)
-      if (parent.get(from.offset).type.selectable)
-        return new NodeSelection(from, to, node)
+      let node = doc.path(from.path).child(from.offset)
+      if (node.type.selectable) return new NodeSelection(from, to, node)
     }
     return findSelectionNear(doc, from)
   }
@@ -543,12 +542,12 @@ function findSelectionIn(doc, path, offset, dir, text) {
   let node = doc.path(path)
   if (node.isTextblock) return new TextSelection(new Pos(path, offset))
 
-  for (let i = offset + (dir > 0 ? 0 : -1); dir > 0 ? i < node.maxOffset : i >= 0; i += dir) {
+  for (let i = offset + (dir > 0 ? 0 : -1); dir > 0 ? i < node.size : i >= 0; i += dir) {
     let child = node.child(i)
     if (!text && child.type.contains == null && child.type.selectable)
       return new NodeSelection(new Pos(path, i), new Pos(path, i + 1), child)
     path.push(i)
-    let inside = findSelectionIn(doc, path, dir < 0 ? child.maxOffset : 0, dir, text)
+    let inside = findSelectionIn(doc, path, dir < 0 ? child.size : 0, dir, text)
     if (inside) return inside
     path.pop()
   }
@@ -576,7 +575,7 @@ export function findSelectionAtStart(node, path = [], text) {
 }
 
 export function findSelectionAtEnd(node, path = [], text) {
-  return findSelectionIn(node, path.slice(), node.maxOffset, -1, text)
+  return findSelectionIn(node, path.slice(), node.size, -1, text)
 }
 
 export function selectableNodeAbove(pm, dom, coords, liberal) {
@@ -595,7 +594,7 @@ export function selectableNodeAbove(pm, dom, coords, liberal) {
     } else if (dom.hasAttribute("pm-span-atom")) {
       let path = pathFromNode(dom.parentNode)
       let parent = pm.doc.path(path), span = parseSpan(dom.getAttribute("pm-span"))
-      return parent.get(span.from).type.selectable ? new Pos(path, span.from) : null
+      return parent.child(span.from).type.selectable ? new Pos(path, span.from) : null
     }
   }
 }

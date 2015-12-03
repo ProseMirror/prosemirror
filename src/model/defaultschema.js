@@ -1,4 +1,4 @@
-import {SchemaSpec, Schema, Block, Textblock, Inline, Attribute, StyleType} from "./schema"
+import {SchemaSpec, Schema, Block, Textblock, Inline, Text, Attribute, StyleType} from "./schema"
 
 export class Doc extends Block {
   static get kind() { return "." }
@@ -82,6 +82,7 @@ const defaultSpec = new SchemaSpec({
   heading: Heading,
   code_block: CodeBlock,
 
+  text: Text,
   image: Image,
   hard_break: HardBreak
 }, {

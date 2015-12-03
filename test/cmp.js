@@ -7,7 +7,7 @@ export function cmpNode(a, b, comment) {
   }
   function inner(a, b, path) {
     if (a.type != b.type) raise("types differ", path)
-    if (a.length != b.length) raise("different content length", path)
+    if (a.chunkLength != b.chunkLength) raise("different content length", path)
     for (var name in b.attrs) {
       if (!(name in a.attrs) && b.attrs[name])
         raise("missing attr " + name + " on left", path)
@@ -18,9 +18,9 @@ export function cmpNode(a, b, comment) {
       if (!(name in b.attrs) && a.attrs[name])
         raise("missing attr " + name + " on right", path)
     if (a.text != null && a.text != b.text) raise("different text", path)
-    if (a.styles && !sameStyles(a.styles, b.styles)) raise("different styles", path)
-    for (var i = 0; i < a.length; i++)
-      inner(a.child(i), b.child(i), path + "." + i)
+    if (a.marks && !sameStyles(a.marks, b.marks)) raise("different marks", path)
+    for (var i = 0; i < a.chunkLength; i++)
+      inner(a.chunkAt(i), b.chunkAt(i), path + "." + i)
   }
   inner(a, b, "doc")
 }

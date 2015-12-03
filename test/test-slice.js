@@ -4,16 +4,14 @@ import {Failure} from "./failure"
 import {defTest} from "./tests"
 import {cmpNode} from "./cmp"
 
-import {sliceBefore, sliceAfter, sliceBetween} from "../src/model"
-
 function t(name, doc, expect) {
   defTest("slice_" + name, () => {
     if (doc.tag.a && doc.tag.b)
-      cmpNode(sliceBetween(doc, doc.tag.a, doc.tag.b), expect)
+      cmpNode(doc.sliceBetween(doc.tag.a, doc.tag.b), expect)
     else if (doc.tag.a)
-      cmpNode(sliceBefore(doc, doc.tag.a), expect)
+      cmpNode(doc.sliceBetween(null, doc.tag.a), expect)
     else
-      cmpNode(sliceAfter(doc, doc.tag.b), expect)
+      cmpNode(doc.sliceBetween(doc.tag.b, null), expect)
   })
 }
 

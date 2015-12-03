@@ -33,11 +33,13 @@ const blockElements = {
   output: true, p: true, pre: true, section: true, table: true, tfoot: true, ul: true
 }
 
+const noMarks = []
+
 class Context {
   constructor(schema, topNode) {
     this.schema = schema
     this.stack = []
-    this.styles = []
+    this.marks = noMarks
     this.closing = false
     this.enter(topNode.type, topNode.attrs)
     this.nodeInfo = nodeInfo(schema)
@@ -72,7 +74,7 @@ class Context {
             last.type.name == "text" && /\s$/.test(last.text))
           value = value.slice(1)
         if (value)
-          this.insert(this.schema.text(value, this.styles))
+          this.insert(this.schema.text(value, this.marks))
       }
     } else if (dom.nodeType != 1) {
       // Ignore non-text non-element nodes
@@ -126,7 +128,7 @@ class Context {
         }
         for (let j = 0; j < route.length; j++)
           this.enter(route[j])
-        if (this.styles.length) this.styles = []
+        if (this.marks.length) this.marks = noMarks
         break
       }
     }
@@ -139,7 +141,7 @@ class Context {
   }
 
   enter(type, attrs) {
-    if (this.styles.length) this.styles = []
+    if (this.marks.length) this.marks = noMarks
     this.stack.push({type, attrs, content: []})
   }
 
@@ -165,7 +167,7 @@ class Context {
       let add = stack[this.stack.length]
       this.enter(add.type, add.attrs)
     }
-    if (this.styles.length) this.styles = []
+    if (this.marks.length) this.marks = noMarks
     this.closing = false
   }
 }
@@ -191,7 +193,7 @@ function summarizeNodeInfo(schema) {
   }
 
   for (let name in schema.nodes) read(schema.nodes[name])
-  for (let name in schema.styles) read(schema.styles[name])
+  for (let name in schema.marks) read(schema.marks[name])
   for (let tag in tags) tags[tag].sort((a, b) => a.rank - b.rank)
   return tags
 }
@@ -238,7 +240,7 @@ ListItem.register("parseDOM", {tag: "li", parse: wrap})
 
 HardBreak.register("parseDOM", {tag: "br", parse: (dom, context, type) => {
   if (!dom.hasAttribute("pm-force-br"))
-    context.insertFrom(dom, type, null, null, context.styles)
+    context.insertFrom(dom, type, null, null, context.marks)
 }})
 
 Image.register("parseDOM", {tag: "img", parse: (dom, context, type) => {
@@ -252,10 +254,10 @@ Image.register("parseDOM", {tag: "img", parse: (dom, context, type) => {
 // Inline style tokens
 
 function inline(dom, context, style) {
-  var old = context.styles
-  context.styles = (style.instance || style).addToSet(old)
+  var old = context.marks
+  context.marks = (style.instance || style).addToSet(old)
   context.addAll(dom.firstChild, null)
-  context.styles = old
+  context.marks = old
 }
 
 LinkStyle.register("parseDOM", {tag: "a", parse: (dom, context, style) => {
