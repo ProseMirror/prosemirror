@@ -16,7 +16,7 @@ defineStep("join", {
     for (let i = 0; i < last; i++) if (pFrom[i] != pTo[i]) return null
 
     let targetPath = pFrom.slice(0, last)
-    let target = doc.path(targetPath), oldSize = target.length
+    let target = doc.path(targetPath), oldSize = target.size
     if (target.type.locked) return null
     let joined = before.append(after.content)
     let copy = doc.replaceDeep(targetPath, target.splice(offset - 1, offset + 1, Fragment.from(joined)))

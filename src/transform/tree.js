@@ -6,7 +6,7 @@ export function copyStructure(node, from, to, f, depth = 0) {
   } else {
     if (!node.size) return node
     let start = from ? from.path[depth] : 0
-    let end = to ? to.path[depth] : node.length - 1
+    let end = to ? to.path[depth] : node.size - 1
     let content = []
     if (start == end) {
       content.push(copyStructure(node.child(start), from, to, f, depth + 1))
@@ -36,7 +36,7 @@ export function isFlatRange(from, to) {
 }
 
 function canBeJoined(node, offset, depth) {
-  if (!depth || offset == 0 || offset == node.length) return false
+  if (!depth || offset == 0 || offset == node.size) return false
   let left = node.child(offset - 1), right = node.child(offset)
   return left.sameMarkup(right)
 }

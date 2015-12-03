@@ -43,7 +43,7 @@ class TooltipMenu {
     } else if (!empty) {
       let coords = node ? topOfNodeSelection(this.pm) : topCenterOfSelection()
       return () => this.menu.show(this.inlineItems, coords)
-    } else if (this.emptyBlockMenu && this.pm.doc.path(head.path).length == 0) {
+    } else if (this.emptyBlockMenu && this.pm.doc.path(head.path).size == 0) {
       let coords = this.pm.coordsAtPos(head)
       return () => this.menu.show(this.blockItems, coords)
     } else if (this.showLinks && (link = this.linkUnderCursor())) {

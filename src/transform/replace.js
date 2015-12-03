@@ -37,7 +37,7 @@ export function replace(node, from, to, root, repl, depth = 0) {
                      .append(after.content, repl.openRight, to.depth - depth)
     else
       result = before.append(after.content, from.depth - depth, to.depth - depth)
-    if (!result.length && !result.type.canBeEmpty)
+    if (!result.size && !result.type.canBeEmpty)
       result = result.copy(result.type.defaultContent())
     return {doc: result, moved: findMovedChunks(node, to, result, depth)}
   } else {
@@ -146,7 +146,7 @@ function buildInserted(nodesLeft, source, start, end) {
 function moveText(tr, doc, before, after) {
   let root = samePathDepth(before, after)
   let cutAt = after.shorten(null, 1)
-  while (cutAt.path.length > root && doc.path(cutAt.path).length == 1)
+  while (cutAt.path.length > root && doc.path(cutAt.path).size == 1)
     cutAt = cutAt.shorten(null, 1)
   tr.split(cutAt, cutAt.path.length - root)
   let start = after, end = new Pos(start.path, doc.path(start.path).size)

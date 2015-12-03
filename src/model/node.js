@@ -15,7 +15,6 @@ export class Node {
   }
 
   get size() { return this.content.size }
-  get length() { return this.content.size } // FIXME remove
 
   get width() { return 1 }
 

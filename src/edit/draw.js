@@ -117,7 +117,7 @@ export function redraw(pm, dirty, doc, prev) {
       if (found != null) {
         domPos = deleteNextNodes(dom, domPos, found - prevIndex)
         prevIndex = found
-      } else if (node && prevIndex < prev.length && inNode[prevIndex] == null &&
+      } else if (node && prevIndex < prev.content.chunkLength && inNode[prevIndex] == null &&
                  status[prevIndex] != 2 && node.sameMarkup(prev.content.chunkAt(prevIndex))) {
         scan(domPos, node, prev.content.chunkAt(prevIndex))
       } else {

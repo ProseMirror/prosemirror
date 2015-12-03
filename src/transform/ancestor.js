@@ -116,7 +116,7 @@ Transform.prototype.lift = function(from, to = from) {
   let rangeNode = found.unwrap && this.doc.path(range.from.path)
 
   for (let d = 0, pos = range.to;; d++) {
-    if (pos.offset < this.doc.path(pos.path).length) {
+    if (pos.offset < this.doc.path(pos.path).size) {
       this.split(pos, depth)
       break
     }
@@ -139,7 +139,7 @@ Transform.prototype.lift = function(from, to = from) {
       this.join(new Pos(range.from.path, i))
     let size = 0
     for (let i = range.from.offset; i < range.to.offset; i++)
-      size += rangeNode.child(i).length
+      size += rangeNode.child(i).size
     let path = range.from.path.concat(range.from.offset)
     range = {from: new Pos(path, 0), to: new Pos(path, size)}
     ++depth
