@@ -53,7 +53,7 @@ class MenuBar {
                        this.menuElt)
     pm.wrapper.insertBefore(this.wrapper, pm.wrapper.firstChild)
 
-    this.update = new MenuUpdate(pm, "selectionChange change activeStyleChange", () => this.prepareUpdate())
+    this.update = new MenuUpdate(pm, "selectionChange change activeMarkChange", () => this.prepareUpdate())
     this.menu = new Menu(pm, new BarDisplay(this.menuElt, () => this.resetMenu()))
 
     this.menuItems = config && config.items || commandGroups(pm, "inline", "block", "history")

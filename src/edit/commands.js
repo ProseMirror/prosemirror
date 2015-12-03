@@ -1,6 +1,6 @@
 import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
-        StrongStyle, EmStyle, CodeStyle, LinkStyle, Image, NodeType, StyleType,
-        Pos, containsStyle, rangeHasStyle, compareMarkup} from "../model"
+        StrongMark, EmMark, CodeMark, LinkMark, Image, NodeType, MarkType,
+        Pos, containsMark, rangeHasMark, compareMarkup} from "../model"
 import {joinPoint, joinableBlocks, canLift, canWrap, alreadyHasBlockType} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
@@ -16,7 +16,7 @@ export function defineCommand(name, cmd) {
   globalCommands[name] = cmd instanceof Command ? cmd : new Command(name, cmd)
 }
 
-NodeType.attachCommand = StyleType.attachCommand = function(name, create) {
+NodeType.attachCommand = MarkType.attachCommand = function(name, create) {
   this.register("commands", {name, create})
 }
 
@@ -106,27 +106,27 @@ HardBreak.attachCommand("insertHardBreak", type => ({
   key: ["Mod-Enter", "Shift-Enter"]
 }))
 
-function inlineStyleActive(pm, type) {
+function markActive(pm, type) {
   let sel = pm.selection
   if (sel.empty)
-    return containsStyle(pm.activeStyles(), type)
+    return containsMark(pm.activeMarks(), type)
   else
-    return rangeHasStyle(pm.doc, sel.from, sel.to, type)
+    return rangeHasMark(pm.doc, sel.from, sel.to, type)
 }
 
 function canAddInline(pm, type) {
   let {from, to, empty} = pm.selection
   if (empty)
-    return !containsStyle(pm.activeStyles(), type) && pm.doc.path(from.path).type.canContainMark(type)
+    return !containsMark(pm.activeMarks(), type) && pm.doc.path(from.path).type.canContainMark(type)
   let can = false
   pm.doc.nodesBetween(from, to, node => {
     if (can || node.isTextblock && !node.type.canContainMark(type)) return false
-    if (node.isInline && !containsStyle(node.marks, type)) can = true
+    if (node.isInline && !containsMark(node.marks, type)) can = true
   })
   return can
 }
 
-function inlineStyleApplies(pm, type) {
+function markApplies(pm, type) {
   let {from, to} = pm.selection
   let relevant = false
   pm.doc.nodesBetween(from, to, node => {
@@ -138,34 +138,34 @@ function inlineStyleApplies(pm, type) {
   return relevant
 }
 
-function generateStyleCommands(type, name, labelName, info) {
+function generateMarkCommands(type, name, labelName, info) {
   if (!labelName) labelName = name
   let cap = name.charAt(0).toUpperCase() + name.slice(1)
   type.attachCommand("set" + cap, type => ({
     label: "Set " + labelName,
-    run(pm) { pm.setStyle(type, true) },
+    run(pm) { pm.setMark(type, true) },
     select(pm) { return canAddInline(pm, type) },
     icon: {from: name}
   }))
   type.attachCommand("unset" + cap, type => ({
     label: "Remove " + labelName,
-    run(pm) { pm.setStyle(type, false) },
-    select(pm) { return inlineStyleActive(pm, type) },
+    run(pm) { pm.setMark(type, false) },
+    select(pm) { return markActive(pm, type) },
     icon: {from: name}
   }))
   type.attachCommand(name, type => {
     let command = {
       label: "Toggle " + labelName,
-      run(pm) { pm.setStyle(type, null) },
-      active(pm) { return inlineStyleActive(pm, type) },
-      select(pm) { return inlineStyleApplies(pm, type) }
+      run(pm) { pm.setMark(type, null) },
+      active(pm) { return markActive(pm, type) },
+      select(pm) { return markApplies(pm, type) }
     }
     for (let prop in info) command[prop] = info[prop]
     return command
   })
 }
 
-generateStyleCommands(StrongStyle, "strong", null, {
+generateMarkCommands(StrongMark, "strong", null, {
   menuGroup: "inline", menuRank: 20,
   icon: {
     width: 805, height: 1024,
@@ -174,7 +174,7 @@ generateStyleCommands(StrongStyle, "strong", null, {
   key: "Mod-B"
 })
 
-generateStyleCommands(EmStyle, "em", "emphasis", {
+generateMarkCommands(EmMark, "em", "emphasis", {
   menuGroup: "inline", menuRank: 21,
   icon: {
     width: 585, height: 1024,
@@ -183,7 +183,7 @@ generateStyleCommands(EmStyle, "em", "emphasis", {
   key: "Mod-I"
 })
 
-generateStyleCommands(CodeStyle, "code", null, {
+generateMarkCommands(CodeMark, "code", null, {
   menuGroup: "inline", menuRank: 22,
   icon: {
     width: 896, height: 1024,
@@ -192,23 +192,23 @@ generateStyleCommands(CodeStyle, "code", null, {
   key: "Mod-`"
 })
 
-LinkStyle.attachCommand("unlink", type => ({
+LinkMark.attachCommand("unlink", type => ({
   label: "Unlink",
-  run(pm) { pm.setStyle(type, false) },
-  select(pm) { return inlineStyleActive(pm, type) },
+  run(pm) { pm.setMark(type, false) },
+  select(pm) { return markActive(pm, type) },
   active() { return true },
   menuGroup: "inline", menuRank: 30,
   icon: {from: "link"}
 }))
 
-LinkStyle.attachCommand("link", type => ({
+LinkMark.attachCommand("link", type => ({
   label: "Add link",
-  run(pm, href, title) { pm.setStyle(type, true, {href, title}) },
+  run(pm, href, title) { pm.setMark(type, true, {href, title}) },
   params: [
     {name: "Target", type: "text"},
     {name: "Title", type: "text", default: ""}
   ],
-  select(pm) { return inlineStyleApplies(pm, type) && !inlineStyleActive(pm, type) },
+  select(pm) { return markApplies(pm, type) && !markActive(pm, type) },
   menuGroup: "inline", menuRank: 30,
   icon: {
     width: 951, height: 1024,

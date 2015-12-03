@@ -1,4 +1,4 @@
-import {SchemaSpec, Schema, Block, Textblock, Inline, Text, Attribute, StyleType} from "./schema"
+import {SchemaSpec, Schema, Block, Textblock, Inline, Text, Attribute, MarkType} from "./schema"
 
 export class Doc extends Block {
   static get kind() { return "." }
@@ -28,7 +28,7 @@ Heading.attributes = {level: new Attribute({default: "1"})}
 
 export class CodeBlock extends Textblock {
   static get contains() { return "text" }
-  get containsStyles() { return false }
+  get containsMarks() { return false }
   get isCode() { return true }
 }
 
@@ -47,25 +47,25 @@ export class HardBreak extends Inline {
   get selectable() { return false }
 }
 
-// Style types
+// Mark types
 
-export class EmStyle extends StyleType {
+export class EmMark extends MarkType {
   static get rank() { return 51 }
 }
 
-export class StrongStyle extends StyleType {
+export class StrongMark extends MarkType {
   static get rank() { return 52 }
 }
 
-export class LinkStyle extends StyleType {
+export class LinkMark extends MarkType {
   static get rank() { return 53 }
 }
-LinkStyle.attributes = {
+LinkMark.attributes = {
   href: new Attribute,
   title: new Attribute({default: ""})
 }
 
-export class CodeStyle extends StyleType {
+export class CodeMark extends MarkType {
   static get rank() { return 101 }
   get isCode() { return true }
 }
@@ -86,10 +86,10 @@ const defaultSpec = new SchemaSpec({
   image: Image,
   hard_break: HardBreak
 }, {
-  em: EmStyle,
-  strong: StrongStyle,
-  link: LinkStyle,
-  code: CodeStyle
+  em: EmMark,
+  strong: StrongMark,
+  link: LinkMark,
+  code: CodeMark
 })
 
 export const defaultSchema = new Schema(defaultSpec)

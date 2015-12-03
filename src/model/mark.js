@@ -1,6 +1,4 @@
-// FIXME rename to marks
-
-export class StyleMarker {
+export class Mark {
   constructor(type, attrs) {
     this.type = type
     this.attrs = attrs
@@ -47,21 +45,21 @@ export class StyleMarker {
   }
 }
 
-export function removeStyle(set, type) {
+export function removeMark(set, type) {
   for (var i = 0; i < set.length; i++)
     if (set[i].type == type)
       return [...set.slice(0, i), ...set.slice(i + 1)]
   return set
 }
 
-export function sameStyles(a, b) {
+export function sameMarks(a, b) {
   if (a.length != b.length) return false
   for (let i = 0; i < a.length; i++)
     if (!a[i].eq(b[i])) return false
   return true
 }
 
-export function containsStyle(set, type) {
+export function containsMark(set, type) {
   for (let i = 0; i < set.length; i++)
     if (set[i].type == type) return set[i]
   return false
@@ -69,16 +67,16 @@ export function containsStyle(set, type) {
 
 const empty = []
 
-export function spanStylesAt(doc, pos) {
+export function marksAt(doc, pos) {
   let parent = doc.path(pos.path)
   if (!parent.isTextblock || !parent.size) return empty
   return parent.chunkBefore(pos.offset || 1).node.marks
 }
 
-export function rangeHasStyle(doc, from, to, type) {
+export function rangeHasMark(doc, from, to, type) {
   let found = false
   doc.nodesBetween(from, to, node => {
-    if (containsStyle(node.marks, type)) found = true
+    if (containsMark(node.marks, type)) found = true
   })
   return found
 }

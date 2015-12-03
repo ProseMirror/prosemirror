@@ -36,11 +36,11 @@ function rm(from, to) {
 function join(pos) {
   return tr => tr.join(asPos(tr.doc, pos))
 }
-function addSt(from, to, st) {
-  return tr => tr.addStyle(asPos(tr.doc, from), asPos(tr.doc, to), st)
+function addMark(from, to, st) {
+  return tr => tr.addMark(asPos(tr.doc, from), asPos(tr.doc, to), st)
 }
-function rmSt(from, to, st) {
-  return tr => tr.removeStyle(asPos(tr.doc, from), asPos(tr.doc, to), st)
+function rmMark(from, to, st) {
+  return tr => tr.removeMark(asPos(tr.doc, from), asPos(tr.doc, to), st)
 }
 function repl(from, to, source, start, end) {
   return tr => tr.replace(asPos(tr.doc, from), asPos(tr.doc, to), source, start, end)
@@ -163,20 +163,20 @@ rebase$("join",
 
 rebase("style",
        doc(p("hello <1>wo<2>rld<3>")),
-       [addSt("1", "3", schema.style("em"))],
+       [addMark("1", "3", schema.mark("em"))],
        [text("2", "_")],
        doc(p("hello <1>", em("wo"), "_<2>", em("rld<3>"))))
 
 rebase("style_unstyle",
        doc(p(em("<1>hello"), " world<2>")),
-       [addSt("1", "2", schema.style("em"))],
-       [rmSt("1", "2", schema.style("em"))],
+       [addMark("1", "2", schema.mark("em"))],
+       [rmMark("1", "2", schema.mark("em"))],
        doc(p("<1>hello", em(" world<2>"))))
 
 rebase("unstyle_style",
        doc(p("<1>hello ", em("world<2>"))),
-       [rmSt("1", "2", schema.style("em"))],
-       [addSt("1", "2", schema.style("em"))],
+       [rmMark("1", "2", schema.mark("em"))],
+       [addMark("1", "2", schema.mark("em"))],
        doc(p(em("<1>hello "), "world<2>")))
 
 rebase("replace_nested",

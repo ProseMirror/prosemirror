@@ -1,7 +1,7 @@
 import "./css"
 
-import {spanStylesAt, rangeHasStyle, Pos, findDiffStart,
-        containsStyle, removeStyle} from "../model"
+import {marksAt, rangeHasMark, Pos, findDiffStart,
+        containsMark, removeMark} from "../model"
 import {Transform} from "../transform"
 import sortedInsert from "../util/sortedinsert"
 import {Map} from "../util/map"
@@ -241,24 +241,24 @@ export class ProseMirror {
     this.ranges.removeRange(range)
   }
 
-  setStyle(type, to, attrs) {
+  setMark(type, to, attrs) {
     let sel = this.selection
     if (sel.empty) {
-      let styles = this.activeStyles()
-      if (to == null) to = !containsStyle(styles, type)
+      let marks = this.activeMarks()
+      if (to == null) to = !containsMark(marks, type)
       if (to && !this.doc.path(sel.head.path).type.canContainMark(type)) return
-      this.input.storedStyles = to ? type.create(attrs).addToSet(styles) : removeStyle(styles, type)
-      this.signal("activeStyleChange")
+      this.input.storedMarks = to ? type.create(attrs).addToSet(marks) : removeMark(marks, type)
+      this.signal("activeMarkChange")
     } else {
-      if (to != null ? to : !rangeHasStyle(this.doc, sel.from, sel.to, type))
-        this.apply(this.tr.addStyle(sel.from, sel.to, type.create(attrs)))
+      if (to != null ? to : !rangeHasMark(this.doc, sel.from, sel.to, type))
+        this.apply(this.tr.addMark(sel.from, sel.to, type.create(attrs)))
       else
-        this.apply(this.tr.removeStyle(sel.from, sel.to, type))
+        this.apply(this.tr.removeMark(sel.from, sel.to, type))
     }
   }
 
-  activeStyles() {
-    return this.input.storedStyles || spanStylesAt(this.doc, this.selection.head)
+  activeMarks() {
+    return this.input.storedMarks || marksAt(this.doc, this.selection.head)
   }
 
   focus() {
@@ -371,11 +371,11 @@ class EditorTransform extends Transform {
     return this.steps.length ? this.pm.selection.map(this) : this.pm.selection
   }
 
-  replaceSelection(node, inheritStyles) {
+  replaceSelection(node, inheritMarks) {
     let {empty, from, to, node: selNode} = this.selection, parent
-    if (node && node.isInline && inheritStyles !== false) {
-      let styles = empty ? this.pm.input.storedStyles : spanStylesAt(this.doc, from)
-      node = node.type.create(node.attrs, node.text, styles)
+    if (node && node.isInline && inheritMarks !== false) {
+      let marks = empty ? this.pm.input.storedMarks : marksAt(this.doc, from)
+      node = node.type.create(node.attrs, node.text, marks)
     }
 
     if (selNode && selNode.isTextblock && node && node.isInline) {

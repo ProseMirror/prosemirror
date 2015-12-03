@@ -37,66 +37,66 @@ function testTransform(doc, expect, tr) {
 }
 
 function add(name, doc, expect, style) {
-  defTest("addStyle_" + name, () => {
-    testTransform(doc, expect, Tr(doc).addStyle(doc.tag.a, doc.tag.b, style))
+  defTest("addMark_" + name, () => {
+    testTransform(doc, expect, Tr(doc).addMark(doc.tag.a, doc.tag.b, style))
   })
 }
 
 add("simple",
     doc(p("hello <a>there<b>!")),
     doc(p("hello ", strong("there"), "!")),
-    schema.style("strong"))
+    schema.mark("strong"))
 add("double_bold",
     doc(p("hello ", strong("<a>there"), "!<b>")),
     doc(p("hello ", strong("there!"))),
-    schema.style("strong"))
+    schema.mark("strong"))
 add("overlap",
     doc(p("one <a>two ", em("three<b> four"))),
     doc(p("one ", strong("two ", em("three")), em(" four"))),
-    schema.style("strong"))
+    schema.mark("strong"))
 add("overwrite_link",
     doc(p("this is a ", a("<a>link<b>"))),
     doc(p("this is a ", a2("link"))),
-    schema.style("link", {href: "http://bar"}))
+    schema.mark("link", {href: "http://bar"}))
 add("code",
     doc(p("before"), blockquote(p("the variable is called <a>i<b>")), p("after")),
     doc(p("before"), blockquote(p("the variable is called ", code("i"))), p("after")),
-    schema.style("code"))
+    schema.mark("code"))
 add("across_blocks",
     doc(p("hi <a>this"), blockquote(p("is")), p("a docu<b>ment"), p("!")),
     doc(p("hi ", em("this")), blockquote(p(em("is"))), p(em("a docu"), "ment"), p("!")),
-    schema.style("em"))
+    schema.mark("em"))
 
 function rem(name, doc, expect, style) {
-  defTest("removeStyle_" + name, () => {
-    testTransform(doc, expect, Tr(doc).removeStyle(doc.tag.a, doc.tag.b, style))
+  defTest("removeMark_" + name, () => {
+    testTransform(doc, expect, Tr(doc).removeMark(doc.tag.a, doc.tag.b, style))
   })
 }
 
 rem("gap",
     doc(p(em("hello <a>world<b>!"))),
     doc(p(em("hello "), "world", em("!"))),
-    schema.style("em"))
+    schema.mark("em"))
 rem("nothing_there",
     doc(p(em("hello"), " <a>world<b>!")),
     doc(p(em("hello"), " <a>world<b>!")),
-    schema.style("em"))
+    schema.mark("em"))
 rem("from_nested",
     doc(p(em("one ", strong("<a>two<b>"), " three"))),
     doc(p(em("one two three"))),
-    schema.style("strong"))
+    schema.mark("strong"))
 rem("unlink",
     doc(p("hello ", a("link"))),
     doc(p("hello link")),
-    schema.style("link", {href: "http://foo"}))
+    schema.mark("link", {href: "http://foo"}))
 rem("other_link",
     doc(p("hello ", a("link"))),
     doc(p("hello ", a("link"))),
-    schema.style("link", {href: "http://bar"}))
+    schema.mark("link", {href: "http://bar"}))
 rem("across_blocks",
     doc(blockquote(p(em("much <a>em")), p(em("here too"))), p("between", em("...")), p(em("end<b>"))),
     doc(blockquote(p(em("much "), "em"), p("here too")), p("between..."), p("end")),
-    schema.style("em"))
+    schema.mark("em"))
 rem("all",
     doc(p("<a>hello, ", em("this is ", strong("much"), " ", a("markup<b>")))),
     doc(p("<a>hello, this is much markup")),

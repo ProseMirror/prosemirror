@@ -1,5 +1,5 @@
 import {defineOption} from "../edit"
-import {spanStylesAt} from "../model"
+import {marksAt} from "../model"
 import {elt, insertCSS} from "../dom"
 import {MenuUpdate} from "./update"
 
@@ -57,8 +57,8 @@ class TooltipMenu {
   linkUnderCursor() {
     let head = this.pm.selection.head
     if (!head) return null
-    let styles = spanStylesAt(this.pm.doc, head)
-    return styles.reduce((found, st) => found || (st.type.name == "link" && st), null)
+    let marks = marksAt(this.pm.doc, head)
+    return marks.reduce((found, m) => found || (m.type.name == "link" && m), null)
   }
 
   showLink(link, pos) {

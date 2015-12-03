@@ -74,11 +74,11 @@ export let h2 = build("heading", {level: "2"})
 export let li = build("list_item")
 export let ul = build("bullet_list")
 export let ol = build("ordered_list", {order: "1"})
-export let em = buildInline(schema.style("em"))
-export let strong = buildInline(schema.style("strong"))
-export let code = buildInline(schema.style("code"))
-export let a = buildInline(schema.style("link", {href: "http://foo"}))
-export let a2 = buildInline(schema.style("link", {href: "http://bar"}))
+export let em = buildInline(schema.mark("em"))
+export let strong = buildInline(schema.mark("strong"))
+export let code = buildInline(schema.mark("code"))
+export let a = buildInline(schema.mark("link", {href: "http://foo"}))
+export let a2 = buildInline(schema.mark("link", {href: "http://bar"}))
 export let br = {type: "insert", style: "hard_break"}
 export const dataImage = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
 export let img = {type: "insert", style: "image", attrs: {src: dataImage, alt: "x"}}

@@ -1,4 +1,4 @@
-import {Pos, spanStylesAt} from "../model"
+import {Pos, marksAt} from "../model"
 
 import {fromHTML} from "../parse/dom"
 import {elt} from "../dom"
@@ -37,7 +37,7 @@ export class Input {
 
     this.keymaps = []
 
-    this.storedStyles = null
+    this.storedMarks = null
 
     this.dropTarget = pm.wrapper.appendChild(elt("div", {class: "ProseMirror-drop-target"}))
 
@@ -46,7 +46,7 @@ export class Input {
       pm.content.addEventListener(event, e => handler(pm, e))
     }
 
-    pm.on("selectionChange", () => this.storedStyles = null)
+    pm.on("selectionChange", () => this.storedMarks = null)
   }
 
   maybeAbortComposition() {
@@ -139,9 +139,9 @@ handlers.keyup = (pm, e) => {
 
 function inputText(pm, range, text) {
   if (range.empty && !text) return false
-  let styles = pm.input.storedStyles || spanStylesAt(pm.doc, range.from)
+  let marks = pm.input.storedMarks || marksAt(pm.doc, range.from)
   let tr = pm.tr
-  tr.replaceWith(range.from, range.to, pm.schema.text(text, styles)).apply()
+  tr.replaceWith(range.from, range.to, pm.schema.text(text, marks)).apply()
   pm.scrollIntoView()
   pm.signal("textInput", text)
 }
@@ -315,9 +315,9 @@ handlers.paste = (pm, e) => {
     let doc, from, to
     if (pm.input.shiftKey && txt) {
       let paragraphs = txt.split(/[\r\n]+/)
-      let styles = spanStylesAt(pm.doc, sel.from)
+      let marks = marksAt(pm.doc, sel.from)
       // FIXME use fromText instead?
-      doc = pm.schema.node("doc", null, paragraphs.map(s => pm.schema.node("paragraph", null, pm.schema.text(s, styles))))
+      doc = pm.schema.node("doc", null, paragraphs.map(s => pm.schema.node("paragraph", null, pm.schema.text(s, marks))))
     } else if (lastCopied && (lastCopied.html == html || lastCopied.text == txt)) {
       ;({doc, from, to} = lastCopied)
     } else if (html) {

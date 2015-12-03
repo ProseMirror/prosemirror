@@ -1,8 +1,8 @@
 import markdownit from "markdown-it"
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmStyle, StrongStyle, LinkStyle, CodeStyle,
-        removeStyle, sameStyles} from "../model"
+        EmMark, StrongMark, LinkMark, CodeMark,
+        removeMark, sameMarks} from "../model"
 import {defineSource} from "./index"
 
 export function fromMarkdown(schema, text) {
@@ -20,7 +20,7 @@ defineSource("markdown", fromMarkdown)
 const noMarks = []
 
 function maybeMerge(a, b) {
-  if (a.isText && b.isText && sameStyles(a.marks, b.marks))
+  if (a.isText && b.isText && sameMarks(a.marks, b.marks))
     return a.copy(a.text + b.text)
 }
 
@@ -54,7 +54,7 @@ class State {
   }
 
   closeInline(rm) {
-    this.marks = removeStyle(this.marks, rm)
+    this.marks = removeMark(this.marks, rm)
   }
 
   parseTokens(toks) {
@@ -178,13 +178,13 @@ HardBreak.register("parseMarkdown", {token: "hardbreak", parse: function(state) 
   state.addInline(this)
 }})
 
-// Inline styles
+// Inline marks
 
-EmStyle.register("parseMarkdown", {type: "inline", token: "em"})
+EmMark.register("parseMarkdown", {type: "inline", token: "em"})
 
-StrongStyle.register("parseMarkdown", {type: "inline", token: "strong"})
+StrongMark.register("parseMarkdown", {type: "inline", token: "strong"})
 
-LinkStyle.register("parseMarkdown", {
+LinkMark.register("parseMarkdown", {
   type: "inline",
   token: "link",
   attrs: (state, tok) => ({
@@ -193,7 +193,7 @@ LinkStyle.register("parseMarkdown", {
   })
 })
 
-CodeStyle.register("parseMarkdown", {token: "code_inline", parse: function(state, tok) {
+CodeMark.register("parseMarkdown", {token: "code_inline", parse: function(state, tok) {
   state.openInline(this.create())
   state.addText(tok.content)
   state.closeInline(this)

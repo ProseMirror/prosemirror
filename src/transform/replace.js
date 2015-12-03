@@ -1,4 +1,4 @@
-import {Pos, spanStylesAt, Fragment, emptyFragment} from "../model"
+import {Pos, marksAt, Fragment, emptyFragment} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -251,9 +251,9 @@ Transform.prototype.insert = function(pos, content) {
 }
 
 Transform.prototype.insertInline = function(pos, node) {
-  return this.insert(pos, node.marked(spanStylesAt(this.doc, pos)))
+  return this.insert(pos, node.marked(marksAt(this.doc, pos)))
 }
 
 Transform.prototype.insertText = function(pos, text) {
-  return this.insert(pos, this.doc.type.schema.text(text, spanStylesAt(this.doc, pos)))
+  return this.insert(pos, this.doc.type.schema.text(text, marksAt(this.doc, pos)))
 }

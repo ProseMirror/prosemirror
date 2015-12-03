@@ -1,6 +1,6 @@
 import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmStyle, StrongStyle, LinkStyle, CodeStyle, Pos} from "../model"
+        EmMark, StrongMark, LinkMark, CodeMark, Pos} from "../model"
 import {defineTarget} from "./index"
 
 // declare_global: window
@@ -192,11 +192,11 @@ def(HardBreak, (_, s) => s.elt("br"))
 
 // Inline styles
 
-def(EmStyle, (_, s) => s.elt("em"))
+def(EmMark, (_, s) => s.elt("em"))
 
-def(StrongStyle, (_, s) => s.elt("strong"))
+def(StrongMark, (_, s) => s.elt("strong"))
 
-def(CodeStyle, (_, s) => s.elt("code"))
+def(CodeMark, (_, s) => s.elt("code"))
 
-def(LinkStyle, (mark, s) => s.elt("a", {href: mark.attrs.href,
-                                        title: mark.attrs.title}))
+def(LinkMark, (mark, s) => s.elt("a", {href: mark.attrs.href,
+                                       title: mark.attrs.title}))

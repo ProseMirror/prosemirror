@@ -1,5 +1,5 @@
 import {Failure} from "./failure"
-import {Pos, sameStyles} from "../src/model"
+import {Pos, sameMarks} from "../src/model"
 
 export function cmpNode(a, b, comment) {
   function raise(msg, path) {
@@ -18,7 +18,7 @@ export function cmpNode(a, b, comment) {
       if (!(name in b.attrs) && a.attrs[name])
         raise("missing attr " + name + " on right", path)
     if (a.text != null && a.text != b.text) raise("different text", path)
-    if (a.marks && !sameStyles(a.marks, b.marks)) raise("different marks", path)
+    if (a.marks && !sameMarks(a.marks, b.marks)) raise("different marks", path)
     for (var i = 0; i < a.chunkLength; i++)
       inner(a.chunkAt(i), b.chunkAt(i), path + "." + i)
   }

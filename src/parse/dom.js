@@ -1,6 +1,6 @@
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmStyle, StrongStyle, LinkStyle, CodeStyle,
+        EmMark, StrongMark, LinkMark, CodeMark,
         compareMarkup} from "../model"
 import {defineSource} from "./index"
 
@@ -260,16 +260,16 @@ function inline(dom, context, style) {
   context.marks = old
 }
 
-LinkStyle.register("parseDOM", {tag: "a", parse: (dom, context, style) => {
+LinkMark.register("parseDOM", {tag: "a", parse: (dom, context, style) => {
   let href = dom.getAttribute("href")
   if (!href) return false
   inline(dom, context, style.create({href, title: dom.getAttribute("title")}))
 }})
 
-EmStyle.register("parseDOM", {tag: "i", parse: inline})
-EmStyle.register("parseDOM", {tag: "em", parse: inline})
+EmMark.register("parseDOM", {tag: "i", parse: inline})
+EmMark.register("parseDOM", {tag: "em", parse: inline})
 
-StrongStyle.register("parseDOM", {tag: "b", parse: inline})
-StrongStyle.register("parseDOM", {tag: "strong", parse: inline})
+StrongMark.register("parseDOM", {tag: "b", parse: inline})
+StrongMark.register("parseDOM", {tag: "strong", parse: inline})
 
-CodeStyle.register("parseDOM", {tag: "code", parse: inline})
+CodeMark.register("parseDOM", {tag: "code", parse: inline})

@@ -1,10 +1,10 @@
-import {Pos, containsStyle, StyleType} from "../model"
+import {Pos, containsMark, MarkType} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
 import {copyInline, copyStructure} from "./tree"
 
-defineStep("addStyle", {
+defineStep("addMark", {
   apply(doc, step) {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       if (!node.type.canContainMark(step.param)) return node
@@ -14,29 +14,29 @@ defineStep("addStyle", {
     }))
   },
   invert(step, _oldDoc, map) {
-    return new Step("removeStyle", step.from, map.map(step.to).pos, null, step.param)
+    return new Step("removeMark", step.from, map.map(step.to).pos, null, step.param)
   },
   paramToJSON(param) {
     return param.toJSON()
   },
   paramFromJSON(schema, json) {
-    return schema.styleFromJSON(json)
+    return schema.markFromJSON(json)
   }
 })
 
 
-Transform.prototype.addStyle = function(from, to, st) {
+Transform.prototype.addMark = function(from, to, st) {
   let removed = [], added = [], removing = null, adding = null
   this.doc.inlineNodesBetween(from, to, ({marks}, path, start, end, parent) => {
     if (st.isInSet(marks) || !parent.type.canContainMark(st.type)) {
       adding = removing = null
     } else {
-      let rm = containsStyle(marks, st.type)
+      let rm = containsMark(marks, st.type)
       if (rm) {
         if (removing && removing.param.eq(rm)) {
           removing.to = new Pos(path, end)
         } else {
-          removing = new Step("removeStyle", new Pos(path, start), new Pos(path, end), null, rm)
+          removing = new Step("removeMark", new Pos(path, start), new Pos(path, end), null, rm)
           removed.push(removing)
         }
       } else if (removing) {
@@ -45,7 +45,7 @@ Transform.prototype.addStyle = function(from, to, st) {
       if (adding) {
         adding.to = new Pos(path, end)
       } else {
-        adding = new Step("addStyle", new Pos(path, start), new Pos(path, end), null, st)
+        adding = new Step("addMark", new Pos(path, start), new Pos(path, end), null, st)
         added.push(adding)
       }
     }
@@ -55,7 +55,7 @@ Transform.prototype.addStyle = function(from, to, st) {
   return this
 }
 
-defineStep("removeStyle", {
+defineStep("removeMark", {
   apply(doc, step) {
     return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       return copyInline(node, from, to, node => {
@@ -64,23 +64,23 @@ defineStep("removeStyle", {
     }))
   },
   invert(step, _oldDoc, map) {
-    return new Step("addStyle", step.from, map.map(step.to).pos, null, step.param)
+    return new Step("addMark", step.from, map.map(step.to).pos, null, step.param)
   },
   paramToJSON(param) {
     return param.toJSON()
   },
   paramFromJSON(schema, json) {
-    return schema.styleFromJSON(json)
+    return schema.markFromJSON(json)
   }
 })
 
-Transform.prototype.removeStyle = function(from, to, st = null) {
+Transform.prototype.removeMark = function(from, to, st = null) {
   let matched = [], step = 0
   this.doc.inlineNodesBetween(from, to, ({marks}, path, start, end) => {
     step++
     let toRemove = null
-    if (st instanceof StyleType) {
-      let found = containsStyle(marks, st)
+    if (st instanceof MarkType) {
+      let found = containsMark(marks, st)
       if (found) toRemove = [found]
     } else if (st) {
       if (st.isInSet(marks)) toRemove = [st]
@@ -104,7 +104,7 @@ Transform.prototype.removeStyle = function(from, to, st = null) {
       }
     }
   })
-  matched.forEach(m => this.step("removeStyle", m.from, m.to, null, m.style))
+  matched.forEach(m => this.step("removeMark", m.from, m.to, null, m.style))
   return this
 }
 
@@ -121,7 +121,7 @@ Transform.prototype.clearMarkup = function(from, to, newParent) {
       let mark = marks[i]
       if (!newParent || !newParent.canContainMark(mark.type)) {
         path = path.slice()
-        this.step("removeStyle", new Pos(path, start), new Pos(path, end), null, mark)
+        this.step("removeMark", new Pos(path, start), new Pos(path, end), null, mark)
       }
     }
   })

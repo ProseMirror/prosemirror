@@ -1,6 +1,6 @@
 import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmStyle, StrongStyle, LinkStyle, CodeStyle} from "../model"
+        EmMark, StrongMark, LinkMark, CodeMark} from "../model"
 import {defineTarget} from "./index"
 
 export function toMarkdown(doc) {
@@ -115,14 +115,14 @@ class State {
           }
         }
         if (!found) {
-          this.text(styleString(cur, false), false)
+          this.text(markString(cur, false), false)
           stack.splice(j--, 1)
         }
       }
       for (let j = 0; j < marks.length; j++) {
         let cur = marks[j]
         stack.push(cur)
-        this.text(styleString(cur, true), false)
+        this.text(markString(cur, true), false)
       }
       if (node) this.render(node)
     }
@@ -208,23 +208,23 @@ def(HardBreak, state => state.write("\\\n"))
 
 def(Text, (state, node) => state.text(node.text))
 
-// Styles
+// Marks
 
-function styleString(style, open) {
-  let value = open ? style.type.openMarkdownStyle : style.type.closeMarkdownStyle
-  return typeof value == "string" ? value : value(style)
+function markString(mark, open) {
+  let value = open ? mark.type.openMarkdown : mark.type.closeMarkdown
+  return typeof value == "string" ? value : value(mark)
 }
 
-function defStyle(style, open, close) {
-  style.prototype.openMarkdownStyle = open
-  style.prototype.closeMarkdownStyle = close
+function defMark(mark, open, close) {
+  mark.prototype.openMarkdown = open
+  mark.prototype.closeMarkdown = close
 }
 
-defStyle(EmStyle, "*", "*")
+defMark(EmMark, "*", "*")
 
-defStyle(StrongStyle, "**", "**")
+defMark(StrongMark, "**", "**")
 
-defStyle(LinkStyle, "[",
-         style => "](" + esc(style.attrs.href) + (style.attrs.title ? " " + quote(style.attrs.title) : "") + ")")
+defMark(LinkMark, "[",
+        mark => "](" + esc(mark.attrs.href) + (mark.attrs.title ? " " + quote(mark.attrs.title) : "") + ")")
 
-defStyle(CodeStyle, "`", "`")
+defMark(CodeMark, "`", "`")

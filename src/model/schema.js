@@ -1,6 +1,6 @@
 import {Node, TextNode} from "./node"
 import {Fragment} from "./fragment"
-import {StyleMarker} from "./style"
+import {Mark} from "./mark"
 
 import {ProseMirrorError} from "../util/error"
 
@@ -109,10 +109,10 @@ export class NodeType {
     return new Node(this, this.buildAttrs(attrs, content), Fragment.from(content), marks)
   }
 
-  createAutoFill(attrs, content, styles) {
+  createAutoFill(attrs, content, marks) {
     if ((!content || content.length == 0) && !this.canBeEmpty)
       content = this.defaultContent()
-    return this.create(attrs, content, styles)
+    return this.create(attrs, content, marks)
   }
 
   get canBeEmpty() { return true }
@@ -192,39 +192,39 @@ export class Attribute {
   }
 }
 
-// Styles
+// Marks
 
-export class StyleType {
+export class MarkType {
   constructor(name, attrs, rank, schema) {
     this.name = name
     this.attrs = attrs
     this.rank = rank
     this.schema = schema
     let defaults = getDefaultAttrs(this.attrs)
-    this.instance = defaults && new StyleMarker(this, defaults)
+    this.instance = defaults && new Mark(this, defaults)
   }
 
   static get rank() { return 50 }
 
   create(attrs) {
     if (!attrs && this.instance) return this.instance
-    return new StyleMarker(this, buildAttrs(this.attrs, attrs, this))
+    return new Mark(this, buildAttrs(this.attrs, attrs, this))
   }
 
-  static getOrder(styles) {
+  static getOrder(marks) {
     let sorted = []
-    for (let name in styles) sorted.push({name, rank: styles[name].type.rank})
+    for (let name in marks) sorted.push({name, rank: marks[name].type.rank})
     sorted.sort((a, b) => a.rank - b.rank)
     let ranks = Object.create(null)
     for (let i = 0; i < sorted.length; i++) ranks[sorted[i].name] = i
     return ranks
   }
 
-  static compile(styles, schema) {
-    let order = this.getOrder(styles)
+  static compile(marks, schema) {
+    let order = this.getOrder(marks)
     let result = Object.create(null)
-    for (let name in styles) {
-      let info = styles[name]
+    for (let name in marks) {
+      let info = marks[name]
       let attrs = info.attributes || info.type.attributes
       result[name] = new info.type(name, attrs, order[name], schema)
     }
@@ -235,7 +235,7 @@ export class StyleType {
     ;(this.prototype[prop] || (this.prototype[prop] = [])).push(value)
   }
 }
-StyleType.attributes = {}
+MarkType.attributes = {}
 
 // Schema specifications are data structures that specify a schema --
 // a set of node types, their names, attributes, and nesting behavior.
@@ -333,18 +333,18 @@ function buildAttrs(attrSpec, attrs, arg1, arg2) {
  * Document schema class.
  */
 export class Schema {
-  constructor(spec, styles) {
-    if (!(spec instanceof SchemaSpec)) spec = new SchemaSpec(spec, styles)
+  constructor(spec, marks) {
+    if (!(spec instanceof SchemaSpec)) spec = new SchemaSpec(spec, marks)
     this.spec = spec
     this.kinds = Object.create(null)
     this.nodes = NodeType.compile(spec.nodes, this)
-    this.marks = StyleType.compile(spec.marks, this)
+    this.marks = MarkType.compile(spec.marks, this)
     this.cached = Object.create(null)
 
     this.node = this.node.bind(this)
     this.text = this.text.bind(this)
     this.nodeFromJSON = this.nodeFromJSON.bind(this)
-    this.styleFromJSON = this.styleFromJSON.bind(this)
+    this.markFromJSON = this.markFromJSON.bind(this)
   }
 
   node(type, attrs, content, marks) {
@@ -372,7 +372,7 @@ export class Schema {
     return this.cached.defaultTextblockType = null
   }
 
-  style(name, attrs) {
+  mark(name, attrs) {
     let spec = this.marks[name] || SchemaError.raise("No mark named " + name)
     return spec.create(attrs)
   }
@@ -381,9 +381,9 @@ export class Schema {
     return Node.fromJSON(this, json)
   }
 
-  styleFromJSON(json) {
-    if (typeof json == "string") return this.style(json)
-    return this.style(json._, json)
+  markFromJSON(json) {
+    if (typeof json == "string") return this.mark(json)
+    return this.mark(json._, json)
   }
 
   nodeType(name) {
