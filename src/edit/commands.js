@@ -786,7 +786,7 @@ function selectBlockHorizontally(pm, dir) {
   if (!node && (parent = pm.doc.path(from.path)) &&
       (dir > 0 ? from.offset < parent.size : from.offset)) {
     let {node: nextNode, start} = dir > 0 ? parent.chunkAfter(from.offset) : parent.chunkBefore(from.offset)
-    if (nextNode.type.selectable && start == from.offset + (dir > 0 ? 0 : 1)) {
+    if (nextNode.type.selectable && start == from.offset - (dir > 0 ? 0 : 1)) {
       pm.setNodeSelection(dir < 0 ? from.move(-1) : from)
       return true
     }

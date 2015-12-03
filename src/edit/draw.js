@@ -5,6 +5,8 @@ import {elt} from "../dom"
 
 const nonEditable = {html_block: true, html_tag: true, horizontal_rule: true}
 
+// FIXME clean up threading of path and offset, maybe remove from DOM renderer entirely
+
 function options(path, ranges) {
   return {
     onRender(node, dom, offset) {
@@ -16,7 +18,7 @@ function options(path, ranges) {
     },
     renderInlineFlat(node, dom, offset) {
       ranges.advanceTo(new Pos(path, offset))
-      let end = new Pos(path, offset + node.offset)
+      let end = new Pos(path, offset + node.width)
       let nextCut = ranges.nextChangeBefore(end)
 
       let inner = dom, wrapped
@@ -85,8 +87,8 @@ export function redraw(pm, dirty, doc, prev) {
 
   function scan(dom, node, prev) {
     let status = [], inPrev = [], inNode = []
-    for (let i = 0, j = 0; i < prev.length && j < node.width; i++) {
-      let cur = prev.child(i), dirtyStatus = dirty.get(cur)
+    for (let i = 0, j = 0; i < prev.content.chunkLength && j < node.content.chunkLength; i++) {
+      let cur = prev.content.chunkAt(i), dirtyStatus = dirty.get(cur)
       status.push(dirtyStatus)
       let matching = dirtyStatus ? -1 : node.content.chunkIndex(cur, j)
       if (matching > -1) {
@@ -109,18 +111,17 @@ export function redraw(pm, dirty, doc, prev) {
     let domPos = dom.firstChild, prevIndex = 0, index = 0
     let textblock = node.isTextblock
     node.forEach((node, offset) => {
-      path.push(offset)
+      if (!textblock) path.push(offset)
       let found = inPrev[index]
       let nodeLeft = true
       if (found != null) {
         domPos = deleteNextNodes(dom, domPos, found - prevIndex)
         prevIndex = found
       } else if (node && prevIndex < prev.length && inNode[prevIndex] == null &&
-                 status[prevIndex] != 2 && node.sameMarkup(prev.chunkAt(prevIndex))) {
-        scan(domPos, node, prev.chunkAt(prevIndex))
+                 status[prevIndex] != 2 && node.sameMarkup(prev.content.chunkAt(prevIndex))) {
+        scan(domPos, node, prev.content.chunkAt(prevIndex))
       } else {
-        let opts = options(path, ranges)
-        let rendered = renderNodeToDOM(node, opts, offset)
+        let rendered = renderNodeToDOM(node, options(path, ranges), offset)
         dom.insertBefore(rendered, domPos)
         nodeLeft = false
       }
@@ -132,10 +133,10 @@ export function redraw(pm, dirty, doc, prev) {
         domPos = domPos.nextSibling
         prevIndex++
       }
-      path.pop()
+      if (!textblock) path.pop()
       ++index
     })
-    deleteNextNodes(dom, domPos, prev.length - prevIndex)
+    deleteNextNodes(dom, domPos, prev.content.chunkLength - prevIndex)
   }
   scan(pm.content, doc, prev)
 }

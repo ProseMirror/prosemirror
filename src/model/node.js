@@ -135,11 +135,10 @@ export class Node {
   get isText() { return this.type.isText }
 
   toString() {
-    let content = this.content.toString()
-    if (this.type.isBlock)
-      return this.type.name + (content ? "(" + content + ")" : "")
+    if (this.content.size)
+      return this.type.name + "(" + this.content.toString() + ")"
     else
-      return content
+      return this.type.name
   }
 
   toJSON() {

@@ -122,7 +122,7 @@ class CompressionWorker {
 
 function isDelStep(step) {
   return step.name == "replace" && step.from.offset < step.to.offset &&
-    Pos.samePath(step.from.path, step.to.path) && step.param.nodes.length == 0
+    Pos.samePath(step.from.path, step.to.path) && (!step.param || step.param.content.size == 0)
 }
 
 const compressStepCount = 150

@@ -52,9 +52,9 @@ export function applyDOMChange(pm) {
   if (changeStart) {
     let changeEnd = findDiffEndConstrained(pm.doc.content, updated.content, changeStart)
     // Mark nodes touched by this change as 'to be redrawn'
-    pm.markRangeDirty(siblingRange(pm.doc, changeStart.a, changeEnd.a))
+    pm.markRangeDirty(siblingRange(pm.doc, changeStart, changeEnd.a))
 
-    pm.tr.replace(changeStart.a, changeEnd.a, updated, changeStart.b, changeEnd.b).apply()
+    pm.tr.replace(changeStart, changeEnd.a, updated, changeStart, changeEnd.b).apply()
     return true
   } else {
     return false
