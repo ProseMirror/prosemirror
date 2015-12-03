@@ -9,7 +9,7 @@ import {cmpNode, cmpStr, P} from "./cmp"
 
 function test(name, doc, insert, expected, moved) {
   defTest("replace_inner_" + name, () => {
-    let sliced = insert(insert.tag.a, insert.tag.b)
+    let sliced = insert.sliceBetween(insert.tag.a, insert.tag.b)
     let repl
     for (let left = insert.tag.a, right = insert.tag.b, i = 0, node = sliced;; i++) {
       if (i == left.path.length || i == right.path.length || left.path[i] != right.path[i] ||

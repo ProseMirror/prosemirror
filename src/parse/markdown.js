@@ -2,7 +2,7 @@ import markdownit from "markdown-it"
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmStyle, StrongStyle, LinkStyle, CodeStyle,
-        removeStyle} from "../model"
+        removeStyle, sameStyles} from "../model"
 import {defineSource} from "./index"
 
 export function fromMarkdown(schema, text) {
@@ -18,6 +18,11 @@ export function fromMarkdown(schema, text) {
 defineSource("markdown", fromMarkdown)
 
 const noMarks = []
+
+function maybeMerge(a, b) {
+  if (a.isText && b.isText && sameStyles(a.marks, b.marks))
+    return a.copy(a.text + b.text)
+}
 
 class State {
   constructor(schema, tokens) {
@@ -40,7 +45,7 @@ class State {
   addText(text) {
     let nodes = this.top().content, last = nodes[nodes.length - 1]
     let node = this.schema.text(text, this.marks), merged
-    if (last && (merged = last.maybeMerge(node))) nodes[nodes.length - 1] = merged
+    if (last && (merged = maybeMerge(last, node))) nodes[nodes.length - 1] = merged
     else nodes.push(node)
   }
 

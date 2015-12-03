@@ -42,7 +42,7 @@ class DOMSerializer {
     else if (this.options.renderInlineFlat)
       this.renderInlineFlatInto(node, where)
     else
-      this.renderIndlineInto(node, where)
+      this.renderInlineInto(node, where)
     return where
   }
 
@@ -149,7 +149,7 @@ BlockQuote.prototype.clicked = (_, path, dom, coords) => {
 
 def(BulletList, (node, s) => s.renderAs(node, "ul"))
 
-def(OrderedList, (node, s) => s.renderAs(node, "ol", {start: node.attrs.order}))
+def(OrderedList, (node, s) => s.renderAs(node, "ol", {start: node.attrs.order != "1" && node.attrs.order}))
 
 OrderedList.prototype.clicked = BulletList.prototype.clicked = (_, path, dom, coords) => {
   for (let i = 0; i < dom.childNodes.length; i++) {

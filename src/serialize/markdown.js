@@ -97,22 +97,37 @@ class State {
   }
 
   renderInline(parent) {
-    let active = []
-    parent.forEach(node => {
-      let keep = 0
-      for (; keep < Math.min(active.length, node.marks.length); ++keep)
-        if (!node.marks[keep].eq(active[keep])) break
-      while (keep < active.length)
-        this.text(styleString(active.pop(), false), false)
-      while (active.length < node.marks.length) {
-        let add = node.marks[active.length]
-        active.push(add)
-        this.text(styleString(add, true), false)
+    let stack = []
+    let progress = node => {
+      let marks = node ? node.marks.slice() : []
+      if (stack.length && stack[stack.length - 1].type == "code" &&
+          (!marks.length || marks[marks.length - 1].type != "code")) {
+        this.text("`", false)
+        stack.pop()
       }
-      this.render(node)
-    })
-    for (let i = active.lengh - 1; i >= 0; i--)
-      this.text(styleString(active[i], false), false)
+      for (let j = 0; j < stack.length; j++) {
+        let cur = stack[j], found = false
+        for (let k = 0; k < marks.length; k++) {
+          if (marks[k].eq(stack[j])) {
+            marks.splice(k, 1)
+            found = true
+            break
+          }
+        }
+        if (!found) {
+          this.text(styleString(cur, false), false)
+          stack.splice(j--, 1)
+        }
+      }
+      for (let j = 0; j < marks.length; j++) {
+        let cur = marks[j]
+        stack.push(cur)
+        this.text(styleString(cur, true), false)
+      }
+      if (node) this.render(node)
+    }
+    parent.forEach(progress)
+    progress(null)
   }
 
   renderList(node, delim, firstDelim) {

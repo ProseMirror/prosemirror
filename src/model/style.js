@@ -72,7 +72,7 @@ const empty = []
 export function spanStylesAt(doc, pos) {
   let parent = doc.path(pos.path)
   if (!parent.isTextblock || !parent.size) return empty
-  return parent.chunkBefore(pos.offset || 1).marks
+  return parent.chunkBefore(pos.offset || 1).node.marks
 }
 
 export function rangeHasStyle(doc, from, to, type) {

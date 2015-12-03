@@ -8,12 +8,18 @@ import {Failure} from "./failure"
 
 function t(name, type, a, b, pos) {
   defTest("diff_" + type + "_" + name, () => {
-    let result = (type == "start" ? findDiffStart : findDiffEnd)(a, b)
+    let result
+    if (type == "start") {
+      result = findDiffStart(a.content, b.content)
+    } else {
+      let found = findDiffEnd(a.content, b.content)
+      result = found && found.a
+    }
     if (!pos) {
       if (result) throw new Failure("Unexpectedly found a difference")
     } else {
       if (!result) throw new Failure("Unexpectedly found no difference")
-      cmpStr(result.a, pos)
+      cmpStr(result, pos)
     }
   })
 }
