@@ -1,4 +1,5 @@
 import "./test-pos"
+import "./test-node"
 import "./test-diff"
 import "./test-parse"
 import "./test-dom"

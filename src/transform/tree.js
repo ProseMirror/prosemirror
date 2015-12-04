@@ -24,8 +24,7 @@ export function copyStructure(node, from, to, f, depth = 0) {
 export function copyInline(node, from, to, f) {
   let start = from ? from.offset : 0
   let end = to ? to.offset : node.size
-  let copied = node.slice(0, start).append(node.slice(start, end).map(f)).append(node.slice(end))
-  return node.copy(copied)
+  return node.splice(start, end, node.slice(start, end).map(f))
 }
 
 export function isFlatRange(from, to) {

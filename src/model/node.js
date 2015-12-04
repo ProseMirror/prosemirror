@@ -20,6 +20,8 @@ export class Node {
 
   child(off) { return this.content.child(off) }
 
+  iter(start, end) { return this.content.iter(start, end) }
+
   chunkBefore(off) { return this.content.chunkBefore(off) }
   chunkAfter(off) { return this.content.chunkAfter(off) }
 
@@ -27,8 +29,8 @@ export class Node {
 
   get textContent() { return this.content.textContent }
 
-  get firstChild() { return this.size ? this.child(0) : null }
-  get lastChild() { return this.size ? this.child(this.size - 1) : null }
+  get firstChild() { return this.content.firstChild }
+  get lastChild() { return this.content.lastChild }
 
   sameMarkup(other) {
     return compareMarkup(this.type, other.type, this.attrs, other.attrs)
@@ -86,6 +88,10 @@ export class Node {
     return node
   }
 
+  nodeAfter(pos) {
+    return this.path(pos.path).child(pos.offset)
+  }
+
   pathNodes(path) {
     let nodes = []
     for (var i = 0, node = this;; i++) {
@@ -110,12 +116,12 @@ export class Node {
   }
 
   nodesBetween(from, to, f, path = [], parent = null) {
-    if (f(this, path, from, to, parent) === false) return
+    if (f(this, path, parent) === false) return
     this.content.nodesBetween(from, to, f, path, this)
   }
 
   inlineNodesBetween(from, to, f) {
-    this.nodesBetween(from, to, (node, path, _from, _to, parent) => {
+    this.nodesBetween(from, to, (node, path, parent) => {
       if (node.isInline) {
         let last = path.length - 1
         f(node, path.slice(0, last), path[last], path[last] + node.width, parent)
@@ -134,10 +140,10 @@ export class Node {
   get isText() { return this.type.isText }
 
   toString() {
+    let name = this.type.name
     if (this.content.size)
-      return this.type.name + "(" + this.content.toString() + ")"
-    else
-      return this.type.name
+      name += "(" + this.content.toString() + ")"
+    return wrapMarks(this.marks, name)
   }
 
   toJSON() {
@@ -166,7 +172,7 @@ export class TextNode extends Node {
     this.text = content
   }
 
-  toString() { return JSON.stringify(this.text) }
+  toString() { return wrapMarks(this.marks, JSON.stringify(this.text)) }
 
   get textContent() { return this.text }
 
@@ -175,6 +181,12 @@ export class TextNode extends Node {
   mark(marks) {
     return new TextNode(this.type, this.attrs, this.text, marks)
   }
+}
+
+function wrapMarks(marks, str) {
+  for (let i = marks.length - 1; i >= 0; i--)
+    str = marks[i].type.name + "(" + str + ")"
+  return str
 }
 
 function isEmpty(obj) {

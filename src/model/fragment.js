@@ -1,3 +1,5 @@
+import {sameMarks} from "./mark"
+
 export class Fragment {
   append(other, joinLeft = 0, joinRight = 0) {
     if (!this.size)
@@ -20,8 +22,45 @@ export class Fragment {
     return str
   }
 
+  // FIXME formulate without access to .content
   map(f) { return Fragment.fromArray(this.content.map(f)) }
   some(f) { return this.content.some(f) }
+
+  close(depth, side) {
+    let child = side == "start" ? this.firstChild : this.lastChild
+    let closed = child.close(depth - 1, side)
+    if (closed == child) return this
+    return this.replace(side == "start" ? 0 : this.size - 1, closed)
+  }
+
+  nodesBetween(from, to, f, path, parent) {
+    let moreFrom = from && from.depth > path.length, moreTo = to && to.depth > path.length
+    let start = moreFrom ? from.path[path.length] : from ? from.offset : 0
+    let end = moreTo ? to.path[path.length] + 1 : to ? to.offset : this.size
+    for (let iter = this.iter(start, end), node; node = iter.next();) {
+      let startOffset = iter.offset - node.width
+      path.push(startOffset)
+      node.nodesBetween(moreFrom && startOffset == start ? from : null,
+                        moreTo && iter.offset == end ? to : null,
+                        f, path, parent)
+      path.pop()
+    }
+  }
+
+  sliceBetween(from, to, depth = 0) {
+    let moreFrom = from && from.depth > depth, moreTo = to && to.depth > depth
+    let start = moreFrom ? from.path[depth] : from ? from.offset : 0
+    let end = moreTo ? to.path[depth] + 1 : to ? to.offset : this.size
+    let nodes = []
+    for (let iter = this.iter(start, end), node; node = iter.next();) {
+      let passFrom = moreFrom && (iter.offset - node.width) == start ? from : null
+      let passTo = moreTo && iter.offset == end ? to : null
+      if (passFrom || passTo)
+        node = node.sliceBetween(passFrom, passTo, depth + 1)
+      nodes.push(node)
+    }
+    return new this.constructor(nodes)
+  }
 
   static fromJSON(schema, value) {
     return value ? this.fromArray(value.map(schema.nodeFromJSON)) : emptyFragment
@@ -42,6 +81,20 @@ export class Fragment {
   }
 }
 
+class FlatIterator {
+  constructor(array, pos, end) {
+    this.array = array
+    this.pos = pos
+    this.end = end
+  }
+
+  next() {
+    return this.pos == this.end ? null : this.array[this.pos++]
+  }
+
+  get offset() { return this.pos }
+}
+
 class FlatFragment extends Fragment {
   constructor(content) {
     super()
@@ -52,7 +105,14 @@ class FlatFragment extends Fragment {
   chunkAt(i) { return this.content[i] }
   get chunkLength() { return this.content.length }
 
+  iter(start = 0, end = this.size) {
+    return new FlatIterator(this.content, start, end)
+  }
+
   get size() { return this.content.length }
+
+  get firstChild() { return this.content.length ? this.content[0] : null }
+  get lastChild() { return this.content.length ? this.content[this.content.length - 1] : null }
 
   child(off) {
     if (off < 0 || off >= this.content.length) throw new Error("Offset " + off + " out of range")
@@ -90,47 +150,57 @@ class FlatFragment extends Fragment {
     return Fragment.fromArray(content)
   }
 
-  close(depth, side) {
-    let off = side == "start" ? 0 : this.size - 1, child = this.content[off]
-    let closed = child.close(depth - 1, side)
-    return closed == child ? this : this.replace(off, closed)
-  }
-
-  nodesBetween(from, to, f, path, parent) {
-    let moreFrom = from && from.depth > path.length, moreTo = to && to.depth > path.length
-    let start = moreFrom ? from.path[path.length] : from ? from.offset : 0
-    let end = moreTo ? to.path[path.length] + 1 : to ? to.offset : this.size
-    for (let i = start; i < end; i++) {
-      path.push(i)
-      this.content[i].nodesBetween(moreFrom && i == start ? from : null,
-                                   moreTo && i == end - 1 ? to : null,
-                                   f, path, parent)
-      path.pop()
-    }
-  }
-
-  sliceBetween(from, to, depth = 0) {
-    let moreFrom = from && from.depth > depth, moreTo = to && to.depth > depth
-    let start = moreFrom ? from.path[depth] : from ? from.offset : 0
-    let end = moreTo ? to.path[depth] + 1 : to ? to.offset : this.size
-    let result = []
-    for (let i = start; i < end; i++) {
-      let passFrom = moreFrom && i == start ? from : null
-      let passTo = moreTo && i == end - 1 ? to : null
-      if (passFrom || passTo)
-        result.push(this.content[i].sliceBetween(passFrom, passTo, depth + 1))
-      else
-        result.push(this.content[i])
-    }
-    return new FlatFragment(result)
-  }
-
   toJSON() {
     return this.content.map(n => n.toJSON())
   }
 }
 
 export const emptyFragment = new FlatFragment([])
+
+class TextIterator {
+  constructor(array, startOffset, endOffset) {
+    this.array = array
+    this.offset = startOffset
+    this.pos = -1
+    this.end = endOffset
+  }
+
+  next() {
+    if (this.pos == -1) {
+      let start = this.init()
+      if (start) return start
+    }
+    if (this.offset == this.end) return null
+    let node = this.array[this.pos++], end = this.offset + node.width
+    if (end > this.end) {
+      node = node.copy(node.text.slice(0, this.end - this.offset))
+      this.offset = this.end
+      return node
+    }
+    this.offset = end
+    return node
+  }
+
+  init() {
+    this.pos = 0
+    let offset = 0
+    while (offset < this.offset) {
+      let node = this.array[this.pos++], end = offset + node.width
+      if (end == this.offset) break
+      if (end > this.offset) {
+        let sliceEnd = node.width
+        if (end > this.end) {
+          sliceEnd = this.end - offset
+          end = this.end
+        }
+        node = node.copy(node.text.slice(this.offset - offset, sliceEnd))
+        this.offset = end
+        return node
+      }
+      offset = end
+    }
+  }
+}
 
 class TextFragment extends Fragment {
   constructor(content, size) {
@@ -144,6 +214,13 @@ class TextFragment extends Fragment {
   chunkIndex(elt, start) { return this.content.indexOf(elt, start || 0) }
   chunkAt(i) { return this.content[i] }
   get chunkLength() { return this.content.length }
+
+  get firstChild() { return this.size ? this.content[0] : null }
+  get lastChild() { return this.size ? this.content[this.content.length - 1] : null }
+
+  iter(from = 0, to = this.size) {
+    return new TextIterator(this.content, from, to)
+  }
 
   child(off) {
     if (off < 0 || off >= this.size) throw new Error("Offset " + off + " out of range")
@@ -181,104 +258,36 @@ class TextFragment extends Fragment {
 
   slice(from, to = this.size) {
     if (from == to) return emptyFragment
-    let result = []
-    for (let i = 0, off = 0; off < to; i++) {
-      let child = this.content[i], width = child.width, end = off + width
-      if (end > from) {
-        if (child.isText) {
-          let cutFrom = Math.max(0, from - off), cutTo = Math.min(width, to - off)
-          if (cutFrom == 0 && cutTo == width)
-            result.push(child)
-          else
-            result.push(child.copy(child.text.slice(cutFrom, cutTo)))
-        } else {
-          result.push(child)
-        }
-      }
-      off = end
-    }
-    return new TextFragment(result)
+    let nodes = []
+    for (let iter = this.iter(from, to), n; n = iter.next();) nodes.push(n)
+    return new TextFragment(nodes)
   }
 
   replace(off, node) {
     if (node.isText) throw new Error("Argument to replace should be a non-text node")
-    for (let i = 0, curOff = 0;; i++) {
-      let child = this.content[i]
-      curOff += child.width
-      if (curOff > off) {
-        if (child.isText) throw new Error("Can not replace text content with replace method")
-        let copy = this.content.slice()
-        copy[i] = node
-        return new TextFragment(copy)
-      }
+    let curNode, index
+    for (let curOff = 0; curOff < off; index++) {
+      curNode = this.content[index]
+      curOff += curNode.width
     }
+    if (curNode.isText) throw new Error("Can not replace text content with replace method")
+    let copy = this.content.slice()
+    copy[index] = node
+    return new TextFragment(copy)
   }
 
   appendInner(other, joinLeft, joinRight) {
     let last = this.content.length - 1, content = this.content.slice(0, last)
     let before = this.content[last], after = other.chunkAt(0)
-    if ((before.isText || (joinLeft > 0 && joinRight > 0)) && before.sameMarkup(after)) {
-      if (before.isText)
-        content.push(before.copy(before.text + after.text))
-      else
-        content.push(before.append(after.content, joinLeft - 1, joinRight - 1))
-    } else {
+    let same = before.sameMarkup(after)
+    if (same && before.isText && sameMarks(before.marks, after.marks))
+      content.push(before.copy(before.text + after.text))
+    else if (same && joinLeft > 0 && joinRight > 0)
+      content.push(before.append(after.content, joinLeft - 1, joinRight - 1))
+    else
       content.push(before.close(joinLeft - 1, "end"), after.close(joinRight - 1, "start"))
-    }
     for (let i = 1; i < other.chunkLength; i++) content.push(other.chunkAt(i))
     return Fragment.fromArray(content)
-  }
-
-  close(depth, side) {
-    let off = side == "start" ? 0 : this.content.length - 1, child = this.content[off]
-    let closed = child.close(depth - 1, side)
-    if (closed == child) return this
-    let copy = this.content.slice()
-    copy[off] = closed
-    return new TextFragment(copy)
-  }
-
-  nodesBetween(from, to, f, path, parent) {
-    let moreFrom = from && from.depth > path.length, moreTo = to && to.depth > path.length
-    let start = !from ? 0 : moreFrom ? from.path[path.length] : from.offset
-    let end = !to ? this.size : moreTo ? to.path[path.length] + 1 : to.offset
-    if (start == end) return
-    for (let i = 0, off = 0; off < end; i++) {
-      let child = this.content[i], endOff = off + child.width
-      if (endOff > start) {
-        path.push(off)
-        child.nodesBetween(moreFrom && off <= start ? from : null,
-                           moreTo && endOff >= end ? to : null,
-                           f, path, parent)
-        path.pop()
-      }
-      off = endOff
-    }
-  }
-
-  sliceBetween(from, to, depth = 0) {
-    let moreFrom = from && from.depth > depth, moreTo = to && to.depth > depth
-    let start = moreFrom ? from.path[depth] : from ? from.offset : 0
-    let end = moreTo ? to.path[depth] + 1 : to ? to.offset : this.size
-    let result = []
-    for (let i = 0, off = 0; off < end; i++) {
-      let child = this.content[i], width = child.width, endOff = off + width
-      if (endOff > start) {
-        if (child.isText) {
-          let cutFrom = Math.max(0, start - off), cutTo = Math.min(width, end - off)
-          if (cutFrom > 0 || cutTo < width)
-            child = child.copy(child.text.slice(cutFrom, cutTo))
-        }
-        let passFrom = moreFrom && i == start ? from : null
-        let passTo = moreTo && i == end - 1 ? to : null
-        if (passFrom || passTo)
-          result.push(child.sliceBetween(passFrom, passTo, depth + 1))
-        else
-          result.push(child)
-      }
-      off = endOff
-    }
-    return new TextFragment(result)
   }
 
   toJSON() {
