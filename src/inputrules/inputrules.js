@@ -100,7 +100,7 @@ function getContext(doc, pos) {
   let isCode = parent.type.isCode
   let textBefore = ""
   for (let offset = 0, i = 0; offset < pos.offset;) {
-    let child = parent.chunkAt(i++), size = child.width
+    let child = parent.content.chunkAt(i++), size = child.width
     textBefore += offset + size > pos.offset ? child.text.slice(0, pos.offset - offset) : child.text
     if (offset + size >= pos.offset) {
       if (child.marks.some(st => st.type.isCode))
