@@ -22,9 +22,20 @@ export class Fragment {
     return str
   }
 
-  // FIXME formulate without access to .content
-  map(f) { return Fragment.fromArray(this.content.map(f)) }
-  some(f) { return this.content.some(f) }
+  toArray(from = 0, to = this.size, f) {
+    let result = []
+    for (let iter = this.iter(from, to), n; n = iter.next().value;) result.push(f ? f(n) : n)
+    return result
+  }
+
+  map(f) {
+    return Fragment.fromArray(this.toArray(undefined, undefined, f))
+  }
+
+  some(f) {
+    for (let iter = this.iter(), n; n = iter.next().value;)
+      if (f(n)) return n
+  }
 
   close(depth, side) {
     let child = side == "start" ? this.firstChild : this.lastChild
@@ -37,7 +48,7 @@ export class Fragment {
     let moreFrom = from && from.depth > path.length, moreTo = to && to.depth > path.length
     let start = moreFrom ? from.path[path.length] : from ? from.offset : 0
     let end = moreTo ? to.path[path.length] + 1 : to ? to.offset : this.size
-    for (let iter = this.iter(start, end), node; node = iter.next();) {
+    for (let iter = this.iter(start, end), node; node = iter.next().value;) {
       let startOffset = iter.offset - node.width
       path.push(startOffset)
       node.nodesBetween(moreFrom && startOffset == start ? from : null,
@@ -52,7 +63,7 @@ export class Fragment {
     let start = moreFrom ? from.path[depth] : from ? from.offset : 0
     let end = moreTo ? to.path[depth] + 1 : to ? to.offset : this.size
     let nodes = []
-    for (let iter = this.iter(start, end), node; node = iter.next();) {
+    for (let iter = this.iter(start, end), node; node = iter.next().value;) {
       let passFrom = moreFrom && (iter.offset - node.width) == start ? from : null
       let passTo = moreTo && iter.offset == end ? to : null
       if (passFrom || passTo)
@@ -81,6 +92,8 @@ export class Fragment {
   }
 }
 
+const iterEnd = {done: true}
+
 class FlatIterator {
   constructor(array, pos, end) {
     this.array = array
@@ -89,7 +102,7 @@ class FlatIterator {
   }
 
   next() {
-    return this.pos == this.end ? null : this.array[this.pos++]
+    return this.pos == this.end ? iterEnd : this.array[this.pos++]
   }
 
   get offset() { return this.pos }
@@ -170,7 +183,7 @@ class TextIterator {
       let start = this.init()
       if (start) return start
     }
-    if (this.offset == this.end) return null
+    if (this.offset == this.end) return iterEnd
     let node = this.array[this.pos++], end = this.offset + node.width
     if (end > this.end) {
       node = node.copy(node.text.slice(0, this.end - this.offset))
@@ -256,11 +269,9 @@ class TextFragment extends Fragment {
     }
   }
 
-  slice(from, to = this.size) {
+  slice(from = 0, to = this.size) {
     if (from == to) return emptyFragment
-    let nodes = []
-    for (let iter = this.iter(from, to), n; n = iter.next();) nodes.push(n)
-    return new TextFragment(nodes)
+    return new TextFragment(this.toArray(from, to))
   }
 
   replace(off, node) {
@@ -293,4 +304,9 @@ class TextFragment extends Fragment {
   toJSON() {
     return this.content.map(n => n.toJSON())
   }
+}
+
+if (typeof Symbol != "undefined") {
+  Fragment.prototype[Symbol.iterator] = function() { return this.iter() }
+  FlatIterator.prototype[Symbol.iterator] = TextIterator.prototype[Symbol.iterator] = function() { return this }
 }

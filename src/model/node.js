@@ -45,7 +45,7 @@ export class Node {
   }
 
   // FIXME remove or return a node
-  slice(from, to = this.size) {
+  slice(from, to) {
     return this.content.slice(from, to)
   }
 
@@ -159,12 +159,17 @@ export class Node {
     return obj
   }
 
+  // This is a hack to be able to treat a node object as an iterator result
+  get value() { return this }
+
   static fromJSON(schema, json) {
     let type = schema.nodeType(json.type)
     let content = Fragment.fromJSON(schema, json.content)
     return type.create(json.attrs, content, json.marks && json.marks.map(schema.markFromJSON))
   }
 }
+
+if (typeof Symbol != "undefined") Node.prototype[Symbol.iterator] = function() { return this.iter() }
 
 export class TextNode extends Node {
   constructor(type, attrs, content, marks) {

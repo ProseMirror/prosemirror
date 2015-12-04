@@ -20,8 +20,8 @@ export function cmpNode(a, b, comment) {
     if (a.text != null && a.text != b.text) raise("different text", path)
     if (a.marks && !sameMarks(a.marks, b.marks)) raise("different marks", path)
 
-    for (let iA = a.iter(), iB = b.iter(), cA, cB; (cA = iA.next()) && (cB = iB.next());)
-      inner(cA, cB, path + "." + (iA.offset - cA.size))
+    for (let iA = a.iter(), iB = b.iter(), cA, cB; cA = iA.next().value, cB = iB.next().value;)
+      inner(cA, cB, path + "." + (iA.offset - cA.width))
   }
   inner(a, b, "doc")
 }
