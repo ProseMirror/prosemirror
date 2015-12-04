@@ -2,17 +2,15 @@ import {Pos} from "./pos"
 import {sameMarks} from "./mark"
 
 export function findDiffStart(a, b, path = []) {
-  let offset = 0
-  for (let i = 0;; i++) {
-    if (i == a.chunkLength || i == b.chunkLength) {
-      if (a.chunkLength == b.chunkLength) return null
+  let iA = a.iter(), iB = b.iter(), offset = 0
+  for (;;) {
+    if (iA.atEnd() || iB.atEnd()) {
+      if (a.size == b.size) return null
       break
     }
-    let childA = a.chunkAt(i), childB = b.chunkAt(i)
-    if (childA == childB) {
-      offset += childA.width
-      continue
-    }
+
+    let childA = iA.next(), childB = iB.next()
+    if (childA == childB) { offset += childA.width; continue }
 
     if (!childA.sameMarkup(childB) || !sameMarks(childA.marks, childB.marks)) break
 
@@ -34,15 +32,15 @@ export function findDiffStart(a, b, path = []) {
 }
 
 export function findDiffEnd(a, b, pathA = [], pathB = []) {
-  let iA = a.chunkLength, iB = b.chunkLength
+  let iA = a.reverseIter(), iB = b.reverseIter()
   let offA = a.size, offB = b.size
 
-  for (;; iA--, iB--) {
-    if (iA == 0 || iB == 0) {
-      if (iA == iB) return null
+  for (;;) {
+    if (iA.atEnd() || iB.atEnd()) {
+      if (a.size == b.size) return null
       break
     }
-    let childA = a.chunkAt(iA - 1), childB = b.chunkAt(iB - 1)
+    let childA = iA.next(), childB = iB.next()
     if (childA == childB) {
       offA -= childA.width; offB -= childB.width
       continue

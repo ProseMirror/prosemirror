@@ -11,8 +11,7 @@ export class Fragment {
 
   get textContent() {
     let text = ""
-    for (let i = 0; i < this.chunkLength; i++)
-      text += this.chunkAt(i).textContent
+    this.forEach(n => text += n.textContent)
     return text
   }
 
@@ -101,11 +100,19 @@ class FlatIterator {
     this.end = end
   }
 
+  atEnd() { return this.pos == this.end }
+
   next() {
     return this.pos == this.end ? iterEnd : this.array[this.pos++]
   }
 
   get offset() { return this.pos }
+}
+
+class ReverseFlatIterator extends FlatIterator {
+  next() {
+    return this.pos == this.end ? iterEnd : this.array[--this.pos]
+  }
 }
 
 class FlatFragment extends Fragment {
@@ -120,6 +127,9 @@ class FlatFragment extends Fragment {
 
   iter(start = 0, end = this.size) {
     return new FlatIterator(this.content, start, end)
+  }
+  reverseIter(start = this.size, end = 0) {
+    return new ReverseFlatIterator(this.content, start, end)
   }
 
   get size() { return this.content.length }
@@ -154,13 +164,12 @@ class FlatFragment extends Fragment {
 
   appendInner(other, joinLeft, joinRight) {
     let last = this.content.length - 1, content = this.content.slice(0, last)
-    let before = this.content[last], after = other.child(0)
+    let before = this.content[last], after = other.firstChild
     if (joinLeft > 0 && joinRight > 0 && before.sameMarkup(after))
       content.push(before.append(after.content, joinLeft - 1, joinRight - 1))
     else
       content.push(before.close(joinLeft - 1, "end"), after.close(joinRight - 1, "start"))
-    for (let i = 1; i < other.chunkLength; i++) content.push(other.chunkAt(i))
-    return Fragment.fromArray(content)
+    return Fragment.fromArray(content.concat(other.toArray(after.width)))
   }
 
   toJSON() {
@@ -171,20 +180,25 @@ class FlatFragment extends Fragment {
 export const emptyFragment = new FlatFragment([])
 
 class TextIterator {
-  constructor(array, startOffset, endOffset) {
-    this.array = array
+  constructor(fragment, startOffset, endOffset) {
+    this.frag = fragment
     this.offset = startOffset
     this.pos = -1
     this.end = endOffset
   }
+
+  atEnd() { return this.offset == this.end }
 
   next() {
     if (this.pos == -1) {
       let start = this.init()
       if (start) return start
     }
-    if (this.offset == this.end) return iterEnd
-    let node = this.array[this.pos++], end = this.offset + node.width
+    return this.offset == this.end ? iterEnd : this.advance()
+  }
+
+  advance() {
+    let node = this.frag.content[this.pos++], end = this.offset + node.width
     if (end > this.end) {
       node = node.copy(node.text.slice(0, this.end - this.offset))
       this.offset = this.end
@@ -198,7 +212,7 @@ class TextIterator {
     this.pos = 0
     let offset = 0
     while (offset < this.offset) {
-      let node = this.array[this.pos++], end = offset + node.width
+      let node = this.frag.content[this.pos++], end = offset + node.width
       if (end == this.offset) break
       if (end > this.offset) {
         let sliceEnd = node.width
@@ -207,6 +221,39 @@ class TextIterator {
           end = this.end
         }
         node = node.copy(node.text.slice(this.offset - offset, sliceEnd))
+        this.offset = end
+        return node
+      }
+      offset = end
+    }
+  }
+}
+
+class ReverseTextIterator extends TextIterator {
+  advance() {
+    let node = this.frag.content[--this.pos], end = this.offset - node.width
+    if (end < this.end) {
+      node = node.copy(node.text.slice(this.end - end))
+      this.offset = this.end
+      return node
+    }
+    this.offset = end
+    return node
+  }
+
+  init() {
+    this.pos = this.frag.content.length
+    let offset = this.frag.size
+    while (offset > this.offset) {
+      let node = this.frag.content[--this.pos], end = offset - node.width
+      if (end == this.offset) break
+      if (end < this.offset) {
+        if (end < this.end) {
+          node = node.copy(node.text.slice(this.end - end, this.offset - end))
+          end = this.end
+        } else {
+          node = node.copy(node.text.slice(0, this.offset - end))
+        }
         this.offset = end
         return node
       }
@@ -232,7 +279,10 @@ class TextFragment extends Fragment {
   get lastChild() { return this.size ? this.content[this.content.length - 1] : null }
 
   iter(from = 0, to = this.size) {
-    return new TextIterator(this.content, from, to)
+    return new TextIterator(this, from, to)
+  }
+  reverseIter(from = this.size, to = 0) {
+    return new ReverseTextIterator(this, from, to)
   }
 
   child(off) {
@@ -289,7 +339,7 @@ class TextFragment extends Fragment {
 
   appendInner(other, joinLeft, joinRight) {
     let last = this.content.length - 1, content = this.content.slice(0, last)
-    let before = this.content[last], after = other.chunkAt(0)
+    let before = this.content[last], after = other.firstChild
     let same = before.sameMarkup(after)
     if (same && before.isText && sameMarks(before.marks, after.marks))
       content.push(before.copy(before.text + after.text))
@@ -297,8 +347,7 @@ class TextFragment extends Fragment {
       content.push(before.append(after.content, joinLeft - 1, joinRight - 1))
     else
       content.push(before.close(joinLeft - 1, "end"), after.close(joinRight - 1, "start"))
-    for (let i = 1; i < other.chunkLength; i++) content.push(other.chunkAt(i))
-    return Fragment.fromArray(content)
+    return Fragment.fromArray(content.concat(other.toArray(after.width)))
   }
 
   toJSON() {

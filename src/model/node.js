@@ -21,6 +21,7 @@ export class Node {
   child(off) { return this.content.child(off) }
 
   iter(start, end) { return this.content.iter(start, end) }
+  reverseIter(start, end) { return this.content.reverseIter(start, end) }
 
   chunkBefore(off) { return this.content.chunkBefore(off) }
   chunkAfter(off) { return this.content.chunkAfter(off) }
