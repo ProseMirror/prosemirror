@@ -1,4 +1,4 @@
-import {Pos} from "../model"
+import {Pos, sameMarks} from "../model"
 import {toDOM, renderNodeToDOM} from "../serialize/dom"
 
 import {elt} from "../dom"
@@ -72,13 +72,17 @@ export function draw(pm, doc) {
   pm.content.appendChild(toDOM(doc, options([], pm.ranges.activeRangeTracker())))
 }
 
-function deleteNextNodes(parent, at, amount) {
-  for (let i = 0; i < amount; i++) {
-    let prev = at
-    at = at.nextSibling
-    parent.removeChild(prev)
-  }
-  return at
+// FIXME also deal with trailing empty text node somehow, or try to
+// generalize the updating extra kludge nodes
+function adjustTrailingBR(dom, node) {
+  if (!node.isTextblock) return
+  let needsBR = node.size == 0 ||
+      node.lastChild.type == node.type.schema.nodes.hard_break
+  let last = dom.lastChild, hasBR = last && last.nodeType == 1 && last.hasAttribute("pm-force-br")
+  if (needsBR && !hasBR)
+    dom.appendChild(elt("br", {"pm-force-br": "true"}))
+  else if (!needsBR && hasBR)
+    dom.removeChild(last)
 }
 
 export function redraw(pm, dirty, doc, prev) {
@@ -86,57 +90,40 @@ export function redraw(pm, dirty, doc, prev) {
   let path = []
 
   function scan(dom, node, prev) {
-    let status = [], inPrev = [], inNode = []
-    for (let i = 0, j = 0; i < prev.content.chunkLength && j < node.content.chunkLength; i++) {
-      let cur = prev.content.chunkAt(i), dirtyStatus = dirty.get(cur)
-      status.push(dirtyStatus)
-      let matching = dirtyStatus ? -1 : node.content.chunkIndex(cur, j)
-      if (matching > -1) {
-        inNode[i] = matching
-        inPrev[matching] = i
-        j = matching + 1
-      }
-    }
+    adjustTrailingBR(dom, node)
 
-    if (node.isTextblock) {
-      let needsBR = node.size == 0 ||
-          node.lastChild.type == node.type.schema.nodes.hard_break
-      let last = dom.lastChild, hasBR = last && last.nodeType == 1 && last.hasAttribute("pm-force-br")
-      if (needsBR && !hasBR)
-        dom.appendChild(elt("br", {"pm-force-br": "true"}))
-      else if (!needsBR && hasBR)
-        dom.removeChild(last)
-    }
+    let iNode = node.iter(), iPrev = prev.iter(), prevChild = iPrev.next().value
+    let domPos = dom.firstChild
 
-    let domPos = dom.firstChild, prevIndex = 0, index = 0
-    let textblock = node.isTextblock
-    node.forEach((node, offset) => {
-      if (!textblock) path.push(offset)
-      let found = inPrev[index]
-      let nodeLeft = true
-      if (found != null) {
-        domPos = deleteNextNodes(dom, domPos, found - prevIndex)
-        prevIndex = found
-      } else if (node && prevIndex < prev.content.chunkLength && inNode[prevIndex] == null &&
-                 status[prevIndex] != 2 && node.sameMarkup(prev.content.chunkAt(prevIndex))) {
-        scan(domPos, node, prev.content.chunkAt(prevIndex))
+    for (let child; child = iNode.next().value;) {
+      let usePrevChild, offset = iNode.offset - child.width
+      if (child == prevChild && !dirty.get(prevChild)) {
+        usePrevChild = true
+      } else if (prevChild && child.sameMarkup(prevChild) && !child.isText &&
+                 sameMarks(child.marks, prevChild.marks) && dirty.get(prevChild) != 2) {
+        usePrevChild = true
+        scan(domPos, child, prevChild)
       } else {
-        let rendered = renderNodeToDOM(node, options(path, ranges), offset)
+        let rendered = renderNodeToDOM(child, options(path, ranges), offset)
         dom.insertBefore(rendered, domPos)
-        nodeLeft = false
+        usePrevChild = false
       }
-      if (nodeLeft) {
-        if (textblock) // FIXME use path for inline nodes as well
-          domPos.setAttribute("pm-span", offset + "-" + (offset + node.width))
+      if (usePrevChild) {
+        if (node.isTextblock) // FIXME use path for inline nodes as well
+          domPos.setAttribute("pm-span", offset + "-" + iNode.offset)
         else
           domPos.setAttribute("pm-path", offset)
         domPos = domPos.nextSibling
-        prevIndex++
+        prevChild = iPrev.next().value
       }
-      if (!textblock) path.pop()
-      ++index
-    })
-    deleteNextNodes(dom, domPos, prev.content.chunkLength - prevIndex)
+    }
+
+    while (prevChild) {
+      let rem = domPos
+      domPos = domPos.nextSibling
+      dom.removeChild(rem)
+      prevChild = iPrev.next().value
+    }
   }
   scan(pm.content, doc, prev)
 }

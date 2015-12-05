@@ -33,7 +33,7 @@ export class Node {
   get firstChild() { return this.content.firstChild }
   get lastChild() { return this.content.lastChild }
 
-  sameMarkup(other) {
+  sameMarkup(other) { // FIXME also compare marks?
     return compareMarkup(this.type, other.type, this.attrs, other.attrs)
   }
 
