@@ -139,7 +139,7 @@ insertCSS(`
   transition: left 0.4s ease-out, top 0.4s ease-out, opacity 0.2s;
   opacity: 0;
 
-  z-index: 5;
+  z-index: 10;
 }
 
 .ProseMirror-tooltip-pointer-above {
