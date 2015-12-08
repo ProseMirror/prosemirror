@@ -85,6 +85,17 @@ function adjustTrailingBR(dom, node) {
     dom.removeChild(last)
 }
 
+function findNodeIn(iter, node) {
+  let copy = iter.copy()
+  for (let child; child = copy.next().value;) if (child == node) return child
+}
+
+function movePast(dom) {
+  let next = dom.nextSibling
+  dom.parentNode.removeChild(dom)
+  return next
+}
+
 export function redraw(pm, dirty, doc, prev) {
   let ranges = pm.ranges.activeRangeTracker()
   let path = []
@@ -92,37 +103,46 @@ export function redraw(pm, dirty, doc, prev) {
   function scan(dom, node, prev) {
     adjustTrailingBR(dom, node)
 
-    let iNode = node.iter(), iPrev = prev.iter(), prevChild = iPrev.next().value
+    let iNode = node.iter(), iPrev = prev.iter(), pChild = iPrev.next().value
     let domPos = dom.firstChild
 
     for (let child; child = iNode.next().value;) {
-      let usePrevChild, offset = iNode.offset - child.width
-      if (child == prevChild && !dirty.get(prevChild)) {
-        usePrevChild = true
-      } else if (prevChild && child.sameMarkup(prevChild) && !child.isText &&
-                 sameMarks(child.marks, prevChild.marks) && dirty.get(prevChild) != 2) {
-        usePrevChild = true
-        scan(domPos, child, prevChild)
+      let offset = iNode.offset - child.width, matching, reuseDOM
+
+      if (pChild == child) {
+        matching = pChild
+      } else if (matching = findNodeIn(iPrev, child)) {
+        while (pChild != matching) {
+          pChild = iPrev.next().value
+          domPos = movePast(domPos)
+        }
+      }
+
+      if (matching && !dirty.get(matching)) {
+        reuseDOM = true
+      } else if (pChild && child.sameMarkup(pChild) && !child.isText &&
+                 sameMarks(child.marks, pChild.marks) && dirty.get(pChild) != 2) {
+        reuseDOM = true
+        scan(domPos, child, pChild)
       } else {
         let rendered = renderNodeToDOM(child, options(path, ranges), offset)
         dom.insertBefore(rendered, domPos)
-        usePrevChild = false
+        reuseDOM = false
       }
-      if (usePrevChild) {
+
+      if (reuseDOM) {
         if (node.isTextblock) // FIXME use path for inline nodes as well
           domPos.setAttribute("pm-span", offset + "-" + iNode.offset)
         else
           domPos.setAttribute("pm-path", offset)
         domPos = domPos.nextSibling
-        prevChild = iPrev.next().value
+        pChild = iPrev.next().value
       }
     }
 
-    while (prevChild) {
-      let rem = domPos
-      domPos = domPos.nextSibling
-      dom.removeChild(rem)
-      prevChild = iPrev.next().value
+    while (pChild) {
+      domPos = movePast(domPos)
+      pChild = iPrev.next().value
     }
   }
   scan(pm.content, doc, prev)

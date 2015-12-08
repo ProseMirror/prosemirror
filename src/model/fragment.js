@@ -100,6 +100,10 @@ class FlatIterator {
     this.end = end
   }
 
+  copy() {
+    return new this.constructor(this.array, this.pos, this.end)
+  }
+
   atEnd() { return this.pos == this.end }
 
   next() {
@@ -180,28 +184,32 @@ class FlatFragment extends Fragment {
 export const emptyFragment = new FlatFragment([])
 
 class TextIterator {
-  constructor(fragment, startOffset, endOffset) {
+  constructor(fragment, startOffset, endOffset, pos = -1) {
     this.frag = fragment
     this.offset = startOffset
-    this.pos = -1
-    this.end = endOffset
+    this.pos = pos
+    this.endOffset = endOffset
   }
 
-  atEnd() { return this.offset == this.end }
+  copy() {
+    return new this.constructor(this.frag, this.offset, this.endOffset, this.pos)
+  }
+
+  atEnd() { return this.offset == this.endOffset }
 
   next() {
     if (this.pos == -1) {
       let start = this.init()
       if (start) return start
     }
-    return this.offset == this.end ? iterEnd : this.advance()
+    return this.offset == this.endOffset ? iterEnd : this.advance()
   }
 
   advance() {
     let node = this.frag.content[this.pos++], end = this.offset + node.width
-    if (end > this.end) {
-      node = node.copy(node.text.slice(0, this.end - this.offset))
-      this.offset = this.end
+    if (end > this.endOffset) {
+      node = node.copy(node.text.slice(0, this.endOffset - this.offset))
+      this.offset = this.endOffset
       return node
     }
     this.offset = end
@@ -216,9 +224,9 @@ class TextIterator {
       if (end == this.offset) break
       if (end > this.offset) {
         let sliceEnd = node.width
-        if (end > this.end) {
-          sliceEnd = this.end - offset
-          end = this.end
+        if (end > this.endOffset) {
+          sliceEnd = this.endOffset - offset
+          end = this.endOffset
         }
         node = node.copy(node.text.slice(this.offset - offset, sliceEnd))
         this.offset = end
@@ -232,9 +240,9 @@ class TextIterator {
 class ReverseTextIterator extends TextIterator {
   advance() {
     let node = this.frag.content[--this.pos], end = this.offset - node.width
-    if (end < this.end) {
-      node = node.copy(node.text.slice(this.end - end))
-      this.offset = this.end
+    if (end < this.endOffset) {
+      node = node.copy(node.text.slice(this.endOffset - end))
+      this.offset = this.endOffset
       return node
     }
     this.offset = end
@@ -248,9 +256,9 @@ class ReverseTextIterator extends TextIterator {
       let node = this.frag.content[--this.pos], end = offset - node.width
       if (end == this.offset) break
       if (end < this.offset) {
-        if (end < this.end) {
-          node = node.copy(node.text.slice(this.end - end, this.offset - end))
-          end = this.end
+        if (end < this.endOffset) {
+          node = node.copy(node.text.slice(this.endOffset - end, this.offset - end))
+          end = this.endOffset
         } else {
           node = node.copy(node.text.slice(0, this.offset - end))
         }
