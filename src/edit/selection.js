@@ -246,52 +246,61 @@ export class TextSelection extends Selection {
   }
 }
 
-function pathFromNode(node) {
+function pathFromDOM(node) {
   let path = []
   for (;;) {
-    let attr = node.getAttribute("pm-path")
+    let attr = node.getAttribute("pm-offset")
     if (!attr) return path
     path.unshift(+attr)
     node = node.parentNode
   }
 }
 
-function posFromDOMInner(pm, node, domOffset, loose) {
+function widthFromDOM(dom) {
+  let attr = dom.getAttribute("pm-leaf")
+  return attr && attr != "true" ? +attr : 1
+}
+
+function posFromDOMInner(pm, dom, domOffset, loose) {
   if (!loose && pm.operation && pm.doc != pm.operation.doc)
     throw new Error("Fetching a position from an outdated DOM structure")
 
   let extraOffset = 0, tag
   for (;;) {
-    if (node.nodeType == 3)
+    let adjust = 0
+    if (dom.nodeType == 3) {
       extraOffset += domOffset
-    else if (node.hasAttribute("pm-path") || node == pm.content)
+    } else if (dom.hasAttribute("pm-offset") || dom == pm.content) {
       break
-    else if (tag = node.getAttribute("pm-span-offset"))
+    } else if (tag = dom.getAttribute("pm-inner-offset")) {
       extraOffset += +tag
+      adjust = -1
+    } else if (domOffset && domOffset == dom.childNodes.length) {
+      adjust = 1
+    }
 
-    let parent = node.parentNode
-    domOffset = Array.prototype.indexOf.call(parent.childNodes, node) +
-      (node.nodeType != 3 && domOffset == node.childNodes.length ? 1 : 0)
-    node = parent
+    let parent = dom.parentNode
+    domOffset = adjust < 0 ? 0 : Array.prototype.indexOf.call(parent.childNodes, dom) + adjust
+    dom = parent
   }
+
+  let path = pathFromDOM(dom)
+  if (dom.hasAttribute("pm-leaf"))
+    return Pos.from(path, extraOffset + (domOffset ? 1 : 0))
 
   let offset = 0
   for (let i = domOffset - 1; i >= 0; i--) {
-    let child = node.childNodes[i]
+    let child = dom.childNodes[i]
     if (child.nodeType == 3) {
       if (loose) extraOffset += child.nodeValue.length
-    } else if (tag = child.getAttribute("pm-span")) {
-      offset = parseSpan(tag).to
+    } else if (tag = child.getAttribute("pm-offset")) {
+      offset = +tag + widthFromDOM(child)
       break
-    } else if (tag = child.getAttribute("pm-path")) {
-      offset = +tag + 1
-      extraOffset = 0
-      break
-    } else if (loose) {
+    } else if (loose && !child.hasAttribute("pm-ignore")) {
       extraOffset += child.textContent.length
     }
   }
-  return new Pos(pathFromNode(node), offset + extraOffset)
+  return new Pos(path, offset + extraOffset)
 }
 
 export function posFromDOM(pm, node, offset) {
@@ -313,11 +322,11 @@ export function findByPath(node, n, fromEnd) {
   for (let ch = fromEnd ? node.lastChild : node.firstChild; ch;
        ch = fromEnd ? ch.previousSibling : ch.nextSibling) {
     if (ch.nodeType != 1) continue
-    let path = ch.getAttribute("pm-path")
-    if (!path) {
+    let offset = ch.getAttribute("pm-offset")
+    if (!offset) {
       let found = findByPath(ch, n)
       if (found) return found
-    } else if (+path == n) {
+    } else if (+offset == n) {
       return ch
     }
   }
@@ -332,22 +341,13 @@ export function resolvePath(parent, path) {
   return node
 }
 
-function parseSpan(span) {
-  let [_, from, to] = /^(\d+)-(\d+)$/.exec(span)
-  return {from: +from, to: +to}
-}
-
 function findByOffset(node, offset, after) {
   function search(node) {
     for (let ch = node.firstChild, i = 0, attr; ch; ch = ch.nextSibling, i++) {
       if (ch.nodeType != 1) continue
-      if (attr = ch.getAttribute("pm-span")) {
-        let {from, to} = parseSpan(attr)
-        if (after ? from == offset : to >= offset)
-          return {node: ch, offset: i, innerOffset: offset - from}
-      } else if (attr = ch.getAttribute("pm-path")) {
-        let diff = offset - +attr
-        if (diff == 0 || (after && diff == 1))
+      if (attr = ch.getAttribute("pm-offset")) {
+        let diff = offset - +attr, width = widthFromDOM(ch)
+        if (diff >= 0 && (after ? diff <= width : diff < width))
           return {node: ch, offset: i, innerOffset: diff}
       } else {
         let result = search(ch)
@@ -363,11 +363,11 @@ function leafAt(node, offset) {
     let child = node.firstChild
     if (!child) return {node, offset}
     if (child.nodeType != 1) return {node: child, offset}
-    if (child.hasAttribute("pm-span-offset")) {
+    if (child.hasAttribute("pm-inner-offset")) {
       let nodeOffset = 0
       for (;;) {
         let nextSib = child.nextSibling, nextOffset
-        if (!nextSib || (nextOffset = +nextSib.getAttribute("pm-span-offset")) >= offset) break
+        if (!nextSib || (nextOffset = +nextSib.getAttribute("pm-inner-offset")) >= offset) break
         child = nextSib
         nodeOffset = nextOffset
       }
@@ -385,10 +385,10 @@ function leafAt(node, offset) {
  * @return {Object}     The DOM node and character offset inside the node.
  */
 function DOMFromPos(parent, pos) {
-  let node = resolvePath(parent, pos.path)
-  let found = findByOffset(node, pos.offset), inner
-  if (!found) return {node: node, offset: 0}
-  if (found.node.hasAttribute("pm-span-atom") || !(inner = leafAt(found.node, found.innerOffset)))
+  let dom = resolvePath(parent, pos.path)
+  let found = findByOffset(dom, pos.offset, true), inner
+  if (!found) return {node: dom, offset: 0}
+  if (found.node.getAttribute("pm-leaf") == "true" || !(inner = leafAt(found.node, found.innerOffset)))
     return {node: found.node.parentNode, offset: found.offset + (found.innerOffset ? 1 : 0)}
   else
     return inner
@@ -580,8 +580,8 @@ export function findSelectionAtEnd(node, path = [], text) {
 
 export function selectableNodeAbove(pm, dom, coords, liberal) {
   for (; dom && dom != pm.content; dom = dom.parentNode) {
-    if (dom.hasAttribute("pm-path")) {
-      let path = pathFromNode(dom)
+    if (dom.hasAttribute("pm-offset")) {
+      let path = pathFromDOM(dom)
       let node = pm.doc.path(path)
       if (node.type.clicked) {
         let result = node.type.clicked(node, path, dom, coords)
@@ -591,10 +591,6 @@ export function selectableNodeAbove(pm, dom, coords, liberal) {
       if ((liberal || node.type.contains == null) && node.type.selectable)
         return Pos.from(path)
       return null
-    } else if (dom.hasAttribute("pm-span-atom")) {
-      let path = pathFromNode(dom.parentNode)
-      let parent = pm.doc.path(path), span = parseSpan(dom.getAttribute("pm-span"))
-      return parent.child(span.from).type.selectable ? new Pos(path, span.from) : null
     }
   }
 }

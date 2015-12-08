@@ -9,11 +9,12 @@ import {DIRTY_REDRAW} from "./main"
 function options(path, ranges) {
   return {
     onRender(node, dom, offset) {
-      if (node.type.contains == null)
+      if (node.type.contains == null) {
         dom.contentEditable = false
+        if (node.isBlock) dom.setAttribute("pm-leaf", "true")
+      }
       if (node.isBlock && offset != null)
-        dom.setAttribute("pm-path", offset)
-
+        dom.setAttribute("pm-offset", offset)
       if (node.isTextblock)
         adjustTrailingHacks(dom, node)
 
@@ -36,9 +37,9 @@ function options(path, ranges) {
                                : inner.parentNode.appendChild(elt("span", null, inner))
       }
 
-      dom.setAttribute("pm-span", offset + "-" + end.offset)
-      if (!node.isText)
-        dom.setAttribute("pm-span-atom", "true")
+      dom.setAttribute("pm-offset", offset)
+      if (node.type.contains == null)
+        dom.setAttribute("pm-leaf", node.isText ? node.width : "true")
 
       let inlineOffset = 0
       while (nextCut) {
@@ -46,12 +47,12 @@ function options(path, ranges) {
         let split = splitSpan(wrapped, size)
         if (ranges.current.length)
           split.className = ranges.current.join(" ")
-        split.setAttribute("pm-span-offset", inlineOffset)
+        split.setAttribute("pm-inner-offset", inlineOffset)
         inlineOffset += size
         offset += size
         ranges.advanceTo(new Pos(path, offset))
         if (!(nextCut = ranges.nextChangeBefore(end)))
-          wrapped.setAttribute("pm-span-offset", inlineOffset)
+          wrapped.setAttribute("pm-inner-offset", inlineOffset)
       }
 
       if (ranges.current.length)
@@ -130,11 +131,7 @@ export function redraw(pm, dirty, doc, prev) {
       }
 
       if (reuseDOM) {
-        if (node.isTextblock) // FIXME use path for inline nodes as well
-          domPos.setAttribute("pm-span", offset + "-" + iNode.offset)
-        else
-          domPos.setAttribute("pm-path", offset)
-
+        domPos.setAttribute("pm-offset", offset)
         domPos = domPos.nextSibling
         pChild = iPrev.next().value
       }

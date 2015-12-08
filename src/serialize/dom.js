@@ -150,7 +150,7 @@ def(OrderedList, (node, s) => s.renderAs(node, "ol", {start: node.attrs.order !=
 OrderedList.prototype.clicked = BulletList.prototype.clicked = (_, path, dom, coords) => {
   for (let i = 0; i < dom.childNodes.length; i++) {
     let child = dom.childNodes[i]
-    if (!child.hasAttribute("pm-path")) continue
+    if (!child.hasAttribute("pm-offset")) continue
     let childBox = child.getBoundingClientRect()
     if (coords.left > childBox.left - 2) return null
     if (childBox.top <= coords.top && childBox.bottom >= coords.top)
