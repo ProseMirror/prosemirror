@@ -108,6 +108,7 @@ export function redraw(pm, dirty, doc, prev) {
 
     for (let child; child = iNode.next().value;) {
       let offset = iNode.offset - child.width, matching, reuseDOM
+      if (!node.isTextblock) path.push(offset)
 
       if (pChild == child) {
         matching = pChild
@@ -138,6 +139,7 @@ export function redraw(pm, dirty, doc, prev) {
         domPos = domPos.nextSibling
         pChild = iPrev.next().value
       }
+      if (!node.isTextblock) path.pop()
     }
 
     while (pChild) {

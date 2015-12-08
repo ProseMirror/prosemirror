@@ -125,10 +125,6 @@ class FlatFragment extends Fragment {
     this.content = content
   }
 
-  chunkIndex(elt, start) { return this.content.indexOf(elt, start || 0) }
-  chunkAt(i) { return this.content[i] }
-  get chunkLength() { return this.content.length }
-
   iter(start = 0, end = this.size) {
     return new FlatIterator(this.content, start, end)
   }
@@ -278,10 +274,6 @@ class TextFragment extends Fragment {
     if (size == null) for (let i = 0; i < content.length; i++)
       this.size += content[i].width
   }
-
-  chunkIndex(elt, start) { return this.content.indexOf(elt, start || 0) }
-  chunkAt(i) { return this.content[i] }
-  get chunkLength() { return this.content.length }
 
   get firstChild() { return this.size ? this.content[0] : null }
   get lastChild() { return this.size ? this.content[this.content.length - 1] : null }
