@@ -603,6 +603,7 @@ export function verticalMotionLeavesTextblock(pm, pos, dir) {
   let dom = resolvePath(pm.content, pos.path)
   let coords = coordsAtPos(pm, pos)
   for (let child = dom.firstChild; child; child = child.nextSibling) {
+    if (child.nodeType != 1) continue
     let boxes = child.getClientRects()
     for (let i = 0; i < boxes.length; i++) {
       let box = boxes[i]

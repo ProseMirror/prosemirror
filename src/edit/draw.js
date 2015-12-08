@@ -3,17 +3,19 @@ import {toDOM, renderNodeToDOM} from "../serialize/dom"
 
 import {elt} from "../dom"
 
-const nonEditable = {html_block: true, html_tag: true, horizontal_rule: true}
-
 // FIXME clean up threading of path and offset, maybe remove from DOM renderer entirely
 
 function options(path, ranges) {
   return {
     onRender(node, dom, offset) {
-      if (!node.isInline && offset != null)
-        dom.setAttribute("pm-path", offset)
-      if (nonEditable.hasOwnProperty(node.type.name))
+      if (node.type.contains == null)
         dom.contentEditable = false
+      if (node.isBlock && offset != null)
+        dom.setAttribute("pm-path", offset)
+
+      if (node.isTextblock)
+        adjustTrailingHacks(dom, node)
+
       return dom
     },
     renderInlineFlat(node, dom, offset) {
@@ -55,8 +57,7 @@ function options(path, ranges) {
         wrapped.className = ranges.current.join(" ")
       return dom
     },
-    document: document,
-    path: path
+    document, path
   }
 }
 
@@ -72,17 +73,21 @@ export function draw(pm, doc) {
   pm.content.appendChild(toDOM(doc, options([], pm.ranges.activeRangeTracker())))
 }
 
-// FIXME also deal with trailing empty text node somehow, or try to
-// generalize the updating extra kludge nodes
-function adjustTrailingBR(dom, node) {
-  if (!node.isTextblock) return
+function adjustTrailingHacks(dom, node) {
+  let last = dom.lastChild
+  if (last && last.nodeType == 3 && last.nodeValue == "") {
+    dom.removeChild(last)
+    last = dom.lastChild
+  }
   let needsBR = node.size == 0 ||
       node.lastChild.type == node.type.schema.nodes.hard_break
-  let last = dom.lastChild, hasBR = last && last.nodeType == 1 && last.hasAttribute("pm-force-br")
+  let hasBR = last && last.nodeType == 1 && last.hasAttribute("pm-force-br")
   if (needsBR && !hasBR)
     dom.appendChild(elt("br", {"pm-force-br": "true"}))
   else if (!needsBR && hasBR)
     dom.removeChild(last)
+  if (!needsBR && last && last.contentEditable == "false")
+    dom.appendChild(document.createTextNode(""))
 }
 
 function findNodeIn(iter, node) {
@@ -97,18 +102,15 @@ function movePast(dom) {
 }
 
 export function redraw(pm, dirty, doc, prev) {
-  let ranges = pm.ranges.activeRangeTracker()
-  let path = []
+  let opts = options([], pm.ranges.activeRangeTracker())
 
   function scan(dom, node, prev) {
-    adjustTrailingBR(dom, node)
-
     let iNode = node.iter(), iPrev = prev.iter(), pChild = iPrev.next().value
     let domPos = dom.firstChild
 
     for (let child; child = iNode.next().value;) {
       let offset = iNode.offset - child.width, matching, reuseDOM
-      if (!node.isTextblock) path.push(offset)
+      if (!node.isTextblock) opts.path.push(offset)
 
       if (pChild == child) {
         matching = pChild
@@ -125,7 +127,7 @@ export function redraw(pm, dirty, doc, prev) {
         reuseDOM = true
         scan(domPos, child, pChild)
       } else {
-        let rendered = renderNodeToDOM(child, options(path, ranges), offset)
+        let rendered = renderNodeToDOM(child, opts, offset)
         dom.insertBefore(rendered, domPos)
         reuseDOM = false
       }
@@ -138,13 +140,14 @@ export function redraw(pm, dirty, doc, prev) {
         domPos = domPos.nextSibling
         pChild = iPrev.next().value
       }
-      if (!node.isTextblock) path.pop()
+      if (!node.isTextblock) opts.path.pop()
     }
 
     while (pChild) {
       domPos = movePast(domPos)
       pChild = iPrev.next().value
     }
+    if (node.isTextblock) adjustTrailingHacks(dom, node)
   }
   scan(pm.content, doc, prev)
 }

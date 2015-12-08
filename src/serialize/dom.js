@@ -30,7 +30,7 @@ class DOMSerializer {
       let desc = node.type.attrs[attr]
       if (desc.serializeDOM) desc.serializeDOM(dom, node.attrs[attr], this, node)
     }
-    if (this.options.onRender && node.isBlock)
+    if (this.options.onRender)
       dom = this.options.onRender(node, dom, offset) || dom
     return dom
   }
@@ -81,10 +81,6 @@ class DOMSerializer {
       dom = this.options.renderInlineFlat(node, dom, start) || dom
       where.appendChild(dom)
     })
-    if (!parent.type.isCode && (!parent.size || where.lastChild.nodeName == "BR"))
-      where.appendChild(this.elt("br")).setAttribute("pm-force-br", "true")
-    else if (where.lastChild.contentEditable == "false")
-      where.appendChild(this.doc.createTextNode(""))
   }
 
   renderMark(mark) {
@@ -184,8 +180,7 @@ def(Text, (node, s) => s.doc.createTextNode(node.text))
 def(Image, (node, s) => s.elt("img", {
   src: node.attrs.src,
   alt: node.attrs.alt,
-  title: node.attrs.title,
-  contentEditable: false
+  title: node.attrs.title
 }))
 
 def(HardBreak, (_, s) => s.elt("br"))
