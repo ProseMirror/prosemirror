@@ -1,11 +1,11 @@
 # ProseMirror
 
 This is a well-behaved what-you-see-is-what-you-mean editor based on
-contentEditable, with support for collaborative editing and (soon)
+contentEditable, with support for collaborative editing and
 customizable document models.
 
 The project page, which has a number of demos, is
-[prosemirror.net](http://prosemirror.net). project.
+[prosemirror.net](http://prosemirror.net).
 
 **NOTE:** This project is in *BETA* stage. It isn't well-tested yet,
 there are no NPM modules yet, and the APIs may change at will for the
