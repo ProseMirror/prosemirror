@@ -1,6 +1,7 @@
 import {Pos, marksAt} from "../model"
 
 import {fromHTML} from "../parse/dom"
+import {fromText} from "../parse/text"
 import {elt} from "../dom"
 import {toHTML} from "../serialize/dom"
 import {toText} from "../serialize/text"
@@ -314,10 +315,7 @@ handlers.paste = (pm, e) => {
     e.preventDefault()
     let doc, from, to
     if (pm.input.shiftKey && txt) {
-      let paragraphs = txt.split(/[\r\n]+/)
-      let marks = marksAt(pm.doc, sel.from)
-      // FIXME use fromText instead?
-      doc = pm.schema.node("doc", null, paragraphs.map(s => pm.schema.node("paragraph", null, pm.schema.text(s, marks))))
+      doc = fromText(pm.schema, txt)
     } else if (lastCopied && (lastCopied.html == html || lastCopied.text == txt)) {
       ;({doc, from, to} = lastCopied)
     } else if (html) {

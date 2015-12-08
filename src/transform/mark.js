@@ -111,7 +111,7 @@ Transform.prototype.removeMark = function(from, to, st = null) {
 Transform.prototype.clearMarkup = function(from, to, newParent) {
   let delSteps = [] // Must be accumulated and applied in inverse order
   this.doc.inlineNodesBetween(from, to, ({marks, type}, path, start, end) => {
-    if (newParent ? !newParent.canContainType(type) : type != this.doc.type.schema.nodeTypes.text) { // FIXME text type accessor
+    if (newParent ? !newParent.canContainType(type) : !type.isText) {
       path = path.slice()
       let from = new Pos(path, start)
       delSteps.push(new Step("replace", from, new Pos(path, end), from))

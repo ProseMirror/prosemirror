@@ -127,7 +127,7 @@ function resolveIcon(pm, command) {
       return getIcon(command.name, icon)
     }
   }
-  return elt("span", null, "?") // FIXME saner default?
+  return getIcon("default", {text: "✘"})
 }
 
 function renderSelect(item, menu) {
