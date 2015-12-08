@@ -1,4 +1,5 @@
 import {Fragment, emptyFragment} from "./fragment"
+import {sameMarks} from "./mark"
 
 const emptyArray = []
 
@@ -33,8 +34,21 @@ export class Node {
   get firstChild() { return this.content.firstChild }
   get lastChild() { return this.content.lastChild }
 
-  sameMarkup(other) { // FIXME also compare marks?
-    return compareMarkup(this.type, other.type, this.attrs, other.attrs)
+  sameMarkup(other) {
+    return this.hasMarkup(other.type, other.attrs, other.marks)
+  }
+
+  hasMarkup(type, attrs, marks) {
+    return this.type == type && Node.sameAttrs(this.attrs, attrs) && sameMarks(this.marks, marks || emptyArray)
+  }
+
+  static sameAttrs(a, b) {
+    if (a == b) return true
+    let empty = isEmpty(a)
+    if (empty != isEmpty(b)) return false
+    if (!empty) for (var prop in a)
+      if (a[prop] !== b[prop]) return false
+    return true
   }
 
   copy(content = null) {
@@ -197,16 +211,5 @@ function wrapMarks(marks, str) {
 
 function isEmpty(obj) {
   if (obj) for (let _ in obj) return false
-  return true
-}
-
-// FIXME define whether this is supposed to take checked/built attrs
-export function compareMarkup(typeA, typeB, attrsA, attrsB) {
-  if (typeA != typeB) return false
-  if (isEmpty(attrsA)) return isEmpty(attrsB)
-  if (isEmpty(attrsB)) return false
-  for (var prop in attrsA)
-    if (attrsB[prop] !== attrsA[prop])
-      return false
   return true
 }

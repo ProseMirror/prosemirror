@@ -1,4 +1,4 @@
-import {Pos, Fragment, compareMarkup, siblingRange} from "../model"
+import {Pos, Fragment, siblingRange} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -179,7 +179,7 @@ export function alreadyHasBlockType(doc, from, to, type, attrs) {
   if (!attrs) attrs = {}
   doc.nodesBetween(from, to || from, node => {
     if (node.isTextblock) {
-      if (!compareMarkup(node.type, type, node.attrs, attrs)) found = true
+      if (node.hasMarkup(type, attrs)) found = true
       return false
     }
   })
@@ -188,7 +188,7 @@ export function alreadyHasBlockType(doc, from, to, type, attrs) {
 
 Transform.prototype.setBlockType = function(from, to, type, attrs) {
   this.doc.nodesBetween(from, to || from, (node, path) => {
-    if (node.isTextblock && !compareMarkup(type, node.type, attrs, node.attrs)) {
+    if (node.isTextblock && !node.hasMarkup(type, attrs)) {
       path = path.slice()
       // Ensure all markup that isn't allowed in the new node type is cleared
       this.clearMarkup(new Pos(path, 0), new Pos(path, node.size), type)

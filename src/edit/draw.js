@@ -1,4 +1,4 @@
-import {Pos, sameMarks} from "../model"
+import {Pos} from "../model"
 import {toDOM, renderNodeToDOM} from "../serialize/dom"
 
 import {elt} from "../dom"
@@ -121,8 +121,7 @@ export function redraw(pm, dirty, doc, prev) {
 
       if (matching && !dirty.get(matching)) {
         reuseDOM = true
-      } else if (pChild && child.sameMarkup(pChild) && !child.isText &&
-                 sameMarks(child.marks, pChild.marks) && dirty.get(pChild) != 2) {
+      } else if (pChild && !child.isText && child.sameMarkup(pChild) && dirty.get(pChild) != 2) {
         reuseDOM = true
         scan(domPos, child, pChild)
       } else {

@@ -1,5 +1,3 @@
-import {sameMarks} from "./mark"
-
 export class Fragment {
   append(other, joinLeft = 0, joinRight = 0) {
     if (!this.size)
@@ -341,7 +339,7 @@ class TextFragment extends Fragment {
     let last = this.content.length - 1, content = this.content.slice(0, last)
     let before = this.content[last], after = other.firstChild
     let same = before.sameMarkup(after)
-    if (same && before.isText && sameMarks(before.marks, after.marks))
+    if (same && before.isText)
       content.push(before.copy(before.text + after.text))
     else if (same && joinLeft > 0 && joinRight > 0)
       content.push(before.append(after.content, joinLeft - 1, joinRight - 1))

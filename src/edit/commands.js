@@ -1,6 +1,6 @@
 import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
         StrongMark, EmMark, CodeMark, LinkMark, Image, NodeType, MarkType,
-        Pos, containsMark, rangeHasMark, compareMarkup} from "../model"
+        Pos, containsMark, rangeHasMark} from "../model"
 import {joinPoint, joinableBlocks, canLift, canWrap, alreadyHasBlockType} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
@@ -641,7 +641,7 @@ function blockTypeCommand(type, name, labelName, attrs, key) {
     select(pm) {
       let {from, to, node} = pm.selection
       if (node)
-        return node.isTextblock && !compareMarkup(type, node.type, attrs, node.attrs)
+        return node.isTextblock && !node.hasMarkup(type, attrs)
       else
         return !alreadyHasBlockType(pm.doc, from, to, type, attrs)
     },
@@ -740,7 +740,7 @@ function currentTextblockType(pm) {
   let types = listTextblockTypes(pm)
   for (let i = 0; i < types.length; i++) {
     let tp = types[i], val = tp.value
-    if (compareMarkup(val.type, node.type, val.attrs, node.attrs)) return tp
+    if (node.hasMarkup(val.type, val.attrs)) return tp
   }
 }
 

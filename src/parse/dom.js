@@ -1,7 +1,6 @@
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmMark, StrongMark, LinkMark, CodeMark,
-        compareMarkup} from "../model"
+        EmMark, StrongMark, LinkMark, CodeMark, Node} from "../model"
 import {defineSource} from "./index"
 
 export function fromDOM(schema, dom, options) {
@@ -160,7 +159,7 @@ class Context {
     while (this.stack.length > stack.length) this.leave()
     for (;;) {
       let n = this.stack.length - 1, one = this.stack[n], two = stack[n]
-      if (compareMarkup(one.type, two.type, one.attrs, two.attrs)) break
+      if (one.type == two.type && Node.sameAttrs(one.attrs, two.attrs)) break
       this.leave()
     }
     while (stack.length > this.stack.length) {

@@ -1,4 +1,4 @@
-export {Node, compareMarkup} from "./node"
+export {Node} from "./node"
 export {Fragment, emptyFragment} from "./fragment"
 export {removeMark, sameMarks, containsMark, marksAt, rangeHasMark} from "./mark"
 
