@@ -251,7 +251,7 @@ Transform.prototype.insert = function(pos, content) {
 }
 
 Transform.prototype.insertInline = function(pos, node) {
-  return this.insert(pos, node.marked(marksAt(this.doc, pos)))
+  return this.insert(pos, node.mark(marksAt(this.doc, pos)))
 }
 
 Transform.prototype.insertText = function(pos, text) {
