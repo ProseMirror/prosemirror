@@ -75,20 +75,16 @@ export function draw(pm, doc) {
 }
 
 function adjustTrailingHacks(dom, node) {
+  let needs = node.size == 0 || node.lastChild.type.isBR ? "br"
+      : node.lastChild.type.contains == null ? "text" : null
   let last = dom.lastChild
-  if (last && last.nodeType == 3 && last.nodeValue == "") {
-    dom.removeChild(last)
-    last = dom.lastChild
+  let has = !last || last.nodeType != 1 || !last.hasAttribute("pm-ignore") ? null
+      : last.nodeName == "BR" ? "br" : "text"
+  if (needs != has) {
+    if (has) dom.removeChild(last)
+    if (needs) dom.appendChild(needs == "br" ? elt("br", {"pm-ignore": "trailing-break"})
+                               : elt("span", {"pm-ignore": "cursor-text"}, ""))
   }
-  let needsBR = node.size == 0 ||
-      node.lastChild.type == node.type.schema.nodes.hard_break
-  let hasBR = last && last.nodeType == 1 && last.hasAttribute("pm-force-br")
-  if (needsBR && !hasBR)
-    dom.appendChild(elt("br", {"pm-force-br": "true"}))
-  else if (!needsBR && hasBR)
-    dom.removeChild(last)
-  if (!needsBR && last && last.contentEditable == "false")
-    dom.appendChild(document.createTextNode(""))
 }
 
 function findNodeIn(iter, node) {

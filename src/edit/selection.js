@@ -583,11 +583,11 @@ export function selectableNodeAbove(pm, dom, coords, liberal) {
     if (dom.hasAttribute("pm-path")) {
       let path = pathFromNode(dom)
       let node = pm.doc.path(path)
-      // Leaf nodes are implicitly clickable
       if (node.type.clicked) {
         let result = node.type.clicked(node, path, dom, coords)
         if (result) return result
       }
+      // Leaf nodes are implicitly clickable
       if ((liberal || node.type.contains == null) && node.type.selectable)
         return Pos.from(path)
       return null

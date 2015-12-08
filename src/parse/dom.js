@@ -75,7 +75,7 @@ class Context {
         if (value)
           this.insert(this.schema.text(value, this.marks))
       }
-    } else if (dom.nodeType != 1) {
+    } else if (dom.nodeType != 1 || dom.hasAttribute("pm-ignore")) {
       // Ignore non-text non-element nodes
     } else if (!this.parseNodeType(dom)) {
       this.addAll(dom.firstChild, null)
@@ -238,8 +238,7 @@ OrderedList.register("parseDOM", {tag: "ol", parse: (dom, context, type) => {
 ListItem.register("parseDOM", {tag: "li", parse: wrap})
 
 HardBreak.register("parseDOM", {tag: "br", parse: (dom, context, type) => {
-  if (!dom.hasAttribute("pm-force-br"))
-    context.insertFrom(dom, type, null, null, context.marks)
+  context.insertFrom(dom, type, null, null, context.marks)
 }})
 
 Image.register("parseDOM", {tag: "img", parse: (dom, context, type) => {

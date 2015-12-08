@@ -45,6 +45,7 @@ Image.attributes = {
 
 export class HardBreak extends Inline {
   get selectable() { return false }
+  get isBR() { return true }
 }
 
 // Mark types

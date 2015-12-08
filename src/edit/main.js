@@ -50,7 +50,7 @@ export class ProseMirror {
     draw(this, this.doc)
     this.content.contentEditable = true
     if (opts.label)
-      this.content.setAttribute('aria-label', opts.label)
+      this.content.setAttribute("aria-label", opts.label)
 
     this.mod = Object.create(null)
     this.operation = null
