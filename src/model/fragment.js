@@ -1,9 +1,9 @@
 export class Fragment {
   append(other, joinLeft = 0, joinRight = 0) {
     if (!this.size)
-      return joinRight ? other.replace(0, other.child(0).close(joinRight - 1, "start")) : other
+      return joinRight ? other.replace(0, other.firstChild.close(joinRight - 1, "start")) : other
     if (!other.size)
-      return joinLeft ? this.replace(this.size - 1, this.child(this.size - 1).close(joinLeft - 1, "end")) : this
+      return joinLeft ? this.replace(this.size - 1, this.lastChild.close(joinLeft - 1, "end")) : this
     return this.appendInner(other, joinLeft, joinRight)
   }
 

@@ -208,7 +208,7 @@ export class NodeSelection extends Selection {
     let from = mapping.map(this.from, 1).pos
     let to = mapping.map(this.to, -1).pos
     if (Pos.samePath(from.path, to.path) && from.offset == to.offset - 1) {
-      let node = doc.path(from.path).child(from.offset)
+      let node = doc.nodeAfter(from)
       if (node.type.selectable) return new NodeSelection(from, to, node)
     }
     return findSelectionNear(doc, from)

@@ -1,7 +1,8 @@
 import {Pos} from "../model"
 import {toDOM, renderNodeToDOM} from "../serialize/dom"
-
 import {elt} from "../dom"
+
+import {DIRTY_REDRAW} from "./main"
 
 // FIXME clean up threading of path and offset, maybe remove from DOM renderer entirely
 
@@ -123,7 +124,7 @@ export function redraw(pm, dirty, doc, prev) {
 
       if (matching && !dirty.get(matching)) {
         reuseDOM = true
-      } else if (pChild && !child.isText && child.sameMarkup(pChild) && dirty.get(pChild) != 2) {
+      } else if (pChild && !child.isText && child.sameMarkup(pChild) && dirty.get(pChild) != DIRTY_REDRAW) {
         reuseDOM = true
         scan(domPos, child, pChild)
       } else {
@@ -137,6 +138,7 @@ export function redraw(pm, dirty, doc, prev) {
           domPos.setAttribute("pm-span", offset + "-" + iNode.offset)
         else
           domPos.setAttribute("pm-path", offset)
+
         domPos = domPos.nextSibling
         pChild = iPrev.next().value
       }

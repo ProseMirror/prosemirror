@@ -138,10 +138,9 @@ class State {
 
     let prevTight = this.inTightList
     this.inTightList = node.attrs.tight
-    for (let i = 0; i < node.size; i++) {
-      if (i && node.attrs.tight) this.flushClose(1)
-      let item = node.child(i)
-      this.wrapBlock(delim, firstDelim(i), node, () => this.render(item))
+    for (let i = node.iter(), n = 0, item; item = i.next().value; n++) {
+      if (n && node.attrs.tight) this.flushClose(1)
+      this.wrapBlock(delim, firstDelim(n), node, () => this.render(item))
     }
     this.inTightList = prevTight
   }

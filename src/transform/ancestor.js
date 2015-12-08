@@ -138,8 +138,8 @@ Transform.prototype.lift = function(from, to = from) {
     for (let i = range.to.offset - 1; i > range.from.offset; i--)
       this.join(new Pos(range.from.path, i))
     let size = 0
-    for (let i = range.from.offset; i < range.to.offset; i++)
-      size += rangeNode.child(i).size
+    for (let i = rangeNode.iter(range.from.offset, range.to.offset), child; child = i.next().value;)
+      size += child.size
     let path = range.from.path.concat(range.from.offset)
     range = {from: new Pos(path, 0), to: new Pos(path, size)}
     ++depth
@@ -201,7 +201,7 @@ Transform.prototype.setBlockType = function(from, to, type, attrs) {
 }
 
 Transform.prototype.setNodeType = function(pos, type, attrs) {
-  let node = this.doc.path(pos.path).child(pos.offset)
+  let node = this.doc.nodeAfter(pos)
   let path = pos.toPath()
   this.step("ancestor", new Pos(path, 0), new Pos(path, node.size), null,
             {depth: 1, types: [type], attrs: [attrs]})

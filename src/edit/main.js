@@ -322,26 +322,27 @@ export class ProseMirror {
       let fromEnd = depth == from.depth, toEnd = depth == to.depth
       if (!fromEnd && !toEnd && from.path[depth] == to.path[depth]) {
         let child = node.child(from.path[depth])
-        if (!dirty.has(child)) dirty.set(child, 1)
+        if (!dirty.has(child)) dirty.set(child, DIRTY_RESCAN)
         node = child
       } else {
         let start = fromEnd ? from.offset : from.path[depth]
         let end = toEnd ? to.offset : to.path[depth] + 1
         if (node.isTextblock) {
-          for (let offset = 0, i = 0; offset < end; i++) {
-            let child = node.child(i)
-            offset += child.width
-            if (offset > start) dirty.set(child, 2)
-          }
+          node.forEach((child, cStart, cEnd) => {
+            if (cStart < end && cEnd > start)
+              dirty.set(child, DIRTY_REDRAW)
+          })
         } else {
-          for (let i = start; i < end; i++)
-            dirty.set(node.child(i), 2)
+          for (let i = node.iter(start, end), child; child = i.next().value;)
+            dirty.set(child, DIRTY_REDRAW)
         }
         break
       }
     }
   }
 }
+
+export const DIRTY_RESCAN = 1, DIRTY_REDRAW = 2
 
 const nullOptions = {}
 

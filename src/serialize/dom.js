@@ -47,9 +47,9 @@ class DOMSerializer {
   }
 
   renderBlocksInto(parent, where) {
-    for (let i = 0; i < parent.size; i++) {
-      if (this.options.path) this.options.path.push(i)
-      where.appendChild(this.renderNode(parent.child(i), i))
+    for (let i = parent.iter(), child; child = i.next().value;) {
+      if (this.options.path) this.options.path.push(i.offset - child.width)
+      where.appendChild(this.renderNode(child, i.offset - child.width))
       if (this.options.path) this.options.path.pop()
     }
   }
