@@ -59,12 +59,10 @@ export class Node {
     return new this.constructor(this.type, this.attrs, this.content, marks)
   }
 
-  // FIXME remove or return a node
   slice(from, to) {
-    return this.content.slice(from, to)
+    return this.copy(this.content.slice(from, to))
   }
 
-  // FIXME remove? optimize?
   splice(from, to, replace) {
     return this.copy(this.content.slice(0, from).append(replace).append(this.content.slice(to)))
   }
@@ -148,7 +146,6 @@ export class Node {
     return this.copy(this.content.sliceBetween(from, to, depth))
   }
 
-  // FIXME remove these? more specific predicates?
   get isBlock() { return this.type.isBlock }
   get isTextblock() { return this.type.isTextblock }
   get isInline() { return this.type.isInline }

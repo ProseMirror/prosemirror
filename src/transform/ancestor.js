@@ -24,7 +24,7 @@ defineStep("ancestor", {
     if (parent.type.locked) return null
     if (types.length) {
       let lastWrapper = types[types.length - 1]
-      let content = inner.slice(from.offset, to.offset)
+      let content = inner.content.slice(from.offset, to.offset)
       if (!parent.type.canContainType(types[0]) ||
           content.some(n => !lastWrapper.canContain(n)) ||
           !inner.size && !lastWrapper.canBeEmpty ||
@@ -97,7 +97,7 @@ function canBeLifted(doc, range) {
     if (parentDepth > -1)
       return {path: range.from.path.slice(0, parentDepth), unwrap}
     if (unwrap || !content[0].isBlock) return null
-    content = content[0].slice(range.from.offset, range.to.offset)
+    content = content[0].content.slice(range.from.offset, range.to.offset)
     unwrap = true
   }
 }

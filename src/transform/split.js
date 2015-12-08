@@ -19,8 +19,8 @@ defineStep("split", {
         (splitAt == target.size) && !typeAfter.canBeEmpty)
       return null
     let newParent = parent.splice(offset, offset + 1,
-                                  Fragment.from([target.copy(target.slice(0, splitAt)),
-                                                 typeAfter.create(attrsAfter, target.slice(splitAt))]))
+                                  Fragment.from([target.slice(0, splitAt),
+                                                 typeAfter.create(attrsAfter, target.content.slice(splitAt))]))
     let copy = doc.replaceDeep(parentPath, newParent)
 
     let dest = new Pos(parentPath.concat(offset + 1), 0)

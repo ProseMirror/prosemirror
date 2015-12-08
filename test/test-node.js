@@ -51,8 +51,8 @@ slice("inline",
 function append(name, doc, result) {
   defTest("node_append_" + name, () => {
     let base = doc.path(doc.tag.to.path)
-    let before = base.slice(0, doc.tag.to.offset)
-    let after = doc.path(doc.tag.from.path).slice(doc.tag.from.offset)
+    let before = base.content.slice(0, doc.tag.to.offset)
+    let after = doc.path(doc.tag.from.path).content.slice(doc.tag.from.offset)
     cmpNode(base.copy(before.append(after)), result.nodeAfter(result.tag.here))
   })
 }
