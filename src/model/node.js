@@ -162,7 +162,7 @@ export class Node {
     let obj = {type: this.type.name}
     for (let _ in this.attrs) {
       obj.attrs = this.attrs
-      return obj
+      break
     }
     if (this.size)
       obj.content = this.content.toJSON()
@@ -176,7 +176,7 @@ export class Node {
 
   static fromJSON(schema, json) {
     let type = schema.nodeType(json.type)
-    let content = Fragment.fromJSON(schema, json.content)
+    let content = json.text != null ? json.text : Fragment.fromJSON(schema, json.content)
     return type.create(json.attrs, content, json.marks && json.marks.map(schema.markFromJSON))
   }
 }
@@ -197,6 +197,12 @@ export class TextNode extends Node {
 
   mark(marks) {
     return new TextNode(this.type, this.attrs, this.text, marks)
+  }
+
+  toJSON() {
+    let base = super.toJSON()
+    base.text = this.text
+    return base
   }
 }
 
