@@ -6,6 +6,7 @@ import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br
 import {Failure} from "./failure"
 import {defTest} from "./tests"
 import {cmpNode, cmpStr} from "./cmp"
+import {testStepJSON} from "./test-json"
 
 function Tr(doc) { return new Transform(doc) }
 
@@ -31,6 +32,8 @@ function testTransform(doc, expect, tr) {
   cmpNode(tr.doc, expect)
   let inverted = invert(tr)
   cmpNode(inverted.doc, doc, "inverted")
+
+  testStepJSON(tr)
 
   for (let tag in expect.tag)
     testMapping(tr.maps, doc.tag[tag], expect.tag[tag], tag)

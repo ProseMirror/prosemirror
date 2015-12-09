@@ -80,7 +80,7 @@ defineStep("ancestor", {
   },
   paramFromJSON(schema, json) {
     return {depth: json.depth,
-            wrappers: json.types && json.types.map(n => schema.nodeType(n)),
+            types: json.types && json.types.map(n => schema.nodeType(n)),
             attrs: json.attrs}
   }
 })

@@ -167,7 +167,7 @@ export class Node {
     if (this.size)
       obj.content = this.content.toJSON()
     if (this.marks.length)
-      obj.marks = this.marks
+      obj.marks = this.marks.map(n => n.toJSON())
     return obj
   }
 
