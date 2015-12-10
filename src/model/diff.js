@@ -1,5 +1,8 @@
 import {Pos} from "./pos"
 
+// :: (Node, Node) → ?Pos
+// Find the first position at which nodes `a` and `b` differ, or
+// `null` if they are the same.
 export function findDiffStart(a, b, path = []) {
   let iA = a.iter(), iB = b.iter(), offset = 0
   for (;;) {
@@ -30,6 +33,11 @@ export function findDiffStart(a, b, path = []) {
   return new Pos(path, offset)
 }
 
+// :: (Node, Node) → ?{a: Pos, b: Pos}
+// Find the first position, searching from the end, at which nodes `a`
+// and `b` differ, or `null` if they are the same. Since this position
+// will not be the same in both nodes, an object with two separate
+// positions is returned.
 export function findDiffEnd(a, b, pathA = [], pathB = []) {
   let iA = a.reverseIter(), iB = b.reverseIter()
   let offA = a.size, offB = b.size

@@ -1,4 +1,17 @@
+// ;; A fragment is an abstract type used to represent a node's
+// collection of child nodes. It tries to hide considerations about
+// the actual way in which the child nodes are stored, so that
+// different representations (nodes that only contain simple nodes
+// versus nodes that also contain text) can be approached using the
+// same API.
 export class Fragment {
+  // :: (Fragment, number, number) → Fragment
+  // Create a fragment that combines this one with another fragment.
+  // Takes care of merging adjacent text nodes and can also merge
+  // “open” nodes at the boundary. `joinLeft` and `joinRight` give the
+  // depth to which the left and right fragments are open. If open
+  // nodes with the same markup are found on both sides, they are
+  // joined. If not, the open nodes are [closed](#Node.close).
   append(other, joinLeft = 0, joinRight = 0) {
     if (!this.size)
       return joinRight ? other.replace(0, other.firstChild.close(joinRight - 1, "start")) : other
@@ -7,28 +20,43 @@ export class Fragment {
     return this.appendInner(other, joinLeft, joinRight)
   }
 
+  // :: string
+  // Concatenate all the text nodes found in this fragment and its
+  // childen.
   get textContent() {
     let text = ""
     this.forEach(n => text += n.textContent)
     return text
   }
 
+  // :: () → string
+  // Return a debugging string that describes this fragment.
   toString() {
     let str = ""
     this.forEach(n => str += (str ? ", " : "") + n.toString())
     return str
   }
 
+  // :: (number, number, ?(Node) → Node) → [Node]
+  // Produce an array with the child nodes between the given
+  // boundaries, optionally mapping a function over them.
   toArray(from = 0, to = this.size, f) {
     let result = []
     for (let iter = this.iter(from, to), n; n = iter.next().value;) result.push(f ? f(n) : n)
     return result
   }
 
+  // :: ((Node) → Node) → Fragment
+  // Produce a new Fragment by mapping all this fragment's children
+  // through a function.
   map(f) {
+    // FIXME join text nodes?
     return Fragment.fromArray(this.toArray(undefined, undefined, f))
   }
 
+  // :: ((Node) → bool) → bool
+  // Returns `true` if the given function returned `true` for any of
+  // the fragment's children.
   some(f) {
     for (let iter = this.iter(), n; n = iter.next().value;)
       if (f(n)) return n
@@ -70,10 +98,14 @@ export class Fragment {
     return new this.constructor(nodes)
   }
 
+  // :: (Schema, Object) → Fragment
+  // Deserialize a fragment from its JSON representation.
   static fromJSON(schema, value) {
     return value ? this.fromArray(value.map(schema.nodeFromJSON)) : emptyFragment
   }
 
+  // :: ([Node]) → Fragment
+  // Build a fragment from an array of nodes.
   static fromArray(array) {
     if (!array.length) return emptyFragment
     let hasText = false

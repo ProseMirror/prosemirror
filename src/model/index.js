@@ -1,3 +1,15 @@
+// !!
+// This module defines ProseMirror's document model, the data
+// structure used to define and inspect content documents. It
+// includes:
+//
+// * The [node](#Node) type that represents document elements
+//
+// * The [schema](#Schema) types used to tag and constrain the
+//   document structure
+//
+// * The data type for document [positions](#Pos)
+
 export {Node} from "./node"
 export {Fragment, emptyFragment} from "./fragment"
 export {removeMark, sameMarks, containsMark, marksAt, rangeHasMark} from "./mark"
