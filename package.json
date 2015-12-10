@@ -15,7 +15,7 @@
     "url": "git://github.com/prosemirror/prosemirror.git"
   },
   "dependencies": {
-    "markdown-it": "^4.0.0"
+    "markdown-it": "^4.4.0"
   },
   "devDependencies": {
     "babel": "^5.1.13",

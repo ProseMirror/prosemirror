@@ -4,6 +4,10 @@
 // different representations (nodes that only contain simple nodes
 // versus nodes that also contain text) can be approached using the
 // same API.
+//
+// Fragments are persistent data structures. That means you should
+// _not_ mutate them or their content, but create new instances
+// whenever needed. The API tries to make this easy.
 export class Fragment {
   // :: (Fragment, number, number) → Fragment
   // Create a fragment that combines this one with another fragment.
@@ -83,6 +87,10 @@ export class Fragment {
     }
   }
 
+  // :: (?Pos, ?Pos) → Fragment
+  // Slice out the sub-fragment between the two given positions.
+  // `null` can be passed for either to indicate the slice should go
+  // all the way to the start or end of the fragment.
   sliceBetween(from, to, depth = 0) {
     let moreFrom = from && from.depth > depth, moreTo = to && to.depth > depth
     let start = moreFrom ? from.path[depth] : from ? from.offset : 0
@@ -149,46 +157,89 @@ class ReverseFlatIterator extends FlatIterator {
   }
 }
 
+// ;; #forward=Fragment 
 class FlatFragment extends Fragment {
   constructor(content) {
     super()
     this.content = content
   }
 
+  // :: (?number, ?number) → Iterator<Node>
+  // Create a forward iterator over the content of the fragment. An
+  // explicit start and end offset can be given to have the iterator
+  // go over only part of the content. If an iteration bound falls
+  // within a text node, only the part that is within the bounds is
+  // yielded.
   iter(start = 0, end = this.size) {
     return new FlatIterator(this.content, start, end)
   }
+
+  // :: (?number, ?number) → Iterator<Node>
+  // Create a reverse iterator over the content of the fragment. An
+  // explicit start and end offset can be given to have the iterator
+  // go over only part of the content. **Note**: `start` should be
+  // greater than `end`, when passed.
   reverseIter(start = this.size, end = 0) {
     return new ReverseFlatIterator(this.content, start, end)
   }
 
+  // :: number
+  // The maximum offset in this fragment.
   get size() { return this.content.length }
 
+  // :: ?Node
+  // The first child of the fragment, or `null` if it is empty.
   get firstChild() { return this.content.length ? this.content[0] : null }
+
+  // :: ?Node
+  // The last child of the fragment, or `null` if it is empty.
   get lastChild() { return this.content.length ? this.content[this.content.length - 1] : null }
 
+  // :: (number) → Node
+  // Get the child at the given offset. Might return a text node that
+  // stretches before and/or after the offset.
   child(off) {
     if (off < 0 || off >= this.content.length) throw new Error("Offset " + off + " out of range")
     return this.content[off]
   }
 
+  // :: ((node: Node, start: number, end: number))
+  // Call the given function for each node in the fragment, passing it
+  // the node, its start offset, and its end offset.
   forEach(f) {
     for (let i = 0; i < this.content.length; i++)
       f(this.content[i], i, i + 1)
   }
 
+  // :: (number) → {start: number, node: Node}
+  // Find the node before the given offset. Returns an object
+  // containing the node as well as its start index. Offset should be
+  // greater than zero.
   chunkBefore(off) { return {node: this.child(off - 1), start: off - 1} }
+
+  // :: (number) → {start: number, node: Node}
+  // Find the node after the given offset. Returns an object
+  // containing the node as well as its start index. Offset should be
+  // less than the fragment's size.
   chunkAfter(off) { return {node: this.child(off), start: off} }
 
+  // :: (number, ?number) → Fragment
+  // Return a fragment with only the nodes between the given offsets.
+  // When `to` is not given, the slice will go to the end of the
+  // fragment.
   slice(from, to = this.size) {
     if (from == to) return emptyFragment
     return new FlatFragment(this.content.slice(from, to))
   }
 
-  replace(i, node) {
+  // :: (number, Node) → Fragment
+  // Return a fragment in which the node at the given offset is
+  // replaced by the given node. The node, as well as the one it
+  // replaces, should not be text nodes.
+  replace(offset, node) {
     if (node.isText) throw new Error("Argument to replace should be a non-text node")
     let copy = this.content.slice()
-    copy[i] = node
+    copy[offset] = node
     return new FlatFragment(copy)
   }
 
@@ -202,11 +253,17 @@ class FlatFragment extends Fragment {
     return Fragment.fromArray(content.concat(other.toArray(after.width)))
   }
 
+  // :: () → Object
+  // Create a JSON-serializeable representation of this fragment.
   toJSON() {
     return this.content.map(n => n.toJSON())
   }
 }
 
+// :: Fragment
+// An empty fragment. Intended to be reused whenever a node doesn't
+// contain anything (rather than allocating a new empty fragment for
+// each leaf node).
 export const emptyFragment = new FlatFragment([])
 
 class TextIterator {
@@ -386,6 +443,8 @@ class TextFragment extends Fragment {
 }
 
 if (typeof Symbol != "undefined") {
+  // :: () → Iterator<Node>
+  // A fragment is iterable, in the ES6 sense.
   Fragment.prototype[Symbol.iterator] = function() { return this.iter() }
   FlatIterator.prototype[Symbol.iterator] = TextIterator.prototype[Symbol.iterator] = function() { return this }
 }
