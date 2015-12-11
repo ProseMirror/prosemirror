@@ -1,5 +1,5 @@
 import {Fragment, emptyFragment} from "./fragment"
-import {sameMarks} from "./mark"
+import {Mark} from "./mark"
 
 const emptyArray = []
 
@@ -15,15 +15,24 @@ const emptyArray = []
 //
 // **Never** directly mutate the properties of a `Node` object.
 export class Node {
-  // :: (NodeType, Object, ?Fragment, ?[Mark])
-  // Construct a node with the given type and attributes. You'll usually
-  // want to create nodes using [`Schema.node`](#Schema.node), which
-  // will convert strings to node types and normalize attributes for
-  // you.
   constructor(type, attrs, content, marks) {
+    // :: NodeType
+    // The type of node that this is.
     this.type = type
+
+    // :: Object
+    // An object mapping attribute names to string values. The kind of
+    // attributes allowed and required are determined by the node
+    // type.
     this.attrs = attrs
+
+    // :: Fragment
+    // The node's content.
     this.content = content || emptyFragment
+
+    // :: [Mark]
+    // The marks (things like whether it is emphasized or part of a
+    // link) associated with this node.
     this.marks = marks || emptyArray
   }
 
@@ -104,14 +113,14 @@ export class Node {
   // Check whether this node's markup correspond to the given type,
   // attributes, and marks.
   hasMarkup(type, attrs, marks) {
-    return this.type == type && Node.sameAttrs(this.attrs, attrs) && sameMarks(this.marks, marks || emptyArray)
+    return this.type == type && Node.sameAttrs(this.attrs, attrs) && Mark.sameSet(this.marks, marks || emptyArray)
   }
 
   static sameAttrs(a, b) {
     if (a == b) return true
     let empty = isEmpty(a)
     if (empty != isEmpty(b)) return false
-    if (!empty) for (var prop in a)
+    if (!empty) for (let prop in a)
       if (a[prop] !== b[prop]) return false
     return true
   }
@@ -238,6 +247,10 @@ export class Node {
     this.content.nodesBetween(from, to, f, path, this)
   }
 
+  // :: (?Pos, ?Pos, (node: Node, path: [number], start: number, end: number, parent: Node))
+  // Calls the given function for each inline node between the two
+  // given positions. Pass null for `from` or `to` to start or end at
+  // the start or end of the node.
   inlineNodesBetween(from, to, f) {
     this.nodesBetween(from, to, (node, path, parent) => {
       if (node.isInline) {
@@ -247,15 +260,56 @@ export class Node {
     })
   }
 
+  // :: (?Pos, ?Pos) → Node
+  // Returns a copy of this node containing only the content between
+  // `from` and `to`. You can pass `null` for either of them to start
+  // or end at the start or end of the node.
   sliceBetween(from, to, depth = 0) {
     return this.copy(this.content.sliceBetween(from, to, depth))
   }
 
+  // :: (Pos) → [Mark]
+  // Get the marks of the node before the given position or, if that
+  // position is at the start of a non-empty node, those of the node
+  // after it.
+  marksAt(pos) {
+    let parent = this.path(pos.path)
+    if (!parent.isTextblock || !parent.size) return emptyArray
+    return parent.chunkBefore(pos.offset || 1).node.marks
+  }
+
+  // :: (?Pos, ?Pos, MarkType) → bool
+  // Test whether a mark of the given type occurs in this document
+  // between the two given positions.
+  rangeHasMark(from, to, type) {
+    let found = false
+    this.nodesBetween(from, to, node => {
+      if (type.isInSet(node.marks)) found = true
+    })
+    return found
+  }
+
+  // :: bool
+  // True when this is a block (non-inline node)
   get isBlock() { return this.type.isBlock }
+
+  // :: bool
+  // True when this is a textblock node, a block node with inline
+  // content.
   get isTextblock() { return this.type.isTextblock }
+
+  // :: bool
+  // True when this is an inline node (a text node or a node that can
+  // appear among text).
   get isInline() { return this.type.isInline }
+
+  // :: bool
+  // True when this is a text node.
   get isText() { return this.type.isText }
 
+  // :: () → string
+  // Return a string representation of this node for debugging
+  // purposes.
   toString() {
     let name = this.type.name
     if (this.content.size)
@@ -263,6 +317,8 @@ export class Node {
     return wrapMarks(this.marks, name)
   }
 
+  // :: () → Object
+  // Return a JSON-serializable representation of this node.
   toJSON() {
     let obj = {type: this.type.name}
     for (let _ in this.attrs) {
@@ -279,6 +335,8 @@ export class Node {
   // This is a hack to be able to treat a node object as an iterator result
   get value() { return this }
 
+  // :: (Schema, Object) → Node
+  // Deserialize a node from its JSON representation.
   static fromJSON(schema, json) {
     let type = schema.nodeType(json.type)
     let content = json.text != null ? json.text : Fragment.fromJSON(schema, json.content)
@@ -286,11 +344,18 @@ export class Node {
   }
 }
 
-if (typeof Symbol != "undefined") Node.prototype[Symbol.iterator] = function() { return this.iter() }
+if (typeof Symbol != "undefined") {
+  // :: () → Iterator<Node>
+  // A fragment is iterable, in the ES6 sense.
+  Node.prototype[Symbol.iterator] = function() { return this.iter() }
+}
 
+// ;; #forward=Node
 export class TextNode extends Node {
   constructor(type, attrs, content, marks) {
     super(type, attrs, null, marks)
+    // :: ?string
+    // For text nodes, this contains the node's text content.
     this.text = content
   }
 

@@ -90,7 +90,7 @@ function canBeLifted(doc, range) {
   for (;;) {
     let parentDepth = -1
     for (let node = doc, i = 0; i < range.from.path.length; i++) {
-      if (!content.some(inner => !node.type.canContainChildren(inner)))
+      if (!content.some(inner => !node.type.canContainContent(inner.type)))
         parentDepth = i
       node = node.child(range.from.path[i])
     }

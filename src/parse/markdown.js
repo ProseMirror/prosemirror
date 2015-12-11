@@ -1,8 +1,7 @@
 import markdownit from "markdown-it"
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmMark, StrongMark, LinkMark, CodeMark,
-        removeMark, sameMarks} from "../model"
+        EmMark, StrongMark, LinkMark, CodeMark, Mark} from "../model"
 import {defineSource} from "./index"
 
 export function fromMarkdown(schema, text) {
@@ -20,7 +19,7 @@ defineSource("markdown", fromMarkdown)
 const noMarks = []
 
 function maybeMerge(a, b) {
-  if (a.isText && b.isText && sameMarks(a.marks, b.marks))
+  if (a.isText && b.isText && Mark.sameSet(a.marks, b.marks))
     return a.copy(a.text + b.text)
 }
 
@@ -54,7 +53,7 @@ class State {
   }
 
   closeInline(rm) {
-    this.marks = removeMark(this.marks, rm)
+    this.marks = rm.removeFromSet(this.marks)
   }
 
   parseTokens(toks) {

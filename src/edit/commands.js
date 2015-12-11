@@ -1,6 +1,5 @@
 import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
-        StrongMark, EmMark, CodeMark, LinkMark, Image, NodeType, MarkType,
-        Pos, containsMark, rangeHasMark} from "../model"
+        StrongMark, EmMark, CodeMark, LinkMark, Image, NodeType, MarkType, Pos} from "../model"
 import {joinPoint, joinableBlocks, canLift, canWrap, alreadyHasBlockType} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
@@ -109,19 +108,19 @@ HardBreak.attachCommand("insertHardBreak", type => ({
 function markActive(pm, type) {
   let sel = pm.selection
   if (sel.empty)
-    return containsMark(pm.activeMarks(), type)
+    return type.isInSet(pm.activeMarks())
   else
-    return rangeHasMark(pm.doc, sel.from, sel.to, type)
+    return pm.doc.rangeHasMark(sel.from, sel.to, type)
 }
 
 function canAddInline(pm, type) {
   let {from, to, empty} = pm.selection
   if (empty)
-    return !containsMark(pm.activeMarks(), type) && pm.doc.path(from.path).type.canContainMark(type)
+    return !type.isInSet(pm.activeMarks()) && pm.doc.path(from.path).type.canContainMark(type)
   let can = false
   pm.doc.nodesBetween(from, to, node => {
     if (can || node.isTextblock && !node.type.canContainMark(type)) return false
-    if (node.isInline && !containsMark(node.marks, type)) can = true
+    if (node.isInline && !type.isInSet(node.marks)) can = true
   })
   return can
 }
@@ -291,7 +290,7 @@ defineCommand("deleteSelection", {
 function deleteBarrier(pm, cut) {
   let around = pm.doc.path(cut.path)
   let before = around.child(cut.offset - 1), after = around.child(cut.offset)
-  if (before.type.canContainChildren(after) && pm.tr.join(cut).apply(andScroll) !== false)
+  if (before.type.canContainContent(after.type) && pm.tr.join(cut).apply(andScroll) !== false)
     return
 
   let conn

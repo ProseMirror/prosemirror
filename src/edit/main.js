@@ -1,7 +1,6 @@
 import "./css"
 
-import {marksAt, rangeHasMark, Pos, findDiffStart,
-        containsMark, removeMark} from "../model"
+import {Pos, findDiffStart} from "../model"
 import {Transform} from "../transform"
 import sortedInsert from "../util/sortedinsert"
 import {Map} from "../util/map"
@@ -245,12 +244,12 @@ export class ProseMirror {
     let sel = this.selection
     if (sel.empty) {
       let marks = this.activeMarks()
-      if (to == null) to = !containsMark(marks, type)
+      if (to == null) to = !type.isInSet(marks)
       if (to && !this.doc.path(sel.head.path).type.canContainMark(type)) return
-      this.input.storedMarks = to ? type.create(attrs).addToSet(marks) : removeMark(marks, type)
+      this.input.storedMarks = to ? type.create(attrs).addToSet(marks) : type.removeFromSet(marks)
       this.signal("activeMarkChange")
     } else {
-      if (to != null ? to : !rangeHasMark(this.doc, sel.from, sel.to, type))
+      if (to != null ? to : !this.doc.rangeHasMark(sel.from, sel.to, type))
         this.apply(this.tr.addMark(sel.from, sel.to, type.create(attrs)))
       else
         this.apply(this.tr.removeMark(sel.from, sel.to, type))
@@ -258,7 +257,7 @@ export class ProseMirror {
   }
 
   activeMarks() {
-    return this.input.storedMarks || marksAt(this.doc, this.selection.head)
+    return this.input.storedMarks || this.doc.marksAt(this.selection.head)
   }
 
   focus() {
@@ -375,7 +374,7 @@ class EditorTransform extends Transform {
   replaceSelection(node, inheritMarks) {
     let {empty, from, to, node: selNode} = this.selection, parent
     if (node && node.isInline && inheritMarks !== false) {
-      let marks = empty ? this.pm.input.storedMarks : marksAt(this.doc, from)
+      let marks = empty ? this.pm.input.storedMarks : this.doc.marksAt(from)
       node = node.type.create(node.attrs, node.text, marks)
     }
 

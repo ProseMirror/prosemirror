@@ -1,4 +1,4 @@
-import {Pos, containsMark, MarkType} from "../model"
+import {Pos, MarkType} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -31,7 +31,7 @@ Transform.prototype.addMark = function(from, to, st) {
     if (st.isInSet(marks) || !parent.type.canContainMark(st.type)) {
       adding = removing = null
     } else {
-      let rm = containsMark(marks, st.type)
+      let rm = st.type.isInSet(marks)
       if (rm) {
         if (removing && removing.param.eq(rm)) {
           removing.to = new Pos(path, end)
@@ -80,7 +80,7 @@ Transform.prototype.removeMark = function(from, to, st = null) {
     step++
     let toRemove = null
     if (st instanceof MarkType) {
-      let found = containsMark(marks, st)
+      let found = st.isInSet(marks)
       if (found) toRemove = [found]
     } else if (st) {
       if (st.isInSet(marks)) toRemove = [st]

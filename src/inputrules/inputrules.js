@@ -1,4 +1,4 @@
-import {Pos, marksAt} from "../model"
+import {Pos} from "../model"
 import {Keymap} from "../edit"
 
 export function addInputRules(pm, rules) {
@@ -72,7 +72,7 @@ class InputRules {
         if (typeof rule.handler == "string") {
           let offset = pos.offset - (match[1] || match[0]).length
           let start = new Pos(pos.path, offset)
-          let marks = marksAt(this.pm.doc, pos)
+          let marks = this.pm.doc.marksAt(pos)
           this.pm.tr.delete(start, pos)
                     .insert(start, this.pm.schema.text(rule.handler, marks))
                     .apply()

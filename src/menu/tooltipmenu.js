@@ -1,5 +1,4 @@
 import {defineOption} from "../edit"
-import {marksAt} from "../model"
 import {elt, insertCSS} from "../dom"
 import {MenuUpdate} from "./update"
 
@@ -57,7 +56,7 @@ class TooltipMenu {
   linkUnderCursor() {
     let head = this.pm.selection.head
     if (!head) return null
-    let marks = marksAt(this.pm.doc, head)
+    let marks = this.pm.doc.marksAt(head)
     return marks.reduce((found, m) => found || (m.type.name == "link" && m), null)
   }
 

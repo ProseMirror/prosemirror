@@ -1,4 +1,4 @@
-import {Pos, marksAt} from "../model"
+import {Pos} from "../model"
 
 import {fromHTML} from "../parse/dom"
 import {fromText} from "../parse/text"
@@ -140,7 +140,7 @@ handlers.keyup = (pm, e) => {
 
 function inputText(pm, range, text) {
   if (range.empty && !text) return false
-  let marks = pm.input.storedMarks || marksAt(pm.doc, range.from)
+  let marks = pm.input.storedMarks || pm.doc.marksAt(range.from)
   let tr = pm.tr
   tr.replaceWith(range.from, range.to, pm.schema.text(text, marks)).apply()
   pm.scrollIntoView()

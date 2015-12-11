@@ -1,4 +1,4 @@
-import {Pos, marksAt, Fragment, emptyFragment} from "../model"
+import {Pos, Fragment, emptyFragment} from "../model"
 
 import {TransformResult, Transform} from "./transform"
 import {defineStep, Step} from "./step"
@@ -112,7 +112,7 @@ function buildInserted(nodesLeft, source, start, end) {
     let outside = searchRight <= same
     for (let i = searchLeft; i >= 0; i--) {
       let left = nodesLeft[i]
-      if (outside ? left.type.canContainChildren(node) : left.type == type) {
+      if (outside ? left.type.canContainContent(node.type) : left.type == type) {
         matched = i
         break
       }
@@ -251,9 +251,9 @@ Transform.prototype.insert = function(pos, content) {
 }
 
 Transform.prototype.insertInline = function(pos, node) {
-  return this.insert(pos, node.mark(marksAt(this.doc, pos)))
+  return this.insert(pos, node.mark(this.doc.marksAt(pos)))
 }
 
 Transform.prototype.insertText = function(pos, text) {
-  return this.insert(pos, this.doc.type.schema.text(text, marksAt(this.doc, pos)))
+  return this.insert(pos, this.doc.type.schema.text(text, this.doc.marksAt(pos)))
 }

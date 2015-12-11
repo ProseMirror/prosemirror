@@ -1,4 +1,4 @@
-import {sameMarks, marksAt, defaultSchema as schema} from "../src/model"
+import {Mark, defaultSchema as schema} from "../src/model"
 import {Failure} from "./failure"
 import {defTest} from "./tests"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, a, a2, br} from "./build"
@@ -7,26 +7,22 @@ function assert(name, value) {
   if (!value) throw new Failure("Assertion failed: " + name)
 }
 
-function same(name, value, expected) {
-  assert(name, Array.isArray(expected) ? sameMarks(value, expected) : expected.eq(value))
-}
-
 let em_ = schema.mark("em")
 let strong = schema.mark("strong")
 let link = (href, title) => schema.mark("link", {href, title})
 let code = schema.mark("code")
 
 defTest("mark_same", () => {
-  assert("empty", sameMarks([], []))
-  assert("two", sameMarks([em_, strong], [em_, strong]))
-  assert("diff set", !sameMarks([em_, strong], [em_, code]))
-  assert("diff size", !sameMarks([em_, strong], [em_, strong, code]))
+  assert("empty", Mark.sameSet([], []))
+  assert("two", Mark.sameSet([em_, strong], [em_, strong]))
+  assert("diff set", !Mark.sameSet([em_, strong], [em_, code]))
+  assert("diff size", !Mark.sameSet([em_, strong], [em_, strong, code]))
   assert("links", link("http://foo").eq(link("http://foo")))
   assert("diff links", !link("http://foo").eq(link("http://bar")))
   assert("diff title", !link("http://foo", "A").eq(link("http://foo", "B")))
-  assert("link in set", sameMarks([link("http://foo"), code],
+  assert("link in set", Mark.sameSet([link("http://foo"), code],
                                    [link("http://foo"), code]))
-  assert("diff link in set", !sameMarks([link("http://foo"), code],
+  assert("diff link in set", !Mark.sameSet([link("http://foo"), code],
                                          [link("http://bar"), code]))
 })
 
@@ -55,7 +51,7 @@ defTest("mark_remove", () => {
 
 function has(name, doc, st, result) {
   defTest("has_mark_" + name, function() {
-    if (st.isInSet(marksAt(doc, doc.tag.a)) != result)
+    if (st.isInSet(doc.marksAt(doc.tag.a)) != result)
       throw new Failure("hasMark(" + doc + ", " + doc.tag.a + ", " + st.type + ") returned " + !result)
   })
 }

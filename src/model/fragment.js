@@ -122,6 +122,11 @@ export class Fragment {
     return new (hasText ? TextFragment : FlatFragment)(array)
   }
 
+  // :: (?union<Fragment, Node, [Node]>) → Fragment
+  // Create a fragment from something that can be interpreted as a set
+  // of nodes. For `null`, it returns the empty fragment. For a
+  // fragment, the fragment itself. For a node or array of nodes, a
+  // fragment containing those nodes.
   static from(nodes) {
     if (!nodes) return emptyFragment
     if (nodes instanceof Fragment) return nodes
@@ -157,7 +162,7 @@ class ReverseFlatIterator extends FlatIterator {
   }
 }
 
-// ;; #forward=Fragment 
+// ;; #forward=Fragment
 class FlatFragment extends Fragment {
   constructor(content) {
     super()

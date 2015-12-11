@@ -12,7 +12,7 @@
 
 export {Node} from "./node"
 export {Fragment, emptyFragment} from "./fragment"
-export {removeMark, sameMarks, containsMark, marksAt, rangeHasMark} from "./mark"
+export {Mark} from "./mark"
 
 export {SchemaSpec, Schema, SchemaError,
         NodeType, Block, Textblock, Inline, Text,
