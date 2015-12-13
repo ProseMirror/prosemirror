@@ -1,5 +1,5 @@
 // ;; A mark is a piece of information that can be attached to a node,
-// such as it being empasized, in code font, or a link. It has a type
+// such as it being emphasized, in code font, or a link. It has a type
 // and optionally a set of attributes that provide further information
 // (such as the target of the link). Marks are created through a
 // [schema](#Schema), which controls which types exist and which

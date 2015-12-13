@@ -89,7 +89,7 @@ export class Node {
 
   // :: string
   // Concatenate all the text nodes found in this fragment and its
-  // childen.
+  // children.
   get textContent() { return this.content.textContent }
 
   // :: ?Node

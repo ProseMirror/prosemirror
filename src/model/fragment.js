@@ -26,7 +26,7 @@ export class Fragment {
 
   // :: string
   // Concatenate all the text nodes found in this fragment and its
-  // childen.
+  // children.
   get textContent() {
     let text = ""
     this.forEach(n => text += n.textContent)
