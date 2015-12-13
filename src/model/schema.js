@@ -36,7 +36,7 @@ function findKinds(type, name, schema, override) {
 
 // ;; Node types are objects allocated once per [`Schema`](#Schema)
 // and used to tag [`Node`](#Node) instances with a type. They are
-// instances of subtypes of this class, and contain information about
+// instances of sub-types of this class, and contain information about
 // the node type (its name, its allowed attributes, methods for
 // serializing it to various formats, information to guide
 // deserialization, and so on).
@@ -131,7 +131,7 @@ export class NodeType {
 
   // :: (NodeType) → bool
   // Test whether the nodes that can be contained in the given node
-  // type are a subtype of the nodes that can be contained in this
+  // type are a sub-type of the nodes that can be contained in this
   // type.
   canContainContent(type) {
     return this.schema.subKind(type.contains, this.contains)
@@ -603,7 +603,7 @@ export class Schema {
   }
 
   // :: (string, string) → bool
-  // Test whether a node kind is a subkind of another kind.
+  // Test whether a node kind is a sub-kind of another kind.
   subKind(sub, sup) {
     for (;;) {
       if (sub == sup) return true

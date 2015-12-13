@@ -171,7 +171,7 @@ export class Node {
 
   // :: ([number], Node) → Node
   // Return a copy of this node with the descendant at `path` replaced
-  // by the given replacement node. This will copy as many subnodes as
+  // by the given replacement node. This will copy as many sub-nodes as
   // there are elements in `path`.
   replaceDeep(path, node, depth = 0) {
     if (depth == path.length) return node
@@ -182,7 +182,7 @@ export class Node {
   // :: (number, string) → Node
   // “Close” this node by making sure that, if it is empty, and is not
   // allowed to be so, it has its default content inserted. When depth
-  // is greater than zero, subnodes at the given side (which can be
+  // is greater than zero, sub-nodes at the given side (which can be
   // `"start"` or `"end"`) are closed too. Returns itself if no work
   // is necessary, or a closed copy if something did need to happen.
   close(depth, side) {
@@ -318,7 +318,7 @@ export class Node {
   }
 
   // :: () → Object
-  // Return a JSON-serializable representation of this node.
+  // Return a JSON-serializeable representation of this node.
   toJSON() {
     let obj = {type: this.type.name}
     for (let _ in this.attrs) {

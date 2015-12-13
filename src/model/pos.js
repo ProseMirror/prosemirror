@@ -65,7 +65,7 @@ export class Pos {
   // :: (?number, ?number) → Pos
   // Create a position pointing into a parent of this position's
   // target. When `to` is given, it determines the new length of the
-  // path. By default, the path becomes one storter. The `offset`
+  // path. By default, the path becomes one shorter. The `offset`
   // parameter can be used to determine where in this parent the
   // position points. By default, it points before the old target. You
   // can pass a negative or positive integer to move it backward or

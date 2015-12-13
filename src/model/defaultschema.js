@@ -61,7 +61,7 @@ Image.attributes = {
   title: new Attribute({default: ""})
 }
 
-// ;; The default hardbreak node type.
+// ;; The default hard break node type.
 export class HardBreak extends Inline {
   get selectable() { return false }
   get isBR() { return true }
