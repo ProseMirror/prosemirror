@@ -1,7 +1,6 @@
 // ;; Instances of the `Pos` class represent positions in a document.
 // A position an array of integers that describe a path to the target
-// node (see [`Node.path`](#Node..path)) and an integer offset into
-// that target node.
+// node (see `Node.path`) and an integer offset into that target node.
 
 export class Pos {
   // :: (path: [number], number)
@@ -83,7 +82,7 @@ export class Pos {
     return new Pos(this.path, this.offset + by)
   }
 
-  // :: (?move) → [number]
+  // :: (?number) → [number]
   // Convert this position to an array of numbers (including its
   // offset). Optionally pass an argument to adjust the value of the
   // offset.
@@ -106,7 +105,7 @@ export class Pos {
 
   // :: ([number], ?number) → Pos
   // Build a position from an array of numbers (as in
-  // [toPath](#Pos.toPath)), taking the last element of the array as
+  // [`toPath`](#Pos.toPath)), taking the last element of the array as
   // offset and optionally moving it by `move`.
   static from(array, move = 0) {
     if (!array.length) throw new Error("Can't create a pos from an empty array")

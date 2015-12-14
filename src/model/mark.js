@@ -2,7 +2,7 @@
 // such as it being emphasized, in code font, or a link. It has a type
 // and optionally a set of attributes that provide further information
 // (such as the target of the link). Marks are created through a
-// [schema](#Schema), which controls which types exist and which
+// `Schema`, which controls which types exist and which
 // attributes they have.
 export class Mark {
   constructor(type, attrs) {
@@ -32,10 +32,10 @@ export class Mark {
       var other = set[i]
       if (other.type == this.type) {
         if (this.eq(other)) return set
-        else return [...set.slice(0, i), this, ...set.slice(i + 1)]
+        else return set.slice(0, i).concat(this).concat(set.slice(i + 1))
       }
       if (other.type.rank > this.type.rank)
-        return [...set.slice(0, i), this, ...set.slice(i)]
+        return set.slice(0, i).concat(this).concat(set.slice(i))
     }
     return set.concat(this)
   }
@@ -46,7 +46,7 @@ export class Mark {
   removeFromSet(set) {
     for (var i = 0; i < set.length; i++)
       if (this.eq(set[i]))
-        return [...set.slice(0, i), ...set.slice(i + 1)]
+        return set.slice(0, i).concat(set.slice(i + 1))
     return set
   }
 

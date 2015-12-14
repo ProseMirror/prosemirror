@@ -4,7 +4,8 @@ import {Mark} from "./mark"
 
 import {ProseMirrorError} from "../util/error"
 
-// ;; The exception type used to signal schema-related errors.
+// ;; #toc=false The exception type used to signal schema-related
+// errors.
 export class SchemaError extends ProseMirrorError {}
 
 function findKinds(type, name, schema, override) {
@@ -34,8 +35,8 @@ function findKinds(type, name, schema, override) {
   }
 }
 
-// ;; Node types are objects allocated once per [`Schema`](#Schema)
-// and used to tag [`Node`](#Node) instances with a type. They are
+// ;; Node types are objects allocated once per `Schema`
+// and used to tag `Node` instances with a type. They are
 // instances of sub-types of this class, and contain information about
 // the node type (its name, its allowed attributes, methods for
 // serializing it to various formats, information to guide
@@ -53,7 +54,7 @@ export class NodeType {
     // The attributes allowed on this node type.
     this.attrs = attrs
     // :: Schema
-    // A link back to the [`Schema`](#Schema) the node type belongs to.
+    // A link back to the `Schema` the node type belongs to.
     this.schema = schema
     this.defaultAttrs = null
   }
@@ -168,10 +169,10 @@ export class NodeType {
   }
 
   // :: (?Object, ?Fragment, ?[Mark]) → Node
-  // Create a [`Node`](#Node) of this type. The given attributes are
+  // Create a `Node` of this type. The given attributes are
   // checked and defaulted (you can pass `null` to use the type's
   // defaults entirely, if no required attributes exist). `content`
-  // may be a [`Fragment`](#Fragment), a node, an array of nodes, or
+  // may be a `Fragment`, a node, an array of nodes, or
   // `null`. Similarly `marks` may be `null` to default to the empty
   // set of marks.
   create(attrs, content, marks) {
@@ -233,7 +234,7 @@ export class NodeType {
 // type.
 NodeType.attributes = {}
 
-// ;; Base type for block nodetypes.
+// ;; #toc=false Base type for block nodetypes.
 export class Block extends NodeType {
   static get contains() { return "block" }
   static get kind() { return "block." }
@@ -250,7 +251,7 @@ export class Block extends NodeType {
   }
 }
 
-// ;; Base type for textblock node types.
+// ;; #toc=false Base type for textblock node types.
 export class Textblock extends Block {
   static get contains() { return "inline" }
   get containsMarks() { return true }
@@ -258,14 +259,14 @@ export class Textblock extends Block {
   get canBeEmpty() { return true }
 }
 
-// ;; Base type for inline node types.
+// ;; #toc=false Base type for inline node types.
 export class Inline extends NodeType {
   static get contains() { return null }
   static get kind() { return "inline." }
   get isInline() { return true }
 }
 
-// ;; The text node type.
+// ;; #toc=false The text node type.
 export class Text extends Inline {
   get selectable() { return false }
   get isText() { return true }
@@ -307,7 +308,7 @@ export class Attribute {
 
 // ;; Like nodes, marks (which are associated with nodes to signify
 // things like emphasis or being part of a link) are tagged with type
-// objects, which are instantiated once per [Schema](#Schema).
+// objects, which are instantiated once per `Schema`.
 export class MarkType {
   constructor(name, attrs, rank, schema) {
     // :: string
@@ -423,7 +424,7 @@ function overlayObj(obj, overlay) {
 // FIXME clean up handling of attributes, finish documentation.
 
 // ;; A schema specification is a blueprint for an actual
-// [`Schema`](#Schema). It maps names to node and mark types, along
+// `Schema`. It maps names to node and mark types, along
 // with extra information, such as additional attributes and changes
 // to node kinds and relations.
 //
@@ -532,9 +533,9 @@ export class Schema {
 
   // :: (union<string, NodeType>, ?Object, ?union<Fragment, Node, [Node]>, ?[Mark]) → Node
   // Create a node in this schema. The `type` may be a string or a
-  // [`NodeType`](#NodeType) instance. Attributes will be extended
-  // with defaults, `content` may be a [`Fragment`](#Fragment),
-  // `null`, a [`Node`](#Node), or an array of nodes.
+  // `NodeType` instance. Attributes will be extended
+  // with defaults, `content` may be a `Fragment`,
+  // `null`, a `Node`, or an array of nodes.
   //
   // When creating a text node, `content` should be a string and is
   // interpreted as the node's text.
@@ -596,7 +597,7 @@ export class Schema {
   }
 
   // :: (string) → NodeType
-  // Get the [`NodeType`](#NodeType) associated with the given name in
+  // Get the `NodeType` associated with the given name in
   // this schema, or raise an error if it does not exist.
   nodeType(name) {
     return this.nodes[name] || SchemaError.raise("Unknown node type: " + name)
