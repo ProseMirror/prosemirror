@@ -393,15 +393,15 @@ The core editor library defines the following commands, which are
 named operations that can be bound to keys or ran with the
 [`execCommand`](#ProseMirror.execCommand) method.
 
-**setStrong**, **unsetStrong**, **toggleStrong** (Ctrl/Cmd-B) <a name="command_setStrong"></a>
+**setStrong**, **unsetStrong**, **strong** (Ctrl/Cmd-B) <a name="command_setStrong"></a>
   : Add, remove, or toggle strong styling for the current selection.
     When no selection is present, the pending styling, which
     determines the style of the next typed character, is changed.
 
-**setEm**, **unsetEm**, **toggleEm** (Ctrl/Cmd-I) <a name="command_setEm"></a>
+**setEm**, **unsetEm**, **em** (Ctrl/Cmd-I) <a name="command_setEm"></a>
   : Add, remove, or toggle emphasized styling.
 
-**setCode**, **unsetCode**, **toggleCode** (Ctrl/Cmd-`) <a name="command_setCode"></a>
+**setCode**, **unsetCode**, **code** (Ctrl/Cmd-`) <a name="command_setCode"></a>
   : Add, remove, or toggle code font styling.
 
 **endBlock** (Enter) <a name="command_endBlock"></a>
