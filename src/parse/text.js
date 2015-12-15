@@ -3,6 +3,8 @@ import {defineSource} from "./index"
 // FIXME is it meaningful to try and attach text-parsing information
 // to node types?
 
+// :: (Schema, string) → Node
+// Convert a string into a simple ProseMirror document.
 export function fromText(schema, text) {
   let blocks = text.trim().split(/\n{2,}/)
   let nodes = []

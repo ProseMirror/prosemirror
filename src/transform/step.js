@@ -128,8 +128,8 @@ export class Step {
   }
 }
 
-// ;; Objects of this type are returned as the result of applying a
-// transform step to a document.
+// ;; #toc=false Objects of this type are returned as the result of
+// applying a transform step to a document.
 export class StepResult {
   constructor(doc, map = nullMap) {
     // :: Node The transformed document.

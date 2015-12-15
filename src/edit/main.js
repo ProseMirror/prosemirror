@@ -16,7 +16,7 @@ import {History} from "./history"
 import {eventMixin} from "./event"
 import {toText} from "../serialize/text"
 import "../parse/text"
-import {convertFrom} from "../parse"
+import {from} from "../parse"
 import {convertTo} from "../serialize"
 import {initCommands} from "./commands"
 import {RangeStore, MarkedRange} from "./range"
@@ -45,7 +45,7 @@ export class ProseMirror {
     else if (opts.place)
       opts.place(this.wrapper)
 
-    this.setDocInner(opts.docFormat ? convertFrom(this.schema, opts.doc, opts.docFormat, {document}) : opts.doc)
+    this.setDocInner(opts.docFormat ? from(this.schema, opts.doc, opts.docFormat) : opts.doc)
     draw(this, this.doc)
     this.content.contentEditable = true
     if (opts.label)
@@ -103,7 +103,7 @@ export class ProseMirror {
   get tr() { return new EditorTransform(this) }
 
   setContent(value, format) {
-    if (format) value = convertFrom(this.schema, value, format)
+    if (format) value = from(this.schema, value, format)
     this.setDoc(value)
   }
 

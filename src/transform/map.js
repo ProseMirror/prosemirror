@@ -1,12 +1,12 @@
 import {Pos} from "../model"
 
-// ;; #kind=interface #path=Mappable
+// ;; #kind=interface #path=Mappable #toc=false
 // There are various things that positions can be mapped through.
 // We'll denote those as 'mappable'. This is not an actual class in
 // the codebase, only an agreed-on interface.
 
 // :: (pos: Pos, bias: ?number) → MapResult
-// #path=Mappable.prototype.map
+// #path=Mappable.map
 // Map a position through this object. When given, the `bias`
 // determines in which direction to move when a chunk of content is
 // inserted at or around the mapped position.

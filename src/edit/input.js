@@ -5,7 +5,7 @@ import {fromText} from "../parse/text"
 import {elt} from "../dom"
 import {toHTML} from "../serialize/dom"
 import {toText} from "../serialize/text"
-import {knownSource, convertFrom} from "../parse"
+import {knownSource, from} from "../parse"
 
 import {isModifierKey, lookupKey, keyName} from "./keys"
 import {captureKeys} from "./capturekeys"
@@ -321,7 +321,7 @@ handlers.paste = (pm, e) => {
     } else if (html) {
       doc = fromHTML(pm.schema, html)
     } else {
-      doc = convertFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
+      doc = from(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
     }
     pm.tr.replace(sel.from, sel.to, doc, from || findSelectionAtStart(doc).from,
                   to || findSelectionAtEnd(doc).to).apply()
@@ -369,7 +369,7 @@ handlers.drop = (pm, e) => {
   if (html = e.dataTransfer.getData("text/html"))
     doc = fromHTML(pm.schema, html, {document})
   else if (txt = e.dataTransfer.getData("text/plain"))
-    doc = convertFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
+    doc = from(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
 
   if (doc) {
     e.preventDefault()

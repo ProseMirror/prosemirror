@@ -3,9 +3,14 @@ import {BlockQuote, OrderedList, BulletList, ListItem,
         EmMark, StrongMark, LinkMark, CodeMark, Node} from "../model"
 import {defineSource} from "./index"
 
+// :: (Schema, DOMNode, ?Object) → Node
+// Parse document from the content of a DOM node. To pass an explicit
+// parent document (for example, when not in a browser window
+// environment, where we simply use the global document), pass it as
+// the `document` property of `options`.
 export function fromDOM(schema, dom, options) {
   if (!options) options = {}
-  let context = new Context(schema, options.topNode || schema.node("doc"))
+  let context = new DOMParseState(schema, options.topNode || schema.node("doc"), options)
   let start = options.from ? dom.childNodes[options.from] : dom.firstChild
   let end = options.to != null && dom.childNodes[options.to] || null
   context.addAll(start, end, true)
@@ -14,8 +19,46 @@ export function fromDOM(schema, dom, options) {
   return doc
 }
 
+// ;; #path=DOMParseSpec #kind=interface #toc=false
+// To define the way [node](#NodeType) and [mark](#MarkType) types are
+// parsed, you can associate one or more DOM parsing specifications to
+// them using the [`register`](#NodeType.register) method with the
+// `parseDOM` property name. Each of them defines a parsing strategy
+// for a certain type of DOM node.
+//
+// Note that `Attribute`s may also contain a `parseDOM` property,
+// which should _not_ be a `DOMParseSpec`, but simply a function that
+// computes the attribute's value from a DOM node.
+
+// :: ?string #path=DOMParseSpec.tag
+// The (lower-case) tag name for which to activate this parser. When
+// not given, it is activated for all nodes.
+
+// :: ?number #path=DOMParseSpec.rank
+// The precedence of this parsing strategy. Should be a number between
+// 0 and 100, which determines when this parser gets a chance relative
+// to others that apply to the node (low ranks go first). Defaults to
+// 50.
+
+// :: union<string, (dom: DOMNode, state: DOMParseState) → ?bool> #path=DOMParseSpec.parse
+// The function that, given a DOM node, parses it, updating the parse
+// state. It should return (the exact value) `false` when it wants to
+// indicate that it was not able to parse this node. This function is
+// called in such a way that `this` is bound to the type that the
+// parse spec was associated with.
+//
+// When this is set to the string `"block"`, the content of the DOM
+// node is parsed as the content in a node of the type that this spec
+// was associated with.
+//
+// When set to the string `"mark"`, the content of the DOM node is
+// parsed with an instance of the mark that this spec was associated
+// with added to their marks.
+
 defineSource("dom", fromDOM)
 
+// :: (Schema, string, ?Object) → Node
+// Parses the HTML into a DOM, and then calls through to `fromDOM`.
 export function fromHTML(schema, html, options) {
   let wrap = (options && options.document || window.document).createElement("div")
   wrap.innerHTML = html
@@ -34,8 +77,13 @@ const blockElements = {
 
 const noMarks = []
 
-class Context {
-  constructor(schema, topNode) {
+// ;; A state object used to track context during a parse, and to
+// expose methods to custom parsing functions.
+class DOMParseState {
+  constructor(schema, topNode, options) {
+    // :: Object The options passed to this parse.
+    this.options = options || {}
+    // :: Schema The schema that we are parsing into.
     this.schema = schema
     this.stack = []
     this.marks = noMarks
@@ -88,7 +136,7 @@ class Context {
   tryParsers(parsers, dom) {
     if (parsers) for (let i = 0; i < parsers.length; i++) {
       let parser = parsers[i]
-      if (parser.parse(dom, this, parser.type, null, this.options) !== false) return true
+      if (parser.parse.call(parser.type, dom, this) !== false) return true
     }
   }
 
@@ -135,8 +183,11 @@ class Context {
     return node
   }
 
-  insertFrom(dom, type, attrs, content, styles) {
-    return this.insert(type.createAutoFill(this.parseAttrs(dom, type, attrs), content, styles))
+  // :: (DOMNode, NodeType, ?Object, [Node]) → Node
+  // Insert a node of the given type, with the given content, based on
+  // `dom`, at the current position in the document.
+  insertFrom(dom, type, attrs, content) {
+    return this.insert(type.createAutoFill(this.parseAttrs(dom, type, attrs), content, this.marks))
   }
 
   enter(type, attrs) {
@@ -169,6 +220,25 @@ class Context {
     if (this.marks.length) this.marks = noMarks
     this.closing = false
   }
+
+  // :: (DOMNode, NodeType, ?Object)
+  // Parse the contents of `dom` as children of a node of the given
+  // type.
+  wrapIn(dom, type, attrs) {
+    this.enterFrom(dom, type, attrs)
+    this.addAll(dom.firstChild, null, true)
+    this.leave()
+  }
+
+  // :: (DOMNode, Mark)
+  // Parse the contents of `dom`, with `mark` added to the set of
+  // current marks.
+  wrapMark(dom, mark) {
+    let old = this.marks
+    this.marks = (mark.instance || mark).addToSet(old)
+    this.addAll(dom.firstChild, null)
+    this.marks = old
+  }
 }
 
 function nodeInfo(schema) {
@@ -178,15 +248,19 @@ function nodeInfo(schema) {
 function summarizeNodeInfo(schema) {
   let tags = Object.create(null)
   tags._ = []
-  function read(value) {
-    let info = value.parseDOM
+  function read(type) {
+    let info = type.parseDOM
     if (!info) return
     info.forEach(info => {
       let tag = info.tag || "_"
+      let parse = info.parse
+      if (parse == "block")
+        parse = function(dom, state) { state.wrapIn(dom, this) }
+      else if (parse == "mark")
+        parse = function(dom, state) { state.wrapMark(dom, this) }
       ;(tags[tag] || (tags[tag] = [])).push({
-        type: value,
-        rank: info.rank == null ? 50 : info.rank,
-        parse: info.parse
+        type, parse,
+        rank: info.rank == null ? 50 : info.rank
       })
     })
   }
@@ -197,25 +271,19 @@ function summarizeNodeInfo(schema) {
   return tags
 }
 
-function wrap(dom, context, type, attrs) {
-  context.enterFrom(dom, type, attrs)
-  context.addAll(dom.firstChild, null, true)
-  context.leave()
-}
+Paragraph.register("parseDOM", {tag: "p", parse: "block"})
 
-Paragraph.register("parseDOM", {tag: "p", parse: wrap})
-
-BlockQuote.register("parseDOM", {tag: "blockquote", parse: wrap})
+BlockQuote.register("parseDOM", {tag: "blockquote", parse: "block"})
 
 for (let i = 1; i <= 6; i++)
   Heading.register("parseDOM", {
     tag: "h" + i,
-    parse: (dom, context, type) => wrap(dom, context, type, {level: i})
+    parse: function(dom, state) { state.wrapIn(dom, this, {level: i}) }
   })
 
-HorizontalRule.register("parseDOM", {tag: "hr", parse: wrap})
+HorizontalRule.register("parseDOM", {tag: "hr", parse: "block"})
 
-CodeBlock.register("parseDOM", {tag: "pre", parse: (dom, context, type) => {
+CodeBlock.register("parseDOM", {tag: "pre", parse: function(dom, state) {
   let params = dom.firstChild && /^code$/i.test(dom.firstChild.nodeName) && dom.firstChild.getAttribute("class")
   if (params && /fence/.test(params)) {
     let found = [], re = /(?:^|\s)lang-(\S+)/g, m
@@ -225,24 +293,24 @@ CodeBlock.register("parseDOM", {tag: "pre", parse: (dom, context, type) => {
     params = null
   }
   let text = dom.textContent
-  context.insertFrom(dom, type, {params}, text ? [context.schema.text(text)] : [])
+  state.insertFrom(dom, this, {params}, text ? [state.schema.text(text)] : [])
 }})
 
-BulletList.register("parseDOM", {tag: "ul", parse: wrap})
+BulletList.register("parseDOM", {tag: "ul", parse: "block"})
 
-OrderedList.register("parseDOM", {tag: "ol", parse: (dom, context, type) => {
+OrderedList.register("parseDOM", {tag: "ol", parse: function(dom, state) {
   let attrs = {order: dom.getAttribute("start") || 1}
-  wrap(dom, context, type, attrs)
+  state.wrapIn(dom, this, attrs)
 }})
 
-ListItem.register("parseDOM", {tag: "li", parse: wrap})
+ListItem.register("parseDOM", {tag: "li", parse: "block"})
 
-HardBreak.register("parseDOM", {tag: "br", parse: (dom, context, type) => {
-  context.insertFrom(dom, type, null, null, context.marks)
+HardBreak.register("parseDOM", {tag: "br", parse: function(dom, state) {
+  state.insertFrom(dom, this)
 }})
 
-Image.register("parseDOM", {tag: "img", parse: (dom, context, type) => {
-  context.insertFrom(dom, type, {
+Image.register("parseDOM", {tag: "img", parse: function(dom, state) {
+  state.insertFrom(dom, this, {
     src: dom.getAttribute("src"),
     title: dom.getAttribute("title") || null,
     alt: dom.getAttribute("alt") || null
@@ -251,23 +319,16 @@ Image.register("parseDOM", {tag: "img", parse: (dom, context, type) => {
 
 // Inline style tokens
 
-function inline(dom, context, style) {
-  var old = context.marks
-  context.marks = (style.instance || style).addToSet(old)
-  context.addAll(dom.firstChild, null)
-  context.marks = old
-}
-
-LinkMark.register("parseDOM", {tag: "a", parse: (dom, context, style) => {
+LinkMark.register("parseDOM", {tag: "a", parse: function(dom, state) {
   let href = dom.getAttribute("href")
   if (!href) return false
-  inline(dom, context, style.create({href, title: dom.getAttribute("title")}))
+  state.wrapMark(dom, this.create({href, title: dom.getAttribute("title")}))
 }})
 
-EmMark.register("parseDOM", {tag: "i", parse: inline})
-EmMark.register("parseDOM", {tag: "em", parse: inline})
+EmMark.register("parseDOM", {tag: "i", parse: "mark"})
+EmMark.register("parseDOM", {tag: "em", parse: "mark"})
 
-StrongMark.register("parseDOM", {tag: "b", parse: inline})
-StrongMark.register("parseDOM", {tag: "strong", parse: inline})
+StrongMark.register("parseDOM", {tag: "b", parse: "mark"})
+StrongMark.register("parseDOM", {tag: "strong", parse: "mark"})
 
-CodeMark.register("parseDOM", {tag: "code", parse: inline})
+CodeMark.register("parseDOM", {tag: "code", parse: "mark"})
