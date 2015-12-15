@@ -1,4 +1,4 @@
-import {mapStep, Remapping, Transform} from "../transform"
+import {Remapping, Transform} from "../transform"
 
 export function rebaseSteps(doc, forward, steps, maps) {
   let remap = new Remapping([], forward.slice())
@@ -6,7 +6,7 @@ export function rebaseSteps(doc, forward, steps, maps) {
   let positions = []
 
   for (let i = 0; i < steps.length; i++) {
-    let step = mapStep(steps[i], remap)
+    let step = steps[i].map(remap)
     let result = step && transform.step(step)
     let id = remap.addToFront(maps[i].invert())
     if (result) {

@@ -1,5 +1,6 @@
 import {Fragment, emptyFragment} from "./fragment"
 import {Mark} from "./mark"
+import {Pos} from "./pos"
 
 const emptyArray = []
 
@@ -232,6 +233,26 @@ export class Node {
         if (n >= node.size) return false
         node = node.child(n)
       }
+    }
+  }
+
+  // :: (Pos, Pos) → {from: Pos, to: Pos}
+  // Finds the narrowest sibling range (two positions that both point
+  // into the same node) that encloses the given positions.
+  siblingRange(from, to) {
+    for (let i = 0, node = this;; i++) {
+      if (node.isTextblock) {
+        let path = from.path.slice(0, i - 1), offset = from.path[i - 1]
+        return {from: new Pos(path, offset), to: new Pos(path, offset + 1)}
+      }
+      let fromEnd = i == from.path.length, toEnd = i == to.path.length
+      let left = fromEnd ? from.offset : from.path[i]
+      let right = toEnd ? to.offset : to.path[i]
+      if (fromEnd || toEnd || left != right) {
+        let path = from.path.slice(0, i)
+        return {from: new Pos(path, left), to: new Pos(path, right + (toEnd ? 0 : 1))}
+      }
+      node = node.child(left)
     }
   }
 

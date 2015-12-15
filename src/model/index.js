@@ -21,6 +21,6 @@ export {defaultSchema, Doc, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         CodeMark, EmMark, StrongMark, LinkMark} from "./defaultschema"
 
-export {Pos, siblingRange} from "./pos"
+export {Pos} from "./pos"
 
 export {findDiffStart, findDiffEnd} from "./diff"

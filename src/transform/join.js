@@ -1,10 +1,15 @@
 import {Pos, Fragment} from "../model"
 
-import {TransformResult, Transform} from "./transform"
-import {defineStep, Step} from "./step"
+import {Transform} from "./transform"
+import {Step, StepResult} from "./step"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 
-defineStep("join", {
+// !! **`join`**
+//   : Join two block elements together. `from` and `to` must point at
+//     the end of the first and start of the second element (so that
+//     the intention is preserved even when the positions are mapped).
+
+Step.define("join", {
   apply(doc, step) {
     let before = doc.path(step.from.path)
     let after = doc.path(step.to.path)
@@ -24,13 +29,16 @@ defineStep("join", {
     let map = new PosMap([new MovedRange(step.to, after.size, step.from),
                           new MovedRange(new Pos(targetPath, offset + 1), oldSize - offset - 1, new Pos(targetPath, offset))],
                          [new ReplacedRange(step.from, step.to, step.from, step.from, step.to.shorten())])
-    return new TransformResult(copy, map)
+    return new StepResult(copy, map)
   },
   invert(step, oldDoc) {
     return new Step("split", null, null, step.from, oldDoc.path(step.to.path).copy())
   }
 })
 
+// :: (Node, Pos) → bool
+// Test whether the blocks before and after a given position can be
+// joined.
 export function joinableBlocks(doc, pos) {
   if (pos.offset == 0) return false
   let parent = doc.path(pos.path)
@@ -39,6 +47,10 @@ export function joinableBlocks(doc, pos) {
   return !type.isTextblock && type.contains && type == parent.child(pos.offset).type
 }
 
+// :: (Node, Pos, ?number) → ?Pos
+// Find an ancestor of the given position that can be joined to the
+// block before (or after if `dir` is positive). Returns the joinable
+// point, if any.
 export function joinPoint(doc, pos, dir = -1) {
   for (;;) {
     if (joinableBlocks(doc, pos)) return pos
@@ -47,6 +59,8 @@ export function joinPoint(doc, pos, dir = -1) {
   }
 }
 
+// :: (Pos) → Transform
+// Join the blocks around the given position.
 Transform.prototype.join = function(at) {
   let parent = this.doc.path(at.path)
   if (at.offset == 0 || at.offset == parent.size || parent.isTextblock) return this

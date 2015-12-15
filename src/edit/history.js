@@ -1,5 +1,5 @@
 import {Pos} from "../model"
-import {Transform, Step, mapStep, Remapping} from "../transform"
+import {Transform, Step, Remapping} from "../transform"
 
 class InvertedStep {
   constructor(step, version, id) {
@@ -66,7 +66,7 @@ class CompressionWorker {
         let {step, version: stepVersion, id: stepID} = event[j]
         this.remap.moveToVersion(stepVersion)
 
-        let mappedStep = mapStep(step, this.remap.remap)
+        let mappedStep = step.map(this.remap.remap)
         if (mappedStep && isDelStep(step)) {
           let extra = 0, start = step.from
           while (j > 0) {
@@ -121,7 +121,7 @@ class CompressionWorker {
 }
 
 function isDelStep(step) {
-  return step.name == "replace" && step.from.offset < step.to.offset &&
+  return step.type == "replace" && step.from.offset < step.to.offset &&
     Pos.samePath(step.from.path, step.to.path) && (!step.param || step.param.content.size == 0)
 }
 
@@ -199,7 +199,7 @@ class Branch {
         collapsing = false
         remap.moveToVersion(invertedStep.version)
 
-        step = mapStep(step, remap.remap)
+        step = step.map(remap.remap)
         let result = step && tr.step(step)
         if (result) {
           ids.push(invertedStep.id)

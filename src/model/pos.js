@@ -38,6 +38,14 @@ export class Pos {
       return offsetA - offsetB
   }
 
+  // :: (Pos) → Pos
+  // Return the greater of two positions.
+  max(other) { return this.cmp(other) > 0 ? this : other }
+
+  // :: (Pos) → Pos
+  // Return the lesser of two positions.
+  mmin(other) { return this.cmp(other) < 0 ? this : other }
+
   // :: ([number], [number]) → bool
   // Compares two paths and returns true when they are the same.
   static samePath(pathA, pathB) {
@@ -115,21 +123,4 @@ export class Pos {
   // :: (Object) → Pos
   // Create a position from a JSON representation.
   static fromJSON(json) { return new Pos(json.path, json.offset) }
-}
-
-export function siblingRange(doc, from, to) {
-  for (let i = 0, node = doc;; i++) {
-    if (node.isTextblock) {
-      let path = from.path.slice(0, i - 1), offset = from.path[i - 1]
-      return {from: new Pos(path, offset), to: new Pos(path, offset + 1)}
-    }
-    let fromEnd = i == from.path.length, toEnd = i == to.path.length
-    let left = fromEnd ? from.offset : from.path[i]
-    let right = toEnd ? to.offset : to.path[i]
-    if (fromEnd || toEnd || left != right) {
-      let path = from.path.slice(0, i)
-      return {from: new Pos(path, left), to: new Pos(path, right + (toEnd ? 0 : 1))}
-    }
-    node = node.child(left)
-  }
 }

@@ -1,6 +1,15 @@
 import {Pos} from "../model"
 
-import {Step} from "./step"
+// ;; #kind=interface #path=Mappable
+// There are various things that positions can be mapped through.
+// We'll denote those as 'mappable'. This is not an actual class in
+// the codebase, only an agreed-on interface.
+
+// :: (pos: Pos, bias: ?number) → MapResult
+// #path=Mappable.prototype.map
+// Map a position through this object. When given, the `bias`
+// determines in which direction to move when a chunk of content is
+// inserted at or around the mapped position.
 
 export class MovedRange {
   constructor(start, size, dest = null) {
@@ -38,14 +47,6 @@ export class ReplacedRange {
 }
 
 const empty = []
-
-export class MapResult {
-  constructor(pos, deleted = false, recover = null) {
-    this.pos = pos
-    this.deleted = deleted
-    this.recover = recover
-  }
-}
 
 function offsetFrom(base, pos) {
   if (pos.path.length > base.path.length) {
@@ -90,6 +91,9 @@ function mapThrough(map, pos, bias = 1, back) {
   return new MapResult(pos)
 }
 
+// ;; A position map, holding information about the way positions in
+// the pre-step version of a document correspond to positions in the
+// post-step version. This class implements `Mappable`.
 export class PosMap {
   constructor(moved, replaced) {
     this.moved = moved || empty
@@ -100,13 +104,34 @@ export class PosMap {
     return this.replaced[offset.rangeID].after.ref.extend(offset.offset)
   }
 
+  // :: (Pos, ?number) → MapResult
+  // Map the given position through this map. The `bias` parameter can
+  // be used to control what happens when the transform inserted
+  // content at (or around) this position—if `bias` is negative, the a
+  // position before the inserted content will be returned, if it is
+  // positive, a position after the insertion is returned.
   map(pos, bias) {
     return mapThrough(this, pos, bias, false)
   }
 
+  // :: () → PosMap
+  // Create an inverted version of this map. The result can be used to
+  // map positions in the post-step document to the pre-step document.
   invert() { return new InvertedPosMap(this) }
 
   toString() { return this.moved.concat(this.replaced).join(" ") }
+}
+
+// ;; #toc=false The return value of mapping a position.
+export class MapResult {
+  constructor(pos, deleted = false, recover = null) {
+    // :: Pos The mapped version of the position.
+    this.pos = pos
+    // :: bool Tells you whether the position was deleted, that is,
+    // whether the step removed its surroundings from the document.
+    this.deleted = deleted
+    this.recover = recover
+  }
 }
 
 class InvertedPosMap {
@@ -127,13 +152,31 @@ class InvertedPosMap {
 
 export const nullMap = new PosMap
 
+// ;; A remapping represents a pipeline of zero or more mappings. It
+// is a specialized data structured used to manage mapping through a
+// series of steps, typically including inverted and non-inverted
+// versions of the same step. (This comes up when ‘rebasing’ steps for
+// collaboration or history management.) This class implements
+// `Mappable`.
 export class Remapping {
+  // :: (?[PosMap], ?[PosMap])
   constructor(head = [], tail = [], mirror = Object.create(null)) {
+    // :: [PosMap]
+    // The maps in the head of the mapping are applied to input
+    // positions first, back-to-front. So the map at the end of this
+    // array (if any) is the very first one applied.
     this.head = head
+    // The maps in the tail are applied last, front-to-back.
     this.tail = tail
     this.mirror = mirror
   }
 
+  // :: (PosMap, ?number) → number
+  // Add a map to the mapping's front. If this map is the mirror image
+  // (produced by an inverted step) of another map in this mapping,
+  // that map's id (as returned by this method or
+  // [`addToBack`](#Remapping.addToBack)) should be passed as a second
+  // parameter to register the correspondence.
   addToFront(map, corr) {
     this.head.push(map)
     let id = -this.head.length
@@ -141,6 +184,10 @@ export class Remapping {
     return id
   }
 
+  // :: (PosMap, ?number) → number
+  // Add a map to the mapping's back. If the map is the mirror image
+  // of another mapping in this object, the id of that map should be
+  // passed to register the correspondence.
   addToBack(map, corr) {
     this.tail.push(map)
     let id = this.tail.length - 1
@@ -152,6 +199,9 @@ export class Remapping {
     return id < 0 ? this.head[-id - 1] : this.tail[id]
   }
 
+  // :: (Pos, ?number) → MapResult
+  // Map a position through this remapping, optionally passing a bias
+  // direction.
   map(pos, bias) {
     let deleted = false
 
@@ -172,40 +222,4 @@ export class Remapping {
 
     return new MapResult(pos, deleted)
   }
-}
-
-function maxPos(a, b) {
-  return a.cmp(b) > 0 ? a : b
-}
-
-export function mapStep(step, remapping) {
-  let allDeleted = true
-  let from = null, to = null, pos = null
-
-  if (step.from) {
-    let result = remapping.map(step.from, 1)
-    from = result.pos
-    if (!result.deleted) allDeleted = false
-  }
-  if (step.to) {
-    if (step.to.cmp(step.from) == 0) {
-      to = from
-    } else {
-      let result = remapping.map(step.to, -1)
-      to = maxPos(result.pos, from)
-      if (!result.deleted) allDeleted = false
-    }
-  }
-  if (step.pos) {
-    if (from && step.pos.cmp(step.from) == 0) {
-      pos = from
-    } else if (to && step.pos.cmp(step.to) == 0) {
-      pos = to
-    } else {
-      let result = remapping.map(step.pos, 1)
-      pos = result.pos
-      if (!result.deleted) allDeleted = false
-    }
-  }
-  if (!allDeleted) return new Step(step.name, from, to, pos, step.param)
 }

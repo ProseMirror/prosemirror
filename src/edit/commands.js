@@ -1,6 +1,6 @@
 import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
         StrongMark, EmMark, CodeMark, LinkMark, Image, NodeType, MarkType, Pos} from "../model"
-import {joinPoint, joinableBlocks, canLift, canWrap, alreadyHasBlockType} from "../transform"
+import {joinPoint, joinableBlocks, canLift, canWrap} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
 
@@ -628,6 +628,18 @@ ListItem.attachCommand("splitListItem", type => ({
   },
   key: "Enter(50)"
 }))
+
+function alreadyHasBlockType(doc, from, to, type, attrs) {
+  let found = false
+  if (!attrs) attrs = {}
+  doc.nodesBetween(from, to || from, node => {
+    if (node.isTextblock) {
+      if (node.hasMarkup(type, attrs)) found = true
+      return false
+    }
+  })
+  return found
+}
 
 function blockTypeCommand(type, name, labelName, attrs, key) {
   if (!attrs) attrs = {}

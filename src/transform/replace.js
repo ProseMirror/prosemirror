@@ -1,9 +1,34 @@
 import {Pos, Fragment, emptyFragment} from "../model"
 
-import {TransformResult, Transform} from "./transform"
-import {defineStep, Step} from "./step"
+import {Transform} from "./transform"
+import {Step, StepResult} from "./step"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 import {replaceHasEffect, samePathDepth} from "./tree"
+
+// !! **`replace`**
+
+//   : Delete the part of the document between `from` and `to` and
+//     optionally replace it with another chunk of content. `pos` must
+//     point at the ‘root’ at which the cut starts—a position between
+//     and above `from` and `to`.
+//
+//     When new content is to be inserted, the step's parameter should
+//     be an object of shape `{content: `[`Fragment`](#Fragment)`,
+//     openLeft: number, openRight: number}`. The step will insert the
+//     given content at the root of the cut, and `openLeft` and
+//     `openRight` indicate how much of the content on both sides
+//     should be consided ‘open’.
+//
+//     A replace step will try to join open nodes on both sides of the
+//     cut. That is, nodes in the original document that are partially
+//     cut off by `from` and `to`, and nodes at the sides of the
+//     replacement content as specificed by `openLeft` and
+//     `openRight`. For example, if `openLeft` is 2, the first node of
+//     the replacement content as well as its first child is
+//     considered open. Whenever two open nodes with the same
+//     [markup](#Node.sameMarkup) end up next to each other, they are
+//     joined. Open nodes that aren't joined are [closed](#Node.close)
+//     to ensure their content (or lack of it) is valid.
 
 function findMovedChunks(oldNode, oldPath, newNode, startDepth) {
   let moved = []
@@ -50,7 +75,7 @@ export function replace(node, from, to, root, repl, depth = 0) {
 
 const nullRepl = {content: emptyFragment, openLeft: 0, openRight: 0}
 
-defineStep("replace", {
+Step.define("replace", {
   apply(doc, step) {
     let rootPos = step.pos, root = rootPos.path
     if (step.from.depth < root.length || step.to.depth < root.length)
@@ -64,7 +89,7 @@ defineStep("replace", {
     let {doc: out, moved} = result
     let end = moved.length ? moved[moved.length - 1].dest : step.to
     let replaced = new ReplacedRange(step.from, step.to, step.from, end, rootPos, rootPos)
-    return new TransformResult(out, new PosMap(moved, [replaced]))
+    return new StepResult(out, new PosMap(moved, [replaced]))
   },
   invert(step, oldDoc, map) {
     let depth = step.pos.depth
@@ -167,21 +192,16 @@ function moveText(tr, doc, before, after) {
     tr.join(before.shorten(i, 1))
 }
 
-/**
- * Delete content between two positions.
- *
- * @param  {Pos} from
- * @param  {Pos} to
- * @return this
- */
+// :: (Pos, Pos) → Transform
+// Delete the content between the given positions.
 Transform.prototype.delete = function(from, to) {
   if (from.cmp(to)) this.replace(from, to)
   return this
 }
 
-/**
- * Replace the content between two positions.
- */
+// :: (Pos, Pos, Node, Pos, Pos) → Transform
+// Replace the part of the document between `from` and `to` with the
+// part of the `source` between `start` and `end`.
 Transform.prototype.replace = function(from, to, source, start, end) {
   let repl, depth, doc = this.doc, maxDepth = samePathDepth(from, to)
   if (source) {
@@ -239,6 +259,10 @@ Transform.prototype.replace = function(from, to, source, start, end) {
   return this
 }
 
+// :: (Pos, Pos, union<Fragment, Node, [Node]>) → Transform
+// Replace the given sibling range (position ponting into the same
+// parent) with the given content, which may be a fragment, node, or
+// array of nodes.
 Transform.prototype.replaceWith = function(from, to, content) {
   if (!(content instanceof Fragment)) content = Fragment.from(content)
   if (!Pos.samePath(from.path, to.path)) return this
@@ -246,14 +270,15 @@ Transform.prototype.replaceWith = function(from, to, content) {
   return this
 }
 
+// :: (Pos, union<Fragment, Node, [Node]>) → Transform
+// Insert the given content at the `pos`.
 Transform.prototype.insert = function(pos, content) {
   return this.replaceWith(pos, pos, content)
 }
 
-Transform.prototype.insertInline = function(pos, node) {
-  return this.insert(pos, node.mark(this.doc.marksAt(pos)))
-}
-
+// :: (Pos, string) → Transform
+// Insert the given text at `pos`, inheriting the marks of the
+// existing content at that position.
 Transform.prototype.insertText = function(pos, text) {
   return this.insert(pos, this.doc.type.schema.text(text, this.doc.marksAt(pos)))
 }

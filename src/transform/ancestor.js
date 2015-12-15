@@ -1,11 +1,27 @@
-import {Pos, Fragment, siblingRange} from "../model"
+import {Pos, Fragment} from "../model"
 
-import {TransformResult, Transform} from "./transform"
-import {defineStep, Step} from "./step"
+import {Transform} from "./transform"
+import {Step, StepResult} from "./step"
 import {isFlatRange} from "./tree"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 
-defineStep("ancestor", {
+// !! **`ancestor`**
+//    : Change the stack of nodes that wrap the part of the document
+//      between `from` and `to`, which must point into the same parent
+//      node.
+//
+//      The set of ancestors to replace is determined by the `depth`
+//      property of the step's parameter. If this is greater than
+//      zero, `from` and `to` must point at the start and end of a
+//      stack of nodes, of that depth, since this step will not split
+//      nodes.
+//
+//      The set of new ancestors to wrap with is determined by the
+//      `types` and `attrs` properties of the parameter. The first
+//      should be an array of `NodeType`s, and the second, optionally,
+//      an array of attribute objects.
+
+Step.define("ancestor", {
   apply(doc, step) {
     let from = step.from, to = step.to
     if (!isFlatRange(from, to)) return null
@@ -58,7 +74,7 @@ defineStep("ancestor", {
     if (end - start != insertedSize)
       moved.push(new MovedRange(new Pos(toParent, end), parentSize - end,
                                 new Pos(toParent, start + insertedSize)))
-    return new TransformResult(copy, new PosMap(moved, replaced))
+    return new StepResult(copy, new PosMap(moved, replaced))
   },
   invert(step, oldDoc, map) {
     let types = [], attrs = []
@@ -102,12 +118,20 @@ function canBeLifted(doc, range) {
   }
 }
 
+// :: (Node, Pos, ?Pos) → bool
+// Tells you whether the given positions' [sibling
+// range](#Node.siblingRange), or any of its ancestor nodes, can be
+// lifted out of a parent.
 export function canLift(doc, from, to) {
-  let range = siblingRange(doc, from, to || from)
+  let range = doc.siblingRange(from, to || from)
   let found = canBeLifted(doc, range)
   if (found) return {found, range}
 }
 
+// :: (Pos, ?Pos) → Transform
+// Lift the nearest liftable ancestor of the [sibling
+// range](#Node.siblingRange) of the given positions out of its
+// parent (or do nothing if no such node exists).
 Transform.prototype.lift = function(from, to = from) {
   let can = canLift(this.doc, from, to)
   if (!can) return this
@@ -148,8 +172,11 @@ Transform.prototype.lift = function(from, to = from) {
   return this
 }
 
+// :: (Node, Pos, ?Pos, NodeType) → bool
+// Determines whether the [sibling range](#Node.siblingRange) of the
+// given positions can be wrapped in the given node type.
 export function canWrap(doc, from, to, type) {
-  let range = siblingRange(doc, from, to || from)
+  let range = doc.siblingRange(from, to || from)
   if (range.from.offset == range.to.offset) return null
   let parent = doc.path(range.from.path)
   let around = parent.type.findConnection(type)
@@ -157,6 +184,10 @@ export function canWrap(doc, from, to, type) {
   if (around && inside) return {range, around, inside}
 }
 
+// :: (Pos, ?Pos, NodeType, ?Object) → Transform
+// Wrap the [sibling range](#Node.siblingRange) of the given positions
+// in a node of the given type, with the given attributes (if
+// possible).
 Transform.prototype.wrap = function(from, to, type, wrapAttrs) {
   let can = canWrap(this.doc, from, to, type)
   if (!can) return this
@@ -174,18 +205,9 @@ Transform.prototype.wrap = function(from, to, type, wrapAttrs) {
   return this
 }
 
-export function alreadyHasBlockType(doc, from, to, type, attrs) {
-  let found = false
-  if (!attrs) attrs = {}
-  doc.nodesBetween(from, to || from, node => {
-    if (node.isTextblock) {
-      if (node.hasMarkup(type, attrs)) found = true
-      return false
-    }
-  })
-  return found
-}
-
+// :: (Pos, ?Pos, NodeType, ?Object) → Transform
+// Set the type of all textblocks (partly) between `from` and `to` to
+// the given node type with the given attributes.
 Transform.prototype.setBlockType = function(from, to, type, attrs) {
   this.doc.nodesBetween(from, to || from, (node, path) => {
     if (node.isTextblock && !node.hasMarkup(type, attrs)) {
@@ -200,6 +222,8 @@ Transform.prototype.setBlockType = function(from, to, type, attrs) {
   return this
 }
 
+// :: (Pos, NodeType, ?Object) → Transform
+// Change the type and attributes of the node after `pos`.
 Transform.prototype.setNodeType = function(pos, type, attrs) {
   let node = this.doc.nodeAfter(pos)
   let path = pos.toPath()

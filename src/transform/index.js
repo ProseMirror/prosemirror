@@ -1,8 +1,18 @@
-export {TransformResult, Transform} from "./transform"
-export {Step} from "./step"
-export {canLift, canWrap, alreadyHasBlockType} from "./ancestor"
+export {Transform} from "./transform"
+export {Step, StepResult} from "./step"
+export {canLift, canWrap} from "./ancestor"
 export {joinPoint, joinableBlocks} from "./join"
-export {PosMap, MapResult, mapStep, Remapping} from "./map"
+export {PosMap, MapResult, Remapping} from "./map"
 import "./mark"
 import "./split"
 import "./replace"
+
+// !! This module defines a way to transform documents. Transforming
+// happens in `Step`s, which are atomic, well-defined modifications to
+// a document. [Applying](`Step.apply`) a step produces a new document
+// and a [position map](#PosMap) that maps positions in the old
+// document to position in the new document. Steps can be
+// [inverted](#Step.invert) to create a step that undoes their effect,
+// and chained together in a convenience object called a `Transform`.
+//
+// These are the types of steps defined:

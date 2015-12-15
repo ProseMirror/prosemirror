@@ -1,12 +1,21 @@
 import {Pos, MarkType} from "../model"
 
-import {TransformResult, Transform} from "./transform"
-import {defineStep, Step} from "./step"
+import {Transform} from "./transform"
+import {Step, StepResult} from "./step"
 import {copyInline, copyStructure} from "./tree"
 
-defineStep("addMark", {
+// !!
+// **`addMark`**
+//   : Add the `Mark` given as the step's parameter to all
+//     inline content between `from` and `to` (when allowed).
+//
+// **`removeMark`**
+//   : Remove the `Mark` given as the step's parameter from all inline
+//     content between `from` and `to`.
+
+Step.define("addMark", {
   apply(doc, step) {
-    return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
+    return new StepResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       if (!node.type.canContainMark(step.param)) return node
       return copyInline(node, from, to, node => {
         return node.mark(step.param.addToSet(node.marks))
@@ -24,14 +33,15 @@ defineStep("addMark", {
   }
 })
 
-
-Transform.prototype.addMark = function(from, to, st) {
+// :: (Pos, Pos, Mark) → Transform
+// Add the given mark to the inline content between `from` and `to`.
+Transform.prototype.addMark = function(from, to, mark) {
   let removed = [], added = [], removing = null, adding = null
   this.doc.inlineNodesBetween(from, to, ({marks}, path, start, end, parent) => {
-    if (st.isInSet(marks) || !parent.type.canContainMark(st.type)) {
+    if (mark.isInSet(marks) || !parent.type.canContainMark(mark.type)) {
       adding = removing = null
     } else {
-      let rm = st.type.isInSet(marks)
+      let rm = mark.type.isInSet(marks)
       if (rm) {
         if (removing && removing.param.eq(rm)) {
           removing.to = new Pos(path, end)
@@ -45,7 +55,7 @@ Transform.prototype.addMark = function(from, to, st) {
       if (adding) {
         adding.to = new Pos(path, end)
       } else {
-        adding = new Step("addMark", new Pos(path, start), new Pos(path, end), null, st)
+        adding = new Step("addMark", new Pos(path, start), new Pos(path, end), null, mark)
         added.push(adding)
       }
     }
@@ -55,9 +65,9 @@ Transform.prototype.addMark = function(from, to, st) {
   return this
 }
 
-defineStep("removeMark", {
+Step.define("removeMark", {
   apply(doc, step) {
-    return new TransformResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
+    return new StepResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
       return copyInline(node, from, to, node => {
         return node.mark(step.param.removeFromSet(node.marks))
       })
@@ -74,16 +84,19 @@ defineStep("removeMark", {
   }
 })
 
-Transform.prototype.removeMark = function(from, to, st = null) {
+// :: (Pos, Pos, union<Mark, MarkType>) → Transform
+// Remove the given mark, or all marks of the given type, from inline
+// nodes between `from` and `to`.
+Transform.prototype.removeMark = function(from, to, mark = null) {
   let matched = [], step = 0
   this.doc.inlineNodesBetween(from, to, ({marks}, path, start, end) => {
     step++
     let toRemove = null
-    if (st instanceof MarkType) {
-      let found = st.isInSet(marks)
+    if (mark instanceof MarkType) {
+      let found = mark.isInSet(marks)
       if (found) toRemove = [found]
-    } else if (st) {
-      if (st.isInSet(marks)) toRemove = [st]
+    } else if (mark) {
+      if (mark.isInSet(marks)) toRemove = [mark]
     } else {
       toRemove = marks
     }
@@ -108,6 +121,10 @@ Transform.prototype.removeMark = function(from, to, st = null) {
   return this
 }
 
+// :: (Pos, Pos, ?NodeType) → Transform
+// Remove all marks and non-text inline nodes, or if `newParent` is
+// given, all marks and inline nodes that may not appear as content of
+// `newParent`, from the given range.
 Transform.prototype.clearMarkup = function(from, to, newParent) {
   let delSteps = [] // Must be accumulated and applied in inverse order
   this.doc.inlineNodesBetween(from, to, ({marks, type}, path, start, end) => {

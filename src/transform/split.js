@@ -1,10 +1,16 @@
 import {Pos, Fragment} from "../model"
 
-import {TransformResult, Transform} from "./transform"
-import {defineStep, Step} from "./step"
+import {Transform} from "./transform"
+import {Step, StepResult} from "./step"
 import {PosMap, MovedRange, ReplacedRange} from "./map"
 
-defineStep("split", {
+// !! **`split`**
+//   : Split a block node at `pos`. The parameter, if given, may be
+//     `{type, ?attrs}` object giving the node type and optionally the
+//     attributes of the node created to hold the content after the
+//     split.
+
+Step.define("split", {
   apply(doc, step) {
     let pos = step.pos
     if (pos.depth == 0) return null
@@ -28,7 +34,7 @@ defineStep("split", {
                           new MovedRange(new Pos(parentPath, offset + 1), newParent.size - 2 - offset,
                                          new Pos(parentPath, offset + 2))],
                          [new ReplacedRange(pos, pos, pos, dest, pos, pos.shorten(null, 1))])
-    return new TransformResult(copy, map)
+    return new StepResult(copy, map)
   },
   invert(step, _oldDoc, map) {
     return new Step("join", step.pos, map.map(step.pos).pos)
@@ -41,6 +47,11 @@ defineStep("split", {
   }
 })
 
+// :: (Pos, ?number, ?NodeType, ?Object) → Transform
+// Split the node at the given position, and optionally, if `depth` is
+// greater than one, any number of nodes above that. By default, the part
+// split off will inherit the node type of the original node. This can
+// be changed by passing `typeAfter` and `attrsAfter`.
 Transform.prototype.split = function(pos, depth = 1, typeAfter, attrsAfter) {
   if (depth == 0) return this
   for (let i = 0;; i++) {
@@ -51,6 +62,10 @@ Transform.prototype.split = function(pos, depth = 1, typeAfter, attrsAfter) {
   }
 }
 
+// :: (Pos, ?number) → Transform
+// Split at the given position, _if_ that position isn't already at
+// the start or end of a node. If `depth` is greater than one, also do
+// so for parent positions above the given position.
 Transform.prototype.splitIfNeeded = function(pos, depth = 1) {
   for (let off = 0; off < depth; off++) {
     let here = pos.shorten(pos.depth - off)
