@@ -18,6 +18,8 @@ HardBreak.prototype.serializeText = () => "\n"
 
 Text.prototype.serializeText = node => node.text
 
+// :: (Node) → string
+// Serialize a node as a plain text string.
 export function toText(doc) {
   return doc.type.serializeText(doc).trim()
 }

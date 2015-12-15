@@ -3,24 +3,30 @@ import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         EmMark, StrongMark, LinkMark, CodeMark, Pos} from "../model"
 import {defineTarget} from "./index"
 
-// declare_global: window
-
+// ;; #toc=false Object used to to expose relevant values and methods
+// to DOM serializer functions.
 class DOMSerializer {
   constructor(options) {
+    // :: Object The options passed to the serializer.
     this.options = options || {}
+    // :: DOMDocument The DOM document in which we are working.
     this.doc = this.options.document || window.document
   }
 
-  elt(tag, attrs, ...args) {
-    let result = this.doc.createElement(tag)
+  // :: (string, ?Object, ...union<string, DOMNode>) → DOMNode
+  // Create a DOM node of the given type, with (optionally) the given
+  // attributes and content. Content elements may be strings (for text
+  // nodes) or other DOM nodes.
+  elt(type, attrs, ...content) {
+    let result = this.doc.createElement(type)
     if (attrs) for (let name in attrs) {
       if (name == "style")
         result.style.cssText = attrs[name]
       else if (attrs[name])
         result.setAttribute(name, attrs[name])
     }
-    for (let i = 0; i < args.length; i++)
-      result.appendChild(typeof args[i] == "string" ? this.doc.createTextNode(args[i]) : args[i])
+    for (let i = 0; i < content.length; i++)
+      result.appendChild(typeof content[i] == "string" ? this.doc.createTextNode(content[i]) : content[i])
     return result
   }
 
@@ -101,26 +107,42 @@ class DOMSerializer {
     return dom
   }
 
+  // :: (Node, string, ?Object) → DOMNode
+  // Render the content of ProseMirror node into a DOM node with the
+  // given tag name and attributes.
   renderAs(node, tagName, tagAttrs) {
     return this.renderContent(node, this.elt(tagName, tagAttrs))
   }
 }
 
+// :: (Node, ?Object) → DOMFragment
+// Serialize the content of the given node to a DOM fragment. When not
+// in the browser, the `document` option, containing a DOM document,
+// should be passed so that the serialize can create nodes.
+//
+// To define rendering behavior for your own [node](#NodeType) and
+// [mark](#MarkType) types, give them a `serializeDOM` method. This
+// method is passed a `Node` and a `DOMSerializer`, and should return
+// the [DOM
+// node](https://developer.mozilla.org/en-US/docs/Web/API/Node) that
+// represents this node and its content. For marks, that should be an
+// inline wrapping node like `<a>` or `<strong>`.
+//
+// Individual attributes can also define serialization behavior. If an
+// `Attribute` object has a `serializeDOM` method, that will be called
+// with the DOM node representing the node that the attribute applies
+// to and the atttribute's value, so that it can set additional DOM
+// attributes on the DOM node.
 export function toDOM(node, options = {}) {
   return new DOMSerializer(options).renderContent(node)
 }
 
 defineTarget("dom", toDOM)
 
-export function toHTML(node, options) {
-  let serializer = new DOMSerializer(options)
-  let wrap = serializer.elt("div")
-  wrap.appendChild(serializer.renderContent(node))
-  return wrap.innerHTML
-}
-
-defineTarget("html", toHTML)
-
+// :: (Node, ?Object) → DOMNode
+// Serialize a given node to a DOM node. This is useful when you need
+// to serialize a part of a document, as opposed to the whole
+// document.
 export function renderNodeToDOM(node, options, offset) {
   let serializer = new DOMSerializer(options)
   let dom = serializer.renderNode(node, offset)
@@ -131,6 +153,19 @@ export function renderNodeToDOM(node, options, offset) {
   }
   return dom
 }
+
+// :: (Node, ?Object) → string
+// Serialize a node as an HTML string. Goes through `toDOM` and then
+// serializes the result. Again, you must pass a `document` option
+// when not in the browser.
+export function toHTML(node, options) {
+  let serializer = new DOMSerializer(options)
+  let wrap = serializer.elt("div")
+  wrap.appendChild(serializer.renderContent(node))
+  return wrap.innerHTML
+}
+
+defineTarget("html", toHTML)
 
 // Block nodes
 

@@ -1,6 +1,6 @@
 // !! This module implements a way to register and access parsers from
 // various input formats to ProseMirror's [document format](#Node). To
-// load the actual parsers, you need to import submodules like
+// load the actual parsers, you need to import parser modules like
 // `parse/dom` or `parse/markdown`, which will then register
 // themselves here, as well as export special-purpose parsing
 // functions.

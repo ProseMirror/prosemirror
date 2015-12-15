@@ -17,7 +17,7 @@ import {eventMixin} from "./event"
 import {toText} from "../serialize/text"
 import "../parse/text"
 import {from} from "../parse"
-import {convertTo} from "../serialize"
+import {serialize} from "../serialize"
 import {initCommands} from "./commands"
 import {RangeStore, MarkedRange} from "./range"
 import {normalizeKeyName} from "./keys"
@@ -108,7 +108,7 @@ export class ProseMirror {
   }
 
   getContent(format) {
-    return format ? convertTo(this.doc, format) : this.doc
+    return format ? serialize(this.doc, format) : this.doc
   }
 
   setDocInner(doc) {

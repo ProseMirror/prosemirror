@@ -77,8 +77,8 @@ const blockElements = {
 
 const noMarks = []
 
-// ;; A state object used to track context during a parse, and to
-// expose methods to custom parsing functions.
+// ;; #toc=false A state object used to track context during a parse,
+// and to expose methods to custom parsing functions.
 class DOMParseState {
   constructor(schema, topNode, options) {
     // :: Object The options passed to this parse.
