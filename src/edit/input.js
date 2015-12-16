@@ -193,21 +193,24 @@ handlers.mousedown = (pm, e) => {
   lastClick = now
   if (pm.input.shiftKey || multi) return
 
-  let x = e.clientX, y = e.clientY
-  let done = () => {
+  let x = e.clientX, y = e.clientY, moved = false
+  let up = () => {
     removeEventListener("mouseup", up)
     removeEventListener("mousemove", move)
-  }
-  let up = () => {
-    done()
-    let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY})
-    if (pos) {
-      pm.setNodeSelection(pos)
-      pm.focus()
+    if (moved) {
+      pm.sel.pollForUpdate()
+    } else {
+      let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY})
+      if (pos) {
+        pm.setNodeSelection(pos)
+        pm.focus()
+      }
     }
   }
   let move = e => {
-    if (Math.abs(x - e.clientX) > 4 || Math.abs(y - e.clientY) > 4) done()
+    if (!moved && (Math.abs(x - e.clientX) > 4 || Math.abs(y - e.clientY) > 4))
+      moved = true
+    pm.sel.pollForUpdate()
   }
   addEventListener("mouseup", up)
   addEventListener("mousemove", move)
@@ -215,10 +218,6 @@ handlers.mousedown = (pm, e) => {
 
 handlers.touchdown = pm => {
   pm.sel.pollForUpdate()
-}
-
-handlers.mousemove = (pm, e) => {
-  if (e.which || e.button) pm.sel.pollForUpdate()
 }
 
 /**
