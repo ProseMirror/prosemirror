@@ -181,7 +181,7 @@ function renderItem(item, menu) {
 }
 
 function buildParamForm(pm, command) {
-  let prefill = command.spec.prefillParams && command.info.prefillParams(pm)
+  let prefill = command.spec.prefillParams && command.spec.prefillParams(pm)
   let fields = command.params.map((param, i) => {
     let field, name = "field_" + i
     let val = prefill ? prefill[i] : param.default || ""
@@ -269,8 +269,8 @@ export function commandGroups(pm, ...names) {
     let found = []
     for (let name in pm.commands) {
       let cmd = pm.commands[name]
-      if (cmd.spec.menuGroup && cmd.info.menuGroup == group)
-        sortedInsert(found, cmd, (a, b) => (a.spec.menuRank || 50) - (b.info.menuRank || 50))
+      if (cmd.spec.menuGroup && cmd.spec.menuGroup == group)
+        sortedInsert(found, cmd, (a, b) => (a.spec.menuRank || 50) - (b.spec.menuRank || 50))
     }
     return found
   })
