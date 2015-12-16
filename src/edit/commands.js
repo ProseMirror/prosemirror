@@ -11,6 +11,9 @@ import {findSelectionFrom, verticalMotionLeavesTextblock, setDOMSelectionToPos, 
 const globalCommands = Object.create(null)
 const paramHandlers = Object.create(null)
 
+// :: (string, CommandSpec)
+// Define a global (not node- or mark-specific) command with the given
+// name.
 export function defineCommand(name, cmd) {
   globalCommands[name] = cmd instanceof Command ? cmd : new Command(name, cmd)
 }
