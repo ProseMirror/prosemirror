@@ -1,5 +1,5 @@
 import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
-        StrongMark, EmMark, CodeMark, LinkMark, Image, NodeType, MarkType, Pos} from "../model"
+        StrongMark, EmMark, CodeMark, LinkMark, Image, Pos} from "../model"
 import {joinPoint, joinableBlocks, canLift, canWrap} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
@@ -18,10 +18,6 @@ export function defineCommand(name, cmd) {
   globalCommands[name] = cmd instanceof Command ? cmd : new Command(name, cmd)
 }
 
-NodeType.attachCommand = MarkType.attachCommand = function(name, create) {
-  this.register("commands", {name, create})
-}
-
 export function defineParamHandler(name, handler) {
   paramHandlers[name] = handler
 }
@@ -31,26 +27,46 @@ function getParamHandler(pm) {
   if (option && paramHandlers[option]) return paramHandlers[option]
 }
 
+const empty = []
+
 export class Command {
-  constructor(name, options) {
+  constructor(name, spec, self) {
     this.name = name
-    this.label = options.label || name
-    this.run = options.run
-    this.params = options.params || []
-    this.select = options.select || (() => true)
-    this.active = options.active || (() => false)
-    this.info = options
-    this.display = options.display || "icon"
+    this.spec = spec
+    this.self = self
+  }
+
+  select(pm) {
+    let f = this.spec.select
+    return f ? f.call(this.self, pm) : true
+  }
+
+  active(pm) {
+    let f = this.spec.active
+    return f ? f.call(this.self, pm) : false
+  }
+
+  get params() {
+    return this.spec.params || empty
+  }
+
+  get label() {
+    return this.spec.label || this.name
+  }
+
+  get display() {
+    return this.spec.display || "icon"
   }
 
   exec(pm, params) {
-    if (!this.params.length) return this.run(pm)
-    if (params) return this.run(pm, ...params)
+    let run = this.spec.run
+    if (!this.params.length) return run.call(this.self, pm)
+    if (params) return run.call(this.self, pm, ...params)
     let handler = getParamHandler(pm)
-    if (handler) handler(pm, this, params => {
-      if (params) this.run(pm, ...params)
+    if (!handler) return false
+    handler(pm, this, params => {
+      if (params) run.call(this.self, pm, ...params)
     })
-    else return false
   }
 }
 
@@ -59,9 +75,9 @@ export function initCommands(schema) {
   for (let cmd in globalCommands) result[cmd] = globalCommands[cmd]
   function fromTypes(types) {
     for (let name in types) {
-      let type = types[name], cmds = type.commands
-      if (cmds) cmds.forEach(({name, create}) => {
-        result[name] = new Command(name, create(type))
+      let type = types[name], cmds = type.command
+      if (cmds) cmds.forEach(spec => {
+        result[spec.name] = new Command(spec.name, spec, type)
       })
     }
   }
@@ -83,8 +99,8 @@ export function defaultKeymap(pm) {
   }
   for (let name in pm.commands) {
     let cmd = pm.commands[name]
-    add(name, cmd.info.key)
-    add(name, browser.mac ? cmd.info.macKey : cmd.info.pcKey)
+    add(name, cmd.spec.key)
+    add(name, browser.mac ? cmd.spec.macKey : cmd.spec.pcKey)
   }
 
   for (let key in bindings)
@@ -94,7 +110,8 @@ export function defaultKeymap(pm) {
 
 const andScroll = {scrollIntoView: true}
 
-HardBreak.attachCommand("insertHardBreak", type => ({
+HardBreak.register("command", {
+  name: "insertHardBreak",
   label: "Insert hard break",
   run(pm) {
     let {node, from} = pm.selection
@@ -103,10 +120,10 @@ HardBreak.attachCommand("insertHardBreak", type => ({
     else if (pm.doc.path(from.path).type.isCode)
       return pm.tr.typeText("\n").apply(andScroll)
     else
-      return pm.tr.replaceSelection(type.create()).apply(andScroll)
+      return pm.tr.replaceSelection(this.create()).apply(andScroll)
   },
   key: ["Mod-Enter", "Shift-Enter"]
-}))
+})
 
 function markActive(pm, type) {
   let sel = pm.selection
@@ -140,31 +157,32 @@ function markApplies(pm, type) {
   return relevant
 }
 
-function generateMarkCommands(type, name, labelName, info) {
+function generateMarkCommands(type, name, labelName, spec) {
   if (!labelName) labelName = name
   let cap = name.charAt(0).toUpperCase() + name.slice(1)
-  type.attachCommand("set" + cap, type => ({
+  type.register("command", {
+    name: "set" + cap,
     label: "Set " + labelName,
-    run(pm) { pm.setMark(type, true) },
-    select(pm) { return canAddInline(pm, type) },
+    run(pm) { pm.setMark(this, true) },
+    select(pm) { return canAddInline(pm, this) },
     icon: {from: name}
-  }))
-  type.attachCommand("unset" + cap, type => ({
-    label: "Remove " + labelName,
-    run(pm) { pm.setMark(type, false) },
-    select(pm) { return markActive(pm, type) },
-    icon: {from: name}
-  }))
-  type.attachCommand(name, type => {
-    let command = {
-      label: "Toggle " + labelName,
-      run(pm) { pm.setMark(type, null) },
-      active(pm) { return markActive(pm, type) },
-      select(pm) { return markApplies(pm, type) }
-    }
-    for (let prop in info) command[prop] = info[prop]
-    return command
   })
+  type.register("command", {
+    name: "unset" + cap,
+    label: "Remove " + labelName,
+    run(pm) { pm.setMark(this, false) },
+    select(pm) { return markActive(pm, this) },
+    icon: {from: name}
+  })
+  let command = {
+    name,
+    label: "Toggle " + labelName,
+    run(pm) { pm.setMark(this, null) },
+    active(pm) { return markActive(pm, this) },
+    select(pm) { return markApplies(pm, this) }
+  }
+  for (let prop in spec) command[prop] = spec[prop]
+  type.register("command", command)
 }
 
 generateMarkCommands(StrongMark, "strong", null, {
@@ -194,34 +212,37 @@ generateMarkCommands(CodeMark, "code", null, {
   key: "Mod-`"
 })
 
-LinkMark.attachCommand("unlink", type => ({
+LinkMark.register("command", {
+  name: "unlink",
   label: "Unlink",
-  run(pm) { pm.setMark(type, false) },
-  select(pm) { return markActive(pm, type) },
+  run(pm) { pm.setMark(this, false) },
+  select(pm) { return markActive(pm, this) },
   active() { return true },
   menuGroup: "inline", menuRank: 30,
   icon: {from: "link"}
-}))
+})
 
-LinkMark.attachCommand("link", type => ({
+LinkMark.register("command", {
+  name: "link",
   label: "Add link",
-  run(pm, href, title) { pm.setMark(type, true, {href, title}) },
+  run(pm, href, title) { pm.setMark(this, true, {href, title}) },
   params: [
     {name: "Target", type: "text"},
     {name: "Title", type: "text", default: ""}
   ],
-  select(pm) { return markApplies(pm, type) && !markActive(pm, type) },
+  select(pm) { return markApplies(pm, this) && !markActive(pm, this) },
   menuGroup: "inline", menuRank: 30,
   icon: {
     width: 951, height: 1024,
     path: "M832 694q0-22-16-38l-118-118q-16-16-38-16-24 0-41 18 1 1 10 10t12 12 8 10 7 14 2 15q0 22-16 38t-38 16q-8 0-15-2t-14-7-10-8-12-12-10-10q-18 17-18 41 0 22 16 38l117 118q15 15 38 15 22 0 38-14l84-83q16-16 16-38zM430 292q0-22-16-38l-117-118q-16-16-38-16-22 0-38 15l-84 83q-16 16-16 38 0 22 16 38l118 118q15 15 38 15 24 0 41-17-1-1-10-10t-12-12-8-10-7-14-2-15q0-22 16-38t38-16q8 0 15 2t14 7 10 8 12 12 10 10q18-17 18-41zM941 694q0 68-48 116l-84 83q-47 47-116 47-69 0-116-48l-117-118q-47-47-47-116 0-70 50-119l-50-50q-49 50-118 50-68 0-116-48l-118-118q-48-48-48-116t48-116l84-83q47-47 116-47 69 0 116 48l117 118q47 47 47 116 0 70-50 119l50 50q49-50 118-50 68 0 116 48l118 118q48 48 48 116z"
   }
-}))
+})
 
-Image.attachCommand("insertImage", type => ({
+Image.register("command", {
+  name: "insertImage",
   label: "Insert image",
   run(pm, src, alt, title) {
-    return pm.tr.replaceSelection(type.create({src, title, alt})).apply(andScroll)
+    return pm.tr.replaceSelection(this.create({src, title, alt})).apply(andScroll)
   },
   params: [
     {name: "Image URL", type: "text"},
@@ -229,7 +250,7 @@ Image.attachCommand("insertImage", type => ({
     {name: "Title", type: "text", default: ""}
   ],
   select(pm) {
-    return pm.doc.path(pm.selection.from.path).type.canContainType(type)
+    return pm.doc.path(pm.selection.from.path).type.canContainType(this)
   },
   menuGroup: "inline", menuRank: 40,
   icon: {
@@ -238,10 +259,10 @@ Image.attachCommand("insertImage", type => ({
   },
   prefillParams(pm) {
     let {node} = pm.selection
-    if (node && node.type == type)
+    if (node && node.type == this)
       return [node.attrs.src, node.attrs.alt, node.attrs.title]
   }
-}))
+})
 
 /**
  * Get an offset moving backward from a current offset inside a node.
@@ -509,32 +530,31 @@ function isAtTopOfListItem(doc, from, to, listType) {
     listType.canContain(doc.path(from.path.slice(0, from.path.length - 1)))
 }
 
-function wrapCommand(type, name, labelName, isList, info) {
-  type.attachCommand("wrap" + name, type => {
-    let command = {
-      label: "Wrap in " + labelName,
-      run(pm) {
-        let {from, to, head} = pm.selection, doJoin = false
-        if (isList && head && isAtTopOfListItem(pm.doc, from, to, type)) {
-          // Don't do anything if this is the top of the list
-          if (from.path[from.path.length - 2] == 0) return false
-          doJoin = true
-        }
-        let tr = pm.tr.wrap(from, to, type)
-        if (doJoin) tr.join(from.shorten(from.depth - 2))
-        return tr.apply(andScroll)
-      },
-      select(pm) {
-        let {from, to, head} = pm.selection
-        if (isList && head && isAtTopOfListItem(pm.doc, from, to, type) &&
-            from.path[from.path.length - 2] == 0)
-          return false
-        return canWrap(pm.doc, from, to, type)
+function wrapCommand(type, name, labelName, isList, spec) {
+  let command = {
+    name: "wrap" + name,
+    label: "Wrap in " + labelName,
+    run(pm) {
+      let {from, to, head} = pm.selection, doJoin = false
+      if (isList && head && isAtTopOfListItem(pm.doc, from, to, this)) {
+        // Don't do anything if this is the top of the list
+        if (from.path[from.path.length - 2] == 0) return false
+        doJoin = true
       }
+      let tr = pm.tr.wrap(from, to, this)
+      if (doJoin) tr.join(from.shorten(from.depth - 2))
+      return tr.apply(andScroll)
+    },
+    select(pm) {
+      let {from, to, head} = pm.selection
+      if (isList && head && isAtTopOfListItem(pm.doc, from, to, this) &&
+          from.path[from.path.length - 2] == 0)
+        return false
+      return canWrap(pm.doc, from, to, this)
     }
-    for (let key in info) command[key] = info[key]
-    return command
-  })
+  }
+  for (let key in spec) command[key] = spec[key]
+  type.register("command", command)
 }
 
 wrapCommand(BulletList, "BulletList", "bullet list", true, {
@@ -618,19 +638,20 @@ defineCommand("splitBlock", {
   key: "Enter(60)"
 })
 
-ListItem.attachCommand("splitListItem", type => ({
+ListItem.register("command", {
+  name: "splitListItem",
   label: "Split the current list item",
   run(pm) {
     let {from, to, node, empty} = pm.selection
     if (node && node.isBlock || from.path.length < 2 || !Pos.samePath(from.path, to.path) ||
         empty && from.offset == 0) return false
     let toParent = from.shorten(), grandParent = pm.doc.path(toParent.path)
-    if (grandParent.type != type) return false
+    if (grandParent.type != this) return false
     let nextType = to.offset == grandParent.child(toParent.offset).size ? pm.schema.defaultTextblockType() : null
     return pm.tr.delete(from, to).split(from, 2, nextType).apply(andScroll)
   },
   key: "Enter(50)"
-}))
+})
 
 function alreadyHasBlockType(doc, from, to, type, attrs) {
   let found = false
@@ -646,21 +667,22 @@ function alreadyHasBlockType(doc, from, to, type, attrs) {
 
 function blockTypeCommand(type, name, labelName, attrs, key) {
   if (!attrs) attrs = {}
-  type.attachCommand(name, type => ({
+  type.register("command", {
+    name,
     label: "Change to " + labelName,
     run(pm) {
       let {from, to} = pm.selection
-      return pm.tr.setBlockType(from, to, type, attrs).apply(andScroll)
+      return pm.tr.setBlockType(from, to, this, attrs).apply(andScroll)
     },
     select(pm) {
       let {from, to, node} = pm.selection
       if (node)
-        return node.isTextblock && !node.hasMarkup(type, attrs)
+        return node.isTextblock && !node.hasMarkup(this, attrs)
       else
-        return !alreadyHasBlockType(pm.doc, from, to, type, attrs)
+        return !alreadyHasBlockType(pm.doc, from, to, this, attrs)
     },
     key
-  }))
+  })
 }
 
 blockTypeCommand(Heading, "makeH1", "heading 1", {level: 1}, "Mod-H '1'")
@@ -673,13 +695,14 @@ blockTypeCommand(Heading, "makeH6", "heading 6", {level: 6}, "Mod-H '6'")
 blockTypeCommand(Paragraph, "makeParagraph", "paragraph", null, "Mod-P")
 blockTypeCommand(CodeBlock, "makeCodeBlock", "code block", null, "Mod-\\")
 
-HorizontalRule.attachCommand("insertHorizontalRule", type => ({
+HorizontalRule.register("command", {
+  name: "insertHorizontalRule",
   label: "Insert horizontal rule",
   run(pm) {
-    return pm.tr.replaceSelection(type.create()).apply(andScroll)
+    return pm.tr.replaceSelection(this.create()).apply(andScroll)
   },
   key: "Mod-Space"
-}))
+})
 
 defineCommand("undo", {
   label: "Undo last change",

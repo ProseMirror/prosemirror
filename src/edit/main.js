@@ -431,7 +431,7 @@ export class ProseMirror {
 
     let cmd = this.commands[name]
     if (!cmd) return this.commandKeys[name] = null
-    let key = cmd.info.key || (browser.mac ? cmd.info.macKey : cmd.info.pcKey)
+    let key = cmd.spec.key || (browser.mac ? cmd.info.macKey : cmd.info.pcKey)
     if (key) {
       key = normalizeKeyName(Array.isArray(key) ? key[0] : key)
       let deflt = this.options.keymap.bindings[key]
