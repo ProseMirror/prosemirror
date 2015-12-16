@@ -51,7 +51,7 @@ test("cleared", pm => {
 })
 
 test("stay_when_empty", pm => {
-  let range = pm.markRange(P(0, 1), P(0, 2), {clearWhenEmpty: false}), cleared = false
+  let range = pm.markRange(P(0, 1), P(0, 2), {removeWhenEmpty: false}), cleared = false
   range.on("removed", () => cleared = true)
   pm.tr.delete(P(0, 0), P(0, 4)).apply()
   cmp(cleared, false)

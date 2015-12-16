@@ -5,7 +5,7 @@ import {cmp, cmpStr, cmpNode, is, P} from "../cmp"
 const test = namespace("nodeselection")
 
 test("parent_block", pm => {
-  pm.setSelection(P(0, 0, 1, 1))
+  pm.setTextSelection(P(0, 0, 1, 1))
   pm.execCommand("selectParentBlock")
   cmpStr(pm.selection.from, P(0, 0, 1), "to paragraph")
   pm.execCommand("selectParentBlock")
@@ -17,7 +17,7 @@ test("parent_block", pm => {
 }, {doc: doc(ul(li(p("foo"), p("bar")), li(p("baz"))))})
 
 test("through_inline_node", pm => {
-  pm.setSelection(P(0, 3))
+  pm.setTextSelection(P(0, 3))
   pm.execCommand("selectBlockRight")
   cmpStr(pm.selection.from, P(0, 3), "moved right onto image")
   pm.execCommand("selectBlockRight")
@@ -31,21 +31,21 @@ test("through_inline_node", pm => {
 }, {doc: doc(p("foo", img, "bar"))})
 
 test("onto_block", pm => {
-  pm.setSelection(P(0, 5))
+  pm.setTextSelection(P(0, 5))
   pm.execCommand("selectBlockDown")
   cmpStr(pm.selection.from, P(1), "moved down onto hr")
-  pm.setSelection(P(2, 0, 0, 0))
+  pm.setTextSelection(P(2, 0, 0, 0))
   pm.execCommand("selectBlockUp")
   cmpStr(pm.selection.from, P(1), "moved up onto hr")
 }, {doc: doc(p("hello"), hr, ul(li(p("there"))))})
 
 test("through_double_block", pm => {
-  pm.setSelection(P(0, 0, 5))
+  pm.setTextSelection(P(0, 0, 5))
   pm.execCommand("selectBlockDown")
   cmpStr(pm.selection.from, P(1), "moved down onto hr")
   pm.execCommand("selectBlockDown")
   cmpStr(pm.selection.from, P(2), "moved down onto second hr")
-  pm.setSelection(P(3, 0))
+  pm.setTextSelection(P(3, 0))
   pm.execCommand("selectBlockUp")
   cmpStr(pm.selection.from, P(2), "moved up onto second hr")
   pm.execCommand("selectBlockUp")
@@ -53,7 +53,7 @@ test("through_double_block", pm => {
 }, {doc: doc(blockquote(p("hello")), hr, hr, p("there"))})
 
 test("horizontally_through_block", pm => {
-  pm.setSelection(P(0, 3))
+  pm.setTextSelection(P(0, 3))
   pm.execCommand("selectBlockRight")
   cmpStr(pm.selection.from, P(1), "right into first hr")
   pm.execCommand("selectBlockRight")

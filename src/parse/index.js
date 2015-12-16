@@ -34,7 +34,7 @@ const parsers = Object.create(null)
 // :: (Schema, any, string, ?Object) → Node
 // Parse document `value` from the format named by `format`. If
 // `options` is given, it is passed along to the parser function.
-export function from(schema, value, format, options) {
+export function parseFrom(schema, value, format, options) {
   let converter = parsers[format]
   if (!converter) throw new Error("Source format " + format + " not defined")
   return converter(schema, value, options)

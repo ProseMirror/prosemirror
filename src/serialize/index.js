@@ -30,7 +30,7 @@ const serializers = Object.create(null)
 // :: (Node, string, ?Object) → any
 // Serialize the given document to the given format. If `options` is
 // given, it will be passed along to the serializer function.
-export function serialize(doc, format, options) {
+export function serializeTo(doc, format, options) {
   let converter = serializers[format]
   if (!converter) throw new Error("Target format " + format + " not defined")
   return converter(doc, options)

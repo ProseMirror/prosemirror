@@ -5,7 +5,7 @@ import {fromText} from "../parse/text"
 import {elt} from "../dom"
 import {toHTML} from "../serialize/dom"
 import {toText} from "../serialize/text"
-import {knownSource, from} from "../parse"
+import {knownSource, parseFrom} from "../parse"
 
 import {isModifierKey, lookupKey, keyName} from "./keys"
 import {captureKeys} from "./capturekeys"
@@ -271,7 +271,7 @@ function finishComposing(pm) {
   pm.ensureOperation()
   pm.input.composing = null
   if (text != info.data) inputText(pm, info.range, text)
-  if (range && !range.eq(pm.sel.range)) pm.setSelection(range)
+  if (range && !range.eq(pm.sel.range)) pm.setSelectionDirect(range)
 }
 
 handlers.input = (pm) => {
@@ -321,7 +321,7 @@ handlers.paste = (pm, e) => {
     } else if (html) {
       doc = fromHTML(pm.schema, html)
     } else {
-      doc = from(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
+      doc = parseFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
     }
     pm.tr.replace(sel.from, sel.to, doc, from || findSelectionAtStart(doc).from,
                   to || findSelectionAtEnd(doc).to).apply()
@@ -369,7 +369,7 @@ handlers.drop = (pm, e) => {
   if (html = e.dataTransfer.getData("text/html"))
     doc = fromHTML(pm.schema, html, {document})
   else if (txt = e.dataTransfer.getData("text/plain"))
-    doc = from(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
+    doc = parseFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
 
   if (doc) {
     e.preventDefault()
@@ -381,7 +381,7 @@ handlers.drop = (pm, e) => {
       insertPos = tr.map(insertPos).pos
     }
     tr.replace(insertPos, insertPos, doc, findSelectionAtStart(doc).from, findSelectionAtEnd(doc).to).apply()
-    pm.setSelection(insertPos, tr.map(insertPos).pos)
+    pm.setTextSelection(insertPos, tr.map(insertPos).pos)
     pm.focus()
   }
 }

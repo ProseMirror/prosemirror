@@ -83,7 +83,7 @@ function getSel() {
 
 test("set", pm => {
   function test(pos, node, offset) {
-    pm.setSelection(pos)
+    pm.setTextSelection(pos)
     pm.flush()
     let sel = getSel()
     cmp(sel.node, node, pos)
@@ -104,10 +104,10 @@ test("set", pm => {
 test("change_event", pm => {
   let received = 0
   pm.on("selectionChange", () => ++received)
-  pm.setSelection(P(0, 1))
-  pm.setSelection(P(0, 1))
+  pm.setTextSelection(P(0, 1))
+  pm.setTextSelection(P(0, 1))
   cmp(received, 1, "changed")
-  pm.setSelection(P(0, 0))
+  pm.setTextSelection(P(0, 0))
   cmp(received, 2, "changed back")
   pm.setOption("doc", doc(p("hi")))
   cmp(received, 2, "new doc")
@@ -146,7 +146,7 @@ test("coords_cornercases", pm => {
     let coords = pm.coordsAtPos(positions[i])
     let pos = pm.posAtCoords(coords)
     cmpStr(pos, positions[i])
-    pm.setSelection(pos)
+    pm.setTextSelection(pos)
     pm.flush()
   }
 }, {
@@ -178,11 +178,11 @@ test("follow_change", pm => {
 })
 
 test("replace_with_block", pm => {
-  pm.setSelection(P(0, 3))
+  pm.setTextSelection(P(0, 3))
   pm.tr.replaceSelection(pm.schema.node("horizontal_rule")).apply()
   cmpNode(pm.doc, doc(p("foo"), hr, p("bar")), "split paragraph")
   cmpStr(pm.selection.head, P(2, 0), "moved after rule")
-  pm.setSelection(P(2, 3))
+  pm.setTextSelection(P(2, 3))
   pm.tr.replaceSelection(pm.schema.node("horizontal_rule")).apply()
   cmpNode(pm.doc, doc(p("foo"), hr, p("bar"), hr), "inserted after")
   cmpStr(pm.selection.head, P(2, 3), "stayed in paragraph")

@@ -80,12 +80,12 @@ test("addKeymap_bottom", pm => {
 test("multiBindings", pm => {
   dispatch(pm, "Enter")
   cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def"))), p("foo")))
-  pm.setSelection(new Pos([1, 0, 0], 3))
+  pm.setTextSelection(new Pos([1, 0, 0], 3))
   dispatch(pm, "Enter")
   cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def")), li(p())), p("foo")))
   dispatch(pm, "Enter")
   cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def"))), p(), p("foo")))
-  pm.setSelection(new Pos([3], 1))
+  pm.setTextSelection(new Pos([3], 1))
   dispatch(pm, "Enter")
   cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def"))), p(), p("f"), p("oo")))
 }, {

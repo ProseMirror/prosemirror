@@ -129,8 +129,8 @@ test("redo", (pm1, pm2) => {
 })
 
 test("undo_deep", (pm1, pm2) => {
-  pm1.setSelection(P(0, 5))
-  pm2.setSelection(P(1, 3))
+  pm1.setTextSelection(P(0, 5))
+  pm2.setTextSelection(P(1, 3))
   type(pm1, "!")
   type(pm2, "!")
   cut(pm1)

@@ -7,7 +7,7 @@ export class MarkedRange {
     this.to = to
   }
 
-  clear() {
+  remove() {
     this.signal("removed", this.from)
     this.from = this.to = null
   }
@@ -86,7 +86,7 @@ export class RangeStore {
       this.sorted.remove(range.from, range)
       this.sorted.remove(range.to, range)
       this.pm.markRangeDirty(range)
-      range.clear()
+      range.remove()
     }
   }
 
@@ -96,7 +96,7 @@ export class RangeStore {
       range.from = mapping.map(range.from, range.options.inclusiveLeft ? -1 : 1).pos
       range.to = mapping.map(range.to, range.options.inclusiveRight ? 1 : -1).pos
       let diff = range.from.cmp(range.to)
-      if (range.options.clearWhenEmpty !== false && diff >= 0) {
+      if (range.options.removeWhenEmpty !== false && diff >= 0) {
         this.removeRange(range)
         i--
       } else if (diff > 0) {

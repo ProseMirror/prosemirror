@@ -4,7 +4,7 @@ import {Text, BlockQuote, OrderedList, BulletList, ListItem,
 import {defineTarget} from "./index"
 
 // :: (Node) → string
-// Serialize the content of the given node to CommonMark](http://commonmark.org/).
+// Serialize the content of the given node to [CommonMark](http://commonmark.org/).
 //
 // To define serialization behavior for your own [node
 // types](#NodeType), give them a `serializeMarkDown` method. It will

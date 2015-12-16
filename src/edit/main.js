@@ -6,7 +6,7 @@ import sortedInsert from "../util/sortedinsert"
 import {Map} from "../util/map"
 
 import {parseOptions, initOptions, setOption} from "./options"
-import {SelectionState, Selection, TextSelection, NodeSelection,
+import {SelectionState, TextSelection, NodeSelection,
         posAtCoords, coordsAtPos, scrollIntoView,
         findSelectionAtStart, hasFocus} from "./selection"
 import {requestAnimationFrame, elt, browser} from "../dom"
@@ -16,27 +16,35 @@ import {History} from "./history"
 import {eventMixin} from "./event"
 import {toText} from "../serialize/text"
 import "../parse/text"
-import {from} from "../parse"
-import {serialize} from "../serialize"
+import {parseFrom} from "../parse"
+import {serializeTo} from "../serialize"
 import {initCommands} from "./commands"
 import {RangeStore, MarkedRange} from "./range"
 import {normalizeKeyName} from "./keys"
 
-/**
- * ProseMirror editor class.
- * @class
- */
+// ;; This is the class used to represent instances of the editor. A
+// ProseMirror editor holds a [document](#Node) and a
+// [selection](#Selection), and displays an editable surface
+// representing that document in the browser document.
+//
+// Contains event methods (`on`, etc) from the [event
+// mixin](#eventMixin).
 export class ProseMirror {
-  /**
-   * @param {Object} opts        Instance options hash.
-   * @param {Object} opts.schema The document model schema for the editor instance.
-   * @param {Object} opts.doc    The document model for the instance. Optional.
-   */
+  // :: (ProseMirrorOptions)
+  // Construct a new editor and, if it has a
+  // [`place`](#ProseMirrorOptions.place) option, add it to the
+  // document.
   constructor(opts) {
     opts = this.options = parseOptions(opts)
+    // :: Schema
+    // The schema for this editor's document.
     this.schema = opts.schema
     if (opts.doc == null) opts.doc = this.schema.node("doc", null, [this.schema.node("paragraph")])
+    // :: DOMNode
+    // The editable DOM node containing the document.
     this.content = elt("div", {class: "ProseMirror-content"})
+    // :: DOMNode
+    // The outer DOM element of the editor.
     this.wrapper = elt("div", {class: "ProseMirror"}, this.content)
     this.wrapper.ProseMirror = this
 
@@ -45,12 +53,15 @@ export class ProseMirror {
     else if (opts.place)
       opts.place(this.wrapper)
 
-    this.setDocInner(opts.docFormat ? from(this.schema, opts.doc, opts.docFormat) : opts.doc)
+    this.setDocInner(opts.docFormat ? parseFrom(this.schema, opts.doc, opts.docFormat) : opts.doc)
     draw(this, this.doc)
     this.content.contentEditable = true
     if (opts.label)
       this.content.setAttribute("aria-label", opts.label)
 
+    // :: Object
+    // A namespace where modules can store references to themselves
+    // associated with this editor instance.
     this.mod = Object.create(null)
     this.operation = null
     this.dirtyNodes = new Map // Maps node object to 1 (re-scan content) or 2 (redraw entirely)
@@ -66,26 +77,26 @@ export class ProseMirror {
     initOptions(this)
   }
 
-  /**
-   * @return {Range} The instance of the editor's selection range.
-   */
+  // :: Selection
+  // Get the current selection.
   get selection() {
     if (!this.accurateSelection) this.ensureOperation()
     return this.sel.range
   }
 
-  get selectedDoc() {
-    let sel = this.selection
-    return this.doc.sliceBetween(sel.from, sel.to)
-  }
-
-  get selectedText() {
-    return toText(this.selectedDoc)
-  }
-
-  /**
-   * Apply a transform on the editor.
-   */
+  // :: (Transform, ?Object) → ?Transform
+  // Apply a transformation (which you might want to create with the
+  // [`tr` getter](#ProseMirror.tr)) to the document in the editor.
+  // The following options are supported:
+  //
+  // **`selection`**`: ?Selection`
+  //   : A new selection to set after the transformation is applied.
+  //
+  // **`scrollIntoView`**: ?bool
+  //   : When true, scroll the selection into view on the next
+  //     [redraw](#ProseMirror.flush).
+  //
+  // Returns the transform, or `false` if there were no steps in it.
   apply(transform, options = nullOptions) {
     if (transform.doc == this.doc) return false
     if (transform.docs[0] != this.doc && findDiffStart(transform.docs[0], this.doc))
@@ -97,28 +108,38 @@ export class ProseMirror {
     return transform
   }
 
-  /**
-   * @return {Transform} A new transform object.
-   */
+  // :: EditorTransform
+  // Create an editor- and selection-aware `Transform` for this editor.
   get tr() { return new EditorTransform(this) }
 
+  // :: (any, ?string)
+  // Replace the editor's document. When `format` is given, it should
+  // be a [parsable format](#parse), and `value` should something in
+  // that format. If not, `value` should be a `Node`.
   setContent(value, format) {
-    if (format) value = from(this.schema, value, format)
+    if (format) value = parseFrom(this.schema, value, format)
     this.setDoc(value)
   }
 
+  // :: (?string) → any
+  // Get the editor's content in a given format. When `format` is not
+  // given, a `Node` is returned. If it is given, it should be an
+  // existing [serialization format](#serialize).
   getContent(format) {
-    return format ? serialize(this.doc, format) : this.doc
+    return format ? serializeTo(this.doc, format) : this.doc
   }
 
   setDocInner(doc) {
     if (doc.type != this.schema.nodes.doc)
       throw new Error("Trying to set a document with a different schema")
+    // :: Node The current document.
     this.doc = doc
     this.ranges = new RangeStore(this)
     this.history = new History(this)
   }
 
+  // :: (Node, ?Selection)
+  // Set the editor's content, and optionally include a new selection.
   setDoc(doc, sel) {
     if (!sel) sel = findSelectionAtStart(doc)
     this.signal("beforeSetDoc", doc, sel)
@@ -137,27 +158,25 @@ export class ProseMirror {
     this.signal("change")
   }
 
-  checkPos(pos, block) {
-    if (!this.doc.isValidPos(pos, block))
+  // :: (Pos, ?bool)
+  // Verify that the given position is valid in the current document,
+  // and throw an error otherwise. When `block` is true, the position
+  // must also fall within a textblock node.
+  checkPos(pos, textblock) {
+    if (!this.doc.isValidPos(pos, textblock))
       throw new Error("Position " + pos + " is not valid in current document")
   }
 
-  setSelection(rangeOrAnchor, head) {
-    let range = rangeOrAnchor
-    if (!(range instanceof Selection))
-      range = new TextSelection(rangeOrAnchor, head)
-    if (range instanceof TextSelection) {
-      this.checkPos(range.head, true)
-      this.checkPos(range.anchor, true)
-    } else {
-      this.checkPos(range.from, false)
-      this.checkPos(range.to, false)
-    }
-    this.ensureOperation()
-    this.input.maybeAbortComposition()
-    if (!range.eq(this.sel.range)) this.sel.setAndSignal(range)
+  // :: (Pos, ?Pos)
+  // Set the selection to a [text selection](#TextSelection) from
+  // `anchor` to `head`, or, if `head` is null, a cursor selection at
+  // `anchor`.
+  setTextSelection(anchor, head) {
+    this.setSelection(new TextSelection(anchor, head))
   }
 
+  // :: (Pos)
+  // Set the selection to a node selection on the node after `pos`.
   setNodeSelection(pos) {
     this.checkPos(pos, false)
     let parent = this.doc.path(pos.path)
@@ -168,6 +187,24 @@ export class ProseMirror {
       throw new Error("Trying to select a non-selectable node")
     this.input.maybeAbortComposition()
     this.sel.setAndSignal(new NodeSelection(pos, pos.move(1), node))
+  }
+
+  // :: (Selection)
+  // Set the selection to the given selection object.
+  setSelection(selection) {
+    if (selection instanceof TextSelection) {
+      this.checkPos(selection.head, true)
+      if (!selection.empty) this.checkPos(selection.anchor, true)
+    } else {
+      this.checkPos(selection.to, false)
+    }
+    this.setSelectionDirect(selection)
+  }
+
+  setSelectionDirect(selection) {
+    this.ensureOperation()
+    this.input.maybeAbortComposition()
+    if (!selection.eq(this.sel.range)) this.sel.setAndSignal(selection)
   }
 
   ensureOperation() {
@@ -187,6 +224,14 @@ export class ProseMirror {
     return this.operation
   }
 
+  // :: ()
+  // Flush any pending changes to the DOM. When the document,
+  // selection, or marked ranges in an editor change, the DOM isn't
+  // updated immediately, but rather scheduled to be updated the next
+  // time the browser redraws the screen. This method can be used to
+  // force this to happen immediately. It can be useful when you, for
+  // example, want to measure where on the screen a part of the
+  // document ends up, immediately after changing the document.
   flush() {
     if (!document.body.contains(this.wrapper) || !this.operation) return
     this.signal("flushing")
@@ -213,13 +258,27 @@ export class ProseMirror {
     this.accurateSelection = false
   }
 
+  // :: (string, any)
+  // Update the value of the given [option](#ProseMirrorOptions).
   setOption(name, value) { setOption(this, name, value) }
+
+  // :: (string) → any
+  // Get the current value of the given [option](#ProseMirrorOptions).
   getOption(name) { return this.options[name] }
 
+  // :: (Keymap, ?number)
+  // Add a [keymap](#Keymap) to the editor. Keymaps added in this way
+  // are queried before the [base keymap](#ProseMirrorOptions.keymap).
+  // The `rank` parameter can be used to control when they are queried
+  // relative to other maps added like this. Maps with a lower rank
+  // get queried first.
   addKeymap(map, rank = 50) {
     sortedInsert(this.input.keymaps, {map, rank}, (a, b) => a.rank - b.rank)
   }
 
+  // :: (union<string, Keymap>)
+  // Remove the given keymap, or the keymap with the given name, from
+  // the editor.
   removeKeymap(map) {
     let maps = this.input.keymaps
     for (let i = 0; i < maps.length; ++i) if (maps[i].map == map || maps[i].map.options.name == map) {
@@ -228,6 +287,29 @@ export class ProseMirror {
     }
   }
 
+  // :: (Pos, Pos, ?Object) → MarkedRange
+  // Create a marked range between the given positions. Marked ranges
+  // “track” the part of the document they point to—as the document
+  // changes, they are updated to move, grow, and shrink along with
+  // their content.
+  //
+  // `options` may be an object containing these properties:
+  //
+  // **`inclusiveLeft`**`: bool = false`
+  //   : Whether the left side of the range is inclusive. When it is,
+  //     content inserted at that point will become part of the range.
+  //     When not, it will be outside of the range.
+  //
+  // **`inclusiveRight`**`: bool = false`
+  //   : Whether the right side of the range is inclusive.
+  //
+  // **`removeWhenEmpty`**`: bool = true`
+  //   : Whether the range should be forgotten when it becomes empty
+  //     (because all of its content was deleted).
+  //
+  // **`className`**: string
+  //   : A CSS class to add to the inline content that is part of this
+  //     range.
   markRange(from, to, options) {
     this.checkPos(from)
     this.checkPos(to)
@@ -236,10 +318,18 @@ export class ProseMirror {
     return range
   }
 
+  // :: (MarkedRange)
+  // Remove the given range from the editor.
   removeRange(range) {
     this.ranges.removeRange(range)
   }
 
+  // :: (MarkType, ?bool, ?Object)
+  // Set (when `to` is true), unset (`to` is false), or toggle (`to`
+  // is null) the given mark type on the selection. When there is a
+  // non-empty selection, the marks of the selection are updated. When
+  // the selection is empty, the set of [active
+  // marks](#ProseMirror.activeMarks) is updated.
   setMark(type, to, attrs) {
     let sel = this.selection
     if (sel.empty) {
@@ -256,15 +346,26 @@ export class ProseMirror {
     }
   }
 
+  // :: () → [Mark]
+  // Get the marks at the cursor. By default, this yields the marks
+  // associated with the content at the cursor, as per `Node.marksAt`.
+  // But `setMark` may have been used to change the set of active
+  // marks, in which case that set is returned.
   activeMarks() {
-    return this.input.storedMarks || this.doc.marksAt(this.selection.head)
+    var head
+    return this.input.storedMarks ||
+      ((head = this.selection.head) ? this.doc.marksAt(head) : [])
   }
 
+  // :: ()
+  // Give the editor focus.
   focus() {
     if (this.operation) this.operation.focus = true
     else this.sel.toDOM(true)
   }
 
+  // :: () → bool
+  // Query whether the editor has focus.
   hasFocus() {
     if (this.sel.range instanceof NodeSelection)
       return document.activeElement == this.content
@@ -272,26 +373,57 @@ export class ProseMirror {
       return hasFocus(this)
   }
 
+  // :: () → Node
+  // Get the part of the document that falls within the selection.
+  get selectedDoc() {
+    let sel = this.selection
+    return this.doc.sliceBetween(sel.from, sel.to)
+  }
+
+  // :: () → string
+  // Get the text that falls within the selection.
+  get selectedText() {
+    return toText(this.selectedDoc)
+  }
+
+  // :: ({top: number, left: number}) → ?Pos
+  // If the given coordinates (which should be relative to the top
+  // left corner of the window—not the page) fall within the editable
+  // content, this method will return the document position that
+  // corresponds to those coordinates.
   posAtCoords(coords) {
     return posAtCoords(this, coords)
   }
 
+  // :: (Pos) → {top: number, left: number, bottom: number}
+  // Find the screen coordinates (relative to top left corner of the
+  // window) of the given document position.
   coordsAtPos(pos) {
     this.checkPos(pos)
     return coordsAtPos(this, pos)
   }
 
+  // :: (?Pos)
+  // Scroll the given position, or the cursor position if `pos` isn't
+  // given, into view.
   scrollIntoView(pos = null) {
     if (pos) this.checkPos(pos)
     this.ensureOperation()
     this.operation.scrollIntoView = pos
   }
 
+  // :: (string, ?[any]) → bool
+  // Execute the named [command](#Command). If the command takes
+  // parameters and they are not passed here, the user will be
+  // prompted for them.
   execCommand(name, params) {
     let cmd = this.commands[name]
     return !!(cmd && cmd.exec(this, params) !== false)
   }
 
+  // :: (string) → ?string
+  // Return the name of the key that is bound to the given command, if
+  // any.
   keyForCommand(name) {
     let cached = this.commandKeys[name]
     if (cached !== undefined) return cached
@@ -357,20 +489,32 @@ class Operation {
   }
 }
 
+// ;; A selection-aware extension of `Transform`. Use `ProseMirror.tr`
+// ;; to create an instance.
 class EditorTransform extends Transform {
   constructor(pm) {
     super(pm.doc)
     this.pm = pm
   }
 
+  // :: (?Object) → ?EditorTransform
+  // Apply the transformation. Returns the transform, or `false` it is
+  // was empty.
   apply(options) {
     return this.pm.apply(this, options)
   }
 
+  // :: Selection
+  // Get the editor's current selection, [mapped](#Selection.map)
+  // through the steps in this transform.
   get selection() {
     return this.steps.length ? this.pm.selection.map(this) : this.pm.selection
   }
 
+  // :: (?Node, ?bool) → EditorTransform
+  // Replace the selection with the given node, or delete it if `node`
+  // is null. When `inheritMarks` is true and the node is an inline
+  // node, it inherits the marks from the place where it is inserted.
   replaceSelection(node, inheritMarks) {
     let {empty, from, to, node: selNode} = this.selection, parent
     if (node && node.isInline && inheritMarks !== false) {
@@ -402,10 +546,14 @@ class EditorTransform extends Transform {
     else return this.delete(from, to)
   }
 
+  // :: () → EditorTransform
+  // Delete the selection.
   deleteSelection() {
     return this.replaceSelection()
   }
 
+  // :: (string) → EditorTransform
+  // Replace the selection with a text node containing the given string.
   typeText(text) {
     return this.replaceSelection(this.pm.schema.text(text), true)
   }

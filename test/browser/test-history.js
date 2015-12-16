@@ -105,7 +105,7 @@ test("ping_pong", pm => {
   pm.tr.insertText(P(0, 0), "zero ").apply()
   cut(pm)
   pm.tr.split(P(0, 0)).apply()
-  pm.setSelection(P(0, 0))
+  pm.setTextSelection(P(0, 0))
   type(pm, "top")
   for (let i = 0; i < 6; i++) {
     let re = i % 2
@@ -124,7 +124,7 @@ test("ping_pong_unsynced", pm => {
   pm.tr.insertText(P(0, 0), "zero ").apply()
   cut(pm)
   pm.tr.split(P(0, 0)).apply()
-  pm.setSelection(P(0, 0))
+  pm.setTextSelection(P(0, 0))
   type(pm, "top")
   pm.tr.insertText(P(0, 0), "yyy").apply({addToHistory: false})
   pm.tr.insertText(P(0, 6), "zzz").apply({addToHistory: false})
@@ -138,7 +138,7 @@ test("ping_pong_unsynced", pm => {
 
 test("compressable", pm => {
   type(pm, "XY")
-  pm.setSelection(P(0, 1))
+  pm.setTextSelection(P(0, 1))
   cut(pm)
   type(pm, "one")
   type(pm, "two")

@@ -582,7 +582,7 @@ defineCommand("createParagraphNear", {
     if (!node || !node.isBlock || node.type.contains) return false
     let side = from.offset ? to : from
     pm.tr.insert(side, pm.schema.defaultTextblockType().create()).apply(andScroll)
-    pm.setSelection(new Pos(side.toPath(), 0))
+    pm.setTextSelection(new Pos(side.toPath(), 0))
   },
   key: "Enter(20)"
 })
@@ -789,7 +789,7 @@ function selectBlockHorizontally(pm, dir) {
   if (!empty && !node) return false
 
   if (node && node.isInline) {
-    pm.setSelection(dir > 0 ? to : from)
+    pm.setTextSelection(dir > 0 ? to : from)
     return true
   }
 
@@ -806,7 +806,7 @@ function selectBlockHorizontally(pm, dir) {
 
   let next = moveSelectionBlock(pm, dir)
   if (next && (next instanceof NodeSelection || node)) {
-    pm.setSelection(next)
+    pm.setSelectionDirect(next)
     return true
   }
   return false
@@ -843,7 +843,7 @@ function selectBlockVertically(pm, dir) {
   if (leavingTextblock) {
     let next = moveSelectionBlock(pm, dir)
     if (next && (next instanceof NodeSelection)) {
-      pm.setSelection(next)
+      pm.setSelectionDirect(next)
       if (!node) pm.sel.lastNonNodePos = from
       return true
     }
@@ -862,7 +862,7 @@ function selectBlockVertically(pm, dir) {
     setDOMSelectionToPos(pm, last)
     return false
   }
-  pm.setSelection(beyond)
+  pm.setSelectionDirect(beyond)
   return true
 }
 
