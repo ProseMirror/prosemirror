@@ -1,4 +1,4 @@
-import {eventMixin} from "./event"
+import {eventMixin} from "../util/event"
 
 export class MarkedRange {
   constructor(from, to, options) {

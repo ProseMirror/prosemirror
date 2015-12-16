@@ -1,4 +1,5 @@
-import {defineOption, eventMixin} from "../edit"
+import {defineOption} from "../edit"
+import {eventMixin} from "../util/event"
 
 import {rebaseSteps} from "./rebase"
 export {rebaseSteps}
