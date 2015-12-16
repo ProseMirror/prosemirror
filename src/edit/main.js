@@ -165,10 +165,16 @@ export class ProseMirror {
   // Set the editor's content, and optionally include a new selection.
   setDoc(doc, sel) {
     if (!sel) sel = findSelectionAtStart(doc)
+    // :: (doc: Node, selection: Selection) #path=ProseMirror#events#beforeSetDoc
+    // Fired when [`setDoc`](#ProseMirror.setDoc) is called, before
+    // the document is actually updated.
     this.signal("beforeSetDoc", doc, sel)
     this.ensureOperation()
     this.setDocInner(doc)
     this.sel.set(sel, true)
+    // :: (doc: Node, selection: Selection) #path=ProseMirror#events#setDoc
+    // Fired when [`setDoc`](#ProseMirror.setDoc) is called, after
+    // the document is updated.
     this.signal("setDoc", doc, sel)
   }
 
@@ -178,6 +184,11 @@ export class ProseMirror {
     this.ranges.transform(mapping)
     this.doc = doc
     this.sel.setAndSignal(selection || this.sel.range.map(doc, mapping))
+    // :: () #path=ProseMirror#events#change
+    // Fired when the document has changed. See
+    // [`setDoc`](#ProseMirror.event_setDoc) and
+    // [`transform`](#ProseMirror.event_transform) for more specific
+    // change-related events.
     this.signal("change")
   }
 
@@ -204,6 +215,10 @@ export class ProseMirror {
       throw new Error("Applying a transform that does not start with the current document")
 
     this.updateDoc(transform.doc, transform, options.selection)
+    // :: (Transform, Object) #path=ProseMirror#event#transform
+    // Signals that a (non-empty) transformation has been aplied to
+    // the editor. Passes the `Transform` and the options given to
+    // [`apply`](#ProseMirror.apply) as arguments to the handler.
     this.signal("transform", transform, options)
     if (options.scrollIntoView) this.scrollIntoView()
     return transform
@@ -245,6 +260,9 @@ export class ProseMirror {
   // document ends up, immediately after changing the document.
   flush() {
     if (!document.body.contains(this.wrapper) || !this.operation) return
+    // :: () #path=ProseMirror#events#flushing
+    // Fired when the editor is about to [flush](#ProseMirror.flush)
+    // an update to the DOM.
     this.signal("flushing")
     let op = this.operation
     if (!op) return
@@ -263,8 +281,20 @@ export class ProseMirror {
 
     if (op.scrollIntoView !== false)
       scrollIntoView(this, op.scrollIntoView)
+    // :: () #path=ProseMirror#events#draw
+    // Fired when the editor redrew its document in the DOM.
     if (docChanged) this.signal("draw")
+    // :: () #path=ProseMirror#events#flush
+    // Fired when the editor has finished
+    // [flushing](#ProseMirror.flush) an update to the DOM. If you
+    // need to respond to this with a DOM update of your own, use this
+    // event to read layout from the DOM, and
+    // [`flushed`](#ProseMirror.event_flushed) to update the DOM.
     this.signal("flush")
+    // :: () #path=ProseMirror#events#flushed
+    // Fired when the editor has finished
+    // [flushing](#ProseMirror.flush) an update to the DOM, after
+    // [`flush`](#ProseMirror.event_flush) has fired.
     this.signal("flushed")
     this.accurateSelection = false
   }
@@ -340,6 +370,8 @@ export class ProseMirror {
       if (to == null) to = !type.isInSet(marks)
       if (to && !this.doc.path(sel.head.path).type.canContainMark(type)) return
       this.input.storedMarks = to ? type.create(attrs).addToSet(marks) : type.removeFromSet(marks)
+      // :: () #path=ProseMirror#events#activeMarkChange
+      // Fired when the set of [active marks](#ProseMirror.activeMarks) changes.
       this.signal("activeMarkChange")
     } else {
       if (to != null ? to : !this.doc.rangeHasMark(sel.from, sel.to, type))
@@ -492,8 +524,8 @@ class Operation {
   }
 }
 
-// ;; A selection-aware extension of `Transform`. Use `ProseMirror.tr`
-// to create an instance.
+// ;; #toc=false A selection-aware extension of `Transform`. Use
+// `ProseMirror.tr` to create an instance.
 class EditorTransform extends Transform {
   constructor(pm) {
     super(pm.doc)

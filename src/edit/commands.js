@@ -83,7 +83,7 @@ export class Command {
   }
 }
 
-// ;; #path=CommandSpec #kind=interface
+// ;; #path=CommandSpec #kind=interface #toc=false
 // Commands are defined using objects that specify various aspects of
 // the command. The only properties that _must_ appear in a command
 // spec are [`name`](#CommandSpec.name) and [`run`](#CommandSpec.run).
@@ -128,7 +128,7 @@ export class Command {
 // :: union<string, [string]> #path=CommandSpec.macKey
 // Default key binding or bindings specific to the Mac platform.
 
-// ;; #path=CommandParam #kind=interface
+// ;; #path=CommandParam #kind=interface #toc=false
 // The parameters that a command can take are specified using objects
 // with the following properties:
 

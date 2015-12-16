@@ -148,6 +148,8 @@ function inputText(pm, range, text) {
   let tr = pm.tr
   tr.replaceWith(range.from, range.to, pm.schema.text(text, marks)).apply()
   pm.scrollIntoView()
+  // :: () #path=ProseMirror#events#textInput
+  // Fired when the user types text into the editor.
   pm.signal("textInput", text)
 }
 
@@ -392,10 +394,14 @@ handlers.drop = (pm, e) => {
 
 handlers.focus = pm => {
   addClass(pm.wrapper, "ProseMirror-focused")
+  // :: () #path=ProseMirror#events#focus
+  // Fired when the editor gains focus.
   pm.signal("focus")
 }
 
 handlers.blur = pm => {
   rmClass(pm.wrapper, "ProseMirror-focused")
+  // :: () #path=ProseMirror#events#blur
+  // Fired when the editor loses focus.
   pm.signal("blur")
 }

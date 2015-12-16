@@ -61,7 +61,7 @@ const options = {
   // handlers are loaded, and you want to choose between them.
   commandParamHandler: new Option("default"),
 
-  // :: ?string
+  // :: ?string #path=label #kind=option
   // The label of the editor. When set, the editable DOM node gets an
   // `aria-label` attribute with this value.
   label: new Option(null)

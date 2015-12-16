@@ -17,9 +17,10 @@ export class MarkedRange {
     this.to = to
   }
 
-  // FIXME document event
   remove() {
-    this.signal("removed", this.from)
+    // :: (from: Pos, to: Pos) #path=MarkedRange#events#removed
+    // Signalled when the marked range is removed from the editor.
+    this.signal("removed", this.from, this.to.max(this.from))
     this.from = this.to = null
   }
 }
