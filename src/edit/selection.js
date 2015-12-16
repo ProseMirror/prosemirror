@@ -109,11 +109,8 @@ export class SelectionState {
   nodeToDOM(takeFocus) {
     window.getSelection().removeAllRanges()
     if (takeFocus) this.pm.content.focus()
-    let pos = this.range.from, node = this.range.node, dom
-    if (node.isInline)
-      dom = findByOffset(resolvePath(this.pm.content, pos.path), pos.offset, true).node
-    else
-      dom = resolvePath(this.pm.content, pos.toPath())
+    let pos = this.range.from, node = this.range.node
+    let dom = resolvePath(this.pm.content, pos.toPath())
     if (dom == this.lastNode) return
     this.clearNode()
     addNodeSelection(node, dom)
