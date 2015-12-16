@@ -13,6 +13,8 @@ const paramHandlers = Object.create(null)
 
 const empty = []
 
+// FIXME document individual commands
+
 // ;; A command is a named piece of functionality that can be bound to
 // a key, shown in the menu, or otherwise exposed to the user. There
 // are two sources of commands: Global commands, registered with
@@ -127,6 +129,8 @@ export class Command {
 
 // :: union<string, [string]> #path=CommandSpec.macKey
 // Default key binding or bindings specific to the Mac platform.
+
+// FIXME document menu and icon properties
 
 // ;; #path=CommandParam #kind=interface #toc=false
 // The parameters that a command can take are specified using objects
