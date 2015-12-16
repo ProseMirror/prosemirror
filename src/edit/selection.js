@@ -188,6 +188,7 @@ function windowRect() {
           top: 0, bottom: window.innerHeight}
 }
 
+// ;; FIXME
 export class Selection {}
 
 export class NodeSelection extends Selection {

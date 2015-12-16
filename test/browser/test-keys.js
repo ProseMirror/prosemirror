@@ -9,14 +9,11 @@ import {Pos} from "../../src/model"
 
 function trace(prop) { return pm => pm.mod[prop] = (pm.mod[prop] || 0) + 1 }
 
-const fallthrough = new Keymap({
-  "Ctrl-A": trace("a")
-})
-
 const extraMap = new Keymap({
   "'B'": trace("b"),
-  "Ctrl-X C": trace("c")
-}, {fallthrough: fallthrough})
+  "Ctrl-X C": trace("c"),
+  "Ctrl-A": trace("a")
+})
 
 const test = namespace("keys", {
   doc: doc(p("foo"))
@@ -32,13 +29,6 @@ test("basic", pm => {
   cmp(pm.mod.b, 2)
 })
   
-test("fallthrough", pm => {
-  pm.addKeymap(extraMap)
-  dispatch(pm, "Ctrl-A")
-  dispatch(pm, "Ctrl-A")
-  cmp(pm.mod.a, 2)
-})
-
 test("multi", pm => {
   pm.addKeymap(extraMap)
   dispatch(pm, "Ctrl-X")

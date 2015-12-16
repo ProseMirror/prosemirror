@@ -11,53 +11,36 @@ import {findSelectionFrom, verticalMotionLeavesTextblock, setDOMSelectionToPos, 
 const globalCommands = Object.create(null)
 const paramHandlers = Object.create(null)
 
-// :: (string, CommandSpec)
-// Define a global (not node- or mark-specific) command with the given
-// name.
-export function defineCommand(name, cmd) {
-  globalCommands[name] = cmd instanceof Command ? cmd : new Command(name, cmd)
-}
-
-export function defineParamHandler(name, handler) {
-  paramHandlers[name] = handler
-}
-
-function getParamHandler(pm) {
-  let option = pm.options.commandParamHandler
-  if (option && paramHandlers[option]) return paramHandlers[option]
-}
-
 const empty = []
 
+// ;; A command is a named piece of functionality that can be bound to
+// a key, shown in the menu, or otherwise exposed to the user. There
+// are two sources of commands: Global commands, registered with
+// `defineCommand`, are available everywhere. Commands associated with
+// [node](#NodeType) or [mark](#MarkType) types, registered by using
+// the types' [`register`](#NodeType.register) method with the string
+// `"command"`, are available only in editors whose schema contains
+// that node or mark type.
 export class Command {
-  constructor(name, spec, self) {
-    this.name = name
+  constructor(spec, self) {
+    // :: string The name of the command.
+    this.name = spec.name
+    if (!this.name) throw new Error("Trying to define a command without a name")
+    // :: CommandSpec The command's specifying object.
     this.spec = spec
     this.self = self
   }
 
-  select(pm) {
-    let f = this.spec.select
-    return f ? f.call(this.self, pm) : true
-  }
-
-  active(pm) {
-    let f = this.spec.active
-    return f ? f.call(this.self, pm) : false
-  }
-
-  get params() {
-    return this.spec.params || empty
-  }
-
-  get label() {
-    return this.spec.label || this.name
-  }
-
-  get display() {
-    return this.spec.display || "icon"
-  }
-
+  // :: (ProseMirror, ?[any]) → ?bool
+  // Execute this command. If the command takes
+  // [parameters](#Command.params), they can be passed as second
+  // argument here, or omitted, in which case a [parameter
+  // handler](#defineParamHandler) will be called to prompt the user
+  // for values.
+  //
+  // Returns the value returned by the command spec's [`run`
+  // method](#CommandSpec.run), or `false` if the command could not be
+  // ran.
   exec(pm, params) {
     let run = this.spec.run
     if (!this.params.length) return run.call(this.self, pm)
@@ -68,6 +51,116 @@ export class Command {
       if (params) run.call(this.self, pm, ...params)
     })
   }
+
+  // :: (ProseMirror) → bool
+  // Ask this command whether it is currently relevant, given the
+  // editor's document and selection. If the command does not define a
+  // [`select`](#CommandSpec.select) method, this always returns true.
+  select(pm) {
+    let f = this.spec.select
+    return f ? f.call(this.self, pm) : true
+  }
+
+  // :: (ProseMirror) → bool
+  // Ask this command whether it is “active”. This is mostly used to
+  // style inline mark icons (such as strong) differently when the
+  // selection contains such marks.
+  active(pm) {
+    let f = this.spec.active
+    return f ? f.call(this.self, pm) : false
+  }
+
+  // :: [CommandParam]
+  // Get the list of parameters that this command expects.
+  get params() {
+    return this.spec.params || empty
+  }
+
+  // :: string
+  // Get the label for this command.
+  get label() {
+    return this.spec.label || this.name
+  }
+}
+
+// ;; #path=CommandSpec #kind=interface
+// Commands are defined using objects that specify various aspects of
+// the command. The only properties that _must_ appear in a command
+// spec are [`name`](#CommandSpec.name) and [`run`](#CommandSpec.run).
+// You should probably also give your commands a `label`.
+
+// :: string #path=CommandSpec.name
+// The name of the command, which will be its key in
+// `ProseMirror.commands`, and the thing passed to
+// [`execCommand`](#ProseMirror.execCommand).
+
+// :: string #path=CommandSpec.label
+// A user-facing label for the command. This will be used, among other
+// things. as the tooltip title for the command's menu item. If there
+// is no `label`, the command's `name` will be used instead.
+
+// :: (pm: ProseMirror, ...params: [any]) → ?bool #path=CommandSpec.run
+// The function that executes the command. If the command has
+// [parameters](#CommandSpec.params), their values are passed as
+// arguments. For commands [registered](#NodeType.register) on node or
+// mark types, `this` will be bound to the node or mark type when this
+// function is ran. Should return `false` when the command could not
+// be executed.
+
+// :: [CommandParam] #path=CommandSpec.params
+// The parameters that this command expects.
+
+// :: (pm: ProseMirror) → bool #path=CommandSpec.select
+// The function used to [select](#Command.select) the command. `this`
+// will again be bound to a node or mark type, when available.
+
+// :: (pm: ProseMirror) → bool #path=CommandSpec.active
+// The function used to determine whether the command is
+// [active](#Command.active). `this` refers to the associated node or
+// mark type.
+
+// :: union<string, [string]> #path=CommandSpec.key
+// The default key binding or bindings for this command.
+
+// :: union<string, [string]> #path=CommandSpec.pcKey
+// Default key binding or bindings specific to non-Mac platforms.
+
+// :: union<string, [string]> #path=CommandSpec.macKey
+// Default key binding or bindings specific to the Mac platform.
+
+// ;; #path=CommandParam #kind=interface
+// The parameters that a command can take are specified using objects
+// with the following properties:
+
+// :: string #path=CommandParam.label
+// The user-facing name of the parameter. Shown to the user when
+// prompting for this parameter.
+
+// :: string #path=CommandParam.type
+// The type of the parameter. Supported types are `"text"` and `"select"`.
+
+// :: any #path=CommandParam.default
+// A default value for the parameter.
+
+// :: (CommandSpec)
+// Define a global (not node- or mark-specific) command.
+export function defineCommand(spec) {
+  globalCommands[spec.name] = new Command(spec)
+}
+
+// :: (string, (pm: ProseMirror, cmd: Command, callback: (?[any])))
+// Register a parameter handler, which is a function that prompts the
+// user to enter values for a command's [parameters](#FIXME), and
+// calls a callback with the values received. See also the
+// [`commandParamHandler`
+// option](#commandParamHandler).
+export function defineParamHandler(name, handler) {
+  paramHandlers[name] = handler
+}
+
+function getParamHandler(pm) {
+  let option = pm.options.commandParamHandler
+  if (option && paramHandlers[option]) return paramHandlers[option]
 }
 
 export function initCommands(schema) {
@@ -77,7 +170,7 @@ export function initCommands(schema) {
     for (let name in types) {
       let type = types[name], cmds = type.command
       if (cmds) cmds.forEach(spec => {
-        result[spec.name] = new Command(spec.name, spec, type)
+        result[spec.name] = new Command(spec, type)
       })
     }
   }
@@ -227,8 +320,8 @@ LinkMark.register("command", {
   label: "Add link",
   run(pm, href, title) { pm.setMark(this, true, {href, title}) },
   params: [
-    {name: "Target", type: "text"},
-    {name: "Title", type: "text", default: ""}
+    {label: "Target", type: "text"},
+    {label: "Title", type: "text", default: ""}
   ],
   select(pm) { return markApplies(pm, this) && !markActive(pm, this) },
   menuGroup: "inline", menuRank: 30,
@@ -245,9 +338,9 @@ Image.register("command", {
     return pm.tr.replaceSelection(this.create({src, title, alt})).apply(andScroll)
   },
   params: [
-    {name: "Image URL", type: "text"},
-    {name: "Description / alternative text", type: "text", default: ""},
-    {name: "Title", type: "text", default: ""}
+    {label: "Image URL", type: "text"},
+    {label: "Description / alternative text", type: "text", default: ""},
+    {label: "Title", type: "text", default: ""}
   ],
   select(pm) {
     return pm.doc.path(pm.selection.from.path).type.canContainType(this)
@@ -302,7 +395,8 @@ function moveBackward(parent, offset, by) {
   }
 }
 
-defineCommand("deleteSelection", {
+defineCommand({
+  name: "deleteSelection",
   label: "Delete the selection",
   run(pm) {
     return pm.tr.replaceSelection().apply(andScroll)
@@ -331,7 +425,8 @@ function deleteBarrier(pm, cut) {
   return pm.tr.lift(selAfter.from, selAfter.to).apply(andScroll)
 }
 
-defineCommand("joinBackward", {
+defineCommand({
+  name: "joinBackward",
   label: "Join with the block above",
   run(pm) {
     let {head, empty} = pm.selection
@@ -358,7 +453,8 @@ defineCommand("joinBackward", {
   key: ["Backspace(30)", "Mod-Backspace(30)"]
 })
 
-defineCommand("deleteCharBefore", {
+defineCommand({
+  name: "deleteCharBefore",
   label: "Delete a character before the cursor",
   run(pm) {
     let {head, empty} = pm.selection
@@ -370,7 +466,8 @@ defineCommand("deleteCharBefore", {
   macKey: "Ctrl-H(40)"
 })
 
-defineCommand("deleteWordBefore", {
+defineCommand({
+  name: "deleteWordBefore",
   label: "Delete the word before the cursor",
   run(pm) {
     let {head, empty} = pm.selection
@@ -410,7 +507,8 @@ function moveForward(parent, offset, by) {
   }
 }
 
-defineCommand("joinForward", {
+defineCommand({
+  name: "joinForward",
   label: "Join with the block below",
   run(pm) {
     let {head, empty} = pm.selection
@@ -438,7 +536,8 @@ defineCommand("joinForward", {
   key: ["Delete(30)", "Mod-Delete(30)"]
 })
 
-defineCommand("deleteCharAfter", {
+defineCommand({
+  name: "deleteCharAfter",
   label: "Delete a character after the cursor",
   run(pm) {
     let {head, empty} = pm.selection
@@ -450,7 +549,8 @@ defineCommand("deleteCharAfter", {
   macKey: "Ctrl-D(60)"
 })
 
-defineCommand("deleteWordAfter", {
+defineCommand({
+  name: "deleteWordAfter",
   label: "Delete a character after the cursor",
   run(pm) {
     let {head, empty} = pm.selection
@@ -468,7 +568,8 @@ function joinPointAbove(pm) {
   else return joinPoint(pm.doc, from, -1)
 }
 
-defineCommand("joinUp", {
+defineCommand({
+  name: "joinUp",
   label: "Join with above block",
   run(pm) {
     let node = pm.selection.node
@@ -492,7 +593,8 @@ function joinPointBelow(pm) {
   else return joinPoint(pm.doc, to, 1)
 }
 
-defineCommand("joinDown", {
+defineCommand({
+  name: "joinDown",
   label: "Join with below block",
   run(pm) {
     let node = pm.selection.node
@@ -505,7 +607,8 @@ defineCommand("joinDown", {
   key: "Alt-Down"
 })
 
-defineCommand("lift", {
+defineCommand({
+  name: "lift",
   label: "Lift out of enclosing block",
   run(pm) {
     let {from, to} = pm.selection
@@ -584,7 +687,8 @@ wrapCommand(BlockQuote, "BlockQuote", "block quote", false, {
   key: ["Alt-Right '>'", "Alt-Right '\"'"]
 })
 
-defineCommand("newlineInCode", {
+defineCommand({
+  name: "newlineInCode",
   label: "Insert newline",
   run(pm) {
     let {from, to, node} = pm.selection, block
@@ -598,7 +702,8 @@ defineCommand("newlineInCode", {
   key: "Enter(10)"
 })
 
-defineCommand("createParagraphNear", {
+defineCommand({
+  name: "createParagraphNear",
   label: "Create a paragraph near the selected leaf block",
   run(pm) {
     let {from, to, node} = pm.selection
@@ -610,7 +715,8 @@ defineCommand("createParagraphNear", {
   key: "Enter(20)"
 })
 
-defineCommand("liftEmptyBlock", {
+defineCommand({
+  name: "liftEmptyBlock",
   label: "Move current block up",
   run(pm) {
     let {head, empty} = pm.selection
@@ -623,7 +729,8 @@ defineCommand("liftEmptyBlock", {
   key: "Enter(30)"
 })
 
-defineCommand("splitBlock", {
+defineCommand({
+  name: "splitBlock",
   label: "Split the current block",
   run(pm) {
     let {from, to, node} = pm.selection, block = pm.doc.path(to.path)
@@ -704,7 +811,8 @@ HorizontalRule.register("command", {
   key: "Mod-Space"
 })
 
-defineCommand("undo", {
+defineCommand({
+  name: "undo",
   label: "Undo last change",
   run(pm) { pm.scrollIntoView(); return pm.history.undo() },
   select(pm) { return pm.history.canUndo() },
@@ -716,7 +824,8 @@ defineCommand("undo", {
   key: "Mod-Z"
 })
 
-defineCommand("redo", {
+defineCommand({
+  name: "redo",
   label: "Redo last undone change",
   run(pm) { pm.scrollIntoView(); return pm.history.redo() },
   select(pm) { return pm.history.canRedo() },
@@ -728,7 +837,8 @@ defineCommand("redo", {
   key: ["Mod-Y", "Shift-Mod-Z"]
 })
 
-defineCommand("textblockType", {
+defineCommand({
+  name: "textblockType",
   label: "Change block type",
   run(pm, type) {
     let {from, to} = pm.selection
@@ -739,7 +849,7 @@ defineCommand("textblockType", {
     return !node || node.isTextblock
   },
   params: [
-    {name: "Type", type: "select", options: listTextblockTypes, default: currentTextblockType, defaultLabel: "Type..."}
+    {label: "Type", type: "select", options: listTextblockTypes, default: currentTextblockType, defaultLabel: "Type..."}
   ],
   display: "select",
   menuGroup: "block", menuRank: 10
@@ -789,7 +899,8 @@ function nodeAboveSelection(pm) {
   return i == 0 ? false : sel.head.shorten(i - 1)
 }
 
-defineCommand("selectParentBlock", {
+defineCommand({
+  name: "selectParentBlock",
   label: "Select parent node",
   run(pm) {
     let node = nodeAboveSelection(pm)
@@ -838,7 +949,8 @@ function selectBlockHorizontally(pm, dir) {
   return false
 }
 
-defineCommand("selectBlockLeft", {
+defineCommand({
+  name: "selectBlockLeft",
   label: "Move the selection onto or out of the block to the left",
   run(pm) {
     let done = selectBlockHorizontally(pm, -1)
@@ -848,7 +960,8 @@ defineCommand("selectBlockLeft", {
   key: ["Left", "Mod-Left"]
 })
 
-defineCommand("selectBlockRight", {
+defineCommand({
+  name: "selectBlockRight",
   label: "Move the selection onto or out of the block to the right",
   run(pm) {
     let done = selectBlockHorizontally(pm, 1)
@@ -892,7 +1005,8 @@ function selectBlockVertically(pm, dir) {
   return true
 }
 
-defineCommand("selectBlockUp", {
+defineCommand({
+  name: "selectBlockUp",
   label: "Move the selection onto or out of the block above",
   run(pm) {
     let done = selectBlockVertically(pm, -1)
@@ -902,7 +1016,8 @@ defineCommand("selectBlockUp", {
   key: "Up"
 })
 
-defineCommand("selectBlockDown", {
+defineCommand({
+  name: "selectBlockDown",
   label: "Move the selection onto or out of the block below",
   run(pm) {
     let done = selectBlockVertically(pm, 1)

@@ -7,7 +7,7 @@ import {toHTML} from "../serialize/dom"
 import {toText} from "../serialize/text"
 import {knownSource, parseFrom} from "../parse"
 
-import {isModifierKey, lookupKey, keyName} from "./keys"
+import {isModifierKey, keyName} from "./keys"
 import {captureKeys} from "./capturekeys"
 import {browser, addClass, rmClass} from "../dom"
 import {applyDOMChange, textContext, textInContext} from "./domchange"
@@ -94,6 +94,10 @@ export function dispatchKey(pm, name, e) {
   }
 
   let handle = function(bound) {
+    if (bound === false) return "nothing"
+    if (bound == "...") return "multi"
+    if (bound == null) return false
+
     let result = false
     if (Array.isArray(bound)) {
       for (let i = 0; result === false && i < bound.length; i++)
@@ -103,14 +107,14 @@ export function dispatchKey(pm, name, e) {
     } else {
       result = bound(pm)
     }
-    return result !== false
+    return result
   }
 
   let result
   for (let i = 0; !result && i < pm.input.keymaps.length; i++)
-    result = lookupKey(name, pm.input.keymaps[i].map, handle, pm)
+    result = handle(pm.input.keymaps[i].map.lookup(name, pm))
   if (!result)
-    result = lookupKey(name, pm.options.keymap, handle, pm) || lookupKey(name, captureKeys, handle, pm)
+    result = handle(pm.options.keymap.lookup(name, pm))
 
   // If the key should be used in sequence with the next key, store the keyname internally.
   if (result == "multi")

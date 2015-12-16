@@ -173,10 +173,11 @@ export function showSelectMenu(pm, item, dom) {
 }
 
 function renderItem(item, menu) {
-  if (item.display == "icon") return renderIcon(item, menu)
-  else if (item.display == "select") return renderSelect(item, menu)
-  else if (!item.display) throw new Error("Command " + item.name + " can not be shown in a menu")
-  else return item.display(menu)
+  var display = item.display || item.spec.display || "icon"
+  if (display == "icon") return renderIcon(item, menu)
+  else if (display == "select") return renderSelect(item, menu)
+  else if (!display) throw new Error("Command " + item.name + " can not be shown in a menu")
+  else return display.call(item, menu)
 }
 
 function buildParamForm(pm, command) {
@@ -186,7 +187,7 @@ function buildParamForm(pm, command) {
     let val = prefill ? prefill[i] : param.default || ""
     if (param.type == "text")
       field = elt("input", {name, type: "text",
-                            placeholder: param.name,
+                            placeholder: param.label,
                             value: val,
                             autocomplete: "off"})
     else if (param.type == "select")

@@ -31,9 +31,9 @@ import {normalizeKeyName} from "./keys"
 // Contains event methods (`on`, etc) from the [event
 // mixin](#eventMixin).
 export class ProseMirror {
-  // :: (ProseMirrorOptions)
-  // Construct a new editor and, if it has a
-  // [`place`](#ProseMirrorOptions.place) option, add it to the
+  // :: (Object)
+  // Construct a new editor from a set of [options](#edit_options)
+  // and, if it has a [`place`](#place) option, add it to the
   // document.
   constructor(opts) {
     opts = this.options = parseOptions(opts)
@@ -72,11 +72,21 @@ export class ProseMirror {
     this.accurateSelection = false
     this.input = new Input(this)
 
+    // :: Object<Command>
+    // The commands available in the editor.
     this.commands = initCommands(this.schema)
     this.commandKeys = Object.create(null)
 
     initOptions(this)
   }
+
+  // :: (string, any)
+  // Update the value of the given [option](#edit_options).
+  setOption(name, value) { setOption(this, name, value) }
+
+  // :: (string) → any
+  // Get the current value of the given [option](#edit_options).
+  getOption(name) { return this.options[name] }
 
   // :: Selection
   // Get the current selection.
@@ -85,33 +95,45 @@ export class ProseMirror {
     return this.sel.range
   }
 
-  // :: (Transform, ?Object) → ?Transform
-  // Apply a transformation (which you might want to create with the
-  // [`tr` getter](#ProseMirror.tr)) to the document in the editor.
-  // The following options are supported:
-  //
-  // **`selection`**`: ?Selection`
-  //   : A new selection to set after the transformation is applied.
-  //
-  // **`scrollIntoView`**: ?bool
-  //   : When true, scroll the selection into view on the next
-  //     [redraw](#ProseMirror.flush).
-  //
-  // Returns the transform, or `false` if there were no steps in it.
-  apply(transform, options = nullOptions) {
-    if (transform.doc == this.doc) return false
-    if (transform.docs[0] != this.doc && findDiffStart(transform.docs[0], this.doc))
-      throw new Error("Applying a transform that does not start with the current document")
-
-    this.updateDoc(transform.doc, transform, options.selection)
-    this.signal("transform", transform, options)
-    if (options.scrollIntoView) this.scrollIntoView()
-    return transform
+  // :: (Pos, ?Pos)
+  // Set the selection to a [text selection](#TextSelection) from
+  // `anchor` to `head`, or, if `head` is null, a cursor selection at
+  // `anchor`.
+  setTextSelection(anchor, head) {
+    this.setSelection(new TextSelection(anchor, head))
   }
 
-  // :: EditorTransform
-  // Create an editor- and selection-aware `Transform` for this editor.
-  get tr() { return new EditorTransform(this) }
+  // :: (Pos)
+  // Set the selection to a node selection on the node after `pos`.
+  setNodeSelection(pos) {
+    this.checkPos(pos, false)
+    let parent = this.doc.path(pos.path)
+    if (pos.offset >= parent.size)
+      throw new Error("Trying to set a node selection at the end of a node")
+    let node = parent.child(pos.offset)
+    if (!node.type.selectable)
+      throw new Error("Trying to select a non-selectable node")
+    this.input.maybeAbortComposition()
+    this.sel.setAndSignal(new NodeSelection(pos, pos.move(1), node))
+  }
+
+  // :: (Selection)
+  // Set the selection to the given selection object.
+  setSelection(selection) {
+    if (selection instanceof TextSelection) {
+      this.checkPos(selection.head, true)
+      if (!selection.empty) this.checkPos(selection.anchor, true)
+    } else {
+      this.checkPos(selection.to, false)
+    }
+    this.setSelectionDirect(selection)
+  }
+
+  setSelectionDirect(selection) {
+    this.ensureOperation()
+    this.input.maybeAbortComposition()
+    if (!selection.eq(this.sel.range)) this.sel.setAndSignal(selection)
+  }
 
   // :: (any, ?string)
   // Replace the editor's document. When `format` is given, it should
@@ -159,6 +181,34 @@ export class ProseMirror {
     this.signal("change")
   }
 
+  // :: EditorTransform
+  // Create an editor- and selection-aware `Transform` for this editor.
+  get tr() { return new EditorTransform(this) }
+
+  // :: (Transform, ?Object) → ?Transform
+  // Apply a transformation (which you might want to create with the
+  // [`tr` getter](#ProseMirror.tr)) to the document in the editor.
+  // The following options are supported:
+  //
+  // **`selection`**`: ?Selection`
+  //   : A new selection to set after the transformation is applied.
+  //
+  // **`scrollIntoView`**: ?bool
+  //   : When true, scroll the selection into view on the next
+  //     [redraw](#ProseMirror.flush).
+  //
+  // Returns the transform, or `false` if there were no steps in it.
+  apply(transform, options = nullOptions) {
+    if (transform.doc == this.doc) return false
+    if (transform.docs[0] != this.doc && findDiffStart(transform.docs[0], this.doc))
+      throw new Error("Applying a transform that does not start with the current document")
+
+    this.updateDoc(transform.doc, transform, options.selection)
+    this.signal("transform", transform, options)
+    if (options.scrollIntoView) this.scrollIntoView()
+    return transform
+  }
+
   // :: (Pos, ?bool)
   // Verify that the given position is valid in the current document,
   // and throw an error otherwise. When `block` is true, the position
@@ -166,46 +216,6 @@ export class ProseMirror {
   checkPos(pos, textblock) {
     if (!this.doc.isValidPos(pos, textblock))
       throw new Error("Position " + pos + " is not valid in current document")
-  }
-
-  // :: (Pos, ?Pos)
-  // Set the selection to a [text selection](#TextSelection) from
-  // `anchor` to `head`, or, if `head` is null, a cursor selection at
-  // `anchor`.
-  setTextSelection(anchor, head) {
-    this.setSelection(new TextSelection(anchor, head))
-  }
-
-  // :: (Pos)
-  // Set the selection to a node selection on the node after `pos`.
-  setNodeSelection(pos) {
-    this.checkPos(pos, false)
-    let parent = this.doc.path(pos.path)
-    if (pos.offset >= parent.size)
-      throw new Error("Trying to set a node selection at the end of a node")
-    let node = parent.child(pos.offset)
-    if (!node.type.selectable)
-      throw new Error("Trying to select a non-selectable node")
-    this.input.maybeAbortComposition()
-    this.sel.setAndSignal(new NodeSelection(pos, pos.move(1), node))
-  }
-
-  // :: (Selection)
-  // Set the selection to the given selection object.
-  setSelection(selection) {
-    if (selection instanceof TextSelection) {
-      this.checkPos(selection.head, true)
-      if (!selection.empty) this.checkPos(selection.anchor, true)
-    } else {
-      this.checkPos(selection.to, false)
-    }
-    this.setSelectionDirect(selection)
-  }
-
-  setSelectionDirect(selection) {
-    this.ensureOperation()
-    this.input.maybeAbortComposition()
-    if (!selection.eq(this.sel.range)) this.sel.setAndSignal(selection)
   }
 
   ensureOperation() {
@@ -259,17 +269,9 @@ export class ProseMirror {
     this.accurateSelection = false
   }
 
-  // :: (string, any)
-  // Update the value of the given [option](#ProseMirrorOptions).
-  setOption(name, value) { setOption(this, name, value) }
-
-  // :: (string) → any
-  // Get the current value of the given [option](#ProseMirrorOptions).
-  getOption(name) { return this.options[name] }
-
   // :: (Keymap, ?number)
   // Add a [keymap](#Keymap) to the editor. Keymaps added in this way
-  // are queried before the [base keymap](#ProseMirrorOptions.keymap).
+  // are queried before the [base keymap](#keymap).
   // The `rank` parameter can be used to control when they are queried
   // relative to other maps added like this. Maps with a lower rank
   // get queried first.
@@ -491,7 +493,7 @@ class Operation {
 }
 
 // ;; A selection-aware extension of `Transform`. Use `ProseMirror.tr`
-// ;; to create an instance.
+// to create an instance.
 class EditorTransform extends Transform {
   constructor(pm) {
     super(pm.doc)

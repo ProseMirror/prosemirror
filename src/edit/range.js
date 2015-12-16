@@ -1,12 +1,23 @@
 import {eventMixin} from "../util/event"
 
+// ;; A [marked range](#ProseMirror.markRange). Includes the methods
+// from the [event mixin](#EventMixin).
 export class MarkedRange {
   constructor(from, to, options) {
     this.options = options || {}
+    // :: ?Pos
+    // The current start position of the range. Updated whenever the
+    // editor's document is changed. Set to `null` when the marked
+    // range is [removed](#ProseMirror.removeRange).
     this.from = from
+    // :: ?Pos
+    // The current end position of the range. Updated whenever the
+    // editor's document is changed. Set to `null` when the marked
+    // range is [removed](#ProseMirror.removeRange).
     this.to = to
   }
 
+  // FIXME document event
   remove() {
     this.signal("removed", this.from)
     this.from = this.to = null
