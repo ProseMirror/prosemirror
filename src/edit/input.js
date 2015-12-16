@@ -107,7 +107,7 @@ export function dispatchKey(pm, name, e) {
     } else {
       result = bound(pm)
     }
-    return result
+    return result == false ? false : "handled"
   }
 
   let result

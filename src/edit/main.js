@@ -29,7 +29,7 @@ import {normalizeKeyName} from "./keys"
 // representing that document in the browser document.
 //
 // Contains event methods (`on`, etc) from the [event
-// mixin](#eventMixin).
+// mixin](#EventMixin).
 export class ProseMirror {
   // :: (Object)
   // Construct a new editor from a set of [options](#edit_options)
