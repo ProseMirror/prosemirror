@@ -215,7 +215,7 @@ export class ProseMirror {
       throw new Error("Applying a transform that does not start with the current document")
 
     this.updateDoc(transform.doc, transform, options.selection)
-    // :: (Transform, Object) #path=ProseMirror#event#transform
+    // :: (Transform, Object) #path=ProseMirror#events#transform
     // Signals that a (non-empty) transformation has been aplied to
     // the editor. Passes the `Transform` and the options given to
     // [`apply`](#ProseMirror.apply) as arguments to the handler.

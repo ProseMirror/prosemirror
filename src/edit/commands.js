@@ -150,10 +150,9 @@ export function defineCommand(spec) {
 
 // :: (string, (pm: ProseMirror, cmd: Command, callback: (?[any])))
 // Register a parameter handler, which is a function that prompts the
-// user to enter values for a command's [parameters](#FIXME), and
+// user to enter values for a command's [parameters](#CommandParam), and
 // calls a callback with the values received. See also the
-// [`commandParamHandler`
-// option](#commandParamHandler).
+// [`commandParamHandler` option](#commandParamHandler).
 export function defineParamHandler(name, handler) {
   paramHandlers[name] = handler
 }

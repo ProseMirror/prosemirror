@@ -52,7 +52,7 @@ export function fromMarkdown(schema, text) {
 // When `parse` is set to a string, this property can be used to
 // specify attributes for the node or mark. It may hold an object or a
 // function that, when called with the [parser
-// state](#MarkdownParserState) and the token object, returns an
+// state](#MarkdownParseState) and the token object, returns an
 // attribute object.
 
 defineSource("markdown", fromMarkdown)
