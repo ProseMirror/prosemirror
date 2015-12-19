@@ -226,7 +226,7 @@ export class ProseMirror {
 
   // :: (Pos, ?bool)
   // Verify that the given position is valid in the current document,
-  // and throw an error otherwise. When `block` is true, the position
+  // and throw an error otherwise. When `textblock` is true, the position
   // must also fall within a textblock node.
   checkPos(pos, textblock) {
     if (!this.doc.isValidPos(pos, textblock))
