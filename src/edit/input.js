@@ -197,14 +197,12 @@ handlers.mousedown = (pm, e) => {
   let up = () => {
     removeEventListener("mouseup", up)
     removeEventListener("mousemove", move)
-    if (moved) {
-      pm.sel.pollForUpdate()
+    let pos = !moved && selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY})
+    if (pos) {
+      pm.setNodeSelection(pos)
+      pm.focus()
     } else {
-      let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY})
-      if (pos) {
-        pm.setNodeSelection(pos)
-        pm.focus()
-      }
+      pm.sel.pollForUpdate()
     }
   }
   let move = e => {
