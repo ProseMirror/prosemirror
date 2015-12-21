@@ -195,7 +195,12 @@ export class NodeType {
       let type = info.type || SchemaError.raise("Missing node type for " + name)
       findKinds(type, name, schema, info.kind)
       let contains = "contains" in info ? info.contains : type.contains
-      result[name] = new type(name, contains, info.attributes || type.attributes, schema)
+      let attrs = type.attributes
+      if (info.attributes) {
+        attrs = copyObj(attrs)
+        for (var aName in info.attributes) attrs[aName] = info.attributes[aName]
+      }
+      result[name] = new type(name, contains, attrs, schema)
     }
     for (let name in result) {
       let contains = result[name].contains
@@ -418,8 +423,6 @@ function overlayObj(obj, overlay) {
   return copy
 }
 
-// FIXME clean up handling of attributes, finish documentation.
-
 // ;; A schema specification is a blueprint for an actual
 // `Schema`. It maps names to node and mark types, along
 // with extra information, such as additional attributes and changes
@@ -428,39 +431,73 @@ function overlayObj(obj, overlay) {
 // A specification consists of an object that maps node names to node
 // type constructors and another similar object mapping mark names to
 // mark type constructors.
+//
+// For flexibility and reusability, node and mark type classes do not
+// declare their own name. Instead, each schema that includes them can
+// assign a name to them, as well as override their
+// [kind](#NodeType.kind) and [contained kind](#NodeType.contains), or
+// adding extra [attributes](#NodeType.attributes).
 export class SchemaSpec {
   // :: (?Object<{type: NodeType}>, ?Object<{type: MarkType}>)
-
   // Create a schema specification from scratch. The arguments map
   // node names to node type constructors and mark names to mark type
   // constructors. Their property value should be either the type
   // constructors themselves, or objects with a type constructor under
-  // their `type` property, and optionally other properties.
+  // their `type` property, and optionally these other properties:
+  //
+  // **`contains`**`: string`
+  //   : Only valid for `nodes`. The [kind](#NodeType.kind) of the
+  //     nodes that this node can contain in this schema.
+  //
+  // **`kind`**`: string`
+  //  : Only valid for `nodes`. Overrides the kind of this node in
+  //    this schema. Same format as `NodeType.kind`.
+  //
+  // **`attributes`**`: Object<Attribute>`
+  //   : Extra attributes to attach to this node in this schema.
   constructor(nodes, marks) {
     this.nodes = nodes ? copyObj(nodes, ensureWrapped) : Object.create(null)
     this.marks = marks ? copyObj(marks, ensureWrapped) : Object.create(null)
   }
 
-  updateNodes(nodes) {
-    return new SchemaSpec(overlayObj(this.nodes, nodes), this.marks)
+  // :: (?Object<?{type: NodeType}>, ?Object<?{type: MarkType}>) → SchemaSpec
+  // Base a new schema spec on this one by specifying nodes and marks
+  // to add, change, or remove.
+  //
+  // When `nodes` is passed, it should be an object mapping type names
+  // to either `null`, to delete the type of that name, to a
+  // `NodeType`, to add or replace the node type of that name, or to
+  // an object containing [extension
+  // properties](#SchemaSpec_constructor), to add to the existing
+  // description of that node type.
+  //
+  // Similarly, `marks` can be an object to add, change, or remove
+  // marks in the schema.
+  update(nodes, marks) {
+    return new SchemaSpec(nodes ? overlayObj(this.nodes, nodes) : this.nodes,
+                          marks ? overlayObj(this.marks, marks) : this.marks)
   }
 
-  addAttribute(filter, attrName, attrInfo) {
+  // :: (?union<string, (name: string, type: NodeType) → bool>, string, Attribute) → SchemaSpec
+  // Create a new schema spec with attributes added to selected node
+  // types. `filter` can be `null`, to add the attribute to all node
+  // types, a string, to add it only to the named node type, or a
+  // predicate function, to add it to node types that pass the
+  // predicate.
+  //
+  // This attribute will be added alongside the node type's [default
+  // attributes](#NodeType.attributes).
+  addAttribute(filter, attrName, attr) {
     let copy = copyObj(this.nodes)
     for (let name in copy) {
       if (typeof filter == "string" ? filter == name :
           typeof filter == "function" ? filter(name, copy[name]) :
           filter ? filter == copy[name] : true) {
         let info = copy[name] = copyObj(copy[name])
-        if (!info.attributes) info.attributes = copyObj(info.type.attributes)
-        info.attributes[attrName] = attrInfo
+        ;(info.attributes || (info.attributes = Object.create(null)))[attrName] = attr
       }
     }
     return new SchemaSpec(copy, this.marks)
-  }
-
-  updateMarks(marks) {
-    return new SchemaSpec(this.nodes, overlayObj(this.marks, marks))
   }
 }
 
