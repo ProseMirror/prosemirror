@@ -613,16 +613,24 @@ export function findSelectionAtEnd(node, path = [], text) {
 export function selectableNodeAbove(pm, dom, coords, liberal) {
   for (; dom && dom != pm.content; dom = dom.parentNode) {
     if (dom.hasAttribute("pm-offset")) {
-      let path = pathFromDOM(dom)
-      let node = pm.doc.path(path)
-      if (node.type.clicked) {
-        let result = node.type.clicked(node, path, dom, coords)
+      let path = pathFromDOM(dom), node = pm.doc.path(path)
+      if (node.type.countCoordsAsChild) {
+        let result = node.type.countCoordsAsChild(node, path, dom, coords)
         if (result) return result
       }
       // Leaf nodes are implicitly clickable
       if ((liberal || node.type.contains == null) && node.type.selectable)
         return Pos.from(path)
       return null
+    }
+  }
+}
+
+export function handleNodeClick(pm, event) {
+  for (let dom = event.target; dom && dom != pm.content; dom = dom.parentNode) {
+    if (dom.hasAttribute("pm-offset")) {
+      let path = pathFromDOM(dom), node = pm.doc.path(path)
+      return node.type.handleClick && node.type.handleClick(pm, event, path, node) !== false
     }
   }
 }

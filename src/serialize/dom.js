@@ -173,7 +173,7 @@ function def(cls, method) { cls.prototype.serializeDOM = method }
 
 def(BlockQuote, (node, s) => s.renderAs(node, "blockquote"))
 
-BlockQuote.prototype.clicked = (_, path, dom, coords) => {
+BlockQuote.prototype.countCoordsAsChild = (_, path, dom, coords) => {
   let childBox = dom.firstChild.getBoundingClientRect()
   if (coords.left < childBox.left - 2) return Pos.from(path)
 }
@@ -182,7 +182,7 @@ def(BulletList, (node, s) => s.renderAs(node, "ul"))
 
 def(OrderedList, (node, s) => s.renderAs(node, "ol", {start: node.attrs.order != "1" && node.attrs.order}))
 
-OrderedList.prototype.clicked = BulletList.prototype.clicked = (_, path, dom, coords) => {
+OrderedList.prototype.countCoordsAsChild = BulletList.prototype.countCoordsAsChild = (_, path, dom, coords) => {
   for (let i = 0; i < dom.childNodes.length; i++) {
     let child = dom.childNodes[i]
     if (!child.hasAttribute("pm-offset")) continue

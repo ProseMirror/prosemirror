@@ -12,7 +12,7 @@ import {captureKeys} from "./capturekeys"
 import {browser, addClass, rmClass} from "../dom"
 import {applyDOMChange, textContext, textInContext} from "./domchange"
 import {TextSelection, coordsAtPos, rangeFromDOMLoose, selectableNodeAbove,
-        findSelectionAtStart, findSelectionAtEnd} from "./selection"
+        findSelectionAtStart, findSelectionAtEnd, handleNodeClick} from "./selection"
 
 let stopSeq = null
 
@@ -197,6 +197,8 @@ handlers.mousedown = (pm, e) => {
   let up = () => {
     removeEventListener("mouseup", up)
     removeEventListener("mousemove", move)
+    if (handleNodeClick(pm, e)) return
+
     let pos = !moved && selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY})
     if (pos) {
       pm.setNodeSelection(pos)
