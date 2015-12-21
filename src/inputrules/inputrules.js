@@ -1,16 +1,16 @@
 import {Pos} from "../model"
 import {Keymap} from "../edit"
 
-export function addInputRules(pm, rules) {
+export function addInputRule(pm, rule) {
   if (!pm.mod.interpretInput)
     pm.mod.interpretInput = new InputRules(pm)
-  pm.mod.interpretInput.addRules(rules)
+  pm.mod.interpretInput.addRule(rule)
 }
 
-export function removeInputRules(pm, rules) {
+export function removeInputRule(pm, name) {
   let ii = pm.mod.interpretInput
   if (!ii) return
-  ii.removeRules(rules)
+  ii.removeRule(name)
   if (ii.rules.length == 0) {
     ii.unregister()
     pm.mod.interpretInput = null
@@ -18,8 +18,9 @@ export function removeInputRules(pm, rules) {
 }
 
 export class Rule {
-  constructor(lastChar, match, handler) {
-    this.lastChar = lastChar
+  constructor(name, match, trigger, handler) {
+    this.name = name
+    this.trigger = trigger
     this.match = match
     this.handler = handler
   }
@@ -42,14 +43,16 @@ class InputRules {
     this.pm.removeKeymap("inputRules")
   }
 
-  addRules(rules) {
-    this.rules = this.rules.concat(rules)
+  addRule(rule) {
+    this.rules.push(rule)
   }
 
-  removeRules(rules) {
-    for (let i = 0; i < rules.length; i++) {
-      let found = this.rules.indexOf(rules[i])
-      if (found > -1) this.rules.splice(found, 1)
+  removeRule(name) {
+    for (let i = 0; i < this.rules.length; i++) {
+      if (this.rules[i].name == name) {
+        this.rules.splice(i, 1)
+        return true
+      }
     }
   }
 
@@ -62,7 +65,7 @@ class InputRules {
 
     for (let i = 0; i < this.rules.length; i++) {
       let rule = this.rules[i], match
-      if (rule.lastChar && rule.lastChar != lastCh) continue
+      if (rule.trigger && rule.trigger != lastCh) continue
       if (textBefore == null) {
         ;({textBefore, isCode} = getContext(this.pm.doc, pos))
         if (isCode) return

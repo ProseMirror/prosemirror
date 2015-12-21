@@ -1,42 +1,97 @@
-import {Pos} from "../model"
+import {Pos, BlockQuote, OrderedList, BulletList, CodeBlock, Heading} from "../model"
 import {defineOption} from "../edit"
-import {Rule, addInputRules, removeInputRules} from "./inputrules"
+import {Rule, addInputRule, removeInputRule} from "./inputrules"
 
-defineOption("autoInput", false, function(pm, val, old) {
-  if (val && !old) addInputRules(pm, rules)
-  else if (!val && old) removeInputRules(pm, rules)
+defineOption("autoInput", false, function(pm, val) {
+  if (pm.mod.autoInput) {
+    pm.mod.autoInput.forEach(name => removeInputRule(pm, name))
+    pm.mod.autoInput = null
+  }
+  if (val) {
+    let rules = schemaRules(pm.schema)
+    let list = Array.isArray(val) ? val : Object.keys(rules)
+    list.forEach(name => addInputRule(pm, rules[name]))
+    pm.mod.autoInput = list
+  }
 })
 
-// FIXME attach node-specific rules to node types, rather than
-// hard-coding the node names.
+function schemaRules(schema) {
+  let cached = schema.cached.inputRules
+  if (cached) return cached
 
-export var rules = [
-  new Rule("-", /--$/, "—"),
-  new Rule('"', /\s(")$/, "“"),
-  new Rule('"', /"$/, "”"),
-  new Rule("'", /\s(')$/, "‘"),
-  new Rule("'", /'$/, "’"),
+  let found = Object.create(null)
+  for (let name in globalRules) found[name] = globalRules[name]
 
-  new Rule(" ", /^\s*> $/, function(pm, _, pos) {
-    wrapAndJoin(pm, pos, pm.schema.nodeType("blockquote"))
-  }),
-  new Rule(" ", /^(\d+)\. $/, function(pm, match, pos) {
+  for (let name in schema.nodes) {
+    let type = schema.nodes[name], rules = type.autoInput
+    if (rules) rules.forEach(spec => {
+      let handler = spec.handler
+      if (handler.bind) handler = handler.bind(type)
+      found[spec.name] = new Rule(spec.name, spec.match, spec.filter, handler)
+    })
+  }
+  return schema.cached.inputRules = found
+}
+
+const globalRules = Object.create(null)
+
+;[
+  new Rule("emDash", /--$/, "-", "—"),
+  new Rule("openDoubleQuote", /\s(")$/, '"', "“"),
+  new Rule("closeDoubleQuote", /"$/, '"', "”"),
+  new Rule("openSingleQuote", /\s(')$/, "'", "‘"),
+  new Rule("closeSingleQuote", /'$/, "'", "’")
+].forEach(rule => globalRules[rule.name] = rule)
+
+export function defineRule(spec) {
+  globalRules[spec.name] = new Rule(spec.name, spec.match, spec.trigger, spec.handler)
+}
+
+BlockQuote.register("autoInput", {
+  name: "startBlockQuote",
+  match: /^\s*> $/,
+  trigger: " ",
+  handler: function(pm, _, pos) { wrapAndJoin(pm, pos, this) }
+})
+
+OrderedList.register("autoInput", {
+  name: "startOrderedList",
+  match: /^(\d+)\. $/,
+  trigger: " ",
+  handler: function(pm, match, pos) {
     let order = +match[1]
-    wrapAndJoin(pm, pos, pm.schema.nodeType("ordered_list"), {order: order || null},
+    wrapAndJoin(pm, pos, this, {order: order || null},
                 node => node.size + (node.attrs.order || 1) == order)
-  }),
-  new Rule(" ", /^\s*([-+*]) $/, function(pm, match, pos) {
+  }
+})
+
+BulletList.register("autoInput", {
+  name: "startBulletList",
+  match: /^\s*([-+*]) $/,
+  trigger: " ",
+  handler: function(pm, match, pos) {
     let bullet = match[1]
-    wrapAndJoin(pm, pos, pm.schema.nodeType("bullet_list"), null,
-                node => node.attrs.bullet == bullet)
-  }),
-  new Rule("`", /^```$/, function(pm, _, pos) {
-    setAs(pm, pos, pm.schema.nodeType("code_block"), {params: ""})
-  }),
-  new Rule(" ", /^(#{1,6}) $/, function(pm, match, pos) {
-    setAs(pm, pos, pm.schema.nodeType("heading"), {level: match[1].length})
-  })
-]
+    wrapAndJoin(pm, pos, this, null, node => node.attrs.bullet == bullet)
+  }
+})
+
+CodeBlock.register("autoInput", {
+  name: "startCodeBlock",
+  match: /^```$/,
+  trigger: "`",
+  handler: function(pm, _, pos) {
+    setAs(pm, pos, this, {params: ""})
+  }
+})
+
+Heading.register("autoInput", {
+  name: "startHeading",
+  match: /^(#{1,6}) $/,
+  trigger: " ",
+  handler: function(pm, match, pos) {
+    setAs(pm, pos, this, {level: match[1].length})
+  }
+})
 
 function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
   let before = pos.shorten()
