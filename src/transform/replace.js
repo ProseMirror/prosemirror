@@ -282,3 +282,10 @@ Transform.prototype.insert = function(pos, content) {
 Transform.prototype.insertText = function(pos, text) {
   return this.insert(pos, this.doc.type.schema.text(text, this.doc.marksAt(pos)))
 }
+
+// :: (Pos, Node) → Transform
+// Insert the given node at `pos`, inheriting the marks of the
+// existing content at that position.
+Transform.prototype.insertInline = function(pos, node) {
+  return this.insert(pos, node.mark(this.doc.marksAt(pos)))
+}
