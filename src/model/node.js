@@ -2,7 +2,7 @@ import {Fragment, emptyFragment} from "./fragment"
 import {Mark} from "./mark"
 import {Pos} from "./pos"
 
-const emptyArray = []
+const emptyArray = [], emptyAttrs = Object.create(null)
 
 // ;; This class represents a node in the tree that makes up a
 // ProseMirror document. So a document is an instance of `Node`, with
@@ -114,14 +114,12 @@ export class Node {
   // Check whether this node's markup correspond to the given type,
   // attributes, and marks.
   hasMarkup(type, attrs, marks) {
-    return this.type == type && Node.sameAttrs(this.attrs, attrs) && Mark.sameSet(this.marks, marks || emptyArray)
+    return this.type == type && Node.sameAttrs(this.attrs, attrs || emptyAttrs) && Mark.sameSet(this.marks, marks || emptyArray)
   }
 
   static sameAttrs(a, b) {
     if (a == b) return true
-    let empty = isEmpty(a)
-    if (empty != isEmpty(b)) return false
-    if (!empty) for (let prop in a)
+    for (let prop in a)
       if (a[prop] !== b[prop]) return false
     return true
   }
@@ -401,9 +399,4 @@ function wrapMarks(marks, str) {
   for (let i = marks.length - 1; i >= 0; i--)
     str = marks[i].type.name + "(" + str + ")"
   return str
-}
-
-function isEmpty(obj) {
-  if (obj) for (let _ in obj) return false
-  return true
 }

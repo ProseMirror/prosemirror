@@ -175,7 +175,7 @@ export class NodeType {
   // `null`. Similarly `marks` may be `null` to default to the empty
   // set of marks.
   create(attrs, content, marks) {
-    return new Node(this, this.buildAttrs(attrs, content), Fragment.from(content), marks)
+    return new Node(this, this.buildAttrs(attrs, content), Fragment.from(content), Mark.setFrom(marks))
   }
 
   createAutoFill(attrs, content, marks) {
@@ -563,8 +563,6 @@ export class Schema {
     this.markFromJSON = this.markFromJSON.bind(this)
   }
 
-  // FIXME normalize mark arrays passed to these methods
-
   // :: (union<string, NodeType>, ?Object, ?union<Fragment, Node, [Node]>, ?[Mark]) → Node
   // Create a node in this schema. The `type` may be a string or a
   // `NodeType` instance. Attributes will be extended
@@ -591,7 +589,7 @@ export class Schema {
   // :: (string, ?[Mark]) → Node
   // Create a text node in the schema. This method is bound to the Schema.
   text(text, marks) {
-    return this.nodes.text.create(null, text, marks)
+    return this.nodes.text.create(null, text, Mark.setFrom(marks))
   }
 
   // :: () → ?NodeType
