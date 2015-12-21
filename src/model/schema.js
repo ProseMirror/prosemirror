@@ -56,7 +56,7 @@ export class NodeType {
     // :: Schema
     // A link back to the `Schema` the node type belongs to.
     this.schema = schema
-    this.defaultAttrs = null
+    this.defaultAttrs = getDefaultAttrs(attrs)
   }
 
   // :: bool
@@ -143,8 +143,7 @@ export class NodeType {
   // to be inserted between this type and `other` to put a node of
   // type `other` into this type.
   findConnection(other) {
-    // FIXME be more careful about order, and about chosen nodes
-    // having default attrs
+    // FIXME somehow define an order in which these are tried
     if (this.canContainType(other)) return []
 
     let seen = Object.create(null)
@@ -152,8 +151,8 @@ export class NodeType {
     while (active.length) {
       let current = active.shift()
       for (let name in this.schema.nodes) {
-        let type = this.schema.nodeType(name)
-        if (!(type.contains in seen) && current.from.canContainType(type)) {
+        let type = this.schema.nodes[name]
+        if (type.defaultAttrs && !(type.contains in seen) && current.from.canContainType(type)) {
           let via = current.via.concat(type)
           if (type.canContainType(other)) return via
           active.push({from: type, via: via})
@@ -206,8 +205,6 @@ export class NodeType {
     if (!result.doc) SchemaError.raise("Every schema needs a 'doc' type")
     if (!result.text) SchemaError.raise("Every schema needs a 'text' type")
 
-    for (let name in types)
-      types[name].defaultAttrs = getDefaultAttrs(types[name].attrs)
     return result
   }
 
