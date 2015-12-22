@@ -182,7 +182,7 @@ function selectClickedNode(pm, e) {
   e.preventDefault()
 }
 
-let lastClick = 0
+let lastClick = 0, oneButLastClick = 0
 
 handlers.mousedown = (pm, e) => {
   if (e.ctrlKey)
@@ -190,9 +190,26 @@ handlers.mousedown = (pm, e) => {
 
   pm.sel.pollForUpdate()
 
-  let now = Date.now(), multi = now - lastClick < 500
+  let now = Date.now(), doubleClick = now - lastClick < 500, tripleClick = now - oneButLastClick < 600
+  oneButLastClick = lastClick
   lastClick = now
-  if (pm.input.shiftKey || multi) return
+  if (tripleClick) {
+    e.preventDefault()
+    let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY}, true)
+    if (pos) {
+      let node = pm.doc.nodeAfter(pos)
+      if (node.isBlock && !node.isTextblock) {
+        pm.setNodeSelection(pos)
+      } else {
+        let path = node.isInline ? pos.path : pos.toPath()
+        if (node.isInline) node = pm.doc.path(path)
+        pm.setTextSelection(new Pos(path, 0), new Pos(path, node.size))
+      }
+      pm.focus()
+    }
+    return
+  }
+  if (pm.input.shiftKey || doubleClick) return
 
   let x = e.clientX, y = e.clientY, moved = false
   let up = () => {
