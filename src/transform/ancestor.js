@@ -141,7 +141,7 @@ Transform.prototype.lift = function(from, to = from) {
 
   for (let d = 0, pos = range.to;; d++) {
     if (pos.offset < this.doc.path(pos.path).size) {
-      this.split(pos, depth)
+      this.split(pos, depth - d)
       break
     }
     if (d == depth - 1) break

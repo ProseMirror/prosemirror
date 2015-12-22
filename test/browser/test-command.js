@@ -279,6 +279,9 @@ test("lift",
 test("lift",
      doc(blockquote("<a>", ul(li(p("foo"))))),
      doc(ul(li(p("foo")))))
+test("lift",
+     doc(ul(li(p("one"), ul(li(p("<a>sub1")), li(p("sub2")))), li(p("two")))),
+     doc(ul(li(p("one"), p("<a>sub1"), ul(li(p("sub2")))), li(p("two")))))
 
 test("wrapBulletList",
      doc(p("<a>foo")),
@@ -366,6 +369,9 @@ test("newlineInCode",
 test("liftEmptyBlock",
      doc(blockquote(p("foo"), p("<a>"), p("bar"))),
      doc(blockquote(p("foo")), blockquote(p(), p("bar"))))
+test("liftEmptyBlock",
+     doc(blockquote(p("foo"), p("<a>"))),
+     doc(blockquote(p("foo")), p()))
 test("liftEmptyBlock",
      doc(blockquote(p("foo")), blockquote(p("<a>"))),
      doc(blockquote(p("foo")), p("<a>")))
