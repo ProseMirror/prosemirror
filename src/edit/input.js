@@ -288,6 +288,7 @@ handlers.input = (pm) => {
     return
   }
 
+  pm.sel.stopPollingForUpdate()
   applyDOMChange(pm)
   pm.scrollIntoView()
 }

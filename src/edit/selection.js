@@ -42,11 +42,17 @@ export class SelectionState {
       } else if (!this.readUpdate() && ++n == 1) {
         this.pollTimeout = setTimeout(check, 50)
       } else {
-        this.pollState = null
-        this.pollToSync()
+        this.stopPollingForUpdate()
       }
     }
     this.pollTimeout = setTimeout(check, 20)
+  }
+
+  stopPollingForUpdate() {
+    if (this.pollState == "update") {
+      this.pollState = null
+      this.pollToSync()
+    }
   }
 
   domChanged() {
@@ -161,8 +167,7 @@ export class SelectionState {
   beforeStartOp() {
     if (this.pollState == "update" && this.readUpdate()) {
       clearTimeout(this.pollTimeout)
-      this.pollState = null
-      this.pollToSync()
+      this.stopPollingForUpdate()
     } else {
       this.syncDOM()
     }
