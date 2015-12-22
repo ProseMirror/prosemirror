@@ -192,21 +192,6 @@ export function defaultKeymap(pm) {
 
 const andScroll = {scrollIntoView: true}
 
-HardBreak.register("command", {
-  name: "insertHardBreak",
-  label: "Insert hard break",
-  run(pm) {
-    let {node, from} = pm.selection
-    if (node && node.isBlock)
-      return false
-    else if (pm.doc.path(from.path).type.isCode)
-      return pm.tr.typeText("\n").apply(andScroll)
-    else
-      return pm.tr.replaceSelection(this.create()).apply(andScroll)
-  },
-  key: ["Mod-Enter", "Shift-Enter"]
-})
-
 function markActive(pm, type) {
   let sel = pm.selection
   if (sel.empty)
@@ -267,6 +252,23 @@ function generateMarkCommands(type, name, labelName, spec) {
   type.register("command", command)
 }
 
+// :: StrongMark #path=setStrong #kind=command
+// Add the [strong](#StrongMark) mark to the selected content.
+
+// :: StrongMark #path=unsetStrong #kind=command
+// Remove the [strong](#StrongMark) mark from the selected content.
+
+// :: StrongMark #path=strong #kind=command// Toggle the [strong](#StrongMark) mark. If there is any strong
+// content in the selection, or there is no selection and the [active
+// marks](#ProseMirror.activeMarks) contain the strong mark, this
+// counts as [active](#Command.active) and executing it removes the
+// mark. Otherwise, this does not count as active, and executing it
+// makes the selected content strong.
+//
+// **Keybindings:** Mod-B
+//
+// Registers itself in the inline [menu](#FIXME).
+
 generateMarkCommands(StrongMark, "strong", null, {
   menuGroup: "inline", menuRank: 20,
   icon: {
@@ -275,6 +277,24 @@ generateMarkCommands(StrongMark, "strong", null, {
   },
   key: "Mod-B"
 })
+
+// :: EmMark #path=setEm #kind=command
+// Add the [emphasis](#EmMark) mark to the selected content.
+
+// :: EmMark #path=unsetEm #kind=command
+// Remove the [emphasis](#EmMark) mark from the selected content.
+
+// :: EmMark #path=em #kind=command
+// Toggle the [emphasis](#EmMark) mark. If there is any emphasized
+// content in the selection, or there is no selection and the [active
+// marks](#ProseMirror.activeMarks) contain the emphasis mark, this
+// counts as [active](#Command.active) and executing it removes the
+// mark. Otherwise, this does not count as active, and executing it
+// makes the selected content emphasized.
+//
+// **Keybindings:** Mod-I
+//
+// Registers itself in the inline [menu](#FIXME).
 
 generateMarkCommands(EmMark, "em", "emphasis", {
   menuGroup: "inline", menuRank: 21,
@@ -285,6 +305,24 @@ generateMarkCommands(EmMark, "em", "emphasis", {
   key: "Mod-I"
 })
 
+// :: CodeMark #path=setCode #kind=command
+// Add the [code](#CodeMark) mark to the selected content.
+
+// :: CodeMark #path=unsetCode #kind=command
+// Remove the [code](#CodeMark) mark from the selected content.
+
+// :: CodeMark #path=code #kind=command
+// Toggle the [code](#CodeMark) mark. If there is any code-styled
+// content in the selection, or there is no selection and the [active
+// marks](#ProseMirror.activeMarks) contain the code mark, this
+// counts as [active](#Command.active) and executing it removes the
+// mark. Otherwise, this does not count as active, and executing it
+// styles the selected content as code.
+//
+// **Keybindings:** Mod-`
+//
+// Registers itself in the inline [menu](#FIXME).
+
 generateMarkCommands(CodeMark, "code", null, {
   menuGroup: "inline", menuRank: 22,
   icon: {
@@ -293,6 +331,14 @@ generateMarkCommands(CodeMark, "code", null, {
   },
   key: "Mod-`"
 })
+
+// :: LinkMark #path=unlink #kind=command
+// Removes all links for the selected content, or, if there is no
+// selection, from the [active marks](#ProseMirror.activeMarks). Will
+// only [select](#Command.select) itself when there is a link in the
+// selection or active marks.
+//
+// Registers itself in the inline [menu](#FIXME).
 
 LinkMark.register("command", {
   name: "unlink",
@@ -303,6 +349,21 @@ LinkMark.register("command", {
   menuGroup: "inline", menuRank: 30,
   icon: {from: "link"}
 })
+
+// :: LinkMark #path=link #kind=command
+// Adds a link mark to the selection or set of [active
+// marks](#ProseMirror.activeMarks). Takes parameters to determine the
+// attributes of the link:
+//
+// **`href`**`: string`
+//   : The link's target.
+//
+// **`title`**`: string`
+//   : The link's title.
+//
+// Adds itself to the inline [menu](#FIXME). Only selects itself when
+// `unlink` isn't selected, so that only one of the two is visible in
+// the menu at any time.
 
 LinkMark.register("command", {
   name: "link",
@@ -318,7 +379,24 @@ LinkMark.register("command", {
     width: 951, height: 1024,
     path: "M832 694q0-22-16-38l-118-118q-16-16-38-16-24 0-41 18 1 1 10 10t12 12 8 10 7 14 2 15q0 22-16 38t-38 16q-8 0-15-2t-14-7-10-8-12-12-10-10q-18 17-18 41 0 22 16 38l117 118q15 15 38 15 22 0 38-14l84-83q16-16 16-38zM430 292q0-22-16-38l-117-118q-16-16-38-16-22 0-38 15l-84 83q-16 16-16 38 0 22 16 38l118 118q15 15 38 15 24 0 41-17-1-1-10-10t-12-12-8-10-7-14-2-15q0-22 16-38t38-16q8 0 15 2t14 7 10 8 12 12 10 10q18-17 18-41zM941 694q0 68-48 116l-84 83q-47 47-116 47-69 0-116-48l-117-118q-47-47-47-116 0-70 50-119l-50-50q-49 50-118 50-68 0-116-48l-118-118q-48-48-48-116t48-116l84-83q47-47 116-47 69 0 116 48l117 118q47 47 47 116 0 70-50 119l50 50q49-50 118-50 68 0 116 48l118 118q48 48 48 116z"
   }
+  // FIXME pre-fill params when a single link is selected
+  // (If parameter pre-filling is going to continue working like that)
 })
+
+// :: Image #path=insertImage #kind=command
+// Replace the selection with an [image](#Image) node. Takes paramers
+// that specify the image's attributes:
+//
+// **`src`**`: string`
+//   : The URL of the image.
+//
+// **`alt`**`: string`
+//   : The alt text for the image.
+//
+// **`title`**`: string`
+//   : A title for the image.
+//
+// Registers itself in the inline [menu](#FIXME).
 
 Image.register("command", {
   name: "insertImage",
@@ -343,16 +421,11 @@ Image.register("command", {
     let {node} = pm.selection
     if (node && node.type == this)
       return [node.attrs.src, node.attrs.alt, node.attrs.title]
+    // FIXME else use the selected text as alt
   }
 })
 
-/**
- * Get an offset moving backward from a current offset inside a node.
- *
- * @param  {Object} parent The parent node.
- * @param  {int}    offset Offset to move from inside the node.
- * @param  {string} by     Size to delete by. Either "char" or "word".
- */
+// Get an offset moving backward from a current offset inside a node.
 function moveBackward(parent, offset, by) {
   if (by != "char" && by != "word")
     throw new Error("Unknown motion unit: " + by)
@@ -384,6 +457,13 @@ function moveBackward(parent, offset, by) {
   }
 }
 
+// ;; #path=deleteSelection #kind=command
+// Delete the selection, if there is one.
+//
+// **Keybindings:** Backspace, Delete, Mod-Backspace, Mod-Delete,
+// **Ctrl-H (Mac), Alt-Backspace (Mac), Ctrl-D (Mac),
+// **Ctrl-Alt-Backspace (Mac), Alt-Delete (Mac), Alt-D (Mac)
+
 reg.register("command", {
   name: "deleteSelection",
   label: "Delete the selection",
@@ -414,6 +494,15 @@ function deleteBarrier(pm, cut) {
   return pm.tr.lift(selAfter.from, selAfter.to).apply(andScroll)
 }
 
+// ;; #path=joinBackward #kind=command
+// If the selection is empty and at the start of a textblock, move
+// that block closer to the block before it, by lifting it out of its
+// parent or, if it has no parent it doesn't share with the node
+// before it, moving it into a parent of that node, or joining it with
+// that.
+//
+// **Keybindings:** Backspace, Mod-Backspace
+
 reg.register("command", {
   name: "joinBackward",
   label: "Join with the block above",
@@ -442,6 +531,12 @@ reg.register("command", {
   key: ["Backspace(30)", "Mod-Backspace(30)"]
 })
 
+// ;; #path=deleteCharBefore #kind=command
+// Delete the character before the cursor, if the selection is empty
+// and the cursor isn't at the start of a textblock.
+//
+// **Keybindings:** Backspace, Ctrl-H (Mac)
+
 reg.register("command", {
   name: "deleteCharBefore",
   label: "Delete a character before the cursor",
@@ -454,6 +549,12 @@ reg.register("command", {
   key: "Backspace(60)",
   macKey: "Ctrl-H(40)"
 })
+
+// ;; #path=deleteWordBefore #kind=command
+// Delete the word before the cursor, if the selection is empty and
+// the cursor isn't at the start of a textblock.
+//
+// **Keybindings:** Mod-Backspace, Alt-Backspace (Mac)
 
 reg.register("command", {
   name: "deleteWordBefore",
@@ -496,6 +597,15 @@ function moveForward(parent, offset, by) {
   }
 }
 
+// ;; #path=joinForward #kind=command
+// If the selection is empty and the cursor is at the end of a
+// textblock, move the node after it closer to the node with the
+// cursor (lifting it out of parents that aren't shared, moving it
+// into parents of the cursor block, or joining the two when they are
+// siblings).
+//
+// **Keybindings:** Delete, Mod-Delete
+
 reg.register("command", {
   name: "joinForward",
   label: "Join with the block below",
@@ -525,6 +635,12 @@ reg.register("command", {
   key: ["Delete(30)", "Mod-Delete(30)"]
 })
 
+// ;; #path=deleteCharAfter #kind=command
+// Delete the character after the cursor, if the selection is empty
+// and the cursor isn't at the end of its textblock.
+//
+// **Keybindings:** Delete, Ctrl-D (Mac)
+
 reg.register("command", {
   name: "deleteCharAfter",
   label: "Delete a character after the cursor",
@@ -538,9 +654,16 @@ reg.register("command", {
   macKey: "Ctrl-D(60)"
 })
 
+// ;; #path=deleteWordAfter #kind=command
+// Delete the word after the cursor, if the selection is empty and the
+// cursor isn't at the end of a textblock.
+//
+// **Keybindings:** Mod-Delete, Ctrl-Alt-Backspace (Mac), Alt-Delete
+// (Mac), Alt-D (Mac)
+
 reg.register("command", {
   name: "deleteWordAfter",
-  label: "Delete a character after the cursor",
+  label: "Delete a word after the cursor",
   run(pm) {
     let {head, empty} = pm.selection
     if (!empty || head.offset == pm.doc.path(head.path).size) return false
@@ -557,15 +680,23 @@ function joinPointAbove(pm) {
   else return joinPoint(pm.doc, from, -1)
 }
 
+// ;; #path=joinUp #kind=command
+// Join the selected block or, if there is a text selection, the
+// closest ancestor block of the selection that can be joined, with
+// the sibling above it.
+//
+// **Keybindings:** Alt-Up
+//
+// Registers itself in the block [menu](#FIXME)
+
 reg.register("command", {
   name: "joinUp",
   label: "Join with above block",
   run(pm) {
-    let node = pm.selection.node
     let point = joinPointAbove(pm)
     if (!point) return false
     pm.tr.join(point).apply()
-    if (node) pm.setNodeSelection(point.move(-1))
+    if (pm.selection.node) pm.setNodeSelection(point.move(-1))
   },
   select(pm) { return joinPointAbove(pm) },
   menuGroup: "block", menuRank: 80,
@@ -582,6 +713,12 @@ function joinPointBelow(pm) {
   else return joinPoint(pm.doc, to, 1)
 }
 
+// ;; #path=joinDown #kind=command
+// Join the selected block, or the closest ancestor of the selection
+// that can be joined, with the sibling after it.
+//
+// **Keybindings:** Alt-Down
+
 reg.register("command", {
   name: "joinDown",
   label: "Join with below block",
@@ -595,6 +732,14 @@ reg.register("command", {
   select(pm) { return joinPointBelow(pm) },
   key: "Alt-Down"
 })
+
+// ;; #path=lift #kind=command
+// Lift the selected block, or the closest ancestor block of the
+// selection that can be lifted, out of its parent node.
+//
+// **Keybindings:** Alt-Left
+//
+// Registers itself in the block [menu](#FIXME).
 
 reg.register("command", {
   name: "lift",
@@ -649,6 +794,13 @@ function wrapCommand(type, name, labelName, isList, spec) {
   type.register("command", command)
 }
 
+// :: BulletList #path=wrapBulletList #kind=command
+// Wrap the selection in a bullet list.
+//
+// **Keybindings:** Alt-Right '*', Alt-Right '-'
+//
+// Registers itself in the block [menu](#FIXME).
+
 wrapCommand(BulletList, "BulletList", "bullet list", true, {
   menuGroup: "block", menuRank: 40,
   icon: {
@@ -657,6 +809,13 @@ wrapCommand(BulletList, "BulletList", "bullet list", true, {
   },
   key: ["Alt-Right '*'", "Alt-Right '-'"]
 })
+
+// :: OrderedList #path=wrapOrderedList #kind=command
+// Wrap the selection in an ordered list.
+//
+// **Keybindings:** Alt-Right '1'
+//
+// Registers itself in the block [menu](#FIXME).
 
 wrapCommand(OrderedList, "OrderedList", "ordered list", true, {
   menuGroup: "block", menuRank: 41,
@@ -667,6 +826,13 @@ wrapCommand(OrderedList, "OrderedList", "ordered list", true, {
   key: "Alt-Right '1'"
 })
 
+// :: BlockQuote #path=wrapBlockQuote #kind=command
+// Wrap the selection in a block quote.
+//
+// **Keybindings:** Alt-Right '>', Alt-Right '"'
+//
+// Registers itself in the block [menu](#FIXME).
+
 wrapCommand(BlockQuote, "BlockQuote", "block quote", false, {
   menuGroup: "block", menuRank: 45,
   icon: {
@@ -675,6 +841,34 @@ wrapCommand(BlockQuote, "BlockQuote", "block quote", false, {
   },
   key: ["Alt-Right '>'", "Alt-Right '\"'"]
 })
+
+// :: HardBreak #path=insertHardBreak #kind=command
+// Replace the selection with a hard break node. If the selection is
+// in a node whose [type](#NodeType) has a truthy `isCode` property
+// (such as `CodeBlock` in the default schema), a regular newline is
+// inserted instead.
+//
+// **Keybindings:** Mod-Enter, Shift-Enter
+HardBreak.register("command", {
+  name: "insertHardBreak",
+  label: "Insert hard break",
+  run(pm) {
+    let {node, from} = pm.selection
+    if (node && node.isBlock)
+      return false
+    else if (pm.doc.path(from.path).type.isCode)
+      return pm.tr.typeText("\n").apply(andScroll)
+    else
+      return pm.tr.replaceSelection(this.create()).apply(andScroll)
+  },
+  key: ["Mod-Enter", "Shift-Enter"]
+})
+
+// ;; #path=newlineInCode #kind=command
+// If the selection is in a node whose type has a truthy `isCode`
+// property, replace the selection with a newline character.
+//
+// **Keybindings:** Enter
 
 reg.register("command", {
   name: "newlineInCode",
@@ -691,6 +885,12 @@ reg.register("command", {
   key: "Enter(10)"
 })
 
+// ;; #path=createParagraphNew #kind=command
+// If a content-less block node is selected, create an empty paragraph
+// before (if it is its parent's first child) or after it.
+//
+// **Keybindings:** Enter
+
 reg.register("command", {
   name: "createParagraphNear",
   label: "Create a paragraph near the selected leaf block",
@@ -703,6 +903,12 @@ reg.register("command", {
   },
   key: "Enter(20)"
 })
+
+// ;; #path=liftEmptyBlock #kind=command
+// If the cursor is in an empty textblock that can be lifted, lift the
+// block.
+//
+// **Keybindings:** Enter
 
 reg.register("command", {
   name: "liftEmptyBlock",
@@ -721,6 +927,12 @@ reg.register("command", {
   key: "Enter(30)"
 })
 
+// ;; #path=splitBlock #kind=command
+// Split the parent block of the selection. If the selection is a text
+// selection, delete it.
+//
+// **Keybindings:** Enter
+
 reg.register("command", {
   name: "splitBlock",
   label: "Split the current block",
@@ -736,6 +948,12 @@ reg.register("command", {
   },
   key: "Enter(60)"
 })
+
+// :: ListItem #path=splitListItem #kind=command
+// If the selection is a text selection inside of a child of a list
+// item, split that child and the list item, and delete the selection.
+//
+// **Keybindings:** Enter
 
 ListItem.register("command", {
   name: "splitListItem",
