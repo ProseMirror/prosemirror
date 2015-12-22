@@ -639,7 +639,7 @@ export function selectableNodeAbove(pm, dom, coords, liberal) {
       // Leaf nodes are implicitly clickable
       if ((liberal || node.type.contains == null) && node.type.selectable)
         return Pos.from(path)
-      return null
+      if (!liberal) return null
     }
   }
 }
