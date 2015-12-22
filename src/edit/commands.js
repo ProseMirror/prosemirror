@@ -19,10 +19,13 @@ const empty = []
 // a key, shown in the menu, or otherwise exposed to the user.
 //
 // The commands available in a given editor are gathered from the
-// [registries](#registries) given to the editor, and the node and
+// [registries](#Registry) given to the editor, and the node and
 // mark types in its [schema](#Schema.registry). Use the
 // [`register`](#NodeType.register) method with `"command"` as the
 // name and a `CommandSpec` as value to define a new command.
+//
+// This module defines a [bunch of commands](#edit_commands) in the
+// [default registry](#defaultRegistry).
 export class Command {
   constructor(spec, self) {
     // :: string The name of the command.
@@ -1002,6 +1005,12 @@ function blockTypeCommand(type, name, labelName, attrs, key) {
   })
 }
 
+// :: Heading #path=makeH_ #kind=command
+// The commands `makeH1` to `makeH6` set the textblocks in the
+// selection to become headers with the given level.
+//
+// **Keybindings:** Mod-H '1' through Mod-H '6'
+
 blockTypeCommand(Heading, "makeH1", "heading 1", {level: 1}, "Mod-H '1'")
 blockTypeCommand(Heading, "makeH2", "heading 2", {level: 2}, "Mod-H '2'")
 blockTypeCommand(Heading, "makeH3", "heading 3", {level: 3}, "Mod-H '3'")
@@ -1009,8 +1018,24 @@ blockTypeCommand(Heading, "makeH4", "heading 4", {level: 4}, "Mod-H '4'")
 blockTypeCommand(Heading, "makeH5", "heading 5", {level: 5}, "Mod-H '5'")
 blockTypeCommand(Heading, "makeH6", "heading 6", {level: 6}, "Mod-H '6'")
 
+// :: Paragraph #path=makeParagraph #kind=command
+// Set the textblocks in the selection to be regular paragraphs.
+//
+// **Keybindings:** Mod-P
+
 blockTypeCommand(Paragraph, "makeParagraph", "paragraph", null, "Mod-P")
+
+// :: CodeBlock #path=makeCodeBlock #kind=command
+// Set the textblocks in the selection to be code blocks.
+//
+// **Keybindings:** Mod-\
+
 blockTypeCommand(CodeBlock, "makeCodeBlock", "code block", null, "Mod-\\")
+
+// :: HorizontalRule #path=insertHorizontalRule #kind=command
+// Replace the selection with a horizontal rule.
+//
+// **Keybindings:** Mod-=
 
 HorizontalRule.register("command", {
   name: "insertHorizontalRule",
@@ -1018,34 +1043,16 @@ HorizontalRule.register("command", {
   run(pm) {
     return pm.tr.replaceSelection(this.create()).apply(andScroll)
   },
-  key: "Mod-Space"
+  key: "Mod-="
 })
 
-reg.register("command", {
-  name: "undo",
-  label: "Undo last change",
-  run(pm) { pm.scrollIntoView(); return pm.history.undo() },
-  select(pm) { return pm.history.canUndo() },
-  menuGroup: "history", menuRank: 10,
-  icon: {
-    width: 1024, height: 1024,
-    path: "M761 1024c113-206 132-520-313-509v253l-384-384 384-384v248c534-13 594 472 313 775z"
-  },
-  key: "Mod-Z"
-})
-
-reg.register("command", {
-  name: "redo",
-  label: "Redo last undone change",
-  run(pm) { pm.scrollIntoView(); return pm.history.redo() },
-  select(pm) { return pm.history.canRedo() },
-  menuGroup: "history", menuRank: 20,
-  icon: {
-    width: 1024, height: 1024,
-    path: "M576 248v-248l384 384-384 384v-253c-446-10-427 303-313 509-280-303-221-789 313-775z"
-  },
-  key: ["Mod-Y", "Shift-Mod-Z"]
-})
+// ;; #path=textblockType #kind=command
+// Change the type of the selected textblocks. Takes one parameter,
+// `type`, which should be a `{type: NodeType, attrs: ?Object}`
+// object, giving the new type and its attributes.
+//
+// Registers itself in the block [menu](#FIXME), where it creates the
+// textblock type dropdown.
 
 reg.register("command", {
   name: "textblockType",
@@ -1109,8 +1116,16 @@ function nodeAboveSelection(pm) {
   return i == 0 ? false : sel.head.shorten(i - 1)
 }
 
+// ;; #path=selectParentBlock #kind=command
+// Move the selection to the node wrapping the current selection, if
+// any. (Will not select the document node.)
+//
+// **Keybindings:** Esc
+//
+// Registers itself in the block [menu](#FIXME).
+
 reg.register("command", {
-  name: "selectParentBlock",
+  name: "selectParentNode",
   label: "Select parent node",
   run(pm) {
     let node = nodeAboveSelection(pm)
@@ -1159,8 +1174,13 @@ function selectBlockHorizontally(pm, dir) {
   return false
 }
 
+// ;; #path=selectBlockLeft #kind=command
+// Select the node directly before the cursor, if any.
+//
+// **Keybindings:** Left, Mod-Left
+
 reg.register("command", {
-  name: "selectBlockLeft",
+  name: "selectNodeLeft",
   label: "Move the selection onto or out of the block to the left",
   run(pm) {
     let done = selectBlockHorizontally(pm, -1)
@@ -1170,8 +1190,13 @@ reg.register("command", {
   key: ["Left", "Mod-Left"]
 })
 
+// ;; #path=selectNodeRight #kind=command
+// Select the node directly after the cursor, if any.
+//
+// **Keybindings:** Right, Mod-Right
+
 reg.register("command", {
-  name: "selectBlockRight",
+  name: "selectNodeRight",
   label: "Move the selection onto or out of the block to the right",
   run(pm) {
     let done = selectBlockHorizontally(pm, 1)
@@ -1215,8 +1240,13 @@ function selectBlockVertically(pm, dir) {
   return true
 }
 
+// ;; #path=selectNodeUp #kind=command
+// Select the node directly above the cursor, if any.
+//
+// **Keybindings:** Up
+
 reg.register("command", {
-  name: "selectBlockUp",
+  name: "selectNodeUp",
   label: "Move the selection onto or out of the block above",
   run(pm) {
     let done = selectBlockVertically(pm, -1)
@@ -1226,8 +1256,13 @@ reg.register("command", {
   key: "Up"
 })
 
+// ;; #path=selectNodeDown #kind=command
+// Select the node directly below the cursor, if any.
+//
+// **Keybindings:** Down
+
 reg.register("command", {
-  name: "selectBlockDown",
+  name: "selectNodeDown",
   label: "Move the selection onto or out of the block below",
   run(pm) {
     let done = selectBlockVertically(pm, 1)
@@ -1235,4 +1270,44 @@ reg.register("command", {
     return done
   },
   key: "Down"
+})
+
+// ;; #path=undo #kind=command
+// Undo the most recent change event, if any.
+//
+// **Keybindings:** Mod-Z
+//
+// Registers itself in the history [menu](#FIXME).
+
+reg.register("command", {
+  name: "undo",
+  label: "Undo last change",
+  run(pm) { pm.scrollIntoView(); return pm.history.undo() },
+  select(pm) { return pm.history.canUndo() },
+  menuGroup: "history", menuRank: 10,
+  icon: {
+    width: 1024, height: 1024,
+    path: "M761 1024c113-206 132-520-313-509v253l-384-384 384-384v248c534-13 594 472 313 775z"
+  },
+  key: "Mod-Z"
+})
+
+// ;; #path=redo #kind=command
+// Redo the most recently undone change event, if any.
+//
+// **Keybindings:** Mod-Y, Shift-Mod-Z
+//
+// Registers itself in the history [menu](#FIXME).
+
+reg.register("command", {
+  name: "redo",
+  label: "Redo last undone change",
+  run(pm) { pm.scrollIntoView(); return pm.history.redo() },
+  select(pm) { return pm.history.canRedo() },
+  menuGroup: "history", menuRank: 20,
+  icon: {
+    width: 1024, height: 1024,
+    path: "M576 248v-248l384 384-384 384v-253c-446-10-427 303-313 509-280-303-221-789 313-775z"
+  },
+  key: ["Mod-Y", "Shift-Mod-Z"]
 })
