@@ -104,7 +104,7 @@ export class Keymap {
   // :: (string, any)
   // Add a binding for the given key or key sequence.
   addBinding(keyname, value) {
-    let keys = keyname.split(/ +(?!\')/).map(normalizeKeyName)
+    let keys = keyname.split(/ +(?!\'$)/).map(normalizeKeyName)
     for (let i = 0; i < keys.length; i++) {
       let name = keys.slice(0, i + 1).join(" ")
       let val = i == keys.length - 1 ? value : "..."
@@ -117,7 +117,7 @@ export class Keymap {
   // :: (string)
   // Remove the binding for the given key or key sequence.
   removeBinding(keyname) {
-    let keys = keyname.split(/ +(?!\')/).map(normalizeKeyName)
+    let keys = keyname.split(/ +(?!\'$)/).map(normalizeKeyName)
     for (let i = keys.length - 1; i >= 0; i--) {
       let name = keys.slice(0, i).join(" ")
       let val = this.bindings[name]
