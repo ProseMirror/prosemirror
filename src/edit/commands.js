@@ -709,10 +709,13 @@ reg.register("command", {
   label: "Move current block up",
   run(pm) {
     let {head, empty} = pm.selection
-    if (!empty || head.offset > 0) return false
-    if (head.path[head.path.length - 1] > 0 &&
-        pm.tr.split(head.shorten()).apply() !== false)
-      return
+    if (!empty || head.offset > 0 || pm.doc.path(head.path).size) return false
+    if (head.depth > 1) {
+      let shorter = head.shorten()
+      if (shorter.offset > 0 && shorter.offset < pm.doc.path(shorter.path).size - 1 &&
+          pm.tr.split(shorter).apply() !== false)
+        return
+    }
     return pm.tr.lift(head).apply(andScroll)
   },
   key: "Enter(30)"
@@ -738,9 +741,9 @@ ListItem.register("command", {
   name: "splitListItem",
   label: "Split the current list item",
   run(pm) {
-    let {from, to, node, empty} = pm.selection
-    if (node && node.isBlock || from.path.length < 2 || !Pos.samePath(from.path, to.path) ||
-        empty && from.offset == 0) return false
+    let {from, to, node} = pm.selection
+    if ((node && node.isBlock) ||
+        from.path.length < 2 || !Pos.samePath(from.path, to.path)) return false
     let toParent = from.shorten(), grandParent = pm.doc.path(toParent.path)
     if (grandParent.type != this) return false
     let nextType = to.offset == grandParent.child(toParent.offset).size ? pm.schema.defaultTextblockType() : null

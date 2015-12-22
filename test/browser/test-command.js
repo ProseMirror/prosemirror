@@ -364,14 +364,11 @@ test("newlineInCode",
      doc(pre("foo\nbar")))
 
 test("liftEmptyBlock",
-     doc(blockquote(p("foo"), p("<a>"))),
-     doc(blockquote(p("foo")), blockquote(p())))
+     doc(blockquote(p("foo"), p("<a>"), p("bar"))),
+     doc(blockquote(p("foo")), blockquote(p(), p("bar"))))
 test("liftEmptyBlock",
      doc(blockquote(p("foo")), blockquote(p("<a>"))),
      doc(blockquote(p("foo")), p("<a>")))
-test("liftEmptyBlock",
-     doc(ul(li(p("hi"), p("<a>")))),
-     doc(ul(li(p("hi")), li(p("<a>")))))
 test("liftEmptyBlock",
      doc(ul(li(p("hi")), li(p("<a>")))),
      doc(ul(li(p("hi"))), p()))
