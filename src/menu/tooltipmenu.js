@@ -1,3 +1,4 @@
+import {Pos} from "../model"
 import {defineOption} from "../edit"
 import {elt, insertCSS} from "../dom"
 import {MenuUpdate} from "./update"
@@ -18,7 +19,7 @@ class TooltipMenu {
     this.inlineItems = (config && config.inlineItems) || commandGroups(pm, "inline")
     this.blockItems = (config && config.blockItems) || commandGroups(pm, "block")
     this.showLinks = config ? config.showLinks !== false : true
-    this.emptyBlockMenu = config && config.emptyBlockMenu
+    this.selectedBlockMenu = config && config.selectedBlockMenu
     this.update = new MenuUpdate(pm, "change selectionChange blur", () => this.prepareUpdate())
 
     this.tooltip = new Tooltip(pm, "above")
@@ -33,7 +34,7 @@ class TooltipMenu {
   prepareUpdate() {
     if (this.menu.active) return null
 
-    let {empty, node, head} = this.pm.selection, link
+    let {empty, node, from, to} = this.pm.selection, link
     if (!this.pm.hasFocus()) {
       return () => this.tooltip.close()
     } else if (node && node.isBlock) {
@@ -41,12 +42,14 @@ class TooltipMenu {
       return () => this.menu.show(this.blockItems, coords)
     } else if (!empty) {
       let coords = node ? topOfNodeSelection(this.pm) : topCenterOfSelection()
-      return () => this.menu.show(this.inlineItems, coords)
-    } else if (this.emptyBlockMenu && this.pm.doc.path(head.path).size == 0) {
-      let coords = this.pm.coordsAtPos(head)
+      let showBlock = this.selectedBlockMenu && Pos.samePath(from.path, to.path) &&
+          from.offset == 0 && to.offset == this.pm.doc.path(from.path).size
+      return () => this.menu.show(showBlock ? [this.inlineItems, this.blockItems] : this.inlineItems, coords)
+    } else if (this.selectedBlockMenu && this.pm.doc.path(from.path).size == 0) {
+      let coords = this.pm.coordsAtPos(from)
       return () => this.menu.show(this.blockItems, coords)
     } else if (this.showLinks && (link = this.linkUnderCursor())) {
-      let coords = this.pm.coordsAtPos(head)
+      let coords = this.pm.coordsAtPos(from)
       return () => this.showLink(link, coords)
     } else {
       return () => this.tooltip.close()
