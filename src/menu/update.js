@@ -50,11 +50,15 @@ export class MenuUpdate {
   }
 
   force() {
-    this.mustUpdate = false
-    this.updateInfo = null
-    this.lastFlush = Date.now()
-    clearTimeout(this.timeout)
-    let update = this.prepare()
-    if (update) update()
+    if (this.pm.operation) {
+      this.onEvent()
+    } else {
+      this.mustUpdate = false
+      this.updateInfo = null
+      this.lastFlush = Date.now()
+      clearTimeout(this.timeout)
+      let update = this.prepare()
+      if (update) update()
+    }
   }
 }
