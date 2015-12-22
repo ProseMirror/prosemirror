@@ -9,7 +9,7 @@ import {DIRTY_REDRAW} from "./main"
 function options(path, ranges) {
   return {
     onRender(node, dom, offset) {
-      if (node.type.contains == null) {
+      if (!node.isText && node.type.contains == null) {
         dom.contentEditable = false
         if (node.isBlock) dom.setAttribute("pm-leaf", "true")
       }
@@ -76,9 +76,8 @@ export function draw(pm, doc) {
 }
 
 function adjustTrailingHacks(dom, node) {
-  // FIXME trailing cursor text is sometimes left
   let needs = node.size == 0 || node.lastChild.type.isBR ? "br"
-      : node.lastChild.type.contains == null ? "text" : null
+      : !node.lastChild.isText && node.lastChild.type.contains == null ? "text" : null
   let last = dom.lastChild
   let has = !last || last.nodeType != 1 || !last.hasAttribute("pm-ignore") ? null
       : last.nodeName == "BR" ? "br" : "text"
