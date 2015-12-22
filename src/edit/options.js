@@ -10,62 +10,7 @@ class Option {
   }
 }
 
-const options = {
-  __proto__: null,
-
-  // :: Schema #path=schema #kind=option
-  // The [schema](#Schema) that the editor's document should use.
-  schema: new Option(defaultSchema, false, false),
-
-  // :: any #path=doc #kind=option
-  // The starting document. Usually a `Node`, but can be in another
-  // format when the `docFormat` option is also specified.
-  doc: new Option(null, function(pm, value) {
-    pm.setDoc(value)
-  }, false),
-
-  // :: ?string #path=docFormat #kind=option
-  // The format in which the `doc` option is given. Defaults to `null`
-  // (a raw `Node`).
-  docFormat: new Option(null),
-
-  // :: ?union<DOMNode, (DOMNode)> #path=place #kind=option
-  // Determines the placement of the editor in the page. When `null`,
-  // the editor is not placed. When a DOM node is given, the editor is
-  // appended to that node. When a function is given, it is called
-  // with the editor's wrapping DOM node, and is expected to place it
-  // into the document.
-  place: new Option(null),
-
-  // :: Keymap #path=keymap #kind=option
-  // The base [keymap](#Keymap). When not given, a default keymap is
-  // synthesized from the default key bindings provided by the
-  // [commands](#Command) that are in scope for the editor.
-  keymap: new Option(null, (pm, value) => {
-    if (!value) pm.options.keymap = defaultKeymap(pm)
-  }),
-
-  // :: number #path=historyDepth #kind=option
-  // The amount of history events that are collected before the oldest
-  // events are discarded. Defaults to 100.
-  historyDepth: new Option(100),
-
-  // :: number #path=historyEventDelay #kind=option
-  // The amount of milliseconds that must pass between changes to
-  // start a new history event. Defaults to 500.
-  historyEventDelay: new Option(500),
-
-  // :: string #path=commandParamHandler #kind=option
-  // The name of the handler used to prompt the user for [command
-  // parameters](#CommandParam). Only relevant when multiple such
-  // handlers are loaded, and you want to choose between them.
-  commandParamHandler: new Option("default"),
-
-  // :: ?string #path=label #kind=option
-  // The label of the editor. When set, the editable DOM node gets an
-  // `aria-label` attribute with this value.
-  label: new Option(null)
-}
+const options = Object.create(null)
 
 // :: (string, any, (pm: ProseMirror, newValue: any, oldValue: any, init: bool), bool)
 // Define a new option. The `update` handler will be called with the
@@ -76,6 +21,57 @@ const options = {
 export function defineOption(name, defaultValue, update, updateOnInit) {
   options[name] = new Option(defaultValue, update, updateOnInit)
 }
+
+// :: Schema #path=schema #kind=option
+// The [schema](#Schema) that the editor's document should use.
+defineOption("schema", defaultSchema, false)
+
+// :: any #path=doc #kind=option
+// The starting document. Usually a `Node`, but can be in another
+// format when the `docFormat` option is also specified.
+defineOption("doc", null, (pm, value) => pm.setDoc(value), false)
+
+// :: ?string #path=docFormat #kind=option
+// The format in which the `doc` option is given. Defaults to `null`
+// (a raw `Node`).
+defineOption("docFormat", null)
+
+// :: ?union<DOMNode, (DOMNode)> #path=place #kind=option
+// Determines the placement of the editor in the page. When `null`,
+// the editor is not placed. When a DOM node is given, the editor is
+// appended to that node. When a function is given, it is called
+// with the editor's wrapping DOM node, and is expected to place it
+// into the document.
+defineOption("place", null)
+
+// :: Keymap #path=keymap #kind=option
+// The base [keymap](#Keymap). When not given, a default keymap is
+// synthesized from the default key bindings provided by the
+// [commands](#Command) that are in scope for the editor.
+defineOption("keymap", null, (pm, value) => {
+  if (!value) pm.options.keymap = defaultKeymap(pm)
+})
+
+// :: number #path=historyDepth #kind=option
+// The amount of history events that are collected before the oldest
+// events are discarded. Defaults to 100.
+defineOption("historyDepth", 100)
+
+// :: number #path=historyEventDelay #kind=option
+// The amount of milliseconds that must pass between changes to
+// start a new history event. Defaults to 500.
+defineOption("historyEventDelay", 500)
+
+// :: string #path=commandParamHandler #kind=option
+// The name of the handler used to prompt the user for [command
+// parameters](#CommandParam). Only relevant when multiple such
+// handlers are loaded, and you want to choose between them.
+defineOption("commandParamHandler", "default")
+
+// :: ?string #path=label #kind=option
+// The label of the editor. When set, the editable DOM node gets an
+// `aria-label` attribute with this value.
+defineOption("label", null)
 
 export function parseOptions(obj) {
   let result = Object.create(null)
