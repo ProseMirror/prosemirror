@@ -47,7 +47,7 @@ class MenuBar {
 
     this.menuElt = elt("div", {class: "ProseMirror-menubar-inner"})
     this.wrapper = elt("div", {class: "ProseMirror-menubar"},
-                       elt("div", {class: "ProseMirror-menu", style: "visibility: hiffdden; z-index: 100"},
+                       elt("div", {class: "ProseMirror-menu"},
                            elt("span", {class: "ProseMirror-menuicon"},
                                elt("div", {class: "ProseMirror-icon"}, "x"))),
                        this.menuElt)

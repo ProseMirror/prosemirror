@@ -125,7 +125,7 @@ insertCSS(`
   border-color: #777;
   color: white;
 
-  z-index: 5;
+  z-index: 11;
 }
 
 .ProseMirror-tooltip-pointer {
@@ -139,7 +139,7 @@ insertCSS(`
   transition: left 0.4s ease-out, top 0.4s ease-out, opacity 0.2s;
   opacity: 0;
 
-  z-index: 10;
+  z-index: 12;
 }
 
 .ProseMirror-tooltip-pointer-above {
