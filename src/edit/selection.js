@@ -283,14 +283,14 @@ export class NodeSelection extends Selection {
   }
 }
 
-function pathFromDOM(node) {
+function pathFromDOM(pm, node) {
   let path = []
-  for (;;) {
+  for (; node != pm.content;) {
     let attr = node.getAttribute("pm-offset")
-    if (!attr) return path
-    path.unshift(+attr)
+    if (attr) path.unshift(+attr)
     node = node.parentNode
   }
+  return path
 }
 
 function widthFromDOM(dom) {
@@ -321,7 +321,7 @@ function posFromDOMInner(pm, dom, domOffset, loose) {
     dom = parent
   }
 
-  let path = pathFromDOM(dom)
+  let path = pathFromDOM(pm, dom)
   if (dom.hasAttribute("pm-leaf"))
     return Pos.from(path, extraOffset + (domOffset ? 1 : 0))
 
@@ -631,7 +631,7 @@ export function findSelectionAtEnd(node, path = [], text) {
 export function selectableNodeAbove(pm, dom, coords, liberal) {
   for (; dom && dom != pm.content; dom = dom.parentNode) {
     if (dom.hasAttribute("pm-offset")) {
-      let path = pathFromDOM(dom), node = pm.doc.path(path)
+      let path = pathFromDOM(pm, dom), node = pm.doc.path(path)
       if (node.type.countCoordsAsChild) {
         let result = node.type.countCoordsAsChild(node, path, dom, coords)
         if (result) return result
@@ -661,7 +661,7 @@ export function selectableNodeAbove(pm, dom, coords, liberal) {
 export function handleNodeClick(pm, event) {
   for (let dom = event.target; dom && dom != pm.content; dom = dom.parentNode) {
     if (dom.hasAttribute("pm-offset")) {
-      let path = pathFromDOM(dom), node = pm.doc.path(path)
+      let path = pathFromDOM(pm, dom), node = pm.doc.path(path)
       return node.type.handleClick && node.type.handleClick(pm, event, path, node) !== false
     }
   }

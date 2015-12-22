@@ -76,6 +76,7 @@ export function draw(pm, doc) {
 }
 
 function adjustTrailingHacks(dom, node) {
+  // FIXME trailing cursor text is sometimes left
   let needs = node.size == 0 || node.lastChild.type.isBR ? "br"
       : node.lastChild.type.contains == null ? "text" : null
   let last = dom.lastChild
@@ -123,7 +124,13 @@ export function redraw(pm, dirty, doc, prev) {
         reuseDOM = true
       } else if (pChild && !child.isText && child.sameMarkup(pChild) && dirty.get(pChild) != DIRTY_REDRAW) {
         reuseDOM = true
-        scan(domPos, child, pChild)
+        let contentNode = domPos
+        for (;;) {
+          let first = contentNode.firstChild
+          if (!first || first.hasAttribute("pm-ignore") || first.hasAttribute("pm-offset")) break
+          contentNode = first
+        }
+        scan(contentNode, child, pChild)
       } else {
         let rendered = renderNodeToDOM(child, opts, offset)
         dom.insertBefore(rendered, domPos)
