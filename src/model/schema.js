@@ -214,13 +214,15 @@ export class NodeType {
   }
 
   // :: (string, *)
-  // Register a metadata element for this type. That is, add `value`
-  // to the array under the property name `name` on the type's
-  // prototype, creating the array if it wasn't already there. This is
-  // mostly used to attach things like commands and parsing strategies
-  // to node type.
+  // Register an element in this type's registry. That is, add `value`
+  // to the array associated with `name` in the registry stored in
+  // type's `prototype`. This is mostly used to attach things like
+  // commands and parsing strategies to node types. See `Schema.registry`.
   static register(name, value) {
-    ;(this.prototype[name] || (this.prototype[name] = [])).push(value)
+    let registry = this.prototype.hasOwnProperty("registry")
+        ? this.prototype.registry
+        : this.prototype.registry = Object.create(null)
+    ;(registry[name] || (registry[name] = [])).push(value)
   }
 
   // :: union<bool, [string]>
@@ -303,6 +305,14 @@ export class Attribute {
   constructor(options = {}) {
     this.default = options.default
     this.compute = options.compute
+    this.registry = Object.create(null)
+  }
+
+  // :: (string, *)
+  // Register a value in this attribute's registry. See
+  // `NodeType.register` and `Schema.registry`.
+  register(name, value) {
+    ;(this.registry[name] || (this.registry[name] = [])).push(value)
   }
 }
 
@@ -379,19 +389,17 @@ export class MarkType {
     for (let i = 0; i < set.length; i++)
       if (set[i].type == this) return set[i]
   }
-
-  // :: (string, *)
-  // Register a metadata element for this mark type. Adds `value` to
-  // the array under the property name `name` on the type's prototype.
-  static register(name, value) {
-    ;(this.prototype[name] || (this.prototype[name] = [])).push(value)
-  }
 }
 
 // :: Object<Attribute>
 // The default set of attributes to associate with a mark type. By
 // default, this returns an empty object.
 MarkType.attributes = {}
+
+// :: (string, *)
+// Register a metadata element for this mark type. See also
+// `NodeType.register`.
+MarkType.register = NodeType.register
 
 // Schema specifications are data structures that specify a schema --
 // a set of node types, their names, attributes, and nesting behavior.
@@ -642,6 +650,32 @@ export class Schema {
       if (sub == sup) return true
       sub = this.kinds[sub]
       if (!sub) return false
+    }
+  }
+
+  // :: (string, (value: *, source: union<NodeType, MarkType, Attribute>))
+  // Retrieve all registered items under the given name from this
+  // schema. The given function will be called with each item and, as
+  // a second argument, the element—node type, mark type, or
+  // attribute—that it was associated with.
+  registry(name, f) {
+    let attrsSeen = []
+    for (let i = 0; i < 2; i++) {
+      let obj = i ? this.marks : this.nodes
+      for (let tname in obj) {
+        let type = obj[tname]
+        if (type.constructor.prototype.hasOwnProperty("registry")) {
+          let reg = type.registry[name]
+          if (reg) for (let j = 0; j < reg.length; j++) f(reg[j], type)
+        }
+        for (var aname in type.attrs) {
+          let attr = type.attrs[aname], reg = attr.registry[name]
+          if (reg && attrsSeen.indexOf(attr) == -1) {
+            attrsSeen.push(attr)
+            for (let j = 0; j < reg.length; j++) f(reg[j], attr)
+          }
+        }
+      }
     }
   }
 }

@@ -22,14 +22,11 @@ function schemaRules(schema) {
   let found = Object.create(null)
   for (let name in globalRules) found[name] = globalRules[name]
 
-  for (let name in schema.nodes) {
-    let type = schema.nodes[name], rules = type.autoInput
-    if (rules) rules.forEach(spec => {
-      let handler = spec.handler
-      if (handler.bind) handler = handler.bind(type)
-      found[spec.name] = new Rule(spec.name, spec.match, spec.filter, handler)
-    })
-  }
+  schema.registry("autoInput", (spec, type) => {
+    let handler = spec.handler
+    if (handler.bind) handler = handler.bind(type)
+    found[spec.name] = new Rule(spec.name, spec.match, spec.filter, handler)
+  })
   return schema.cached.inputRules = found
 }
 

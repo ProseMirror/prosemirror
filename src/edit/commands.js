@@ -169,16 +169,9 @@ function getParamHandler(pm) {
 export function initCommands(schema) {
   let result = Object.create(null)
   for (let cmd in globalCommands) result[cmd] = globalCommands[cmd]
-  function fromTypes(types) {
-    for (let name in types) {
-      let type = types[name], cmds = type.command
-      if (cmds) cmds.forEach(spec => {
-        result[spec.name] = new Command(spec, type)
-      })
-    }
-  }
-  fromTypes(schema.nodes)
-  fromTypes(schema.marks)
+  schema.registry("command", (spec, type) => {
+    result[spec.name] = new Command(spec, type)
+  })
   return result
 }
 

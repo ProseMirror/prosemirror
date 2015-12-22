@@ -248,25 +248,18 @@ function nodeInfo(schema) {
 function summarizeNodeInfo(schema) {
   let tags = Object.create(null)
   tags._ = []
-  function read(type) {
-    let info = type.parseDOM
-    if (!info) return
-    info.forEach(info => {
-      let tag = info.tag || "_"
-      let parse = info.parse
-      if (parse == "block")
-        parse = function(dom, state) { state.wrapIn(dom, this) }
-      else if (parse == "mark")
-        parse = function(dom, state) { state.wrapMark(dom, this) }
-      ;(tags[tag] || (tags[tag] = [])).push({
-        type, parse,
-        rank: info.rank == null ? 50 : info.rank
-      })
+  schema.registry("parseDOM", (info, type) => {
+    let tag = info.tag || "_"
+    let parse = info.parse
+    if (parse == "block")
+      parse = function(dom, state) { state.wrapIn(dom, this) }
+    else if (parse == "mark")
+      parse = function(dom, state) { state.wrapMark(dom, this) }
+    ;(tags[tag] || (tags[tag] = [])).push({
+      type, parse,
+      rank: info.rank == null ? 50 : info.rank
     })
-  }
-
-  for (let name in schema.nodes) read(schema.nodes[name])
-  for (let name in schema.marks) read(schema.marks[name])
+  })
   for (let tag in tags) tags[tag].sort((a, b) => a.rank - b.rank)
   return tags
 }

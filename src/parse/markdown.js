@@ -177,13 +177,9 @@ function summarizeTokens(schema) {
   tokens.inline = (state, tok) => state.parseTokens(tok.children)
   tokens.softbreak = state => state.addText("\n")
 
-  function read(type) {
-    let info = type.parseMarkdown
-    if (info) info.forEach(info => registerTokens(tokens, type, info))
-  }
-
-  for (let name in schema.nodes) read(schema.nodes[name])
-  for (let name in schema.marks) read(schema.marks[name])
+  schema.registry("parseMarkdown", (info, type) => {
+    registerTokens(tokens, type, info)
+  })
   return tokens
 }
 
