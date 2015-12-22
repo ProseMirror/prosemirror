@@ -19,7 +19,7 @@ import {SelectionState, TextSelection, NodeSelection,
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
 import {History} from "./history"
-import {initCommands} from "./commands"
+import {defaultKeymap, initCommands} from "./commands"
 import {RangeStore, MarkedRange} from "./range"
 import {normalizeKeyName} from "./keys"
 
@@ -74,7 +74,7 @@ export class ProseMirror {
 
     // :: Object<Command>
     // The commands available in the editor.
-    this.commands = initCommands(this.schema)
+    this.commands = initCommands(this)
     this.commandKeys = Object.create(null)
 
     initOptions(this)
@@ -320,6 +320,10 @@ export class ProseMirror {
     }
   }
 
+  get baseKeymap() {
+    return this.options.keymap || this.defaultKeymap || (this.defaultKeymap = defaultKeymap(this))
+  }
+
   // :: (Pos, Pos, ?Object) → MarkedRange
   // Create a marked range between the given positions. Marked ranges
   // “track” the part of the document they point to—as the document
@@ -463,21 +467,29 @@ export class ProseMirror {
     let cached = this.commandKeys[name]
     if (cached !== undefined) return cached
 
-    let cmd = this.commands[name]
+    let cmd = this.commands[name], keymap = this.baseKeymap
     if (!cmd) return this.commandKeys[name] = null
     let key = cmd.spec.key || (browser.mac ? cmd.spec.macKey : cmd.spec.pcKey)
     if (key) {
       key = normalizeKeyName(Array.isArray(key) ? key[0] : key)
-      let deflt = this.options.keymap.bindings[key]
+      let deflt = keymap.bindings[key]
       if (Array.isArray(deflt) ? deflt.indexOf(name) > -1 : deflt == name)
         return this.commandKeys[name] = key
     }
-    for (let key in this.options.keymap.bindings) {
-      let bound = this.options.keymap.bindings[key]
+    for (let key in keymap.bindings) {
+      let bound = keymap.bindings[key]
       if (Array.isArray(bound) ? bound.indexOf(name) > -1 : bound == name)
         return this.commandKeys[name] = key
     }
     return this.commandKeys[name] = null
+  }
+
+  registry(name, f) {
+    this.schema.registry(name, f)
+    this.options.registries.forEach(reg => {
+      let array = reg.registry[name]
+      if (array) for (var i = 0; i < array.length; i++) f(array[i], this)
+    })
   }
 
   markRangeDirty(range) {

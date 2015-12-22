@@ -37,6 +37,7 @@ export class Input {
     this.draggingFrom = false
 
     this.keymaps = []
+    this.defaultKeymap = null
 
     this.storedMarks = null
 
@@ -114,7 +115,7 @@ export function dispatchKey(pm, name, e) {
   for (let i = 0; !result && i < pm.input.keymaps.length; i++)
     result = handle(pm.input.keymaps[i].map.lookup(name, pm))
   if (!result)
-    result = handle(pm.options.keymap.lookup(name, pm)) || handle(captureKeys.lookup(name))
+    result = handle(pm.baseKeymap.lookup(name, pm)) || handle(captureKeys.lookup(name))
 
   // If the key should be used in sequence with the next key, store the keyname internally.
   if (result == "multi")

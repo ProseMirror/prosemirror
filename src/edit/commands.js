@@ -7,8 +7,8 @@ import sortedInsert from "../util/sortedinsert"
 import {charCategory, isExtendingChar} from "./char"
 import {Keymap} from "./keys"
 import {findSelectionFrom, verticalMotionLeavesTextblock, setDOMSelectionToPos, NodeSelection} from "./selection"
+import {defaultRegistry as reg} from "./options"
 
-const globalCommands = Object.create(null)
 const paramHandlers = Object.create(null)
 
 const empty = []
@@ -16,13 +16,13 @@ const empty = []
 // FIXME document individual commands
 
 // ;; A command is a named piece of functionality that can be bound to
-// a key, shown in the menu, or otherwise exposed to the user. There
-// are two sources of commands: Global commands, registered with
-// `defineCommand`, are available everywhere. Commands associated with
-// [node](#NodeType) or [mark](#MarkType) types, registered by using
-// the types' [`register`](#NodeType.register) method with the string
-// `"command"`, are available only in editors whose schema contains
-// that node or mark type.
+// a key, shown in the menu, or otherwise exposed to the user.
+//
+// The commands available in a given editor are gathered from the
+// [registries](#registries) given to the editor, and the node and
+// mark types in its [schema](#Schema.registry). Use the
+// [`register`](#NodeType.register) method with `"command"` as the
+// name and a `CommandSpec` as value to define a new command.
 export class Command {
   constructor(spec, self) {
     // :: string The name of the command.
@@ -146,12 +146,6 @@ export class Command {
 // :: any #path=CommandParam.default
 // A default value for the parameter.
 
-// :: (CommandSpec)
-// Define a global (not node- or mark-specific) command.
-export function defineCommand(spec) {
-  globalCommands[spec.name] = new Command(spec)
-}
-
 // :: (string, (pm: ProseMirror, cmd: Command, callback: (?[any])))
 // Register a parameter handler, which is a function that prompts the
 // user to enter values for a command's [parameters](#CommandParam), and
@@ -166,10 +160,9 @@ function getParamHandler(pm) {
   if (option && paramHandlers[option]) return paramHandlers[option]
 }
 
-export function initCommands(schema) {
+export function initCommands(pm) {
   let result = Object.create(null)
-  for (let cmd in globalCommands) result[cmd] = globalCommands[cmd]
-  schema.registry("command", (spec, type) => {
+  pm.registry("command", (spec, type) => {
     result[spec.name] = new Command(spec, type)
   })
   return result
@@ -391,7 +384,7 @@ function moveBackward(parent, offset, by) {
   }
 }
 
-defineCommand({
+reg.register("command", {
   name: "deleteSelection",
   label: "Delete the selection",
   run(pm) {
@@ -421,7 +414,7 @@ function deleteBarrier(pm, cut) {
   return pm.tr.lift(selAfter.from, selAfter.to).apply(andScroll)
 }
 
-defineCommand({
+reg.register("command", {
   name: "joinBackward",
   label: "Join with the block above",
   run(pm) {
@@ -449,7 +442,7 @@ defineCommand({
   key: ["Backspace(30)", "Mod-Backspace(30)"]
 })
 
-defineCommand({
+reg.register("command", {
   name: "deleteCharBefore",
   label: "Delete a character before the cursor",
   run(pm) {
@@ -462,7 +455,7 @@ defineCommand({
   macKey: "Ctrl-H(40)"
 })
 
-defineCommand({
+reg.register("command", {
   name: "deleteWordBefore",
   label: "Delete the word before the cursor",
   run(pm) {
@@ -503,7 +496,7 @@ function moveForward(parent, offset, by) {
   }
 }
 
-defineCommand({
+reg.register("command", {
   name: "joinForward",
   label: "Join with the block below",
   run(pm) {
@@ -532,7 +525,7 @@ defineCommand({
   key: ["Delete(30)", "Mod-Delete(30)"]
 })
 
-defineCommand({
+reg.register("command", {
   name: "deleteCharAfter",
   label: "Delete a character after the cursor",
   run(pm) {
@@ -545,7 +538,7 @@ defineCommand({
   macKey: "Ctrl-D(60)"
 })
 
-defineCommand({
+reg.register("command", {
   name: "deleteWordAfter",
   label: "Delete a character after the cursor",
   run(pm) {
@@ -564,7 +557,7 @@ function joinPointAbove(pm) {
   else return joinPoint(pm.doc, from, -1)
 }
 
-defineCommand({
+reg.register("command", {
   name: "joinUp",
   label: "Join with above block",
   run(pm) {
@@ -589,7 +582,7 @@ function joinPointBelow(pm) {
   else return joinPoint(pm.doc, to, 1)
 }
 
-defineCommand({
+reg.register("command", {
   name: "joinDown",
   label: "Join with below block",
   run(pm) {
@@ -603,7 +596,7 @@ defineCommand({
   key: "Alt-Down"
 })
 
-defineCommand({
+reg.register("command", {
   name: "lift",
   label: "Lift out of enclosing block",
   run(pm) {
@@ -683,7 +676,7 @@ wrapCommand(BlockQuote, "BlockQuote", "block quote", false, {
   key: ["Alt-Right '>'", "Alt-Right '\"'"]
 })
 
-defineCommand({
+reg.register("command", {
   name: "newlineInCode",
   label: "Insert newline",
   run(pm) {
@@ -698,7 +691,7 @@ defineCommand({
   key: "Enter(10)"
 })
 
-defineCommand({
+reg.register("command", {
   name: "createParagraphNear",
   label: "Create a paragraph near the selected leaf block",
   run(pm) {
@@ -711,7 +704,7 @@ defineCommand({
   key: "Enter(20)"
 })
 
-defineCommand({
+reg.register("command", {
   name: "liftEmptyBlock",
   label: "Move current block up",
   run(pm) {
@@ -725,7 +718,7 @@ defineCommand({
   key: "Enter(30)"
 })
 
-defineCommand({
+reg.register("command", {
   name: "splitBlock",
   label: "Split the current block",
   run(pm) {
@@ -807,7 +800,7 @@ HorizontalRule.register("command", {
   key: "Mod-Space"
 })
 
-defineCommand({
+reg.register("command", {
   name: "undo",
   label: "Undo last change",
   run(pm) { pm.scrollIntoView(); return pm.history.undo() },
@@ -820,7 +813,7 @@ defineCommand({
   key: "Mod-Z"
 })
 
-defineCommand({
+reg.register("command", {
   name: "redo",
   label: "Redo last undone change",
   run(pm) { pm.scrollIntoView(); return pm.history.redo() },
@@ -833,7 +826,7 @@ defineCommand({
   key: ["Mod-Y", "Shift-Mod-Z"]
 })
 
-defineCommand({
+reg.register("command", {
   name: "textblockType",
   label: "Change block type",
   run(pm, type) {
@@ -895,7 +888,7 @@ function nodeAboveSelection(pm) {
   return i == 0 ? false : sel.head.shorten(i - 1)
 }
 
-defineCommand({
+reg.register("command", {
   name: "selectParentBlock",
   label: "Select parent node",
   run(pm) {
@@ -945,7 +938,7 @@ function selectBlockHorizontally(pm, dir) {
   return false
 }
 
-defineCommand({
+reg.register("command", {
   name: "selectBlockLeft",
   label: "Move the selection onto or out of the block to the left",
   run(pm) {
@@ -956,7 +949,7 @@ defineCommand({
   key: ["Left", "Mod-Left"]
 })
 
-defineCommand({
+reg.register("command", {
   name: "selectBlockRight",
   label: "Move the selection onto or out of the block to the right",
   run(pm) {
@@ -1001,7 +994,7 @@ function selectBlockVertically(pm, dir) {
   return true
 }
 
-defineCommand({
+reg.register("command", {
   name: "selectBlockUp",
   label: "Move the selection onto or out of the block above",
   run(pm) {
@@ -1012,7 +1005,7 @@ defineCommand({
   key: "Up"
 })
 
-defineCommand({
+reg.register("command", {
   name: "selectBlockDown",
   label: "Move the selection onto or out of the block below",
   run(pm) {
