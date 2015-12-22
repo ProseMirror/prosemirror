@@ -9,6 +9,9 @@
 //   document structure
 //
 // * The data type for document [positions](#Pos)
+//
+// This module does not depend on the browser API being available
+// (i.e. you can load it into any JavaScript environment).
 
 export {Node} from "./node"
 export {Fragment, emptyFragment} from "./fragment"
