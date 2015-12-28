@@ -132,7 +132,7 @@ function resolveIcon(pm, command) {
 
 function renderSelect(item, menu) {
   let param = item.params[0]
-  let value = !param.default ? null : param.default.call ? param.default(menu.pm) : param.default
+  let value = paramDefault(param, menu.pm, item)
 
   let dom = elt("div", {class: "ProseMirror-select ProseMirror-select-command-" + item.name, title: item.label},
                 !value ? (param.defaultLabel || "Select...") : value.display ? value.display(value) : value.label)
@@ -180,11 +180,17 @@ function renderItem(item, menu) {
   else return display.call(item, menu)
 }
 
+function paramDefault(param, pm, command) {
+  return !param.default ? ""
+    : param.default.call ? param.default.call(command.self, pm)
+    : param.default
+}
+
 function buildParamForm(pm, command) {
-  let prefill = command.spec.prefillParams && command.spec.prefillParams(pm)
+  let prefill = command.spec.prefillParams && command.spec.prefillParams.call(command.self, pm)
   let fields = command.params.map((param, i) => {
     let field, name = "field_" + i
-    let val = prefill ? prefill[i] : param.default || ""
+    let val = prefill ? prefill[i] : paramDefault(param, pm, command)
     if (param.type == "text")
       field = elt("input", {name, type: "text",
                             placeholder: param.label,
@@ -206,7 +212,7 @@ function gatherParams(pm, command, form) {
     let val = form.elements["field_" + i].value
     if (val) return val
     if (param.default == null) bad = true
-    else return param.default.call ? param.default(pm) : param.default
+    else return paramDefault(param, pm, command)
   })
   return bad ? null : params
 }
