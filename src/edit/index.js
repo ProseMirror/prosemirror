@@ -4,7 +4,7 @@
 // and interact with when using the editor.
 
 export {ProseMirror} from "./main"
-export {defineOption, Registry, defaultRegistry} from "./options"
+export {defineOption} from "./options"
 export {Range} from "./selection"
 export {Keymap, keyName, keyNames} from "./keys"
 export {MarkedRange} from "./range"

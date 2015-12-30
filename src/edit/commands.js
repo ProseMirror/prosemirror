@@ -24,13 +24,15 @@ export function defineCommand(spec) {
 // a key, shown in the menu, or otherwise exposed to the user.
 //
 // The commands available in a given editor are gathered from the
-// [registries](#Registry) given to the editor, and the node and
-// mark types in its [schema](#Schema.registry). Use the
+// commands defined with `defineCommand`, and from
+// [specs](#CommandSpec) associated with node and mark types in the
+// editor's [schema](#Schema.registry). Use the
 // [`register`](#NodeType.register) method with `"command"` as the
-// name and a `CommandSpec` as value to define a new command.
+// name and a `CommandSpec` as value to associate a command with a
+// node or mark.
 //
 // This module defines a [bunch of commands](#edit_commands) in the
-// [default registry](#defaultRegistry).
+// [default schema](#defaultSchema) and global command registry.
 export class Command {
   constructor(spec, self) {
     // :: string The name of the command.

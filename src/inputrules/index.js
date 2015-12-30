@@ -3,5 +3,5 @@
 // comes with a bunch of default rules that can be enabled with the
 // `autoInput` option.
 
-export {InputRule, addInputRule, removeInputRule} from "./inputrules"
+export {InputRule, defineInputRule, addInputRule, removeInputRule} from "./inputrules"
 import "./autoinput"

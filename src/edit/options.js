@@ -1,30 +1,5 @@
 import {defaultSchema} from "../model"
 
-// ;; A registry is a namespace for [commands](#Commands), input
-// rules, and so on. They provide a way to define commands and such in
-// a scoped way, without having them show up on all your editors by
-// default all of a sudden. See also the [`registries`
-// option](#registries).
-export class Registry {
-  // :: (string)
-  // Create a new registry with the given name.
-  constructor(name) {
-    this.name = name
-    this.registry = Object.create(null)
-  }
-
-  // :: (string, *)
-  // Register a new item in this registry.
-  register(name, value) {
-    ;(this.registry[name] || (this.registry[name] = [])).push(value)
-  }
-}
-
-// :: Registry
-// The registry in which built-in commands and input rules are
-// registered. The default content of the `registries` option.
-export const defaultRegistry = new Registry("default")
-
 class Option {
   constructor(defaultValue, update, updateOnInit) {
     this.defaultValue = defaultValue
@@ -72,11 +47,6 @@ defineOption("place", null)
 // synthesized from the default key bindings provided by the
 // [commands](#Command) that are in scope for the editor.
 defineOption("keymap", null)
-
-// :: [Registry]
-// The set of [registries](#Registry) the editor should load items
-// from.
-defineOption("registries", [defaultRegistry], false)
 
 // :: number #path=historyDepth #kind=option
 // The amount of history events that are collected before the oldest

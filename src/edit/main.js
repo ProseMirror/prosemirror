@@ -484,14 +484,6 @@ export class ProseMirror {
     return this.commandKeys[name] = null
   }
 
-  registry(name, f) {
-    this.schema.registry(name, f)
-    this.options.registries.forEach(reg => {
-      let array = reg.registry[name]
-      if (array) for (var i = 0; i < array.length; i++) f(array[i], this)
-    })
-  }
-
   markRangeDirty(range) {
     this.ensureOperation()
     let dirty = this.dirtyNodes

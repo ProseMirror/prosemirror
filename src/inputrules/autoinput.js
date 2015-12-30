@@ -1,11 +1,11 @@
 import {Pos, BlockQuote, OrderedList, BulletList, CodeBlock, Heading} from "../model"
-import {defineOption, defaultRegistry} from "../edit"
+import {defineOption} from "../edit"
 import {InputRule, addInputRule, removeInputRule} from "./inputrules"
 
 // :: bool #path=autoInput #kind=option
-// When set to true, enables the input rules stored under the
-// `"autoInput"` name in the editor's
-// [`registry`](#ProseMirror.registry)—by default, these are things
+// When set to true, enables the input rules defined by `defineInputRule` and stored under the
+// `"autoInput"` name in the editor schema's
+// [`registry`](#Schema.registry)—by default, these are things
 // like smart quotes, and automatically wrapping a block in a list if
 // you start it with `"1. "`.
 defineOption("autoInput", false, function(pm, val) {
@@ -15,24 +15,37 @@ defineOption("autoInput", false, function(pm, val) {
   }
   if (val) {
     pm.mod.autoInput = []
-    pm.registry("autoInput", (rule, type) => {
+    pm.schema.registry("autoInput", (rule, type) => {
       pm.mod.autoInput.push(rule.name)
       if (rule.handler.bind)
         rule = new InputRule(rule.name, rule.match, rule.filter, rule.handler.bind(type))
       addInputRule(pm, rule)
     })
+    for (let name in rules) {
+      let rule = rules[name]
+      addInputRule(pm, rule)
+      pm.mod.autoInput.push(rule.name)
+    }
   }
 })
 
-defaultRegistry.register("autoInput", new InputRule("emDash", /--$/, "-", "—"))
+const rules = Object.create(null)
 
-defaultRegistry.register("autoInput", new InputRule("openDoubleQuote", /\s(")$/, '"', "“"))
+// :: (InputRule)
+// Define an input rule to be used when the `autoInput` option is enabled.
+export function defineInputRule(rule) {
+  rules[rule.name] = rule
+}
 
-defaultRegistry.register("autoInput", new InputRule("closeDoubleQuote", /"$/, '"', "”"))
+defineInputRule(new InputRule("emDash", /--$/, "-", "—"))
 
-defaultRegistry.register("autoInput", new InputRule("openSingleQuote", /\s(')$/, "'", "‘"))
+defineInputRule(new InputRule("openDoubleQuote", /\s(")$/, '"', "“"))
 
-defaultRegistry.register("autoInput", new InputRule("closeSingleQuote", /'$/, "'", "’"))
+defineInputRule(new InputRule("closeDoubleQuote", /"$/, '"', "”"))
+
+defineInputRule(new InputRule("openSingleQuote", /\s(')$/, "'", "‘"))
+
+defineInputRule(new InputRule("closeSingleQuote", /'$/, "'", "’"))
 
 BlockQuote.register("autoInput", new InputRule("startBlockQuote", /^\s*> $/, " ",
                                                function(pm, _, pos) { wrapAndJoin(pm, pos, this) }))
