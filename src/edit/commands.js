@@ -143,12 +143,13 @@ const empty = []
 // optional `all`, `mac`, and `pc` properties, specifying arrays of
 // keys for different platforms.
 
-// :: union<bool, string> #path=CommandSpec.derive
+// :: union<bool, object> #path=CommandSpec.derive
 // [Mark](#MarkType) and [node](#NodeType) types often need to define
 // boilerplate commands. To reduce the amount of duplicated code, you
 // can derive such commands by setting the `derive` property to either
-// `true` (derive the implementation based on the command name) or a
-// string (derive based on that name).
+// `true` or an object which is passed to the deriving function. If
+// this object has a `name` property, that is used, instead of the
+// command name, to pick a deriving function.
 //
 // For node types, you can derive `"insert"`, `"make"`, and `"wrap"`.
 //
@@ -206,12 +207,12 @@ export function deriveCommands(pm) {
 
   pm.schema.registry("command", (spec, type, name) => {
     if (spec.derive) {
-      let dname = typeof spec.derive == "string" ? spec.derive : spec.name
+      let conf = typeof spec.derive == "object" ? spec.derive : {}
+      let dname = conf.name || spec.name
       let derive = type.constructor.deriveableCommands[dname]
       if (!derive) throw new Error("Don't know how to derive command " + dname)
-      let derived = Object.create(null)
-      for (var prop in derive) derived[prop] = derive[prop]
-      for (var prop in spec) derived[prop] = spec[prop]
+      let derived = derive.call(type, conf)
+      for (var prop in spec) if (prop != "derive") derived[prop] = spec[prop]
       spec = derived
     }
     addAndOverride("schema:" + name + ":" + spec.name, spec, type)
@@ -284,21 +285,21 @@ function markApplies(pm, type) {
 NodeType.deriveableCommands = Object.create(null)
 MarkType.deriveableCommands = Object.create(null)
 
-MarkType.deriveableCommands.set = {
+MarkType.deriveableCommands.set = () => ({
   run(pm) { pm.setMark(this, true) },
   select(pm) { return canAddInline(pm, this) }
-}
+})
 
-MarkType.deriveableCommands.unset = {
+MarkType.deriveableCommands.unset = () => ({
   run(pm) { pm.setMark(this, false) },
   select(pm) { return markActive(pm, this) }
-}
+})
 
-MarkType.deriveableCommands.toggle = {
+MarkType.deriveableCommands.toggle = () => ({
   run(pm) { pm.setMark(this, null) },
   active(pm) { return markActive(pm, this) },
   select(pm) { return markApplies(pm, this) }
-}
+})
 
 // FIXME figure out a way to get the names into the docs properly
 
@@ -849,7 +850,7 @@ function isAtTopOfListItem(doc, from, to, listType) {
     listType.canContain(doc.path(from.path.slice(0, from.path.length - 1)))
 }
 
-NodeType.deriveableCommands.wrap = {
+NodeType.deriveableCommands.wrap = conf => ({
   run(pm) {
     let {from, to, head} = pm.selection, doJoin = false
     if (this.isList && head && isAtTopOfListItem(pm.doc, from, to, this)) {
@@ -857,7 +858,7 @@ NodeType.deriveableCommands.wrap = {
       if (from.path[from.path.length - 2] == 0) return false
       doJoin = true
     }
-    let tr = pm.tr.wrap(from, to, this)
+    let tr = pm.tr.wrap(from, to, this, conf.attrs)
     if (doJoin) tr.join(from.shorten(from.depth - 2))
     return tr.apply(andScroll)
   },
@@ -866,9 +867,9 @@ NodeType.deriveableCommands.wrap = {
     if (this.isList && head && isAtTopOfListItem(pm.doc, from, to, this) &&
         from.path[from.path.length - 2] == 0)
       return false
-    return canWrap(pm.doc, from, to, this)
+    return canWrap(pm.doc, from, to, this, conf.attrs)
   }
-}
+})
 
 // :: BulletList #path=wrapBulletList #kind=command
 // Wrap the selection in a bullet list.
@@ -1067,6 +1068,20 @@ function alreadyHasBlockType(doc, from, to, type, attrs) {
   return found
 }
 
+NodeType.deriveableCommands.make = conf => ({
+  run(pm) {
+    let {from, to} = pm.selection
+    return pm.tr.setBlockType(from, to, this, conf.attrs).apply(andScroll)
+  },
+  select(pm) {
+    let {from, to, node} = pm.selection
+    if (node)
+      return node.isTextblock && !node.hasMarkup(this, conf.attrs)
+    else
+      return !alreadyHasBlockType(pm.doc, from, to, this, conf.attrs)
+  }
+})
+
 function blockTypeCommand(type, mod, labelName, attrs, key) {
   if (!attrs) attrs = {}
   type.register("command", {
@@ -1093,26 +1108,37 @@ function blockTypeCommand(type, mod, labelName, attrs, key) {
 //
 // **Keybindings:** Mod-H '1' through Mod-H '6'
 
-blockTypeCommand(Heading, 1, "heading 1", {level: 1}, "Mod-H '1'")
-blockTypeCommand(Heading, 2, "heading 2", {level: 2}, "Mod-H '2'")
-blockTypeCommand(Heading, 3, "heading 3", {level: 3}, "Mod-H '3'")
-blockTypeCommand(Heading, 4, "heading 4", {level: 4}, "Mod-H '4'")
-blockTypeCommand(Heading, 5, "heading 5", {level: 5}, "Mod-H '5'")
-blockTypeCommand(Heading, 6, "heading 6", {level: 6}, "Mod-H '6'")
+for (let i = 1; i <= 6; i++)
+  Heading.register("command", {
+    name: "make" + i,
+    derive: {name: "make", attrs: {level: i}},
+    label: "Change to heading " + i,
+    keys: [`Mod-H '${i}'`]
+  })
 
 // :: Paragraph #path=makeParagraph #kind=command
 // Set the textblocks in the selection to be regular paragraphs.
 //
 // **Keybindings:** Mod-P
 
-blockTypeCommand(Paragraph, null, "paragraph", null, "Mod-P")
+Paragraph.register("command", {
+  name: "make",
+  derive: true,
+  label: "Change to paragraph",
+  keys: ["Mod-P"]
+})
 
 // :: CodeBlock #path=makeCodeBlock #kind=command
 // Set the textblocks in the selection to be code blocks.
 //
 // **Keybindings:** Mod-\
 
-blockTypeCommand(CodeBlock, null, "code block", null, "Mod-\\")
+CodeBlock.register("command", {
+  name: "make",
+  derive: true,
+  label: "Change to code block",
+  keys: ["Mod-\\"]
+})
 
 // :: HorizontalRule #path=insertHorizontalRule #kind=command
 // Replace the selection with a horizontal rule.
@@ -1120,11 +1146,11 @@ blockTypeCommand(CodeBlock, null, "code block", null, "Mod-\\")
 // **Keybindings:** Mod-Shift-Minus
 
 // FIXME automate attribute reading?
-NodeType.deriveableCommands.insert = {
+NodeType.deriveableCommands.insert = conf => ({
   run(pm) {
-    return pm.tr.replaceSelection(this.create()).apply(andScroll)
+    return pm.tr.replaceSelection(this.create(conf.attrs)).apply(andScroll)
   }
-}
+})
 
 HorizontalRule.register("command", {
   name: "insert",
