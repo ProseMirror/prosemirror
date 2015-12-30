@@ -414,13 +414,7 @@ function leafAt(node, offset) {
   }
 }
 
-/**
- * Get a DOM element at a given position in the document.
- *
- * @param {Node} parent The parent DOM node.
- * @param {Pos} pos     The position in the document.
- * @return {Object}     The DOM node and character offset inside the node.
- */
+// Get a DOM element at a given position in the document.
 function DOMFromPos(parent, pos) {
   let dom = resolvePath(parent, pos.path)
   let found = findByOffset(dom, pos.offset, true), inner
@@ -436,13 +430,7 @@ export function hasFocus(pm) {
   return sel.rangeCount && contains(pm.content, sel.anchorNode)
 }
 
-/**
- * Given an x,y position on the editor, get the position in the document.
- *
- * @param  {ProseMirror} pm     Editor instance.
- * @param  {Object}      coords The x, y coordinates.
- * @return {Pos}
- */
+// Given an x,y position on the editor, get the position in the document.
 // FIXME fails on the space between lines
 // FIXME reformulate as selectionAtCoords? So that it can't return null
 export function posAtCoords(pm, coords) {
@@ -467,14 +455,8 @@ function textRect(node, from, to) {
   return range.getBoundingClientRect()
 }
 
-/**
- * Given a position in the document model, get a bounding box of the character at
- * that position, relative to the window.
- *
- * @param  {ProseMirror} pm The editor instance.
- * @param  {Pos}         pos
- * @return {Object} The bounding box.
- */
+// Given a position in the document model, get a bounding box of the character at
+// that position, relative to the window.
 export function coordsAtPos(pm, pos) {
   let {node, offset} = DOMFromPos(pm.content, pos)
   let side, rect

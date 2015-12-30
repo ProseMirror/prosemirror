@@ -16,10 +16,8 @@ import {TextSelection, coordsAtPos, rangeFromDOMLoose, selectableNodeAbove,
 
 let stopSeq = null
 
-/**
- * A collection of DOM events that occur within the editor, and callback functions
- * to invoke when the event fires.
- */
+// A collection of DOM events that occur within the editor, and callback functions
+// to invoke when the event fires.
 const handlers = {}
 
 export class Input {
@@ -71,17 +69,8 @@ export class Input {
   }
 }
 
-/**
- * Dispatch a key press to the internal keymaps, which will override the default
- * DOM behavior.
- *
- * @param  {ProseMirror}   pm The editor instance.
- * @param  {string}        name The name of the key pressed.
- * @param  {KeyboardEvent} e
- * @return {string} If the key name has a mapping and the callback is invoked ("handled"),
- *                  if the key name needs to be combined in sequence with the next key ("multi"),
- *                  if there is no mapping ("nothing").
- */
+// Dispatch a key press to the internal keymaps, which will override the default
+// DOM behavior.
 export function dispatchKey(pm, name, e) {
   let seq = pm.input.keySeq
   // If the previous key should be used in sequence with this one, modify the name accordingly.
@@ -239,9 +228,7 @@ handlers.touchdown = pm => {
   pm.sel.pollForUpdate()
 }
 
-/**
- * A class to track state while creating a composed character.
- */
+// A class to track state while creating a composed character.
 class Composing {
   constructor(pm, data) {
     this.finished = false

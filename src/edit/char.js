@@ -12,13 +12,8 @@ export function isWordChar(ch) {
     (ch.toUpperCase() != ch.toLowerCase() || nonASCIISingleCaseWordChar.test(ch))
 }
 
-/**
- * Get the category of a given character. Either a "space",
- * a character that can be part of a word ("word"), or anything else ("other").
- *
- * @param  {string} ch The character.
- * @return {string}
- */
+// Get the category of a given character. Either a "space",
+// a character that can be part of a word ("word"), or anything else ("other").
 export function charCategory(ch) {
   return /\s/.test(ch) ? "space" : isWordChar(ch) ? "word" : "other"
 }
