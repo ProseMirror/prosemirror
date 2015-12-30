@@ -270,16 +270,31 @@ const separator = {
   display() { return elt("div", {class: "ProseMirror-menuseparator"}) }
 }
 
+function menuRank(cmd) {
+  let match = /^[^(]+\((\d+)\)$/.exec(cmd.spec.menuGroup)
+  return match ? +match[1] : 50
+}
+
+function computeMenuGroups(pm) {
+  let groups = Object.create(null)
+  for (let name in pm.commands) {
+    let cmd = pm.commands[name], spec = cmd.spec.menuGroup
+    if (!spec) continue
+    let [group] = /^[^(]+/.exec(spec)
+    sortedInsert(groups[group] || (groups[group] = []), cmd, (a, b) => menuRank(a) - menuRank(b))
+  }
+  pm.mod.menuGroups = groups
+  let clear = () => {
+    pm.mod.menuGroups = null
+    pm.off("commandsChanging", clear)
+  }
+  pm.on("commandsChanging", clear)
+  return groups
+}
+
 export function commandGroups(pm, ...names) {
-  return names.map(group => {
-    let found = []
-    for (let name in pm.commands) {
-      let cmd = pm.commands[name]
-      if (cmd.spec.menuGroup && cmd.spec.menuGroup == group)
-        sortedInsert(found, cmd, (a, b) => (a.spec.menuRank || 50) - (b.spec.menuRank || 50))
-    }
-    return found
-  })
+  let groups = pm.mod.menuGroups || computeMenuGroups(pm)
+  return names.map(group => groups[group])
 }
 
 function tooltipParamHandler(pm, command, callback) {

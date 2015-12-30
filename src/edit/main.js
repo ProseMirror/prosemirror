@@ -94,9 +94,15 @@ export class ProseMirror {
   getOption(name) { return this.options[name] }
 
   updateCommands() {
+    // :: () #path=ProseMirror#events#commandsChanging
+    // Fired before the set of commands for the editor is updated.
+    this.signal("commandsChanging")
     this.commands = deriveCommands(this)
     this.input.baseKeymap = deriveKeymap(this)
     this.commandKeys = Object.create(null)
+    // :: () #path=ProseMirror#events#commandsChanged
+    // Fired when the set of commands for the editor is updated.
+    this.signal("commandsChanged")
   }
 
   // :: (string) → bool

@@ -53,10 +53,9 @@ class MenuBar {
                        this.menuElt)
     pm.wrapper.insertBefore(this.wrapper, pm.wrapper.firstChild)
 
-    this.update = new MenuUpdate(pm, "selectionChange change activeMarkChange", () => this.prepareUpdate())
+    this.update = new MenuUpdate(pm, "selectionChange change activeMarkChange commandsChanged", () => this.prepareUpdate())
     this.menu = new Menu(pm, new BarDisplay(this.menuElt, () => this.resetMenu()))
 
-    this.menuItems = config && config.items || commandGroups(pm, "inline", "block", "history")
     this.update.force()
 
     this.floating = false
@@ -89,7 +88,7 @@ class MenuBar {
   }
 
   resetMenu() {
-    this.menu.show(this.menuItems)
+    this.menu.show(commandGroups(this.pm, "inline", "block", "history"))
   }
 
   updateFloat() {

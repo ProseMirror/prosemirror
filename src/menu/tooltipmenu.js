@@ -16,11 +16,9 @@ defineOption("tooltipMenu", false, function(pm, value) {
 class TooltipMenu {
   constructor(pm, config) {
     this.pm = pm
-    this.inlineItems = (config && config.inlineItems) || commandGroups(pm, "inline")
-    this.blockItems = (config && config.blockItems) || commandGroups(pm, "block")
     this.showLinks = config ? config.showLinks !== false : true
     this.selectedBlockMenu = config && config.selectedBlockMenu
-    this.update = new MenuUpdate(pm, "change selectionChange blur", () => this.prepareUpdate())
+    this.update = new MenuUpdate(pm, "change selectionChange blur commandsChanged", () => this.prepareUpdate())
 
     this.tooltip = new Tooltip(pm, "above")
     this.menu = new Menu(pm, new TooltipDisplay(this.tooltip, () => this.update.force()))
@@ -39,15 +37,15 @@ class TooltipMenu {
       return () => this.tooltip.close()
     } else if (node && node.isBlock) {
       let coords = topOfNodeSelection(this.pm)
-      return () => this.menu.show(this.blockItems, coords)
+      return () => this.menu.show(commandGroups(this.pm, "block"), coords)
     } else if (!empty) {
       let coords = node ? topOfNodeSelection(this.pm) : topCenterOfSelection()
       let showBlock = this.selectedBlockMenu && Pos.samePath(from.path, to.path) &&
           from.offset == 0 && to.offset == this.pm.doc.path(from.path).size
-      return () => this.menu.show(showBlock ? [this.inlineItems, this.blockItems] : this.inlineItems, coords)
+      return () => this.menu.show(showBlock ? commandGroups(this.pm, "inline", "block") : commandGroups(this.pm, "inline"), coords)
     } else if (this.selectedBlockMenu && this.pm.doc.path(from.path).size == 0) {
       let coords = this.pm.coordsAtPos(from)
-      return () => this.menu.show(this.blockItems, coords)
+      return () => this.menu.show(commandGroups(this.pm, "block"), coords)
     } else if (this.showLinks && (link = this.linkUnderCursor())) {
       let coords = this.pm.coordsAtPos(from)
       return () => this.showLink(link, coords)
