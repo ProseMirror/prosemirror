@@ -1,7 +1,9 @@
 import {defTest} from "../tests"
-import {tempEditor} from "./def"
-import {cmpNode} from "../cmp"
+import {tempEditor, namespace} from "./def"
+import {cmpNode, is} from "../cmp"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "../build"
+
+import {defineCommand} from "../../src/edit"
 
 const used = Object.create(null)
 
@@ -428,3 +430,38 @@ test("schema:horizontal_rule:insert",
 test("schema:horizontal_rule:insert",
      doc("<a>", p("bar")),
      doc(hr))
+
+const test_ = namespace("command")
+
+defineCommand({
+  name: "foo:doIt",
+  label: "DO IT",
+  run(pm) { pm.setContent("hi", "text") }
+})
+
+test_("exclude_namespaced", pm => {
+  is(!pm.commands["foo:doIt"], "command not present")
+})
+
+test_("include_namespaced", pm => {
+  is(pm.commands["foo:doIt"], "command present")
+}, {namespaces: ["default", "schema", "foo"]})
+
+test_("delete_specific", pm => {
+  is(!pm.commands["lift"], "command disabled")
+  is(!pm.input.baseKeymap.bindings["Alt-Left"], "no key bound")
+}, {commands: {lift: null}})
+
+test_("override_specific", pm => {
+  pm.execCommand("lift")
+  cmpNode(pm.doc, doc(p("Lift?")))
+  is(!pm.commands.lift.spec.label, "completely replaced")
+}, {commands: {lift: {run: pm => pm.setContent("Lift?", "text")}}})
+
+test_("extend_specific", pm => {
+  pm.execCommand("lift")
+  cmpNode(pm.doc, doc(p("hi")))
+  is(!pm.input.baseKeymap.bindings["Alt-Left"], "disabled old key")
+  is(pm.input.baseKeymap.bindings["Alt-L"], "enabled new key")
+}, {commands: {lift: {keys: ["Alt-L"]}},
+    doc: doc(blockquote(p("hi")))})

@@ -12,6 +12,10 @@ const commands = Object.create(null)
 
 const paramHandlers = Object.create(null)
 
+// :: (CommandSpec)
+// Define a globally available command. Note that
+// [namespaces](#namespace) can still be used to prevent the command
+// from showing up in editor where you don't want it to show up.
 export function defineCommand(spec) {
   if (commands[spec.name])
     throw new Error("Duplicate definition of command " + spec.name)
@@ -106,7 +110,9 @@ const empty = []
 // :: string #path=CommandSpec.name
 // The name of the command, which will be its key in
 // `ProseMirror.commands`, and the thing passed to
-// [`execCommand`](#ProseMirror.execCommand).
+// [`execCommand`](#ProseMirror.execCommand). Can be
+// [namespaced](#namespaces), (and probably should, for user-defined
+// commands).
 
 // :: string #path=CommandSpec.label
 // A user-facing label for the command. This will be used, among other
@@ -169,18 +175,39 @@ function getParamHandler(pm) {
   if (option && paramHandlers[option]) return paramHandlers[option]
 }
 
-export function initCommands(pm) {
-  let result = Object.create(null)
+export function deriveCommands(pm) {
+  let found = Object.create(null), config = pm.options.commands
+  function add(name, spec, self) {
+    if (!pm.isInNamespace(name)) return
+    if (found[name]) throw new Error("Duplicate definition of command " + name)
+    found[name] = new Command(spec, self, name)
+  }
+  function addAndOverride(name, spec, self) {
+    if (Object.prototype.hasOwnProperty.call(config, name)) {
+      let confSpec = config[name]
+      if (!confSpec) return
+      if (confSpec.run) return
+      let newSpec = Object.create(null)
+      for (let prop in spec) newSpec[prop] = spec[prop]
+      for (let prop in confSpec) newSpec[prop] = confSpec[prop]
+      spec = newSpec
+    }
+    add(name, spec, self)
+  }
+
   pm.schema.registry("command", (spec, type, name) => {
-    let cname = "schema:" + name + ":" + spec.name
-    result[cname] = new Command(spec, type, cname)
+    addAndOverride("schema:" + name + ":" + spec.name, spec, type)
   })
   for (let name in commands)
-    result[name] = new Command(commands[name])
-  return result
+    addAndOverride(name, commands[name])
+  for (let name in config) {
+    let spec = config[name]
+    if (spec && spec.run) add(name, spec)
+  }
+  return found
 }
 
-export function defaultKeymap(pm) {
+export function deriveKeymap(pm) {
   let bindings = {}, platform = browser.mac ? "mac" : "pc"
   function add(command, keys) {
     for (let i = 0; i < keys.length; i++) {

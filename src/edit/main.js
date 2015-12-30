@@ -19,7 +19,7 @@ import {SelectionState, TextSelection, NodeSelection,
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
 import {History} from "./history"
-import {defaultKeymap, initCommands} from "./commands"
+import {deriveKeymap, deriveCommands} from "./commands"
 import {RangeStore, MarkedRange} from "./range"
 import {normalizeKeyName} from "./keys"
 
@@ -74,19 +74,43 @@ export class ProseMirror {
 
     // :: Object<Command>
     // The commands available in the editor.
-    this.commands = initCommands(this)
-    this.commandKeys = Object.create(null)
-
+    this.commands = null
+    this.commandKeys = null
+    this.updateCommands()
     initOptions(this)
   }
 
   // :: (string, any)
   // Update the value of the given [option](#edit_options).
-  setOption(name, value) { setOption(this, name, value) }
+  setOption(name, value) {
+    setOption(this, name, value)
+    // :: (name: string, value: *) #path=ProseMirror#events#optionChanged
+    // Fired when [`setOption`](#ProseMirror.setOption) is called.
+    this.signal("optionChanged", name, value)
+  }
 
   // :: (string) → any
   // Get the current value of the given [option](#edit_options).
   getOption(name) { return this.options[name] }
+
+  updateCommands() {
+    this.commands = deriveCommands(this)
+    this.input.baseKeymap = deriveKeymap(this)
+    this.commandKeys = Object.create(null)
+  }
+
+  // :: (string) → bool
+  // Test whether the given string corresponds to any of the
+  // [namespaces](#namespaces) enabled for this editor.
+  isInNamespace(name) {
+    for (let i = 0; i < this.options.namespaces.length; i++) {
+      let ns = this.options.namespaces[i]
+      let match = ns == "default"
+          ? name.indexOf(":") == -1
+          : name.indexOf(ns) == 0 && name.charAt(ns.length) == ":"
+      if (match) return true
+    }
+  }
 
   // :: Selection
   // Get the current selection.
@@ -320,10 +344,6 @@ export class ProseMirror {
     }
   }
 
-  get baseKeymap() {
-    return this.options.keymap || this.defaultKeymap || (this.defaultKeymap = defaultKeymap(this))
-  }
-
   // :: (Pos, Pos, ?Object) → MarkedRange
   // Create a marked range between the given positions. Marked ranges
   // “track” the part of the document they point to—as the document
@@ -467,7 +487,7 @@ export class ProseMirror {
     let cached = this.commandKeys[name]
     if (cached !== undefined) return cached
 
-    let cmd = this.commands[name], keymap = this.baseKeymap
+    let cmd = this.commands[name], keymap = this.input.baseKeymap
     if (!cmd) return this.commandKeys[name] = null
     let key = cmd.spec.key || (browser.mac ? cmd.spec.macKey : cmd.spec.pcKey)
     if (key) {
