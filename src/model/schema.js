@@ -553,12 +553,16 @@ export class Schema {
     // The specification on which the schema is based.
     this.spec = spec
     this.kinds = Object.create(null)
+
     // :: Object<NodeType>
     // An object mapping the schema's node names to node type objects.
     this.nodes = NodeType.compile(spec.nodes, this)
     // :: Object<MarkType>
     // A map from mark names to mark type objects.
     this.marks = MarkType.compile(spec.marks, this)
+    for (let prop in this.nodes)
+      if (prop in this.marks) SchemaError.raise(prop + " can not be both a node and a mark")
+
     // :: Object
     // An object for storing whatever values modules may want to
     // compute and cache per schema. (If you want to store something
@@ -653,11 +657,11 @@ export class Schema {
     }
   }
 
-  // :: (string, (value: *, source: union<NodeType, MarkType, Attribute>))
+  // :: (string, (value: *, source: union<NodeType, MarkType, Attribute>, name: string))
   // Retrieve all registered items under the given name from this
-  // schema. The given function will be called with each item and, as
-  // a second argument, the element—node type, mark type, or
-  // attribute—that it was associated with.
+  // schema. The given function will be called with each item, the
+  // element—node type, mark type, or attribute—that it was associated
+  // with, and that element's name in the schema.
   registry(name, f) {
     let attrsSeen = []
     for (let i = 0; i < 2; i++) {
@@ -666,13 +670,13 @@ export class Schema {
         let type = obj[tname]
         if (type.constructor.prototype.hasOwnProperty("registry")) {
           let reg = type.registry[name]
-          if (reg) for (let j = 0; j < reg.length; j++) f(reg[j], type)
+          if (reg) for (let j = 0; j < reg.length; j++) f(reg[j], type, tname)
         }
         for (var aname in type.attrs) {
           let attr = type.attrs[aname], reg = attr.registry[name]
           if (reg && attrsSeen.indexOf(attr) == -1) {
             attrsSeen.push(attr)
-            for (let j = 0; j < reg.length; j++) f(reg[j], attr)
+            for (let j = 0; j < reg.length; j++) f(reg[j], attr, aname)
           }
         }
       }

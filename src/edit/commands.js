@@ -34,9 +34,9 @@ export function defineCommand(spec) {
 // This module defines a [bunch of commands](#edit_commands) in the
 // [default schema](#defaultSchema) and global command registry.
 export class Command {
-  constructor(spec, self) {
+  constructor(spec, self, name) {
     // :: string The name of the command.
-    this.name = spec.name
+    this.name = name || spec.name
     if (!this.name) throw new Error("Trying to define a command without a name")
     // :: CommandSpec The command's specifying object.
     this.spec = spec
@@ -171,10 +171,11 @@ function getParamHandler(pm) {
 
 export function initCommands(pm) {
   let result = Object.create(null)
-  pm.schema.registry("command", (spec, type) => {
-    result[spec.name] = new Command(spec, type)
+  pm.schema.registry("command", (spec, type, name) => {
+    let cname = "schema:" + name + ":" + spec.name
+    result[cname] = new Command(spec, type, cname)
   })
-  for (var name in commands)
+  for (let name in commands)
     result[name] = new Command(commands[name])
   return result
 }
@@ -235,25 +236,23 @@ function markApplies(pm, type) {
   return relevant
 }
 
-function generateMarkCommands(type, name, labelName, spec) {
-  if (!labelName) labelName = name
-  let cap = name.charAt(0).toUpperCase() + name.slice(1)
+function generateMarkCommands(type, labelName, spec) {
   type.register("command", {
-    name: "set" + cap,
+    name: "set",
     label: "Set " + labelName,
     run(pm) { pm.setMark(this, true) },
     select(pm) { return canAddInline(pm, this) },
     icon: {from: name}
   })
   type.register("command", {
-    name: "unset" + cap,
+    name: "unset",
     label: "Remove " + labelName,
     run(pm) { pm.setMark(this, false) },
     select(pm) { return markActive(pm, this) },
     icon: {from: name}
   })
   let command = {
-    name,
+    name: "toggle",
     label: "Toggle " + labelName,
     run(pm) { pm.setMark(this, null) },
     active(pm) { return markActive(pm, this) },
@@ -280,7 +279,7 @@ function generateMarkCommands(type, name, labelName, spec) {
 //
 // Registers itself in the inline [menu](#FIXME).
 
-generateMarkCommands(StrongMark, "strong", null, {
+generateMarkCommands(StrongMark, "strong", {
   menuGroup: "inline", menuRank: 20,
   icon: {
     width: 805, height: 1024,
@@ -307,7 +306,7 @@ generateMarkCommands(StrongMark, "strong", null, {
 //
 // Registers itself in the inline [menu](#FIXME).
 
-generateMarkCommands(EmMark, "em", "emphasis", {
+generateMarkCommands(EmMark, "emphasis", {
   menuGroup: "inline", menuRank: 21,
   icon: {
     width: 585, height: 1024,
@@ -334,7 +333,7 @@ generateMarkCommands(EmMark, "em", "emphasis", {
 //
 // Registers itself in the inline [menu](#FIXME).
 
-generateMarkCommands(CodeMark, "code", null, {
+generateMarkCommands(CodeMark, "code", {
   menuGroup: "inline", menuRank: 22,
   icon: {
     width: 896, height: 1024,
@@ -352,7 +351,7 @@ generateMarkCommands(CodeMark, "code", null, {
 // Registers itself in the inline [menu](#FIXME).
 
 LinkMark.register("command", {
-  name: "unlink",
+  name: "unset",
   label: "Unlink",
   run(pm) { pm.setMark(this, false) },
   select(pm) { return markActive(pm, this) },
@@ -377,7 +376,7 @@ LinkMark.register("command", {
 // the menu at any time.
 
 LinkMark.register("command", {
-  name: "link",
+  name: "set",
   label: "Add link",
   run(pm, href, title) { pm.setMark(this, true, {href, title}) },
   params: [
@@ -410,7 +409,7 @@ LinkMark.register("command", {
 // Registers itself in the inline [menu](#FIXME).
 
 Image.register("command", {
-  name: "insertImage",
+  name: "insert",
   label: "Insert image",
   run(pm, src, alt, title) {
     return pm.tr.replaceSelection(this.create({src, title, alt})).apply(andScroll)
@@ -788,9 +787,9 @@ function isAtTopOfListItem(doc, from, to, listType) {
     listType.canContain(doc.path(from.path.slice(0, from.path.length - 1)))
 }
 
-function wrapCommand(type, name, labelName, isList, spec) {
+function wrapCommand(type, labelName, isList, spec) {
   let command = {
-    name: "wrap" + name,
+    name: "wrap",
     label: "Wrap in " + labelName,
     run(pm) {
       let {from, to, head} = pm.selection, doJoin = false
@@ -822,7 +821,7 @@ function wrapCommand(type, name, labelName, isList, spec) {
 //
 // Registers itself in the block [menu](#FIXME).
 
-wrapCommand(BulletList, "BulletList", "bullet list", true, {
+wrapCommand(BulletList, "bullet list", true, {
   menuGroup: "block", menuRank: 40,
   icon: {
     width: 768, height: 896,
@@ -838,7 +837,7 @@ wrapCommand(BulletList, "BulletList", "bullet list", true, {
 //
 // Registers itself in the block [menu](#FIXME).
 
-wrapCommand(OrderedList, "OrderedList", "ordered list", true, {
+wrapCommand(OrderedList, "ordered list", true, {
   menuGroup: "block", menuRank: 41,
   icon: {
     width: 768, height: 896,
@@ -854,7 +853,7 @@ wrapCommand(OrderedList, "OrderedList", "ordered list", true, {
 //
 // Registers itself in the block [menu](#FIXME).
 
-wrapCommand(BlockQuote, "BlockQuote", "block quote", false, {
+wrapCommand(BlockQuote, "block quote", false, {
   menuGroup: "block", menuRank: 45,
   icon: {
     width: 640, height: 896,
@@ -871,7 +870,7 @@ wrapCommand(BlockQuote, "BlockQuote", "block quote", false, {
 //
 // **Keybindings:** Mod-Enter, Shift-Enter
 HardBreak.register("command", {
-  name: "insertHardBreak",
+  name: "insert",
   label: "Insert hard break",
   run(pm) {
     let {node, from} = pm.selection
@@ -977,7 +976,7 @@ defineCommand({
 // **Keybindings:** Enter
 
 ListItem.register("command", {
-  name: "splitListItem",
+  name: "split",
   label: "Split the current list item",
   run(pm) {
     let {from, to, node} = pm.selection
@@ -1003,10 +1002,10 @@ function alreadyHasBlockType(doc, from, to, type, attrs) {
   return found
 }
 
-function blockTypeCommand(type, name, labelName, attrs, key) {
+function blockTypeCommand(type, mod, labelName, attrs, key) {
   if (!attrs) attrs = {}
   type.register("command", {
-    name,
+    name: "make" + (mod || ""),
     label: "Change to " + labelName,
     run(pm) {
       let {from, to} = pm.selection
@@ -1029,26 +1028,26 @@ function blockTypeCommand(type, name, labelName, attrs, key) {
 //
 // **Keybindings:** Mod-H '1' through Mod-H '6'
 
-blockTypeCommand(Heading, "makeH1", "heading 1", {level: 1}, "Mod-H '1'")
-blockTypeCommand(Heading, "makeH2", "heading 2", {level: 2}, "Mod-H '2'")
-blockTypeCommand(Heading, "makeH3", "heading 3", {level: 3}, "Mod-H '3'")
-blockTypeCommand(Heading, "makeH4", "heading 4", {level: 4}, "Mod-H '4'")
-blockTypeCommand(Heading, "makeH5", "heading 5", {level: 5}, "Mod-H '5'")
-blockTypeCommand(Heading, "makeH6", "heading 6", {level: 6}, "Mod-H '6'")
+blockTypeCommand(Heading, 1, "heading 1", {level: 1}, "Mod-H '1'")
+blockTypeCommand(Heading, 2, "heading 2", {level: 2}, "Mod-H '2'")
+blockTypeCommand(Heading, 3, "heading 3", {level: 3}, "Mod-H '3'")
+blockTypeCommand(Heading, 4, "heading 4", {level: 4}, "Mod-H '4'")
+blockTypeCommand(Heading, 5, "heading 5", {level: 5}, "Mod-H '5'")
+blockTypeCommand(Heading, 6, "heading 6", {level: 6}, "Mod-H '6'")
 
 // :: Paragraph #path=makeParagraph #kind=command
 // Set the textblocks in the selection to be regular paragraphs.
 //
 // **Keybindings:** Mod-P
 
-blockTypeCommand(Paragraph, "makeParagraph", "paragraph", null, "Mod-P")
+blockTypeCommand(Paragraph, null, "paragraph", null, "Mod-P")
 
 // :: CodeBlock #path=makeCodeBlock #kind=command
 // Set the textblocks in the selection to be code blocks.
 //
 // **Keybindings:** Mod-\
 
-blockTypeCommand(CodeBlock, "makeCodeBlock", "code block", null, "Mod-\\")
+blockTypeCommand(CodeBlock, null, "code block", null, "Mod-\\")
 
 // :: HorizontalRule #path=insertHorizontalRule #kind=command
 // Replace the selection with a horizontal rule.
@@ -1056,7 +1055,7 @@ blockTypeCommand(CodeBlock, "makeCodeBlock", "code block", null, "Mod-\\")
 // **Keybindings:** Mod-=
 
 HorizontalRule.register("command", {
-  name: "insertHorizontalRule",
+  name: "insert",
   label: "Insert horizontal rule",
   run(pm) {
     return pm.tr.replaceSelection(this.create()).apply(andScroll)
