@@ -7,11 +7,16 @@ import sortedInsert from "../util/sortedinsert"
 import {charCategory, isExtendingChar} from "./char"
 import {Keymap} from "./keys"
 import {findSelectionFrom, verticalMotionLeavesTextblock, setDOMSelectionToPos, NodeSelection} from "./selection"
-import {defaultRegistry as reg} from "./options"
+
+const commands = Object.create(null)
 
 const paramHandlers = Object.create(null)
 
-const empty = []
+export function defineCommand(spec) {
+  if (commands[spec.name])
+    throw new Error("Duplicate definition of command " + spec.name)
+  commands[spec.name] = spec
+}
 
 // FIXME document individual commands
 
@@ -87,6 +92,8 @@ export class Command {
     return this.spec.label || this.name
   }
 }
+
+const empty = []
 
 // ;; #path=CommandSpec #kind=interface #toc=false
 // Commands are defined using objects that specify various aspects of
@@ -165,9 +172,11 @@ function getParamHandler(pm) {
 
 export function initCommands(pm) {
   let result = Object.create(null)
-  pm.registry("command", (spec, type) => {
+  pm.schema.registry("command", (spec, type) => {
     result[spec.name] = new Command(spec, type)
   })
+  for (var name in commands)
+    result[name] = new Command(commands[name])
   return result
 }
 
@@ -467,7 +476,7 @@ function moveBackward(parent, offset, by) {
 // **Ctrl-H (Mac), Alt-Backspace (Mac), Ctrl-D (Mac),
 // **Ctrl-Alt-Backspace (Mac), Alt-Delete (Mac), Alt-D (Mac)
 
-reg.register("command", {
+defineCommand({
   name: "deleteSelection",
   label: "Delete the selection",
   run(pm) {
@@ -506,7 +515,7 @@ function deleteBarrier(pm, cut) {
 //
 // **Keybindings:** Backspace, Mod-Backspace
 
-reg.register("command", {
+defineCommand({
   name: "joinBackward",
   label: "Join with the block above",
   run(pm) {
@@ -540,7 +549,7 @@ reg.register("command", {
 //
 // **Keybindings:** Backspace, Ctrl-H (Mac)
 
-reg.register("command", {
+defineCommand({
   name: "deleteCharBefore",
   label: "Delete a character before the cursor",
   run(pm) {
@@ -559,7 +568,7 @@ reg.register("command", {
 //
 // **Keybindings:** Mod-Backspace, Alt-Backspace (Mac)
 
-reg.register("command", {
+defineCommand({
   name: "deleteWordBefore",
   label: "Delete the word before the cursor",
   run(pm) {
@@ -609,7 +618,7 @@ function moveForward(parent, offset, by) {
 //
 // **Keybindings:** Delete, Mod-Delete
 
-reg.register("command", {
+defineCommand({
   name: "joinForward",
   label: "Join with the block below",
   run(pm) {
@@ -644,7 +653,7 @@ reg.register("command", {
 //
 // **Keybindings:** Delete, Ctrl-D (Mac)
 
-reg.register("command", {
+defineCommand({
   name: "deleteCharAfter",
   label: "Delete a character after the cursor",
   run(pm) {
@@ -664,7 +673,7 @@ reg.register("command", {
 // **Keybindings:** Mod-Delete, Ctrl-Alt-Backspace (Mac), Alt-Delete
 // (Mac), Alt-D (Mac)
 
-reg.register("command", {
+defineCommand({
   name: "deleteWordAfter",
   label: "Delete a word after the cursor",
   run(pm) {
@@ -692,14 +701,14 @@ function joinPointAbove(pm) {
 //
 // Registers itself in the block [menu](#FIXME)
 
-reg.register("command", {
+defineCommand({
   name: "joinUp",
   label: "Join with above block",
   run(pm) {
-    let point = joinPointAbove(pm)
+    let point = joinPointAbove(pm), isNode = pm.selection.node
     if (!point) return false
     pm.tr.join(point).apply()
-    if (pm.selection.node) pm.setNodeSelection(point.move(-1))
+    if (isNode) pm.setNodeSelection(point.move(-1))
   },
   select(pm) { return joinPointAbove(pm) },
   menuGroup: "block", menuRank: 80,
@@ -722,7 +731,7 @@ function joinPointBelow(pm) {
 //
 // **Keybindings:** Alt-Down
 
-reg.register("command", {
+defineCommand({
   name: "joinDown",
   label: "Join with below block",
   run(pm) {
@@ -744,7 +753,7 @@ reg.register("command", {
 //
 // Registers itself in the block [menu](#FIXME).
 
-reg.register("command", {
+defineCommand({
   name: "lift",
   label: "Lift out of enclosing block",
   run(pm) {
@@ -873,7 +882,7 @@ HardBreak.register("command", {
 //
 // **Keybindings:** Enter
 
-reg.register("command", {
+defineCommand({
   name: "newlineInCode",
   label: "Insert newline",
   run(pm) {
@@ -894,7 +903,7 @@ reg.register("command", {
 //
 // **Keybindings:** Enter
 
-reg.register("command", {
+defineCommand({
   name: "createParagraphNear",
   label: "Create a paragraph near the selected leaf block",
   run(pm) {
@@ -913,7 +922,7 @@ reg.register("command", {
 //
 // **Keybindings:** Enter
 
-reg.register("command", {
+defineCommand({
   name: "liftEmptyBlock",
   label: "Move current block up",
   run(pm) {
@@ -936,7 +945,7 @@ reg.register("command", {
 //
 // **Keybindings:** Enter
 
-reg.register("command", {
+defineCommand({
   name: "splitBlock",
   label: "Split the current block",
   run(pm) {
@@ -1054,7 +1063,7 @@ HorizontalRule.register("command", {
 // Registers itself in the block [menu](#FIXME), where it creates the
 // textblock type dropdown.
 
-reg.register("command", {
+defineCommand({
   name: "textblockType",
   label: "Change block type",
   run(pm, type) {
@@ -1116,15 +1125,14 @@ function nodeAboveSelection(pm) {
   return i == 0 ? false : sel.head.shorten(i - 1)
 }
 
-// ;; #path=selectParentBlock #kind=command
+// ;; #path=selectParentNode #kind=command
 // Move the selection to the node wrapping the current selection, if
 // any. (Will not select the document node.)
 //
 // **Keybindings:** Esc
 //
 // Registers itself in the block [menu](#FIXME).
-
-reg.register("command", {
+defineCommand({
   name: "selectParentNode",
   label: "Select parent node",
   run(pm) {
@@ -1146,7 +1154,7 @@ function moveSelectionBlock(pm, dir) {
   return findSelectionFrom(pm.doc, node && node.isBlock ? side : side.shorten(null, dir > 0 ? 1 : 0), dir)
 }
 
-function selectBlockHorizontally(pm, dir) {
+function selectNodeHorizontally(pm, dir) {
   let {empty, node, from, to} = pm.selection
   if (!empty && !node) return false
 
@@ -1174,16 +1182,16 @@ function selectBlockHorizontally(pm, dir) {
   return false
 }
 
-// ;; #path=selectBlockLeft #kind=command
+// ;; #path=selectNodeLeft #kind=command
 // Select the node directly before the cursor, if any.
 //
 // **Keybindings:** Left, Mod-Left
 
-reg.register("command", {
+defineCommand({
   name: "selectNodeLeft",
   label: "Move the selection onto or out of the block to the left",
   run(pm) {
-    let done = selectBlockHorizontally(pm, -1)
+    let done = selectNodeHorizontally(pm, -1)
     if (done) pm.scrollIntoView()
     return done
   },
@@ -1195,18 +1203,18 @@ reg.register("command", {
 //
 // **Keybindings:** Right, Mod-Right
 
-reg.register("command", {
+defineCommand({
   name: "selectNodeRight",
   label: "Move the selection onto or out of the block to the right",
   run(pm) {
-    let done = selectBlockHorizontally(pm, 1)
+    let done = selectNodeHorizontally(pm, 1)
     if (done) pm.scrollIntoView()
     return done
   },
   key: ["Right", "Mod-Right"]
 })
 
-function selectBlockVertically(pm, dir) {
+function selectNodeVertically(pm, dir) {
   let {empty, node, from, to} = pm.selection
   if (!empty && !node) return false
 
@@ -1245,11 +1253,11 @@ function selectBlockVertically(pm, dir) {
 //
 // **Keybindings:** Up
 
-reg.register("command", {
+defineCommand({
   name: "selectNodeUp",
   label: "Move the selection onto or out of the block above",
   run(pm) {
-    let done = selectBlockVertically(pm, -1)
+    let done = selectNodeVertically(pm, -1)
     if (done !== false) pm.scrollIntoView()
     return done
   },
@@ -1261,11 +1269,11 @@ reg.register("command", {
 //
 // **Keybindings:** Down
 
-reg.register("command", {
+defineCommand({
   name: "selectNodeDown",
   label: "Move the selection onto or out of the block below",
   run(pm) {
-    let done = selectBlockVertically(pm, 1)
+    let done = selectNodeVertically(pm, 1)
     if (done !== false) pm.scrollIntoView()
     return done
   },
@@ -1279,7 +1287,7 @@ reg.register("command", {
 //
 // Registers itself in the history [menu](#FIXME).
 
-reg.register("command", {
+defineCommand({
   name: "undo",
   label: "Undo last change",
   run(pm) { pm.scrollIntoView(); return pm.history.undo() },
@@ -1299,7 +1307,7 @@ reg.register("command", {
 //
 // Registers itself in the history [menu](#FIXME).
 
-reg.register("command", {
+defineCommand({
   name: "redo",
   label: "Redo last undone change",
   run(pm) { pm.scrollIntoView(); return pm.history.redo() },
