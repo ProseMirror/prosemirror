@@ -13,12 +13,14 @@ export class BlockQuote extends Block {}
 // counting, and defaults to 1.
 export class OrderedList extends Block {
   static get contains() { return "list_item" }
+  get isList() { return true }
 }
 OrderedList.attributes = {order: new Attribute({default: "1"})}
 
 // ;; #toc=false The default bullet list node type.
 export class BulletList extends Block {
   static get contains() { return "list_item" }
+  get isList() { return true }
 }
 
 // ;; #toc=false The default list item node type.

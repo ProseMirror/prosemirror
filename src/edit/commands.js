@@ -1,5 +1,5 @@
 import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
-        StrongMark, EmMark, CodeMark, LinkMark, Image, Pos} from "../model"
+        StrongMark, EmMark, CodeMark, LinkMark, Image, Pos, NodeType, MarkType} from "../model"
 import {joinPoint, joinableBlocks, canLift, canWrap} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
@@ -21,8 +21,6 @@ export function defineCommand(spec) {
     throw new Error("Duplicate definition of command " + spec.name)
   commands[spec.name] = spec
 }
-
-// FIXME document individual commands
 
 // ;; A command is a named piece of functionality that can be bound to
 // a key, shown in the menu, or otherwise exposed to the user.
@@ -145,6 +143,17 @@ const empty = []
 // optional `all`, `mac`, and `pc` properties, specifying arrays of
 // keys for different platforms.
 
+// :: union<bool, string> #path=CommandSpec.derive
+// [Mark](#MarkType) and [node](#NodeType) types often need to define
+// boilerplate commands. To reduce the amount of duplicated code, you
+// can derive such commands by setting the `derive` property to either
+// `true` (derive the implementation based on the command name) or a
+// string (derive based on that name).
+//
+// For node types, you can derive `"insert"`, `"make"`, and `"wrap"`.
+//
+// For mark types, you can derive `"set"`, `"unset"`, and `"toggle"`.
+
 // FIXME document menu and icon properties
 
 // ;; #path=CommandParam #kind=interface #toc=false
@@ -196,6 +205,15 @@ export function deriveCommands(pm) {
   }
 
   pm.schema.registry("command", (spec, type, name) => {
+    if (spec.derive) {
+      let dname = typeof spec.derive == "string" ? spec.derive : spec.name
+      let derive = type.constructor.deriveableCommands[dname]
+      if (!derive) throw new Error("Don't know how to derive command " + dname)
+      let derived = Object.create(null)
+      for (var prop in derive) derived[prop] = derive[prop]
+      for (var prop in spec) derived[prop] = spec[prop]
+      spec = derived
+    }
     addAndOverride("schema:" + name + ":" + spec.name, spec, type)
   })
   for (let name in commands)
@@ -263,39 +281,38 @@ function markApplies(pm, type) {
   return relevant
 }
 
-function generateMarkCommands(type, labelName, spec) {
-  type.register("command", {
-    name: "set",
-    label: "Set " + labelName,
-    run(pm) { pm.setMark(this, true) },
-    select(pm) { return canAddInline(pm, this) },
-    icon: {from: name}
-  })
-  type.register("command", {
-    name: "unset",
-    label: "Remove " + labelName,
-    run(pm) { pm.setMark(this, false) },
-    select(pm) { return markActive(pm, this) },
-    icon: {from: name}
-  })
-  let command = {
-    name: "toggle",
-    label: "Toggle " + labelName,
-    run(pm) { pm.setMark(this, null) },
-    active(pm) { return markActive(pm, this) },
-    select(pm) { return markApplies(pm, this) }
-  }
-  for (let prop in spec) command[prop] = spec[prop]
-  type.register("command", command)
+NodeType.deriveableCommands = Object.create(null)
+MarkType.deriveableCommands = Object.create(null)
+
+MarkType.deriveableCommands.set = {
+  run(pm) { pm.setMark(this, true) },
+  select(pm) { return canAddInline(pm, this) }
 }
 
-// :: StrongMark #path=setStrong #kind=command
+MarkType.deriveableCommands.unset = {
+  run(pm) { pm.setMark(this, false) },
+  select(pm) { return markActive(pm, this) }
+}
+
+MarkType.deriveableCommands.toggle = {
+  run(pm) { pm.setMark(this, null) },
+  active(pm) { return markActive(pm, this) },
+  select(pm) { return markApplies(pm, this) }
+}
+
+// FIXME figure out a way to get the names into the docs properly
+
+// :: StrongMark #path="schema:strong:set" #kind=command
 // Add the [strong](#StrongMark) mark to the selected content.
 
-// :: StrongMark #path=unsetStrong #kind=command
+StrongMark.register("command", {name: "set", derive: true, label: "Set strong"})
+
+// :: StrongMark #path="schema:strong:unset" #kind=command
 // Remove the [strong](#StrongMark) mark from the selected content.
 
-// :: StrongMark #path=strong #kind=command// Toggle the [strong](#StrongMark) mark. If there is any strong
+StrongMark.register("command", {name: "unset", derive: true, label: "Unset strong"})
+
+// :: StrongMark #path="schema:strong:toggle" #kind=command// Toggle the [strong](#StrongMark) mark. If there is any strong
 // content in the selection, or there is no selection and the [active
 // marks](#ProseMirror.activeMarks) contain the strong mark, this
 // counts as [active](#Command.active) and executing it removes the
@@ -306,7 +323,10 @@ function generateMarkCommands(type, labelName, spec) {
 //
 // Registers itself in the inline [menu](#FIXME).
 
-generateMarkCommands(StrongMark, "strong", {
+StrongMark.register("command", {
+  name: "toggle",
+  derive: true,
+  label: "Toggle strong",
   menuGroup: "inline(20)",
   icon: {
     width: 805, height: 1024,
@@ -318,8 +338,12 @@ generateMarkCommands(StrongMark, "strong", {
 // :: EmMark #path=setEm #kind=command
 // Add the [emphasis](#EmMark) mark to the selected content.
 
+EmMark.register("command", {name: "set", derive: true, label: "Add emphasis"})
+
 // :: EmMark #path=unsetEm #kind=command
 // Remove the [emphasis](#EmMark) mark from the selected content.
+
+EmMark.register("command", {name: "unset", derive: true, label: "Remove emphasis"})
 
 // :: EmMark #path=em #kind=command
 // Toggle the [emphasis](#EmMark) mark. If there is any emphasized
@@ -333,7 +357,10 @@ generateMarkCommands(StrongMark, "strong", {
 //
 // Registers itself in the inline [menu](#FIXME).
 
-generateMarkCommands(EmMark, "emphasis", {
+EmMark.register("command", {
+  name: "toggle",
+  derive: true,
+  label: "Toggle emphasis",
   menuGroup: "inline(21)",
   icon: {
     width: 585, height: 1024,
@@ -345,8 +372,12 @@ generateMarkCommands(EmMark, "emphasis", {
 // :: CodeMark #path=setCode #kind=command
 // Add the [code](#CodeMark) mark to the selected content.
 
+CodeMark.register("command", {name: "set", derive: true, label: "Set code style"})
+
 // :: CodeMark #path=unsetCode #kind=command
 // Remove the [code](#CodeMark) mark from the selected content.
+
+CodeMark.register("command", {name: "unset", derive: true, label: "Remove code style"})
 
 // :: CodeMark #path=code #kind=command
 // Toggle the [code](#CodeMark) mark. If there is any code-styled
@@ -360,7 +391,10 @@ generateMarkCommands(EmMark, "emphasis", {
 //
 // Registers itself in the inline [menu](#FIXME).
 
-generateMarkCommands(CodeMark, "code", {
+CodeMark.register("command", {
+  name: "toggle",
+  derive: true,
+  label: "Toggle code style",
   menuGroup: "inline(22)",
   icon: {
     width: 896, height: 1024,
@@ -377,14 +411,18 @@ generateMarkCommands(CodeMark, "code", {
 //
 // Registers itself in the inline [menu](#FIXME).
 
+const linkIcon = {
+  width: 951, height: 1024,
+  path: "M832 694q0-22-16-38l-118-118q-16-16-38-16-24 0-41 18 1 1 10 10t12 12 8 10 7 14 2 15q0 22-16 38t-38 16q-8 0-15-2t-14-7-10-8-12-12-10-10q-18 17-18 41 0 22 16 38l117 118q15 15 38 15 22 0 38-14l84-83q16-16 16-38zM430 292q0-22-16-38l-117-118q-16-16-38-16-22 0-38 15l-84 83q-16 16-16 38 0 22 16 38l118 118q15 15 38 15 24 0 41-17-1-1-10-10t-12-12-8-10-7-14-2-15q0-22 16-38t38-16q8 0 15 2t14 7 10 8 12 12 10 10q18-17 18-41zM941 694q0 68-48 116l-84 83q-47 47-116 47-69 0-116-48l-117-118q-47-47-47-116 0-70 50-119l-50-50q-49 50-118 50-68 0-116-48l-118-118q-48-48-48-116t48-116l84-83q47-47 116-47 69 0 116 48l117 118q47 47 47 116 0 70-50 119l50 50q49-50 118-50 68 0 116 48l118 118q48 48 48 116z"
+}
+
 LinkMark.register("command", {
   name: "unset",
+  derive: true,
   label: "Unlink",
-  run(pm) { pm.setMark(this, false) },
-  select(pm) { return markActive(pm, this) },
-  active() { return true },
   menuGroup: "inline(30)",
-  icon: {from: "link"}
+  active() { return true },
+  icon: linkIcon
 })
 
 // :: LinkMark #path=link #kind=command
@@ -412,10 +450,7 @@ LinkMark.register("command", {
   ],
   select(pm) { return markApplies(pm, this) && !markActive(pm, this) },
   menuGroup: "inline(30)",
-  icon: {
-    width: 951, height: 1024,
-    path: "M832 694q0-22-16-38l-118-118q-16-16-38-16-24 0-41 18 1 1 10 10t12 12 8 10 7 14 2 15q0 22-16 38t-38 16q-8 0-15-2t-14-7-10-8-12-12-10-10q-18 17-18 41 0 22 16 38l117 118q15 15 38 15 22 0 38-14l84-83q16-16 16-38zM430 292q0-22-16-38l-117-118q-16-16-38-16-22 0-38 15l-84 83q-16 16-16 38 0 22 16 38l118 118q15 15 38 15 24 0 41-17-1-1-10-10t-12-12-8-10-7-14-2-15q0-22 16-38t38-16q8 0 15 2t14 7 10 8 12 12 10 10q18-17 18-41zM941 694q0 68-48 116l-84 83q-47 47-116 47-69 0-116-48l-117-118q-47-47-47-116 0-70 50-119l-50-50q-49 50-118 50-68 0-116-48l-118-118q-48-48-48-116t48-116l84-83q47-47 116-47 69 0 116 48l117 118q47 47 47 116 0 70-50 119l50 50q49-50 118-50 68 0 116 48l118 118q48 48 48 116z"
-  }
+  icon: linkIcon
   // FIXME pre-fill params when a single link is selected
   // (If parameter pre-filling is going to continue working like that)
 })
@@ -814,31 +849,25 @@ function isAtTopOfListItem(doc, from, to, listType) {
     listType.canContain(doc.path(from.path.slice(0, from.path.length - 1)))
 }
 
-function wrapCommand(type, labelName, isList, spec) {
-  let command = {
-    name: "wrap",
-    label: "Wrap in " + labelName,
-    run(pm) {
-      let {from, to, head} = pm.selection, doJoin = false
-      if (isList && head && isAtTopOfListItem(pm.doc, from, to, this)) {
-        // Don't do anything if this is the top of the list
-        if (from.path[from.path.length - 2] == 0) return false
-        doJoin = true
-      }
-      let tr = pm.tr.wrap(from, to, this)
-      if (doJoin) tr.join(from.shorten(from.depth - 2))
-      return tr.apply(andScroll)
-    },
-    select(pm) {
-      let {from, to, head} = pm.selection
-      if (isList && head && isAtTopOfListItem(pm.doc, from, to, this) &&
-          from.path[from.path.length - 2] == 0)
-        return false
-      return canWrap(pm.doc, from, to, this)
+NodeType.deriveableCommands.wrap = {
+  run(pm) {
+    let {from, to, head} = pm.selection, doJoin = false
+    if (this.isList && head && isAtTopOfListItem(pm.doc, from, to, this)) {
+      // Don't do anything if this is the top of the list
+      if (from.path[from.path.length - 2] == 0) return false
+      doJoin = true
     }
+    let tr = pm.tr.wrap(from, to, this)
+    if (doJoin) tr.join(from.shorten(from.depth - 2))
+    return tr.apply(andScroll)
+  },
+  select(pm) {
+    let {from, to, head} = pm.selection
+    if (this.isList && head && isAtTopOfListItem(pm.doc, from, to, this) &&
+        from.path[from.path.length - 2] == 0)
+      return false
+    return canWrap(pm.doc, from, to, this)
   }
-  for (let key in spec) command[key] = spec[key]
-  type.register("command", command)
 }
 
 // :: BulletList #path=wrapBulletList #kind=command
@@ -848,7 +877,10 @@ function wrapCommand(type, labelName, isList, spec) {
 //
 // Registers itself in the block [menu](#FIXME).
 
-wrapCommand(BulletList, "bullet list", true, {
+BulletList.register("command", {
+  name: "wrap",
+  derive: true,
+  labelName: "bullet list",
   menuGroup: "block(40)",
   icon: {
     width: 768, height: 896,
@@ -864,7 +896,10 @@ wrapCommand(BulletList, "bullet list", true, {
 //
 // Registers itself in the block [menu](#FIXME).
 
-wrapCommand(OrderedList, "ordered list", true, {
+OrderedList.register("command", {
+  name: "wrap",
+  derive: true,
+  labelName: "ordered list",
   menuGroup: "block(41)",
   icon: {
     width: 768, height: 896,
@@ -880,7 +915,10 @@ wrapCommand(OrderedList, "ordered list", true, {
 //
 // Registers itself in the block [menu](#FIXME).
 
-wrapCommand(BlockQuote, "block quote", false, {
+BlockQuote.register("command", {
+  name: "wrap",
+  derive: true,
+  labelName: "block quote",
   menuGroup: "block(45)",
   icon: {
     width: 640, height: 896,
@@ -1079,15 +1117,20 @@ blockTypeCommand(CodeBlock, null, "code block", null, "Mod-\\")
 // :: HorizontalRule #path=insertHorizontalRule #kind=command
 // Replace the selection with a horizontal rule.
 //
-// **Keybindings:** Mod-=
+// **Keybindings:** Mod-Shift-Minus
+
+// FIXME automate attribute reading?
+NodeType.deriveableCommands.insert = {
+  run(pm) {
+    return pm.tr.replaceSelection(this.create()).apply(andScroll)
+  }
+}
 
 HorizontalRule.register("command", {
   name: "insert",
+  derive: true,
   label: "Insert horizontal rule",
-  run(pm) {
-    return pm.tr.replaceSelection(this.create()).apply(andScroll)
-  },
-  keys: ["Mod-="]
+  keys: ["Mod-Shift--"]
 })
 
 // ;; #path=textblockType #kind=command
