@@ -42,12 +42,6 @@ defineOption("docFormat", null)
 // into the document.
 defineOption("place", null)
 
-// :: Keymap #path=keymap #kind=option
-// The base [keymap](#Keymap). When not given, a default keymap is
-// synthesized from the default key bindings provided by the
-// [commands](#Command) that are in scope for the editor.
-defineOption("keymap", null)
-
 // :: number #path=historyDepth #kind=option
 // The amount of history events that are collected before the oldest
 // events are discarded. Defaults to 100.
