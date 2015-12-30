@@ -133,14 +133,11 @@ const empty = []
 // [active](#Command.active). `this` refers to the associated node or
 // mark type.
 
-// :: union<string, [string]> #path=CommandSpec.key
-// The default key binding or bindings for this command.
-
-// :: union<string, [string]> #path=CommandSpec.pcKey
-// Default key binding or bindings specific to non-Mac platforms.
-
-// :: union<string, [string]> #path=CommandSpec.macKey
-// Default key binding or bindings specific to the Mac platform.
+// :: union<string, [string]> #path=CommandSpec.keys
+// The default key bindings for this command. May either be an array
+// of strings containing [key names](#FIXME), or an object with
+// optional `all`, `mac`, and `pc` properties, specifying arrays of
+// keys for different platforms.
 
 // FIXME document menu and icon properties
 
@@ -183,24 +180,24 @@ export function initCommands(pm) {
 }
 
 export function defaultKeymap(pm) {
-  let bindings = {}
-  function add(command, key) {
-    if (Array.isArray(key)) {
-      for (let i = 0; i < key.length; i++) add(command, key[i])
-    } else if (key) {
-      let [_, name, rank = 50] = /^(.+?)(?:\((\d+)\))?$/.exec(key)
+  let bindings = {}, platform = browser.mac ? "mac" : "pc"
+  function add(command, keys) {
+    for (let i = 0; i < keys.length; i++) {
+      let [_, name, rank = 50] = /^(.+?)(?:\((\d+)\))?$/.exec(keys[i])
       sortedInsert(bindings[name] || (bindings[name] = []), {command, rank},
                    (a, b) => a.rank - b.rank)
     }
   }
   for (let name in pm.commands) {
-    let cmd = pm.commands[name]
-    add(name, cmd.spec.key)
-    add(name, browser.mac ? cmd.spec.macKey : cmd.spec.pcKey)
+    let cmd = pm.commands[name], keys = cmd.spec.keys
+    if (!keys) continue
+    if (Array.isArray(keys)) add(cmd, keys)
+    if (keys.all) add(cmd, keys.all)
+    if (keys[platform]) add(cmd, keys[platform])
   }
 
   for (let key in bindings)
-    bindings[key] = bindings[key].map(b => b.command)
+    bindings[key] = bindings[key].map(b => b.command.name)
   return new Keymap(bindings)
 }
 
@@ -289,7 +286,7 @@ generateMarkCommands(StrongMark, "strong", null, {
     width: 805, height: 1024,
     path: "M317 869q42 18 80 18 214 0 214-191 0-65-23-102-15-25-35-42t-38-26-46-14-48-6-54-1q-41 0-57 5 0 30-0 90t-0 90q0 4-0 38t-0 55 2 47 6 38zM309 442q24 4 62 4 46 0 81-7t62-25 42-51 14-81q0-40-16-70t-45-46-61-24-70-8q-28 0-74 7 0 28 2 86t2 86q0 15-0 45t-0 45q0 26 0 39zM0 950l1-53q8-2 48-9t60-15q4-6 7-15t4-19 3-18 1-21 0-19v-37q0-561-12-585-2-4-12-8t-25-6-28-4-27-2-17-1l-2-47q56-1 194-6t213-5q13 0 39 0t38 0q40 0 78 7t73 24 61 40 42 59 16 78q0 29-9 54t-22 41-36 32-41 25-48 22q88 20 146 76t58 141q0 57-20 102t-53 74-78 48-93 27-100 8q-25 0-75-1t-75-1q-60 0-175 6t-132 6z"
   },
-  key: "Mod-B"
+  keys: ["Mod-B"]
 })
 
 // :: EmMark #path=setEm #kind=command
@@ -316,7 +313,7 @@ generateMarkCommands(EmMark, "em", "emphasis", {
     width: 585, height: 1024,
     path: "M0 949l9-48q3-1 46-12t63-21q16-20 23-57 0-4 35-165t65-310 29-169v-14q-13-7-31-10t-39-4-33-3l10-58q18 1 68 3t85 4 68 1q27 0 56-1t69-4 56-3q-2 22-10 50-17 5-58 16t-62 19q-4 10-8 24t-5 22-4 26-3 24q-15 84-50 239t-44 203q-1 5-7 33t-11 51-9 47-3 32l0 10q9 2 105 17-1 25-9 56-6 0-18 0t-18 0q-16 0-49-5t-49-5q-78-1-117-1-29 0-81 5t-69 6z"
   },
-  key: "Mod-I"
+  keys: ["Mod-I"]
 })
 
 // :: CodeMark #path=setCode #kind=command
@@ -343,7 +340,7 @@ generateMarkCommands(CodeMark, "code", null, {
     width: 896, height: 1024,
     path: "M608 192l-96 96 224 224-224 224 96 96 288-320-288-320zM288 192l-288 320 288 320 96-96-224-224 224-224-96-96z"
   },
-  key: "Mod-`"
+  keys: ["Mod-`"]
 })
 
 // :: LinkMark #path=unlink #kind=command
@@ -484,8 +481,10 @@ defineCommand({
   run(pm) {
     return pm.tr.replaceSelection().apply(andScroll)
   },
-  key: ["Backspace(10)", "Delete(10)", "Mod-Backspace(10)", "Mod-Delete(10)"],
-  macKey: ["Ctrl-H(10)", "Alt-Backspace(10)", "Ctrl-D(10)", "Ctrl-Alt-Backspace(10)", "Alt-Delete(10)", "Alt-D(10)"]
+  keys: {
+    all: ["Backspace(10)", "Delete(10)", "Mod-Backspace(10)", "Mod-Delete(10)"],
+    mac: ["Ctrl-H(10)", "Alt-Backspace(10)", "Ctrl-D(10)", "Ctrl-Alt-Backspace(10)", "Alt-Delete(10)", "Alt-D(10)"]
+  }
 })
 
 function deleteBarrier(pm, cut) {
@@ -542,7 +541,7 @@ defineCommand({
     // Apply the joining algorithm
     return deleteBarrier(pm, cut)
   },
-  key: ["Backspace(30)", "Mod-Backspace(30)"]
+  keys: ["Backspace(30)", "Mod-Backspace(30)"]
 })
 
 // ;; #path=deleteCharBefore #kind=command
@@ -560,8 +559,10 @@ defineCommand({
     let from = moveBackward(pm.doc.path(head.path), head.offset, "char")
     return pm.tr.delete(new Pos(head.path, from), head).apply(andScroll)
   },
-  key: "Backspace(60)",
-  macKey: "Ctrl-H(40)"
+  keys: {
+    all: ["Backspace(60)"],
+    mac: ["Ctrl-H(40)"]
+  }
 })
 
 // ;; #path=deleteWordBefore #kind=command
@@ -579,8 +580,10 @@ defineCommand({
     let from = moveBackward(pm.doc.path(head.path), head.offset, "word")
     return pm.tr.delete(new Pos(head.path, from), head).apply(andScroll)
   },
-  key: "Mod-Backspace(40)",
-  macKey: "Alt-Backspace(40)"
+  keys: {
+    all: ["Mod-Backspace(40)"],
+    mac: ["Alt-Backspace(40)"]
+  }
 })
 
 function moveForward(parent, offset, by) {
@@ -646,7 +649,7 @@ defineCommand({
     // Apply the joining algorithm
     return deleteBarrier(pm, cut)
   },
-  key: ["Delete(30)", "Mod-Delete(30)"]
+  keys: ["Delete(30)", "Mod-Delete(30)"]
 })
 
 // ;; #path=deleteCharAfter #kind=command
@@ -664,8 +667,10 @@ defineCommand({
     let to = moveForward(pm.doc.path(head.path), head.offset, "char")
     return pm.tr.delete(head, new Pos(head.path, to)).apply(andScroll)
   },
-  key: "Delete(60)",
-  macKey: "Ctrl-D(60)"
+  keys: {
+    all: ["Delete(60)"],
+    mac: ["Ctrl-D(60)"]
+  }
 })
 
 // ;; #path=deleteWordAfter #kind=command
@@ -684,8 +689,10 @@ defineCommand({
     let to = moveForward(pm.doc.path(head.path), head.offset, "word")
     return pm.tr.delete(head, new Pos(head.path, to)).apply(andScroll)
   },
-  key: "Mod-Delete(40)",
-  macKey: ["Ctrl-Alt-Backspace(40)", "Alt-Delete(40)", "Alt-D(40)"]
+  keys: {
+    all: ["Mod-Delete(40)"],
+    mac: ["Ctrl-Alt-Backspace(40)", "Alt-Delete(40)", "Alt-D(40)"]
+  }
 })
 
 function joinPointAbove(pm) {
@@ -718,7 +725,7 @@ defineCommand({
     width: 800, height: 900,
     path: "M0 75h800v125h-800z M0 825h800v-125h-800z M250 400h100v-100h100v100h100v100h-100v100h-100v-100h-100z"
   },
-  key: "Alt-Up"
+  keys: ["Alt-Up"]
 })
 
 function joinPointBelow(pm) {
@@ -744,7 +751,7 @@ defineCommand({
     if (node) pm.setNodeSelection(point.move(-1))
   },
   select(pm) { return joinPointBelow(pm) },
-  key: "Alt-Down"
+  keys: ["Alt-Down"]
 })
 
 // ;; #path=lift #kind=command
@@ -771,7 +778,7 @@ defineCommand({
     width: 1024, height: 1024,
     path: "M219 310v329q0 7-5 12t-12 5q-8 0-13-5l-164-164q-5-5-5-13t5-13l164-164q5-5 13-5 7 0 12 5t5 12zM1024 749v109q0 7-5 12t-12 5h-987q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h987q7 0 12 5t5 12zM1024 530v109q0 7-5 12t-12 5h-621q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h621q7 0 12 5t5 12zM1024 310v109q0 7-5 12t-12 5h-621q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h621q7 0 12 5t5 12zM1024 91v109q0 7-5 12t-12 5h-987q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h987q7 0 12 5t5 12z"
   },
-  key: "Alt-Left"
+  keys: ["Alt-Left"]
 })
 
 function isAtTopOfListItem(doc, from, to, listType) {
@@ -821,7 +828,7 @@ wrapCommand(BulletList, "BulletList", "bullet list", true, {
     width: 768, height: 896,
     path: "M0 512h128v-128h-128v128zM0 256h128v-128h-128v128zM0 768h128v-128h-128v128zM256 512h512v-128h-512v128zM256 256h512v-128h-512v128zM256 768h512v-128h-512v128z"
   },
-  key: ["Alt-Right '*'", "Alt-Right '-'"]
+  keys: ["Alt-Right '*'", "Alt-Right '-'"]
 })
 
 // :: OrderedList #path=wrapOrderedList #kind=command
@@ -837,7 +844,7 @@ wrapCommand(OrderedList, "OrderedList", "ordered list", true, {
     width: 768, height: 896,
     path: "M320 512h448v-128h-448v128zM320 768h448v-128h-448v128zM320 128v128h448v-128h-448zM79 384h78v-256h-36l-85 23v50l43-2v185zM189 590c0-36-12-78-96-78-33 0-64 6-83 16l1 66c21-10 42-15 67-15s32 11 32 28c0 26-30 58-110 112v50h192v-67l-91 2c49-30 87-66 87-113l1-1z"
   },
-  key: "Alt-Right '1'"
+  keys: ["Alt-Right '1'"]
 })
 
 // :: BlockQuote #path=wrapBlockQuote #kind=command
@@ -853,7 +860,7 @@ wrapCommand(BlockQuote, "BlockQuote", "block quote", false, {
     width: 640, height: 896,
     path: "M0 448v256h256v-256h-128c0 0 0-128 128-128v-128c0 0-256 0-256 256zM640 320v-128c0 0-256 0-256 256v256h256v-256h-128c0 0 0-128 128-128z"
   },
-  key: ["Alt-Right '>'", "Alt-Right '\"'"]
+  keys: ["Alt-Right '>'", "Alt-Right '\"'"]
 })
 
 // :: HardBreak #path=insertHardBreak #kind=command
@@ -875,7 +882,7 @@ HardBreak.register("command", {
     else
       return pm.tr.replaceSelection(this.create()).apply(andScroll)
   },
-  key: ["Mod-Enter", "Shift-Enter"]
+  keys: ["Mod-Enter", "Shift-Enter"]
 })
 
 // ;; #path=newlineInCode #kind=command
@@ -896,7 +903,7 @@ defineCommand({
     else
       return false
   },
-  key: "Enter(10)"
+  keys: ["Enter(10)"]
 })
 
 // ;; #path=createParagraphNew #kind=command
@@ -915,7 +922,7 @@ defineCommand({
     pm.tr.insert(side, pm.schema.defaultTextblockType().create()).apply(andScroll)
     pm.setTextSelection(new Pos(side.toPath(), 0))
   },
-  key: "Enter(20)"
+  keys: ["Enter(20)"]
 })
 
 // ;; #path=liftEmptyBlock #kind=command
@@ -938,7 +945,7 @@ defineCommand({
     }
     return pm.tr.lift(head).apply(andScroll)
   },
-  key: "Enter(30)"
+  keys: ["Enter(30)"]
 })
 
 // ;; #path=splitBlock #kind=command
@@ -960,7 +967,7 @@ defineCommand({
       return pm.tr.delete(from, to).split(from, 1, type).apply(andScroll)
     }
   },
-  key: "Enter(60)"
+  keys: ["Enter(60)"]
 })
 
 // :: ListItem #path=splitListItem #kind=command
@@ -981,7 +988,7 @@ ListItem.register("command", {
     let nextType = to.offset == grandParent.child(toParent.offset).size ? pm.schema.defaultTextblockType() : null
     return pm.tr.delete(from, to).split(from, 2, nextType).apply(andScroll)
   },
-  key: "Enter(50)"
+  keys: ["Enter(50)"]
 })
 
 function alreadyHasBlockType(doc, from, to, type, attrs) {
@@ -1054,7 +1061,7 @@ HorizontalRule.register("command", {
   run(pm) {
     return pm.tr.replaceSelection(this.create()).apply(andScroll)
   },
-  key: "Mod-="
+  keys: ["Mod-="]
 })
 
 // ;; #path=textblockType #kind=command
@@ -1147,7 +1154,7 @@ defineCommand({
   },
   menuGroup: "block", menuRank: 90,
   icon: {text: "\u2b1a", style: "font-weight: bold; vertical-align: 20%"},
-  key: "Esc"
+  keys: ["Esc"]
 })
 
 function moveSelectionBlock(pm, dir) {
@@ -1197,7 +1204,7 @@ defineCommand({
     if (done) pm.scrollIntoView()
     return done
   },
-  key: ["Left", "Mod-Left"]
+  keys: ["Left", "Mod-Left"]
 })
 
 // ;; #path=selectNodeRight #kind=command
@@ -1213,7 +1220,7 @@ defineCommand({
     if (done) pm.scrollIntoView()
     return done
   },
-  key: ["Right", "Mod-Right"]
+  keys: ["Right", "Mod-Right"]
 })
 
 function selectNodeVertically(pm, dir) {
@@ -1263,7 +1270,7 @@ defineCommand({
     if (done !== false) pm.scrollIntoView()
     return done
   },
-  key: "Up"
+  keys: ["Up"]
 })
 
 // ;; #path=selectNodeDown #kind=command
@@ -1279,7 +1286,7 @@ defineCommand({
     if (done !== false) pm.scrollIntoView()
     return done
   },
-  key: "Down"
+  keys: ["Down"]
 })
 
 // ;; #path=undo #kind=command
@@ -1299,7 +1306,7 @@ defineCommand({
     width: 1024, height: 1024,
     path: "M761 1024c113-206 132-520-313-509v253l-384-384 384-384v248c534-13 594 472 313 775z"
   },
-  key: "Mod-Z"
+  keys: ["Mod-Z"]
 })
 
 // ;; #path=redo #kind=command
@@ -1319,5 +1326,5 @@ defineCommand({
     width: 1024, height: 1024,
     path: "M576 248v-248l384 384-384 384v-253c-446-10-427 303-313 509-280-303-221-789 313-775z"
   },
-  key: ["Mod-Y", "Shift-Mod-Z"]
+  keys: ["Mod-Y", "Shift-Mod-Z"]
 })
