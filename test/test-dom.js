@@ -1,4 +1,4 @@
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
+import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, img, hr} from "./build"
 import {Failure} from "./failure"
 import {cmpNode} from "./cmp"
 import {defTest} from "./tests"
@@ -42,6 +42,10 @@ t("simple",
 t("br",
   doc(p("hi", br, "there")),
   "<p>hi<br/>there</p>")
+
+t("img",
+  doc(p("hi", img, "there")),
+  '<p>hi<img src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="x"/>there</p>')
 
 t("join_styles",
   doc(p("one", strong("two", em("three")), em("four"), "five")),
