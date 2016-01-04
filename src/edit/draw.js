@@ -123,13 +123,15 @@ export function redraw(pm, dirty, doc, prev) {
         reuseDOM = true
       } else if (pChild && !child.isText && child.sameMarkup(pChild) && dirty.get(pChild) != DIRTY_REDRAW) {
         reuseDOM = true
-        let contentNode = domPos
-        for (;;) {
-          let first = contentNode.firstChild
-          if (!first || first.hasAttribute("pm-ignore") || first.hasAttribute("pm-offset")) break
-          contentNode = first
+        if (pChild.type.contains) {
+          let contentNode = domPos
+          for (;;) {
+            let first = contentNode.firstChild
+            if (!first || first.hasAttribute("pm-ignore") || first.hasAttribute("pm-offset")) break
+            contentNode = first
+          }
+          scan(contentNode, child, pChild)
         }
-        scan(contentNode, child, pChild)
       } else {
         let rendered = renderNodeToDOM(child, opts, offset)
         dom.insertBefore(rendered, domPos)
