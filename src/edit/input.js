@@ -199,15 +199,15 @@ handlers.mousedown = (pm, e) => {
     }
     return
   }
-  if (pm.input.shiftKey || doubleClick) return
+  let leaveToBrowser = pm.input.shiftKey || doubleClick
 
-  let x = e.clientX, y = e.clientY, moved = false
+  let x = e.clientX, y = e.clientY
   let up = () => {
     removeEventListener("mouseup", up)
     removeEventListener("mousemove", move)
     if (handleNodeClick(pm, e)) return
 
-    let pos = !moved && selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY})
+    let pos = !leaveToBrowser && selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY})
     if (pos) {
       pm.setNodeSelection(pos)
       pm.focus()
@@ -216,8 +216,8 @@ handlers.mousedown = (pm, e) => {
     }
   }
   let move = e => {
-    if (!moved && (Math.abs(x - e.clientX) > 4 || Math.abs(y - e.clientY) > 4))
-      moved = true
+    if (!leaveToBrowser && (Math.abs(x - e.clientX) > 4 || Math.abs(y - e.clientY) > 4))
+      leaveToBrowser = true
     pm.sel.pollForUpdate()
   }
   addEventListener("mouseup", up)
