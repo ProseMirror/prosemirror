@@ -1,6 +1,6 @@
 import {Tooltip} from "./tooltip"
 import {elt, insertCSS} from "../dom"
-import {defineParamHandler} from "../edit"
+import {defineParamHandler, Command} from "../edit"
 import sortedInsert from "../util/sortedinsert"
 import {getIcon} from "./icons"
 
@@ -99,7 +99,7 @@ function title(pm, command) {
 }
 
 function renderIcon(command, menu) {
-  let icon = resolveIcon(menu.pm, command)
+  let icon = getIcon(command.name, command.spec.display)
   if (command.active(menu.pm)) icon.className += " ProseMirror-icon-active"
   let dom = elt("span", {class: "ProseMirror-menuicon", title: title(menu.pm, command)}, icon)
   dom.addEventListener("mousedown", e => {
@@ -114,20 +114,6 @@ function renderIcon(command, menu) {
     }
   })
   return dom
-}
-
-function resolveIcon(pm, command) {
-  for (;;) {
-    let icon = command.spec.icon
-    if (!icon) break
-    if (icon.from) {
-      command = pm.commands[icon.from]
-      if (!command) break
-    } else {
-      return getIcon(command.name, icon)
-    }
-  }
-  return getIcon("default", {text: "✘"})
 }
 
 function renderSelect(item, menu) {
@@ -173,11 +159,14 @@ export function showSelectMenu(pm, item, dom) {
 }
 
 function renderItem(item, menu) {
-  var display = item.display || item.spec.display || "icon"
-  if (display == "icon") return renderIcon(item, menu)
-  else if (display == "select") return renderSelect(item, menu)
-  else if (!display) throw new Error("Command " + item.name + " can not be shown in a menu")
-  else return display.call(item, menu)
+  if (item instanceof Command) {
+    var display = item.spec.display
+    if (display.type == "icon") return renderIcon(item, menu)
+    else if (display.type == "param") return renderSelect(item, menu)
+    else throw new Error("Command " + item.name + " can not be shown in a menu")
+  } else {
+    return item.display(menu)
+  }
 }
 
 function paramDefault(param, pm, command) {
