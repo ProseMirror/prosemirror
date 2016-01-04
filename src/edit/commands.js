@@ -1210,7 +1210,7 @@ function currentTextblockType(pm) {
   let types = listTextblockTypes(pm)
   for (let i = 0; i < types.length; i++) {
     let tp = types[i], val = tp.value
-    if (node.hasMarkup(val.type, val.attrs)) return tp
+    if (node.hasMarkup(val.type, val.attrs)) return tp.value
   }
 }
 

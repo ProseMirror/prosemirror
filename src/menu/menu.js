@@ -118,10 +118,17 @@ function renderIcon(command, menu) {
 
 function renderSelect(item, menu) {
   let param = item.params[0]
-  let value = paramDefault(param, menu.pm, item)
+  let deflt = paramDefault(param, menu.pm, item)
+  if (deflt != null) {
+    let options = param.options.call ? param.options(menu.pm) : param.options
+    for (let i = 0; i < options.length; i++) if (options[i].value === deflt) {
+      deflt = options[i]
+      break
+    }
+  }
 
   let dom = elt("div", {class: "ProseMirror-select ProseMirror-select-command-" + item.name, title: item.label},
-                !value ? (param.defaultLabel || "Select...") : value.display ? value.display(value) : value.label)
+                !deflt ? (param.defaultLabel || "Select...") : deflt.display ? deflt.display(deflt) : deflt.label)
   dom.addEventListener("mousedown", e => {
     e.preventDefault(); e.stopPropagation()
     showSelectMenu(menu.pm, item, dom)
