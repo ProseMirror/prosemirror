@@ -188,7 +188,7 @@ function getParamHandler(pm) {
 export function deriveCommands(pm) {
   let found = Object.create(null), config = pm.options.commands
   function add(name, spec, self) {
-    if (!pm.isInNamespace(name)) return
+    if (!pm.isIncluded(name)) return
     if (found[name]) throw new Error("Duplicate definition of command " + name)
     found[name] = new Command(spec, self, name)
   }

@@ -445,7 +445,7 @@ test_("exclude_namespaced", pm => {
 
 test_("include_namespaced", pm => {
   is(pm.commands["foo:doIt"], "command present")
-}, {namespaces: ["default", "schema", "foo"]})
+}, {include: ["default", "schema", "foo"]})
 
 test_("delete_specific", pm => {
   is(!pm.commands["lift"], "command disabled")

@@ -17,13 +17,13 @@ defineOption("autoInput", false, function(pm, val) {
     pm.mod.autoInput = []
     pm.schema.registry("autoInput", (rule, type, name) => {
       let rname = "schema:" + name + ":" + rule.name, handler = rule.handler
-      if (pm.isInNamespace(rname)) {
+      if (pm.isIncluded(rname)) {
         if (handler.bind) handler = handler.bind(type)
         addInputRule(pm, new InputRule(rname, rule.match, rule.filter, handler))
         pm.mod.autoInput.push(rname)
       }
     })
-    for (let name in rules) if (pm.isInNamespace(name)) {
+    for (let name in rules) if (pm.isIncluded(name)) {
       let rule = rules[name]
       addInputRule(pm, rule)
       pm.mod.autoInput.push(rule.name)

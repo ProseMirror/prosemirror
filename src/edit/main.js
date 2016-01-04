@@ -107,13 +107,13 @@ export class ProseMirror {
 
   // :: (string) → bool
   // Test whether the given string corresponds to any of the
-  // [namespaces](#namespaces) enabled for this editor.
-  isInNamespace(name) {
-    for (let i = 0; i < this.options.namespaces.length; i++) {
-      let ns = this.options.namespaces[i]
+  // [includes](#include) enabled for this editor.
+  isIncluded(name) {
+    for (let i = 0; i < this.options.include.length; i++) {
+      let ns = this.options.include[i]
       let match = ns == "default"
           ? name.indexOf(":") == -1
-          : name.indexOf(ns) == 0 && name.charAt(ns.length) == ":"
+          : name == ns || (name.indexOf(ns) == 0 && name.charAt(ns.length) == ":")
       if (match) return true
     }
   }

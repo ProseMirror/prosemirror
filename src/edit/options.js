@@ -64,26 +64,26 @@ defineOption("historyEventDelay", 500)
 // menu.
 defineOption("commands", {}, pm => pm.updateCommands(), false)
 
-// :: [string] #path=namespaces #kind=option
-// An array of namespaces that are enabled for this editor. These are
-// used to filter [commands](#defineCommand) and [input
-// rules](#defineInputRule) so that you can define these without
-// having them show up in every editor.
+// :: [string] #path=include #kind=option
+// An array of included names or namespaces that are enabled for this
+// editor. These are used to filter [commands](#defineCommand) and
+// [input rules](#defineInputRule) so that you can define these
+// without having them show up in every editor.
 //
-// A namespaced name looks like `"space:name"` or `"space:sub:name"`.
-// Those would, for example, only show up if the namespace `"space"`
-// is chosen. Names without a colon are considered part of the
-// `"default"` namespace. Commands and input rules associated with
-// schema [nodes](#NodeType) or [marks](#MarkType) will be namespaced
-// under `"schema:"` and then the name of the element they are
-// associated with, for example `"schema:horizontal_rule:insert"`.
+// An item named `"space:name"` would only be included in the editor
+// if either the namespace `"space"` is included, or the full name
+// `"space:name"` is. Item names without a colon are considered part
+// of the `"default"` namespace. Commands and input rules associated
+// with schema [nodes](#NodeType) or [marks](#MarkType) will be
+// namespaced under `"schema:"` and then the name of the element they
+// are associated with, for example `"schema:horizontal_rule:insert"`.
 //
 // This option's default value is `["default", "schema"]`, including
 // all the ‘top level’ items and those associated with schema
 // elements, but nothing else.
 //
 // See also `ProseMirror.isInNamespace`.
-defineOption("namespaces", ["default", "schema"], pm => pm.updateCommands(), false)
+defineOption("include", ["default", "schema"], pm => pm.updateCommands(), false)
 
 // :: string #path=commandParamHandler #kind=option
 // The name of the handler used to prompt the user for [command
