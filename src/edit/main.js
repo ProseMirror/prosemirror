@@ -5,7 +5,7 @@ import {Transform} from "../transform"
 import sortedInsert from "../util/sortedinsert"
 import {Map} from "../util/map"
 import {eventMixin} from "../util/event"
-import {requestAnimationFrame, elt, browser} from "../dom"
+import {requestAnimationFrame, elt, browser, ensureCSSAdded} from "../dom"
 
 import {toText, parseFrom, serializeTo} from "../format"
 
@@ -33,6 +33,8 @@ export class ProseMirror {
   // and, if it has a [`place`](#place) option, add it to the
   // document.
   constructor(opts) {
+    ensureCSSAdded()
+
     opts = this.options = parseOptions(opts)
     // :: Schema
     // The schema for this editor's document.

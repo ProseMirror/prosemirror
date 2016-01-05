@@ -20,7 +20,7 @@ class TooltipMenu {
     this.selectedBlockMenu = config && config.selectedBlockMenu
     this.update = new MenuUpdate(pm, "change selectionChange blur commandsChanged", () => this.prepareUpdate())
 
-    this.tooltip = new Tooltip(pm, "above")
+    this.tooltip = new Tooltip(pm.wrapper, "above")
     this.menu = new Menu(pm, new TooltipDisplay(this.tooltip, () => this.update.force()))
   }
 
@@ -101,7 +101,7 @@ insertCSS(`
   padding: 0 5px;
 }
 
-.{classPrefix}-linktext a:hover {
+.${classPrefix}-linktext a:hover {
   text-decoration: underline;
 }
 

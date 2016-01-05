@@ -9,12 +9,13 @@ const prefix = "ProseMirror-tooltip"
 // little arrow-like triangle attached to the node.
 export class Tooltip {
   // :: (DOMNode, string)
-  // Create a new tooltip that lives in the wrapper node (which should
+  // Create a new tooltip that lives in the wrapper node, which should
   // be its offset anchor, i.e. it should have a `relative` or
-  // `absolute` CSS position). `dir` may be `"above"`, `"below"`,
-  // `"right"`, `"left"`, or `"center"`. In the latter case, the
-  // tooltip has no arrow and is positioned centered in its wrapper
-  // node.
+  // `absolute` CSS position. You'll often want to pass an editor's
+  // [`wrapper` node](#ProseMirror.wrapper). `dir` may be `"above"`,
+  // `"below"`, `"right"`, `"left"`, or `"center"`. In the latter
+  // case, the tooltip has no arrow and is positioned centered in its
+  // wrapper node.
   constructor(wrapper, dir) {
     this.wrapper = wrapper
     this.dir = dir || "above"

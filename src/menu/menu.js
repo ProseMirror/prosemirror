@@ -295,7 +295,7 @@ export function commandGroups(pm, ...names) {
 }
 
 function tooltipParamHandler(pm, command, callback) {
-  let tooltip = new Tooltip(pm, "center")
+  let tooltip = new Tooltip(pm.wrapper, "center")
   tooltip.open(paramForm(pm, command, params => {
     pm.focus()
     tooltip.close()

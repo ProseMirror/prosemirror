@@ -58,4 +58,4 @@ insertCSS(`
 
 .ProseMirror-icon span {
   vertical-align: text-top;
-`)
+}`)
