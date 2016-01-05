@@ -1,7 +1,8 @@
 import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmMark, StrongMark, LinkMark, CodeMark, Pos} from "../model"
-import {defineTarget} from "./index"
+
+import {defineTarget} from "./register"
 
 // ;; #toc=false Object used to to expose relevant values and methods
 // to DOM serializer functions.
@@ -124,7 +125,7 @@ class DOMSerializer {
 // with the DOM node representing the node that the attribute applies
 // to and the atttribute's value, so that it can set additional DOM
 // attributes on the DOM node.
-export function toDOM(node, options = {}) {
+export function toDOM(node, options, offset = 0) {
   return new DOMSerializer(options).renderContent(node)
 }
 
@@ -134,7 +135,7 @@ defineTarget("dom", toDOM)
 // Serialize a given node to a DOM node. This is useful when you need
 // to serialize a part of a document, as opposed to the whole
 // document.
-export function renderNodeToDOM(node, options, offset) {
+export function nodeToDOM(node, options, offset) {
   let serializer = new DOMSerializer(options)
   let dom = serializer.renderNode(node, offset)
   if (node.isInline) {

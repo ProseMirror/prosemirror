@@ -2,7 +2,7 @@ import markdownit from "markdown-it"
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmMark, StrongMark, LinkMark, CodeMark, Mark} from "../model"
-import {defineSource} from "./index"
+import {defineSource} from "../format"
 
 // :: (Schema, string) → Node
 // Parse a string as [CommonMark](http://commonmark.org/) markup, and

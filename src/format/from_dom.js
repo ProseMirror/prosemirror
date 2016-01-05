@@ -1,7 +1,7 @@
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmMark, StrongMark, LinkMark, CodeMark, Node} from "../model"
-import {defineSource} from "./index"
+import {defineSource} from "./register"
 
 // :: (Schema, DOMNode, ?Object) → Node
 // Parse document from the content of a DOM node. To pass an explicit

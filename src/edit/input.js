@@ -1,11 +1,7 @@
 import {Pos} from "../model"
 
-import {fromHTML} from "../parse/dom"
-import {fromText} from "../parse/text"
+import {knownSource, parseFrom, fromHTML, fromText, toHTML, toText} from "../format"
 import {elt} from "../dom"
-import {toHTML} from "../serialize/dom"
-import {toText} from "../serialize/text"
-import {knownSource, parseFrom} from "../parse"
 
 import {isModifierKey, keyName} from "./keys"
 import {captureKeys} from "./capturekeys"

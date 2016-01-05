@@ -1,7 +1,7 @@
 import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmMark, StrongMark, LinkMark, CodeMark} from "../model"
-import {defineTarget} from "./index"
+import {defineTarget} from "../format"
 
 // :: (Node) → string
 // Serialize the content of the given node to [CommonMark](http://commonmark.org/).

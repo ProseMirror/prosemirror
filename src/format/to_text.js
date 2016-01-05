@@ -1,5 +1,6 @@
 import {Block, Textblock, Inline, HardBreak, Text} from "../model"
-import {defineTarget} from "./index"
+
+import {defineTarget} from "./register"
 
 Block.prototype.serializeText = node => {
   let accum = ""

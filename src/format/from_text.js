@@ -1,4 +1,4 @@
-import {defineSource} from "./index"
+import {defineSource} from "./register"
 
 // FIXME is it meaningful to try and attach text-parsing information
 // to node types?

@@ -3,8 +3,7 @@ import {cmpNode, cmpStr} from "./cmp"
 import {defTest} from "./tests"
 
 import {defaultSchema as schema} from "../src/model"
-import {fromMarkdown} from "../src/parse/markdown"
-import {toMarkdown} from "../src/serialize/markdown"
+import {fromMarkdown, toMarkdown} from "../src/markdown"
 
 function t(name, text, doc) {
   defTest("parse_" + name, () => {

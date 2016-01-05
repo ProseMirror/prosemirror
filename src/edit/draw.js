@@ -1,5 +1,5 @@
 import {Pos} from "../model"
-import {toDOM, renderNodeToDOM} from "../serialize/dom"
+import {toDOM, nodeToDOM} from "../format"
 import {elt} from "../dom"
 
 import {DIRTY_REDRAW} from "./main"
@@ -133,7 +133,7 @@ export function redraw(pm, dirty, doc, prev) {
           scan(contentNode, child, pChild)
         }
       } else {
-        let rendered = renderNodeToDOM(child, opts, offset)
+        let rendered = nodeToDOM(child, opts, offset)
         dom.insertBefore(rendered, domPos)
         reuseDOM = false
       }

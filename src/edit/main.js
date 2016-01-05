@@ -7,10 +7,7 @@ import {Map} from "../util/map"
 import {eventMixin} from "../util/event"
 import {requestAnimationFrame, elt, browser} from "../dom"
 
-import {toText} from "../serialize/text"
-import "../parse/text"
-import {parseFrom} from "../parse"
-import {serializeTo} from "../serialize"
+import {toText, parseFrom, serializeTo} from "../format"
 
 import {parseOptions, initOptions, setOption} from "./options"
 import {SelectionState, TextSelection, NodeSelection,
