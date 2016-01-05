@@ -15,14 +15,10 @@ export class SchemaError extends ProseMirrorError {}
 // serializing it to various formats, information to guide
 // deserialization, and so on).
 export class NodeType {
-  constructor(name, contains, kind, attrs, schema) {
+  constructor(name, kind, attrs, schema) {
     // :: string
     // The name the node type has in this schema.
     this.name = name
-    // :: ?string
-    // The kind of nodes this node may contain. `null` means it's a
-    // leaf node.
-    this.contains = contains
     this.kind = kind
     // :: Object<Attribute>
     // The attributes allowed on this node type.
@@ -58,6 +54,11 @@ export class NodeType {
   // :: bool
   // Controls whether this node type is locked.
   get locked() { return false }
+
+  // :: ?string
+  // The kind of nodes this node may contain. `null` means it's a
+  // leaf node.
+  get contains() { return null }
 
   // :: string
   // Controls the _kind_ of the node, which is used to determine valid
@@ -172,13 +173,12 @@ export class NodeType {
       let kinds = type.kinds.split(" ")
       for (let i = 0; i < kinds.length; i++)
         schema.registerKind(kinds[i], i ? kinds[i - 1] : null)
-      let contains = "contains" in info ? info.contains : type.contains
       let attrs = type.attributes
       if (info.attributes) {
         attrs = copyObj(attrs)
         for (var aName in info.attributes) attrs[aName] = info.attributes[aName]
       }
-      result[name] = new type(name, contains, kinds[kinds.length - 1], attrs, schema)
+      result[name] = new type(name, kinds[kinds.length - 1], attrs, schema)
     }
     for (let name in result) {
       let contains = result[name].contains
@@ -218,7 +218,7 @@ NodeType.attributes = {}
 
 // ;; #toc=false Base type for block nodetypes.
 export class Block extends NodeType {
-  static get contains() { return "block" }
+  get contains() { return "block" }
   static get kinds() { return "block" }
   get isBlock() { return true }
 
@@ -235,7 +235,7 @@ export class Block extends NodeType {
 
 // ;; #toc=false Base type for textblock node types.
 export class Textblock extends Block {
-  static get contains() { return "inline" }
+  get contains() { return "inline" }
   get containsMarks() { return true }
   get isTextblock() { return true }
   get canBeEmpty() { return true }
@@ -243,7 +243,6 @@ export class Textblock extends Block {
 
 // ;; #toc=false Base type for inline node types.
 export class Inline extends NodeType {
-  static get contains() { return null }
   static get kinds() { return "inline" }
   get isInline() { return true }
 }
@@ -431,10 +430,6 @@ export class SchemaSpec {
   // constructors. Their property value should be either the type
   // constructors themselves, or objects with a type constructor under
   // their `type` property, and optionally these other properties:
-  //
-  // **`contains`**`: string`
-  //   : Only valid for `nodes`. The [kind](#NodeType.kinds) of the
-  //     nodes that this node can contain in this schema.
   //
   // **`attributes`**`: Object<Attribute>`
   //   : Extra attributes to attach to this node in this schema.

@@ -12,14 +12,14 @@ export class BlockQuote extends Block {}
 // `order`, which determines the number at which the list starts
 // counting, and defaults to 1.
 export class OrderedList extends Block {
-  static get contains() { return "list_item" }
+  get contains() { return "list_item" }
   get isList() { return true }
 }
 OrderedList.attributes = {order: new Attribute({default: "1"})}
 
 // ;; #toc=false The default bullet list node type.
 export class BulletList extends Block {
-  static get contains() { return "list_item" }
+  get contains() { return "list_item" }
   get isList() { return true }
 }
 
@@ -30,7 +30,7 @@ export class ListItem extends Block {
 
 // ;; #toc=false The default horizontal rule node type.
 export class HorizontalRule extends Block {
-  static get contains() { return null }
+  get contains() { return null }
 }
 
 // ;; #toc=false The default heading node type. Has a single attribute
@@ -41,7 +41,7 @@ Heading.attributes = {level: new Attribute({default: "1"})}
 // ;; #toc=false The default code block / listing node type. Only
 // allows unmarked text nodes inside of it.
 export class CodeBlock extends Textblock {
-  static get contains() { return "text" }
+  get contains() { return "text" }
   get containsMarks() { return false }
   get isCode() { return true }
 }
