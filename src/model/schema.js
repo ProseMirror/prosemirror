@@ -8,6 +8,55 @@ import {ProseMirrorError} from "../util/error"
 // errors.
 export class SchemaError extends ProseMirrorError {}
 
+function attrMixin(Class) {
+  Class.prototype.attrs = Object.create(null)
+
+  Class.updateAttrs = function(attrs) {
+    let result = Object.create(null)
+    for (let name in this.prototype.attrs) if (!attrs.hasOwnProperty(name)) result[name] = this.prototype.attrs[name]
+    for (let name in attrs) if (attrs[name]) result[name] = attrs[name]
+    this.prototype.attrs = result
+  }
+
+  // For node types where all attrs have a default value (or which don't
+  // have any attributes), build up a single reusable default attribute
+  // object, and use it for all nodes that don't specify specific
+  // attributes.
+  Class.prototype.getDefaultAttrs = function() {
+    let defaults = Object.create(null)
+    for (let attrName in this.attrs) {
+      let attr = this.attrs[attrName]
+      if (attr.default == null) return null
+      defaults[attrName] = attr.default
+    }
+    return defaults
+  }
+
+  Class.prototype.computeAttrs = function(attrs, arg) {
+    let built = Object.create(null)
+    for (let name in this.attrs) {
+      let value = attrs && attrs[name]
+      if (value == null) {
+        let attr = this.attrs[name]
+        if (attr.default != null)
+          value = attr.default
+        else if (attr.compute)
+          value = attr.compute(this, arg)
+        else
+          SchemaError.raise("No value supplied for attribute " + name)
+      }
+      built[name] = value
+    }
+    return built
+  }
+
+  Class.prototype.freezeAttrs = function() {
+    let frozen = Object.create(null)
+    for (let name in this.attrs) frozen[name] = this.attrs[name]
+    Object.defineProperty(this, "attrs", {value: frozen})
+  }
+}
+
 // ;; Node types are objects allocated once per `Schema`
 // and used to tag `Node` instances with a type. They are
 // instances of sub-types of this class, and contain information about
@@ -15,18 +64,22 @@ export class SchemaError extends ProseMirrorError {}
 // serializing it to various formats, information to guide
 // deserialization, and so on).
 export class NodeType {
-  constructor(name, kind, attrs, schema) {
+  constructor(name, kind, schema) {
     // :: string
     // The name the node type has in this schema.
     this.name = name
     this.kind = kind
-    // :: Object<Attribute>
-    // The attributes allowed on this node type.
-    this.attrs = attrs
+
+    // Freeze the attributes, to avoid calling a potentially expensive
+    // getter all the time.
+
+    // :: Object<Attribute> #path=NodeType.attrs
+    // The set of attributes to associate with each node of this type.
+    this.freezeAttrs()
+    this.defaultAttrs = this.getDefaultAttrs()
     // :: Schema
     // A link back to the `Schema` the node type belongs to.
     this.schema = schema
-    this.defaultAttrs = getDefaultAttrs(attrs)
   }
 
   // :: bool
@@ -141,7 +194,7 @@ export class NodeType {
 
   buildAttrs(attrs, content) {
     if (!attrs && this.defaultAttrs) return this.defaultAttrs
-    else return buildAttrs(this.attrs, attrs, this, content)
+    else return this.computeAttrs(attrs, content)
   }
 
   // :: (?Object, ?Fragment, ?[Mark]) → Node
@@ -173,12 +226,7 @@ export class NodeType {
       let kinds = type.kinds.split(" ")
       for (let i = 0; i < kinds.length; i++)
         schema.registerKind(kinds[i], i ? kinds[i - 1] : null)
-      let attrs = type.attributes
-      if (info.attributes) {
-        attrs = copyObj(attrs)
-        for (var aName in info.attributes) attrs[aName] = info.attributes[aName]
-      }
-      result[name] = new type(name, kinds[kinds.length - 1], attrs, schema)
+      result[name] = new type(name, kinds[kinds.length - 1], schema)
     }
     for (let name in result) {
       let contains = result[name].contains
@@ -210,11 +258,7 @@ export class NodeType {
   get containsMarks() { return false }
 }
 
-// :: Object<Attribute>
-// The default set of attributes to associate with a given type. Note
-// that schemas may add additional attributes to instances of the
-// type.
-NodeType.attributes = {}
+attrMixin(NodeType)
 
 // ;; #toc=false Base type for block nodetypes.
 export class Block extends NodeType {
@@ -300,18 +344,18 @@ export class Attribute {
 // things like emphasis or being part of a link) are tagged with type
 // objects, which are instantiated once per `Schema`.
 export class MarkType {
-  constructor(name, attrs, rank, schema) {
+  constructor(name, rank, schema) {
     // :: string
     // The name of the mark type.
     this.name = name
-    // :: Object<Attribute>
+    // :: Object<Attribute> #path = MarkType.attrs
     // The attributes supported by this type of mark.
-    this.attrs = attrs
+    this.freezeAttrs()
     this.rank = rank
     // :: Schema
     // The schema that this mark type instance is part of.
     this.schema = schema
-    let defaults = getDefaultAttrs(this.attrs)
+    let defaults = this.getDefaultAttrs()
     this.instance = defaults && new Mark(this, defaults)
   }
 
@@ -328,7 +372,7 @@ export class MarkType {
   // they have defaults, will be added.
   create(attrs) {
     if (!attrs && this.instance) return this.instance
-    return new Mark(this, buildAttrs(this.attrs, attrs, this))
+    return new Mark(this, this.computeAttrs(attrs))
   }
 
   static getOrder(marks) {
@@ -345,8 +389,7 @@ export class MarkType {
     let result = Object.create(null)
     for (let name in marks) {
       let info = marks[name]
-      let attrs = info.attributes || info.type.attributes
-      result[name] = new info.type(name, attrs, order[name], schema)
+      result[name] = new info.type(name, order[name], schema)
     }
     return result
   }
@@ -369,10 +412,7 @@ export class MarkType {
   }
 }
 
-// :: Object<Attribute>
-// The default set of attributes to associate with a mark type. By
-// default, this returns an empty object.
-MarkType.attributes = {}
+attrMixin(MarkType)
 
 // :: (string, *)
 // Register a metadata element for this mark type. See also
@@ -417,12 +457,6 @@ function overlayObj(obj, overlay) {
 // A specification consists of an object that maps node names to node
 // type constructors and another similar object mapping mark names to
 // mark type constructors.
-//
-// For flexibility and reusability, node and mark type classes do not
-// declare their own name. Instead, each schema that includes them can
-// assign a name to them, as well as override their
-// [kind](#NodeType.kinds) and [contained kind](#NodeType.contains), or
-// adding extra [attributes](#NodeType.attributes).
 export class SchemaSpec {
   // :: (?Object<{type: NodeType}>, ?Object<{type: MarkType}>)
   // Create a schema specification from scratch. The arguments map
@@ -430,9 +464,6 @@ export class SchemaSpec {
   // constructors. Their property value should be either the type
   // constructors themselves, or objects with a type constructor under
   // their `type` property, and optionally these other properties:
-  //
-  // **`attributes`**`: Object<Attribute>`
-  //   : Extra attributes to attach to this node in this schema.
   constructor(nodes, marks) {
     this.nodes = nodes ? copyObj(nodes, ensureWrapped) : Object.create(null)
     this.marks = marks ? copyObj(marks, ensureWrapped) : Object.create(null)
@@ -455,61 +486,6 @@ export class SchemaSpec {
     return new SchemaSpec(nodes ? overlayObj(this.nodes, nodes) : this.nodes,
                           marks ? overlayObj(this.marks, marks) : this.marks)
   }
-
-  // :: (?union<string, (name: string, type: NodeType) → bool>, string, Attribute) → SchemaSpec
-  // Create a new schema spec with attributes added to selected node
-  // types. `filter` can be `null`, to add the attribute to all node
-  // types, a string, to add it only to the named node type, or a
-  // predicate function, to add it to node types that pass the
-  // predicate.
-  //
-  // This attribute will be added alongside the node type's [default
-  // attributes](#NodeType.attributes).
-  addAttribute(filter, attrName, attr) {
-    let copy = copyObj(this.nodes)
-    for (let name in copy) {
-      if (typeof filter == "string" ? filter == name :
-          typeof filter == "function" ? filter(name, copy[name]) :
-          filter ? filter == copy[name] : true) {
-        let info = copy[name] = copyObj(copy[name])
-        ;(info.attributes || (info.attributes = Object.create(null)))[attrName] = attr
-      }
-    }
-    return new SchemaSpec(copy, this.marks)
-  }
-}
-
-// For node types where all attrs have a default value (or which don't
-// have any attributes), build up a single reusable default attribute
-// object, and use it for all nodes that don't specify specific
-// attributes.
-
-function getDefaultAttrs(attrs) {
-  let defaults = Object.create(null)
-  for (let attrName in attrs) {
-    let attr = attrs[attrName]
-    if (attr.default == null) return null
-    defaults[attrName] = attr.default
-  }
-  return defaults
-}
-
-function buildAttrs(attrSpec, attrs, arg1, arg2) {
-  let built = Object.create(null)
-  for (let name in attrSpec) {
-    let value = attrs && attrs[name]
-    if (value == null) {
-      let attr = attrSpec[name]
-      if (attr.default != null)
-        value = attr.default
-      else if (attr.compute)
-        value = attr.compute(arg1, arg2)
-      else
-        SchemaError.raise("No value supplied for attribute " + name)
-    }
-    built[name] = value
-  }
-  return built
 }
 
 // ;; Each document is based on a single schema, which provides the
