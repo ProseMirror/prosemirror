@@ -32,10 +32,6 @@ class DOMSerializer {
 
   renderNode(node, offset) {
     let dom = node.type.serializeDOM(node, this)
-    for (let attr in node.type.attrs) {
-      let desc = node.type.attrs[attr]
-      if (desc.serializeDOM) desc.serializeDOM(dom, node.attrs[attr], this, node)
-    }
     if (this.options.onRender)
       dom = this.options.onRender(node, dom, offset) || dom
     return dom
@@ -90,12 +86,7 @@ class DOMSerializer {
   }
 
   renderMark(mark) {
-    let dom = mark.type.serializeDOM(mark, this)
-    for (let attr in mark.type.attrs) {
-      let desc = mark.type.attrs[attr]
-      if (desc.serializeDOM) desc.serializeDOM(dom, mark.attrs[attr], this)
-    }
-    return dom
+    return mark.type.serializeDOM(mark, this)
   }
 
   wrapInlineFlat(dom, marks) {

@@ -96,20 +96,6 @@ class DOMParseState {
     return this.stack[this.stack.length - 1]
   }
 
-  parseAttrs(dom, type, attrs) {
-    for (let attr in type.attrs) {
-      let desc = type.attrs[attr]
-      if (desc.parseDOM && (!attrs || !Object.prototype.hasOwnProperty.call(attrs, attr))) {
-        let value = desc.parseDOM(dom, this.options, desc, type)
-        if (value != null) {
-          if (!attrs) attrs = {}
-          attrs[attr] = value
-        }
-      }
-    }
-    return attrs
-  }
-
   addDOM(dom) {
     if (dom.nodeType == 3) {
       // FIXME define a coherent strategy for dealing with trailing, leading, and multiple spaces (this isn't one)
@@ -121,7 +107,7 @@ class DOMParseState {
             last.type.name == "text" && /\s$/.test(last.text))
           value = value.slice(1)
         if (value)
-          this.insert(this.schema.text(value, this.marks))
+          this.insertNode(this.schema.text(value, this.marks))
       }
     } else if (dom.nodeType != 1 || dom.hasAttribute("pm-ignore")) {
       // Ignore non-text non-element nodes
@@ -161,7 +147,7 @@ class DOMParseState {
     this.closing = false
   }
 
-  insert(node) {
+  insertNode(node) {
     if (this.top.type.canContain(node)) {
       this.doClose()
     } else {
@@ -186,8 +172,8 @@ class DOMParseState {
   // :: (DOMNode, NodeType, ?Object, [Node]) → Node
   // Insert a node of the given type, with the given content, based on
   // `dom`, at the current position in the document.
-  insertFrom(dom, type, attrs, content) {
-    return this.insert(type.createAutoFill(this.parseAttrs(dom, type, attrs), content, this.marks))
+  insert(type, attrs, content) {
+    return this.insertNode(type.createAutoFill(attrs, content, this.marks))
   }
 
   enter(type, attrs) {
@@ -195,14 +181,10 @@ class DOMParseState {
     this.stack.push({type, attrs, content: []})
   }
 
-  enterFrom(dom, type, attrs) {
-    this.enter(type, this.parseAttrs(dom, type, attrs))
-  }
-
   leave() {
     let top = this.stack.pop()
     let node = top.type.createAutoFill(top.attrs, top.content)
-    if (this.stack.length) this.insert(node)
+    if (this.stack.length) this.insertNode(node)
     return node
   }
 
@@ -225,7 +207,7 @@ class DOMParseState {
   // Parse the contents of `dom` as children of a node of the given
   // type.
   wrapIn(dom, type, attrs) {
-    this.enterFrom(dom, type, attrs)
+    this.enter(type, attrs)
     this.addAll(dom.firstChild, null, true)
     this.leave()
   }
@@ -286,7 +268,7 @@ CodeBlock.register("parseDOM", {tag: "pre", parse: function(dom, state) {
     params = null
   }
   let text = dom.textContent
-  state.insertFrom(dom, this, {params}, text ? [state.schema.text(text)] : [])
+  state.insert(this, {params}, text ? [state.schema.text(text)] : [])
 }})
 
 BulletList.register("parseDOM", {tag: "ul", parse: "block"})
@@ -298,12 +280,12 @@ OrderedList.register("parseDOM", {tag: "ol", parse: function(dom, state) {
 
 ListItem.register("parseDOM", {tag: "li", parse: "block"})
 
-HardBreak.register("parseDOM", {tag: "br", parse: function(dom, state) {
-  state.insertFrom(dom, this)
+HardBreak.register("parseDOM", {tag: "br", parse: function(_, state) {
+  state.insert(this)
 }})
 
 Image.register("parseDOM", {tag: "img", parse: function(dom, state) {
-  state.insertFrom(dom, this, {
+  state.insert(this, {
     src: dom.getAttribute("src"),
     title: dom.getAttribute("title") || null,
     alt: dom.getAttribute("alt") || null

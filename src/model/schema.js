@@ -330,14 +330,6 @@ export class Attribute {
   constructor(options = {}) {
     this.default = options.default
     this.compute = options.compute
-    this.registry = Object.create(null)
-  }
-
-  // :: (string, *)
-  // Register a value in this attribute's registry. See
-  // `SchemaItem.register` and `Schema.registry`.
-  register(name, value) {
-    ;(this.registry[name] || (this.registry[name] = [])).push(value)
   }
 }
 
@@ -591,13 +583,12 @@ export class Schema {
     }
   }
 
-  // :: (string, (value: *, source: union<NodeType, MarkType, Attribute>, name: string))
+  // :: (string, (value: *, source: union<NodeType, MarkType>, name: string))
   // Retrieve all registered items under the given name from this
   // schema. The given function will be called with each item, the
-  // element—node type, mark type, or attribute—that it was associated
-  // with, and that element's name in the schema.
+  // element—node type or mark type—that it was associated with, and
+  // that element's name in the schema.
   registry(name, f) {
-    let attrsSeen = []
     for (let i = 0; i < 2; i++) {
       let obj = i ? this.marks : this.nodes
       for (let tname in obj) {
@@ -605,13 +596,6 @@ export class Schema {
         if (type.constructor.prototype.hasOwnProperty("registry")) {
           let reg = type.registry[name]
           if (reg) for (let j = 0; j < reg.length; j++) f(reg[j], type, tname)
-        }
-        for (var aname in type.attrs) {
-          let attr = type.attrs[aname], reg = attr.registry[name]
-          if (reg && attrsSeen.indexOf(attr) == -1) {
-            attrsSeen.push(attr)
-            for (let j = 0; j < reg.length; j++) f(reg[j], attr, aname)
-          }
         }
       }
     }
