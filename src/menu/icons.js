@@ -16,8 +16,8 @@ export function getIcon(name, data) {
     let use = svg.appendChild(document.createElementNS(SVG, "use"))
     use.setAttributeNS(XLINK, "href", "#pm-icon-" + name)
   } else {
-    node.textContent = data.text
-    if (data.css) node.style.cssText = data.css
+    node.appendChild(document.createElement("span")).textContent = data.text
+    if (data.css) node.firstChild.style.cssText = data.css
   }
   return node
 }
@@ -41,7 +41,7 @@ insertCSS(`
 .ProseMirror-icon {
   display: inline-block;
   line-height: .8;
-  vertical-align: middle;
+  vertical-align: -2px; /* Compensate for padding */
   padding: 2px 8px;
   cursor: pointer;
 }
@@ -55,4 +55,7 @@ insertCSS(`
   fill: currentColor;
   height: 1em;
 }
+
+.ProseMirror-icon span {
+  vertical-align: text-top;
 `)

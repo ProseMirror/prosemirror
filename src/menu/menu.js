@@ -341,7 +341,6 @@ insertCSS(`
   content: "︙";
   opacity: 0.5;
   padding: 0 4px;
-  vertical-align: baseline;
 }
 
 .ProseMirror-select, .ProseMirror-select-menu {
@@ -353,7 +352,7 @@ insertCSS(`
 .ProseMirror-select {
   padding: 1px 12px 1px 4px;
   display: inline-block;
-  vertical-align: middle;
+  vertical-align: 1px;
   position: relative;
   cursor: pointer;
   margin: 0 8px;
