@@ -1,6 +1,6 @@
 import {defineOption} from "../edit"
 import {elt, insertCSS} from "../dom"
-import {MenuUpdate} from "./update"
+import {UpdateScheduler} from "../ui/update"
 
 import {Menu, commandGroups} from "./menu"
 
@@ -55,7 +55,7 @@ class MenuBar {
                        this.menuElt)
     pm.wrapper.insertBefore(this.wrapper, pm.wrapper.firstChild)
 
-    this.update = new MenuUpdate(pm, "selectionChange change activeMarkChange commandsChanged", () => this.prepareUpdate())
+    this.update = new UpdateScheduler(pm, "selectionChange change activeMarkChange commandsChanged", () => this.prepareUpdate())
     this.menu = new Menu(pm, new BarDisplay(this.menuElt, () => this.resetMenu()))
 
     this.update.force()

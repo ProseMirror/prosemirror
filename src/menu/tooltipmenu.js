@@ -2,8 +2,8 @@ import {Pos} from "../model"
 import {defineOption} from "../edit"
 import {elt, insertCSS} from "../dom"
 import {Tooltip} from "../ui/tooltip"
+import {UpdateScheduler} from "../ui/update"
 
-import {MenuUpdate} from "./update"
 import {Menu, TooltipDisplay, commandGroups} from "./menu"
 
 const classPrefix = "ProseMirror-tooltipmenu"
@@ -18,7 +18,7 @@ class TooltipMenu {
     this.pm = pm
     this.showLinks = config ? config.showLinks !== false : true
     this.selectedBlockMenu = config && config.selectedBlockMenu
-    this.update = new MenuUpdate(pm, "change selectionChange blur commandsChanged", () => this.prepareUpdate())
+    this.update = new UpdateScheduler(pm, "change selectionChange blur commandsChanged", () => this.prepareUpdate())
 
     this.tooltip = new Tooltip(pm.wrapper, "above")
     this.menu = new Menu(pm, new TooltipDisplay(this.tooltip, () => this.update.force()))
