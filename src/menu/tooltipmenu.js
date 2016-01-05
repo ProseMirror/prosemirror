@@ -1,9 +1,9 @@
 import {Pos} from "../model"
 import {defineOption} from "../edit"
 import {elt, insertCSS} from "../dom"
-import {MenuUpdate} from "./update"
+import {Tooltip} from "../ui/tooltip"
 
-import {Tooltip} from "./tooltip"
+import {MenuUpdate} from "./update"
 import {Menu, TooltipDisplay, commandGroups} from "./menu"
 
 const classPrefix = "ProseMirror-tooltipmenu"
@@ -95,13 +95,13 @@ function topOfNodeSelection(pm) {
 
 insertCSS(`
 
-.ProseMirror-tooltipmenu-linktext a {
+.${classPrefix}-linktext a {
   color: white;
   text-decoration: none;
   padding: 0 5px;
 }
 
-.ProseMirror-tooltipmenu-linktext a:hover {
+.{classPrefix}-linktext a:hover {
   text-decoration: underline;
 }
 

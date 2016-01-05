@@ -125,7 +125,7 @@ class DOMSerializer {
 // with the DOM node representing the node that the attribute applies
 // to and the atttribute's value, so that it can set additional DOM
 // attributes on the DOM node.
-export function toDOM(node, options, offset = 0) {
+export function toDOM(node, options) {
   return new DOMSerializer(options).renderContent(node)
 }
 

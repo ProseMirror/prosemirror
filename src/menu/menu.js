@@ -1,7 +1,8 @@
-import {Tooltip} from "./tooltip"
+import {Tooltip} from "../ui/tooltip"
 import {elt, insertCSS} from "../dom"
 import {defineParamHandler, Command} from "../edit"
 import sortedInsert from "../util/sortedinsert"
+
 import {getIcon} from "./icons"
 
 export class Menu {

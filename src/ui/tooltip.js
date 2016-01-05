@@ -2,13 +2,25 @@ import {elt, insertCSS} from "../dom"
 
 const prefix = "ProseMirror-tooltip"
 
+// ;; Used to show tooltips. An instance of this class is a persistent
+// DOM node (to allow position and opacity animation) that can be
+// shown and hidden. It is positioned relative to a position (passed
+// when showing the tooltip), and points at that position with a
+// little arrow-like triangle attached to the node.
 export class Tooltip {
-  constructor(pm, dir) {
-    this.pm = pm
+  // :: (DOMNode, string)
+  // Create a new tooltip that lives in the wrapper node (which should
+  // be its offset anchor, i.e. it should have a `relative` or
+  // `absolute` CSS position). `dir` may be `"above"`, `"below"`,
+  // `"right"`, `"left"`, or `"center"`. In the latter case, the
+  // tooltip has no arrow and is positioned centered in its wrapper
+  // node.
+  constructor(wrapper, dir) {
+    this.wrapper = wrapper
     this.dir = dir || "above"
-    this.pointer = pm.wrapper.appendChild(elt("div", {class: prefix + "-pointer-" + this.dir + " " + prefix + "-pointer"}))
+    this.pointer = wrapper.appendChild(elt("div", {class: prefix + "-pointer-" + this.dir + " " + prefix + "-pointer"}))
     this.pointerWidth = this.pointerHeight = null
-    this.dom = pm.wrapper.appendChild(elt("div", {class: prefix}))
+    this.dom = wrapper.appendChild(elt("div", {class: prefix}))
     this.dom.addEventListener("transitionend", () => {
       if (this.dom.style.opacity == "0")
         this.dom.style.display = this.pointer.style.display = ""
@@ -18,13 +30,15 @@ export class Tooltip {
     this.lastLeft = this.lastRight = null
   }
 
+  // :: ()
+  // Remove the tooltip from the DOM.
   detach() {
     this.dom.parentNode.removeChild(this.dom)
     this.pointer.parentNode.removeChild(this.pointer)
   }
 
   getSize(node) {
-    let wrap = this.pm.wrapper.appendChild(elt("div", {
+    let wrap = this.wrapper.appendChild(elt("div", {
       class: prefix,
       style: "display: block; position: absolute"
     }, node))
@@ -33,13 +47,19 @@ export class Tooltip {
     return size
   }
 
+  // :: (DOMNode, ?{left: number, top: number})
+  // Make the tooltip visible, show the given node in it, and position
+  // it relative to the given position. If `pos` is not given, the
+  // tooltip stays in its previous place. Unless the tooltip's
+  // direction is `"center"`, `pos` should definitely be given the
+  // first time it is shown.
   open(node, pos) {
     let left = this.lastLeft = pos ? pos.left : this.lastLeft
     let top = this.lastTop = pos ? pos.top : this.lastTop
 
     let size = this.getSize(node)
 
-    let around = this.pm.wrapper.getBoundingClientRect()
+    let around = this.wrapper.getBoundingClientRect()
 
     for (let child = this.dom.firstChild, next; child; child = next) {
       next = child.nextSibling
@@ -96,6 +116,8 @@ export class Tooltip {
     this.isOpen = true
   }
 
+  // :: ()
+  // Close (hide) the tooltip.
   close() {
     if (this.isOpen) {
       this.isOpen = false
@@ -106,7 +128,7 @@ export class Tooltip {
 
 insertCSS(`
 
-.ProseMirror-tooltip {
+.${prefix} {
   position: absolute;
   display: none;
   box-sizing: border-box;
@@ -128,7 +150,7 @@ insertCSS(`
   z-index: 11;
 }
 
-.ProseMirror-tooltip-pointer {
+.${prefix}-pointer {
   content: "";
   position: absolute;
   display: none;
@@ -142,39 +164,39 @@ insertCSS(`
   z-index: 12;
 }
 
-.ProseMirror-tooltip-pointer-above {
+.${prefix}-pointer-above {
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
   border-top: 6px solid #444;
 }
 
-.ProseMirror-tooltip-pointer-below {
+.${prefix}-pointer-below {
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
   border-bottom: 6px solid #444;
 }
 
-.ProseMirror-tooltip-pointer-right {
+.${prefix}-pointer-right {
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
   border-right: 6px solid #444;
 }
 
-.ProseMirror-tooltip-pointer-left {
+.${prefix}-pointer-left {
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
   border-left: 6px solid #444;
 }
 
-.ProseMirror-tooltip input[type="text"],
-.ProseMirror-tooltip textarea {
+.${prefix} input[type="text"],
+.${prefix} textarea {
   background: #666;
   color: white;
   border: none;
   outline: none;
 }
 
-.ProseMirror-tooltip input[type="text"] {
+.${prefix} input[type="text"] {
   padding: 0 4px;
 }
 
