@@ -8,10 +8,17 @@ import {ProseMirrorError} from "../util/error"
 // errors.
 export class SchemaError extends ProseMirrorError {}
 
-function attrMixin(Class) {
-  Class.prototype.attrs = Object.create(null)
+class SchemaItem {
+  // :: Object<Attribute>
+  // The set of attributes to associate with each node or mark of this
+  // type.
+  get attrs() { return {} }
 
-  Class.updateAttrs = function(attrs) {
+  // :: (Object<?Attribute>)
+  // Add or remove attributes from this type. Expects an object
+  // mapping names to either attributes (to add) or null (to remove
+  // the attribute by that name).
+  static updateAttrs(attrs) {
     let result = Object.create(null)
     for (let name in this.prototype.attrs) if (!attrs.hasOwnProperty(name)) result[name] = this.prototype.attrs[name]
     for (let name in attrs) if (attrs[name]) result[name] = attrs[name]
@@ -22,7 +29,7 @@ function attrMixin(Class) {
   // have any attributes), build up a single reusable default attribute
   // object, and use it for all nodes that don't specify specific
   // attributes.
-  Class.prototype.getDefaultAttrs = function() {
+  getDefaultAttrs() {
     let defaults = Object.create(null)
     for (let attrName in this.attrs) {
       let attr = this.attrs[attrName]
@@ -32,7 +39,7 @@ function attrMixin(Class) {
     return defaults
   }
 
-  Class.prototype.computeAttrs = function(attrs, arg) {
+  computeAttrs(attrs, arg) {
     let built = Object.create(null)
     for (let name in this.attrs) {
       let value = attrs && attrs[name]
@@ -50,10 +57,22 @@ function attrMixin(Class) {
     return built
   }
 
-  Class.prototype.freezeAttrs = function() {
+  freezeAttrs() {
     let frozen = Object.create(null)
     for (let name in this.attrs) frozen[name] = this.attrs[name]
     Object.defineProperty(this, "attrs", {value: frozen})
+  }
+
+  // :: (string, *)
+  // Register an element in this type's registry. That is, add `value`
+  // to the array associated with `name` in the registry stored in
+  // type's `prototype`. This is mostly used to attach things like
+  // commands and parsing strategies to node types. See `Schema.registry`.
+  static register(name, value) {
+    let registry = this.prototype.hasOwnProperty("registry")
+        ? this.prototype.registry
+        : this.prototype.registry = Object.create(null)
+    ;(registry[name] || (registry[name] = [])).push(value)
   }
 }
 
@@ -63,18 +82,15 @@ function attrMixin(Class) {
 // the node type (its name, its allowed attributes, methods for
 // serializing it to various formats, information to guide
 // deserialization, and so on).
-export class NodeType {
+export class NodeType extends SchemaItem {
   constructor(name, kind, schema) {
+    super()
     // :: string
     // The name the node type has in this schema.
     this.name = name
     this.kind = kind
-
     // Freeze the attributes, to avoid calling a potentially expensive
     // getter all the time.
-
-    // :: Object<Attribute> #path=NodeType.attrs
-    // The set of attributes to associate with each node of this type.
     this.freezeAttrs()
     this.defaultAttrs = this.getDefaultAttrs()
     // :: Schema
@@ -192,9 +208,9 @@ export class NodeType {
     }
   }
 
-  buildAttrs(attrs, content) {
+  computeAttrs(attrs, content) {
     if (!attrs && this.defaultAttrs) return this.defaultAttrs
-    else return this.computeAttrs(attrs, content)
+    else return super.computeAttrs(attrs, content)
   }
 
   // :: (?Object, ?Fragment, ?[Mark]) → Node
@@ -205,7 +221,7 @@ export class NodeType {
   // `null`. Similarly `marks` may be `null` to default to the empty
   // set of marks.
   create(attrs, content, marks) {
-    return new Node(this, this.buildAttrs(attrs, content), Fragment.from(content), Mark.setFrom(marks))
+    return new Node(this, this.computeAttrs(attrs, content), Fragment.from(content), Mark.setFrom(marks))
   }
 
   createAutoFill(attrs, content, marks) {
@@ -239,26 +255,12 @@ export class NodeType {
     return result
   }
 
-  // :: (string, *)
-  // Register an element in this type's registry. That is, add `value`
-  // to the array associated with `name` in the registry stored in
-  // type's `prototype`. This is mostly used to attach things like
-  // commands and parsing strategies to node types. See `Schema.registry`.
-  static register(name, value) {
-    let registry = this.prototype.hasOwnProperty("registry")
-        ? this.prototype.registry
-        : this.prototype.registry = Object.create(null)
-    ;(registry[name] || (registry[name] = [])).push(value)
-  }
-
   // :: union<bool, [string]>
   // The mark types that child nodes of this node may have. `false`
   // means no marks, `true` means any mark, and an array of strings
   // can be used to explicitly list the allowed mark types.
   get containsMarks() { return false }
 }
-
-attrMixin(NodeType)
 
 // ;; #toc=false Base type for block nodetypes.
 export class Block extends NodeType {
@@ -298,7 +300,7 @@ export class Text extends Inline {
   static get kinds() { return super.kinds + " text" }
 
   create(attrs, content, marks) {
-    return new TextNode(this, this.buildAttrs(attrs, content), content, marks)
+    return new TextNode(this, this.computeAttrs(attrs, content), content, marks)
   }
 }
 
@@ -343,13 +345,12 @@ export class Attribute {
 // ;; Like nodes, marks (which are associated with nodes to signify
 // things like emphasis or being part of a link) are tagged with type
 // objects, which are instantiated once per `Schema`.
-export class MarkType {
+export class MarkType extends SchemaItem {
   constructor(name, rank, schema) {
+    super()
     // :: string
     // The name of the mark type.
     this.name = name
-    // :: Object<Attribute> #path = MarkType.attrs
-    // The attributes supported by this type of mark.
     this.freezeAttrs()
     this.rank = rank
     // :: Schema
@@ -411,13 +412,6 @@ export class MarkType {
       if (set[i].type == this) return set[i]
   }
 }
-
-attrMixin(MarkType)
-
-// :: (string, *)
-// Register a metadata element for this mark type. See also
-// `NodeType.register`.
-MarkType.register = NodeType.register
 
 // Schema specifications are data structures that specify a schema --
 // a set of node types, their names, attributes, and nesting behavior.
