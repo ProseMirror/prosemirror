@@ -22,7 +22,7 @@ export function fromDOM(schema, dom, options) {
 // ;; #path=DOMParseSpec #kind=interface #toc=false
 // To define the way [node](#NodeType) and [mark](#MarkType) types are
 // parsed, you can associate one or more DOM parsing specifications to
-// them using the [`register`](#NodeType.register) method with the
+// them using the [`register`](#SchemaItem.register) method with the
 // `parseDOM` property name. Each of them defines a parsing strategy
 // for a certain type of DOM node.
 //

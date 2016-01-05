@@ -29,7 +29,7 @@ export function defineCommand(spec) {
 // commands defined with `defineCommand`, and from
 // [specs](#CommandSpec) associated with node and mark types in the
 // editor's [schema](#Schema.registry). Use the
-// [`register`](#NodeType.register) method with `"command"` as the
+// [`register`](#SchemaItem.register) method with `"command"` as the
 // name and a `CommandSpec` as value to associate a command with a
 // node or mark.
 //
@@ -120,7 +120,7 @@ const empty = []
 // :: (pm: ProseMirror, ...params: [any]) → ?bool #path=CommandSpec.run
 // The function that executes the command. If the command has
 // [parameters](#CommandSpec.params), their values are passed as
-// arguments. For commands [registered](#NodeType.register) on node or
+// arguments. For commands [registered](#SchemaItem.register) on node or
 // mark types, `this` will be bound to the node or mark type when this
 // function is ran. Should return `false` when the command could not
 // be executed.

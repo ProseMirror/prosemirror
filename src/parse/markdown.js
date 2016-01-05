@@ -20,7 +20,7 @@ export function fromMarkdown(schema, text) {
 // ;; #kind=interface #path=MarkdownParseSpec #toc=false
 // Schema-specific parsing logic can be defined by adding a
 // `parseMarkdown` property to the prototype of your node or mark
-// types, preferably using the type's [`register`](#NodeType.register)
+// types, preferably using the type's [`register`](#SchemaItem.register)
 // method, that contains an array of objects following this parsing
 // specification interface.
 

@@ -8,6 +8,11 @@ import {ProseMirrorError} from "../util/error"
 // errors.
 export class SchemaError extends ProseMirrorError {}
 
+// ;; #toc=false The [node](#NodeType) and [mark](#MarkType) types
+// that make up a schema have several things in common—they support
+// attributes, and you can [register](#SchemaItem.register) values
+// with them. This class implements this functionality, and acts as a
+// superclass to those `NodeType` and `MarkType`.
 class SchemaItem {
   // :: Object<Attribute>
   // The set of attributes to associate with each node or mark of this
@@ -19,10 +24,7 @@ class SchemaItem {
   // mapping names to either attributes (to add) or null (to remove
   // the attribute by that name).
   static updateAttrs(attrs) {
-    let result = Object.create(null)
-    for (let name in this.prototype.attrs) if (!attrs.hasOwnProperty(name)) result[name] = this.prototype.attrs[name]
-    for (let name in attrs) if (attrs[name]) result[name] = attrs[name]
-    this.prototype.attrs = result
+    this.prototype.attrs = overlayObj(this.prototype.attrs, attrs)
   }
 
   // For node types where all attrs have a default value (or which don't
@@ -237,8 +239,7 @@ export class NodeType extends SchemaItem {
   static compile(types, schema) {
     let result = Object.create(null)
     for (let name in types) {
-      let info = types[name]
-      let type = info.type || SchemaError.raise("Missing node type for " + name)
+      let type = types[name]
       let kinds = type.kinds.split(" ")
       for (let i = 0; i < kinds.length; i++)
         schema.registerKind(kinds[i], i ? kinds[i - 1] : null)
@@ -334,7 +335,7 @@ export class Attribute {
 
   // :: (string, *)
   // Register a value in this attribute's registry. See
-  // `NodeType.register` and `Schema.registry`.
+  // `SchemaItem.register` and `Schema.registry`.
   register(name, value) {
     ;(this.registry[name] || (this.registry[name] = [])).push(value)
   }
@@ -378,7 +379,7 @@ export class MarkType extends SchemaItem {
 
   static getOrder(marks) {
     let sorted = []
-    for (let name in marks) sorted.push({name, rank: marks[name].type.rank})
+    for (let name in marks) sorted.push({name, rank: marks[name].rank})
     sorted.sort((a, b) => a.rank - b.rank)
     let ranks = Object.create(null)
     for (let i = 0; i < sorted.length; i++) ranks[sorted[i].name] = i
@@ -388,10 +389,8 @@ export class MarkType extends SchemaItem {
   static compile(marks, schema) {
     let order = this.getOrder(marks)
     let result = Object.create(null)
-    for (let name in marks) {
-      let info = marks[name]
-      result[name] = new info.type(name, order[name], schema)
-    }
+    for (let name in marks)
+      result[name] = new marks[name](name, order[name], schema)
     return result
   }
 
@@ -422,23 +421,12 @@ function copyObj(obj, f) {
   return result
 }
 
-function ensureWrapped(obj) {
-  return obj instanceof Function ? {type: obj} : obj
-}
-
 function overlayObj(obj, overlay) {
   let copy = copyObj(obj)
   for (let name in overlay) {
-    let info = ensureWrapped(overlay[name])
-    if (info == null) {
-      delete copy[name]
-    } else if (info.type) {
-      copy[name] = info
-    } else {
-      let existing = copy[name] = copyObj(copy[name])
-      for (let prop in info)
-        existing[prop] = info[prop]
-    }
+    let value = overlay[name]
+    if (value == null) delete copy[name]
+    else copy[name] = value
   }
   return copy
 }
@@ -448,34 +436,30 @@ function overlayObj(obj, overlay) {
 // with extra information, such as additional attributes and changes
 // to node kinds and relations.
 //
-// A specification consists of an object that maps node names to node
-// type constructors and another similar object mapping mark names to
-// mark type constructors.
+// A specification consists of an object that associates node names
+// with node type constructors and another similar object associating
+// mark names with mark type constructors.
 export class SchemaSpec {
-  // :: (?Object<{type: NodeType}>, ?Object<{type: MarkType}>)
+  // :: (?Object<NodeType>, ?Object<MarkType>)
   // Create a schema specification from scratch. The arguments map
   // node names to node type constructors and mark names to mark type
-  // constructors. Their property value should be either the type
-  // constructors themselves, or objects with a type constructor under
-  // their `type` property, and optionally these other properties:
+  // constructors.
   constructor(nodes, marks) {
-    this.nodes = nodes ? copyObj(nodes, ensureWrapped) : Object.create(null)
-    this.marks = marks ? copyObj(marks, ensureWrapped) : Object.create(null)
+    this.nodes = nodes || {}
+    this.marks = marks || {}
   }
 
-  // :: (?Object<?{type: NodeType}>, ?Object<?{type: MarkType}>) → SchemaSpec
+  // :: (?Object<?NodeType>, ?Object<?MarkType>) → SchemaSpec
   // Base a new schema spec on this one by specifying nodes and marks
-  // to add, change, or remove.
+  // to add or remove.
   //
   // When `nodes` is passed, it should be an object mapping type names
-  // to either `null`, to delete the type of that name, to a
-  // `NodeType`, to add or replace the node type of that name, or to
-  // an object containing [extension
-  // properties](#SchemaSpec_constructor), to add to the existing
-  // description of that node type.
+  // to either `null`, to delete the type of that name, or to a
+  // `NodeType` subclass, to add or replace the node type of that
+  // name.
   //
   // Similarly, `marks` can be an object to add, change, or remove
-  // marks in the schema.
+  // [mark types](#MarkType) in the schema.
   update(nodes, marks) {
     return new SchemaSpec(nodes ? overlayObj(this.nodes, nodes) : this.nodes,
                           marks ? overlayObj(this.marks, marks) : this.marks)
