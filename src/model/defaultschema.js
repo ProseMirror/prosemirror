@@ -2,7 +2,7 @@ import {SchemaSpec, Schema, Block, Textblock, Inline, Text, Attribute, MarkType}
 
 // ;; #toc="Default schema" The default top-level document node type.
 export class Doc extends Block {
-  static get kind() { return "." }
+  static get kinds() { return "doc" }
 }
 
 // ;; #toc=false The default blockquote node type.
@@ -25,7 +25,7 @@ export class BulletList extends Block {
 
 // ;; #toc=false The default list item node type.
 export class ListItem extends Block {
-  static get kind() { return "." }
+  static get kinds() { return "list_item" }
 }
 
 // ;; #toc=false The default horizontal rule node type.
