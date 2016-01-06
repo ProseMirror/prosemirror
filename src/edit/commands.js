@@ -140,9 +140,10 @@ const empty = []
 
 // :: union<string, [string]> #path=CommandSpec.keys
 // The default key bindings for this command. May either be an array
-// of strings containing [key names](#FIXME), or an object with
-// optional `all`, `mac`, and `pc` properties, specifying arrays of
-// keys for different platforms.
+// of strings containing [key
+// names](https://github.com/marijnh/browserkeymap#a-string-notation-for-key-events),
+// or an object with optional `all`, `mac`, and `pc` properties,
+// specifying arrays of keys for different platforms.
 
 // :: union<bool, Object> #path=CommandSpec.derive
 // [Mark](#MarkType) and [node](#NodeType) types often need to define

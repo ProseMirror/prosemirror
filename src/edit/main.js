@@ -330,11 +330,12 @@ export class ProseMirror {
   }
 
   // :: (Keymap, ?number)
-  // Add a [keymap](#Keymap) to the editor. Keymaps added in this way
-  // are queried before the [base keymap](#keymap).
-  // The `rank` parameter can be used to control when they are queried
-  // relative to other maps added like this. Maps with a lower rank
-  // get queried first.
+  // Add a
+  // [keymap](https://github.com/marijnh/browserkeymap#an-object-type-for-keymaps)
+  // to the editor. Keymaps added in this way are queried before the
+  // [base keymap](#keymap). The `rank` parameter can be used to
+  // control when they are queried relative to other maps added like
+  // this. Maps with a lower rank get queried first.
   addKeymap(map, rank = 50) {
     sortedInsert(this.input.keymaps, {map, rank}, (a, b) => a.rank - b.rank)
   }
