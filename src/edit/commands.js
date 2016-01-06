@@ -1,3 +1,5 @@
+import Keymap from "browserkeymap"
+
 import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
         StrongMark, EmMark, CodeMark, LinkMark, Image, Pos, NodeType, MarkType} from "../model"
 import {joinPoint, joinableBlocks, canLift, canWrap} from "../transform"
@@ -5,7 +7,6 @@ import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
 
 import {charCategory, isExtendingChar} from "./char"
-import {Keymap} from "./keys"
 import {findSelectionFrom, verticalMotionLeavesTextblock, setDOMSelectionToPos, NodeSelection} from "./selection"
 
 const commands = Object.create(null)

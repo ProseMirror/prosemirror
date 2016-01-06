@@ -4,7 +4,7 @@ import {cmp, cmpNode, is} from "../cmp"
 import {defTest} from "../tests"
 
 import {dispatchKey} from "../../src/edit/input"
-import {Keymap} from "../../src/edit/keys"
+import {Keymap} from "../../src/edit"
 import {Pos} from "../../src/model"
 
 function trace(prop) { return pm => pm.mod[prop] = (pm.mod[prop] || 0) + 1 }

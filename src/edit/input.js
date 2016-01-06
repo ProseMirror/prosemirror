@@ -1,9 +1,8 @@
+import Keymap from "browserkeymap"
 import {Pos} from "../model"
-
 import {knownSource, parseFrom, fromHTML, fromText, toHTML, toText} from "../format"
 import {elt} from "../dom"
 
-import {isModifierKey, keyName} from "./keys"
 import {captureKeys} from "./capturekeys"
 import {browser, addClass, rmClass} from "../dom"
 import {applyDOMChange, textContext, textInContext} from "./domchange"
@@ -71,7 +70,7 @@ export function dispatchKey(pm, name, e) {
   let seq = pm.input.keySeq
   // If the previous key should be used in sequence with this one, modify the name accordingly.
   if (seq) {
-    if (isModifierKey(name)) return true
+    if (Keymap.isModifierKey(name)) return true
     clearTimeout(stopSeq)
     stopSeq = setTimeout(function() {
       if (pm.input.keySeq == seq)
@@ -120,7 +119,7 @@ export function dispatchKey(pm, name, e) {
 handlers.keydown = (pm, e) => {
   if (e.keyCode == 16) pm.input.shiftKey = true
   if (pm.input.composing) return
-  let name = keyName(e)
+  let name = Keymap.keyName(e)
   if (name && dispatchKey(pm, name, e)) return
   pm.sel.pollForUpdate()
 }
@@ -140,14 +139,13 @@ function inputText(pm, range, text) {
 
 handlers.keypress = (pm, e) => {
   if (pm.input.composing || !e.charCode || e.ctrlKey && !e.altKey || browser.mac && e.metaKey) return
-  let ch = String.fromCharCode(e.charCode)
-  if (dispatchKey(pm, "'" + ch + "'", e)) return
+  if (dispatchKey(pm, Keymap.keyName(e))) return
   let sel = pm.selection
   if (sel.node && sel.node.contains == null) {
     pm.tr.delete(sel.from, sel.to).apply()
     sel = pm.selection
   }
-  inputText(pm, sel, ch)
+  inputText(pm, sel, String.fromCharCode(e.charCode))
   e.preventDefault()
 }
 

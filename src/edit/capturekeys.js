@@ -1,6 +1,7 @@
+import Keymap from "browserkeymap"
+
 import {setDOMSelectionToPos, findSelectionNear} from "./selection"
 import {browser} from "../dom"
-import {Keymap} from "./keys"
 
 function nothing() {}
 

@@ -15,6 +15,7 @@
     "url": "git://github.com/prosemirror/prosemirror.git"
   },
   "dependencies": {
+    "browserkeymap": "^0.1.0",
     "markdown-it": "^4.4.0"
   },
   "devDependencies": {

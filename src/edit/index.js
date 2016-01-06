@@ -6,6 +6,8 @@
 export {ProseMirror} from "./main"
 export {defineOption} from "./options"
 export {Range} from "./selection"
-export {Keymap, keyName, keyNames} from "./keys"
 export {MarkedRange} from "./range"
 export {defineCommand, defineParamHandler, Command} from "./commands"
+
+import Keymap from "browserkeymap"
+export {Keymap}
