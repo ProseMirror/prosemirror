@@ -44,7 +44,7 @@ export class Pos {
 
   // :: (Pos) → Pos
   // Return the lesser of two positions.
-  mmin(other) { return this.cmp(other) < 0 ? this : other }
+  min(other) { return this.cmp(other) < 0 ? this : other }
 
   // :: ([number], [number]) → bool
   // Compares two paths and returns true when they are the same.
