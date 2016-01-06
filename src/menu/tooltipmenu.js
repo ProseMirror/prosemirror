@@ -8,6 +8,46 @@ import {Menu, TooltipDisplay, menuGroups} from "./menu"
 
 const classPrefix = "ProseMirror-tooltipmenu"
 
+// :: union<bool, Object> #path=tooltipMenu #kind=option
+//
+// When given a truthy value, enables the tooltip menu module for this
+// editor. This menu shows up when there is a selection, and
+// optionally in certain other circumstances, providing
+// context-relevant commands.
+//
+// By default, the tooltip will show inline menu commands (registered
+// with the [`menuGroup`](#FIXME) command property) when there is an
+// inline selection, and block related commands when there is a node
+// selection on a block.
+//
+// The module can be configured by passing an object. These properties
+// are recognized:
+//
+// **`showLinks`**`: bool = true`
+//   : Causes a tooltip with the link target to show up when the
+//     cursor is inside of a link (without a selection).
+//
+// **`selectedBlockMenu`**: bool = false`
+//   : When enabled, and a whole block is selected or the cursor is
+//     inside an empty block, the block menu gets shown.
+//
+// **`inlineGroups`**`: [string] = ["inline"]`
+//   : The menu groups to show when displaying the menu for inline
+//     content.
+//
+// **`inlineItems`**`: [union<string, [string]>]`
+//   : Instead of using menu groups, this can be used to completely
+//     override the set of commands shown for inline content. If
+//     nested arrays are used, separators will be shown between items
+//     from different arrays.
+//
+// **`blockGroups`**`: [string] = ["block"]`
+//   : The menu groups to show when displaying the menu for block
+//     content.
+//
+// **`blockItems`**`: [union<string, [string]>]`
+//   : Overrides the commands shown for block content.
+
 defineOption("tooltipMenu", false, function(pm, value) {
   if (pm.mod.tooltipMenu) pm.mod.tooltipMenu.detach()
   pm.mod.tooltipMenu = value ? new TooltipMenu(pm, value) : null
@@ -23,7 +63,7 @@ class TooltipMenu {
     this.config = config || {}
 
     this.showLinks = this.config.showLinks !== false
-    this.selectedBlockMenu = this.config.selectedBlockMenu !== false
+    this.selectedBlockMenu = this.config.selectedBlockMenu
     this.update = new UpdateScheduler(pm, "change selectionChange blur commandsChanged", () => this.prepareUpdate())
 
     this.tooltip = new Tooltip(pm.wrapper, "above")

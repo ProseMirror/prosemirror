@@ -6,6 +6,28 @@ import {Menu, menuGroups} from "./menu"
 
 const prefix = "ProseMirror-menubar"
 
+// :: union<bool, Object> #path=menuBar #kind=option
+//
+// When given a truthy value, enables the menu bar module for this
+// editor. The menu bar takes up space above the editor, showing
+// currently available commands (that have been [added](#FIXME) to the
+// menu). To configure the module, you can pass a configuration
+// object, on which the following properties are supported:
+//
+// **`float`**`: bool = false`
+//   : When enabled, causes the menu bar to stay visible when the
+//     editor is partially scrolled out of view, by making it float at
+//     the top of the viewport.
+//
+// **`groups`**`: [string] = ["inline", "block", "history"]`
+//   : Determines the menu groups that are shown in the menu bar.
+//
+// **`items`**`: [union<string, [string]>]`
+//   : Can be used to, rather than getting the commands to display
+//     from menu groups, explicitly provide the full list of commands.
+//     If nested arrays are used, separators will be shown between
+//     items from different arrays.
+
 defineOption("menuBar", false, function(pm, value) {
   if (pm.mod.menuBar) pm.mod.menuBar.detach()
   pm.mod.menuBar = value ? new MenuBar(pm, value) : null
