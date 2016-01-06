@@ -23,19 +23,19 @@ export class Menu {
   }
 
   enter(content, displayInfo) {
-    let pieces = [], explore = value => {
+    let pieces = [], close = false, explore = value => {
       if (Array.isArray(value)) {
         for (let i = 0; i < value.length; i++) explore(value[i])
-        pieces.push(separator)
+        close = true
       } else if (!value.select || value.select(this.pm)) {
+        if (close) {
+          pieces.push(separator)
+          close = false
+        }
         pieces.push(value)
       }
     }
     explore(content)
-    // Remove superfluous separators
-    for (let i = 0; i < pieces.length; i++)
-      if (pieces[i] == separator && (i == 0 || i == pieces.length - 1 || pieces[i + 1] == separator))
-        pieces.splice(i--, 1)
 
     if (!pieces.length) return this.display.clear()
 
