@@ -132,9 +132,7 @@ handlers.keyup = (pm, e) => {
 function inputText(pm, range, text) {
   if (range.empty && !text) return false
   let marks = pm.input.storedMarks || pm.doc.marksAt(range.from)
-  let tr = pm.tr
-  tr.replaceWith(range.from, range.to, pm.schema.text(text, marks)).apply()
-  pm.scrollIntoView()
+  pm.tr.replaceWith(range.from, range.to, pm.schema.text(text, marks)).apply({scrollIntoView: true})
   // :: () #path=ProseMirror#events#textInput
   // Fired when the user types text into the editor.
   pm.signal("textInput", text)

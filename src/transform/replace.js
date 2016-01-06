@@ -260,13 +260,14 @@ Transform.prototype.replace = function(from, to, source, start, end) {
 }
 
 // :: (Pos, Pos, union<Fragment, Node, [Node]>) → Transform
-// Replace the given sibling range (position ponting into the same
-// parent) with the given content, which may be a fragment, node, or
-// array of nodes.
+// Replace the given range with the given content, which may be a
+// fragment, node, or array of nodes.
 Transform.prototype.replaceWith = function(from, to, content) {
   if (!(content instanceof Fragment)) content = Fragment.from(content)
-  if (!Pos.samePath(from.path, to.path)) return this
-  this.step("replace", from, to, from, {content: content, openLeft: 0, openRight: 0})
+  if (Pos.samePath(from.path, to.path))
+    this.step("replace", from, to, from, {content, openLeft: 0, openRight: 0})
+  else
+    this.delete(from, to).step("replace", from, from, from, {content, openLeft: 0, openRight: 0})
   return this
 }
 
