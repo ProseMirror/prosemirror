@@ -11,6 +11,10 @@ defineOption("menuBar", false, function(pm, value) {
   pm.mod.menuBar = value ? new MenuBar(pm, value) : null
 })
 
+function getItems(pm, items) {
+  return Array.isArray(items) ? items.map(getItems.bind(null, pm)) : pm.commands[items]
+}
+
 class BarDisplay {
   constructor(container, resetFunc) {
     this.container = container
@@ -46,10 +50,12 @@ class BarDisplay {
 class MenuBar {
   constructor(pm, config) {
     this.pm = pm
+    this.config = config || {}
 
     this.menuElt = elt("div", {class: prefix + "-inner"})
     this.wrapper = elt("div", {class: prefix},
-                       elt("div", {class: "ProseMirror-menu"},
+                       // Dummy structure to reserve space for the menu
+                       elt("div", {class: "ProseMirror-menu", style: "visibility: hidden"},
                            elt("span", {class: "ProseMirror-menuicon"},
                                elt("div", {class: "ProseMirror-icon"}, "x"))),
                        this.menuElt)
@@ -61,7 +67,7 @@ class MenuBar {
     this.update.force()
 
     this.floating = false
-    if (config && config.float) {
+    if (this.config.float) {
       this.updateFloat()
       this.scrollFunc = () => {
         if (!document.body.contains(this.pm.wrapper))
@@ -90,7 +96,14 @@ class MenuBar {
   }
 
   resetMenu() {
-    this.menu.show(commandGroups(this.pm, "inline", "block", "history"))
+    let items
+    if (this.config.items)
+      items = getItems(this.pm, this.config.items)
+    else if (this.config.groups)
+      items = commandGroups(this.pm, ...this.config.groups)
+    else
+      items = commandGroups(this.pm, "inline", "block", "history")
+    this.menu.show(items)
   }
 
   updateFloat() {
@@ -144,6 +157,7 @@ insertCSS(`
 }
 
 .${prefix}-inner {
+  min-height: 1em;
   color: #666;
   padding: 1px 6px;
   top: 0; left: 0; right: 0;
