@@ -10,9 +10,10 @@ const prefix = "ProseMirror-menubar"
 //
 // When given a truthy value, enables the menu bar module for this
 // editor. The menu bar takes up space above the editor, showing
-// currently available commands (that have been [added](#FIXME) to the
-// menu). To configure the module, you can pass a configuration
-// object, on which the following properties are supported:
+// currently available commands (that have been
+// [added](#CommandSpec.menuGroup) to the menu). To configure the
+// module, you can pass a configuration object, on which the following
+// properties are supported:
 //
 // **`float`**`: bool = false`
 //   : When enabled, causes the menu bar to stay visible when the

@@ -5,6 +5,39 @@ import sortedInsert from "../util/sortedinsert"
 
 import {getIcon} from "./icons"
 
+// ;; #path=CommandSpec #kind=interface #noAnchor #toc=false
+// The `menu` module gives meaning to two additional properties of
+// [command specs](#CommandSpec).
+
+// :: string #path=CommandSpec.menuGroup
+//
+// Adds the command to the menugroup with the given name. The value
+// may either be just a name (for example `"inline"` or `"block"`), or
+// a name followed by a parenthesized rank (`"inline(40)"`) to control
+// the order in which the commands appear in the group (from low to
+// high, with 50 as default rank).
+
+// :: Object #path=CommandSpec.display
+//
+// Determines how a command is shown in the menu. The object should
+// have a `type` property, which picks a style of display. These types
+// are supported:
+//
+// **`"icon"`**
+//   : Show the command as an icon. The object may have `{path, width,
+//     height}` properties, where `path` is an [SVG path
+//     spec](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/d),
+//     and `width` and `height` provide the viewbox in which that path
+//     exists. Alternatively, it may have a `text` property specifying
+//     a string of text that makes up the icon, with an optional
+//     `style` property giving additional CSS styling for the text.
+//
+// **`"param"`**
+//   : Render command based on its first and only
+//     [parameter](#CommandSpec.params), and immediately execute the
+//     command when the parameter is changed. Currently only works for
+//     `"select"` parameters.
+
 export class Menu {
   constructor(pm, display) {
     this.display = display

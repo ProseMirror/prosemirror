@@ -16,9 +16,9 @@ const classPrefix = "ProseMirror-tooltipmenu"
 // context-relevant commands.
 //
 // By default, the tooltip will show inline menu commands (registered
-// with the [`menuGroup`](#FIXME) command property) when there is an
-// inline selection, and block related commands when there is a node
-// selection on a block.
+// with the [`menuGroup`](#CommandSpec.menuGroup) command property)
+// when there is an inline selection, and block related commands when
+// there is a node selection on a block.
 //
 // The module can be configured by passing an object. These properties
 // are recognized:
