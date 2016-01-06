@@ -54,7 +54,6 @@ export class Fragment {
   // Produce a new Fragment by mapping all this fragment's children
   // through a function.
   map(f) {
-    // FIXME join text nodes?
     return Fragment.fromArray(this.toArray(undefined, undefined, f))
   }
 
@@ -116,10 +115,20 @@ export class Fragment {
   // Build a fragment from an array of nodes.
   static fromArray(array) {
     if (!array.length) return emptyFragment
-    let hasText = false
-    for (let i = 0; i < array.length; i++)
-      if (array[i].isText) hasText = true
-    return new (hasText ? TextFragment : FlatFragment)(array)
+    let hasText = false, joined
+    for (let i = 0; i < array.length; i++) {
+      let node = array[i]
+      if (node.isText) {
+        hasText = true
+        if (i && array[i - 1].sameMarkup(node)) {
+          if (!joined) joined = array.slice(0, i)
+          joined[joined.length - 1] = node.copy(joined[joined.length - 1].text + node.text)
+          continue
+        }
+      }
+      if (joined) joined.push(node)
+    }
+    return hasText ? new TextFragment(joined || array) : new FlatFragment(array)
   }
 
   // :: (?union<Fragment, Node, [Node]>) → Fragment

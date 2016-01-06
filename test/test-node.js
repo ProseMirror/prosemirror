@@ -1,8 +1,10 @@
+import {Fragment, defaultSchema as schema} from "../src/model"
+
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, img, hr} from "./build"
 
 import {Failure} from "./failure"
 import {defTest} from "./tests"
-import {cmpNode, cmpStr} from "./cmp"
+import {is, cmp, cmpNode, cmpStr} from "./cmp"
 
 function str(name, node, str) {
   defTest("node_string_" + name, () => cmpStr(node, str))
@@ -161,3 +163,34 @@ iter("inline_contained",
 riter("inline_contained",
       doc(p("foo<b>bar<a>baz")),
       "bar", 3)
+
+function from(name, arg, expect) {
+  defTest("node_fragment_from_" + name, () => {
+    let result = Fragment.from(arg), i = 0
+    for (let it = result.iter(), cur; cur = it.next().value; i++) {
+      if (i == expect.length) {i++; break}
+      cmpNode(cur, expect[i], "child " + i)
+    }
+    is(i == expect.length, "same size")
+  })
+}
+
+from("single",
+     schema.node("paragraph"),
+     [schema.node("paragraph")])
+
+from("array",
+     [schema.node("hard_break"), schema.text("foo")],
+     [schema.node("hard_break"), schema.text("foo")])
+
+from("fragment",
+     doc(p("foo")).content,
+     [schema.node("paragraph", null, [schema.text("foo")])])
+
+from("null",
+     null,
+     [])
+
+from("append",
+     [schema.text("a"), schema.text("b")],
+     [schema.text("ab")])
