@@ -889,7 +889,7 @@ NodeType.deriveableCommands.wrap = conf => ({
 BulletList.register("command", {
   name: "wrap",
   derive: true,
-  labelName: "bullet list",
+  label: "Wrap the selection in a bullet list",
   menuGroup: "block(40)",
   display: {
     type: "icon",
@@ -909,7 +909,7 @@ BulletList.register("command", {
 OrderedList.register("command", {
   name: "wrap",
   derive: true,
-  labelName: "ordered list",
+  label: "Wrap the selection in an ordered list",
   menuGroup: "block(41)",
   display: {
     type: "icon",
@@ -929,7 +929,7 @@ OrderedList.register("command", {
 BlockQuote.register("command", {
   name: "wrap",
   derive: true,
-  labelName: "block quote",
+  label: "Wrap the selection in a block quote",
   menuGroup: "block(45)",
   display: {
     type: "icon",
