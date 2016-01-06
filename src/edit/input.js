@@ -128,6 +128,8 @@ handlers.keyup = (pm, e) => {
   if (e.keyCode == 16) pm.input.shiftKey = false
 }
 
+// : (ProseMirror, TextSelection, string)
+// Insert text into a document.
 function inputText(pm, range, text) {
   if (range.empty && !text) return false
   let marks = pm.input.storedMarks || pm.doc.marksAt(range.from)
