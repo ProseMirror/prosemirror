@@ -2,7 +2,7 @@ import {defineOption} from "../edit"
 import {elt, insertCSS} from "../dom"
 import {UpdateScheduler} from "../ui/update"
 
-import {Menu, commandGroups} from "./menu"
+import {Menu, menuGroups} from "./menu"
 
 const prefix = "ProseMirror-menubar"
 
@@ -96,14 +96,9 @@ class MenuBar {
   }
 
   resetMenu() {
-    let items
-    if (this.config.items)
-      items = getItems(this.pm, this.config.items)
-    else if (this.config.groups)
-      items = commandGroups(this.pm, ...this.config.groups)
-    else
-      items = commandGroups(this.pm, "inline", "block", "history")
-    this.menu.show(items)
+    this.menu.show(this.config.items
+                   ? getItems(this.pm, this.config.items)
+                   : menuGroups(this.pm, this.config.groups || ["inline", "block", "history"]))
   }
 
   updateFloat() {

@@ -4,7 +4,7 @@ import {elt, insertCSS} from "../dom"
 import {Tooltip} from "../ui/tooltip"
 import {UpdateScheduler} from "../ui/update"
 
-import {Menu, TooltipDisplay, commandGroups} from "./menu"
+import {Menu, TooltipDisplay, menuGroups} from "./menu"
 
 const classPrefix = "ProseMirror-tooltipmenu"
 
@@ -39,11 +39,11 @@ class TooltipMenu {
     let items
     if (!inline) items = []
     else if (this.config.inlineItems) items = getItems(this.pm, this.config.inlineItems)
-    else items = commandGroups(this.pm, ...this.config.inlineGroups || ["inline"])
+    else items = menuGroups(this.pm, this.config.inlineGroups || ["inline"])
 
     if (block) {
       if (this.config.blockItems) items = items.concat(getItems(this.pm, this.config.blockItems))
-      else items = items.concat(commandGroups(this.pm, ...this.config.blockGroups || ["block"]))
+      else items = items.concat(menuGroups(this.pm, this.config.blockGroups || ["block"]))
     }
     return items
   }

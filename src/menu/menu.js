@@ -289,7 +289,7 @@ function computeMenuGroups(pm) {
   return groups
 }
 
-export function commandGroups(pm, ...names) {
+export function menuGroups(pm, names) {
   let groups = pm.mod.menuGroups || computeMenuGroups(pm)
   return names.map(group => groups[group])
 }
