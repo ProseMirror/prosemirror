@@ -172,6 +172,11 @@ const empty = []
 // :: any #path=CommandParam.default
 // A default value for the parameter.
 
+// :: (pm) → ?any #path=CommandParam.prefill
+// A function that, given an editor instance (and a `this` bound to
+// the command's source item), tries to derive an initial value for
+// the parameter, or return null if it can't.
+
 // :: (string, (pm: ProseMirror, cmd: Command, callback: (?[any])))
 // Register a parameter handler, which is a function that prompts the
 // user to enter values for a command's [parameters](#CommandParam), and
@@ -462,6 +467,11 @@ LinkMark.register("command", {
   // (If parameter pre-filling is going to continue working like that)
 })
 
+function selectedNodeAttr(pm, type, name) {
+  let {node} = pm.selection
+  if (node && node.type == type) return node.attrs[name]
+}
+
 // ;; #path=schema:image:insert #kind=command
 // Replace the selection with an [image](#Image) node. Takes paramers
 // that specify the image's attributes:
@@ -484,9 +494,12 @@ Image.register("command", {
     return pm.tr.replaceSelection(this.create({src, title, alt})).apply(andScroll)
   },
   params: [
-    {label: "Image URL", type: "text"},
-    {label: "Description / alternative text", type: "text", default: ""},
-    {label: "Title", type: "text", default: ""}
+    {label: "Image URL", type: "text",
+     prefill: function(pm) { return selectedNodeAttr(pm, this, "src") }},
+    {label: "Description / alternative text", type: "text", default: "",
+     prefill: function(pm) { return selectedNodeAttr(pm, this, "alt") || pm.selectedText }},
+    {label: "Title", type: "text", default: "",
+     prefill: function(pm) { return selectedNodeAttr(pm, this, "title") }}
   ],
   select(pm) {
     return pm.doc.path(pm.selection.from.path).type.canContainType(this)
@@ -496,12 +509,6 @@ Image.register("command", {
     type: "icon",
     width: 1097, height: 1024,
     path: "M365 329q0 45-32 77t-77 32-77-32-32-77 32-77 77-32 77 32 32 77zM950 548v256h-804v-109l182-182 91 91 292-292zM1005 146h-914q-7 0-12 5t-5 12v694q0 7 5 12t12 5h914q7 0 12-5t5-12v-694q0-7-5-12t-12-5zM1097 164v694q0 37-26 64t-64 26h-914q-37 0-64-26t-26-64v-694q0-37 26-64t64-26h914q37 0 64 26t26 64z"
-  },
-  prefillParams(pm) {
-    let {node} = pm.selection
-    if (node && node.type == this)
-      return [node.attrs.src, node.attrs.alt, node.attrs.title]
-    // FIXME else use the selected text as alt
   }
 })
 
@@ -1171,7 +1178,7 @@ defineCommand({
     return !node || node.isTextblock
   },
   params: [
-    {label: "Type", type: "select", options: listTextblockTypes, default: currentTextblockType, defaultLabel: "Type..."}
+    {label: "Type", type: "select", options: listTextblockTypes, prefill: currentTextblockType, defaultLabel: "Type..."}
   ],
   display: {
     type: "param"

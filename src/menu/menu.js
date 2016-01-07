@@ -212,16 +212,17 @@ function renderItem(item, menu) {
 }
 
 function paramDefault(param, pm, command) {
-  return !param.default ? ""
-    : param.default.call ? param.default.call(command.self, pm)
-    : param.default
+  if (param.prefill) {
+    let prefill = param.prefill.call(command.self, pm)
+    if (prefill != null) return prefill
+  }
+  return param.default
 }
 
 function buildParamForm(pm, command) {
-  let prefill = command.spec.prefillParams && command.spec.prefillParams.call(command.self, pm)
   let fields = command.params.map((param, i) => {
     let field, name = "field_" + i
-    let val = prefill ? prefill[i] : paramDefault(param, pm, command)
+    let val = paramDefault(param, pm, command)
     if (param.type == "text")
       field = elt("input", {name, type: "text",
                             placeholder: param.label,
