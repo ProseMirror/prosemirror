@@ -1,3 +1,5 @@
+import {ModelError} from "./error"
+
 // ;; A fragment is an abstract type used to represent a node's
 // collection of child nodes. It tries to hide considerations about
 // the actual way in which the child nodes are stored, so that
@@ -213,7 +215,7 @@ class FlatFragment extends Fragment {
   // Get the child at the given offset. Might return a text node that
   // stretches before and/or after the offset.
   child(off) {
-    if (off < 0 || off >= this.content.length) throw new Error("Offset " + off + " out of range")
+    if (off < 0 || off >= this.content.length) ModelError.raise("Offset " + off + " out of range")
     return this.content[off]
   }
 
@@ -251,7 +253,7 @@ class FlatFragment extends Fragment {
   // replaced by the given node. The node, as well as the one it
   // replaces, should not be text nodes.
   replace(offset, node) {
-    if (node.isText) throw new Error("Argument to replace should be a non-text node")
+    if (node.isText) ModelError.raise("Argument to replace should be a non-text node")
     let copy = this.content.slice()
     copy[offset] = node
     return new FlatFragment(copy)
@@ -387,7 +389,7 @@ class TextFragment extends Fragment {
   }
 
   child(off) {
-    if (off < 0 || off >= this.size) throw new Error("Offset " + off + " out of range")
+    if (off < 0 || off >= this.size) ModelError.raise("Offset " + off + " out of range")
     for (let i = 0, curOff = 0; i < this.content.length; i++) {
       let child = this.content[i]
       curOff += child.width
@@ -403,7 +405,7 @@ class TextFragment extends Fragment {
   }
 
   chunkBefore(off) {
-    if (!off) throw new Error("No chunk before start of node")
+    if (!off) ModelError.raise("No chunk before start of node")
     for (let i = 0, curOff = 0; i < this.content.length; i++) {
       let child = this.content[i], end = curOff + child.width
       if (end >= off) return {node: child, start: curOff}
@@ -412,7 +414,7 @@ class TextFragment extends Fragment {
   }
 
   chunkAfter(off) {
-    if (off == this.size) throw new Error("No chunk after end of node")
+    if (off == this.size) ModelError.raise("No chunk after end of node")
     for (let i = 0, curOff = 0; i < this.content.length; i++) {
       let child = this.content[i], end = curOff + child.width
       if (end > off) return {node: child, start: curOff}
@@ -426,13 +428,13 @@ class TextFragment extends Fragment {
   }
 
   replace(off, node) {
-    if (node.isText) throw new Error("Argument to replace should be a non-text node")
+    if (node.isText) ModelError.raise("Argument to replace should be a non-text node")
     let curNode, index
     for (let curOff = 0; curOff < off; index++) {
       curNode = this.content[index]
       curOff += curNode.width
     }
-    if (curNode.isText) throw new Error("Can not replace text content with replace method")
+    if (curNode.isText) ModelError.raise("Can not replace text content with replace method")
     let copy = this.content.slice()
     copy[index] = node
     return new TextFragment(copy)

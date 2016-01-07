@@ -3,6 +3,7 @@ import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmMark, StrongMark, LinkMark, CodeMark, Mark} from "../model"
 import {defineSource} from "../format"
+import {AssertionError} from "../util/error"
 
 // :: (Schema, string) → Node
 // Parse a string as [CommonMark](http://commonmark.org/) markup, and
@@ -167,7 +168,7 @@ function registerTokens(tokens, type, info) {
   } else if (info.parse) {
     tokens[info.token] = info.parse.bind(type)
   } else {
-    throw new Error("Unrecognized markdown parsing spec: " + info)
+    AssertionError.raise("Unrecognized markdown parsing spec: " + info)
   }
 }
 

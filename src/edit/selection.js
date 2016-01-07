@@ -1,6 +1,10 @@
 import {Pos} from "../model"
+import {ProseMirrorError, AssertionError} from "../util/error"
 
 import {contains, browser} from "../dom"
+
+// ;; Error type used to signal selection-related problems.
+export class SelectionError extends ProseMirrorError {}
 
 export class SelectionState {
   constructor(pm) {
@@ -211,7 +215,7 @@ export class Selection {
   // should be the new document, to which we are mapping.
 }
 
-// ;; #toc=false A text selection represents a classical editor
+// ;; A text selection represents a classical editor
 // selection, with a head (the moving side) and anchor (immobile
 // side), both of which point into textblock nodes. It can be empty (a
 // regular cursor position).
@@ -300,7 +304,7 @@ function widthFromDOM(dom) {
 
 function posFromDOMInner(pm, dom, domOffset, loose) {
   if (!loose && pm.operation && pm.doc != pm.operation.doc)
-    throw new Error("Fetching a position from an outdated DOM structure")
+    AssertionError.raise("Fetching a position from an outdated DOM structure")
 
   let extraOffset = 0, tag
   for (;;) {
@@ -373,7 +377,7 @@ export function resolvePath(parent, path) {
   let node = parent
   for (let i = 0; i < path.length; i++) {
     node = findByPath(node, path[i])
-    if (!node) throw new Error("Failed to resolve path " + path.join("/"))
+    if (!node) SelectionError.raise("Failed to resolve path " + path.join("/"))
   }
   return node
 }
@@ -585,7 +589,7 @@ export function findSelectionFrom(doc, pos, dir, text) {
 
 export function findSelectionNear(doc, pos, bias = 1, text) {
   let result = findSelectionFrom(doc, pos, bias, text) || findSelectionFrom(doc, pos, -bias, text)
-  if (!result) throw new Error("Searching for selection in invalid document " + doc)
+  if (!result) SelectionError("Searching for selection in invalid document " + doc)
   return result
 }
 

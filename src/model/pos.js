@@ -1,3 +1,5 @@
+import {ModelError} from "./error"
+
 // ;; Instances of the `Pos` class represent positions in a document.
 // A position an array of integers that describe a path to the target
 // node (see `Node.path`) and an integer offset into that target node.
@@ -116,7 +118,7 @@ export class Pos {
   // [`toPath`](#Pos.toPath)), taking the last element of the array as
   // offset and optionally moving it by `move`.
   static from(array, move = 0) {
-    if (!array.length) throw new Error("Can't create a pos from an empty array")
+    if (!array.length) ModelError.raise("Can't create a pos from an empty array")
     return new Pos(array.slice(0, array.length - 1), array[array.length - 1] + move)
   }
 

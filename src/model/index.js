@@ -27,3 +27,5 @@ export {defaultSchema, Doc, BlockQuote, OrderedList, BulletList, ListItem,
 export {Pos} from "./pos"
 
 export {findDiffStart, findDiffEnd} from "./diff"
+
+export {ModelError} from "./error"

@@ -2,6 +2,7 @@ import {Tooltip} from "../ui/tooltip"
 import {elt, insertCSS} from "../dom"
 import {defineParamHandler, Command} from "../edit"
 import sortedInsert from "../util/sortedinsert"
+import {AssertionError} from "../util/error"
 
 import {getIcon} from "./icons"
 
@@ -204,7 +205,7 @@ function renderItem(item, menu) {
     var display = item.spec.display
     if (display.type == "icon") return renderIcon(item, menu)
     else if (display.type == "param") return renderSelect(item, menu)
-    else throw new Error("Command " + item.name + " can not be shown in a menu")
+    else AssertionError.raise("Command " + item.name + " can not be shown in a menu")
   } else {
     return item.display(menu)
   }
@@ -230,7 +231,7 @@ function buildParamForm(pm, command) {
       field = elt("select", {name}, (param.options.call ? param.options(pm) : param.options)
                   .map(o => elt("option", {value: o.value, selected: o == val}, o.label)))
     else // FIXME more types
-      throw new Error("Unsupported parameter type: " + param.type)
+      AssertionError.raise("Unsupported parameter type: " + param.type)
     return elt("div", null, field)
   })
   return elt("form", null, fields)

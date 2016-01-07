@@ -5,6 +5,7 @@ import Keymap from "browserkeymap"
 import {Pos, findDiffStart} from "../model"
 import {Transform} from "../transform"
 import sortedInsert from "../util/sortedinsert"
+import {AssertionError} from "../util/error"
 import {Map} from "../util/map"
 import {eventMixin} from "../util/event"
 import {requestAnimationFrame, elt, browser, ensureCSSAdded} from "../dom"
@@ -14,7 +15,7 @@ import {toText, parseFrom, serializeTo} from "../format"
 import {parseOptions, initOptions, setOption} from "./options"
 import {SelectionState, TextSelection, NodeSelection,
         posAtCoords, coordsAtPos, scrollIntoView,
-        findSelectionAtStart, hasFocus} from "./selection"
+        findSelectionAtStart, hasFocus, SelectionError} from "./selection"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
 import {History} from "./history"
@@ -139,10 +140,10 @@ export class ProseMirror {
     this.checkPos(pos, false)
     let parent = this.doc.path(pos.path)
     if (pos.offset >= parent.size)
-      throw new Error("Trying to set a node selection at the end of a node")
+      SelectionError.raise("Trying to set a node selection at the end of a node")
     let node = parent.child(pos.offset)
     if (!node.type.selectable)
-      throw new Error("Trying to select a non-selectable node")
+      SelectionError.raise("Trying to select a non-selectable node")
     this.input.maybeAbortComposition()
     this.sel.setAndSignal(new NodeSelection(pos, pos.move(1), node))
   }
@@ -184,7 +185,7 @@ export class ProseMirror {
 
   setDocInner(doc) {
     if (doc.type != this.schema.nodes.doc)
-      throw new Error("Trying to set a document with a different schema")
+      AssertionError.raise("Trying to set a document with a different schema")
     // :: Node The current document.
     this.doc = doc
     this.ranges = new RangeStore(this)
@@ -242,7 +243,7 @@ export class ProseMirror {
   apply(transform, options = nullOptions) {
     if (transform.doc == this.doc) return false
     if (transform.docs[0] != this.doc && findDiffStart(transform.docs[0], this.doc))
-      throw new Error("Applying a transform that does not start with the current document")
+      AssertionError.raise("Applying a transform that does not start with the current document")
 
     this.updateDoc(transform.doc, transform, options.selection)
     // :: (Transform, Object) #path=ProseMirror#events#transform
@@ -260,7 +261,7 @@ export class ProseMirror {
   // must also fall within a textblock node.
   checkPos(pos, textblock) {
     if (!this.doc.isValidPos(pos, textblock))
-      throw new Error("Position " + pos + " is not valid in current document")
+      AssertionError.raise("Position " + pos + " is not valid in current document")
   }
 
   ensureOperation() {

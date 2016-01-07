@@ -1,3 +1,5 @@
+import {NamespaceError} from "../util/error"
+
 const serializers = Object.create(null)
 
 // :: (Node, string, ?Object) → any
@@ -5,7 +7,7 @@ const serializers = Object.create(null)
 // given, it will be passed along to the serializer function.
 export function serializeTo(doc, format, options) {
   let converter = serializers[format]
-  if (!converter) throw new Error("Target format " + format + " not defined")
+  if (!converter) NamespaceError.raise("Target format " + format + " not defined")
   return converter(doc, options)
 }
 
@@ -26,7 +28,7 @@ const parsers = Object.create(null)
 // `options` is given, it is passed along to the parser function.
 export function parseFrom(schema, value, format, options) {
   let converter = parsers[format]
-  if (!converter) throw new Error("Source format " + format + " not defined")
+  if (!converter) NamespaceError.raise("Source format " + format + " not defined")
   return converter(schema, value, options)
 }
 

@@ -1,5 +1,6 @@
 import {defineOption} from "../edit"
 import {eventMixin} from "../util/event"
+import {AssertionError} from "../util/error"
 
 import {rebaseSteps} from "./rebase"
 export {rebaseSteps}
@@ -34,7 +35,7 @@ class Collab {
       this.signal("mustSend")
     })
     pm.on("beforeSetDoc", this.onSetDoc = () => {
-      throw new Error("setDoc is not supported on a collaborative editor")
+      AssertionError.raise("setDoc is not supported on a collaborative editor")
     })
     pm.history.allowCollapsing = false
   }

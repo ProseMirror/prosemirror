@@ -1,4 +1,5 @@
 import {defaultSchema} from "../model"
+import {AssertionError} from "../util/error"
 
 class Option {
   constructor(defaultValue, update, updateOnInit) {
@@ -121,7 +122,7 @@ export function initOptions(pm) {
 
 export function setOption(pm, name, value) {
   let desc = options[name]
-  if (desc.update === false) throw new Error("Option '" + name + "' can not be changed")
+  if (desc.update === false) AssertionError.raise("Option '" + name + "' can not be changed")
   let old = pm.options[name]
   pm.options[name] = value
   if (desc.update) desc.update(pm, value, old, false)

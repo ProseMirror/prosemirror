@@ -5,6 +5,7 @@ import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Parag
 import {joinPoint, joinableBlocks, canLift, canWrap} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
+import {NamespaceError, AssertionError} from "../util/error"
 
 import {charCategory, isExtendingChar} from "./char"
 import {findSelectionFrom, verticalMotionLeavesTextblock, setDOMSelectionToPos, NodeSelection} from "./selection"
@@ -19,7 +20,7 @@ const paramHandlers = Object.create(null)
 // from showing up in editor where you don't want it to show up.
 export function defineCommand(spec) {
   if (commands[spec.name])
-    throw new Error("Duplicate definition of command " + spec.name)
+    NamespaceError.raise("Duplicate definition of command " + spec.name)
   commands[spec.name] = spec
 }
 
@@ -40,7 +41,7 @@ export class Command {
   constructor(spec, self, name) {
     // :: string The name of the command.
     this.name = name || spec.name
-    if (!this.name) throw new Error("Trying to define a command without a name")
+    if (!this.name) NamespaceError.raise("Trying to define a command without a name")
     // :: CommandSpec The command's specifying object.
     this.spec = spec
     this.self = self
@@ -189,7 +190,7 @@ export function deriveCommands(pm) {
   let found = Object.create(null), config = pm.options.commands
   function add(name, spec, self) {
     if (!pm.isIncluded(name)) return
-    if (found[name]) throw new Error("Duplicate definition of command " + name)
+    if (found[name]) NamespaceError.raise("Duplicate definition of command " + name)
     found[name] = new Command(spec, self, name)
   }
   function addAndOverride(name, spec, self) {
@@ -210,7 +211,7 @@ export function deriveCommands(pm) {
       let conf = typeof spec.derive == "object" ? spec.derive : {}
       let dname = conf.name || spec.name
       let derive = type.constructor.deriveableCommands[dname]
-      if (!derive) throw new Error("Don't know how to derive command " + dname)
+      if (!derive) AssertionError.raise("Don't know how to derive command " + dname)
       let derived = derive.call(type, conf)
       for (var prop in spec) if (prop != "derive") derived[prop] = spec[prop]
       spec = derived
@@ -507,7 +508,7 @@ Image.register("command", {
 // Get an offset moving backward from a current offset inside a node.
 function moveBackward(parent, offset, by) {
   if (by != "char" && by != "word")
-    throw new Error("Unknown motion unit: " + by)
+    AssertionError.raise("Unknown motion unit: " + by)
 
   let cat = null, counted = 0
   for (;;) {
@@ -656,7 +657,7 @@ defineCommand({
 
 function moveForward(parent, offset, by) {
   if (by != "char" && by != "word")
-    throw new Error("Unknown motion unit: " + by)
+    AssertionError.raise("Unknown motion unit: " + by)
 
   let cat = null, counted = 0
   for (;;) {
