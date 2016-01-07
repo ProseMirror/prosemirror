@@ -19,7 +19,7 @@ export function fromDOM(schema, dom, options) {
   return doc
 }
 
-// ;; #path=DOMParseSpec #kind=interface #toc=false
+// ;; #path=DOMParseSpec #kind=interface
 // To define the way [node](#NodeType) and [mark](#MarkType) types are
 // parsed, you can associate one or more DOM parsing specifications to
 // them using the [`register`](#SchemaItem.register) method with the
@@ -77,7 +77,7 @@ const blockElements = {
 
 const noMarks = []
 
-// ;; #toc=false A state object used to track context during a parse,
+// ;; A state object used to track context during a parse,
 // and to expose methods to custom parsing functions.
 class DOMParseState {
   constructor(schema, topNode, options) {

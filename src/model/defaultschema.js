@@ -1,14 +1,14 @@
 import {SchemaSpec, Schema, Block, Textblock, Inline, Text, Attribute, MarkType} from "./schema"
 
-// ;; #toc="Default schema" The default top-level document node type.
+// ;; The default top-level document node type.
 export class Doc extends Block {
   static get kinds() { return "doc" }
 }
 
-// ;; #toc=false The default blockquote node type.
+// ;; The default blockquote node type.
 export class BlockQuote extends Block {}
 
-// ;; #toc=false The default ordered list node type. Has a single attribute,
+// ;; The default ordered list node type. Has a single attribute,
 // `order`, which determines the number at which the list starts
 // counting, and defaults to 1.
 export class OrderedList extends Block {
@@ -17,29 +17,29 @@ export class OrderedList extends Block {
   get attrs() { new Attribute({default: "1"}) }
 }
 
-// ;; #toc=false The default bullet list node type.
+// ;; The default bullet list node type.
 export class BulletList extends Block {
   get contains() { return "list_item" }
   get isList() { return true }
 }
 
-// ;; #toc=false The default list item node type.
+// ;; The default list item node type.
 export class ListItem extends Block {
   static get kinds() { return "list_item" }
 }
 
-// ;; #toc=false The default horizontal rule node type.
+// ;; The default horizontal rule node type.
 export class HorizontalRule extends Block {
   get contains() { return null }
 }
 
-// ;; #toc=false The default heading node type. Has a single attribute
+// ;; The default heading node type. Has a single attribute
 // `level`, which indicates the heading level, and defaults to 1.
 export class Heading extends Textblock {
   get attrs() { return {level: new Attribute({default: "1"})} }
 }
 
-// ;; #toc=false The default code block / listing node type. Only
+// ;; The default code block / listing node type. Only
 // allows unmarked text nodes inside of it.
 export class CodeBlock extends Textblock {
   get contains() { return "text" }
@@ -47,12 +47,12 @@ export class CodeBlock extends Textblock {
   get isCode() { return true }
 }
 
-// ;; #toc=false The default paragraph node type.
+// ;; The default paragraph node type.
 export class Paragraph extends Textblock {
   get defaultTextblock() { return true }
 }
 
-// ;; #toc=false The default inline image node type. Has these
+// ;; The default inline image node type. Has these
 // attributes:
 //
 // - **`src`** (required): The URL of the image.
@@ -68,23 +68,23 @@ export class Image extends Inline {
   }
 }
 
-// ;; #toc=false The default hard break node type.
+// ;; The default hard break node type.
 export class HardBreak extends Inline {
   get selectable() { return false }
   get isBR() { return true }
 }
 
-// ;; #toc=false The default emphasis mark type.
+// ;; The default emphasis mark type.
 export class EmMark extends MarkType {
   static get rank() { return 51 }
 }
 
-// ;; #toc=false The default strong mark type.
+// ;; The default strong mark type.
 export class StrongMark extends MarkType {
   static get rank() { return 52 }
 }
 
-// ;; #toc=false The default link mark type. Has these attributes:
+// ;; The default link mark type. Has these attributes:
 //
 // - **`href`** (required): The link target.
 // - **`title`**: The link's title.
@@ -98,7 +98,7 @@ export class LinkMark extends MarkType {
   }
 }
 
-// ;; #toc=false The default code font mark type.
+// ;; The default code font mark type.
 export class CodeMark extends MarkType {
   static get rank() { return 101 }
   get isCode() { return true }

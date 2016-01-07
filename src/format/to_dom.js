@@ -4,7 +4,7 @@ import {Text, BlockQuote, OrderedList, BulletList, ListItem,
 
 import {defineTarget} from "./register"
 
-// ;; #toc=false Object used to to expose relevant values and methods
+// ;; Object used to to expose relevant values and methods
 // to DOM serializer functions.
 class DOMSerializer {
   constructor(options) {

@@ -23,7 +23,7 @@ export function toMarkdown(doc) {
 
 defineTarget("markdown", toMarkdown)
 
-// ;; #toc=false This is an object used to track state and expose
+// ;; This is an object used to track state and expose
 // methods related to markdown serialization. Instances are passed to
 // node and mark serialization methods (see `toMarkdown`).
 class MarkdownSerializer {

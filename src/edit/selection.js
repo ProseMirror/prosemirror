@@ -249,7 +249,7 @@ export class TextSelection extends Selection {
   }
 }
 
-// ;; #toc=false A node selection is a selection that points at a
+// ;; A node selection is a selection that points at a
 // single node. All nodes marked [selectable](#NodeType.selectable)
 // can be the target of a node selection. In such an object, `from`
 // and `to` point directly before and after the selected node.

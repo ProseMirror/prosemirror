@@ -5,7 +5,7 @@ import sortedInsert from "../util/sortedinsert"
 
 import {getIcon} from "./icons"
 
-// ;; #path=CommandSpec #kind=interface #noAnchor #toc=false
+// ;; #path=CommandSpec #kind=interface #noAnchor
 // The `menu` module gives meaning to two additional properties of
 // [command specs](#CommandSpec).
 

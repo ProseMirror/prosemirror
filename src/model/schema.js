@@ -4,11 +4,11 @@ import {Mark} from "./mark"
 
 import {ProseMirrorError} from "../util/error"
 
-// ;; #toc=false The exception type used to signal schema-related
+// ;; The exception type used to signal schema-related
 // errors.
 export class SchemaError extends ProseMirrorError {}
 
-// ;; #toc=false The [node](#NodeType) and [mark](#MarkType) types
+// ;; The [node](#NodeType) and [mark](#MarkType) types
 // that make up a schema have several things in common—they support
 // attributes, and you can [register](#SchemaItem.register) values
 // with them. This class implements this functionality, and acts as a
@@ -262,7 +262,7 @@ export class NodeType extends SchemaItem {
   get containsMarks() { return false }
 }
 
-// ;; #toc=false Base type for block nodetypes.
+// ;; Base type for block nodetypes.
 export class Block extends NodeType {
   get contains() { return "block" }
   static get kinds() { return "block" }
@@ -279,7 +279,7 @@ export class Block extends NodeType {
   }
 }
 
-// ;; #toc=false Base type for textblock node types.
+// ;; Base type for textblock node types.
 export class Textblock extends Block {
   get contains() { return "inline" }
   get containsMarks() { return true }
@@ -287,13 +287,13 @@ export class Textblock extends Block {
   get canBeEmpty() { return true }
 }
 
-// ;; #toc=false Base type for inline node types.
+// ;; Base type for inline node types.
 export class Inline extends NodeType {
   static get kinds() { return "inline" }
   get isInline() { return true }
 }
 
-// ;; #toc=false The text node type.
+// ;; The text node type.
 export class Text extends Inline {
   get selectable() { return false }
   get isText() { return true }

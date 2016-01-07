@@ -1,6 +1,6 @@
 import {Pos} from "../model"
 
-// ;; #kind=interface #path=Mappable #toc=false
+// ;; #kind=interface #path=Mappable
 // There are various things that positions can be mapped through.
 // We'll denote those as 'mappable'. This is not an actual class in
 // the codebase, only an agreed-on interface.
@@ -122,7 +122,7 @@ export class PosMap {
   toString() { return this.moved.concat(this.replaced).join(" ") }
 }
 
-// ;; #toc=false The return value of mapping a position.
+// ;; The return value of mapping a position.
 export class MapResult {
   constructor(pos, deleted = false, recover = null) {
     // :: Pos The mapped version of the position.

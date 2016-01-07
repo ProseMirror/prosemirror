@@ -555,7 +555,7 @@ class Operation {
   }
 }
 
-// ;; #toc=false A selection-aware extension of `Transform`. Use
+// ;; A selection-aware extension of `Transform`. Use
 // `ProseMirror.tr` to create an instance.
 class EditorTransform extends Transform {
   constructor(pm) {

@@ -100,7 +100,7 @@ export class Command {
 
 const empty = []
 
-// ;; #path=CommandSpec #kind=interface #toc=false
+// ;; #path=CommandSpec #kind=interface
 // Commands are defined using objects that specify various aspects of
 // the command. The only properties that _must_ appear in a command
 // spec are [`name`](#CommandSpec.name) and [`run`](#CommandSpec.run).
@@ -157,7 +157,7 @@ const empty = []
 //
 // For mark types, you can derive `"set"`, `"unset"`, and `"toggle"`.
 
-// ;; #path=CommandParam #kind=interface #toc=false
+// ;; #path=CommandParam #kind=interface
 // The parameters that a command can take are specified using objects
 // with the following properties:
 
