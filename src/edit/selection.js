@@ -434,22 +434,62 @@ export function hasFocus(pm) {
   return sel.rangeCount && contains(pm.content, sel.anchorNode)
 }
 
-// Given an x,y position on the editor, get the position in the document.
-// FIXME fails on the space between lines
-// FIXME reformulate as selectionAtCoords? So that it can't return null
-export function posAtCoords(pm, coords) {
-  let element = document.elementFromPoint(coords.left, coords.top + 1)
-  if (!contains(pm.content, element)) return null
+function findOffsetInNode(node, coords) {
+  let closest, dyClosest = 1e8, coordsClosest, offset = 0
+  for (let child = node.firstChild, i = 0; child; child = child.nextSibling, i++) {
+    let rects
+    if (child.nodeType == 1) rects = child.getClientRects()
+    else if (child.nodeType == 3) rects = textRects(child)
+    else continue
 
-  let offset
-  if (element.childNodes.length == 1 && element.firstChild.nodeType == 3) {
-    element = element.firstChild
-    offset = offsetInTextNode(element, coords)
-  } else {
-    offset = offsetInElement(element, coords)
+    for (let i = 0; i < rects.length; i++) {
+      let rect = rects[i]
+      if (rect.left <= coords.left && rect.right >= coords.left) {
+        let dy = rect.top > coords.top ? rect.top - coords.top
+            : rect.bottom < coords.top ? coords.top - rect.bottom : 0
+        if (dy < dyClosest) { // FIXME does not group by row
+          closest = child
+          dyClosest = dy
+          coordsClosest = dy ? {left: coords.left, top: rect.top} : coords
+          if (child.nodeType == 1 && !child.firstChild)
+            offset = i + (coords.left >= (rect.left + rect.right) / 2 ? 1 : 0)
+          continue
+        }
+      }
+      if (!closest &&
+          (coords.top >= rect.bottom || coords.top >= rect.top && coords.left >= rect.right))
+        offset = i + 1
+    }
   }
+  if (!closest) return {node, offset}
+  if (closest.nodeType == 3) return findOffsetInText(closest, coordsClosest)
+  if (closest.firstChild) return findOffsetInNode(closest, coordsClosest)
+  return {node, offset}
+}
 
-  return posFromDOM(pm, element, offset)
+function findOffsetInText(node, coords) {
+  let len = node.nodeValue.length
+  let range = document.createRange()
+  for (let i = 0; i < len; i++) {
+    range.setEnd(node, i + 1)
+    range.setStart(node, i)
+    let rect = range.getBoundingClientRect()
+    if (rect.top == rect.bottom) continue
+    if (rect.left <= coords.left && rect.right >= coords.left &&
+        rect.top <= coords.top && rect.bottom >= coords.top)
+      return {node, offset: i + (coords.left >= (rect.left + rect.right) / 2 ? 1 : 0)}
+  }
+  return {node, offset: 0}
+}
+
+// Given an x,y position on the editor, get the position in the document.
+export function posAtCoords(pm, coords) {
+  let elt = document.elementFromPoint(coords.left, coords.top + 1)
+  if (!contains(pm.content, elt)) return null
+
+  if (!elt.firstChild) elt = elt.parentNode
+  let {node, offset} = findOffsetInNode(elt, coords)
+  return posFromDOM(pm, node, offset)
 }
 
 function textRect(node, from, to) {
@@ -457,6 +497,13 @@ function textRect(node, from, to) {
   range.setEnd(node, to)
   range.setStart(node, from)
   return range.getBoundingClientRect()
+}
+
+function textRects(node) {
+  let range = document.createRange()
+  range.setEnd(node, node.nodeValue.length)
+  range.setStart(node, 0)
+  return range.getClientRects()
 }
 
 // Given a position in the document model, get a bounding box of the character at
@@ -518,49 +565,6 @@ export function scrollIntoView(pm, pos) {
     if (atBody) break
   }
 }
-
-function offsetInRects(coords, rects, strict) {
-  let {top: y, left: x} = coords
-  let minY = 1e8, minX = 1e8, offset = 0
-  for (let i = 0; i < rects.length; i++) {
-    let rect = rects[i]
-    if (!rect || rect.top == rect.bottom) continue
-    let dX = x < rect.left ? rect.left - x : x > rect.right ? x - rect.right : 0
-    if (dX > minX) continue
-    if (dX < minX) { minX = dX; minY = 1e8 }
-    let dY = y < rect.top ? rect.top - y : y > rect.bottom ? y - rect.bottom : 0
-    if (dY < minY) {
-      minY = dY
-      offset = x < (rect.left + rect.right) / 2 ? i : i + 1
-    }
-  }
-  if (strict && (minX || minY)) return null
-  return offset
-}
-
-function offsetInTextNode(text, coords, strict) {
-  let len = text.nodeValue.length
-  let range = document.createRange()
-  let rects = []
-  for (let i = 0; i < len; i++) {
-    range.setEnd(text, i + 1)
-    range.setStart(text, i)
-    rects.push(range.getBoundingClientRect())
-  }
-  return offsetInRects(coords, rects, strict)
-}
-
-function offsetInElement(element, coords) {
-  let rects = []
-  for (let child = element.firstChild; child; child = child.nextSibling) {
-    if (child.getBoundingClientRect)
-      rects.push(child.getBoundingClientRect())
-    else
-      rects.push(null)
-  }
-  return offsetInRects(coords, rects)
-}
-
 function findSelectionIn(doc, path, offset, dir, text) {
   let node = doc.path(path)
   if (node.isTextblock) return new TextSelection(new Pos(path, offset))
