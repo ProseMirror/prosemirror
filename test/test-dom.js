@@ -122,14 +122,18 @@ recover("dont_ignore_whitespace",
         "<p><em>one</em> <strong>two</strong></p>",
         doc(p(em("one"), " ", strong("two"))))
 
-recover("stray tab",
+recover("stray_tab",
         "<p> <b>&#09;</b></p>",
-        doc(p(" ")))
+        doc(p()))
 
-recover("random spaces",
-        "<p><b>1 </b> </p>",
-        doc(p(strong("1 "))))
+recover("random_spaces",
+        "<p><b>1 </b>  </p>",
+        doc(p(strong("1"))))
 
-recover("empty code block",
+recover("empty_code_block",
         "<pre></pre>",
         doc(pre()))
+
+recover("trailing_code",
+        "<pre>foo\n</pre>",
+        doc(pre("foo\n")))
