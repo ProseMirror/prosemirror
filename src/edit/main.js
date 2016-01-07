@@ -167,7 +167,7 @@ export class ProseMirror {
 
   // :: (any, ?string)
   // Replace the editor's document. When `format` is given, it should
-  // be a [parsable format](#parse), and `value` should something in
+  // be a [parsable format](#format), and `value` should something in
   // that format. If not, `value` should be a `Node`.
   setContent(value, format) {
     if (format) value = parseFrom(this.schema, value, format)
@@ -177,7 +177,7 @@ export class ProseMirror {
   // :: (?string) → any
   // Get the editor's content in a given format. When `format` is not
   // given, a `Node` is returned. If it is given, it should be an
-  // existing [serialization format](#serialize).
+  // existing [serialization format](#format).
   getContent(format) {
     return format ? serializeTo(this.doc, format) : this.doc
   }
@@ -333,7 +333,7 @@ export class ProseMirror {
   // Add a
   // [keymap](https://github.com/marijnh/browserkeymap#an-object-type-for-keymaps)
   // to the editor. Keymaps added in this way are queried before the
-  // [base keymap](#keymap). The `rank` parameter can be used to
+  // base keymap. The `rank` parameter can be used to
   // control when they are queried relative to other maps added like
   // this. Maps with a lower rank get queried first.
   addKeymap(map, rank = 50) {
