@@ -1,4 +1,9 @@
+// ;; Superclass for ProseMirror-related errors. Does some magic to
+// make it safely subclassable even on ES5 runtimes.
 export class ProseMirrorError extends Error {
+  // :: (string)
+  // Create an instance of this error type, capturing the current
+  // stack.
   constructor(message) {
     super(message)
     if (this.message != message) {
@@ -12,6 +17,10 @@ export class ProseMirrorError extends Error {
     return this.constructor.name || functionName(this.constructor) || "ProseMirrorError"
   }
 
+  // :: (string)
+  // Raise an exception of this type, with the given message.
+  // (Somewhat shorter than `throw new ...`, and can appear in
+  // expression position.)
   static raise(message) {
     throw new this(message)
   }

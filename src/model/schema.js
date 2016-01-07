@@ -186,12 +186,11 @@ export class NodeType extends SchemaItem {
     return this.schema.subKind(type.contains, this.contains)
   }
 
-  // :: (NodeType) → [NodeType]
+  // :: (NodeType) → ?[NodeType]
   // Find a set of intermediate node types, possibly empty, that have
   // to be inserted between this type and `other` to put a node of
   // type `other` into this type.
   findConnection(other) {
-    // FIXME somehow define an order in which these are tried
     if (this.canContainType(other)) return []
 
     let seen = Object.create(null)
