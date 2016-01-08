@@ -3,9 +3,10 @@ import {joinPoint, joinableBlocks, canLift} from "../transform"
 import sortedInsert from "../util/sortedinsert"
 import {AssertionError} from "../util/error"
 
-import {defineCommand} from "./command"
 import {charCategory, isExtendingChar} from "./char"
 import {findSelectionFrom, verticalMotionLeavesTextblock, setDOMSelectionToPos, NodeSelection} from "./selection"
+
+export const baseCommands = Object.create(null)
 
 // FIXME find a way to put an introduction text above the command section
 
@@ -48,8 +49,7 @@ function moveBackward(parent, offset, by) {
 // **Ctrl-H (Mac), Alt-Backspace (Mac), Ctrl-D (Mac),
 // **Ctrl-Alt-Backspace (Mac), Alt-Delete (Mac), Alt-D (Mac)
 
-defineCommand({
-  name: "deleteSelection",
+baseCommands.deleteSelection = {
   label: "Delete the selection",
   run(pm) {
     return pm.tr.replaceSelection().apply(pm.apply.scroll)
@@ -58,7 +58,7 @@ defineCommand({
     all: ["Backspace(10)", "Delete(10)", "Mod-Backspace(10)", "Mod-Delete(10)"],
     mac: ["Ctrl-H(10)", "Alt-Backspace(10)", "Ctrl-D(10)", "Ctrl-Alt-Backspace(10)", "Alt-Delete(10)", "Alt-D(10)"]
   }
-})
+}
 
 function deleteBarrier(pm, cut) {
   let around = pm.doc.path(cut.path)
@@ -89,8 +89,7 @@ function deleteBarrier(pm, cut) {
 //
 // **Keybindings:** Backspace, Mod-Backspace
 
-defineCommand({
-  name: "joinBackward",
+baseCommands.joinBackward = {
   label: "Join with the block above",
   run(pm) {
     let {head, empty} = pm.selection
@@ -115,7 +114,7 @@ defineCommand({
     return deleteBarrier(pm, cut)
   },
   keys: ["Backspace(30)", "Mod-Backspace(30)"]
-})
+}
 
 // ;; #path=deleteCharBefore #kind=command
 // Delete the character before the cursor, if the selection is empty
@@ -123,8 +122,7 @@ defineCommand({
 //
 // **Keybindings:** Backspace, Ctrl-H (Mac)
 
-defineCommand({
-  name: "deleteCharBefore",
+baseCommands.deleteCharBefore = {
   label: "Delete a character before the cursor",
   run(pm) {
     let {head, empty} = pm.selection
@@ -136,7 +134,7 @@ defineCommand({
     all: ["Backspace(60)"],
     mac: ["Ctrl-H(40)"]
   }
-})
+}
 
 // ;; #path=deleteWordBefore #kind=command
 // Delete the word before the cursor, if the selection is empty and
@@ -144,8 +142,7 @@ defineCommand({
 //
 // **Keybindings:** Mod-Backspace, Alt-Backspace (Mac)
 
-defineCommand({
-  name: "deleteWordBefore",
+baseCommands.deleteWordBefore = {
   label: "Delete the word before the cursor",
   run(pm) {
     let {head, empty} = pm.selection
@@ -157,7 +154,7 @@ defineCommand({
     all: ["Mod-Backspace(40)"],
     mac: ["Alt-Backspace(40)"]
   }
-})
+}
 
 function moveForward(parent, offset, by) {
   if (by != "char" && by != "word")
@@ -196,8 +193,7 @@ function moveForward(parent, offset, by) {
 //
 // **Keybindings:** Delete, Mod-Delete
 
-defineCommand({
-  name: "joinForward",
+baseCommands.joinForward = {
   label: "Join with the block below",
   run(pm) {
     let {head, empty} = pm.selection
@@ -223,7 +219,7 @@ defineCommand({
     return deleteBarrier(pm, cut)
   },
   keys: ["Delete(30)", "Mod-Delete(30)"]
-})
+}
 
 // ;; #path=deleteCharAfter #kind=command
 // Delete the character after the cursor, if the selection is empty
@@ -231,8 +227,7 @@ defineCommand({
 //
 // **Keybindings:** Delete, Ctrl-D (Mac)
 
-defineCommand({
-  name: "deleteCharAfter",
+baseCommands.deleteCharAfter = {
   label: "Delete a character after the cursor",
   run(pm) {
     let {head, empty} = pm.selection
@@ -244,7 +239,7 @@ defineCommand({
     all: ["Delete(60)"],
     mac: ["Ctrl-D(60)"]
   }
-})
+}
 
 // ;; #path=deleteWordAfter #kind=command
 // Delete the word after the cursor, if the selection is empty and the
@@ -253,8 +248,7 @@ defineCommand({
 // **Keybindings:** Mod-Delete, Ctrl-Alt-Backspace (Mac), Alt-Delete
 // (Mac), Alt-D (Mac)
 
-defineCommand({
-  name: "deleteWordAfter",
+baseCommands.deleteWordAfter = {
   label: "Delete a word after the cursor",
   run(pm) {
     let {head, empty} = pm.selection
@@ -266,7 +260,7 @@ defineCommand({
     all: ["Mod-Delete(40)"],
     mac: ["Ctrl-Alt-Backspace(40)", "Alt-Delete(40)", "Alt-D(40)"]
   }
-})
+}
 
 function joinPointAbove(pm) {
   let {node, from} = pm.selection
@@ -283,8 +277,7 @@ function joinPointAbove(pm) {
 //
 // Registers itself in the block [menu group](#CommandSpec.menuGroup)
 
-defineCommand({
-  name: "joinUp",
+baseCommands.joinUp = {
   label: "Join with above block",
   run(pm) {
     let point = joinPointAbove(pm), isNode = pm.selection.node
@@ -300,7 +293,7 @@ defineCommand({
     path: "M0 75h800v125h-800z M0 825h800v-125h-800z M250 400h100v-100h100v100h100v100h-100v100h-100v-100h-100z"
   },
   keys: ["Alt-Up"]
-})
+}
 
 function joinPointBelow(pm) {
   let {node, to} = pm.selection
@@ -314,8 +307,7 @@ function joinPointBelow(pm) {
 //
 // **Keybindings:** Alt-Down
 
-defineCommand({
-  name: "joinDown",
+baseCommands.joinDown = {
   label: "Join with below block",
   run(pm) {
     let node = pm.selection.node
@@ -326,7 +318,7 @@ defineCommand({
   },
   select(pm) { return joinPointBelow(pm) },
   keys: ["Alt-Down"]
-})
+}
 
 // ;; #path=lift #kind=command
 // Lift the selected block, or the closest ancestor block of the
@@ -336,8 +328,7 @@ defineCommand({
 //
 // Registers itself in the block [menu group](#CommandSpec.menuGroup).
 
-defineCommand({
-  name: "lift",
+baseCommands.lift = {
   label: "Lift out of enclosing block",
   run(pm) {
     let {from, to} = pm.selection
@@ -354,7 +345,7 @@ defineCommand({
     path: "M219 310v329q0 7-5 12t-12 5q-8 0-13-5l-164-164q-5-5-5-13t5-13l164-164q5-5 13-5 7 0 12 5t5 12zM1024 749v109q0 7-5 12t-12 5h-987q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h987q7 0 12 5t5 12zM1024 530v109q0 7-5 12t-12 5h-621q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h621q7 0 12 5t5 12zM1024 310v109q0 7-5 12t-12 5h-621q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h621q7 0 12 5t5 12zM1024 91v109q0 7-5 12t-12 5h-987q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h987q7 0 12 5t5 12z"
   },
   keys: ["Alt-Left"]
-})
+}
 
 // ;; #path=newlineInCode #kind=command
 // If the selection is in a node whose type has a truthy `isCode`
@@ -362,8 +353,7 @@ defineCommand({
 //
 // **Keybindings:** Enter
 
-defineCommand({
-  name: "newlineInCode",
+baseCommands.newlineInCode = {
   label: "Insert newline",
   run(pm) {
     let {from, to, node} = pm.selection, block
@@ -375,7 +365,7 @@ defineCommand({
       return false
   },
   keys: ["Enter(10)"]
-})
+}
 
 // ;; #path=createParagraphNew #kind=command
 // If a content-less block node is selected, create an empty paragraph
@@ -383,8 +373,7 @@ defineCommand({
 //
 // **Keybindings:** Enter
 
-defineCommand({
-  name: "createParagraphNear",
+baseCommands.createParagraphNear = {
   label: "Create a paragraph near the selected leaf block",
   run(pm) {
     let {from, to, node} = pm.selection
@@ -394,7 +383,7 @@ defineCommand({
     pm.setTextSelection(new Pos(side.toPath(), 0))
   },
   keys: ["Enter(20)"]
-})
+}
 
 // ;; #path=liftEmptyBlock #kind=command
 // If the cursor is in an empty textblock that can be lifted, lift the
@@ -402,8 +391,7 @@ defineCommand({
 //
 // **Keybindings:** Enter
 
-defineCommand({
-  name: "liftEmptyBlock",
+baseCommands.liftEmptyBlock = {
   label: "Move current block up",
   run(pm) {
     let {head, empty} = pm.selection
@@ -417,7 +405,7 @@ defineCommand({
     return pm.tr.lift(head).apply(pm.apply.scroll)
   },
   keys: ["Enter(30)"]
-})
+}
 
 // ;; #path=splitBlock #kind=command
 // Split the parent block of the selection. If the selection is a text
@@ -425,8 +413,7 @@ defineCommand({
 //
 // **Keybindings:** Enter
 
-defineCommand({
-  name: "splitBlock",
+baseCommands.splitBlock = {
   label: "Split the current block",
   run(pm) {
     let {from, to, node} = pm.selection, block = pm.doc.path(to.path)
@@ -439,7 +426,7 @@ defineCommand({
     }
   },
   keys: ["Enter(60)"]
-})
+}
 
 // ;; #path=textblockType #kind=command
 // Change the type of the selected textblocks. Takes one parameter,
@@ -449,8 +436,7 @@ defineCommand({
 // Registers itself in the block [menu group](#CommandSpec.menuGroup), where it creates the
 // textblock type dropdown.
 
-defineCommand({
-  name: "textblockType",
+baseCommands.textblockType = {
   label: "Change block type",
   run(pm, type) {
     let {from, to} = pm.selection
@@ -467,7 +453,7 @@ defineCommand({
     type: "param"
   },
   menuGroup: "block(10)"
-})
+}
 
 function listTextblockTypes(pm) {
   let cached = pm.schema.cached.textblockTypes
@@ -516,8 +502,7 @@ function nodeAboveSelection(pm) {
 // **Keybindings:** Esc
 //
 // Registers itself in the block [menu group](#CommandSpec.menuGroup).
-defineCommand({
-  name: "selectParentNode",
+baseCommands.selectParentNode = {
   label: "Select parent node",
   run(pm) {
     let node = nodeAboveSelection(pm)
@@ -530,7 +515,7 @@ defineCommand({
   menuGroup: "block(90)",
   display: {type: "icon", text: "\u2b1a", style: "font-weight: bold; vertical-align: 20%"},
   keys: ["Esc"]
-})
+}
 
 function moveSelectionBlock(pm, dir) {
   let {from, to, node} = pm.selection
@@ -571,8 +556,7 @@ function selectNodeHorizontally(pm, dir) {
 //
 // **Keybindings:** Left, Mod-Left
 
-defineCommand({
-  name: "selectNodeLeft",
+baseCommands.selectNodeLeft = {
   label: "Move the selection onto or out of the block to the left",
   run(pm) {
     let done = selectNodeHorizontally(pm, -1)
@@ -580,15 +564,14 @@ defineCommand({
     return done
   },
   keys: ["Left", "Mod-Left"]
-})
+}
 
 // ;; #path=selectNodeRight #kind=command
 // Select the node directly after the cursor, if any.
 //
 // **Keybindings:** Right, Mod-Right
 
-defineCommand({
-  name: "selectNodeRight",
+baseCommands.selectNodeRight = {
   label: "Move the selection onto or out of the block to the right",
   run(pm) {
     let done = selectNodeHorizontally(pm, 1)
@@ -596,7 +579,7 @@ defineCommand({
     return done
   },
   keys: ["Right", "Mod-Right"]
-})
+}
 
 function selectNodeVertically(pm, dir) {
   let {empty, node, from, to} = pm.selection
@@ -637,8 +620,7 @@ function selectNodeVertically(pm, dir) {
 //
 // **Keybindings:** Up
 
-defineCommand({
-  name: "selectNodeUp",
+baseCommands.selectNodeUp = {
   label: "Move the selection onto or out of the block above",
   run(pm) {
     let done = selectNodeVertically(pm, -1)
@@ -646,15 +628,14 @@ defineCommand({
     return done
   },
   keys: ["Up"]
-})
+}
 
 // ;; #path=selectNodeDown #kind=command
 // Select the node directly below the cursor, if any.
 //
 // **Keybindings:** Down
 
-defineCommand({
-  name: "selectNodeDown",
+baseCommands.selectNodeDown = {
   label: "Move the selection onto or out of the block below",
   run(pm) {
     let done = selectNodeVertically(pm, 1)
@@ -662,7 +643,7 @@ defineCommand({
     return done
   },
   keys: ["Down"]
-})
+}
 
 // ;; #path=undo #kind=command
 // Undo the most recent change event, if any.
@@ -671,8 +652,7 @@ defineCommand({
 //
 // Registers itself in the history [menu group](#CommandSpec.menuGroup).
 
-defineCommand({
-  name: "undo",
+baseCommands.undo = {
   label: "Undo last change",
   run(pm) { pm.scrollIntoView(); return pm.history.undo() },
   select(pm) { return pm.history.canUndo() },
@@ -683,7 +663,7 @@ defineCommand({
     path: "M761 1024c113-206 132-520-313-509v253l-384-384 384-384v248c534-13 594 472 313 775z"
   },
   keys: ["Mod-Z"]
-})
+}
 
 // ;; #path=redo #kind=command
 // Redo the most recently undone change event, if any.
@@ -692,8 +672,7 @@ defineCommand({
 //
 // Registers itself in the history [menu group](#CommandSpec.menuGroup).
 
-defineCommand({
-  name: "redo",
+baseCommands.redo = {
   label: "Redo last undone change",
   run(pm) { pm.scrollIntoView(); return pm.history.redo() },
   select(pm) { return pm.history.canRedo() },
@@ -704,4 +683,4 @@ defineCommand({
     path: "M576 248v-248l384 384-384 384v-253c-446-10-427 303-313 509-280-303-221-789 313-775z"
   },
   keys: ["Mod-Y", "Shift-Mod-Z"]
-})
+}

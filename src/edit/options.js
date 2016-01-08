@@ -1,6 +1,8 @@
 import {defaultSchema} from "../model"
 import {AssertionError} from "../util/error"
 
+import {Command, updateCommands} from "./command"
+
 class Option {
   constructor(defaultValue, update, updateOnInit) {
     this.defaultValue = defaultValue
@@ -63,7 +65,7 @@ defineOption("historyEventDelay", 500)
 // be used to change, for example, the [key
 // bindings](#CommandSpec.keys) for a command or its appearance in the
 // menu.
-defineOption("commands", {}, pm => pm.updateCommands(), false)
+defineOption("commands", Command.defaultSet, updateCommands)
 
 // :: string #path=commandParamHandler #kind=option
 // The name of the handler used to prompt the user for [command

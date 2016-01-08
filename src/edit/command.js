@@ -6,22 +6,14 @@ import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
 import {NamespaceError, AssertionError} from "../util/error"
 
-const commands = Object.create(null)
+import {baseCommands} from "./base_commands"
 
 const paramHandlers = Object.create(null)
-
-// :: (CommandSpec)
-// Define a globally available command.
-export function defineCommand(spec) {
-  if (commands[spec.name])
-    NamespaceError.raise("Duplicate definition of command " + spec.name)
-  commands[spec.name] = spec
-}
 
 // ;; A command is a named piece of functionality that can be bound to
 // a key, shown in the menu, or otherwise exposed to the user.
 //
-// The commands available in a given editor are gathered from the
+// FIXME The commands available in a given editor are gathered from the
 // commands defined with `defineCommand`, and from
 // [specs](#CommandSpec) associated with node and mark types in the
 // editor's [schema](#Schema.registry). Use the
@@ -94,6 +86,59 @@ export class Command {
 }
 
 const empty = []
+
+class CommandSet {
+  constructor(fromSchema, updates) {
+    this.fromSchema = fromSchema
+    this.updates = updates
+  }
+
+  includeSchema() {
+    return new CommandSet(true, this.updates)
+  }
+
+  update(spec) {
+    return new CommandSet(this.fromSchema, this.updates.concat(spec))
+  }
+
+  derive(schema) {
+    let found = Object.create(null)
+    if (this.fromSchema) schema.registry("command", (spec, type, name) => {
+      if (spec.derive) {
+        let conf = typeof spec.derive == "object" ? spec.derive : {}
+        let dname = conf.name || spec.name
+        let derive = type.constructor.deriveableCommands[dname]
+        if (!derive) AssertionError.raise("Don't know how to derive command " + dname)
+        let derived = derive.call(type, conf)
+        for (var prop in spec) if (prop != "derive") derived[prop] = spec[prop]
+        spec = derived
+      }
+      found[name + ":" + spec.name] = {self: type, spec}
+    })
+
+    this.updates.forEach(update => {
+      for (let name in update) {
+        let spec = update[name]
+        if (!spec) {
+          delete found[name]
+        } else if (spec.run || spec.derive) {
+          found[name] = {self: null, spec}
+        } else {
+          let known = found[name]
+          if (known) for (let prop in spec) known.spec[prop] = spec[prop]
+        }
+      }
+    })
+
+    let result = Object.create(null)
+    for (let name in found)
+      result[name] = new Command(found[name].spec, found[name].self, name)
+    return result
+  }
+}
+
+Command.defaultSet = new CommandSet(true, [baseCommands])
+Command.emptySet = new CommandSet(false, [])
 
 // ;; #path=CommandSpec #kind=interface
 // Commands are defined using objects that specify various aspects of
@@ -183,47 +228,7 @@ function getParamHandler(pm) {
   if (option && paramHandlers[option]) return paramHandlers[option]
 }
 
-export function deriveCommands(pm) {
-  let found = Object.create(null), config = pm.options.commands
-  function add(name, spec, self) {
-    if (found[name]) NamespaceError.raise("Duplicate definition of command " + name)
-    found[name] = new Command(spec, self, name)
-  }
-  function addAndOverride(name, spec, self) {
-    if (Object.prototype.hasOwnProperty.call(config, name)) {
-      let confSpec = config[name]
-      if (!confSpec) return
-      if (confSpec.run || confSpec.derive) return
-      let newSpec = Object.create(null)
-      for (let prop in spec) newSpec[prop] = spec[prop]
-      for (let prop in confSpec) newSpec[prop] = confSpec[prop]
-      spec = newSpec
-    }
-    add(name, spec, self)
-  }
-
-  pm.schema.registry("command", (spec, type, name) => {
-    if (spec.derive) {
-      let conf = typeof spec.derive == "object" ? spec.derive : {}
-      let dname = conf.name || spec.name
-      let derive = type.constructor.deriveableCommands[dname]
-      if (!derive) AssertionError.raise("Don't know how to derive command " + dname)
-      let derived = derive.call(type, conf)
-      for (var prop in spec) if (prop != "derive") derived[prop] = spec[prop]
-      spec = derived
-    }
-    addAndOverride(name + ":" + spec.name, spec, type)
-  })
-  for (let name in commands)
-    addAndOverride(name, commands[name])
-  for (let name in config) {
-    let spec = config[name]
-    if (spec && (spec.run || spec.derive)) add(name, spec)
-  }
-  return found
-}
-
-export function deriveKeymap(pm) {
+function deriveKeymap(pm) {
   let bindings = {}, platform = browser.mac ? "mac" : "pc"
   function add(command, keys) {
     for (let i = 0; i < keys.length; i++) {
@@ -243,6 +248,18 @@ export function deriveKeymap(pm) {
   for (let key in bindings)
     bindings[key] = bindings[key].map(b => b.command.name)
   return new Keymap(bindings)
+}
+
+export function updateCommands(pm, set) {
+  // :: () #path=ProseMirror#events#commandsChanging
+  // Fired before the set of commands for the editor is updated.
+  pm.signal("commandsChanging")
+  pm.commands = set.derive(pm.schema)
+  pm.input.baseKeymap = deriveKeymap(pm)
+  pm.commandKeys = Object.create(null)
+  // :: () #path=ProseMirror#events#commandsChanged
+  // Fired when the set of commands for the editor is updated.
+  pm.signal("commandsChanged")
 }
 
 function markActive(pm, type) {

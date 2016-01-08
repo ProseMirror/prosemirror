@@ -19,7 +19,6 @@ import {SelectionState, TextSelection, NodeSelection,
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
 import {History} from "./history"
-import {deriveKeymap, deriveCommands} from "./command"
 import {RangeStore, MarkedRange} from "./range"
 
 // ;; This is the class used to represent instances of the editor. A
@@ -77,7 +76,6 @@ export class ProseMirror {
     // The commands available in the editor.
     this.commands = null
     this.commandKeys = null
-    this.updateCommands()
     initOptions(this)
   }
 
@@ -93,18 +91,6 @@ export class ProseMirror {
   // :: (string) → any
   // Get the current value of the given [option](#edit_options).
   getOption(name) { return this.options[name] }
-
-  updateCommands() {
-    // :: () #path=ProseMirror#events#commandsChanging
-    // Fired before the set of commands for the editor is updated.
-    this.signal("commandsChanging")
-    this.commands = deriveCommands(this)
-    this.input.baseKeymap = deriveKeymap(this)
-    this.commandKeys = Object.create(null)
-    // :: () #path=ProseMirror#events#commandsChanged
-    // Fired when the set of commands for the editor is updated.
-    this.signal("commandsChanged")
-  }
 
   // :: Selection
   // Get the current selection.
