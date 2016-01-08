@@ -19,7 +19,7 @@ import {SelectionState, TextSelection, NodeSelection,
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
 import {History} from "./history"
-import {deriveKeymap, deriveCommands} from "./commands"
+import {deriveKeymap, deriveCommands} from "./command"
 import {RangeStore, MarkedRange} from "./range"
 
 // ;; This is the class used to represent instances of the editor. A
@@ -539,6 +539,8 @@ export class ProseMirror {
     }
   }
 }
+
+ProseMirror.prototype.apply.scroll = {scrollIntoView: true}
 
 export const DIRTY_RESCAN = 1, DIRTY_REDRAW = 2
 

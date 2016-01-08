@@ -7,7 +7,10 @@ export {ProseMirror} from "./main"
 export {defineOption} from "./options"
 export {Range, SelectionError} from "./selection"
 export {MarkedRange} from "./range"
-export {defineCommand, defineParamHandler, Command} from "./commands"
+export {defineCommand, defineParamHandler, Command} from "./command"
 
 import Keymap from "browserkeymap"
 export {Keymap}
+
+import "./base_commands"
+import "./schema_commands"
