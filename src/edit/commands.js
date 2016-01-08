@@ -1,7 +1,9 @@
+// FIXME split up
+
 import Keymap from "browserkeymap"
 
 import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
-        StrongMark, EmMark, CodeMark, LinkMark, Image, Pos, NodeType, MarkType} from "../model"
+        StrongMark, EmMark, CodeMark, LinkMark, Image, Pos, NodeType, MarkType, Mark} from "../model"
 import {joinPoint, joinableBlocks, canLift, canWrap} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
@@ -457,15 +459,30 @@ LinkMark.register("command", {
   label: "Add link",
   run(pm, href, title) { pm.setMark(this, true, {href, title}) },
   params: [
-    {label: "Target", type: "text"},
-    {label: "Title", type: "text", default: ""}
+    {label: "Target", type: "text",
+     prefill: function(pm) { return selectedMarkAttr(pm, this, "href")}},
+    {label: "Title", type: "text", default: "",
+     prefill: function(pm) { return selectedMarkAttr(pm, this, "title")}}
   ],
   select(pm) { return markApplies(pm, this) && !markActive(pm, this) },
   menuGroup: "inline(30)",
   display: linkIcon
-  // FIXME pre-fill params when a single link is selected
-  // (If parameter pre-filling is going to continue working like that)
 })
+
+function selectedMarkAttr(pm, type, attr) {
+  let {from, to, empty} = pm.selection
+  let start, end
+  if (empty) {
+    start = end = type.isInSet(pm.activeMarks())
+  } else {
+    let startParent = pm.doc.path(from.path)
+    let startChunk = startParent.size > from.offset && startParent.chunkAfter(from.offset)
+    start = startChunk ? type.isInSet(startChunk.node.marks) : null
+    end = type.isInSet(pm.doc.marksAt(to))
+  }
+  if (start && end && start.attrs[attr] == end.attrs[attr])
+    return start.attrs[attr]
+}
 
 function selectedNodeAttr(pm, type, name) {
   let {node} = pm.selection
