@@ -40,10 +40,11 @@ import {getIcon} from "./icons"
 //     `"select"` parameters.
 
 export class Menu {
-  constructor(pm, display) {
+  constructor(pm, display, reset) {
     this.display = display
     this.stack = []
     this.pm = pm
+    this.resetHandler = reset
   }
 
   show(content, displayInfo) {
@@ -53,13 +54,14 @@ export class Menu {
 
   reset() {
     this.stack.length = 0
-    this.display.reset()
+    this.resetHandler()
   }
 
   enter(content, displayInfo) {
     let pieces = [], close = false, explore = value => {
       if (Array.isArray(value)) {
         for (let i = 0; i < value.length; i++) explore(value[i])
+        // FIXME only when something was added
         close = true
       } else if (!value.select || value.select(this.pm)) {
         if (close) {
@@ -95,23 +97,17 @@ export class Menu {
     if (this.stack.length)
       this.draw()
     else
-      this.display.reset()
+      this.resetHandler()
   }
 }
 
 export class TooltipDisplay {
-  constructor(tooltip, resetFunc) {
+  constructor(tooltip) {
     this.tooltip = tooltip
-    this.resetFunc = resetFunc
   }
 
   clear() {
     this.tooltip.close()
-  }
-
-  reset() {
-    if (this.resetFunc) this.resetFunc()
-    else this.clear()
   }
 
   show(dom, info) {

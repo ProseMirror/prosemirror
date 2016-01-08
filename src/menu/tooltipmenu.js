@@ -67,7 +67,7 @@ class TooltipMenu {
     this.update = new UpdateScheduler(pm, "change selectionChange blur commandsChanged", () => this.prepareUpdate())
 
     this.tooltip = new Tooltip(pm.wrapper, "above")
-    this.menu = new Menu(pm, new TooltipDisplay(this.tooltip, () => this.update.force()))
+    this.menu = new Menu(pm, new TooltipDisplay(this.tooltip), () => this.update.force())
   }
 
   detach() {

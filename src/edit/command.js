@@ -198,7 +198,7 @@ export function deriveCommands(pm) {
     if (Object.prototype.hasOwnProperty.call(config, name)) {
       let confSpec = config[name]
       if (!confSpec) return
-      if (confSpec.run) return
+      if (confSpec.run || confSpec.derive) return
       let newSpec = Object.create(null)
       for (let prop in spec) newSpec[prop] = spec[prop]
       for (let prop in confSpec) newSpec[prop] = confSpec[prop]
@@ -223,7 +223,7 @@ export function deriveCommands(pm) {
     addAndOverride(name, commands[name])
   for (let name in config) {
     let spec = config[name]
-    if (spec && spec.run) add(name, spec)
+    if (spec && (spec.run || spec.derive)) add(name, spec)
   }
   return found
 }

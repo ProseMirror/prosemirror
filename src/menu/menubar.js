@@ -39,12 +39,10 @@ function getItems(pm, items) {
 }
 
 class BarDisplay {
-  constructor(container, resetFunc) {
+  constructor(container) {
     this.container = container
-    this.resetFunc = resetFunc
   }
   clear() { this.container.textContent = "" }
-  reset() { this.resetFunc() }
   show(dom) {
     this.clear()
     this.container.appendChild(dom)
@@ -85,7 +83,7 @@ class MenuBar {
     pm.wrapper.insertBefore(this.wrapper, pm.wrapper.firstChild)
 
     this.update = new UpdateScheduler(pm, "selectionChange change activeMarkChange commandsChanged", () => this.prepareUpdate())
-    this.menu = new Menu(pm, new BarDisplay(this.menuElt, () => this.resetMenu()))
+    this.menu = new Menu(pm, new BarDisplay(this.menuElt), () => this.resetMenu())
 
     this.update.force()
 
