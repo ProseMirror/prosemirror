@@ -307,7 +307,7 @@ export class ProseMirror {
       redrawn = true
     }
 
-    if ((redrawn || !op.sel.eq(this.sel.range)) && !this.input.composing)
+    if ((redrawn || !op.sel.eq(this.sel.range)) && !this.input.composing || op.focus)
       this.sel.toDOM(op.focus)
 
     if (op.scrollIntoView !== false)
