@@ -14,7 +14,7 @@ export class BlockQuote extends Block {}
 export class OrderedList extends Block {
   get contains() { return "list_item" }
   get isList() { return true }
-  get attrs() { new Attribute({default: "1"}) }
+  get attrs() { return {order: new Attribute({default: "1"})} }
 }
 
 // ;; The default bullet list node type.

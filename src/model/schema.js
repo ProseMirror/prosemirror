@@ -315,13 +315,16 @@ export class Attribute {
   // settings for the attributes. The following settings are
   // supported:
   //
-  // **`default`**: `?string`
-  // : The default value for this attribute, to choose when no
-  //   explicit value is provided.
+  // **`default`**`: ?string`
+  //   : The default value for this attribute, to choose when no
+  //     explicit value is provided.
   //
-  // **`compute`**: `?(Fragment) → string`
-  // : A function that computes a default value for the attribute from
-  //   the node's content.
+  // **`compute`**`: ?(Fragment) → string`
+  //   : A function that computes a default value for the attribute from
+  //     the node's content.
+  //
+  // **`label`**`: ?string`
+  //   : A user-readable text label associated with the attribute.
   //
   // Attributes that have no default or compute property must be
   // provided whenever a node or mark of a type that has them is
@@ -329,6 +332,7 @@ export class Attribute {
   constructor(options = {}) {
     this.default = options.default
     this.compute = options.compute
+    this.label = options.label
   }
 }
 

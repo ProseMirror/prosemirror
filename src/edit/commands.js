@@ -506,21 +506,15 @@ function selectedNodeAttr(pm, type, name) {
 
 Image.register("command", {
   name: "insert",
+  derive: {
+    params: [
+      {label: "Image URL", attr: "src"},
+      {label: "Description / alternative text", attr: "alt",
+       prefill: function(pm) { return selectedNodeAttr(pm, this, "alt") || pm.selectedText }},
+      {label: "Title", attr: "title"}
+    ]
+  },
   label: "Insert image",
-  run(pm, src, alt, title) {
-    return pm.tr.replaceSelection(this.create({src, title, alt})).apply(andScroll)
-  },
-  params: [
-    {label: "Image URL", type: "text",
-     prefill: function(pm) { return selectedNodeAttr(pm, this, "src") }},
-    {label: "Description / alternative text", type: "text", default: "",
-     prefill: function(pm) { return selectedNodeAttr(pm, this, "alt") || pm.selectedText }},
-    {label: "Title", type: "text", default: "",
-     prefill: function(pm) { return selectedNodeAttr(pm, this, "title") }}
-  ],
-  select(pm) {
-    return pm.doc.path(pm.selection.from.path).type.canContainType(this)
-  },
   menuGroup: "inline(40)",
   display: {
     type: "icon",
@@ -1156,12 +1150,33 @@ CodeBlock.register("command", {
   keys: ["Mod-\\"]
 })
 
-// FIXME automate attribute reading?
-NodeType.deriveableCommands.insert = conf => ({
-  run(pm) {
-    return pm.tr.replaceSelection(this.create(conf.attrs)).apply(andScroll)
+NodeType.deriveableCommands.insert = function(conf) {
+  let params = conf.params && conf.params.map(param => {
+    let attr = this.attrs[param.attr]
+    return {
+      label: param.label,
+      type: param.type || "text",
+      default: param.default || attr.default,
+      prefill: param.prefill || function(pm) { return selectedNodeAttr(pm, this, param.attr) }
+    }
+  })
+  return {
+    run(pm, ...params) {
+      let attrs = conf.attrs
+      if (conf.params) {
+        let filled = Object.create(null)
+        if (attrs) for (let name in attrs) filled[name] = attrs[name]
+        conf.params.forEach((param, i) => filled[param.attr] = params[i])
+        attrs = filled
+      }
+      return pm.tr.replaceSelection(this.create(attrs)).apply(andScroll)
+    },
+    select: this.isInline ? function(pm) {
+      return pm.doc.path(pm.selection.from.path).type.canContainType(this)
+    } : null,
+    params: params
   }
-})
+}
 
 // ;; #path=schema:horizontal_rule:insert #kind=command
 // Replace the selection with a horizontal rule.
