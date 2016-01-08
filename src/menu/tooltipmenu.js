@@ -82,16 +82,16 @@ class TooltipMenu {
   }
 
   items(inline, block) {
-    let items
-    if (!inline) items = []
-    else if (this.config.inlineItems) items = getItems(this.pm, this.config.inlineItems)
-    else items = menuGroups(this.pm, this.config.inlineGroups || ["inline", "insert"])
+    let result
+    if (!inline) result = []
+    else if (this.config.inlineItems) result = getItems(this.pm, this.config.inlineItems)
+    else result = menuGroups(this.pm, this.config.inlineGroups || ["inline", "insert"])
 
     if (block) {
-      if (this.config.blockItems) addIfNew(items, getItems(this.pm, this.config.blockItems))
-      else addIfNew(items, menuGroups(this.pm, this.config.blockGroups || ["insert", "block"]))
+      if (this.config.blockItems) addIfNew(result, getItems(this.pm, this.config.blockItems))
+      else addIfNew(result, menuGroups(this.pm, this.config.blockGroups || ["insert", "block"]))
     }
-    return items
+    return result
   }
 
   prepareUpdate() {
