@@ -1,7 +1,7 @@
 import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
         StrongMark, EmMark, CodeMark, LinkMark, Image, Pos} from "../model"
 
-import {selectedMarkAttr, selectedNodeAttr, markActive, markApplies} from "./command"
+import {selectedNodeAttr} from "./command"
 
 // # Mark types
 
@@ -150,15 +150,14 @@ LinkMark.register("command", {
 
 LinkMark.register("command", {
   name: "set",
+  derive: {
+    inverseSelect: true,
+    params: [
+      {label: "Target", attr: "href"},
+      {label: "Title", attr: "title"}
+    ]
+  },
   label: "Add link",
-  run(pm, href, title) { pm.setMark(this, true, {href, title}) },
-  params: [
-    {label: "Target", type: "text",
-     prefill: function(pm) { return selectedMarkAttr(pm, this, "href")}},
-    {label: "Title", type: "text", default: "",
-     prefill: function(pm) { return selectedMarkAttr(pm, this, "title")}}
-  ],
-  select(pm) { return markApplies(pm, this) && !markActive(pm, this) },
   menuGroup: "inline(30)",
   display: linkIcon
 })
@@ -208,7 +207,7 @@ Image.register("command", {
 
 BulletList.register("command", {
   name: "wrap",
-  derive: true,
+  derive: {list: true},
   label: "Wrap the selection in a bullet list",
   menuGroup: "block(40)",
   display: {
@@ -228,7 +227,7 @@ BulletList.register("command", {
 
 OrderedList.register("command", {
   name: "wrap",
-  derive: true,
+  derive: {list: true},
   label: "Wrap the selection in an ordered list",
   menuGroup: "block(41)",
   display: {

@@ -250,7 +250,7 @@ export function deriveKeymap(pm) {
   return new Keymap(bindings)
 }
 
-export function markActive(pm, type) {
+function markActive(pm, type) {
   let sel = pm.selection
   if (sel.empty)
     return type.isInSet(pm.activeMarks())
@@ -270,7 +270,7 @@ function canAddInline(pm, type) {
   return can
 }
 
-export function markApplies(pm, type) {
+function markApplies(pm, type) {
   let {from, to} = pm.selection
   let relevant = false
   pm.doc.nodesBetween(from, to, node => {
@@ -282,27 +282,7 @@ export function markApplies(pm, type) {
   return relevant
 }
 
-NodeType.deriveableCommands = Object.create(null)
-MarkType.deriveableCommands = Object.create(null)
-
-// FIXME support params/attrs
-MarkType.deriveableCommands.set = () => ({
-  run(pm) { pm.setMark(this, true) },
-  select(pm) { return canAddInline(pm, this) }
-})
-
-MarkType.deriveableCommands.unset = () => ({
-  run(pm) { pm.setMark(this, false) },
-  select(pm) { return markActive(pm, this) }
-})
-
-MarkType.deriveableCommands.toggle = () => ({
-  run(pm) { pm.setMark(this, null) },
-  active(pm) { return markActive(pm, this) },
-  select(pm) { return markApplies(pm, this) }
-})
-
-export function selectedMarkAttr(pm, type, attr) {
+function selectedMarkAttr(pm, type, attr) {
   let {from, to, empty} = pm.selection
   let start, end
   if (empty) {
@@ -322,6 +302,60 @@ export function selectedNodeAttr(pm, type, name) {
   if (node && node.type == type) return node.attrs[name]
 }
 
+function deriveParams(type, params) {
+  return params && params.map(param => {
+    let attr = type.attrs[param.attr]
+    return {
+      label: param.label,
+      type: param.type || "text",
+      default: param.default || attr.default,
+      prefill: param.prefill ||
+        (type instanceof NodeType
+         ? function(pm) { return selectedNodeAttr(pm, this, param.attr) }
+         : function(pm) { return selectedMarkAttr(pm, this, param.attr) })
+    }
+  })
+}
+
+function fillAttrs(conf, givenParams) {
+  let attrs = conf.attrs
+  if (conf.params) {
+    let filled = Object.create(null)
+    if (attrs) for (let name in attrs) filled[name] = attrs[name]
+    conf.params.forEach((param, i) => filled[param.attr] = givenParams[i])
+    attrs = filled
+  }
+  return attrs
+}
+
+NodeType.deriveableCommands = Object.create(null)
+MarkType.deriveableCommands = Object.create(null)
+
+MarkType.deriveableCommands.set = function(conf) {
+  return {
+    run(pm, ...params) {
+      pm.setMark(this, true, fillAttrs(conf, params))
+    },
+    select(pm) {
+      return conf.inverseSelect
+        ? markApplies(pm, this) && !markActive(pm, this)
+        : canAddInline(pm, this)
+    },
+    params: deriveParams(this, conf.params)
+  }
+}
+
+MarkType.deriveableCommands.unset = () => ({
+  run(pm) { pm.setMark(this, false) },
+  select(pm) { return markActive(pm, this) }
+})
+
+MarkType.deriveableCommands.toggle = () => ({
+  run(pm) { pm.setMark(this, null) },
+  active(pm) { return markActive(pm, this) },
+  select(pm) { return markApplies(pm, this) }
+})
+
 function isAtTopOfListItem(doc, from, to, listType) {
   return Pos.samePath(from.path, to.path) &&
     from.path.length >= 2 &&
@@ -332,7 +366,7 @@ function isAtTopOfListItem(doc, from, to, listType) {
 NodeType.deriveableCommands.wrap = conf => ({
   run(pm) {
     let {from, to, head} = pm.selection, doJoin = false
-    if (this.isList && head && isAtTopOfListItem(pm.doc, from, to, this)) {
+    if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this)) {
       // Don't do anything if this is the top of the list
       if (from.path[from.path.length - 2] == 0) return false
       doJoin = true
@@ -343,7 +377,7 @@ NodeType.deriveableCommands.wrap = conf => ({
   },
   select(pm) {
     let {from, to, head} = pm.selection
-    if (this.isList && head && isAtTopOfListItem(pm.doc, from, to, this) &&
+    if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this) &&
         from.path[from.path.length - 2] == 0)
       return false
     return canWrap(pm.doc, from, to, this, conf.attrs)
@@ -377,29 +411,13 @@ NodeType.deriveableCommands.make = conf => ({
 })
 
 NodeType.deriveableCommands.insert = function(conf) {
-  let params = conf.params && conf.params.map(param => {
-    let attr = this.attrs[param.attr]
-    return {
-      label: param.label,
-      type: param.type || "text",
-      default: param.default || attr.default,
-      prefill: param.prefill || function(pm) { return selectedNodeAttr(pm, this, param.attr) }
-    }
-  })
   return {
     run(pm, ...params) {
-      let attrs = conf.attrs
-      if (conf.params) {
-        let filled = Object.create(null)
-        if (attrs) for (let name in attrs) filled[name] = attrs[name]
-        conf.params.forEach((param, i) => filled[param.attr] = params[i])
-        attrs = filled
-      }
-      return pm.tr.replaceSelection(this.create(attrs)).apply(pm.apply.scroll)
+      return pm.tr.replaceSelection(this.create(fillAttrs(conf, params))).apply(pm.apply.scroll)
     },
     select: this.isInline ? function(pm) {
       return pm.doc.path(pm.selection.from.path).type.canContainType(this)
     } : null,
-    params: params
+    params: deriveParams(this, conf.params)
   }
 }
