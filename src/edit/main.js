@@ -106,19 +106,6 @@ export class ProseMirror {
     this.signal("commandsChanged")
   }
 
-  // :: (string) → bool
-  // Test whether the given string corresponds to any of the
-  // [includes](#include) enabled for this editor.
-  isIncluded(name) {
-    for (let i = 0; i < this.options.include.length; i++) {
-      let ns = this.options.include[i]
-      let match = ns == "default"
-          ? name.indexOf(":") == -1
-          : name == ns || (name.indexOf(ns) == 0 && name.charAt(ns.length) == ":")
-      if (match) return true
-    }
-  }
-
   // :: Selection
   // Get the current selection.
   get selection() {

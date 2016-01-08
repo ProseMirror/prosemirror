@@ -320,9 +320,11 @@ function computeMenuGroups(pm) {
   return groups
 }
 
+const empty = []
+
 export function menuGroups(pm, names) {
   let groups = pm.mod.menuGroups || computeMenuGroups(pm)
-  return names.map(group => groups[group])
+  return names.map(group => groups[group] || empty)
 }
 
 function tooltipParamHandler(pm, command, callback) {

@@ -17,69 +17,69 @@ function test(cmd, before, after) {
   used[cmd] = known + 1
 }
 
-test("schema:hard_break:insert",
+test("hard_break:insert",
      doc(p("fo<a>o")),
      doc(p("fo", br, "o")))
-test("schema:hard_break:insert",
+test("hard_break:insert",
      doc(pre("fo<a>o")),
      doc(pre("fo\no")))
 
-test("schema:strong:set",
+test("strong:set",
      doc(p("f<a>o<b>o")),
      doc(p("f", strong("o"), "o")))
-test("schema:strong:set",
+test("strong:set",
      doc(p("f<a>oo")),
      doc(p("foo")))
-test("schema:strong:set",
+test("strong:set",
      doc(p("f<a>oo"), p("ba<b>r")),
      doc(p("f", strong("oo")), p(strong("ba"), "r")))
-test("schema:strong:set",
+test("strong:set",
      doc(p(strong("f<a>o<b>o"))),
      doc(p(strong("f<a>o<b>o"))))
 
-test("schema:strong:unset",
+test("strong:unset",
      doc(p(strong("f<a>o<b>o"))),
      doc(p(strong("f"), "o", strong("o"))))
-test("schema:strong:unset",
+test("strong:unset",
      doc(p("f<a>o<b>o")),
      doc(p("foo")))
-test("schema:strong:unset",
+test("strong:unset",
      doc(p("f<a>oo"), p(strong("ba<b>r"))),
      doc(p("foo"), p("ba", strong("r"))))
 
-test("schema:strong:toggle",
+test("strong:toggle",
      doc(p("f<a>o<b>o")),
      doc(p("f", strong("o"), "o")))
-test("schema:strong:toggle",
+test("strong:toggle",
      doc(p(strong("f<a>o<b>o"))),
      doc(p(strong("f"), "o", strong("o"))))
-test("schema:strong:toggle",
+test("strong:toggle",
      doc(p("f<a>oo ", strong("ba<b>r"))),
      doc(p("foo ba", strong("r"))))
 
-test("schema:em:set",
+test("em:set",
      doc(p("f<a>o<b>o")),
      doc(p("f", em("o"), "o")))
-test("schema:em:unset",
+test("em:unset",
      doc(p(em("f<a>o<b>o"))),
      doc(p(em("f"), "o", em("o"))))
-test("schema:em:toggle",
+test("em:toggle",
      doc(p("f<a>o<b>o")),
      doc(p("f", em("o"), "o")))
-test("schema:em:toggle",
+test("em:toggle",
      doc(p(em("f<a>o<b>o"))),
      doc(p(em("f"), "o", em("o"))))
      
-test("schema:code:set",
+test("code:set",
      doc(p("f<a>o<b>o")),
      doc(p("f", code("o"), "o")))
-test("schema:code:unset",
+test("code:unset",
      doc(p(code("f<a>o<b>o"))),
      doc(p(code("f"), "o", code("o"))))
-test("schema:code:toggle",
+test("code:toggle",
      doc(p("f<a>o<b>o")),
      doc(p("f", code("o"), "o")))
-test("schema:code:toggle",
+test("code:toggle",
      doc(p(code("f<a>o<b>o"))),
      doc(p(code("f"), "o", code("o"))))
 
@@ -285,47 +285,47 @@ test("lift",
      doc(ul(li(p("one"), ul(li(p("<a>sub1")), li(p("sub2")))), li(p("two")))),
      doc(ul(li(p("one"), p("<a>sub1"), ul(li(p("sub2")))), li(p("two")))))
 
-test("schema:bullet_list:wrap",
+test("bullet_list:wrap",
      doc(p("<a>foo")),
      doc(ul(li(p("foo")))))
-test("schema:bullet_list:wrap",
+test("bullet_list:wrap",
      doc(blockquote(p("<a>foo"))),
      doc(blockquote(ul(li(p("foo"))))))
-test("schema:bullet_list:wrap",
+test("bullet_list:wrap",
      doc(p("foo"), p("ba<a>r"), p("ba<b>z")),
      doc(p("foo"), ul(li(p("bar")), li(p("baz"))))) 
-test("schema:bullet_list:wrap",
+test("bullet_list:wrap",
      doc(ul(li(p("<a>foo")))),
      doc(ul(li(p("foo")))))
-test("schema:bullet_list:wrap",
+test("bullet_list:wrap",
      doc(ol(li(p("<a>foo")))),
      doc(ol(li(p("foo")))))
-test("schema:bullet_list:wrap",
+test("bullet_list:wrap",
      doc(ul(li(p("foo"), p("<a>bar")))),
      doc(ul(li(p("foo"), ul(li(p("bar")))))))
-test("schema:bullet_list:wrap",
+test("bullet_list:wrap",
      doc(ul(li(p("foo")), li(p("<a>bar")), li(p("baz")))),
      doc(ul(li(p("foo"), ul(li(p("bar")))), li(p("baz")))))
 
-test("schema:ordered_list:wrap",
+test("ordered_list:wrap",
      doc(p("<a>foo")),
      doc(ol(li(p("foo")))))
-test("schema:ordered_list:wrap",
+test("ordered_list:wrap",
      doc(blockquote(p("<a>foo"))),
      doc(blockquote(ol(li(p("foo"))))))
-test("schema:ordered_list:wrap",
+test("ordered_list:wrap",
      doc(p("foo"), p("ba<a>r"), p("ba<b>z")),
      doc(p("foo"), ol(li(p("bar")), li(p("baz")))))
-test("schema:blockquote:wrap",
+test("blockquote:wrap",
      doc(p("fo<a>o")),
      doc(blockquote(p("foo"))))
-test("schema:blockquote:wrap",
+test("blockquote:wrap",
      doc(p("fo<a>o"), p("bar"), p("ba<b>z"), p("quux")),
      doc(blockquote(p("foo"), p("bar"), p("baz")), p("quux")))
-test("schema:blockquote:wrap",
+test("blockquote:wrap",
      doc(blockquote(p("fo<a>o"))),
      doc(blockquote(blockquote(p("foo")))))
-test("schema:blockquote:wrap",
+test("blockquote:wrap",
      doc("<a>", ul(li(p("foo")))),
      doc(blockquote(ul(li(p("foo"))))))
 
@@ -351,16 +351,16 @@ test("splitBlock",
      doc(ol("<a>", li(p("a")), li(p("b")), li(p("c")))),
      doc(ol(li(p("a")), li(p("b")), li(p("c")))))
 
-test("schema:list_item:split",
+test("list_item:split",
      doc(p("foo<a>bar")),
      doc(p("foobar")))
-test("schema:list_item:split",
+test("list_item:split",
      doc("<a>", p("foobar")),
      doc(p("foobar")))
-test("schema:list_item:split",
+test("list_item:split",
      doc(ul(li(p("foo<a>bar")))),
      doc(ul(li(p("foo")), li(p("bar")))))
-test("schema:list_item:split",
+test("list_item:split",
      doc(ul(li(p("foo<a>ba<b>r")))),
      doc(ul(li(p("foo")), li(p("r")))))
 
@@ -388,46 +388,46 @@ test("createParagraphNear",
      doc(p(), "<a>", hr),
      doc(p(), hr, p()))
 
-test("schema:heading:make1",
+test("heading:make1",
      doc(p("fo<a>o")),
      doc(h1("foo")))
-test("schema:heading:make2",
+test("heading:make2",
      doc(pre("fo<a>o")),
      doc(h2("foo")))
 
-test("schema:paragraph:make",
+test("paragraph:make",
      doc(h1("fo<a>o")),
      doc(p("foo")))
-test("schema:paragraph:make",
+test("paragraph:make",
      doc(h1("fo<a>o", em("bar"))),
      doc(p("foo", em("bar"))))
-test("schema:paragraph:make",
+test("paragraph:make",
      doc("<a>", h1("foo")),
      doc(p("foo")))
 
-test("schema:code_block:make",
+test("code_block:make",
      doc(h1("fo<a>o")),
      doc(pre("foo")))
-test("schema:code_block:make",
+test("code_block:make",
      doc(p("fo<a>o", em("bar"))),
      doc(pre("foobar")))
 
-test("schema:horizontal_rule:insert",
+test("horizontal_rule:insert",
      doc(p("<a>foo")),
      doc(hr, p("foo")))
-test("schema:horizontal_rule:insert",
+test("horizontal_rule:insert",
      doc(p("foo"), p("<a>bar")),
      doc(p("foo"), hr, p("bar")))
-test("schema:horizontal_rule:insert",
+test("horizontal_rule:insert",
      doc(p("foo"), p("b<a>ar")),
      doc(p("foo"), p("b"), hr, p("ar")))
-test("schema:horizontal_rule:insert",
+test("horizontal_rule:insert",
      doc(p("fo<a>o"), p("b<b>ar")),
      doc(p("fo"), hr, p("ar")))
-test("schema:horizontal_rule:insert",
+test("horizontal_rule:insert",
      doc("<a>", p("foo"), p("bar")),
      doc(hr, p("bar")))
-test("schema:horizontal_rule:insert",
+test("horizontal_rule:insert",
      doc("<a>", p("bar")),
      doc(hr))
 
@@ -438,14 +438,6 @@ defineCommand({
   label: "DO IT",
   run(pm) { pm.setContent("hi", "text") }
 })
-
-test_("exclude_namespaced", pm => {
-  is(!pm.commands["foo:doIt"], "command not present")
-})
-
-test_("include_namespaced", pm => {
-  is(pm.commands["foo:doIt"], "command present")
-}, {include: ["default", "schema", "foo"]})
 
 test_("delete_specific", pm => {
   is(!pm.commands["lift"], "command disabled")

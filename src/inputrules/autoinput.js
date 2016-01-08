@@ -16,14 +16,12 @@ defineOption("autoInput", false, function(pm, val) {
   if (val) {
     pm.mod.autoInput = []
     pm.schema.registry("autoInput", (rule, type, name) => {
-      let rname = "schema:" + name + ":" + rule.name, handler = rule.handler
-      if (pm.isIncluded(rname)) {
-        if (handler.bind) handler = handler.bind(type)
-        addInputRule(pm, new InputRule(rname, rule.match, rule.filter, handler))
-        pm.mod.autoInput.push(rname)
-      }
+      let rname = name + ":" + rule.name, handler = rule.handler
+      if (handler.bind) handler = handler.bind(type)
+      addInputRule(pm, new InputRule(rname, rule.match, rule.filter, handler))
+      pm.mod.autoInput.push(rname)
     })
-    for (let name in rules) if (pm.isIncluded(name)) {
+    for (let name in rules) {
       let rule = rules[name]
       addInputRule(pm, rule)
       pm.mod.autoInput.push(rule.name)

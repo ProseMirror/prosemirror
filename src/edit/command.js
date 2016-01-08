@@ -11,9 +11,7 @@ const commands = Object.create(null)
 const paramHandlers = Object.create(null)
 
 // :: (CommandSpec)
-// Define a globally available command. Note that
-// [namespaces](#include) can still be used to prevent the command
-// from showing up in editor where you don't want it to show up.
+// Define a globally available command.
 export function defineCommand(spec) {
   if (commands[spec.name])
     NamespaceError.raise("Duplicate definition of command " + spec.name)
@@ -106,9 +104,7 @@ const empty = []
 // :: string #path=CommandSpec.name
 // The name of the command, which will be its key in
 // `ProseMirror.commands`, and the thing passed to
-// [`execCommand`](#ProseMirror.execCommand). Can be
-// [namespaced](#include), (and probably should, for user-defined
-// commands).
+// [`execCommand`](#ProseMirror.execCommand).
 
 // :: string #path=CommandSpec.label
 // A user-facing label for the command. This will be used, among other
@@ -190,7 +186,6 @@ function getParamHandler(pm) {
 export function deriveCommands(pm) {
   let found = Object.create(null), config = pm.options.commands
   function add(name, spec, self) {
-    if (!pm.isIncluded(name)) return
     if (found[name]) NamespaceError.raise("Duplicate definition of command " + name)
     found[name] = new Command(spec, self, name)
   }
@@ -217,7 +212,7 @@ export function deriveCommands(pm) {
       for (var prop in spec) if (prop != "derive") derived[prop] = spec[prop]
       spec = derived
     }
-    addAndOverride("schema:" + name + ":" + spec.name, spec, type)
+    addAndOverride(name + ":" + spec.name, spec, type)
   })
   for (let name in commands)
     addAndOverride(name, commands[name])

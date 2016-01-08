@@ -5,17 +5,17 @@ import {selectedNodeAttr} from "./command"
 
 // # Mark types
 
-// ;; #path="schema:strong:set" #kind=command
+// ;; #path="strong:set" #kind=command
 // Add the [strong](#StrongMark) mark to the selected content.
 
 StrongMark.register("command", {name: "set", derive: true, label: "Set strong"})
 
-// ;; #path="schema:strong:unset" #kind=command
+// ;; #path="strong:unset" #kind=command
 // Remove the [strong](#StrongMark) mark from the selected content.
 
 StrongMark.register("command", {name: "unset", derive: true, label: "Unset strong"})
 
-// ;; #path="schema:strong:toggle" #kind=command
+// ;; #path="strong:toggle" #kind=command
 // Toggle the [strong](#StrongMark) mark. If there is any strong
 // content in the selection, or there is no selection and the [active
 // marks](#ProseMirror.activeMarks) contain the strong mark, this
@@ -40,17 +40,17 @@ StrongMark.register("command", {
   keys: ["Mod-B"]
 })
 
-// ;; #path=schema:em:set #kind=command
+// ;; #path=em:set #kind=command
 // Add the [emphasis](#EmMark) mark to the selected content.
 
 EmMark.register("command", {name: "set", derive: true, label: "Add emphasis"})
 
-// ;; #path=schema:em:unset #kind=command
+// ;; #path=em:unset #kind=command
 // Remove the [emphasis](#EmMark) mark from the selected content.
 
 EmMark.register("command", {name: "unset", derive: true, label: "Remove emphasis"})
 
-// ;; #path=schema:em:toggle #kind=command
+// ;; #path=em:toggle #kind=command
 // Toggle the [emphasis](#EmMark) mark. If there is any emphasized
 // content in the selection, or there is no selection and the [active
 // marks](#ProseMirror.activeMarks) contain the emphasis mark, this
@@ -75,17 +75,17 @@ EmMark.register("command", {
   keys: ["Mod-I"]
 })
 
-// ;; #path=schema:code:set #kind=command
+// ;; #path=code:set #kind=command
 // Add the [code](#CodeMark) mark to the selected content.
 
 CodeMark.register("command", {name: "set", derive: true, label: "Set code style"})
 
-// ;; #path=schema:code:unset #kind=command
+// ;; #path=code:unset #kind=command
 // Remove the [code](#CodeMark) mark from the selected content.
 
 CodeMark.register("command", {name: "unset", derive: true, label: "Remove code style"})
 
-// ;; #path=schema:code:toggle #kind=command
+// ;; #path=code:toggle #kind=command
 // Toggle the [code](#CodeMark) mark. If there is any code-styled
 // content in the selection, or there is no selection and the [active
 // marks](#ProseMirror.activeMarks) contain the code mark, this
@@ -110,7 +110,7 @@ CodeMark.register("command", {
   keys: ["Mod-`"]
 })
 
-// ;; #path=schema:link:unset #kind=command
+// ;; #path=link:unset #kind=command
 // Removes all links for the selected content, or, if there is no
 // selection, from the [active marks](#ProseMirror.activeMarks). Will
 // only [select](#Command.select) itself when there is a link in the
@@ -133,7 +133,7 @@ LinkMark.register("command", {
   display: linkIcon
 })
 
-// ;; #path=schema:link:set #kind=command
+// ;; #path=link:set #kind=command
 // Adds a link mark to the selection or set of [active
 // marks](#ProseMirror.activeMarks). Takes parameters to determine the
 // attributes of the link:
@@ -164,7 +164,7 @@ LinkMark.register("command", {
 
 // Node types
 
-// ;; #path=schema:image:insert #kind=command
+// ;; #path=image:insert #kind=command
 // Replace the selection with an [image](#Image) node. Takes paramers
 // that specify the image's attributes:
 //
@@ -198,7 +198,7 @@ Image.register("command", {
   }
 })
 
-// ;; #path=schema:bullet_list:wrap #kind=command
+// ;; #path=bullet_list:wrap #kind=command
 // Wrap the selection in a bullet list.
 //
 // **Keybindings:** Alt-Right '*', Alt-Right '-'
@@ -218,7 +218,7 @@ BulletList.register("command", {
   keys: ["Alt-Right '*'", "Alt-Right '-'"]
 })
 
-// ;; #path=schema:ordered_list:wrap #kind=command
+// ;; #path=ordered_list:wrap #kind=command
 // Wrap the selection in an ordered list.
 //
 // **Keybindings:** Alt-Right '1'
@@ -238,7 +238,7 @@ OrderedList.register("command", {
   keys: ["Alt-Right '1'"]
 })
 
-// ;; #path=schema:blockquote:wrap #kind=command
+// ;; #path=blockquote:wrap #kind=command
 // Wrap the selection in a block quote.
 //
 // **Keybindings:** Alt-Right '>', Alt-Right '"'
@@ -258,7 +258,7 @@ BlockQuote.register("command", {
   keys: ["Alt-Right '>'", "Alt-Right '\"'"]
 })
 
-// ;; #path=schema:hard_break:insert #kind=command
+// ;; #path=hard_break:insert #kind=command
 // Replace the selection with a hard break node. If the selection is
 // in a node whose [type](#NodeType) has a truthy `isCode` property
 // (such as `CodeBlock` in the default schema), a regular newline is
@@ -280,7 +280,7 @@ HardBreak.register("command", {
   keys: ["Mod-Enter", "Shift-Enter"]
 })
 
-// ;; #path=schema:list_item:split #kind=command
+// ;; #path=list_item:split #kind=command
 // If the selection is a text selection inside of a child of a list
 // item, split that child and the list item, and delete the selection.
 //
@@ -301,7 +301,7 @@ ListItem.register("command", {
   keys: ["Enter(50)"]
 })
 
-// ;; #path=schema::heading::make_ #kind=command
+// ;; #path=:heading::make_ #kind=command
 // The commands `make1` to `make6` set the textblocks in the
 // selection to become headers with the given level.
 //
@@ -315,7 +315,7 @@ for (let i = 1; i <= 6; i++)
     keys: [`Mod-H '${i}'`]
   })
 
-// ;; #path=schema:paragraph:make #kind=command
+// ;; #path=paragraph:make #kind=command
 // Set the textblocks in the selection to be regular paragraphs.
 //
 // **Keybindings:** Mod-P
@@ -327,7 +327,7 @@ Paragraph.register("command", {
   keys: ["Mod-P"]
 })
 
-// ;; #path=schema:code_block:make #kind=command
+// ;; #path=code_block:make #kind=command
 // Set the textblocks in the selection to be code blocks.
 //
 // **Keybindings:** Mod-\
@@ -339,7 +339,7 @@ CodeBlock.register("command", {
   keys: ["Mod-\\"]
 })
 
-// ;; #path=schema:horizontal_rule:insert #kind=command
+// ;; #path=horizontal_rule:insert #kind=command
 // Replace the selection with a horizontal rule.
 //
 // **Keybindings:** Mod-Shift-Minus
