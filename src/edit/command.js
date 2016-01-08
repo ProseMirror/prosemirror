@@ -363,26 +363,29 @@ function isAtTopOfListItem(doc, from, to, listType) {
     listType.canContain(doc.path(from.path.slice(0, from.path.length - 1)))
 }
 
-NodeType.deriveableCommands.wrap = conf => ({
-  run(pm) {
-    let {from, to, head} = pm.selection, doJoin = false
-    if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this)) {
-      // Don't do anything if this is the top of the list
-      if (from.path[from.path.length - 2] == 0) return false
-      doJoin = true
-    }
-    let tr = pm.tr.wrap(from, to, this, conf.attrs)
-    if (doJoin) tr.join(from.shorten(from.depth - 2))
-    return tr.apply(pm.apply.scroll)
-  },
-  select(pm) {
-    let {from, to, head} = pm.selection
-    if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this) &&
-        from.path[from.path.length - 2] == 0)
-      return false
-    return canWrap(pm.doc, from, to, this, conf.attrs)
+NodeType.deriveableCommands.wrap = function(conf) {
+  return {
+    run(pm, ...params) {
+      let {from, to, head} = pm.selection, doJoin = false
+      if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this)) {
+        // Don't do anything if this is the top of the list
+        if (from.path[from.path.length - 2] == 0) return false
+        doJoin = true
+      }
+      let tr = pm.tr.wrap(from, to, this, fillAttrs(conf, params))
+      if (doJoin) tr.join(from.shorten(from.depth - 2))
+      return tr.apply(pm.apply.scroll)
+    },
+    select(pm) {
+      let {from, to, head} = pm.selection
+      if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this) &&
+          from.path[from.path.length - 2] == 0)
+        return false
+      return canWrap(pm.doc, from, to, this, conf.attrs)
+    },
+    params: deriveParams(this, conf.params)
   }
-})
+}
 
 function alreadyHasBlockType(doc, from, to, type, attrs) {
   let found = false
