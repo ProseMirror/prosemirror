@@ -19,8 +19,10 @@
     "markdown-it": "^4.4.0"
   },
   "devDependencies": {
-    "babel": "^5.1.13",
-    "babelify": "^6.0.2",
+    "babel-cli": "^6.4.0",
+    "babel-preset-es2015": "^6.3.13",
+    "babel-register": "^6.3.13",
+    "babelify": "^7.2.0",
     "blint": "^0.4.0",
     "watchify": "^3.2.0",
     "xmldom": "^0.1.0"
