@@ -14,16 +14,12 @@ const paramHandlers = Object.create(null)
 // ;; A command is a named piece of functionality that can be bound to
 // a key, shown in the menu, or otherwise exposed to the user.
 //
-// FIXME The commands available in a given editor are gathered from the
-// commands defined with `defineCommand`, and from
-// [specs](#CommandSpec) associated with node and mark types in the
-// editor's [schema](#Schema.registry). Use the
-// [`register`](#SchemaItem.register) method with `"command"` as the
-// name and a `CommandSpec` as value to associate a command with a
-// node or mark.
-//
-// This module defines a [bunch of commands](#edit_commands) in the
-// [default schema](#defaultSchema) and global command registry.
+// The commands available in a given editor are determined by the
+// `commands` option. By default, they come from the `baseCommands`
+// object and the commands [associated](#SchemaItem.register) with
+// schema items. Registering a `CommandSpec` on a [node](#NodeType) or
+// [mark](#MarkType) type will cause that command to come into scope
+// in editors whose schema includes that item.
 export class Command {
   constructor(spec, self, name) {
     // :: string The name of the command.
