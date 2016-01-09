@@ -134,11 +134,12 @@ class RangeTracker {
     let next
     while (this.pos < this.sorted.length && (next = this.sorted[this.pos]).at.cmp(pos) <= 0) {
       let className = next.range.options.className
-      if (!className) continue
-      if (next.type == "open")
-        this.current.push(className)
-      else
-        this.current.splice(this.current.indexOf(className), 1)
+      if (className) {
+        if (next.type == "open")
+          this.current.push(className)
+        else
+          this.current.splice(this.current.indexOf(className), 1)
+      }
       this.pos++
     }
   }
