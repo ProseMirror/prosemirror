@@ -140,7 +140,7 @@ export class CommandSet {
   // commands. The `update` object can map a command name to `null` to
   // delete it, to a full `CommandSpec` (containing a `run` property)
   // to add it, or to a partial `CommandSpec` (without a `run`
-  // property) to update some prroperties in the command by that name.
+  // property) to update some properties in the command by that name.
   update(update) {
     return new CommandSet(this, commands => {
       for (let name in update) {
@@ -246,7 +246,7 @@ CommandSet.default = CommandSet.empty.add("schema").add(baseCommands)
 // :: any #path=CommandParam.default
 // A default value for the parameter.
 
-// :: (pm) → ?any #path=CommandParam.prefill
+// :: (ProseMirror) → ?any #path=CommandParam.prefill
 // A function that, given an editor instance (and a `this` bound to
 // the command's source item), tries to derive an initial value for
 // the parameter, or return null if it can't.
