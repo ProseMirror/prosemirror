@@ -6,9 +6,10 @@ import {AssertionError} from "../util/error"
 import {charCategory, isExtendingChar} from "./char"
 import {findSelectionFrom, verticalMotionLeavesTextblock, setDOMSelectionToPos, NodeSelection} from "./selection"
 
+// :: Object<CommandSpec>
+// The set of default commands defined by the core library. They are
+// included in the [default command set](#CommandSet.default).
 export const baseCommands = Object.create(null)
-
-// FIXME find a way to put an introduction text above the command section
 
 // Get an offset moving backward from a current offset inside a node.
 function moveBackward(parent, offset, by) {
@@ -42,13 +43,12 @@ function moveBackward(parent, offset, by) {
   }
 }
 
-// ;; #path=deleteSelection #kind=command
+// ;; #kind=command
 // Delete the selection, if there is one.
 //
 // **Keybindings:** Backspace, Delete, Mod-Backspace, Mod-Delete,
 // **Ctrl-H (Mac), Alt-Backspace (Mac), Ctrl-D (Mac),
 // **Ctrl-Alt-Backspace (Mac), Alt-Delete (Mac), Alt-D (Mac)
-
 baseCommands.deleteSelection = {
   label: "Delete the selection",
   run(pm) {
@@ -80,7 +80,7 @@ function deleteBarrier(pm, cut) {
   return pm.tr.lift(selAfter.from, selAfter.to).apply(pm.apply.scroll)
 }
 
-// ;; #path=joinBackward #kind=command
+// ;; #kind=command
 // If the selection is empty and at the start of a textblock, move
 // that block closer to the block before it, by lifting it out of its
 // parent or, if it has no parent it doesn't share with the node
@@ -88,7 +88,6 @@ function deleteBarrier(pm, cut) {
 // that.
 //
 // **Keybindings:** Backspace, Mod-Backspace
-
 baseCommands.joinBackward = {
   label: "Join with the block above",
   run(pm) {
@@ -116,12 +115,11 @@ baseCommands.joinBackward = {
   keys: ["Backspace(30)", "Mod-Backspace(30)"]
 }
 
-// ;; #path=deleteCharBefore #kind=command
+// ;; #kind=command
 // Delete the character before the cursor, if the selection is empty
 // and the cursor isn't at the start of a textblock.
 //
 // **Keybindings:** Backspace, Ctrl-H (Mac)
-
 baseCommands.deleteCharBefore = {
   label: "Delete a character before the cursor",
   run(pm) {
@@ -136,12 +134,11 @@ baseCommands.deleteCharBefore = {
   }
 }
 
-// ;; #path=deleteWordBefore #kind=command
+// ;; #kind=command
 // Delete the word before the cursor, if the selection is empty and
 // the cursor isn't at the start of a textblock.
 //
 // **Keybindings:** Mod-Backspace, Alt-Backspace (Mac)
-
 baseCommands.deleteWordBefore = {
   label: "Delete the word before the cursor",
   run(pm) {
@@ -184,7 +181,7 @@ function moveForward(parent, offset, by) {
   }
 }
 
-// ;; #path=joinForward #kind=command
+// ;; #kind=command
 // If the selection is empty and the cursor is at the end of a
 // textblock, move the node after it closer to the node with the
 // cursor (lifting it out of parents that aren't shared, moving it
@@ -192,7 +189,6 @@ function moveForward(parent, offset, by) {
 // siblings).
 //
 // **Keybindings:** Delete, Mod-Delete
-
 baseCommands.joinForward = {
   label: "Join with the block below",
   run(pm) {
@@ -221,12 +217,11 @@ baseCommands.joinForward = {
   keys: ["Delete(30)", "Mod-Delete(30)"]
 }
 
-// ;; #path=deleteCharAfter #kind=command
+// ;; #kind=command
 // Delete the character after the cursor, if the selection is empty
 // and the cursor isn't at the end of its textblock.
 //
 // **Keybindings:** Delete, Ctrl-D (Mac)
-
 baseCommands.deleteCharAfter = {
   label: "Delete a character after the cursor",
   run(pm) {
@@ -241,13 +236,12 @@ baseCommands.deleteCharAfter = {
   }
 }
 
-// ;; #path=deleteWordAfter #kind=command
+// ;; #kind=command
 // Delete the word after the cursor, if the selection is empty and the
 // cursor isn't at the end of a textblock.
 //
 // **Keybindings:** Mod-Delete, Ctrl-Alt-Backspace (Mac), Alt-Delete
 // (Mac), Alt-D (Mac)
-
 baseCommands.deleteWordAfter = {
   label: "Delete a word after the cursor",
   run(pm) {
@@ -268,7 +262,7 @@ function joinPointAbove(pm) {
   else return joinPoint(pm.doc, from, -1)
 }
 
-// ;; #path=joinUp #kind=command
+// ;; #kind=command
 // Join the selected block or, if there is a text selection, the
 // closest ancestor block of the selection that can be joined, with
 // the sibling above it.
@@ -276,7 +270,6 @@ function joinPointAbove(pm) {
 // **Keybindings:** Alt-Up
 //
 // Registers itself in the block [menu group](#CommandSpec.menuGroup)
-
 baseCommands.joinUp = {
   label: "Join with above block",
   run(pm) {
@@ -301,12 +294,11 @@ function joinPointBelow(pm) {
   else return joinPoint(pm.doc, to, 1)
 }
 
-// ;; #path=joinDown #kind=command
+// ;; #kind=command
 // Join the selected block, or the closest ancestor of the selection
 // that can be joined, with the sibling after it.
 //
 // **Keybindings:** Alt-Down
-
 baseCommands.joinDown = {
   label: "Join with below block",
   run(pm) {
@@ -320,14 +312,13 @@ baseCommands.joinDown = {
   keys: ["Alt-Down"]
 }
 
-// ;; #path=lift #kind=command
+// ;; #kind=command
 // Lift the selected block, or the closest ancestor block of the
 // selection that can be lifted, out of its parent node.
 //
 // **Keybindings:** Alt-Left
 //
 // Registers itself in the block [menu group](#CommandSpec.menuGroup).
-
 baseCommands.lift = {
   label: "Lift out of enclosing block",
   run(pm) {
@@ -347,12 +338,11 @@ baseCommands.lift = {
   keys: ["Alt-Left"]
 }
 
-// ;; #path=newlineInCode #kind=command
+// ;; #kind=command
 // If the selection is in a node whose type has a truthy `isCode`
 // property, replace the selection with a newline character.
 //
 // **Keybindings:** Enter
-
 baseCommands.newlineInCode = {
   label: "Insert newline",
   run(pm) {
@@ -367,12 +357,11 @@ baseCommands.newlineInCode = {
   keys: ["Enter(10)"]
 }
 
-// ;; #path=createParagraphNew #kind=command
+// ;; #kind=command
 // If a content-less block node is selected, create an empty paragraph
 // before (if it is its parent's first child) or after it.
 //
 // **Keybindings:** Enter
-
 baseCommands.createParagraphNear = {
   label: "Create a paragraph near the selected leaf block",
   run(pm) {
@@ -385,12 +374,11 @@ baseCommands.createParagraphNear = {
   keys: ["Enter(20)"]
 }
 
-// ;; #path=liftEmptyBlock #kind=command
+// ;; #kind=command
 // If the cursor is in an empty textblock that can be lifted, lift the
 // block.
 //
 // **Keybindings:** Enter
-
 baseCommands.liftEmptyBlock = {
   label: "Move current block up",
   run(pm) {
@@ -407,12 +395,11 @@ baseCommands.liftEmptyBlock = {
   keys: ["Enter(30)"]
 }
 
-// ;; #path=splitBlock #kind=command
+// ;; #kind=command
 // Split the parent block of the selection. If the selection is a text
 // selection, delete it.
 //
 // **Keybindings:** Enter
-
 baseCommands.splitBlock = {
   label: "Split the current block",
   run(pm) {
@@ -428,14 +415,13 @@ baseCommands.splitBlock = {
   keys: ["Enter(60)"]
 }
 
-// ;; #path=textblockType #kind=command
+// ;; #kind=command
 // Change the type of the selected textblocks. Takes one parameter,
 // `type`, which should be a `{type: NodeType, attrs: ?Object}`
 // object, giving the new type and its attributes.
 //
 // Registers itself in the block [menu group](#CommandSpec.menuGroup), where it creates the
 // textblock type dropdown.
-
 baseCommands.textblockType = {
   label: "Change block type",
   run(pm, type) {
@@ -495,7 +481,7 @@ function nodeAboveSelection(pm) {
   return i == 0 ? false : sel.head.shorten(i - 1)
 }
 
-// ;; #path=selectParentNode #kind=command
+// ;; #kind=command
 // Move the selection to the node wrapping the current selection, if
 // any. (Will not select the document node.)
 //
@@ -551,11 +537,10 @@ function selectNodeHorizontally(pm, dir) {
   return false
 }
 
-// ;; #path=selectNodeLeft #kind=command
+// ;; #kind=command
 // Select the node directly before the cursor, if any.
 //
 // **Keybindings:** Left, Mod-Left
-
 baseCommands.selectNodeLeft = {
   label: "Move the selection onto or out of the block to the left",
   run(pm) {
@@ -566,11 +551,10 @@ baseCommands.selectNodeLeft = {
   keys: ["Left", "Mod-Left"]
 }
 
-// ;; #path=selectNodeRight #kind=command
+// ;; #kind=command
 // Select the node directly after the cursor, if any.
 //
 // **Keybindings:** Right, Mod-Right
-
 baseCommands.selectNodeRight = {
   label: "Move the selection onto or out of the block to the right",
   run(pm) {
@@ -615,11 +599,10 @@ function selectNodeVertically(pm, dir) {
   return true
 }
 
-// ;; #path=selectNodeUp #kind=command
+// ;; #kind=command
 // Select the node directly above the cursor, if any.
 //
 // **Keybindings:** Up
-
 baseCommands.selectNodeUp = {
   label: "Move the selection onto or out of the block above",
   run(pm) {
@@ -630,11 +613,10 @@ baseCommands.selectNodeUp = {
   keys: ["Up"]
 }
 
-// ;; #path=selectNodeDown #kind=command
+// ;; #kind=command
 // Select the node directly below the cursor, if any.
 //
 // **Keybindings:** Down
-
 baseCommands.selectNodeDown = {
   label: "Move the selection onto or out of the block below",
   run(pm) {
@@ -645,13 +627,12 @@ baseCommands.selectNodeDown = {
   keys: ["Down"]
 }
 
-// ;; #path=undo #kind=command
+// ;; #kind=command
 // Undo the most recent change event, if any.
 //
 // **Keybindings:** Mod-Z
 //
 // Registers itself in the history [menu group](#CommandSpec.menuGroup).
-
 baseCommands.undo = {
   label: "Undo last change",
   run(pm) { pm.scrollIntoView(); return pm.history.undo() },
@@ -665,13 +646,12 @@ baseCommands.undo = {
   keys: ["Mod-Z"]
 }
 
-// ;; #path=redo #kind=command
+// ;; #kind=command
 // Redo the most recently undone change event, if any.
 //
 // **Keybindings:** Mod-Y, Shift-Mod-Z
 //
 // Registers itself in the history [menu group](#CommandSpec.menuGroup).
-
 baseCommands.redo = {
   label: "Redo last undone change",
   run(pm) { pm.scrollIntoView(); return pm.history.redo() },

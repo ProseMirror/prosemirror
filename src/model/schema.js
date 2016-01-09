@@ -1,6 +1,7 @@
 import {Node, TextNode} from "./node"
 import {Fragment} from "./fragment"
 import {Mark} from "./mark"
+import {copyObj} from "../util/obj"
 
 import {ProseMirrorError} from "../util/error"
 
@@ -410,22 +411,6 @@ export class MarkType extends SchemaItem {
 // Schema specifications are data structures that specify a schema --
 // a set of node types, their names, attributes, and nesting behavior.
 
-function copyObj(obj, f) {
-  let result = Object.create(null)
-  for (let prop in obj) result[prop] = f ? f(obj[prop]) : obj[prop]
-  return result
-}
-
-function overlayObj(obj, overlay) {
-  let copy = copyObj(obj)
-  for (let name in overlay) {
-    let value = overlay[name]
-    if (value == null) delete copy[name]
-    else copy[name] = value
-  }
-  return copy
-}
-
 // ;; A schema specification is a blueprint for an actual
 // `Schema`. It maps names to node and mark types, along
 // with extra information, such as additional attributes and changes
@@ -459,6 +444,16 @@ export class SchemaSpec {
     return new SchemaSpec(nodes ? overlayObj(this.nodes, nodes) : this.nodes,
                           marks ? overlayObj(this.marks, marks) : this.marks)
   }
+}
+
+function overlayObj(base, update) {
+  let copy = copyObj(base)
+  for (let name in update) {
+    let value = update[name]
+    if (value == null) delete copy[name]
+    else copy[name] = value
+  }
+  return copy
 }
 
 // ;; Each document is based on a single schema, which provides the

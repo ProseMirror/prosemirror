@@ -5,6 +5,7 @@ import {canWrap} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
 import {NamespaceError, AssertionError} from "../util/error"
+import {copyObj} from "../util/obj"
 
 import {baseCommands} from "./base_commands"
 
@@ -26,7 +27,7 @@ const paramHandlers = Object.create(null)
 export class Command {
   constructor(spec, self, name) {
     // :: string The name of the command.
-    this.name = name || spec.name
+    this.name = name
     if (!this.name) NamespaceError.raise("Trying to define a command without a name")
     // :: CommandSpec The command's specifying object.
     this.spec = spec
@@ -87,69 +88,105 @@ export class Command {
 
 const empty = []
 
-class CommandSet {
-  constructor(fromSchema, updates) {
-    this.fromSchema = fromSchema
-    this.updates = updates
+function deriveCommandSpec(type, spec) {
+  if (!spec.derive) return spec
+  let conf = typeof spec.derive == "object" ? spec.derive : {}
+  let dname = conf.name || spec.name
+  let derive = type.constructor.deriveableCommands[dname]
+  if (!derive) AssertionError.raise("Don't know how to derive command " + dname)
+  let derived = derive.call(type, conf)
+  for (let prop in spec) if (prop != "derive") derived[prop] = spec[prop]
+  return derived
+}
+
+// ;; The type used as the value of the `commands` option. Allows you
+// to specify the set of commands that are available in the editor by
+// adding and modifying command specs.
+export class CommandSet {
+  constructor(base, op) {
+    this.base = base
+    this.op = op
   }
 
-  includeSchema() {
-    return new CommandSet(true, this.updates)
-  }
-
-  update(spec) {
-    return new CommandSet(this.fromSchema, this.updates.concat(spec))
-  }
-
-  derive(schema) {
-    let found = Object.create(null)
-    if (this.fromSchema) schema.registry("command", (spec, type, name) => {
-      if (spec.derive) {
-        let conf = typeof spec.derive == "object" ? spec.derive : {}
-        let dname = conf.name || spec.name
-        let derive = type.constructor.deriveableCommands[dname]
-        if (!derive) AssertionError.raise("Don't know how to derive command " + dname)
-        let derived = derive.call(type, conf)
-        for (var prop in spec) if (prop != "derive") derived[prop] = spec[prop]
-        spec = derived
+  // :: (union<Object<CommandSpec>, string>, ?(string, CommandSpec) → bool) → CommandSet
+  // Add a set of commands, creating a new command set. If `set` is
+  // the string `"schema"`, the commands are retrieved from the
+  // editor's schema's [registry](#Schema.registry), otherwise, it
+  // should be an object mapping command names to command specs.
+  //
+  // A filter function can be given to add only the commands for which
+  // the filter returns true.
+  add(set, filter) {
+    return new CommandSet(this, (commands, schema) => {
+      function add(name, spec, self) {
+        if (!filter || filter(name, spec)) {
+          if (commands[name]) AssertionError.raise("Duplicate definition of command " + name)
+          commands[name] = new Command(spec, self, name)
+        }
       }
-      found[name + ":" + spec.name] = {self: type, spec}
-    })
 
-    this.updates.forEach(update => {
+      if (set === "schema") {
+        schema.registry("command", (spec, type, name) => {
+          add(name + ":" + spec.name, deriveCommandSpec(type, spec), type)
+        })
+      } else {
+        for (let name in set) add(name, set[name])
+      }
+    })
+  }
+
+  // :: (Object<?CommandSpec>) → CommandSet
+  // Create a new command set by adding, modifying, or deleting
+  // commands. The `update` object can map a command name to `null` to
+  // delete it, to a full `CommandSpec` (containing a `run` property)
+  // to add it, or to a partial `CommandSpec` (without a `run`
+  // property) to update some prroperties in the command by that name.
+  update(update) {
+    return new CommandSet(this, commands => {
       for (let name in update) {
         let spec = update[name]
         if (!spec) {
-          delete found[name]
-        } else if (spec.run || spec.derive) {
-          found[name] = {self: null, spec}
+          delete commands[name]
+        } else if (spec.run) {
+          commands[name] = new Command(spec, null, name)
         } else {
-          let known = found[name]
-          if (known) for (let prop in spec) known.spec[prop] = spec[prop]
+          let known = commands[name]
+          if (known)
+            commands[name] = new Command(copyObj(spec, copyObj(known.spec)), known.self, name)
         }
       }
     })
+  }
 
-    let result = Object.create(null)
-    for (let name in found)
-      result[name] = new Command(found[name].spec, found[name].self, name)
-    return result
+  derive(schema) {
+    let commands = this.base ? this.base.derive(schema) : Object.create(null)
+    this.op(commands, schema)
+    return commands
   }
 }
 
-Command.defaultSet = new CommandSet(true, [baseCommands])
-Command.emptySet = new CommandSet(false, [])
+// :: CommandSet
+// A set without any commands.
+CommandSet.empty = new CommandSet(null, () => null)
+
+// :: CommandSet
+// The default value of the `commands` option. Includes the [base
+// commands](#baseCommands) and the commands defined by the schema.
+CommandSet.default = CommandSet.empty.add("schema").add(baseCommands)
 
 // ;; #path=CommandSpec #kind=interface
 // Commands are defined using objects that specify various aspects of
-// the command. The only properties that _must_ appear in a command
-// spec are [`name`](#CommandSpec.name) and [`run`](#CommandSpec.run).
-// You should probably also give your commands a `label`.
+// the command. The only property that _must_ appear in a command spec
+// is [`run`](#CommandSpec.run). You should probably also give your
+// commands a `label`.
 
 // :: string #path=CommandSpec.name
-// The name of the command, which will be its key in
-// `ProseMirror.commands`, and the thing passed to
-// [`execCommand`](#ProseMirror.execCommand).
+// Commands defined by [registering](#SchemaItem.register) them on
+// schema items should include a `name` in the spec object. The final
+// name of the command (the thing passed to
+// [`execCommand`](#ProseMirror.execCommand)) will be this name
+// prefixed by the node or mark name and a colon (for example
+// `"image:insert"`).
 
 // :: string #path=CommandSpec.label
 // A user-facing label for the command. This will be used, among other

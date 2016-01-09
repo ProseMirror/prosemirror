@@ -3,6 +3,8 @@ import {tempEditor, namespace} from "./def"
 import {cmpNode, is} from "../cmp"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "../build"
 
+import {CommandSet} from "../../src/edit"
+
 const used = Object.create(null)
 
 function test(cmd, before, after) {
@@ -429,32 +431,42 @@ test("horizontal_rule:insert",
      doc("<a>", p("bar")),
      doc(hr))
 
-// FIXME command adding/updating tests
-/*
 const test_ = namespace("command")
-
-defineCommand({
-  name: "foo:doIt",
-  label: "DO IT",
-  run(pm) { pm.setContent("hi", "text") }
-})
 
 test_("delete_specific", pm => {
   is(!pm.commands["lift"], "command disabled")
   is(!pm.input.baseKeymap.bindings["Alt-Left"], "no key bound")
-}, {commands: {lift: null}})
+}, {commands: CommandSet.default.update({lift: null})})
 
 test_("override_specific", pm => {
   pm.execCommand("lift")
   cmpNode(pm.doc, doc(p("Lift?")))
   is(!pm.commands.lift.spec.label, "completely replaced")
-}, {commands: {lift: {run: pm => pm.setContent("Lift?", "text")}}})
+}, {commands: CommandSet.default.update({lift: {run: pm => pm.setContent("Lift?", "text")}})})
 
 test_("extend_specific", pm => {
   pm.execCommand("lift")
   cmpNode(pm.doc, doc(p("hi")))
   is(!pm.input.baseKeymap.bindings["Alt-Left"], "disabled old key")
   is(pm.input.baseKeymap.bindings["Alt-L"], "enabled new key")
-}, {commands: {lift: {keys: ["Alt-L"]}},
+}, {commands: CommandSet.default.update({lift: {keys: ["Alt-L"]}}),
     doc: doc(blockquote(p("hi")))})
-*/
+
+const myCommands = {
+  command1: {
+    label: "DO IT",
+    run(pm) { pm.setContent("hi", "text") }
+  },
+  command2: {
+    run() {}
+  }
+}
+
+test_("add_custom", pm => {
+  is(pm.commands["command1"], "command1 present")
+}, {commands: CommandSet.default.add(myCommands)})
+
+test_("add_filtered", pm => {
+  is(pm.commands["command1"], "command1 present")
+  is(!pm.commands["command2"], "command2 not present")
+}, {commands: CommandSet.default.add(myCommands, name => name != "command2")})

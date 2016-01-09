@@ -1,7 +1,7 @@
 import {defaultSchema} from "../model"
 import {AssertionError} from "../util/error"
 
-import {Command, updateCommands} from "./command"
+import {CommandSet, updateCommands} from "./command"
 
 class Option {
   constructor(defaultValue, update, updateOnInit) {
@@ -55,17 +55,11 @@ defineOption("historyDepth", 100)
 // start a new history event. Defaults to 500.
 defineOption("historyEventDelay", 500)
 
-// :: Object<?CommandSpec> #path=commands #kind=option
-// Delete, add, or modify [commands](#ProseMirror.commands) associated
-// with this editor. The property names of the given object should
-// correspond to command [names](#CommandSpec.name), and their values
-// can be `null`, to disable a command, an object contain a `run`
-// property, to add a command, and an object without `run`, to extend
-// or reconfigure the existing command with that name. The latter can
-// be used to change, for example, the [key
-// bindings](#CommandSpec.keys) for a command or its appearance in the
-// menu.
-defineOption("commands", Command.defaultSet, updateCommands)
+// :: CommandSet #path=commands #kind=option
+// Specifies the set of [commands](#Command) available in the editor
+// (which in turn determines the base key bindings and items available
+// in the menus). Defaults to `CommandSet.default`.
+defineOption("commands", CommandSet.default, updateCommands)
 
 // :: string #path=commandParamHandler #kind=option
 // The name of the handler used to prompt the user for [command
