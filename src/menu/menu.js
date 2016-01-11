@@ -59,17 +59,19 @@ export class Menu {
 
   enter(content, displayInfo) {
     let pieces = [], close = false, explore = value => {
+      let added = false
       if (Array.isArray(value)) {
-        for (let i = 0; i < value.length; i++) explore(value[i])
-        // FIXME only when something was added
-        close = true
+        for (let i = 0; i < value.length; i++) added = explore(value[i]) || added
+        if (added) close = true
       } else if (!value.select || value.select(this.pm)) {
         if (close) {
           pieces.push(separator)
           close = false
         }
         pieces.push(value)
+        added = true
       }
+      return added
     }
     explore(content)
 
