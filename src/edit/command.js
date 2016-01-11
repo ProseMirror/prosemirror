@@ -9,8 +9,6 @@ import {copyObj} from "../util/obj"
 
 import {baseCommands} from "./base_commands"
 
-const paramHandlers = Object.create(null)
-
 // ;; A command is a named piece of functionality that can be bound to
 // a key, shown in the menu, or otherwise exposed to the user.
 //
@@ -34,7 +32,7 @@ export class Command {
   // Execute this command. If the command takes
   // [parameters](#Command.params), they can be passed as second
   // argument here, or omitted, in which case a [parameter
-  // handler](#defineParamHandler) will be called to prompt the user
+  // handler](#commandParamHandler) will be called to prompt the user
   // for values.
   //
   // Returns the value returned by the command spec's [`run`
@@ -44,7 +42,7 @@ export class Command {
     let run = this.spec.run
     if (!this.params.length) return run.call(this.self, pm)
     if (params) return run.call(this.self, pm, ...params)
-    let handler = getParamHandler(pm)
+    let handler = pm.options.commandParamHandler || defaultParamHandler
     if (!handler) return false
     handler(pm, this, params => {
       if (params) run.call(this.self, pm, ...params)
@@ -247,18 +245,17 @@ CommandSet.default = CommandSet.empty.add("schema").add(baseCommands)
 // the command's source item), tries to derive an initial value for
 // the parameter, or return null if it can't.
 
-// :: (string, (pm: ProseMirror, cmd: Command, callback: (?[any])))
-// Register a parameter handler, which is a function that prompts the
-// user to enter values for a command's [parameters](#CommandParam), and
-// calls a callback with the values received. See also the
-// [`commandParamHandler` option](#commandParamHandler).
-export function defineParamHandler(name, handler) {
-  paramHandlers[name] = handler
-}
+let defaultParamHandler = null
 
-function getParamHandler(pm) {
-  let option = pm.options.commandParamHandler
-  if (option && paramHandlers[option]) return paramHandlers[option]
+// :: ((pm: ProseMirror, cmd: Command, callback: (?[any])), bool)
+// Register a default [parameter handler](#commandParamHandler), which
+// is a function that prompts the user to enter values for a command's
+// [parameters](#CommandParam), and calls a callback with the values
+// received. If `override` is set to false, the new handler will be
+// ignored if another handler has already been defined.
+export function defineDefaultParamHandler(handler, override = true) {
+  if (!defaultParamHandler || override)
+    defaultParamHandler = handler
 }
 
 function deriveKeymap(pm) {

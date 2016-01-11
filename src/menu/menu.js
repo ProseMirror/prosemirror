@@ -1,6 +1,6 @@
 import {Tooltip} from "../ui/tooltip"
 import {elt, insertCSS} from "../dom"
-import {defineParamHandler, Command} from "../edit"
+import {defineDefaultParamHandler, Command} from "../edit"
 import sortedInsert from "../util/sortedinsert"
 import {AssertionError} from "../util/error"
 
@@ -336,8 +336,7 @@ function tooltipParamHandler(pm, command, callback) {
   }))
 }
 
-defineParamHandler("default", tooltipParamHandler)
-defineParamHandler("tooltip", tooltipParamHandler)
+defineDefaultParamHandler(tooltipParamHandler, false)
 
 // FIXME check for obsolete styles
 insertCSS(`
