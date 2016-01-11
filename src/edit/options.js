@@ -1,7 +1,7 @@
 import {defaultSchema} from "../model"
 import {AssertionError} from "../util/error"
 
-import {CommandSet, updateCommands, defaultParamHandler} from "./command"
+import {CommandSet, updateCommands} from "./command"
 
 class Option {
   constructor(defaultValue, update, updateOnInit) {

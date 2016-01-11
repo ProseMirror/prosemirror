@@ -109,6 +109,23 @@ export class Pos {
     return new Pos(path, pos.offset + add)
   }
 
+  // :: (Node, ?bool) → bool
+  // Checks whether this position is valid in the given document. When
+  // `requireTextblock` is true, only positions inside textblocks are
+  // considered valid.
+  isValid(doc, requireTextblock) {
+    for (let i = 0, node = doc;; i++) {
+      if (i == this.path.length) {
+        if (requireTextblock && !node.isTextblock) return false
+        return this.offset <= node.size
+      } else {
+        let n = this.path[i]
+        if (n >= node.size) return false
+        node = node.child(n)
+      }
+    }
+  }
+
   // :: () → Object
   // Convert the position to a JSON-safe representation.
   toJSON() { return this }

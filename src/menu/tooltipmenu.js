@@ -130,10 +130,10 @@ class TooltipMenu {
 
   onContextMenu(e) {
     let pos = this.pm.posAtCoords({left: e.clientX, top: e.clientY})
-    if (!pos || !pm.doc.isValidPos(pos, true)) return
+    if (!pos || !pos.isValid(this.pm.doc, true)) return
 
-    pm.setTextSelection(pos, pos)
-    pm.flush()
+    this.pm.setTextSelection(pos, pos)
+    this.pm.flush()
     this.menu.show(this.items(true, false), topCenterOfSelection())
   }
 }
