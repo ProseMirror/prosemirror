@@ -67,6 +67,8 @@ class TooltipMenu {
     this.update = new UpdateScheduler(pm, "change selectionChange blur commandsChanged", () => this.prepareUpdate())
     this.onContextMenu = this.onContextMenu.bind(this)
     pm.content.addEventListener("contextmenu", this.onContextMenu)
+    this.onMouseDown = () => { if (this.menu.active) this.menu.reset() }
+    pm.content.addEventListener("mousedown", this.onMouseDown)
 
     this.tooltip = new Tooltip(pm.wrapper, "above")
     this.menu = new Menu(pm, new TooltipDisplay(this.tooltip), () => this.update.force())
@@ -76,6 +78,7 @@ class TooltipMenu {
     this.update.detach()
     this.tooltip.detach()
     this.pm.content.removeEventListener("contextmenu", this.onContextMenu)
+    this.pm.content.removeEventListener("mousedown", this.onMouseDown)
   }
 
   items(inline, block) {
