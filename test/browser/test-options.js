@@ -39,3 +39,14 @@ test("no_init", pm => {
   pm.setOption("testOptionNoInit", "updated")
   cmp(pm.mod.testOptionNoInitUpdated, true)
 })
+
+test("invalid_option", pm => {
+  var error
+  try {
+    pm.setOption("doesNotExist", "isInvalid")
+  } catch (e) {
+    error = e
+  }
+  cmp(pm.getOption("doesNotExist"), undefined)
+  cmp(error.message, "Option 'doesNotExist' is not defined")
+})
