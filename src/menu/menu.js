@@ -346,11 +346,11 @@ insertCSS(`
 .ProseMirror-menu {
   margin: 0 -4px;
   line-height: 1;
-  white-space: pre;
 }
 .ProseMirror-tooltip .ProseMirror-menu {
   width: -webkit-fit-content;
   width: fit-content;
+  white-space: pre;
 }
 
 .ProseMirror-tooltip-back-wrapper {

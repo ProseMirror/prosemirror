@@ -82,8 +82,8 @@ class TooltipMenu {
     else items = menuGroups(this.pm, this.config.inlineGroups || ["inline"])
 
     if (block) {
-      if (this.config.blockItems) items = items.concat(getItems(this.pm, this.config.blockItems))
-      else items = items.concat(menuGroups(this.pm, this.config.blockGroups || ["block"]))
+      if (this.config.blockItems) addIfNew(items, getItems(this.pm, this.config.blockItems))
+      else addIfNew(items, menuGroups(this.pm, this.config.blockGroups || ["block"]))
     }
     return items
   }
@@ -150,6 +150,11 @@ function topOfNodeSelection(pm) {
   if (!selected) return {left: 0, top: 0}
   let box = selected.getBoundingClientRect()
   return {left: Math.min((box.left + box.right) / 2, box.left + 20), top: box.top}
+}
+
+function addIfNew(array, elts) {
+  for (let i = 0; i < elts.length; i++)
+    if (array.indexOf(elts[i]) == -1) array.push(elts[i])
 }
 
 insertCSS(`
