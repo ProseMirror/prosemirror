@@ -213,6 +213,8 @@ export class ProseMirror {
   //     [redraw](#ProseMirror.flush).
   //
   // Returns the transform, or `false` if there were no steps in it.
+  //
+  // Has the following property:
   apply(transform, options = nullOptions) {
     if (transform.doc == this.doc) return false
     if (transform.docs[0] != this.doc && findDiffStart(transform.docs[0], this.doc))
