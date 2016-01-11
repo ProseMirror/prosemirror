@@ -1,6 +1,6 @@
 {
   "name": "prosemirror",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Well-defined WYSIWYG editor",
   "license": "MIT",
   "maintainers": [
@@ -33,6 +33,7 @@
     "browsertests": "watchify -d -v --outfile demo/test-built.js -t babelify demo/test.js",
     "dist": "babel -d dist src",
     "dist-watch": "babel -w -d dist src",
-    "lint": "blint --browser --ecmaVersion 6 --forbidSemicolons src"
+    "lint": "blint --browser --ecmaVersion 6 --forbidSemicolons src",
+    "prepublish": "babel -d dist src"
   }
 }
