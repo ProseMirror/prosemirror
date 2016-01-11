@@ -65,6 +65,8 @@ class TooltipMenu {
     this.showLinks = this.config.showLinks !== false
     this.selectedBlockMenu = this.config.selectedBlockMenu
     this.update = new UpdateScheduler(pm, "change selectionChange blur commandsChanged", () => this.prepareUpdate())
+    this.onContextMenu = this.onContextMenu.bind(this)
+    pm.content.addEventListener("contextmenu", this.onContextMenu)
 
     this.tooltip = new Tooltip(pm.wrapper, "above")
     this.menu = new Menu(pm, new TooltipDisplay(this.tooltip), () => this.update.force())
@@ -73,6 +75,7 @@ class TooltipMenu {
   detach() {
     this.update.detach()
     this.tooltip.detach()
+    this.pm.content.removeEventListener("contextmenu", this.onContextMenu)
   }
 
   items(inline, block) {
@@ -123,6 +126,15 @@ class TooltipMenu {
   showLink(link, pos) {
     let node = elt("div", {class: classPrefix + "-linktext"}, elt("a", {href: link.attrs.href, title: link.attrs.title}, link.attrs.href))
     this.tooltip.open(node, pos)
+  }
+
+  onContextMenu(e) {
+    let pos = this.pm.posAtCoords({left: e.clientX, top: e.clientY})
+    if (!pos || !pm.doc.isValidPos(pos, true)) return
+
+    pm.setTextSelection(pos, pos)
+    pm.flush()
+    this.menu.show(this.items(true, false), topCenterOfSelection())
   }
 }
 
