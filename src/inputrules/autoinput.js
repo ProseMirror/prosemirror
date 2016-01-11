@@ -2,50 +2,63 @@ import {Pos, BlockQuote, OrderedList, BulletList, CodeBlock, Heading} from "../m
 import {defineOption} from "../edit"
 import {InputRule, addInputRule, removeInputRule} from "./inputrules"
 
-// :: bool #path=autoInput #kind=option
-// When set to true, enables the input rules defined by `defineInputRule` and stored under the
-// `"autoInput"` name in the editor schema's
-// [`registry`](#Schema.registry)—by default, these are things
-// like smart quotes, and automatically wrapping a block in a list if
-// you start it with `"1. "`.
+// :: Object<InputRule>
+// Base set of input rules, enabled by default when `autoInput` is set
+// to `true`.
+export const autoInputRules = Object.create(null)
+
+// :: union<bool, [union<InputRule, string, Object<?InputRule>>]> #path=autoInput #kind=option
+// Controls the [input rules](#InputRule) initially active in the
+// editor. Pass an array of sources, which can be either an input
+// rule, the string `"schema"`, to add rules
+// [registered](#SchemaItem.register) on the schema items (under the
+// string `"autoInput"`), or an object containing input rules. To
+// remove previously included rules, you can add an object that maps
+// their name to `null`.
+//
+// The value `false` (the default) is a shorthand for no input rules,
+// and the value `true` for `["schema", autoInputRules]`.
 defineOption("autoInput", false, function(pm, val) {
   if (pm.mod.autoInput) {
     pm.mod.autoInput.forEach(name => removeInputRule(pm, name))
     pm.mod.autoInput = null
   }
   if (val) {
-    pm.mod.autoInput = []
-    pm.schema.registry("autoInput", (rule, type, name) => {
-      let rname = name + ":" + rule.name, handler = rule.handler
-      if (handler.bind) handler = handler.bind(type)
-      addInputRule(pm, new InputRule(rname, rule.match, rule.filter, handler))
-      pm.mod.autoInput.push(rname)
+    if (val === true) val = ["schema", autoInputRules]
+    let rules = Object.create(null), list = pm.mod.autoInput = []
+    val.forEach(spec => {
+      if (spec === "schema") {
+        pm.schema.registry("autoInput", (rule, type, name) => {
+          let rname = name + ":" + rule.name, handler = rule.handler
+          if (handler.bind) handler = handler.bind(type)
+          rules[rname] = new InputRule(rname, rule.match, rule.filter, handler)
+        })
+      } else if (spec instanceof InputRule) {
+        rules[spec.name] = spec
+      } else {
+        for (let name in spec) {
+          let val = spec[name]
+          if (val == null) delete rules[name]
+          else rules[name] = val
+        }
+      }
     })
     for (let name in rules) {
-      let rule = rules[name]
-      addInputRule(pm, rule)
-      pm.mod.autoInput.push(rule.name)
+      addInputRule(pm, rules[name])
+      list.push(rules[name].name)
     }
   }
 })
 
-const rules = Object.create(null)
+autoInputRules.emDash = new InputRule("emDash", /--$/, "-", "—")
 
-// :: (InputRule)
-// Define an input rule to be used when the `autoInput` option is enabled.
-export function defineInputRule(rule) {
-  rules[rule.name] = rule
-}
+autoInputRules.openDoubleQuote = new InputRule("openDoubleQuote", /\s(")$/, '"', "“")
 
-defineInputRule(new InputRule("emDash", /--$/, "-", "—"))
+autoInputRules.closeDoubleQuote = new InputRule("closeDoubleQuote", /"$/, '"', "”")
 
-defineInputRule(new InputRule("openDoubleQuote", /\s(")$/, '"', "“"))
+autoInputRules.openSingleQuote = new InputRule("openSingleQuote", /\s(')$/, "'", "‘")
 
-defineInputRule(new InputRule("closeDoubleQuote", /"$/, '"', "”"))
-
-defineInputRule(new InputRule("openSingleQuote", /\s(')$/, "'", "‘"))
-
-defineInputRule(new InputRule("closeSingleQuote", /'$/, "'", "’"))
+autoInputRules.closeSingleQuote = new InputRule("closeSingleQuote", /'$/, "'", "’")
 
 BlockQuote.register("autoInput", new InputRule("startBlockQuote", /^\s*> $/, " ",
                                                function(pm, _, pos) { wrapAndJoin(pm, pos, this) }))
