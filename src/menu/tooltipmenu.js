@@ -31,7 +31,7 @@ const classPrefix = "ProseMirror-tooltipmenu"
 //   : When enabled, and a whole block is selected or the cursor is
 //     inside an empty block, the block menu gets shown.
 //
-// **`inlineGroups`**`: [string] = ["inline"]`
+// **`inlineGroups`**`: [string] = ["inline", "insert"]`
 //   : The menu groups to show when displaying the menu for inline
 //     content.
 //
@@ -41,7 +41,7 @@ const classPrefix = "ProseMirror-tooltipmenu"
 //     nested arrays are used, separators will be shown between items
 //     from different arrays.
 //
-// **`blockGroups`**`: [string] = ["block"]`
+// **`blockGroups`**`: [string] = ["insert", "block"]`
 //   : The menu groups to show when displaying the menu for block
 //     content.
 //
@@ -82,11 +82,11 @@ class TooltipMenu {
     let items
     if (!inline) items = []
     else if (this.config.inlineItems) items = getItems(this.pm, this.config.inlineItems)
-    else items = menuGroups(this.pm, this.config.inlineGroups || ["inline"])
+    else items = menuGroups(this.pm, this.config.inlineGroups || ["inline", "insert"])
 
     if (block) {
       if (this.config.blockItems) addIfNew(items, getItems(this.pm, this.config.blockItems))
-      else addIfNew(items, menuGroups(this.pm, this.config.blockGroups || ["block"]))
+      else addIfNew(items, menuGroups(this.pm, this.config.blockGroups || ["insert", "block"]))
     }
     return items
   }
@@ -129,6 +129,7 @@ class TooltipMenu {
   }
 
   onContextMenu(e) {
+    if (!this.pm.selection.empty) return
     let pos = this.pm.posAtCoords({left: e.clientX, top: e.clientY})
     if (!pos || !pos.isValid(this.pm.doc, true)) return
 

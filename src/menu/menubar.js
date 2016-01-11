@@ -20,7 +20,7 @@ const prefix = "ProseMirror-menubar"
 //     editor is partially scrolled out of view, by making it float at
 //     the top of the viewport.
 //
-// **`groups`**`: [string] = ["inline", "block", "history"]`
+// **`groups`**`: [string] = ["inline", "insert", "block", "history"]`
 //   : Determines the menu groups that are shown in the menu bar.
 //
 // **`items`**`: [union<string, [string]>]`
@@ -119,7 +119,7 @@ class MenuBar {
   resetMenu() {
     this.menu.show(this.config.items
                    ? getItems(this.pm, this.config.items)
-                   : menuGroups(this.pm, this.config.groups || ["inline", "block", "history"]))
+                   : menuGroups(this.pm, this.config.groups || ["inline", "insert", "block", "history"]))
   }
 
   updateFloat() {

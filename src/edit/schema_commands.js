@@ -190,7 +190,6 @@ Image.register("command", {
     ]
   },
   label: "Insert image",
-  menuGroup: "inline(40)",
   display: {
     type: "icon",
     width: 1097, height: 1024,
@@ -353,6 +352,11 @@ HorizontalRule.register("command", {
 
 // Used by the textblockType command
 
-Paragraph.prototype.textblockTypes = [{label: "Normal", rank: 10}]
-CodeBlock.prototype.textblockTypes = [{label: "Code", rank: 20}]
-Heading.prototype.textblockTypes = [1, 2, 3, 4, 5, 6].map(n => ({label: "Head " + n, attrs: {level: n}, rank: 30 + n}))
+Paragraph.prototype.textblockMenuOptions = [{label: "Normal", rank: 10}]
+CodeBlock.prototype.textblockMenuOptions = [{label: "Code", rank: 20}]
+Heading.prototype.textblockMenuOptions = [1, 2, 3, 4, 5, 6].map(n => ({label: "Head " + n, attrs: {level: n}, rank: 30 + n}))
+
+// Used by the insert command
+
+Image.prototype.insertMenuOptions = [{label: "Image", command: "insert", rank: 20}]
+HorizontalRule.prototype.insertMenuOptions = [{label: "Horizontal rule", command: "insert", rank: 70}]

@@ -379,7 +379,7 @@ insertCSS(`
 }
 
 .ProseMirror-select, .ProseMirror-select-menu {
-  border: 1px solid #777;
+  border: 1px solid #ccc;
   border-radius: 3px;
   font-size: 90%;
 }
@@ -393,7 +393,7 @@ insertCSS(`
   margin: 0 8px;
 }
 
-.ProseMirror-select-command-textblockType {
+.ProseMirror-select-command-textblockType, .ProseMirror-select-command-insert {
   min-width: 3.2em;
 }
 

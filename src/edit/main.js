@@ -513,6 +513,9 @@ export class ProseMirror {
   }
 }
 
+// :: Object
+// The object `{scrollIntoView: true}`, which is a common argument to
+// pass to `ProseMirror.apply` or `EditorTransform.apply`.
 ProseMirror.prototype.apply.scroll = {scrollIntoView: true}
 
 export const DIRTY_RESCAN = 1, DIRTY_REDRAW = 2
