@@ -1,6 +1,6 @@
 {
   "name": "prosemirror",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Well-defined WYSIWYG editor",
   "license": "MIT",
   "maintainers": [
@@ -34,6 +34,6 @@
     "dist": "babel -d dist src",
     "dist-watch": "babel -w -d dist src",
     "lint": "blint --browser --ecmaVersion 6 --forbidSemicolons src",
-    "prepublish": "babel -d dist src"
+    "prepublish": "rm -rf dist/* && babel -d dist src"
   }
 }
