@@ -48,22 +48,26 @@ class BarDisplay {
     this.container.appendChild(dom)
   }
   enter(dom, back) {
-    let current = this.container.firstChild
-    if (current) {
-      current.style.position = "absolute"
-      current.style.opacity = "0.5"
-    }
+    this.container.firstChild.style.opacity = "0.5"
+
     let backButton = elt("div", {class: prefix + "-back"})
     backButton.addEventListener("mousedown", e => {
       e.preventDefault(); e.stopPropagation()
       back()
     })
-    let added = elt("div", {class: prefix + "-sliding"}, backButton, dom)
+    let added = elt("div", {class: prefix + "-sliding-wrap"},
+                    elt("div", {class: prefix + "-sliding"}, backButton, dom))
     this.container.appendChild(added)
-    added.getBoundingClientRect() // Force layout for transition
-    added.style.left = "0"
-    added.addEventListener("transitionend", () => {
-      if (current && current.parentNode) current.parentNode.removeChild(current)
+    added.lastChild.getBoundingClientRect() // Force layout for transition
+    added.lastChild.style.left = "0"
+  }
+  leave() {
+    let last = this.container.lastChild
+    last.firstChild.style.pointerEvents = "none"
+    last.lastChild.style.left = ""
+    last.previousSibling.style.opacity = ""
+    last.lastChild.addEventListener("transitionend", () => {
+      this.container.removeChild(last)
     })
   }
 }
@@ -73,17 +77,12 @@ class MenuBar {
     this.pm = pm
     this.config = config || {}
 
-    this.menuElt = elt("div", {class: prefix + "-inner"})
-    this.wrapper = elt("div", {class: prefix},
-                       // Dummy structure to reserve space for the menu
-                       elt("div", {class: "ProseMirror-menu", style: "visibility: hidden"},
-                           elt("span", {class: "ProseMirror-menuicon"},
-                               elt("div", {class: "ProseMirror-icon"}, "x"))),
-                       this.menuElt)
+    this.wrapper = elt("div", {class: prefix})
     pm.wrapper.insertBefore(this.wrapper, pm.wrapper.firstChild)
+    this.spacer = null
 
     this.updater = new UpdateScheduler(pm, "selectionChange change activeMarkChange commandsChanged", () => this.update())
-    this.menu = new Menu(pm, new BarDisplay(this.menuElt), () => this.resetMenu())
+    this.menu = new Menu(pm, new BarDisplay(this.wrapper), () => this.resetMenu())
 
     this.updater.force()
 
@@ -122,22 +121,26 @@ class MenuBar {
   updateFloat() {
     let editorRect = this.pm.wrapper.getBoundingClientRect()
     if (this.floating) {
-      if (editorRect.top >= 0 || editorRect.bottom < this.menuElt.offsetHeight + 10) {
+      if (editorRect.top >= 0 || editorRect.bottom < this.wrapper.offsetHeight + 10) {
         this.floating = false
-        this.menuElt.style.position = this.menuElt.style.left = this.menuElt.style.width = ""
-        this.menuElt.style.display = ""
+        this.wrapper.style.position = this.wrapper.style.left = this.wrapper.style.width = ""
+        this.wrapper.style.display = ""
+        this.spacer.parentNode.removeChild(this.spacer)
+        this.spacer = null
       } else {
         let border = (this.pm.wrapper.offsetWidth - this.pm.wrapper.clientWidth) / 2
-        this.menuElt.style.left = (editorRect.left + border) + "px"
-        this.menuElt.style.display = (editorRect.top > window.innerHeight ? "none" : "")
+        this.wrapper.style.left = (editorRect.left + border) + "px"
+        this.wrapper.style.display = (editorRect.top > window.innerHeight ? "none" : "")
       }
     } else {
-      if (editorRect.top < 0 && editorRect.bottom >= this.menuElt.offsetHeight + 10) {
+      if (editorRect.top < 0 && editorRect.bottom >= this.wrapper.offsetHeight + 10) {
         this.floating = true
-        let menuRect = this.menuElt.getBoundingClientRect()
-        this.menuElt.style.left = menuRect.left + "px"
-        this.menuElt.style.width = menuRect.width + "px"
-        this.menuElt.style.position = "fixed"
+        let menuRect = this.wrapper.getBoundingClientRect()
+        this.wrapper.style.left = menuRect.left + "px"
+        this.wrapper.style.width = menuRect.width + "px"
+        this.wrapper.style.position = "fixed"
+        this.spacer = elt("div", {class: prefix + "-spacer", style: "height: " + menuRect.height + "px"})
+        this.pm.wrapper.insertBefore(this.spacer, this.wrapper)
       }
     }
   }
@@ -148,7 +151,7 @@ class MenuBar {
     if (!head) return null
     return () => {
       let cursorPos = this.pm.coordsAtPos(head)
-      let menuRect = this.menuElt.getBoundingClientRect()
+      let menuRect = this.wrapper.getBoundingClientRect()
       if (cursorPos.top < menuRect.bottom && cursorPos.bottom > menuRect.top) {
         let scrollable = findWrappingScrollable(this.pm.wrapper)
         if (scrollable)
@@ -165,26 +168,19 @@ function findWrappingScrollable(node) {
 
 insertCSS(`
 .${prefix} {
-  position: relative;
-  margin-bottom: 3px;
   border-top-left-radius: inherit;
   border-top-right-radius: inherit;
-}
-
-.${prefix}-inner {
+  position: relative;
   min-height: 1em;
   color: #666;
   padding: 1px 6px;
   top: 0; left: 0; right: 0;
-  position: absolute;
   border-bottom: 1px solid silver;
   background: white;
   z-index: 10;
   -moz-box-sizing: border-box;
   box-sizing: border-box;
-  overflow: hidden;
-  border-top-left-radius: inherit;
-  border-top-right-radius: inherit;
+  overflow: visible;
 }
 
 .${prefix} .ProseMirror-icon-active {
@@ -219,6 +215,14 @@ insertCSS(`
   color: #ccc;
 }
 
+.${prefix}-sliding-wrap {
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: -webkit-fit-content;
+  height: fit-content;
+  overflow: hidden;
+}
+
 .${prefix}-sliding {
   -webkit-transition: left 0.2s ease-out;
   -moz-transition: left 0.2s ease-out;
@@ -229,7 +233,9 @@ insertCSS(`
   box-sizing: -moz-border-box;
   box-sizing: border-box;
   padding-left: 16px;
+  padding-right: 4px;
   background: white;
+  border-bottom: 1px solid #ccc;
 }
 
 .${prefix}-back {
@@ -241,9 +247,10 @@ insertCSS(`
   left: 0;
   border-right: 1px solid silver;
   cursor: pointer;
+  z-index: 1;
 }
 .${prefix}-back:after {
-  content: "«";
+  content: "»";
 }
 
 `)

@@ -96,10 +96,10 @@ export class Menu {
 
   leave() {
     this.stack.pop()
-    if (this.stack.length)
-      this.draw()
+    if (this.display.leave)
+      this.display.leave()
     else
-      this.resetHandler()
+      this.draw()
   }
 }
 
