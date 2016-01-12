@@ -82,10 +82,10 @@ class MenuBar {
                        this.menuElt)
     pm.wrapper.insertBefore(this.wrapper, pm.wrapper.firstChild)
 
-    this.update = new UpdateScheduler(pm, "selectionChange change activeMarkChange commandsChanged", () => this.prepareUpdate())
+    this.updater = new UpdateScheduler(pm, "selectionChange change activeMarkChange commandsChanged", () => this.update())
     this.menu = new Menu(pm, new BarDisplay(this.menuElt), () => this.resetMenu())
 
-    this.update.force()
+    this.updater.force()
 
     this.floating = false
     if (this.config.float) {
@@ -101,19 +101,16 @@ class MenuBar {
   }
 
   detach() {
-    this.update.detach()
+    this.updater.detach()
     this.wrapper.parentNode.removeChild(this.wrapper)
 
     if (this.scrollFunc)
       window.removeEventListener("scroll", this.scrollFunc)
   }
 
-  prepareUpdate() {
-    let scrollCursor = this.prepareScrollCursor()
-    return () => {
-      if (!this.menu.active) this.resetMenu()
-      if (scrollCursor) scrollCursor()
-    }
+  update() {
+    if (!this.menu.active) this.resetMenu()
+    return this.updateScrollCursor()
   }
 
   resetMenu() {
@@ -145,16 +142,18 @@ class MenuBar {
     }
   }
 
-  prepareScrollCursor() {
+  updateScrollCursor() {
     if (!this.floating) return null
     let head = this.pm.selection.head
     if (!head) return null
-    let cursorPos = this.pm.coordsAtPos(head)
-    let menuRect = this.menuElt.getBoundingClientRect()
-    if (cursorPos.top < menuRect.bottom && cursorPos.bottom > menuRect.top) {
-      let scrollable = findWrappingScrollable(this.pm.wrapper)
-      if (scrollable)
-        return () => scrollable.scrollTop -= (menuRect.bottom - cursorPos.top)
+    return () => {
+      let cursorPos = this.pm.coordsAtPos(head)
+      let menuRect = this.menuElt.getBoundingClientRect()
+      if (cursorPos.top < menuRect.bottom && cursorPos.bottom > menuRect.top) {
+        let scrollable = findWrappingScrollable(this.pm.wrapper)
+        if (scrollable)
+          return () => { scrollable.scrollTop -= (menuRect.bottom - cursorPos.top) }
+      }
     }
   }
 }

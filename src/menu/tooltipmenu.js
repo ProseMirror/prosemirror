@@ -64,18 +64,18 @@ class TooltipMenu {
 
     this.showLinks = this.config.showLinks !== false
     this.selectedBlockMenu = this.config.selectedBlockMenu
-    this.update = new UpdateScheduler(pm, "change selectionChange blur commandsChanged", () => this.prepareUpdate())
+    this.updater = new UpdateScheduler(pm, "change selectionChange blur commandsChanged", () => this.update())
     this.onContextMenu = this.onContextMenu.bind(this)
     pm.content.addEventListener("contextmenu", this.onContextMenu)
     this.onMouseDown = () => { if (this.menu.active) this.menu.reset() }
     pm.content.addEventListener("mousedown", this.onMouseDown)
 
     this.tooltip = new Tooltip(pm.wrapper, "above")
-    this.menu = new Menu(pm, new TooltipDisplay(this.tooltip), () => this.update.force())
+    this.menu = new Menu(pm, new TooltipDisplay(this.tooltip), () => this.updater.force())
   }
 
   detach() {
-    this.update.detach()
+    this.updater.detach()
     this.tooltip.detach()
     this.pm.content.removeEventListener("contextmenu", this.onContextMenu)
     this.pm.content.removeEventListener("mousedown", this.onMouseDown)
@@ -94,28 +94,36 @@ class TooltipMenu {
     return result
   }
 
-  prepareUpdate() {
+  update() {
     if (this.menu.active) return null
 
     let {empty, node, from, to} = this.pm.selection, link
     if (!this.pm.hasFocus()) {
-      return () => this.tooltip.close()
+      this.tooltip.close()
     } else if (node && node.isBlock) {
-      let coords = topOfNodeSelection(this.pm)
-      return () => this.menu.show(this.items(false, true), coords)
+      return () => {
+        let coords = topOfNodeSelection(this.pm)
+        return () => this.menu.show(this.items(false, true), coords)
+      }
     } else if (!empty) {
-      let coords = node ? topOfNodeSelection(this.pm) : topCenterOfSelection()
-      let showBlock = this.selectedBlockMenu && Pos.samePath(from.path, to.path) &&
-          from.offset == 0 && to.offset == this.pm.doc.path(from.path).size
-      return () => this.menu.show(this.items(true, showBlock), coords)
+      return () => {
+        let coords = node ? topOfNodeSelection(this.pm) : topCenterOfSelection()
+        let showBlock = this.selectedBlockMenu && Pos.samePath(from.path, to.path) &&
+            from.offset == 0 && to.offset == this.pm.doc.path(from.path).size
+        return () => this.menu.show(this.items(true, showBlock), coords)
+      }
     } else if (this.selectedBlockMenu && this.pm.doc.path(from.path).size == 0) {
-      let coords = this.pm.coordsAtPos(from)
-      return () => this.menu.show(this.items(false, true), coords)
+      return () => {
+        let coords = this.pm.coordsAtPos(from)
+        return () => this.menu.show(this.items(false, true), coords)
+      }
     } else if (this.showLinks && (link = this.linkUnderCursor())) {
-      let coords = this.pm.coordsAtPos(from)
-      return () => this.showLink(link, coords)
+      return () => {
+        let coords = this.pm.coordsAtPos(from)
+        return () => this.showLink(link, coords)
+      }
     } else {
-      return () => this.tooltip.close()
+      this.tooltip.close()
     }
   }
 
