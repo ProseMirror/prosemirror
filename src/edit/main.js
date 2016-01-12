@@ -285,6 +285,8 @@ export class ProseMirror {
     if ((redrawn || !op.sel.eq(this.sel.range)) && !this.input.composing || op.focus)
       this.sel.toDOM(op.focus)
 
+    // FIXME somehow schedule this relative to ui/update so that it
+    // doesn't cause extra layout
     if (op.scrollIntoView !== false)
       scrollIntoView(this, op.scrollIntoView)
     // :: () #path=ProseMirror#events#draw
@@ -292,16 +294,8 @@ export class ProseMirror {
     if (docChanged) this.signal("draw")
     // :: () #path=ProseMirror#events#flush
     // Fired when the editor has finished
-    // [flushing](#ProseMirror.flush) an update to the DOM. If you
-    // need to respond to this with a DOM update of your own, use this
-    // event to read layout from the DOM, and
-    // [`flushed`](#ProseMirror.event_flushed) to update the DOM.
+    // [flushing](#ProseMirror.flush) an update to the DOM.
     this.signal("flush")
-    // :: () #path=ProseMirror#events#flushed
-    // Fired when the editor has finished
-    // [flushing](#ProseMirror.flush) an update to the DOM, after
-    // [`flush`](#ProseMirror.event_flush) has fired.
-    this.signal("flushed")
     this.accurateSelection = false
   }
 
