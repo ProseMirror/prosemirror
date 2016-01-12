@@ -1,6 +1,6 @@
 import {Tooltip} from "../ui/tooltip"
 import {elt, insertCSS} from "../dom"
-import {defineDefaultParamHandler, Command} from "../edit"
+import {defineDefaultParamHandler, withParamHandler, Command} from "../edit"
 import sortedInsert from "../util/sortedinsert"
 import {AssertionError} from "../util/error"
 
@@ -131,20 +131,24 @@ function title(pm, command) {
   return key ? command.label + " (" + key + ")" : command.label
 }
 
+function execInMenu(menu, command, params) {
+  withParamHandler((_, command, callback) => {
+    menu.enter(readParams(command, callback))
+  }, () => {
+    command.exec(menu.pm, params)
+  })
+}
+
 function renderIcon(command, menu) {
   let icon = getIcon(command.name, command.spec.display)
   if (command.active(menu.pm)) icon.className += " ProseMirror-icon-active"
   let dom = elt("span", {class: "ProseMirror-menuicon", title: title(menu.pm, command)}, icon)
   dom.addEventListener("mousedown", e => {
     e.preventDefault(); e.stopPropagation()
-    if (!command.params.length) {
-      command.exec(menu.pm)
-      menu.reset()
-    } else if (command.params.length == 1 && command.params[0].type == "select") {
-      showSelectMenu(menu.pm, command, dom)
-    } else {
-      menu.enter(readParams(command))
-    }
+    if (command.params.length == 1 && command.params[0].type == "select")
+      showSelectMenu(menu, command, dom)
+    else
+      execInMenu(menu, command)
   })
   return dom
 }
@@ -164,26 +168,26 @@ function renderSelect(item, menu) {
                 !deflt ? (param.defaultLabel || "Select...") : deflt.display ? deflt.display(deflt) : deflt.label)
   dom.addEventListener("mousedown", e => {
     e.preventDefault(); e.stopPropagation()
-    showSelectMenu(menu.pm, item, dom)
+    showSelectMenu(menu, item, dom)
   })
   return dom
 }
 
-export function showSelectMenu(pm, item, dom) {
-  let param = item.params[0]
+export function showSelectMenu(menu, item, dom) {
+  let param = item.params[0], pm = menu.pm
   let options = param.options.call ? param.options(pm) : param.options
-  let menu = elt("div", {class: "ProseMirror-select-menu"}, options.map(o => {
+  let menuDOM = elt("div", {class: "ProseMirror-select-menu"}, options.map(o => {
     let dom = elt("div", null, o.display ? o.display(o) : o.label)
     dom.addEventListener("mousedown", e => {
       e.preventDefault()
-      item.exec(pm, [o.value])
+      execInMenu(menu, item, [o.value])
       finish()
     })
     return dom
   }))
   let pos = dom.getBoundingClientRect(), box = pm.wrapper.getBoundingClientRect()
-  menu.style.left = (pos.left - box.left - 2) + "px"
-  menu.style.top = (pos.top - box.top - 2) + "px"
+  menuDOM.style.left = (pos.left - box.left - 2) + "px"
+  menuDOM.style.top = (pos.top - box.top - 2) + "px"
 
   let done = false
   function finish() {
@@ -191,11 +195,11 @@ export function showSelectMenu(pm, item, dom) {
     done = true
     document.body.removeEventListener("mousedown", finish)
     document.body.removeEventListener("keydown", finish)
-    pm.wrapper.removeChild(menu)
+    pm.wrapper.removeChild(menuDOM)
   }
   document.body.addEventListener("mousedown", finish)
   document.body.addEventListener("keydown", finish)
-  pm.wrapper.appendChild(menu)
+  pm.wrapper.appendChild(menuDOM)
 }
 
 function renderItem(item, menu) {
@@ -239,7 +243,7 @@ paramTypes.text = {
 
 paramTypes.select = {
   render(param, value) {
-    let options = param.options.call ? param.options(pm) : param.options
+    let options = param.options.call ? param.options(this) : param.options
     return elt("select", null, options.map(o => elt("option", {value: o.value, selected: o == value}, o.label)))
   },
   read(dom) {
@@ -251,7 +255,7 @@ function buildParamForm(pm, command) {
   let fields = command.params.map((param, i) => {
     if (!(param.type in paramTypes))
       AssertionError.raise("Unsupported parameter type: " + param.type)
-    let field = paramTypes[param.type].render(param, paramDefault(param, pm, command))
+    let field = paramTypes[param.type].render.call(pm, param, paramDefault(param, pm, command))
     field.setAttribute("data-field", i)
     return elt("div", null, field)
   })
@@ -262,7 +266,7 @@ function gatherParams(pm, command, form) {
   let bad = false
   let params = command.params.map((param, i) => {
     let dom = form.querySelector("[data-field=\"" + i + "\"]")
-    let val = paramTypes[param.type].read(dom)
+    let val = paramTypes[param.type].read.call(pm, dom)
     if (val) return val
     if (param.default == null) bad = true
     else return paramDefault(param, pm, command)
@@ -305,12 +309,12 @@ function paramForm(pm, command, callback) {
   return form
 }
 
-export function readParams(command) {
+export function readParams(command, callback) {
   return {display(menu) {
     return paramForm(menu.pm, command, params => {
       menu.pm.focus()
       if (params) {
-        command.exec(menu.pm, params)
+        callback(params)
         menu.reset()
       } else {
         menu.leave()
