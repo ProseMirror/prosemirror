@@ -217,20 +217,42 @@ function paramDefault(param, pm, command) {
   return param.default
 }
 
+// :: Object<{render: (param: CommandParam, value: any) → DOMNode, read: (node: DOMNode) → any}>
+// A collection of default renderers and readers for [parameter
+// types](#CommandParam.type), which [parameter
+// handlers](#commandParamHandler) can optionally use to prompt for
+// parameters. `render` should create a form field for the parameter,
+// and `read` should, given that field, return its value.
+export const paramTypes = Object.create(null)
+
+paramTypes.text = {
+  render(param, value) {
+    return elt("input", {type: "text",
+                         placeholder: param.label,
+                         value,
+                         autocomplete: "off"})
+  },
+  read(dom) {
+    return dom.value
+  }
+}
+
+paramTypes.select = {
+  render(param, value) {
+    let options = param.options.call ? param.options(pm) : param.options
+    return elt("select", null, options.map(o => elt("option", {value: o.value, selected: o == value}, o.label)))
+  },
+  read(dom) {
+    return dom.value
+  }
+}
+
 function buildParamForm(pm, command) {
   let fields = command.params.map((param, i) => {
-    let field, name = "field_" + i
-    let val = paramDefault(param, pm, command)
-    if (param.type == "text")
-      field = elt("input", {name, type: "text",
-                            placeholder: param.label,
-                            value: val,
-                            autocomplete: "off"})
-    else if (param.type == "select")
-      field = elt("select", {name}, (param.options.call ? param.options(pm) : param.options)
-                  .map(o => elt("option", {value: o.value, selected: o == val}, o.label)))
-    else // FIXME more types
+    if (!(param.type in paramTypes))
       AssertionError.raise("Unsupported parameter type: " + param.type)
+    let field = paramTypes[param.type].render(param, paramDefault(param, pm, command))
+    field.setAttribute("data-field", i)
     return elt("div", null, field)
   })
   return elt("form", null, fields)
@@ -239,7 +261,8 @@ function buildParamForm(pm, command) {
 function gatherParams(pm, command, form) {
   let bad = false
   let params = command.params.map((param, i) => {
-    let val = form.elements["field_" + i].value
+    let dom = form.querySelector("[data-field=\"" + i + "\"]")
+    let val = paramTypes[param.type].read(dom)
     if (val) return val
     if (param.default == null) bad = true
     else return paramDefault(param, pm, command)
