@@ -42,10 +42,14 @@ export class Command {
     let run = this.spec.run
     if (!this.params.length) return run.call(this.self, pm)
     if (params) return run.call(this.self, pm, ...params)
-    let handler = pm.options.commandParamHandler || defaultParamHandler
+    let fromCx = contextParamHandler
+    let handler = fromCx || pm.options.commandParamHandler || defaultParamHandler
     if (!handler) return false
     handler(pm, this, params => {
-      if (params) run.call(this.self, pm, ...params)
+      if (params) {
+        if (fromCx) withParamHandler(fromCx, run.bind(this.self, pm, ...params))
+        else run.call(this.self, pm, ...params)
+      }
     })
   }
 
@@ -244,6 +248,19 @@ CommandSet.default = CommandSet.empty.add("schema").add(baseCommands)
 // A function that, given an editor instance (and a `this` bound to
 // the command's source item), tries to derive an initial value for
 // the parameter, or return null if it can't.
+
+let contextParamHandler = null
+
+// :: ((pm: ProseMirror, cmd: Command, callback: (?[any])), ())
+// Run `f`, overriding the current [command parameter handler](#commandParamHandler)
+// with `handler` for the dynamic scope of the function.
+
+export function withParamHandler(handler, f) {
+  let prev = contextParamHandler
+  contextParamHandler = handler
+  try { return f() }
+  finally { contextParamHandler = prev }
+}
 
 let defaultParamHandler = null
 
