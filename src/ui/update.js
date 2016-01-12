@@ -45,7 +45,7 @@ class CentralScheduler {
   }
 }
 
-// :: (ProseMirror, () => ?() => ?())
+// :: (ProseMirror, () -> ?() -> ?())
 // Schedule a DOM update function to be called either the next time
 // the editor is [flushed](#ProseMirror.flush), or if no flush happens
 // immediately, after 200 milliseconds. This is used to synchronize
@@ -62,13 +62,13 @@ class CentralScheduler {
 // returned from the second function, and so on.
 export function scheduleDOMUpdate(pm, f) { CentralScheduler.get(pm).set(f) }
 
-// :: (ProseMirror, () => ?() => ?())
+// :: (ProseMirror, () -> ?() -> ?())
 // Cancel an update scheduled with `scheduleDOMUpdate`. Calling this with
 // a function that is not actually scheduled is harmless.
 export function unscheduleDOMUpdate(pm, f) { CentralScheduler.get(pm).unset(f) }
 
 // ;; Helper for scheduling updates whenever any of a series of events
-// ;; happen.
+// happen.
 export class UpdateScheduler {
   // :: (ProseMirror, string, () -> ?())
   // Creates an update scheduler for the given editor. `events` should
