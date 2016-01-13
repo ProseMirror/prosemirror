@@ -5,6 +5,7 @@ import {defTest} from "./tests"
 
 import xmlDOM from "xmldom"
 
+import {elt} from "../src/dom"
 import {defaultSchema as schema} from "../src/model"
 import {toDOM, fromDOM} from "../src/format"
 
@@ -33,6 +34,9 @@ function t(name, doc, dom) {
     cmpNode(doc, fromDOM(schema, derivedDOM.documentElement))
   })
 }
+
+if (typeof elt !== 'function')
+  throw new Failure("`elt` should be an exposed function from `dom`")
 
 t("simple",
   doc(p("hello")),
