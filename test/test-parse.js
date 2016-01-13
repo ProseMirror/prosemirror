@@ -1,3 +1,4 @@
+import {throws} from 'assert'
 import {doc, blockquote, pre, pre2, h1, h2, p, hr, li, ol, ul, em, strong, code, a, a2, br, img, dataImage} from "./build"
 import {cmpNode, cmpStr} from "./cmp"
 import {defTest} from "./tests"
@@ -63,3 +64,10 @@ t("break",
 t("horizontal_rule",
   "one two\n\n---\n\nthree",
   doc(p("one two"), hr, p("three")))
+
+defTest("parse_html_inline", () => {
+  throws(
+    () => fromMarkdown(schema, "Foo <em>bar</em>"),
+    /html_inline/
+  )
+})
