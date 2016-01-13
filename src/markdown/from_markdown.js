@@ -113,7 +113,11 @@ class MarkdownParseState {
   parseTokens(toks) {
     for (let i = 0; i < toks.length; i++) {
       let tok = toks[i]
-      this.tokenTypes[tok.type](this, tok)
+      let tokenType = this.tokenTypes[tok.type]
+      if (!tokenType)
+        throw new Error("Token type `" + tok.type + "` not supported by Markdown parser")
+
+      tokenType(this, tok)
     }
   }
 
