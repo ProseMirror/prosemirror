@@ -364,15 +364,13 @@ export function selectedNodeAttr(pm, type, name) {
 function deriveParams(type, params) {
   return params && params.map(param => {
     let attr = type.attrs[param.attr]
-    return {
-      label: param.label,
-      type: param.type || "text",
-      default: param.default || attr.default,
-      prefill: param.prefill ||
-        (type instanceof NodeType
-         ? function(pm) { return selectedNodeAttr(pm, this, param.attr) }
-         : function(pm) { return selectedMarkAttr(pm, this, param.attr) })
-    }
+    let obj = {type: "text",
+               default: attr.default,
+               prefill: type instanceof NodeType
+                 ? function(pm) { return selectedNodeAttr(pm, this, param.attr) }
+                 : function(pm) { return selectedMarkAttr(pm, this, param.attr) }}
+    for (let prop in param) obj[prop] = param[prop]
+    return obj
   })
 }
 

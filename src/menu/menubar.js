@@ -77,9 +77,10 @@ class MenuBar {
     this.pm = pm
     this.config = config || {}
 
-    this.wrapper = elt("div", {class: prefix})
-    pm.wrapper.insertBefore(this.wrapper, pm.wrapper.firstChild)
+    this.wrapper = pm.wrapper.insertBefore(elt("div", {class: prefix}), pm.wrapper.firstChild)
     this.spacer = null
+    this.maxHeight = 0
+    this.widthForMaxHeight = 0
 
     this.updater = new UpdateScheduler(pm, "selectionChange change activeMarkChange commandsChanged", () => this.update())
     this.menu = new Menu(pm, new BarDisplay(this.wrapper), () => this.resetMenu())
@@ -109,7 +110,16 @@ class MenuBar {
 
   update() {
     if (!this.menu.active) this.resetMenu()
-    return this.updateScrollCursor()
+    return this.float ? this.updateScrollCursor() : () => {
+      if (this.wrapper.offsetWidth != this.widthForMaxHeight) {
+        this.widthForMaxHeight = this.wrapper.offsetWidth
+        this.maxHeight = 0
+      }
+      if (this.wrapper.offsetHeight > this.maxHeight) {
+        this.maxHeight = this.wrapper.offsetHeight
+        return () => { this.wrapper.style.minHeight = this.maxHeight + "px" }
+      }
+    }
   }
 
   resetMenu() {
