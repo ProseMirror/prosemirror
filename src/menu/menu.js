@@ -6,6 +6,8 @@ import {AssertionError} from "../util/error"
 
 import {getIcon} from "./icons"
 
+const prefix = "ProseMirror-menu"
+
 // ;; #path=CommandSpec #kind=interface #noAnchor
 // The `menu` module gives meaning to two additional properties of
 // [command specs](#CommandSpec).
@@ -45,6 +47,7 @@ export class Menu {
     this.stack = []
     this.pm = pm
     this.resetHandler = reset
+    this.cssHint = ""
   }
 
   show(content, displayInfo) {
@@ -87,7 +90,7 @@ export class Menu {
 
   draw(displayInfo) {
     let cur = this.stack[this.stack.length - 1]
-    let rendered = elt("div", {class: "ProseMirror-menu"}, cur.map(item => renderItem(item, this)))
+    let rendered = elt("div", {class: prefix}, cur.map(item => renderItem(item, this)))
     if (this.stack.length > 1)
       this.display.enter(rendered, () => this.leave(), displayInfo)
     else
@@ -127,7 +130,8 @@ export class TooltipDisplay {
 }
 
 function title(pm, command) {
-  let key = pm.keyForCommand(command.name)
+  if (!command.label) return null
+  let key = command.name && pm.keyForCommand(command.name)
   return key ? command.label + " (" + key + ")" : command.label
 }
 
@@ -142,18 +146,14 @@ function execInMenu(menu, command, params) {
 function renderIcon(command, menu) {
   let icon = getIcon(command.name, command.spec.display)
   if (command.active(menu.pm)) icon.className += " ProseMirror-icon-active"
-  let dom = elt("span", {class: "ProseMirror-menuicon", title: title(menu.pm, command)}, icon)
-  dom.addEventListener("mousedown", e => {
+  icon.addEventListener("mousedown", e => {
     e.preventDefault(); e.stopPropagation()
-    if (command.params.length == 1 && command.params[0].type == "select")
-      showSelectMenu(menu, command, dom)
-    else
-      execInMenu(menu, command)
+    execInMenu(menu, command)
   })
-  return dom
+  return icon
 }
 
-function renderSelect(item, menu) {
+function renderDropDown(item, menu) {
   let param = item.params[0]
   let deflt = paramDefault(param, menu.pm, item)
   if (deflt != null) {
@@ -164,19 +164,21 @@ function renderSelect(item, menu) {
     }
   }
 
-  let dom = elt("div", {class: "ProseMirror-select ProseMirror-select-command-" + item.name, title: item.label},
+  let dom = elt("div", {class: "ProseMirror-dropdown ProseMirror-dropdown-command-" + item.name, title: item.label},
                 !deflt ? (param.defaultLabel || "Select...") : deflt.display ? deflt.display(deflt) : deflt.label)
+  let open = null
   dom.addEventListener("mousedown", e => {
     e.preventDefault(); e.stopPropagation()
-    showSelectMenu(menu, item, dom)
+    if (open && open()) open = null
+    else open = expandDropDown(menu, item, dom)
   })
   return dom
 }
 
-export function showSelectMenu(menu, item, dom) {
+export function expandDropDown(menu, item, dom) {
   let param = item.params[0], pm = menu.pm
   let options = param.options.call ? param.options(pm) : param.options
-  let menuDOM = elt("div", {class: "ProseMirror-select-menu"}, options.map(o => {
+  let menuDOM = elt("div", {class: "ProseMirror-dropdown-menu " + menu.cssHint}, options.map(o => {
     let dom = elt("div", null, o.display ? o.display(o) : o.label)
     dom.addEventListener("mousedown", e => {
       e.preventDefault()
@@ -186,8 +188,8 @@ export function showSelectMenu(menu, item, dom) {
     return dom
   }))
   let pos = dom.getBoundingClientRect(), box = pm.wrapper.getBoundingClientRect()
-  menuDOM.style.left = (pos.left - box.left - 2) + "px"
-  menuDOM.style.top = (pos.top - box.top - 2) + "px"
+  menuDOM.style.left = (pos.left - box.left) + "px"
+  menuDOM.style.top = (pos.bottom - box.top) + "px"
 
   let done = false
   function finish() {
@@ -196,21 +198,26 @@ export function showSelectMenu(menu, item, dom) {
     document.body.removeEventListener("mousedown", finish)
     document.body.removeEventListener("keydown", finish)
     pm.wrapper.removeChild(menuDOM)
+    return true
   }
   document.body.addEventListener("mousedown", finish)
   document.body.addEventListener("keydown", finish)
   pm.wrapper.appendChild(menuDOM)
+  return finish
 }
 
 function renderItem(item, menu) {
+  let dom
   if (item instanceof Command) {
     var display = item.spec.display
-    if (display.type == "icon") return renderIcon(item, menu)
-    else if (display.type == "param") return renderSelect(item, menu)
+    if (display.type == "icon") dom = renderIcon(item, menu)
+    else if (display.type == "param") dom = renderDropDown(item, menu)
     else AssertionError.raise("Command " + item.name + " can not be shown in a menu")
   } else {
-    return item.display(menu)
+    dom = item.display(menu)
   }
+  return elt("span", {class: prefix + "item", title: title(menu.pm, item)}, dom)
+
 }
 
 function paramDefault(param, pm, command) {
@@ -324,7 +331,7 @@ export function readParams(command, callback) {
 }
 
 const separator = {
-  display() { return elt("div", {class: "ProseMirror-menuseparator"}) }
+  display() { return elt("span", {class: prefix + "separator"}) }
 }
 
 function menuRank(cmd) {
@@ -370,11 +377,11 @@ defineDefaultParamHandler(tooltipParamHandler, false)
 // FIXME check for obsolete styles
 insertCSS(`
 
-.ProseMirror-menu {
+.${prefix} {
   margin: 0 -4px;
   line-height: 1;
 }
-.ProseMirror-tooltip .ProseMirror-menu {
+.ProseMirror-tooltip .${prefix} {
   width: -webkit-fit-content;
   width: fit-content;
   white-space: pre;
@@ -392,57 +399,52 @@ insertCSS(`
   content: "«";
 }
 
-.ProseMirror-menuicon {
-  margin: 0 7px;
-}
-
-.ProseMirror-menuseparator {
+.${prefix}item {
+  margin-right: 3px;
   display: inline-block;
 }
-.ProseMirror-menuseparator:after {
-  content: "︙";
-  opacity: 0.5;
-  padding: 0 4px;
+
+.${prefix}separator {
+  border-right: 1px solid #666;
 }
 
-.ProseMirror-select, .ProseMirror-select-menu {
-  border: 1px solid #ccc;
-  border-radius: 3px;
+.ProseMirror-dropdown, .ProseMirror-dropdown-menu {
   font-size: 90%;
 }
 
-.ProseMirror-select {
-  padding: 1px 12px 1px 4px;
+.ProseMirror-dropdown {
+  padding: 1px 14px 1px 4px;
   display: inline-block;
   vertical-align: 1px;
   position: relative;
   cursor: pointer;
-  margin: 0 8px;
 }
 
-.ProseMirror-select-command-textblockType, .ProseMirror-select-command-insert {
-  min-width: 3.2em;
-}
-
-.ProseMirror-select:after {
-  content: "▿";
-  color: #777;
+.ProseMirror-dropdown:after {
+  content: "⏷";
+  font-size: 90%;
+  opacity: .6;
   position: absolute;
-  right: 4px;
+  right: 2px;
 }
 
-.ProseMirror-select-menu {
+.ProseMirror-dropdown-command-textblockType {
+  min-width: 3em;
+}
+
+.ProseMirror-dropdown-menu {
   position: absolute;
   background: #444;
   color: white;
-  padding: 2px 2px;
+  padding: 2px;
   z-index: 15;
+  min-width: 6em;
 }
-.ProseMirror-select-menu div {
+.ProseMirror-dropdown-menu div {
   cursor: pointer;
-  padding: 0 1em 0 2px;
+  padding: 2px 8px 2px 4px;
 }
-.ProseMirror-select-menu div:hover {
+.ProseMirror-dropdown-menu div:hover {
   background: #777;
 }
 

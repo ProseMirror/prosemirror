@@ -84,6 +84,7 @@ class MenuBar {
 
     this.updater = new UpdateScheduler(pm, "selectionChange change activeMarkChange commandsChanged", () => this.update())
     this.menu = new Menu(pm, new BarDisplay(this.wrapper), () => this.resetMenu())
+    this.menu.cssHint = prefix + "-hint"
 
     this.updater.force()
 
@@ -197,6 +198,20 @@ insertCSS(`
   background: #eee;
 }
 
+.ProseMirror-menuseparator {
+  border-right: 1px solid #ddd;
+}
+
+.${prefix}-hint.ProseMirror-dropdown-menu {
+  background: white;
+  color: #666;
+  border: 1px solid #ddd;
+}
+
+.${prefix}-hint.ProseMirror-dropdown-menu div:hover {
+  background: #f2f2f2;
+}
+
 .${prefix} input[type="text"],
 .${prefix} textarea {
   background: #eee;
@@ -220,9 +235,6 @@ insertCSS(`
 .${prefix} .ProseMirror-blocktype {
   border: 1px solid #ccc;
   min-width: 4em;
-}
-.${prefix} .ProseMirror-blocktype:after {
-  color: #ccc;
 }
 
 .${prefix}-sliding-wrap {
