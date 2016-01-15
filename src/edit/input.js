@@ -169,9 +169,6 @@ function selectClickedNode(pm, e) {
 let lastClick = 0, oneButLastClick = 0
 
 handlers.mousedown = (pm, e) => {
-  if (e.ctrlKey)
-    return selectClickedNode(pm, e)
-
   pm.sel.pollForUpdate()
 
   let now = Date.now(), doubleClick = now - lastClick < 500, tripleClick = now - oneButLastClick < 600
@@ -199,14 +196,19 @@ handlers.mousedown = (pm, e) => {
   let up = () => {
     removeEventListener("mouseup", up)
     removeEventListener("mousemove", move)
-    if (!leaveToBrowser && handleNodeClick(pm, e)) return
 
-    let pos = !leaveToBrowser && selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY})
-    if (pos) {
-      pm.setNodeSelection(pos)
-      pm.focus()
-    } else {
+    if (leaveToBrowser) {
       pm.sel.pollForUpdate()
+    } else if (e.ctrlKey) {
+      selectClickedNode(pm, e)
+    } else if (!handleNodeClick(pm, e)) {
+      let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY})
+      if (pos) {
+        pm.setNodeSelection(pos)
+        pm.focus()
+      } else {
+        pm.sel.pollForUpdate()
+      }
     }
   }
   let move = e => {
@@ -335,16 +337,19 @@ handlers.paste = (pm, e) => {
   }
 }
 
-// FIXME can't assume that we are dragging the selection, might also
-// be a node (like an image) that automatically is draggable
 handlers.dragstart = (pm, e) => {
   if (!e.dataTransfer) return
 
-  let fragment = pm.selectedDoc
-
-  e.dataTransfer.setData("text/html", toHTML(fragment))
-  e.dataTransfer.setData("text/plain", toText(fragment))
-  pm.input.draggingFrom = true
+  let {from, to, empty} = pm.selection, fragment
+  if (!empty) {
+    let pos = pm.posAtCoords({left: e.clientX, top: e.clientY})
+    if (pos.cmp(from) >= 0 && pos.cmp(to) <= 0) {
+      fragment = pm.doc.sliceBetween(from, to)
+      e.dataTransfer.setData("text/html", toHTML(fragment))
+      e.dataTransfer.setData("text/plain", toText(fragment))
+      pm.input.draggingFrom = true
+    }
+  }
 }
 
 handlers.dragend = pm => window.setTimeout(() => pm.input.dragginFrom = false, 50)
@@ -389,7 +394,12 @@ handlers.drop = (pm, e) => {
       insertPos = tr.map(insertPos).pos
     }
     tr.replace(insertPos, insertPos, doc, findSelectionAtStart(doc).from, findSelectionAtEnd(doc).to).apply()
-    pm.setTextSelection(insertPos, tr.map(origPos).pos)
+    let posAfter = tr.map(origPos).pos
+    if (Pos.samePath(insertPos.path, posAfter.path) && posAfter.offset == insertPos.offset + 1 &&
+        pm.doc.nodeAfter(insertPos).type.selectable)
+      pm.setNodeSelection(insertPos)
+    else
+      pm.setTextSelection(insertPos, posAfter)
     pm.focus()
   }
 }
