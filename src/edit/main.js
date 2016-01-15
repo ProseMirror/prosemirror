@@ -10,7 +10,7 @@ import {Map} from "../util/map"
 import {eventMixin} from "../util/event"
 import {requestAnimationFrame, elt, browser, ensureCSSAdded} from "../dom"
 
-import {toText, parseFrom, serializeTo} from "../format"
+import {parseFrom, serializeTo} from "../format"
 
 import {parseOptions, initOptions, setOption} from "./options"
 import {SelectionState, TextSelection, NodeSelection,
@@ -407,19 +407,6 @@ export class ProseMirror {
       return document.activeElement == this.content
     else
       return hasFocus(this)
-  }
-
-  // :: () → Node
-  // Get the part of the document that falls within the selection.
-  get selectedDoc() {
-    let sel = this.selection
-    return this.doc.sliceBetween(sel.from, sel.to)
-  }
-
-  // :: () → string
-  // Get the text that falls within the selection.
-  get selectedText() {
-    return toText(this.selectedDoc)
   }
 
   // :: ({top: number, left: number}) → ?Pos

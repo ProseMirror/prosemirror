@@ -2,6 +2,7 @@ import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Parag
         StrongMark, EmMark, CodeMark, LinkMark, Image, Pos} from "../model"
 
 import {selectedNodeAttr} from "./command"
+import {toText} from "../format"
 
 // # Mark types
 
@@ -185,7 +186,9 @@ Image.register("command", {
     params: [
       {label: "Image URL", attr: "src"},
       {label: "Description / alternative text", attr: "alt",
-       prefill: function(pm) { return selectedNodeAttr(pm, this, "alt") || pm.selectedText }},
+       prefill: function(pm) {
+         return selectedNodeAttr(pm, this, "alt") || toText(pm.doc.sliceBetween(pm.selection.from, pm.selection.to))
+       }},
       {label: "Title", attr: "title"}
     ]
   },

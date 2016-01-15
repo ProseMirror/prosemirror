@@ -299,7 +299,7 @@ let lastCopied = null
 handlers.copy = handlers.cut = (pm, e) => {
   let {from, to, empty} = pm.selection
   if (empty) return
-  let fragment = pm.selectedDoc
+  let fragment = pm.doc.sliceBetween(from, to)
   lastCopied = {doc: pm.doc, from, to,
                 html: toHTML(fragment),
                 text: toText(fragment)}
