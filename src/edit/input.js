@@ -335,6 +335,8 @@ handlers.paste = (pm, e) => {
   }
 }
 
+// FIXME can't assume that we are dragging the selection, might also
+// be a node (like an image) that automatically is draggable
 handlers.dragstart = (pm, e) => {
   if (!e.dataTransfer) return
 
@@ -379,7 +381,7 @@ handlers.drop = (pm, e) => {
 
   if (doc) {
     e.preventDefault()
-    let insertPos = pm.posAtCoords({left: e.clientX, top: e.clientY})
+    let insertPos = pm.posAtCoords({left: e.clientX, top: e.clientY}), origPos = insertPos
     if (!insertPos) return
     let tr = pm.tr
     if (pm.input.draggingFrom && !e.ctrlKey) {
@@ -387,7 +389,7 @@ handlers.drop = (pm, e) => {
       insertPos = tr.map(insertPos).pos
     }
     tr.replace(insertPos, insertPos, doc, findSelectionAtStart(doc).from, findSelectionAtEnd(doc).to).apply()
-    pm.setTextSelection(insertPos, tr.map(insertPos).pos)
+    pm.setTextSelection(insertPos, tr.map(origPos).pos)
     pm.focus()
   }
 }
