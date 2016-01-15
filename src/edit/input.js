@@ -199,7 +199,7 @@ handlers.mousedown = (pm, e) => {
   let up = () => {
     removeEventListener("mouseup", up)
     removeEventListener("mousemove", move)
-    if (handleNodeClick(pm, e)) return
+    if (!leaveToBrowser && handleNodeClick(pm, e)) return
 
     let pos = !leaveToBrowser && selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY})
     if (pos) {
