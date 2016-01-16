@@ -23,16 +23,10 @@ export function fromDOM(schema, dom, options) {
 // To define the way [node](#NodeType) and [mark](#MarkType) types are
 // parsed, you can associate one or more DOM parsing specifications to
 // them using the [`register`](#SchemaItem.register) method with the
-// `parseDOM` property name. Each of them defines a parsing strategy
-// for a certain type of DOM node.
-//
-// Note that `Attribute`s may also contain a `parseDOM` property,
-// which should _not_ be a `DOMParseSpec`, but simply a function that
-// computes the attribute's value from a DOM node.
-
-// :: ?string #path=DOMParseSpec.tag
-// The (lower-case) tag name for which to activate this parser. When
-// not given, it is activated for all nodes.
+// `"parseDOM"` namespace, using the HTML node name (lowercase) as
+// value name. Each of them defines a parsing strategy for a certain
+// type of DOM node. When `"_"` is used as name, the parser is
+// activated for all nodes.
 
 // :: ?number #path=DOMParseSpec.rank
 // The precedence of this parsing strategy. Should be a number between
@@ -236,8 +230,7 @@ function nodeInfo(schema) {
 function summarizeNodeInfo(schema) {
   let tags = Object.create(null)
   tags._ = []
-  schema.registry("parseDOM", (info, type) => {
-    let tag = info.tag || "_"
+  schema.registry("parseDOM", (tag, info, type) => {
     let parse = info.parse
     if (parse == "block")
       parse = function(dom, state) { state.wrapIn(dom, this) }
@@ -252,19 +245,19 @@ function summarizeNodeInfo(schema) {
   return tags
 }
 
-Paragraph.register("parseDOM", {tag: "p", parse: "block"})
+Paragraph.register("parseDOM", "p", {parse: "block"})
 
-BlockQuote.register("parseDOM", {tag: "blockquote", parse: "block"})
+BlockQuote.register("parseDOM", "blockquote", {parse: "block"})
 
-for (let i = 1; i <= 6; i++)
-  Heading.register("parseDOM", {
-    tag: "h" + i,
+for (let i = 1; i <= 6; i++) Heading.registerComputed("parseDOM", "h" + i, type => {
+  if (i <= type.maxLevel) return {
     parse: function(dom, state) { state.wrapIn(dom, this, {level: i}) }
-  })
+  }
+})
 
-HorizontalRule.register("parseDOM", {tag: "hr", parse: "block"})
+HorizontalRule.register("parseDOM", "hr", {parse: "block"})
 
-CodeBlock.register("parseDOM", {tag: "pre", parse: function(dom, state) {
+CodeBlock.register("parseDOM", "pre", {parse: function(dom, state) {
   let params = dom.firstChild && /^code$/i.test(dom.firstChild.nodeName) && dom.firstChild.getAttribute("class")
   if (params && /fence/.test(params)) {
     let found = [], re = /(?:^|\s)lang-(\S+)/g, m
@@ -277,20 +270,20 @@ CodeBlock.register("parseDOM", {tag: "pre", parse: function(dom, state) {
   state.insert(this, {params}, text ? [state.schema.text(text)] : [])
 }})
 
-BulletList.register("parseDOM", {tag: "ul", parse: "block"})
+BulletList.register("parseDOM", "ul", {parse: "block"})
 
-OrderedList.register("parseDOM", {tag: "ol", parse: function(dom, state) {
+OrderedList.register("parseDOM", "ol", {parse: function(dom, state) {
   let attrs = {order: dom.getAttribute("start") || 1}
   state.wrapIn(dom, this, attrs)
 }})
 
-ListItem.register("parseDOM", {tag: "li", parse: "block"})
+ListItem.register("parseDOM", "li", {parse: "block"})
 
-HardBreak.register("parseDOM", {tag: "br", parse: function(_, state) {
+HardBreak.register("parseDOM", "br", {parse: function(_, state) {
   state.insert(this)
 }})
 
-Image.register("parseDOM", {tag: "img", parse: function(dom, state) {
+Image.register("parseDOM", "img", {parse: function(dom, state) {
   state.insert(this, {
     src: dom.getAttribute("src"),
     title: dom.getAttribute("title") || null,
@@ -300,16 +293,16 @@ Image.register("parseDOM", {tag: "img", parse: function(dom, state) {
 
 // Inline style tokens
 
-LinkMark.register("parseDOM", {tag: "a", parse: function(dom, state) {
+LinkMark.register("parseDOM", "a", {parse: function(dom, state) {
   let href = dom.getAttribute("href")
   if (!href) return false
   state.wrapMark(dom, this.create({href, title: dom.getAttribute("title")}))
 }})
 
-EmMark.register("parseDOM", {tag: "i", parse: "mark"})
-EmMark.register("parseDOM", {tag: "em", parse: "mark"})
+EmMark.register("parseDOM", "i", {parse: "mark"})
+EmMark.register("parseDOM", "em", {parse: "mark"})
 
-StrongMark.register("parseDOM", {tag: "b", parse: "mark"})
-StrongMark.register("parseDOM", {tag: "strong", parse: "mark"})
+StrongMark.register("parseDOM", "b", {parse: "mark"})
+StrongMark.register("parseDOM", "strong", {parse: "mark"})
 
-CodeMark.register("parseDOM", {tag: "code", parse: "mark"})
+CodeMark.register("parseDOM", "code", {parse: "mark"})

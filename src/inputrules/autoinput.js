@@ -12,7 +12,7 @@ export const autoInputRules = Object.create(null)
 // editor. Pass an array of sources, which can be either an input
 // rule, the string `"schema"`, to add rules
 // [registered](#SchemaItem.register) on the schema items (under the
-// string `"autoInput"`), or an object containing input rules. To
+// namespace `"autoInput"`), or an object containing input rules. To
 // remove previously included rules, you can add an object that maps
 // their name to `null`.
 //
@@ -28,8 +28,8 @@ defineOption("autoInput", false, function(pm, val) {
     let rules = Object.create(null), list = pm.mod.autoInput = []
     val.forEach(spec => {
       if (spec === "schema") {
-        pm.schema.registry("autoInput", (rule, type, name) => {
-          let rname = name + ":" + rule.name, handler = rule.handler
+        pm.schema.registry("autoInput", (name, rule, type, typeName) => {
+          let rname = typeName + ":" + name, handler = rule.handler
           if (handler.bind) handler = handler.bind(type)
           rules[rname] = new InputRule(rname, rule.match, rule.filter, handler)
         })
@@ -60,27 +60,43 @@ autoInputRules.openSingleQuote = new InputRule("openSingleQuote", /\s(')$/, "'",
 
 autoInputRules.closeSingleQuote = new InputRule("closeSingleQuote", /'$/, "'", "’")
 
-BlockQuote.register("autoInput", new InputRule("startBlockQuote", /^\s*> $/, " ",
-                                               function(pm, _, pos) { wrapAndJoin(pm, pos, this) }))
+BlockQuote.register("autoInput", "startBlockQuote", new InputRule(
+  "startBlockQuote",
+  /^\s*> $/, " ",
+  function(pm, _, pos) { wrapAndJoin(pm, pos, this) }
+))
 
-OrderedList.register("autoInput", new InputRule("startOrderedList", /^(\d+)\. $/, " ", function(pm, match, pos) {
-  let order = +match[1]
-  wrapAndJoin(pm, pos, this, {order: order || null},
-              node => node.size + (node.attrs.order || 1) == order)
-}))
+OrderedList.register("autoInput", "startOrderedList", new InputRule(
+  "startOrderedList",
+  /^(\d+)\. $/, " ",
+  function(pm, match, pos) {
+    let order = +match[1]
+    wrapAndJoin(pm, pos, this, {order: order || null},
+                node => node.size + (node.attrs.order || 1) == order)
+  }
+))
 
-BulletList.register("autoInput", new InputRule("startBulletList", /^\s*([-+*]) $/, " ", function(pm, match, pos) {
-  let bullet = match[1]
-  wrapAndJoin(pm, pos, this, null, node => node.attrs.bullet == bullet)
-}))
+BulletList.register("autoInput", "startBulletList", new InputRule(
+  "startBulletList",
+  /^\s*([-+*]) $/, " ",
+  function(pm, match, pos) {
+    let bullet = match[1]
+    wrapAndJoin(pm, pos, this, null, node => node.attrs.bullet == bullet)
+  }
+))
 
-CodeBlock.register("autoInput", new InputRule("startCodeBlock", /^```$/, "`", function(pm, _, pos) {
-  setAs(pm, pos, this, {params: ""})
-}))
+CodeBlock.register("autoInput", "startCodeBlock", new InputRule(
+  "startCodeBlock",
+  /^```$/, "`",
+  function(pm, _, pos) { setAs(pm, pos, this, {params: ""}) }
+))
 
-Heading.register("autoInput", new InputRule("startHeading", /^(#{1,6}) $/, " ", function(pm, match, pos) {
-  setAs(pm, pos, this, {level: match[1].length})
-}))
+Heading.registerComputed("autoInput", "startHeading", type => {
+  let re = new RegExp("^(#{1," + type.maxLevel + "}) $")
+  return new InputRule("startHeading", re, " ", function(pm, match, pos) {
+    setAs(pm, pos, this, {level: match[1].length})
+  })
+})
 
 function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
   let before = pos.shorten()

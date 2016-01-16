@@ -35,6 +35,7 @@ export class HorizontalRule extends Block {
 // `level`, which indicates the heading level, and defaults to 1.
 export class Heading extends Textblock {
   get attrs() { return {level: new Attribute({default: "1"})} }
+  get maxLevel() { return 6 }
 }
 
 // ;; The default code block / listing node type. Only

@@ -8,13 +8,11 @@ import {toText} from "../format"
 
 // ;; #path="strong:set" #kind=command
 // Add the [strong](#StrongMark) mark to the selected content.
-
-StrongMark.register("command", {name: "set", derive: true, label: "Set strong"})
+StrongMark.register("command", "set", {derive: true, label: "Set strong"})
 
 // ;; #path="strong:unset" #kind=command
 // Remove the [strong](#StrongMark) mark from the selected content.
-
-StrongMark.register("command", {name: "unset", derive: true, label: "Unset strong"})
+StrongMark.register("command", "unset", {derive: true, label: "Unset strong"})
 
 // ;; #path="strong:toggle" #kind=command
 // Toggle the [strong](#StrongMark) mark. If there is any strong
@@ -27,9 +25,7 @@ StrongMark.register("command", {name: "unset", derive: true, label: "Unset stron
 // **Keybindings:** Mod-B
 //
 // Registers itself in the inline [menu group](#CommandSpec.menuGroup).
-
-StrongMark.register("command", {
-  name: "toggle",
+StrongMark.register("command", "toggle", {
   derive: true,
   label: "Toggle strong",
   menuGroup: "inline(20)",
@@ -43,13 +39,11 @@ StrongMark.register("command", {
 
 // ;; #path=em:set #kind=command
 // Add the [emphasis](#EmMark) mark to the selected content.
-
-EmMark.register("command", {name: "set", derive: true, label: "Add emphasis"})
+EmMark.register("command", "set", {derive: true, label: "Add emphasis"})
 
 // ;; #path=em:unset #kind=command
 // Remove the [emphasis](#EmMark) mark from the selected content.
-
-EmMark.register("command", {name: "unset", derive: true, label: "Remove emphasis"})
+EmMark.register("command", "unset", {derive: true, label: "Remove emphasis"})
 
 // ;; #path=em:toggle #kind=command
 // Toggle the [emphasis](#EmMark) mark. If there is any emphasized
@@ -62,9 +56,7 @@ EmMark.register("command", {name: "unset", derive: true, label: "Remove emphasis
 // **Keybindings:** Mod-I
 //
 // Registers itself in the inline [menu group](#CommandSpec.menuGroup).
-
-EmMark.register("command", {
-  name: "toggle",
+EmMark.register("command", "toggle", {
   derive: true,
   label: "Toggle emphasis",
   menuGroup: "inline(21)",
@@ -78,13 +70,11 @@ EmMark.register("command", {
 
 // ;; #path=code:set #kind=command
 // Add the [code](#CodeMark) mark to the selected content.
-
-CodeMark.register("command", {name: "set", derive: true, label: "Set code style"})
+CodeMark.register("command", "set", {derive: true, label: "Set code style"})
 
 // ;; #path=code:unset #kind=command
 // Remove the [code](#CodeMark) mark from the selected content.
-
-CodeMark.register("command", {name: "unset", derive: true, label: "Remove code style"})
+CodeMark.register("command", "unset", {derive: true, label: "Remove code style"})
 
 // ;; #path=code:toggle #kind=command
 // Toggle the [code](#CodeMark) mark. If there is any code-styled
@@ -97,9 +87,7 @@ CodeMark.register("command", {name: "unset", derive: true, label: "Remove code s
 // **Keybindings:** Mod-`
 //
 // Registers itself in the inline [menu group](#CommandSpec.menuGroup).
-
-CodeMark.register("command", {
-  name: "toggle",
+CodeMark.register("command", "toggle", {
   derive: true,
   label: "Toggle code style",
   menuGroup: "inline(22)",
@@ -111,6 +99,12 @@ CodeMark.register("command", {
   keys: ["Mod-`"]
 })
 
+const linkIcon = {
+  type: "icon",
+  width: 951, height: 1024,
+  path: "M832 694q0-22-16-38l-118-118q-16-16-38-16-24 0-41 18 1 1 10 10t12 12 8 10 7 14 2 15q0 22-16 38t-38 16q-8 0-15-2t-14-7-10-8-12-12-10-10q-18 17-18 41 0 22 16 38l117 118q15 15 38 15 22 0 38-14l84-83q16-16 16-38zM430 292q0-22-16-38l-117-118q-16-16-38-16-22 0-38 15l-84 83q-16 16-16 38 0 22 16 38l118 118q15 15 38 15 24 0 41-17-1-1-10-10t-12-12-8-10-7-14-2-15q0-22 16-38t38-16q8 0 15 2t14 7 10 8 12 12 10 10q18-17 18-41zM941 694q0 68-48 116l-84 83q-47 47-116 47-69 0-116-48l-117-118q-47-47-47-116 0-70 50-119l-50-50q-49 50-118 50-68 0-116-48l-118-118q-48-48-48-116t48-116l84-83q47-47 116-47 69 0 116 48l117 118q47 47 47 116 0 70-50 119l50 50q49-50 118-50 68 0 116 48l118 118q48 48 48 116z"
+}
+
 // ;; #path=link:unset #kind=command
 // Removes all links for the selected content, or, if there is no
 // selection, from the [active marks](#ProseMirror.activeMarks). Will
@@ -118,15 +112,7 @@ CodeMark.register("command", {
 // selection or active marks.
 //
 // Registers itself in the inline [menu group](#CommandSpec.menuGroup).
-
-const linkIcon = {
-  type: "icon",
-  width: 951, height: 1024,
-  path: "M832 694q0-22-16-38l-118-118q-16-16-38-16-24 0-41 18 1 1 10 10t12 12 8 10 7 14 2 15q0 22-16 38t-38 16q-8 0-15-2t-14-7-10-8-12-12-10-10q-18 17-18 41 0 22 16 38l117 118q15 15 38 15 22 0 38-14l84-83q16-16 16-38zM430 292q0-22-16-38l-117-118q-16-16-38-16-22 0-38 15l-84 83q-16 16-16 38 0 22 16 38l118 118q15 15 38 15 24 0 41-17-1-1-10-10t-12-12-8-10-7-14-2-15q0-22 16-38t38-16q8 0 15 2t14 7 10 8 12 12 10 10q18-17 18-41zM941 694q0 68-48 116l-84 83q-47 47-116 47-69 0-116-48l-117-118q-47-47-47-116 0-70 50-119l-50-50q-49 50-118 50-68 0-116-48l-118-118q-48-48-48-116t48-116l84-83q47-47 116-47 69 0 116 48l117 118q47 47 47 116 0 70-50 119l50 50q49-50 118-50 68 0 116 48l118 118q48 48 48 116z"
-}
-
-LinkMark.register("command", {
-  name: "unset",
+LinkMark.register("command", "unset", {
   derive: true,
   label: "Unlink",
   menuGroup: "inline(30)",
@@ -148,9 +134,7 @@ LinkMark.register("command", {
 // Adds itself to the inline [menu group](#CommandSpec.menuGroup). Only selects itself when
 // `unlink` isn't selected, so that only one of the two is visible in
 // the menu at any time.
-
-LinkMark.register("command", {
-  name: "set",
+LinkMark.register("command", "set", {
   derive: {
     inverseSelect: true,
     params: [
@@ -179,9 +163,7 @@ LinkMark.register("command", {
 //   : A title for the image.
 //
 // Registers itself in the inline [menu group](#CommandSpec.menuGroup).
-
-Image.register("command", {
-  name: "insert",
+Image.register("command", "insert", {
   derive: {
     params: [
       {label: "Image URL", attr: "src"},
@@ -206,9 +188,7 @@ Image.register("command", {
 // **Keybindings:** Alt-Right '*', Alt-Right '-'
 //
 // Registers itself in the block [menu group](#CommandSpec.menuGroup).
-
-BulletList.register("command", {
-  name: "wrap",
+BulletList.register("command", "wrap", {
   derive: {list: true},
   label: "Wrap the selection in a bullet list",
   menuGroup: "block(40)",
@@ -226,9 +206,7 @@ BulletList.register("command", {
 // **Keybindings:** Alt-Right '1'
 //
 // Registers itself in the block [menu group](#CommandSpec.menuGroup).
-
-OrderedList.register("command", {
-  name: "wrap",
+OrderedList.register("command", "wrap", {
   derive: {list: true},
   label: "Wrap the selection in an ordered list",
   menuGroup: "block(41)",
@@ -246,9 +224,7 @@ OrderedList.register("command", {
 // **Keybindings:** Alt-Right '>', Alt-Right '"'
 //
 // Registers itself in the block [menu group](#CommandSpec.menuGroup).
-
-BlockQuote.register("command", {
-  name: "wrap",
+BlockQuote.register("command", "wrap", {
   derive: true,
   label: "Wrap the selection in a block quote",
   menuGroup: "block(45)",
@@ -267,8 +243,7 @@ BlockQuote.register("command", {
 // inserted instead.
 //
 // **Keybindings:** Mod-Enter, Shift-Enter
-HardBreak.register("command", {
-  name: "insert",
+HardBreak.register("command", "insert", {
   label: "Insert hard break",
   run(pm) {
     let {node, from} = pm.selection
@@ -287,9 +262,7 @@ HardBreak.register("command", {
 // item, split that child and the list item, and delete the selection.
 //
 // **Keybindings:** Enter
-
-ListItem.register("command", {
-  name: "split",
+ListItem.register("command", "split", {
   label: "Split the current list item",
   run(pm) {
     let {from, to, node} = pm.selection
@@ -303,27 +276,25 @@ ListItem.register("command", {
   keys: ["Enter(50)"]
 })
 
-// ;; #path=:heading::make_ #kind=command
-// The commands `make1` to `make6` set the textblocks in the
-// selection to become headers with the given level.
-//
-// **Keybindings:** Mod-H '1' through Mod-H '6'
-
-for (let i = 1; i <= 6; i++)
-  Heading.register("command", {
-    name: "make" + i,
-    derive: {name: "make", attrs: {level: i}},
-    label: "Change to heading " + i,
-    keys: [`Mod-H '${i}'`]
+for (let i = 1; i <= 10; i++)
+  // ;; #path=:heading::make_ #kind=command
+  // The commands `make1` to `make6` set the textblocks in the
+  // selection to become headers with the given level.
+  //
+  // **Keybindings:** Mod-H '1' through Mod-H '6'
+  Heading.registerComputed("command", "make" + i, type => {
+    if (i <= type.maxLevel) return {
+      derive: {name: "make", attrs: {level: i}},
+      label: "Change to heading " + i,
+      keys: [`Mod-H '${i}'`]
+    }
   })
 
 // ;; #path=paragraph:make #kind=command
 // Set the textblocks in the selection to be regular paragraphs.
 //
 // **Keybindings:** Mod-P
-
-Paragraph.register("command", {
-  name: "make",
+Paragraph.register("command", "make", {
   derive: true,
   label: "Change to paragraph",
   keys: ["Mod-P"]
@@ -333,9 +304,7 @@ Paragraph.register("command", {
 // Set the textblocks in the selection to be code blocks.
 //
 // **Keybindings:** Mod-\
-
-CodeBlock.register("command", {
-  name: "make",
+CodeBlock.register("command", "make", {
   derive: true,
   label: "Change to code block",
   keys: ["Mod-\\"]
@@ -345,9 +314,7 @@ CodeBlock.register("command", {
 // Replace the selection with a horizontal rule.
 //
 // **Keybindings:** Mod-Shift-Minus
-
-HorizontalRule.register("command", {
-  name: "insert",
+HorizontalRule.register("command", "insert", {
   derive: true,
   label: "Insert horizontal rule",
   keys: ["Mod-Shift--"]
@@ -355,6 +322,7 @@ HorizontalRule.register("command", {
 
 // Used by the textblockType command
 
+// FIXME use register for these as well
 Paragraph.prototype.textblockMenuOptions = [{label: "Normal", rank: 10}]
 CodeBlock.prototype.textblockMenuOptions = [{label: "Code", rank: 20}]
 Heading.prototype.textblockMenuOptions = [1, 2, 3, 4, 5, 6].map(n => ({label: "Head " + n, attrs: {level: n}, rank: 30 + n}))

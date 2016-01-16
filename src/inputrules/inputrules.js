@@ -13,6 +13,8 @@ export function addInputRule(pm, rule) {
   pm.mod.interpretInput.addRule(rule)
 }
 
+// FIXME remove these by identity, drop the name field
+
 // :: (ProseMirror, string)
 // Remove the input rule with the given name (added earlier with
 // `addInputRule`) from the editor.

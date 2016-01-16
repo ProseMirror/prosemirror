@@ -19,16 +19,14 @@ export function fromMarkdown(schema, text) {
 }
 
 // ;; #kind=interface #path=MarkdownParseSpec
-// Schema-specific parsing logic can be defined by adding a
-// `parseMarkdown` property to the prototype of your node or mark
-// types, preferably using the type's [`register`](#SchemaItem.register)
-// method, that contains an array of objects following this parsing
-// specification interface.
-
-// :: string #path=MarkdownParseSpec.token
-// Used to specify the
+// Schema-specific parsing logic can be defined
+// [registering](#SchemaItem.register) values with parsing information
+// on [mark](#MarkType) and [node](#NodeType) types, using the
+// `"parseMarkdown"` namespace.
+//
+// The name of the registered item should be the
 // [markdown-it](https://github.com/markdown-it/markdown-it) token
-// type that should trigger this specification.
+// name that the parser should respond to,
 
 // :: union<string, (state: MarkdownParseState, token: MarkdownToken) → Node> #path=MarkdownParseSpec.parse
 // The parsing function for this token. It is, when a matching token
@@ -156,21 +154,21 @@ function tokenTypeInfo(schema) {
     (schema.cached.markdownTokens = summarizeTokens(schema))
 }
 
-function registerTokens(tokens, type, info) {
+function registerTokens(tokens, name, type, info) {
   if (info.parse == "block") {
-    tokens[info.token + "_open"] = (state, tok) => {
-      let attrs = typeof info.attrs == "function" ? info.attrs(state, tok) : info.attrs
+    tokens[name + "_open"] = (state, tok) => {
+      let attrs = typeof info.attrs == "function" ? info.attrs.call(type, state, tok) : info.attrs
       state.openNode(type, attrs)
     }
-    tokens[info.token + "_close"] = state => state.closeNode()
+    tokens[name + "_close"] = state => state.closeNode()
   } else if (info.parse == "mark") {
-    tokens[info.token + "_open"] = (state, tok) => {
-      let attrs = info.attrs instanceof Function ? info.attrs(state, tok) : info.attrs
+    tokens[name + "_open"] = (state, tok) => {
+      let attrs = info.attrs instanceof Function ? info.attrs.call(type, state, tok) : info.attrs
       state.openMark(type.create(attrs))
     }
-    tokens[info.token + "_close"] = state => state.closeMark(type)
+    tokens[name + "_close"] = state => state.closeMark(type)
   } else if (info.parse) {
-    tokens[info.token] = info.parse.bind(type)
+    tokens[name] = info.parse.bind(type)
   } else {
     AssertionError.raise("Unrecognized markdown parsing spec: " + info)
   }
@@ -182,27 +180,27 @@ function summarizeTokens(schema) {
   tokens.inline = (state, tok) => state.parseTokens(tok.children)
   tokens.softbreak = state => state.addText("\n")
 
-  schema.registry("parseMarkdown", (info, type) => {
-    registerTokens(tokens, type, info)
+  schema.registry("parseMarkdown", (name, info, type) => {
+    registerTokens(tokens, name, type, info)
   })
   return tokens
 }
 
-BlockQuote.register("parseMarkdown", {parse: "block", token: "blockquote"})
+BlockQuote.register("parseMarkdown", "blockquote", {parse: "block"})
 
-Paragraph.register("parseMarkdown", {parse: "block", token: "paragraph"})
+Paragraph.register("parseMarkdown", "paragraph", {parse: "block"})
 
-ListItem.register("parseMarkdown", {parse: "block", token: "list_item"})
+ListItem.register("parseMarkdown", "list_item", {parse: "block"})
 
-BulletList.register("parseMarkdown", {parse: "block", token: "bullet_list"})
+BulletList.register("parseMarkdown", "bullet_list", {parse: "block"})
 
-OrderedList.register("parseMarkdown", {parse: "block", token: "ordered_list", attrs: (state, tok) => ({
+OrderedList.register("parseMarkdown", "ordered_list", {parse: "block", attrs: (state, tok) => ({
   order: Number(state.getAttr(tok, "order") || 1)
 })})
 
-Heading.register("parseMarkdown", {parse: "block", token: "heading", attrs: (_, tok) => ({
-  level: tok.tag.slice(1)
-})})
+Heading.register("parseMarkdown", "heading", {parse: "block", attrs: function(_, tok) {
+  return {level: Math.min(this.maxLevel, +tok.tag.slice(1))}
+}})
 
 function trimTrailingNewline(str) {
   if (str.charAt(str.length - 1) == "\n")
@@ -216,39 +214,38 @@ function parseCodeBlock(state, tok) {
   state.closeNode()
 }
 
-CodeBlock.register("parseMarkdown", {token: "code_block", parse: parseCodeBlock})
-CodeBlock.register("parseMarkdown", {token: "fence", parse: parseCodeBlock})
+CodeBlock.register("parseMarkdown", "code_block", {parse: parseCodeBlock})
+CodeBlock.register("parseMarkdown", "fence", {parse: parseCodeBlock})
 
-HorizontalRule.register("parseMarkdown", {token: "hr", parse: function(state, tok) {
+HorizontalRule.register("parseMarkdown", "hr", {parse: function(state, tok) {
   state.addNode(this, {markup: tok.markup})
 }})
 
-Image.register("parseMarkdown", {token: "image", parse: function(state, tok) {
+Image.register("parseMarkdown", "image", {parse: function(state, tok) {
   state.addNode(this, {src: state.getAttr(tok, "src"),
                        title: state.getAttr(tok, "title") || null,
                        alt: tok.children[0] && tok.children[0].content || null})
 }})
 
-HardBreak.register("parseMarkdown", {token: "hardbreak", parse: function(state) {
+HardBreak.register("parseMarkdown", "hardbreak", {parse: function(state) {
   state.addNode(this)
 }})
 
 // Inline marks
 
-EmMark.register("parseMarkdown", {parse: "mark", token: "em"})
+EmMark.register("parseMarkdown", "em", {parse: "mark"})
 
-StrongMark.register("parseMarkdown", {parse: "mark", token: "strong"})
+StrongMark.register("parseMarkdown", "strong", {parse: "mark"})
 
-LinkMark.register("parseMarkdown", {
+LinkMark.register("parseMarkdown", "link", {
   parse: "mark",
-  token: "link",
   attrs: (state, tok) => ({
     href: state.getAttr(tok, "href"),
     title: state.getAttr(tok, "title") || null
   })
 })
 
-CodeMark.register("parseMarkdown", {token: "code_inline", parse: function(state, tok) {
+CodeMark.register("parseMarkdown", "code_inline", {parse: function(state, tok) {
   state.openMark(this.create())
   state.addText(tok.content)
   state.closeMark(this)

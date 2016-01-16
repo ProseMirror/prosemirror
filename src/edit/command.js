@@ -14,7 +14,7 @@ import {baseCommands} from "./base_commands"
 //
 // The commands available in a given editor are determined by the
 // `commands` option. By default, they come from the `baseCommands`
-// object and the commands [associated](#SchemaItem.register) with
+// object and the commands [registered](#SchemaItem.register) with
 // schema items. Registering a `CommandSpec` on a [node](#NodeType) or
 // [mark](#MarkType) type will cause that command to come into scope
 // in editors whose schema includes that item.
@@ -86,10 +86,10 @@ export class Command {
 
 const empty = []
 
-function deriveCommandSpec(type, spec) {
+function deriveCommandSpec(type, spec, name) {
   if (!spec.derive) return spec
   let conf = typeof spec.derive == "object" ? spec.derive : {}
-  let dname = conf.name || spec.name
+  let dname = conf.name || name
   let derive = type.constructor.deriveableCommands[dname]
   if (!derive) AssertionError.raise("Don't know how to derive command " + dname)
   let derived = derive.call(type, conf)
@@ -124,8 +124,8 @@ export class CommandSet {
       }
 
       if (set === "schema") {
-        schema.registry("command", (spec, type, name) => {
-          add(name + ":" + spec.name, deriveCommandSpec(type, spec), type)
+        schema.registry("command", (name, spec, type, typeName) => {
+          add(typeName + ":" + name, deriveCommandSpec(type, spec, name), type)
         })
       } else {
         for (let name in set) add(name, set[name])
@@ -177,14 +177,6 @@ CommandSet.default = CommandSet.empty.add("schema").add(baseCommands)
 // the command. The only property that _must_ appear in a command spec
 // is [`run`](#CommandSpec.run). You should probably also give your
 // commands a `label`.
-
-// :: string #path=CommandSpec.name
-// Commands defined by [registering](#SchemaItem.register) them on
-// schema items should include a `name` in the spec object. The final
-// name of the command (the thing passed to
-// [`execCommand`](#ProseMirror.execCommand)) will be this name
-// prefixed by the node or mark name and a colon (for example
-// `"image:insert"`).
 
 // :: string #path=CommandSpec.label
 // A user-facing label for the command. This will be used, among other

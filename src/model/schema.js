@@ -66,16 +66,44 @@ class SchemaItem {
     Object.defineProperty(this, "attrs", {value: frozen})
   }
 
-  // :: (string, *)
-  // Register an element in this type's registry. That is, add `value`
-  // to the array associated with `name` in the registry stored in
-  // type's `prototype`. This is mostly used to attach things like
-  // commands and parsing strategies to node types. See `Schema.registry`.
-  static register(name, value) {
-    let registry = this.prototype.hasOwnProperty("registry")
-        ? this.prototype.registry
-        : this.prototype.registry = Object.create(null)
-    ;(registry[name] || (registry[name] = [])).push(value)
+  static getRegistry() {
+    if (this == SchemaItem) return null
+    if (!this.prototype.hasOwnProperty("registry"))
+      this.prototype.registry = Object.create(Object.getPrototypeOf(this).getRegistry())
+    return this.prototype.registry
+  }
+
+  static getNamespace(name) {
+    if (this == SchemaItem) return null
+    let reg = this.getRegistry()
+    if (!Object.prototype.hasOwnProperty.call(reg, name))
+      reg[name] = Object.create(Object.getPrototypeOf(this).getNamespace(name))
+    return reg[name]
+  }
+
+  // :: (string, string, *)
+  // Register a value in this type's registry. Various components use
+  // `Schema.registry` to query values from the marks and nodes that
+  // make up the schema. The `namespace`, for example
+  // [`"command"`](#commands), determines which component will see
+  // this value. `name` is a name specific to this value. Its meaning
+  // differs per namespace.
+  //
+  // Subtypes inherit the registered values from their supertypes.
+  // They can override individual values by calling this method to
+  // overwrite them with a new value, or with `null` to disable them.
+  static register(namespace, name, value) {
+    this.getNamespace(namespace)[name] = () => value
+  }
+
+  // :: (string, string, (SchemaItem) → *)
+  // Register a value in this types's registry, like
+  // [`register`](#SchemaItem.register), but providing a function that
+  // will be called with the actual node or mark type, whose return
+  // value will be treated as the effective value (or will be ignored,
+  // if `null`).
+  static registerComputed(namespace, name, f) {
+    this.getNamespace(namespace)[name] = f
   }
 }
 
@@ -586,14 +614,14 @@ export class Schema {
   // schema. The given function will be called with each item, the
   // element—node type or mark type—that it was associated with, and
   // that element's name in the schema.
-  registry(name, f) {
+  registry(namespace, f) {
     for (let i = 0; i < 2; i++) {
       let obj = i ? this.marks : this.nodes
       for (let tname in obj) {
-        let type = obj[tname]
-        if (type.constructor.prototype.hasOwnProperty("registry")) {
-          let reg = type.registry[name]
-          if (reg) for (let j = 0; j < reg.length; j++) f(reg[j], type, tname)
+        let type = obj[tname], registry = type.registry, ns = registry && registry[namespace]
+        if (ns) for (let prop in ns) {
+          let value = ns[prop](type)
+          if (value != null) f(prop, value, type, tname)
         }
       }
     }
