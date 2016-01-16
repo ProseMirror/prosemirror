@@ -35,7 +35,9 @@ defineOption("menuBar", false, function(pm, value) {
 })
 
 function getItems(pm, items) {
-  return Array.isArray(items) ? items.map(getItems.bind(null, pm)) : pm.commands[items]
+  return Array.isArray(items)
+         ? items.map(getItems.bind(null, pm)).filter(i => i)
+         : pm.commands[items]
 }
 
 class BarDisplay {
