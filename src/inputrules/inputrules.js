@@ -13,15 +13,13 @@ export function addInputRule(pm, rule) {
   pm.mod.interpretInput.addRule(rule)
 }
 
-// FIXME remove these by identity, drop the name field
-
-// :: (ProseMirror, string)
-// Remove the input rule with the given name (added earlier with
-// `addInputRule`) from the editor.
-export function removeInputRule(pm, name) {
+// :: (ProseMirror, InputRule)
+// Remove the given rule (added earlier with `addInputRule`) from the
+// editor.
+export function removeInputRule(pm, rule) {
   let ii = pm.mod.interpretInput
   if (!ii) return
-  ii.removeRule(name)
+  ii.removeRule(rule)
   if (ii.rules.length == 0) {
     ii.unregister()
     pm.mod.interpretInput = null
@@ -33,22 +31,20 @@ export function removeInputRule(pm, name) {
 // changing two dashes into an emdash, wrapping a paragraph starting
 // with `"> "` into a blockquote, or something entirely different.
 export class InputRule {
-  // :: (string, RegExp, ?string, union<string, (ProseMirror, [string], Pos)>)
-  // Create an input rule. Its name is used to identify it (to disable
-  // it). The rule applies when the user typed something and the text
-  // directly in front of the cursor matches `match`, which should
-  // probably end with `$`. You can optionally provide a filter, which
-  // should be a single character that always appears at the end of
-  // the match, and will be used to only apply the rule when there's
-  // an actual chance of it succeeding.
+  // :: (RegExp, ?string, union<string, (ProseMirror, [string], Pos)>)
+  // Create an input rule. The rule applies when the user typed
+  // something and the text directly in front of the cursor matches
+  // `match`, which should probably end with `$`. You can optionally
+  // provide a filter, which should be a single character that always
+  // appears at the end of the match, and will be used to only apply
+  // the rule when there's an actual chance of it succeeding.
   //
   // The `handler` can be a string, in which case the matched text
   // will simply be replaced by that string, or a function, which will
   // be called with the match array produced by
   // [`RegExp.exec`](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/RegExp/exec),
   // and should produce the effect of the rule.
-  constructor(name, match, filter, handler) {
-    this.name = name
+  constructor(match, filter, handler) {
     this.filter = filter
     this.match = match
     this.handler = handler
@@ -76,12 +72,11 @@ class InputRules {
     this.rules.push(rule)
   }
 
-  removeRule(name) {
-    for (let i = 0; i < this.rules.length; i++) {
-      if (this.rules[i].name == name) {
-        this.rules.splice(i, 1)
-        return true
-      }
+  removeRule(rule) {
+    let found = this.rules.indexOf(rule)
+    if (found > -1) {
+      this.rules.splice(found, 1)
+      return true
     }
   }
 

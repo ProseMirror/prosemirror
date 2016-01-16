@@ -7,20 +7,19 @@ import {InputRule, addInputRule, removeInputRule} from "./inputrules"
 // to `true`.
 export const autoInputRules = Object.create(null)
 
-// :: union<bool, [union<InputRule, string, Object<?InputRule>>]> #path=autoInput #kind=option
+// :: union<bool, [union<string, Object<?InputRule>>]> #path=autoInput #kind=option
 // Controls the [input rules](#InputRule) initially active in the
-// editor. Pass an array of sources, which can be either an input
-// rule, the string `"schema"`, to add rules
-// [registered](#SchemaItem.register) on the schema items (under the
-// namespace `"autoInput"`), or an object containing input rules. To
-// remove previously included rules, you can add an object that maps
-// their name to `null`.
+// editor. Pass an array of sources, which can be either the string
+// `"schema"`, to add rules [registered](#SchemaItem.register) on the
+// schema items (under the namespace `"autoInput"`), or an object
+// containing input rules. To remove previously included rules, you
+// can add an object that maps their name to `null`.
 //
 // The value `false` (the default) is a shorthand for no input rules,
 // and the value `true` for `["schema", autoInputRules]`.
 defineOption("autoInput", false, function(pm, val) {
   if (pm.mod.autoInput) {
-    pm.mod.autoInput.forEach(name => removeInputRule(pm, name))
+    pm.mod.autoInput.forEach(rule => removeInputRule(pm, rule))
     pm.mod.autoInput = null
   }
   if (val) {
@@ -31,10 +30,8 @@ defineOption("autoInput", false, function(pm, val) {
         pm.schema.registry("autoInput", (name, rule, type, typeName) => {
           let rname = typeName + ":" + name, handler = rule.handler
           if (handler.bind) handler = handler.bind(type)
-          rules[rname] = new InputRule(rname, rule.match, rule.filter, handler)
+          rules[rname] = new InputRule(rule.match, rule.filter, handler)
         })
-      } else if (spec instanceof InputRule) {
-        rules[spec.name] = spec
       } else {
         for (let name in spec) {
           let val = spec[name]
@@ -45,29 +42,27 @@ defineOption("autoInput", false, function(pm, val) {
     })
     for (let name in rules) {
       addInputRule(pm, rules[name])
-      list.push(rules[name].name)
+      list.push(rules[name])
     }
   }
 })
 
-autoInputRules.emDash = new InputRule("emDash", /--$/, "-", "—")
+autoInputRules.emDash = new InputRule(/--$/, "-", "—")
 
-autoInputRules.openDoubleQuote = new InputRule("openDoubleQuote", /\s(")$/, '"', "“")
+autoInputRules.openDoubleQuote = new InputRule(/\s(")$/, '"', "“")
 
-autoInputRules.closeDoubleQuote = new InputRule("closeDoubleQuote", /"$/, '"', "”")
+autoInputRules.closeDoubleQuote = new InputRule(/"$/, '"', "”")
 
-autoInputRules.openSingleQuote = new InputRule("openSingleQuote", /\s(')$/, "'", "‘")
+autoInputRules.openSingleQuote = new InputRule(/\s(')$/, "'", "‘")
 
-autoInputRules.closeSingleQuote = new InputRule("closeSingleQuote", /'$/, "'", "’")
+autoInputRules.closeSingleQuote = new InputRule(/'$/, "'", "’")
 
 BlockQuote.register("autoInput", "startBlockQuote", new InputRule(
-  "startBlockQuote",
   /^\s*> $/, " ",
   function(pm, _, pos) { wrapAndJoin(pm, pos, this) }
 ))
 
 OrderedList.register("autoInput", "startOrderedList", new InputRule(
-  "startOrderedList",
   /^(\d+)\. $/, " ",
   function(pm, match, pos) {
     let order = +match[1]
@@ -77,7 +72,6 @@ OrderedList.register("autoInput", "startOrderedList", new InputRule(
 ))
 
 BulletList.register("autoInput", "startBulletList", new InputRule(
-  "startBulletList",
   /^\s*([-+*]) $/, " ",
   function(pm, match, pos) {
     let bullet = match[1]
@@ -86,14 +80,13 @@ BulletList.register("autoInput", "startBulletList", new InputRule(
 ))
 
 CodeBlock.register("autoInput", "startCodeBlock", new InputRule(
-  "startCodeBlock",
   /^```$/, "`",
   function(pm, _, pos) { setAs(pm, pos, this, {params: ""}) }
 ))
 
 Heading.registerComputed("autoInput", "startHeading", type => {
   let re = new RegExp("^(#{1," + type.maxLevel + "}) $")
-  return new InputRule("startHeading", re, " ", function(pm, match, pos) {
+  return new InputRule(re, " ", function(pm, match, pos) {
     setAs(pm, pos, this, {level: match[1].length})
   })
 })
