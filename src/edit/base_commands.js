@@ -420,12 +420,13 @@ baseCommands.splitBlock = {
 // `type`, which should be a `{type: NodeType, attrs: ?Object}`
 // object, giving the new type and its attributes.
 //
-// Available types are determined by seaching the schema for node
-// types that have a `textBlockMenuOptions` property containing an array of
-// `{label: string, rank: ?number, attrs: ?Object}` options.
+// Available types are determined by enumerating the values
+// [registered](#SchemaItem.register) on the schema under the
+// `"textblockMenu"` namespace. They should have the form `{label:
+// string, rank: ?number, attrs: ?Object}`.
 //
-// Registers itself in the block [menu group](#CommandSpec.menuGroup), where it creates the
-// textblock type dropdown.
+// Registers itself in the block [menu group](#CommandSpec.menuGroup),
+// where it creates the textblock type dropdown.
 baseCommands.textblockType = {
   label: "Change block type",
   run(pm, value) {
@@ -448,20 +449,17 @@ baseCommands.textblockType = {
 function rank(obj) { return obj.rank == null ? 50 : obj.rank }
 
 function listTextblockTypes(pm) {
-  let cached = pm.schema.cached.textblockMenuOptions
-  if (cached) return cached
+  return pm.schema.cached.textblockMenuOptions ||
+    (pm.schema.cached.textblockMenuOptions = buildTextblockTypes(pm.schema))
+}
 
+function buildTextblockTypes(schema) {
   let found = []
-  for (let name in pm.schema.nodes) {
-    let type = pm.schema.nodes[name]
-    if (!type.textblockMenuOptions) continue
-    for (let i = 0; i < type.textblockMenuOptions.length; i++) {
-      let info = type.textblockMenuOptions[i]
-      sortedInsert(found, {label: info.label, value: {type, info}},
-                   (a, b) => rank(a.value.info) - rank(b.value.info))
-    }
-  }
-  return pm.schema.cached.textblockMenuOptions = found
+  schema.registry("textblockMenu", (_, info, type) => {
+    sortedInsert(found, {label: info.label, value: {type, info}},
+                 (a, b) => rank(a.value.info) - rank(b.value.info))
+  })
+  return found
 }
 
 function currentTextblockType(pm) {
@@ -489,15 +487,15 @@ function nodeAboveSelection(pm) {
 
 // ;; #kind=command
 // Replace the selection with a node chosen from a drop-down. Takes
-// its options from the `insertMenuOptions` properties of the node
-// types in the editor's schema, which, if present, should contain
-// arrays of `{label: string, rank: ?number, attrs: ?Object, command:
-// ?string}` object. `rank` deterimes the order in which the options
-// appear (lowest first). If a `command` property is given, the
-// command named by that string, prefixed with the node type name and
-// a colon, will be executed when the option is chosen. If not, a node
-// of type is created, with attributes from the `attrs` property, and
-// used to replace the selection.
+// its options values [registered](#SchemaItem.register) under the
+// `"insertMenu"` namespace. These should have the form `{label:
+// string, rank: ?number, attrs: ?Object, command: ?string}`. `rank`
+// determines the order in which the options appear (lowest first). If
+// a `command` property is given, the command named by that string,
+// prefixed with the node type name and a colon, will be executed when
+// the option is chosen. If not, a node of type is created, with
+// attributes from the `attrs` property, and used to replace the
+// selection.
 //
 // Registers itself in the insert [menu group](#CommandSpec.menuGroup)
 
@@ -522,18 +520,17 @@ baseCommands.insert = {
 }
 
 function listInsertOptions(pm) {
-  let cached = pm.schema.cached.insertMenuOptions
-  if (cached) return cached
+  return pm.schema.cached.insertMenuOptions ||
+    (pm.schema.cached.insertMenuOptions = buildInsertOptions(pm.schema))
+}
 
+function buildInsertOptions(schema) {
   let found = []
-  for (let name in pm.schema.nodes) {
-    let type = pm.schema.nodes[name]
-    if (type.insertMenuOptions) type.insertMenuOptions.forEach(info => {
-      sortedInsert(found, {label: info.label, value: {type, info}},
-                   (a, b) => rank(a.value.info) - rank(b.value.info))
-    })
-  }
-  return pm.schema.cached.inserMenuOptions = found
+  schema.registry("insertMenu", (_, info, type) => {
+    sortedInsert(found, {label: info.label, value: {type, info}},
+                 (a, b) => rank(a.value.info) - rank(b.value.info))
+  })
+  return found
 }
 
 function currentInsertOptions(pm) {

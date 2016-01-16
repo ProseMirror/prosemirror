@@ -322,12 +322,17 @@ HorizontalRule.register("command", "insert", {
 
 // Used by the textblockType command
 
-// FIXME use register for these as well
-Paragraph.prototype.textblockMenuOptions = [{label: "Normal", rank: 10}]
-CodeBlock.prototype.textblockMenuOptions = [{label: "Code", rank: 20}]
-Heading.prototype.textblockMenuOptions = [1, 2, 3, 4, 5, 6].map(n => ({label: "Head " + n, attrs: {level: n}, rank: 30 + n}))
+Paragraph.register("textblockMenu", "main", {label: "Normal", rank: 10})
+
+CodeBlock.register("textblockMenu", "main", {label: "Code", rank: 20})
+
+for (let i = 1; i <= 10; i++)
+  Heading.registerComputed("textblockMenu", String(i), type => {
+    if (i <= type.maxLevel) return {label: "Head " + i, attrs: {level: i}, rank: 30 + i}
+  })
 
 // Used by the insert command
 
-Image.prototype.insertMenuOptions = [{label: "Image", command: "insert", rank: 20}]
-HorizontalRule.prototype.insertMenuOptions = [{label: "Horizontal rule", command: "insert", rank: 70}]
+Image.register("insertMenu", "main", {label: "Image", command: "insert", rank: 20})
+
+HorizontalRule.register("insertMenu", "main", {label: "Horizontal rule", command: "insert", rank: 70})
