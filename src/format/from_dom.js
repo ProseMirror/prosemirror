@@ -240,7 +240,7 @@ function summarizeNodeInfo(schema) {
       type, parse,
       rank: info.rank == null ? 50 : info.rank
     })
-  })
+  }, false)
   for (let tag in tags) tags[tag].sort((a, b) => a.rank - b.rank)
   return tags
 }

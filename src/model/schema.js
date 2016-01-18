@@ -609,17 +609,22 @@ export class Schema {
     }
   }
 
-  // :: (string, (value: *, source: union<NodeType, MarkType>, name: string))
+  // :: (string, (value: *, source: union<NodeType, MarkType>, name: string), ?bool)
   // Retrieve all registered items under the given name from this
   // schema. The given function will be called with each item, the
   // element—node type or mark type—that it was associated with, and
   // that element's name in the schema.
-  registry(namespace, f) {
+  //
+  // If `inherit` is set to `false`, only elements registered directly
+  // on types, or, if the type themselves didn't register anything
+  // under this namespace, directly registered on the first superclass
+  // that did, are enumerated.
+  registry(namespace, f, inherit = true) {
     for (let i = 0; i < 2; i++) {
       let obj = i ? this.marks : this.nodes
       for (let tname in obj) {
         let type = obj[tname], registry = type.registry, ns = registry && registry[namespace]
-        if (ns) for (let prop in ns) {
+        if (ns) for (let prop in ns) if (inherit || Object.prototype.hasOwnProperty.call(ns, prop)) {
           let value = ns[prop](type)
           if (value != null) f(prop, value, type, tname)
         }
