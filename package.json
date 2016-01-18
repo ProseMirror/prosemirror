@@ -24,6 +24,7 @@
     "babel-register": "^6.3.13",
     "babelify": "^7.2.0",
     "blint": "^0.4.0",
+    "rimraf": "^2.5.0",
     "watchify": "^3.2.0",
     "xmldom": "^0.1.0"
   },
@@ -34,6 +35,6 @@
     "dist": "babel -d dist src",
     "dist-watch": "babel -w -d dist src",
     "lint": "blint --browser --ecmaVersion 6 --forbidSemicolons src",
-    "prepublish": "rm -rf dist/* && babel -d dist src"
+    "prepublish": "rimraf dist/* && babel -d dist src"
   }
 }
