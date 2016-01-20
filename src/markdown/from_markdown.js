@@ -182,7 +182,7 @@ function summarizeTokens(schema) {
 
   schema.registry("parseMarkdown", (name, info, type) => {
     registerTokens(tokens, name, type, info)
-  }, false)
+  })
   return tokens
 }
 

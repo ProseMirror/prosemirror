@@ -105,6 +105,14 @@ class SchemaItem {
   static registerComputed(namespace, name, f) {
     this.getNamespace(namespace)[name] = f
   }
+
+  // :: (string)
+  // By default, schema items inherit the
+  // [registered](#SchemaItem.register) items from their superclasses.
+  // Call this to disable that behavior for the given namespace.
+  static cleanNamespace(namespace) {
+    this.getNamespace(namespace).__proto__ = null
+  }
 }
 
 // ;; Node types are objects allocated once per `Schema`
@@ -614,17 +622,12 @@ export class Schema {
   // schema. The given function will be called with each item, the
   // element—node type or mark type—that it was associated with, and
   // that element's name in the schema.
-  //
-  // If `inherit` is set to `false`, only elements registered directly
-  // on types, or, if the type themselves didn't register anything
-  // under this namespace, directly registered on the first superclass
-  // that did, are enumerated.
-  registry(namespace, f, inherit = true) {
+  registry(namespace, f) {
     for (let i = 0; i < 2; i++) {
       let obj = i ? this.marks : this.nodes
       for (let tname in obj) {
         let type = obj[tname], registry = type.registry, ns = registry && registry[namespace]
-        if (ns) for (let prop in ns) if (inherit || Object.prototype.hasOwnProperty.call(ns, prop)) {
+        if (ns) for (let prop in ns) {
           let value = ns[prop](type)
           if (value != null) f(prop, value, type, tname)
         }
