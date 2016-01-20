@@ -1,6 +1,6 @@
 import Keymap from "browserkeymap"
 import {Pos} from "../model"
-import {knownSource, parseFrom, fromHTML, fromText, toHTML, toText} from "../format"
+import {knownSource, parseFrom, serializeTo} from "../format"
 import {elt} from "../dom"
 
 import {captureKeys} from "./capturekeys"
@@ -301,8 +301,8 @@ handlers.copy = handlers.cut = (pm, e) => {
   if (empty) return
   let fragment = pm.doc.sliceBetween(from, to)
   lastCopied = {doc: pm.doc, from, to,
-                html: toHTML(fragment),
-                text: toText(fragment)}
+                html: serializeTo(fragment, "html"),
+                text: serializeTo(fragment, "text")}
 
   if (e.clipboardData) {
     e.preventDefault()
@@ -323,11 +323,11 @@ handlers.paste = (pm, e) => {
     e.preventDefault()
     let doc, from, to
     if (pm.input.shiftKey && txt) {
-      doc = fromText(pm.schema, txt)
+      doc = parseFrom(pm.schema, txt, "text")
     } else if (lastCopied && (lastCopied.html == html || lastCopied.text == txt)) {
       ;({doc, from, to} = lastCopied)
     } else if (html) {
-      doc = fromHTML(pm.schema, html)
+      doc = parseFrom(pm.schema, html, "html")
     } else {
       doc = parseFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
     }
@@ -345,8 +345,8 @@ handlers.dragstart = (pm, e) => {
     let pos = pm.posAtCoords({left: e.clientX, top: e.clientY})
     if (pos.cmp(from) >= 0 && pos.cmp(to) <= 0) {
       fragment = pm.doc.sliceBetween(from, to)
-      e.dataTransfer.setData("text/html", toHTML(fragment))
-      e.dataTransfer.setData("text/plain", toText(fragment))
+      e.dataTransfer.setData("text/html", serializeTo(fragment, "html"))
+      e.dataTransfer.setData("text/plain", serializeTo(fragment, "text"))
       pm.input.draggingFrom = true
     }
   }
@@ -380,7 +380,7 @@ handlers.drop = (pm, e) => {
 
   let html, txt, doc
   if (html = e.dataTransfer.getData("text/html"))
-    doc = fromHTML(pm.schema, html, {document})
+    doc = parseFrom(pm.schema, html, "html", {document})
   else if (txt = e.dataTransfer.getData("text/plain"))
     doc = parseFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
 
