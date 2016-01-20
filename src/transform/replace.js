@@ -6,7 +6,6 @@ import {PosMap, MovedRange, ReplacedRange} from "./map"
 import {replaceHasEffect, samePathDepth} from "./tree"
 
 // !! **`replace`**
-
 //   : Delete the part of the document between `from` and `to` and
 //     optionally replace it with another chunk of content. `pos` must
 //     point at the ‘root’ at which the cut starts—a position between
