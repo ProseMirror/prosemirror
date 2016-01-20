@@ -137,3 +137,11 @@ recover("empty_code_block",
 recover("trailing_code",
         "<pre>foo\n</pre>",
         doc(pre("foo\n")))
+
+recover("script",
+        "<p>hello<script>alert('x')</script>!</p>",
+        doc(p("hello!")))
+
+recover("head_body",
+        "<head><title>T</title><meta charset='utf8'/></head><body>hi</body>",
+        doc(p("hi")))

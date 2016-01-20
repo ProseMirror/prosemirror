@@ -69,6 +69,10 @@ const blockElements = {
   output: true, p: true, pre: true, section: true, table: true, tfoot: true, ul: true
 }
 
+const ignoreElements = {
+  head: true, noscript: true, object: true, script: true, style: true, title: true
+}
+
 const noMarks = []
 
 // ;; A state object used to track context during a parse,
@@ -108,11 +112,13 @@ class DOMParseState {
       }
     } else if (dom.nodeType != 1 || dom.hasAttribute("pm-ignore")) {
       // Ignore non-text non-element nodes
-    } else if (!this.parseNodeType(dom)) {
-      this.addAll(dom.firstChild, null)
+    } else {
       let name = dom.nodeName.toLowerCase()
-      if (blockElements.hasOwnProperty(name) && this.top.type == this.schema.defaultTextblockType())
-        this.closing = true
+      if (!this.parseNodeType(name, dom) && !ignoreElements.hasOwnProperty(name)) {
+        this.addAll(dom.firstChild, null)
+        if (blockElements.hasOwnProperty(name) && this.top.type == this.schema.defaultTextblockType())
+          this.closing = true
+      }
     }
   }
 
@@ -123,8 +129,8 @@ class DOMParseState {
     }
   }
 
-  parseNodeType(dom) {
-    return this.tryParsers(this.nodeInfo[dom.nodeName.toLowerCase()], dom) ||
+  parseNodeType(name, dom) {
+    return this.tryParsers(this.nodeInfo[name], dom) ||
       this.tryParsers(this.nodeInfo._, dom)
   }
 
