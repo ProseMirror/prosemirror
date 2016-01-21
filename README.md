@@ -38,4 +38,4 @@ Start the demo server (resolves modules, compiles ES6):
 npm run demo
 ```
 
-Open `http://localhost:8080/demo/index.html` in your browser
+Open `http://localhost:8080/` in your browser
