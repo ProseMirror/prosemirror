@@ -32,10 +32,10 @@ Inside the project directory, install the project's node dependencies
 npm install
 ```
 
-Build the demo (this will keep running, recompiling files on change)
+Start the demo server (resolves modules, compiles ES6):
 
 ```bash
 npm run demo
 ```
 
-Open `demo/index.html` in your browser
+Open `http://localhost:8080/demo/index.html` in your browser

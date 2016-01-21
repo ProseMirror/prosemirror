@@ -1,6 +1,5 @@
-import {throws} from 'assert'
 import {doc, blockquote, pre, pre2, h1, h2, p, hr, li, ol, ul, em, strong, code, a, a2, br, img, dataImage} from "./build"
-import {cmpNode, cmpStr} from "./cmp"
+import {cmpNode, cmpStr, is} from "./cmp"
 import {defTest} from "./tests"
 
 import {defaultSchema as schema} from "../src/model"
@@ -66,8 +65,10 @@ t("horizontal_rule",
   doc(p("one two"), hr, p("three")))
 
 defTest("parse_html_inline", () => {
-  throws(
-    () => fromMarkdown(schema, "Foo <em>bar</em>"),
-    /html_inline/
-  )
+  try {
+    fromMarkdown(schema, "Foo <em>bar</em>")
+    is(false, "Did not throw")
+  } catch(e) {
+    is(/html_inline/.test(e.message), "Expected message")
+  }
 })
