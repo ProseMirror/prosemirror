@@ -18,4 +18,7 @@ import "./replace"
 // This module does not depend on the browser API being available
 // (i.e. you can load it into any JavaScript environment).
 //
+// You can read more about transformations in [this
+// guide](guide/transform.md).
+//
 // These are the types of steps defined:

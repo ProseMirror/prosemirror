@@ -14,7 +14,8 @@ const emptyArray = [], emptyAttrs = Object.create(null)
 // structure between the old and new data as much as possible, which a
 // tree shape like this (without back pointers) makes easy.
 //
-// **Never** directly mutate the properties of a `Node` object.
+// **Never** directly mutate the properties of a `Node` object. See
+// [this guide](guide/doc.html) for more information.
 export class Node {
   constructor(type, attrs, content, marks) {
     // :: NodeType

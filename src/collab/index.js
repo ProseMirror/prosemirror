@@ -5,6 +5,10 @@ import {AssertionError} from "../util/error"
 import {rebaseSteps} from "./rebase"
 export {rebaseSteps}
 
+// !! This module implements an API into which a communication channel
+// for collaborative editing can be hooked. See [this
+// guide](guide/collab.html) for more details and an example.
+
 // :: ?Object #path=collab #kind=option
 //
 // When given, enables the collaborative editing framework for the
@@ -79,8 +83,10 @@ class Collab {
   }
 
   // :: () → {version: number, doc: Node, steps: [Step]}
-  // Provides the data describing the editor's unconfirmed steps. This
-  // is the thing you'd send to the central authority.
+  // Provides the data describing the editor's unconfirmed steps. The
+  // version and array of steps are the things you'd send to the
+  // central authority. The whole return value must be passed to
+  // [`confirmSteps`](#Collab.confirmSteps) when the steps go through.
   sendableSteps() {
     return {
       version: this.version,
