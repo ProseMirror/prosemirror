@@ -145,3 +145,11 @@ recover("script",
 recover("head_body",
         "<head><title>T</title><meta charset='utf8'/></head><body>hi</body>",
         doc(p("hi")))
+
+recover("double_strong",
+        "<p>A <strong>big <strong>strong</strong> monster</strong>.</p>",
+        doc(p("A ", strong("big strong monster"), ".")))
+
+recover("font_weight",
+        "<p style='font-weight: bold'>Hello</p>",
+        doc(p(strong("Hello"))))

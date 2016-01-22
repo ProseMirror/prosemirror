@@ -1,6 +1,7 @@
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmMark, StrongMark, LinkMark, CodeMark, Node} from "../model"
+import sortedInsert from "../util/sortedinsert"
 import {defineSource} from "./register"
 
 // :: (Schema, DOMNode, ?Object) → Node
@@ -87,7 +88,9 @@ class DOMParseState {
     this.marks = noMarks
     this.closing = false
     this.enter(topNode.type, topNode.attrs)
-    this.nodeInfo = nodeInfo(schema)
+    let info = schemaInfo(schema)
+    this.tagInfo = info.tags
+    this.styleInfo = info.styles
   }
 
   get top() {
@@ -113,13 +116,37 @@ class DOMParseState {
     } else if (dom.nodeType != 1 || dom.hasAttribute("pm-ignore")) {
       // Ignore non-text non-element nodes
     } else {
-      let name = dom.nodeName.toLowerCase()
-      if (!this.parseNodeType(name, dom) && !ignoreElements.hasOwnProperty(name)) {
-        this.addAll(dom.firstChild, null)
-        if (blockElements.hasOwnProperty(name) && this.top.type == this.schema.defaultTextblockType())
-          this.closing = true
+      let style = dom.getAttribute("style")
+      if (style) this.addElementWithStyles(parseStyles(style), dom)
+      else this.addElement(dom)
+    }
+  }
+
+  addElement(dom) {
+    let name = dom.nodeName.toLowerCase()
+    if (!this.parseNodeType(name, dom) && !ignoreElements.hasOwnProperty(name)) {
+      this.addAll(dom.firstChild, null)
+      if (blockElements.hasOwnProperty(name) && this.top.type == this.schema.defaultTextblockType())
+        this.closing = true
+    }
+  }
+
+  addElementWithStyles(styles, dom) {
+    let wrappers = []
+    for (let i = 0; i < styles.length; i += 2) {
+      let parsers = this.styleInfo[styles[i]], value = styles[i + 1]
+      if (parsers) for (let j = 0; j < parsers.length; j++)
+        wrappers.push(parsers[j], value)
+    }
+    let next = (i) => {
+      if (i == wrappers.length) {
+        this.addElement(dom)
+      } else {
+        let parser = wrappers[i]
+        parser.parse.call(parser.type, wrappers[i + 1], this, next.bind(null, i + 2))
       }
     }
+    next(0)
   }
 
   tryParsers(parsers, dom) {
@@ -130,8 +157,8 @@ class DOMParseState {
   }
 
   parseNodeType(name, dom) {
-    return this.tryParsers(this.nodeInfo[name], dom) ||
-      this.tryParsers(this.nodeInfo._, dom)
+    return this.tryParsers(this.tagInfo[name], dom) ||
+      this.tryParsers(this.tagInfo._, dom)
   }
 
   addAll(from, to, sync) {
@@ -180,11 +207,11 @@ class DOMParseState {
   }
 
   enter(type, attrs) {
-    if (this.marks.length) this.marks = noMarks
     this.stack.push({type, attrs, content: []})
   }
 
   leave() {
+    if (this.marks.length) this.marks = noMarks
     let top = this.stack.pop()
     let last = top.content[top.content.length - 1]
     if (last && last.isText && /\s$/.test(last.text))
@@ -221,20 +248,27 @@ class DOMParseState {
   // :: (DOMNode, Mark)
   // Parse the contents of `dom`, with `mark` added to the set of
   // current marks.
-  wrapMark(dom, mark) {
+  wrapMark(inner, mark) {
     let old = this.marks
     this.marks = (mark.instance || mark).addToSet(old)
-    this.addAll(dom.firstChild, null)
+    if (inner.call) inner()
+    else this.addAll(inner.firstChild, null)
     this.marks = old
   }
 }
 
-function nodeInfo(schema) {
-  return schema.cached.parseDOMNodes || (schema.cached.parseDOMNodes = summarizeNodeInfo(schema))
+function parseStyles(style) {
+  let re = /\s*([\w-]+)\s*:\s*([^;]+)/g, m, result = []
+  while (m = re.exec(style)) result.push(m[1], m[2].trim())
+  return result
 }
 
-function summarizeNodeInfo(schema) {
-  let tags = Object.create(null)
+function schemaInfo(schema) {
+  return schema.cached.parseDOMInfo || (schema.cached.parseDOMInfo = summarizeSchemaInfo(schema))
+}
+
+function summarizeSchemaInfo(schema) {
+  let tags = Object.create(null), styles = Object.create(null)
   tags._ = []
   schema.registry("parseDOM", (tag, info, type) => {
     let parse = info.parse
@@ -242,13 +276,19 @@ function summarizeNodeInfo(schema) {
       parse = function(dom, state) { state.wrapIn(dom, this) }
     else if (parse == "mark")
       parse = function(dom, state) { state.wrapMark(dom, this) }
-    ;(tags[tag] || (tags[tag] = [])).push({
+    sortedInsert(tags[tag] || (tags[tag] = []), {
       type, parse,
       rank: info.rank == null ? 50 : info.rank
-    })
+    }, (a, b) => a.rank - b.rank)
   })
-  for (let tag in tags) tags[tag].sort((a, b) => a.rank - b.rank)
-  return tags
+  schema.registry("parseDOMStyle", (style, info, type) => {
+    sortedInsert(styles[style] || (styles[style] = []), {
+      type,
+      parse: info.parse,
+      rank: info.rank == null ? 50 : info.rank
+    }, (a, b) => a.rank - b.rank)
+  })
+  return {tags, styles}
 }
 
 Paragraph.register("parseDOM", "p", {parse: "block"})
@@ -307,8 +347,16 @@ LinkMark.register("parseDOM", "a", {parse: function(dom, state) {
 
 EmMark.register("parseDOM", "i", {parse: "mark"})
 EmMark.register("parseDOM", "em", {parse: "mark"})
+StrongMark.register("parseDOMStyle", "font-style", {parse: function(value, state, inner) {
+  if (value == "italic") state.wrapMark(inner, this)
+  else inner()
+}})
 
 StrongMark.register("parseDOM", "b", {parse: "mark"})
 StrongMark.register("parseDOM", "strong", {parse: "mark"})
+StrongMark.register("parseDOMStyle", "font-weight", {parse: function(value, state, inner) {
+  if (value == "bold" || value == "bolder" || !/\D/.test(value) && +value >= 500) state.wrapMark(inner, this)
+  else inner()
+}})
 
 CodeMark.register("parseDOM", "code", {parse: "mark"})
