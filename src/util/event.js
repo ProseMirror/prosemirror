@@ -44,6 +44,18 @@ const methods = {
     return false
   },
 
+  // :: (type: string, value: any)
+  // Give all handlers for an event a chance to transform a value. The
+  // value returned from a handler will be passed to the next handler.
+  // The method returns the value returned by the final handler (or
+  // the original value, if there are no handlers).
+  signalPipelined(type, value) {
+    let arr = this._handlers && this._handlers[type]
+    if (arr) for (let i = 0; i < arr.length; ++i)
+      value = arr[i](value)
+    return value
+  },
+
   // :: (type: string) → bool #path=EventMixin.hasHandler
   // Query whether there are any handlers for this event type.
   hasHandler(type) {

@@ -59,7 +59,7 @@ function createCollab() {
   server.attach(pm2)
 }
 
-let collab = document.location.hash != "#single"
+let collab = document.location.hash == "#collab"
 let button = document.querySelector("#switch")
 function choose(collab) {
   if (pm) { pm.wrapper.parentNode.removeChild(pm.wrapper); pm = null }

@@ -314,6 +314,16 @@ handlers.copy = handlers.cut = (pm, e) => {
   }
 }
 
+// :: (text: string) → string #path=ProseMirror#events#transformPastedText
+// Fired when plain text is pasted. Handlers must return the given
+// string or a [transformed](#EventMixin.signalPipelined) version of
+// it.
+
+// :: (html: string) → string #path=ProseMirror#events#transformPastedHTML
+// Fired when html content is pasted. Handlers must return the given
+// string or a [transformed](#EventMixin.signalPipelined) version of
+// it.
+
 handlers.paste = (pm, e) => {
   if (!e.clipboardData) return
   let sel = pm.selection
@@ -323,13 +333,14 @@ handlers.paste = (pm, e) => {
     e.preventDefault()
     let doc, from, to
     if (pm.input.shiftKey && txt) {
-      doc = fromText(pm.schema, txt)
+      doc = fromText(pm.schema, pm.signalPipelined("transformPastedText", txt))
     } else if (lastCopied && (lastCopied.html == html || lastCopied.text == txt)) {
       ;({doc, from, to} = lastCopied)
     } else if (html) {
-      doc = fromHTML(pm.schema, html)
+      doc = fromHTML(pm.schema, pm.signalPipelined("transformPastedHTML", html))
     } else {
-      doc = parseFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
+      doc = parseFrom(pm.schema, pm.signalPipelined("transformPastedText", txt),
+                      knownSource("markdown") ? "markdown" : "text")
     }
     pm.tr.replace(sel.from, sel.to, doc, from || findSelectionAtStart(doc).from,
                   to || findSelectionAtEnd(doc).to).apply()
