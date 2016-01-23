@@ -1,7 +1,7 @@
 import {ModelError} from "./error"
 
 // ;; Instances of the `Pos` class represent positions in a document.
-// A position an array of integers that describe a path to the target
+// A position is an array of integers that describe a path to the target
 // node (see `Node.path`) and an integer offset into that target node.
 
 export class Pos {
