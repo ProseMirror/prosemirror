@@ -251,7 +251,7 @@ paramTypes.text = {
 paramTypes.select = {
   render(param, value) {
     let options = param.options.call ? param.options(this) : param.options
-    return elt("select", null, options.map(o => elt("option", {value: o.value, selected: o == value ? "true" : null}, o.label)))
+    return elt("select", null, options.map(o => elt("option", {value: o.value, selected: o.value == value ? "true" : null}, o.label)))
   },
   read(dom) {
     return dom.value
