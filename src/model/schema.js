@@ -25,7 +25,7 @@ class SchemaItem {
   // mapping names to either attributes (to add) or null (to remove
   // the attribute by that name).
   static updateAttrs(attrs) {
-    this.prototype.attrs = overlayObj(this.prototype.attrs, attrs)
+    Object.defineProperty(this.prototype, "attrs", {value: overlayObj(this.prototype.attrs, attrs)})
   }
 
   // For node types where all attrs have a default value (or which don't
