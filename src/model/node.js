@@ -202,10 +202,11 @@ export class Node {
     return node
   }
 
-  // :: (Pos) → Node
-  // Get the node after the given position.
+  // :: (Pos) → ?Node
+  // Get the node after the given position, if any.
   nodeAfter(pos) {
-    return this.path(pos.path).child(pos.offset)
+    let parent = this.path(pos.path)
+    return pos.offset < parent.size ? parent.child(pos.offset) : null
   }
 
   pathNodes(path) {

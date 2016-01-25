@@ -160,6 +160,15 @@ export class NodeType extends SchemaItem {
   get selectable() { return true }
 
   // :: bool
+  // Determines whether nodes of this type can be dragged. Enabling it
+  // causes ProseMirror to set a `draggable` attribute on its DOM
+  // representation, and to put its HTML serialization into the drag
+  // event's [data
+  // transfer](https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer)
+  // when dragged.
+  get draggable() { return false }
+
+  // :: bool
   // Controls whether this node type is locked.
   get locked() { return false }
 

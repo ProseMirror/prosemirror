@@ -65,6 +65,7 @@ export class Image extends Inline {
       title: new Attribute({default: ""})
     }
   }
+  get draggable() { return true }
 }
 
 // ;; The default hard break node type.

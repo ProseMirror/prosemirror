@@ -17,6 +17,8 @@ function options(path, ranges) {
         dom.setAttribute("pm-offset", offset)
       if (node.isTextblock)
         adjustTrailingHacks(dom, node)
+      if (node.type.draggable)
+        dom.setAttribute("draggable", "true")
 
       return dom
     },

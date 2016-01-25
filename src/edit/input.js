@@ -7,7 +7,7 @@ import {captureKeys} from "./capturekeys"
 import {browser, addClass, rmClass} from "../dom"
 import {applyDOMChange, textContext, textInContext} from "./domchange"
 import {TextSelection, coordsAtPos, rangeFromDOMLoose, selectableNodeAbove,
-        findSelectionAtStart, findSelectionAtEnd, handleNodeClick} from "./selection"
+        findSelectionAtStart, findSelectionAtEnd, handleNodeClick, posFromDOM} from "./selection"
 
 let stopSeq = null
 
@@ -296,19 +296,43 @@ handlers.input = (pm) => {
 
 let lastCopied = null
 
+function setCopied(doc, from, to, dataTransfer) {
+  let fragment = doc.sliceBetween(from, to)
+  lastCopied = {doc, from, to,
+                schema: doc.type.schema,
+                html: toHTML(fragment),
+                text: toText(fragment)}
+  if (dataTransfer) {
+    dataTransfer.clearData()
+    dataTransfer.setData("text/html", lastCopied.html)
+    dataTransfer.setData("text/plain", lastCopied.text)
+  }
+}
+
+function getCopied(pm, dataTransfer, plainText) {
+  let txt = dataTransfer.getData("text/plain")
+  let html = dataTransfer.getData("text/html")
+  if (!html && !txt) return null
+  let doc
+  if (plainText && txt) {
+    doc = fromText(pm.schema, pm.signalPipelined("transformPastedText", txt))
+  } else if (lastCopied && lastCopied.html == html && lastCopied.schema == pm.schema) {
+    return lastCopied
+  } else if (html) {
+    doc = fromHTML(pm.schema, pm.signalPipelined("transformPastedHTML", html))
+  } else {
+    doc = parseFrom(pm.schema, pm.signalPipelined("transformPastedText", txt),
+                    knownSource("markdown") ? "markdown" : "text")
+  }
+  return {doc, from: findSelectionAtStart(doc).from, to: findSelectionAtEnd(doc).to}
+}
+
 handlers.copy = handlers.cut = (pm, e) => {
   let {from, to, empty} = pm.selection
   if (empty) return
-  let fragment = pm.doc.sliceBetween(from, to)
-  lastCopied = {doc: pm.doc, from, to,
-                html: toHTML(fragment),
-                text: toText(fragment)}
-
+  setCopied(pm.doc, from, to, e.clipboardData)
   if (e.clipboardData) {
     e.preventDefault()
-    e.clipboardData.clearData()
-    e.clipboardData.setData("text/html", lastCopied.html)
-    e.clipboardData.setData("text/plain", lastCopied.text)
     if (e.type == "cut" && !empty)
       pm.tr.delete(from, to).apply()
   }
@@ -327,23 +351,10 @@ handlers.copy = handlers.cut = (pm, e) => {
 handlers.paste = (pm, e) => {
   if (!e.clipboardData) return
   let sel = pm.selection
-  let txt = e.clipboardData.getData("text/plain")
-  let html = e.clipboardData.getData("text/html")
-  if (html || txt) {
+  let fragment = getCopied(pm, e.clipboardData, pm.input.shiftKey)
+  if (fragment) {
     e.preventDefault()
-    let doc, from, to
-    if (pm.input.shiftKey && txt) {
-      doc = fromText(pm.schema, pm.signalPipelined("transformPastedText", txt))
-    } else if (lastCopied && (lastCopied.html == html || lastCopied.text == txt)) {
-      ;({doc, from, to} = lastCopied)
-    } else if (html) {
-      doc = fromHTML(pm.schema, pm.signalPipelined("transformPastedHTML", html))
-    } else {
-      doc = parseFrom(pm.schema, pm.signalPipelined("transformPastedText", txt),
-                      knownSource("markdown") ? "markdown" : "text")
-    }
-    pm.tr.replace(sel.from, sel.to, doc, from || findSelectionAtStart(doc).from,
-                  to || findSelectionAtEnd(doc).to).apply()
+    pm.tr.replace(sel.from, sel.to, fragment.doc, fragment.from, fragment.to).apply()
     pm.scrollIntoView()
   }
 }
@@ -352,18 +363,23 @@ handlers.dragstart = (pm, e) => {
   if (!e.dataTransfer) return
 
   let {from, to, empty} = pm.selection, fragment
-  if (!empty) {
-    let pos = pm.posAtCoords({left: e.clientX, top: e.clientY})
-    if (pos.cmp(from) >= 0 && pos.cmp(to) <= 0) {
-      fragment = pm.doc.sliceBetween(from, to)
-      e.dataTransfer.setData("text/html", toHTML(fragment))
-      e.dataTransfer.setData("text/plain", toText(fragment))
-      pm.input.draggingFrom = true
-    }
+  let pos = !empty && pm.posAtCoords({left: e.clientX, top: e.clientY})
+  if (pos && pos.cmp(from) >= 0 && pos.cmp(to) <= 0) {
+    fragment = {from, to}
+  } else {
+    let pos = posFromDOM(pm, e.target)
+    let node = pm.doc.nodeAfter(pos)
+    if (node && node.type.draggable)
+      fragment = {from: pos, to: pos.move(1)}
+  }
+
+  if (fragment) {
+    pm.input.draggingFrom = fragment
+    setCopied(pm.doc, fragment.from, fragment.to, e.dataTransfer)
   }
 }
 
-handlers.dragend = pm => window.setTimeout(() => pm.input.dragginFrom = false, 50)
+handlers.dragend = pm => window.setTimeout(() => pm.input.draggingFrom = false, 50)
 
 handlers.dragover = handlers.dragenter = (pm, e) => {
   e.preventDefault()
@@ -389,22 +405,17 @@ handlers.drop = (pm, e) => {
 
   if (!e.dataTransfer) return
 
-  let html, txt, doc
-  if (html = e.dataTransfer.getData("text/html"))
-    doc = fromHTML(pm.schema, html, {document})
-  else if (txt = e.dataTransfer.getData("text/plain"))
-    doc = parseFrom(pm.schema, txt, knownSource("markdown") ? "markdown" : "text")
-
-  if (doc) {
+  let fragment = getCopied(pm, e.dataTransfer)
+  if (fragment) {
     e.preventDefault()
     let insertPos = pm.posAtCoords({left: e.clientX, top: e.clientY}), origPos = insertPos
     if (!insertPos) return
     let tr = pm.tr
     if (pm.input.draggingFrom && !e.ctrlKey) {
-      tr.deleteSelection()
+      tr.delete(pm.input.draggingFrom.from, pm.input.draggingFrom.to)
       insertPos = tr.map(insertPos).pos
     }
-    tr.replace(insertPos, insertPos, doc, findSelectionAtStart(doc).from, findSelectionAtEnd(doc).to).apply()
+    tr.replace(insertPos, insertPos, fragment.doc, fragment.from, fragment.to).apply()
     let posAfter = tr.map(origPos).pos
     if (Pos.samePath(insertPos.path, posAfter.path) && posAfter.offset == insertPos.offset + 1 &&
         pm.doc.nodeAfter(insertPos).type.selectable)
