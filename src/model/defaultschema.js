@@ -88,7 +88,7 @@ export class StrongMark extends MarkType {
 // - **`href`** (required): The link target.
 // - **`title`**: The link's title.
 export class LinkMark extends MarkType {
-  static get rank() { return 53 }
+  static get rank() { return 25 }
   get attrs() {
     return {
       href: new Attribute,
