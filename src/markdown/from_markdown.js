@@ -4,6 +4,7 @@ import {BlockQuote, OrderedList, BulletList, ListItem,
         EmMark, StrongMark, LinkMark, CodeMark, Mark} from "../model"
 import {defineSource} from "../format"
 import {AssertionError} from "../util/error"
+import sortedInsert from "../util/sortedinsert"
 
 // :: (Schema, string) → Node
 // Parse a string as [CommonMark](http://commonmark.org/) markup, and
@@ -11,7 +12,7 @@ import {AssertionError} from "../util/error"
 // that, by default, some CommonMark features, namely inline HTML and
 // tight lists, are not supported.
 export function fromMarkdown(schema, text) {
-  let tokens = markdownit("commonmark").parse(text, {})
+  let tokens = configureMarkdown(schema).parse(text, {})
   let state = new MarkdownParseState(schema, tokens), doc
   state.parseTokens(tokens)
   do { doc = state.closeNode() } while (state.stack.length)
@@ -27,6 +28,20 @@ export function fromMarkdown(schema, text) {
 // The name of the registered item should be the
 // [markdown-it](https://github.com/markdown-it/markdown-it) token
 // name that the parser should respond to,
+//
+// To influence the way the markdown-it parser is initialized and
+// configured, you can register values under the `"configureMarkdown"`
+// namespace. An item with the name `"init"` will be called to
+// initialize the parser. Items with other names will be called with a
+// parser and should return a parser. You could for example configure
+// a subscript mark to enable the [subscript
+// plugin](https://github.com/markdown-it/markdown-it-sub):
+//
+//     SubMark.register("configureMarkdown", "sub", parser => {
+//       return parser.use(require("markdown-it-sub"))
+//     })
+
+// FIXME give registerable things their own top-level reference guide entries?
 
 // :: union<string, (state: MarkdownParseState, token: MarkdownToken) → Node> #path=MarkdownParseSpec.parse
 // The parsing function for this token. It is, when a matching token
@@ -184,6 +199,32 @@ function summarizeTokens(schema) {
     registerTokens(tokens, name, type, info)
   })
   return tokens
+}
+
+function configFromSchema(schema) {
+  let found = schema.cached.markdownConfig
+  if (!found) {
+    let init = null
+    let modifiers = []
+    schema.registry("configureMarkdown", (name, f) => {
+      if (name == "init") {
+        if (init) AssertionError.raise("Two markdown parser initializers defined in schema")
+        init = f
+      } else {
+        let rank = (/_(\d+)$/.exec(name) || [0, 50])[1]
+        sortedInsert(found, {f, rank}, (a, b) => a.rank - b.rank)
+      }
+    })
+    found = {init: init || (() => markdownit("commonmark")), modifiers: modifiers.map(spec => spec.f)}
+  }
+  return found
+}
+
+function configureMarkdown(schema) {
+  let config = configFromSchema(schema)
+  let module = config.init()
+  config.modifiers.forEach(f => module = f(module))
+  return module
 }
 
 BlockQuote.register("parseMarkdown", "blockquote", {parse: "block"})
