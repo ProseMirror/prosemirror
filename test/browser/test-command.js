@@ -350,6 +350,9 @@ test("splitBlock",
 test("splitBlock",
      doc(ol("<a>", li(p("a")), li(p("b")), li(p("c")))),
      doc(ol(li(p("a")), li(p("b")), li(p("c")))))
+test("splitBlock",
+     doc(h1("<a>foo")),
+     doc(p(), h1("foo")))
 
 test("list_item:split",
      doc(p("foo<a>bar")),

@@ -616,7 +616,7 @@ export function findSelectionAtEnd(node, path = [], text) {
 // list marker (which, in the DOM, is part of the list node) select
 // the list item it belongs to. Should return null if the given
 // coordinates don't refer to a child node, or the [position](#Pos)
-// before thechild otherwise.
+// before the child otherwise.
 
 export function selectableNodeAbove(pm, dom, coords, liberal) {
   for (; dom && dom != pm.content; dom = dom.parentNode) {

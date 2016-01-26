@@ -408,8 +408,12 @@ baseCommands.splitBlock = {
       if (!from.offset) return false
       return pm.tr.split(from).apply(pm.apply.scroll)
     } else {
-      let type = to.offset == block.size ? pm.schema.defaultTextblockType() : null
-      return pm.tr.delete(from, to).split(from, 1, type).apply(pm.apply.scroll)
+      let deflt = pm.schema.defaultTextblockType()
+      let type = to.offset == block.size ? deflt : null
+      let tr = pm.tr.delete(from, to).split(from, 1, type)
+      if (to.offset < block.size && !from.offset && pm.doc.path(from.path).type != deflt)
+        tr.setNodeType(from.shorten(), deflt)
+      return tr.apply(pm.apply.scroll)
     }
   },
   keys: ["Enter(60)"]
