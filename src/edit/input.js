@@ -5,9 +5,10 @@ import {elt} from "../dom"
 
 import {captureKeys} from "./capturekeys"
 import {browser, addClass, rmClass} from "../dom"
+
 import {applyDOMChange, textContext, textInContext} from "./domchange"
-import {TextSelection, coordsAtPos, rangeFromDOMLoose, selectableNodeAbove,
-        findSelectionAtStart, findSelectionAtEnd, handleNodeClick, posFromDOM} from "./selection"
+import {TextSelection, rangeFromDOMLoose, findSelectionAtStart, findSelectionAtEnd} from "./selection"
+import {coordsAtPos, posFromDOM, handleNodeClick, selectableNodeAbove} from "./dompos"
 
 let stopSeq = null
 

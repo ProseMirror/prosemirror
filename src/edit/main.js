@@ -14,8 +14,8 @@ import {parseFrom, serializeTo} from "../format"
 
 import {parseOptions, initOptions, setOption} from "./options"
 import {SelectionState, TextSelection, NodeSelection,
-        posAtCoords, coordsAtPos, scrollIntoView,
         findSelectionAtStart, hasFocus, SelectionError} from "./selection"
+import {scrollIntoView, posAtCoords, coordsAtPos} from "./dompos"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
 import {History} from "./history"
@@ -43,7 +43,7 @@ export class ProseMirror {
     if (opts.doc == null) opts.doc = this.schema.node("doc", null, [this.schema.node("paragraph")])
     // :: DOMNode
     // The editable DOM node containing the document.
-    this.content = elt("div", {class: "ProseMirror-content"})
+    this.content = elt("div", {class: "ProseMirror-content", "pm-container": "true"})
     // :: DOMNode
     // The outer DOM element of the editor.
     this.wrapper = elt("div", {class: "ProseMirror"}, this.content)

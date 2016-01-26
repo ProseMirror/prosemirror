@@ -4,7 +4,8 @@ import sortedInsert from "../util/sortedinsert"
 import {AssertionError} from "../util/error"
 
 import {charCategory, isExtendingChar} from "./char"
-import {findSelectionFrom, verticalMotionLeavesTextblock, setDOMSelectionToPos, NodeSelection} from "./selection"
+import {findSelectionFrom, verticalMotionLeavesTextblock, NodeSelection} from "./selection"
+import {setDOMSelectionToPos} from "./dompos"
 
 // :: Object<CommandSpec>
 // The set of default commands defined by the core library. They are

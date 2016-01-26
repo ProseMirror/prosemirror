@@ -103,7 +103,9 @@ class DOMSerializer {
   // Render the content of ProseMirror node into a DOM node with the
   // given tag name and attributes.
   renderAs(node, tagName, tagAttrs) {
-    return this.renderContent(node, this.elt(tagName, tagAttrs))
+    let dom = this.renderContent(node, this.elt(tagName, tagAttrs))
+    if (this.options.onContainer) this.options.onContainer(dom)
+    return dom
   }
 }
 

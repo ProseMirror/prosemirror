@@ -3,6 +3,7 @@ import {toDOM, nodeToDOM} from "../format"
 import {elt} from "../dom"
 
 import {DIRTY_REDRAW} from "./main"
+import {childContainer} from "./dompos"
 
 // FIXME clean up threading of path and offset, maybe remove from DOM renderer entirely
 
@@ -21,6 +22,9 @@ function options(path, ranges) {
         dom.setAttribute("draggable", "true")
 
       return dom
+    },
+    onContainer(node) {
+      node.setAttribute("pm-container", true)
     },
     renderInlineFlat(node, dom, offset) {
       ranges.advanceTo(new Pos(path, offset))
@@ -125,15 +129,8 @@ export function redraw(pm, dirty, doc, prev) {
         reuseDOM = true
       } else if (pChild && !child.isText && child.sameMarkup(pChild) && dirty.get(pChild) != DIRTY_REDRAW) {
         reuseDOM = true
-        if (pChild.type.contains) {
-          let contentNode = domPos
-          for (;;) {
-            let first = contentNode.firstChild
-            if (!first || first.hasAttribute("pm-ignore") || first.hasAttribute("pm-offset")) break
-            contentNode = first
-          }
-          scan(contentNode, child, pChild)
-        }
+        if (pChild.type.contains)
+          scan(childContainer(domPos), child, pChild)
       } else {
         let rendered = nodeToDOM(child, opts, offset)
         dom.insertBefore(rendered, domPos)

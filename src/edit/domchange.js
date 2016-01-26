@@ -2,7 +2,7 @@ import {Pos, findDiffStart, findDiffEnd} from "../model"
 import {fromDOM} from "../format"
 import {samePathDepth} from "../transform/tree"
 
-import {findByPath} from "./selection"
+import {findByPath} from "./dompos"
 
 function isAtEnd(node, pos, depth) {
   for (let i = depth || 0; i < pos.path.length; i++) {
