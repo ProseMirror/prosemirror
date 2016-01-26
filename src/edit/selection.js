@@ -648,11 +648,27 @@ export function selectableNodeAbove(pm, dom, coords, liberal) {
 // ProseMirror has determined that this is not a drag or multi-click
 // event.
 
-export function handleNodeClick(pm, event) {
+// :: (pm: ProseMirror, event: MouseEvent, path: [number], node: Node) → bool
+// #path=NodeType.prototype.handleContextMenu
+//
+// When the [context
+// menu](https://developer.mozilla.org/en-US/docs/Web/Events/contextmenu)
+// is activated in the editable context, nodes that the clicked
+// position falls inside of get a chance to react to it. Node types
+// may define a `handleContextMenu` method, which will be called when
+// present, first on inner nodes and then up the document tree, until
+// one of the methods returns something other than `false`.
+//
+// The handlers can inspect `event.target` to figure out whether they
+// were directly clicked, and may call `event.preventDefault()` to
+// prevent the native context menu.
+
+export function handleNodeClick(pm, type, event, direct) {
   for (let dom = event.target; dom && dom != pm.content; dom = dom.parentNode) {
     if (dom.hasAttribute("pm-offset")) {
       let path = pathFromDOM(pm, dom), node = pm.doc.path(path)
-      return node.type.handleClick && node.type.handleClick(pm, event, path, node) !== false
+      let handled = node.type[type] && node.type[type](pm, event, path, node) !== false
+      if (direct || handled) return handled
     }
   }
 }

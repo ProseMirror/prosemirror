@@ -201,7 +201,7 @@ handlers.mousedown = (pm, e) => {
       pm.sel.pollForUpdate()
     } else if (e.ctrlKey) {
       selectClickedNode(pm, e)
-    } else if (!handleNodeClick(pm, e)) {
+    } else if (!handleNodeClick(pm, "handleClick", e, true)) {
       let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY})
       if (pos) {
         pm.setNodeSelection(pos)
@@ -222,6 +222,10 @@ handlers.mousedown = (pm, e) => {
 
 handlers.touchdown = pm => {
   pm.sel.pollForUpdate()
+}
+
+handlers.contextmenu = (pm, e) => {
+  handleNodeClick(pm, "handleContextMenu", e, false)
 }
 
 // A class to track state while creating a composed character.
