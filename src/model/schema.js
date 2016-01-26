@@ -640,7 +640,7 @@ export class Schema {
     for (let i = 0; i < 2; i++) {
       let obj = i ? this.marks : this.nodes
       for (let tname in obj) {
-        let type = obj[tname], registry = type.registry, ns = registry && registry[namespace]
+        let type = obj[tname], _registry = type.registry, ns = _registry && _registry[namespace]
         if (ns) for (let prop in ns) {
           let value = ns[prop](type)
           if (value != null) f(prop, value, type, tname)

@@ -206,8 +206,8 @@ export class Remapping {
     let deleted = false
 
     for (let i = -this.head.length; i < this.tail.length; i++) {
-      let map = this.get(i)
-      let result = map.map(pos, bias)
+      let _map = this.get(i)
+      let result = _map.map(pos, bias)
       if (result.recover) {
         let corr = this.mirror[i]
         if (corr != null) {
