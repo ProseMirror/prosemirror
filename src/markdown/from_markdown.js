@@ -212,7 +212,7 @@ function configFromSchema(schema) {
         init = f
       } else {
         let rank = (/_(\d+)$/.exec(name) || [0, 50])[1]
-        sortedInsert(found, {f, rank}, (a, b) => a.rank - b.rank)
+        sortedInsert(modifiers, {f, rank}, (a, b) => a.rank - b.rank)
       }
     })
     found = {init: init || (() => markdownit("commonmark")), modifiers: modifiers.map(spec => spec.f)}
