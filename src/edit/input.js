@@ -8,7 +8,7 @@ import {browser, addClass, rmClass} from "../dom"
 
 import {applyDOMChange, textContext, textInContext} from "./domchange"
 import {TextSelection, rangeFromDOMLoose, findSelectionAtStart, findSelectionAtEnd} from "./selection"
-import {coordsAtPos, posFromDOM, handleNodeClick, selectableNodeAbove} from "./dompos"
+import {coordsAtPos, pathFromDOM, handleNodeClick, selectableNodeAbove} from "./dompos"
 
 let stopSeq = null
 
@@ -26,6 +26,7 @@ export class Input {
     // When the user is creating a composed character,
     // this is set to a Composing instance.
     this.composing = null
+    this.mouseDown = null
     this.shiftKey = this.updatingComposition = false
     this.skipInput = 0
 
@@ -169,56 +170,78 @@ function selectClickedNode(pm, e) {
 
 let lastClick = 0, oneButLastClick = 0
 
-handlers.mousedown = (pm, e) => {
-  pm.sel.pollForUpdate()
+function handleTripleClick(pm, e) {
+  e.preventDefault()
+  let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY}, true)
+  if (pos) {
+    let node = pm.doc.nodeAfter(pos)
+    if (node.isBlock && !node.isTextblock) {
+      pm.setNodeSelection(pos)
+    } else {
+      let path = node.isInline ? pos.path : pos.toPath()
+      if (node.isInline) node = pm.doc.path(path)
+      pm.setTextSelection(new Pos(path, 0), new Pos(path, node.size))
+    }
+    pm.focus()
+  }
+}
 
+handlers.mousedown = (pm, e) => {
   let now = Date.now(), doubleClick = now - lastClick < 500, tripleClick = now - oneButLastClick < 600
   oneButLastClick = lastClick
   lastClick = now
-  if (tripleClick) {
-    e.preventDefault()
-    let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY}, true)
-    if (pos) {
-      let node = pm.doc.nodeAfter(pos)
-      if (node.isBlock && !node.isTextblock) {
-        pm.setNodeSelection(pos)
-      } else {
-        let path = node.isInline ? pos.path : pos.toPath()
-        if (node.isInline) node = pm.doc.path(path)
-        pm.setTextSelection(new Pos(path, 0), new Pos(path, node.size))
-      }
-      pm.focus()
-    }
-    return
-  }
-  let leaveToBrowser = pm.input.shiftKey || doubleClick
 
-  let x = e.clientX, y = e.clientY
-  let up = () => {
-    removeEventListener("mouseup", up)
-    removeEventListener("mousemove", move)
+  if (tripleClick) handleTripleClick(pm, e)
+  else pm.input.mouseDown = new MouseDown(pm, e, doubleClick)
+}
 
-    if (leaveToBrowser) {
-      pm.sel.pollForUpdate()
-    } else if (e.ctrlKey) {
-      selectClickedNode(pm, e)
-    } else if (!handleNodeClick(pm, "handleClick", e, true)) {
-      let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY})
-      if (pos) {
-        pm.setNodeSelection(pos)
-        pm.focus()
-      } else {
-        pm.sel.pollForUpdate()
-      }
-    }
-  }
-  let move = e => {
-    if (!leaveToBrowser && (Math.abs(x - e.clientX) > 4 || Math.abs(y - e.clientY) > 4))
-      leaveToBrowser = true
+class MouseDown {
+  constructor(pm, event, doubleClick) {
+    this.pm = pm
+    this.event = event
+    this.leaveToBrowser = pm.input.shiftKey || doubleClick
+
+    let path = pathFromDOM(pm, event.target), node = pm.doc.path(path)
+    this.mightDrag = node.type.draggable || node == pm.sel.range.node ? path : null
+    if (this.mightDrag) event.target.draggable = true
+
+    this.x = event.clientX; this.y = event.clientY
+
+    addEventListener("mouseup", this.up = this.up.bind(this))
+    addEventListener("mousemove", this.move = this.move.bind(this))
     pm.sel.pollForUpdate()
   }
-  addEventListener("mouseup", up)
-  addEventListener("mousemove", move)
+
+  done() {
+    removeEventListener("mouseup", this.up)
+    removeEventListener("mousemove", this.move)
+//    if (this.mightDrag) this.event.target.draggable = false
+  }
+
+  up() {
+    this.done()
+
+    if (this.leaveToBrowser) {
+      this.pm.sel.pollForUpdate()
+    } else if (this.event.ctrlKey) {
+      selectClickedNode(this.pm, this.event)
+    } else if (!handleNodeClick(this.pm, "handleClick", this.event, true)) {
+      let pos = selectableNodeAbove(this.pm, this.event.target, {left: this.x, top: this.y})
+      if (pos) {
+        this.pm.setNodeSelection(pos)
+        this.pm.focus()
+      } else {
+        this.pm.sel.pollForUpdate()
+      }
+    }
+  }
+
+  move(event) {
+    if (!this.leaveToBrowser && (Math.abs(this.x - event.clientX) > 4 ||
+                                 Math.abs(this.y - event.clientY) > 4))
+      this.leaveToBrowser = true
+    this.pm.sel.pollForUpdate()
+  }
 }
 
 handlers.touchdown = pm => {
@@ -365,20 +388,22 @@ handlers.paste = (pm, e) => {
 }
 
 handlers.dragstart = (pm, e) => {
+  let mouseDown = pm.input.mouseDown
+  if (mouseDown) mouseDown.done()
+
   if (!e.dataTransfer) return
 
   let {from, to, empty} = pm.selection, fragment
   let pos = !empty && pm.posAtCoords({left: e.clientX, top: e.clientY})
   if (pos && pos.cmp(from) >= 0 && pos.cmp(to) <= 0) {
     fragment = {from, to}
-  } else {
-    let pos = posFromDOM(pm, e.target)
-    let node = pm.doc.nodeAfter(pos)
-    if (node && node.type.draggable)
-      fragment = {from: pos, to: pos.move(1)}
+  } else if (mouseDown && mouseDown.mightDrag) {
+    let pos = Pos.from(mouseDown.mightDrag)
+    fragment = {from: pos, to: pos.move(1)}
   }
 
   if (fragment) {
+    // FIXME the document could change during a drag, invalidating this range
     pm.input.draggingFrom = fragment
     setCopied(pm.doc, fragment.from, fragment.to, e.dataTransfer)
   }

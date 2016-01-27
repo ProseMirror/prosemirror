@@ -43,7 +43,7 @@ export class ProseMirror {
     if (opts.doc == null) opts.doc = this.schema.node("doc", null, [this.schema.node("paragraph")])
     // :: DOMNode
     // The editable DOM node containing the document.
-    this.content = elt("div", {class: "ProseMirror-content", "pm-container": "true"})
+    this.content = elt("div", {class: "ProseMirror-content", "pm-container": true})
     // :: DOMNode
     // The outer DOM element of the editor.
     this.wrapper = elt("div", {class: "ProseMirror"}, this.content)
