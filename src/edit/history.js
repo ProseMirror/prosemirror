@@ -363,6 +363,7 @@ export class History {
     let found = this.done.findVersion(version)
     if (!found) return false
     let event = this.done.events[found.event]
+    if (found.event == this.done.events.length - 1 && found.step == event.length) return
     let combined = this.done.events.slice(found.event + 1)
         .reduce((comb, arr) => comb.concat(arr), event.slice(found.step))
     this.done.events.length = found.event + ((event.length = found.step) ? 1 : 0)
