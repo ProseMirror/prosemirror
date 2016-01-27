@@ -1,10 +1,9 @@
 import Keymap from "browserkeymap"
 import {Pos} from "../model"
 import {knownSource, parseFrom, fromHTML, fromText, toHTML, toText} from "../format"
-import {elt} from "../dom"
 
 import {captureKeys} from "./capturekeys"
-import {browser, addClass, rmClass} from "../dom"
+import {elt, browser, addClass, rmClass} from "../dom"
 
 import {applyDOMChange, textContext, textInContext} from "./domchange"
 import {TextSelection, rangeFromDOMLoose, findSelectionAtStart, findSelectionAtEnd} from "./selection"
@@ -203,7 +202,11 @@ class MouseDown {
 
     let path = pathFromDOM(pm, event.target), node = pm.doc.path(path)
     this.mightDrag = node.type.draggable || node == pm.sel.range.node ? path : null
-    if (this.mightDrag) event.target.draggable = true
+    if (this.mightDrag) {
+      event.target.draggable = true
+      if (browser.gecko && (this.setContentEditable = !event.target.hasAttribute("contentEditable")))
+        event.target.setAttribute("contentEditable", "false")
+    }
 
     this.x = event.clientX; this.y = event.clientY
 
@@ -215,7 +218,11 @@ class MouseDown {
   done() {
     removeEventListener("mouseup", this.up)
     removeEventListener("mousemove", this.move)
-//    if (this.mightDrag) this.event.target.draggable = false
+    if (this.mightDrag) {
+      this.event.target.draggable = false
+      if (browser.gecko && this.setContentEditable)
+        this.event.target.removeAttribute("contentEditable")
+    }
   }
 
   up() {
