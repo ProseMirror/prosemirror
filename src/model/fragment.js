@@ -391,9 +391,9 @@ class TextFragment extends Fragment {
   child(off) {
     if (off < 0 || off >= this.size) ModelError.raise("Offset " + off + " out of range")
     for (let i = 0, curOff = 0; i < this.content.length; i++) {
-      let child = this.content[i]
-      curOff += child.width
-      if (curOff > off) return child
+      let _child = this.content[i]
+      curOff += _child.width
+      if (curOff > off) return _child
     }
   }
 
