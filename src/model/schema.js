@@ -595,8 +595,6 @@ export class Schema {
   // Deserialize a mark from its JSON representation. This method is
   // bound.
   markFromJSON(json) {
-    // FIXME remove before next release
-    if (typeof json == "string") json = {_: json}
     let type = this.marks[json._]
     let attrs = null
     for (let prop in json) if (prop != "_") {
