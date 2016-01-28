@@ -196,28 +196,9 @@ insertCSS(`
   overflow: visible;
 }
 
-.${prefix} .ProseMirror-icon-active {
-  background: #eee;
-}
-
-.ProseMirror-menuseparator {
-  border-right: 1px solid #ddd;
-}
-
-.${prefix}-hint.ProseMirror-dropdown-menu {
-  background: white;
-  color: #666;
-  border: 1px solid #ddd;
-}
-
-.${prefix}-hint.ProseMirror-dropdown-menu div:hover {
-  background: #f2f2f2;
-}
-
 .${prefix} input[type="text"],
 .${prefix} textarea {
   background: #eee;
-  color: black;
   border: none;
   outline: none;
   width: 100%;
@@ -232,11 +213,6 @@ insertCSS(`
 .${prefix} form {
   position: relative;
   padding: 2px 4px;
-}
-
-.${prefix} .ProseMirror-blocktype {
-  border: 1px solid #ccc;
-  min-width: 4em;
 }
 
 .${prefix}-sliding-wrap {

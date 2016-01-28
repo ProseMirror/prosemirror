@@ -405,7 +405,7 @@ insertCSS(`
 }
 
 .${prefix}separator {
-  border-right: 1px solid #666;
+  border-right: 1px solid #ddd;
 }
 
 .ProseMirror-dropdown, .ProseMirror-dropdown-menu {
@@ -429,23 +429,27 @@ insertCSS(`
 }
 
 .ProseMirror-dropdown-command-textblockType {
-  min-width: 3em;
+  min-width: 4em;
 }
 
 .ProseMirror-dropdown-menu {
   position: absolute;
-  background: #444;
-  color: white;
+
+  background: white;
+  color: #666;
+  border: 1px solid #ddd;
   padding: 2px;
   z-index: 15;
   min-width: 6em;
 }
+
 .ProseMirror-dropdown-menu div {
   cursor: pointer;
   padding: 2px 8px 2px 4px;
 }
+
 .ProseMirror-dropdown-menu div:hover {
-  background: #777;
+  background: #f2f2f2;
 }
 
 `)

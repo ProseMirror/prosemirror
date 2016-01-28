@@ -144,15 +144,14 @@ insertCSS(`
   border-radius: 5px;
   padding: 3px 7px;
   margin: 0;
-  background: #444;
-  border-color: #777;
-  color: white;
+  background: white;
+  border: 1px solid #777;
+  color: #555;
 
   z-index: 11;
 }
 
 .${prefix}-pointer {
-  content: "";
   position: absolute;
   display: none;
   width: 0; height: 0;
@@ -165,34 +164,67 @@ insertCSS(`
   z-index: 12;
 }
 
+.${prefix}-pointer:after {
+  content: "";
+  position: absolute;
+  display: block;
+}
+
 .${prefix}-pointer-above {
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
-  border-top: 6px solid #444;
+  border-top: 6px solid #777;
+}
+
+.${prefix}-pointer-above:after {
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid white;
+  left: -6px; top: -7px;
 }
 
 .${prefix}-pointer-below {
   border-left: 6px solid transparent;
   border-right: 6px solid transparent;
-  border-bottom: 6px solid #444;
+  border-bottom: 6px solid #777;
+}
+
+.${prefix}-pointer-below:after {
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-bottom: 6px solid white;
+  left: -6px; top: 1px;
 }
 
 .${prefix}-pointer-right {
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
-  border-right: 6px solid #444;
+  border-right: 6px solid #777;
+}
+
+.${prefix}-pointer-right:after {
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-right: 6px solid white;
+  left: 1px; top: -6px;
 }
 
 .${prefix}-pointer-left {
   border-top: 6px solid transparent;
   border-bottom: 6px solid transparent;
-  border-left: 6px solid #444;
+  border-left: 6px solid #777;
+}
+
+.${prefix}-pointer-left:after {
+  border-top: 6px solid transparent;
+  border-bottom: 6px solid transparent;
+  border-left: 6px solid white;
+  left: -7px; top: -6px;
 }
 
 .${prefix} input[type="text"],
 .${prefix} textarea {
-  background: #666;
-  color: white;
+  background: #eee;
   border: none;
   outline: none;
 }

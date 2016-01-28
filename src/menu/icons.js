@@ -49,7 +49,7 @@ insertCSS(`
 }
 
 .${prefix}-active {
-  background: #666;
+  background: #eee;
   border-radius: 4px;
 }
 
