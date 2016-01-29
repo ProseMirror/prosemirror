@@ -1,6 +1,5 @@
 import {Pos} from "../model"
 import {joinPoint, joinableBlocks, canLift} from "../transform"
-import sortedInsert from "../util/sortedinsert"
 import {AssertionError} from "../util/error"
 
 import {charCategory, isExtendingChar} from "./char"
@@ -269,8 +268,6 @@ function joinPointAbove(pm) {
 // the sibling above it.
 //
 // **Keybindings:** Alt-Up
-//
-// Registers itself in the block [menu group](#CommandSpec.menuGroup)
 baseCommands.joinUp = {
   label: "Join with above block",
   run(pm) {
@@ -280,11 +277,13 @@ baseCommands.joinUp = {
     if (isNode) pm.setNodeSelection(point.move(-1))
   },
   select(pm) { return joinPointAbove(pm) },
-  menuGroup: "block(80)",
-  display: {
-    type: "icon",
-    width: 800, height: 900,
-    path: "M0 75h800v125h-800z M0 825h800v-125h-800z M250 400h100v-100h100v100h100v100h-100v100h-100v-100h-100z"
+  menu: {
+    group: "block", rank: 80,
+    display: {
+      type: "icon",
+      width: 800, height: 900,
+      path: "M0 75h800v125h-800z M0 825h800v-125h-800z M250 400h100v-100h100v100h100v100h-100v100h-100v-100h-100z"
+    }
   },
   keys: ["Alt-Up"]
 }
@@ -318,8 +317,6 @@ baseCommands.joinDown = {
 // selection that can be lifted, out of its parent node.
 //
 // **Keybindings:** Alt-Left
-//
-// Registers itself in the block [menu group](#CommandSpec.menuGroup).
 baseCommands.lift = {
   label: "Lift out of enclosing block",
   run(pm) {
@@ -330,11 +327,13 @@ baseCommands.lift = {
     let {from, to} = pm.selection
     return canLift(pm.doc, from, to)
   },
-  menuGroup: "block(75)",
-  display: {
-    type: "icon",
-    width: 1024, height: 1024,
-    path: "M219 310v329q0 7-5 12t-12 5q-8 0-13-5l-164-164q-5-5-5-13t5-13l164-164q5-5 13-5 7 0 12 5t5 12zM1024 749v109q0 7-5 12t-12 5h-987q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h987q7 0 12 5t5 12zM1024 530v109q0 7-5 12t-12 5h-621q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h621q7 0 12 5t5 12zM1024 310v109q0 7-5 12t-12 5h-621q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h621q7 0 12 5t5 12zM1024 91v109q0 7-5 12t-12 5h-987q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h987q7 0 12 5t5 12z"
+  menu: {
+    group: "block", rank: 75,
+    display: {
+      type: "icon",
+      width: 1024, height: 1024,
+      path: "M219 310v329q0 7-5 12t-12 5q-8 0-13-5l-164-164q-5-5-5-13t5-13l164-164q5-5 13-5 7 0 12 5t5 12zM1024 749v109q0 7-5 12t-12 5h-987q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h987q7 0 12 5t5 12zM1024 530v109q0 7-5 12t-12 5h-621q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h621q7 0 12 5t5 12zM1024 310v109q0 7-5 12t-12 5h-621q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h621q7 0 12 5t5 12zM1024 91v109q0 7-5 12t-12 5h-987q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h987q7 0 12 5t5 12z"
+    }
   },
   keys: ["Alt-Left"]
 }
@@ -420,6 +419,7 @@ baseCommands.splitBlock = {
   keys: ["Enter(60)"]
 }
 
+/* FIXME replace
 // ;; #kind=command
 // Change the type of the selected textblocks. Takes one parameter,
 // `type`, which should be a `{type: NodeType, attrs: ?Object}`
@@ -448,9 +448,8 @@ baseCommands.textblockType = {
   display: {
     type: "param"
   },
-  menuGroup: "block(10)"
+//  menuGroup: "block(10)"
 }
-
 function rank(obj) { return obj.rank == null ? 50 : obj.rank }
 
 function listTextblockTypes(pm) {
@@ -480,14 +479,6 @@ function currentTextblockType(pm) {
     let tp = types[i], val = tp.value
     if (node.hasMarkup(val.type, val.info.attrs)) return tp.value
   }
-}
-
-function nodeAboveSelection(pm) {
-  let sel = pm.selection, i = 0
-  if (sel.node) return !!sel.from.depth && sel.from.shorten()
-  for (; i < sel.head.depth && i < sel.anchor.depth; i++)
-    if (sel.head.path[i] != sel.anchor.path[i]) break
-  return i == 0 ? false : sel.head.shorten(i - 1)
 }
 
 // ;; #kind=command
@@ -521,7 +512,7 @@ baseCommands.insert = {
   display: {
     type: "param"
   },
-  menuGroup: "insert"
+//  menuGroup: "insert"
 }
 
 function listInsertOptions(pm) {
@@ -550,14 +541,21 @@ function currentInsertOptions(pm) {
     }
   })
 }
+*/
+
+function nodeAboveSelection(pm) {
+  let sel = pm.selection, i = 0
+  if (sel.node) return !!sel.from.depth && sel.from.shorten()
+  for (; i < sel.head.depth && i < sel.anchor.depth; i++)
+    if (sel.head.path[i] != sel.anchor.path[i]) break
+  return i == 0 ? false : sel.head.shorten(i - 1)
+}
 
 // ;; #kind=command
 // Move the selection to the node wrapping the current selection, if
 // any. (Will not select the document node.)
 //
 // **Keybindings:** Esc
-//
-// Registers itself in the block [menu group](#CommandSpec.menuGroup).
 baseCommands.selectParentNode = {
   label: "Select parent node",
   run(pm) {
@@ -568,8 +566,10 @@ baseCommands.selectParentNode = {
   select(pm) {
     return nodeAboveSelection(pm)
   },
-  menuGroup: "block(90)",
-  display: {type: "icon", text: "\u2b1a", style: "font-weight: bold; vertical-align: 20%"},
+  menu: {
+    group: "block", rank: 90,
+    display: {type: "icon", text: "\u2b1a", style: "font-weight: bold; vertical-align: 20%"}
+  },
   keys: ["Esc"]
 }
 
@@ -701,17 +701,17 @@ baseCommands.selectNodeDown = {
 // Undo the most recent change event, if any.
 //
 // **Keybindings:** Mod-Z
-//
-// Registers itself in the history [menu group](#CommandSpec.menuGroup).
 baseCommands.undo = {
   label: "Undo last change",
   run(pm) { pm.scrollIntoView(); return pm.history.undo() },
   select(pm) { return pm.history.canUndo() },
-  menuGroup: "history(10)",
-  display: {
-    type: "icon",
-    width: 1024, height: 1024,
-    path: "M761 1024c113-206 132-520-313-509v253l-384-384 384-384v248c534-13 594 472 313 775z"
+  menu: {
+    group: "history", rank: 10,
+    display: {
+      type: "icon",
+      width: 1024, height: 1024,
+      path: "M761 1024c113-206 132-520-313-509v253l-384-384 384-384v248c534-13 594 472 313 775z"
+    }
   },
   keys: ["Mod-Z"]
 }
@@ -720,17 +720,17 @@ baseCommands.undo = {
 // Redo the most recently undone change event, if any.
 //
 // **Keybindings:** Mod-Y, Shift-Mod-Z
-//
-// Registers itself in the history [menu group](#CommandSpec.menuGroup).
 baseCommands.redo = {
   label: "Redo last undone change",
   run(pm) { pm.scrollIntoView(); return pm.history.redo() },
   select(pm) { return pm.history.canRedo() },
-  menuGroup: "history(20)",
-  display: {
-    type: "icon",
-    width: 1024, height: 1024,
-    path: "M576 248v-248l384 384-384 384v-253c-446-10-427 303-313 509-280-303-221-789 313-775z"
+  menu: {
+    group: "history", rank: 20,
+    display: {
+      type: "icon",
+      width: 1024, height: 1024,
+      path: "M576 248v-248l384 384-384 384v-253c-446-10-427 303-313 509-280-303-221-789 313-775z"
+    }
   },
   keys: ["Mod-Y", "Shift-Mod-Z"]
 }

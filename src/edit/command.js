@@ -448,6 +448,17 @@ function alreadyHasBlockType(doc, from, to, type, attrs) {
   return found
 }
 
+function activeTextblockIs(pm, type, attrs) {
+  let {from, to, node} = pm.selection
+  if (!node || node.isInline) {
+    if (!Pos.samePath(from.path, to.path)) return false
+    node = pm.doc.path(from.path)
+  } else if (!node.isTextblock) {
+    return false
+  }
+  return node.hasMarkup(type, attrs)
+}
+
 NodeType.deriveableCommands.make = conf => ({
   run(pm) {
     let {from, to} = pm.selection
@@ -459,6 +470,9 @@ NodeType.deriveableCommands.make = conf => ({
       return node.isTextblock && !node.hasMarkup(this, conf.attrs)
     else
       return !alreadyHasBlockType(pm.doc, from, to, this, conf.attrs)
+  },
+  active(pm) {
+    return activeTextblockIs(pm, this, conf.attrs)
   }
 })
 

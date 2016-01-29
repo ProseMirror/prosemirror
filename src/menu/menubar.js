@@ -2,7 +2,7 @@ import {defineOption} from "../edit"
 import {elt, insertCSS} from "../dom"
 import {UpdateScheduler} from "../ui/update"
 
-import {Menu, menuGroups} from "./menu"
+import {defaultMenu} from "./menu"
 
 const prefix = "ProseMirror-menubar"
 
@@ -34,46 +34,6 @@ defineOption("menuBar", false, function(pm, value) {
   pm.mod.menuBar = value ? new MenuBar(pm, value) : null
 })
 
-function getItems(pm, items) {
-  return Array.isArray(items)
-         ? items.map(getItems.bind(null, pm)).filter(i => i)
-         : pm.commands[items]
-}
-
-class BarDisplay {
-  constructor(container) {
-    this.container = container
-  }
-  clear() { this.container.textContent = "" }
-  show(dom) {
-    this.clear()
-    this.container.appendChild(dom)
-  }
-  enter(dom, back) {
-    this.container.firstChild.style.opacity = "0.5"
-
-    let backButton = elt("div", {class: prefix + "-back"})
-    backButton.addEventListener("mousedown", e => {
-      e.preventDefault(); e.stopPropagation()
-      back()
-    })
-    let added = elt("div", {class: prefix + "-sliding-wrap"},
-                    elt("div", {class: prefix + "-sliding"}, backButton, dom))
-    this.container.appendChild(added)
-    added.lastChild.getBoundingClientRect() // Force layout for transition
-    added.lastChild.style.left = "0"
-  }
-  leave() {
-    let last = this.container.lastChild
-    last.firstChild.style.pointerEvents = "none"
-    last.lastChild.style.left = ""
-    last.previousSibling.style.opacity = ""
-    last.lastChild.addEventListener("transitionend", () => {
-      this.container.removeChild(last)
-    })
-  }
-}
-
 class MenuBar {
   constructor(pm, config) {
     this.pm = pm
@@ -85,9 +45,7 @@ class MenuBar {
     this.widthForMaxHeight = 0
 
     this.updater = new UpdateScheduler(pm, "selectionChange change activeMarkChange commandsChanged", () => this.update())
-    this.menu = new Menu(pm, new BarDisplay(this.wrapper), () => this.resetMenu())
-    this.menu.cssHint = prefix + "-hint"
-
+    this.content = config.content || defaultMenu
     this.updater.force()
 
     this.floating = false
@@ -112,7 +70,10 @@ class MenuBar {
   }
 
   update() {
-    if (!this.menu.active) this.resetMenu()
+    this.wrapper.textContent = ""
+    let rendered = this.content.render(this.pm)
+    if (rendered) this.wrapper.appendChild(rendered)
+
     return this.float ? this.updateScrollCursor() : () => {
       if (this.wrapper.offsetWidth != this.widthForMaxHeight) {
         this.widthForMaxHeight = this.wrapper.offsetWidth
@@ -123,12 +84,6 @@ class MenuBar {
         return () => { this.wrapper.style.minHeight = this.maxHeight + "px" }
       }
     }
-  }
-
-  resetMenu() {
-    this.menu.show(this.config.items
-                   ? getItems(this.pm, this.config.items)
-                   : menuGroups(this.pm, this.config.groups || ["inline", "insert", "block", "history"]))
   }
 
   updateFloat() {
@@ -195,62 +150,4 @@ insertCSS(`
   box-sizing: border-box;
   overflow: visible;
 }
-
-.${prefix} input[type="text"],
-.${prefix} textarea {
-  background: #eee;
-  border: none;
-  outline: none;
-  width: 100%;
-  box-sizing: -moz-border-box;
-  box-sizing: border-box;
-}
-
-.${prefix} input[type="text"] {
-  padding: 0 4px;
-}
-
-.${prefix} form {
-  position: relative;
-  padding: 2px 4px;
-}
-
-.${prefix}-sliding-wrap {
-  position: absolute;
-  left: 0; right: 0; top: 0;
-  height: -webkit-fit-content;
-  height: fit-content;
-  overflow: hidden;
-}
-
-.${prefix}-sliding {
-  -webkit-transition: left 0.2s ease-out;
-  -moz-transition: left 0.2s ease-out;
-  transition: left 0.2s ease-out;
-  position: relative;
-  left: 100%;
-  width: 100%;
-  box-sizing: -moz-border-box;
-  box-sizing: border-box;
-  padding-left: 16px;
-  padding-right: 4px;
-  background: white;
-  border-bottom: 1px solid #ccc;
-}
-
-.${prefix}-back {
-  position: absolute;
-  height: 100%;
-  margin-top: -1px;
-  padding-bottom: 2px;
-  width: 10px;
-  left: 0;
-  border-right: 1px solid silver;
-  cursor: pointer;
-  z-index: 1;
-}
-.${prefix}-back:after {
-  content: "»";
-}
-
 `)

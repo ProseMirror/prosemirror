@@ -64,6 +64,7 @@ export class ProseMirror {
     // A namespace where modules can store references to themselves
     // associated with this editor instance.
     this.mod = Object.create(null)
+    this.cached = Object.create(null)
     this.operation = null
     this.dirtyNodes = new Map // Maps node object to 1 (re-scan content) or 2 (redraw entirely)
     this.flushScheduled = false

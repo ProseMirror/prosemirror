@@ -23,16 +23,16 @@ StrongMark.register("command", "unset", {derive: true, label: "Unset strong"})
 // makes the selected content strong.
 //
 // **Keybindings:** Mod-B
-//
-// Registers itself in the inline [menu group](#CommandSpec.menuGroup).
 StrongMark.register("command", "toggle", {
   derive: true,
   label: "Toggle strong",
-  menuGroup: "inline(20)",
-  display: {
-    type: "icon",
-    width: 805, height: 1024,
-    path: "M317 869q42 18 80 18 214 0 214-191 0-65-23-102-15-25-35-42t-38-26-46-14-48-6-54-1q-41 0-57 5 0 30-0 90t-0 90q0 4-0 38t-0 55 2 47 6 38zM309 442q24 4 62 4 46 0 81-7t62-25 42-51 14-81q0-40-16-70t-45-46-61-24-70-8q-28 0-74 7 0 28 2 86t2 86q0 15-0 45t-0 45q0 26 0 39zM0 950l1-53q8-2 48-9t60-15q4-6 7-15t4-19 3-18 1-21 0-19v-37q0-561-12-585-2-4-12-8t-25-6-28-4-27-2-17-1l-2-47q56-1 194-6t213-5q13 0 39 0t38 0q40 0 78 7t73 24 61 40 42 59 16 78q0 29-9 54t-22 41-36 32-41 25-48 22q88 20 146 76t58 141q0 57-20 102t-53 74-78 48-93 27-100 8q-25 0-75-1t-75-1q-60 0-175 6t-132 6z"
+  menu: {
+    group: "inline", rank: 20,
+    display: {
+      type: "icon",
+      width: 805, height: 1024,
+      path: "M317 869q42 18 80 18 214 0 214-191 0-65-23-102-15-25-35-42t-38-26-46-14-48-6-54-1q-41 0-57 5 0 30-0 90t-0 90q0 4-0 38t-0 55 2 47 6 38zM309 442q24 4 62 4 46 0 81-7t62-25 42-51 14-81q0-40-16-70t-45-46-61-24-70-8q-28 0-74 7 0 28 2 86t2 86q0 15-0 45t-0 45q0 26 0 39zM0 950l1-53q8-2 48-9t60-15q4-6 7-15t4-19 3-18 1-21 0-19v-37q0-561-12-585-2-4-12-8t-25-6-28-4-27-2-17-1l-2-47q56-1 194-6t213-5q13 0 39 0t38 0q40 0 78 7t73 24 61 40 42 59 16 78q0 29-9 54t-22 41-36 32-41 25-48 22q88 20 146 76t58 141q0 57-20 102t-53 74-78 48-93 27-100 8q-25 0-75-1t-75-1q-60 0-175 6t-132 6z"
+    }
   },
   keys: ["Mod-B"]
 })
@@ -54,16 +54,16 @@ EmMark.register("command", "unset", {derive: true, label: "Remove emphasis"})
 // makes the selected content emphasized.
 //
 // **Keybindings:** Mod-I
-//
-// Registers itself in the inline [menu group](#CommandSpec.menuGroup).
 EmMark.register("command", "toggle", {
   derive: true,
   label: "Toggle emphasis",
-  menuGroup: "inline(21)",
-  display: {
-    type: "icon",
-    width: 585, height: 1024,
-    path: "M0 949l9-48q3-1 46-12t63-21q16-20 23-57 0-4 35-165t65-310 29-169v-14q-13-7-31-10t-39-4-33-3l10-58q18 1 68 3t85 4 68 1q27 0 56-1t69-4 56-3q-2 22-10 50-17 5-58 16t-62 19q-4 10-8 24t-5 22-4 26-3 24q-15 84-50 239t-44 203q-1 5-7 33t-11 51-9 47-3 32l0 10q9 2 105 17-1 25-9 56-6 0-18 0t-18 0q-16 0-49-5t-49-5q-78-1-117-1-29 0-81 5t-69 6z"
+  menu: {
+    group: "inline", rank: 21,
+    display: {
+      type: "icon",
+      width: 585, height: 1024,
+      path: "M0 949l9-48q3-1 46-12t63-21q16-20 23-57 0-4 35-165t65-310 29-169v-14q-13-7-31-10t-39-4-33-3l10-58q18 1 68 3t85 4 68 1q27 0 56-1t69-4 56-3q-2 22-10 50-17 5-58 16t-62 19q-4 10-8 24t-5 22-4 26-3 24q-15 84-50 239t-44 203q-1 5-7 33t-11 51-9 47-3 32l0 10q9 2 105 17-1 25-9 56-6 0-18 0t-18 0q-16 0-49-5t-49-5q-78-1-117-1-29 0-81 5t-69 6z"
+    }
   },
   keys: ["Mod-I"]
 })
@@ -85,16 +85,16 @@ CodeMark.register("command", "unset", {derive: true, label: "Remove code style"}
 // styles the selected content as code.
 //
 // **Keybindings:** Mod-`
-//
-// Registers itself in the inline [menu group](#CommandSpec.menuGroup).
 CodeMark.register("command", "toggle", {
   derive: true,
   label: "Toggle code style",
-  menuGroup: "inline(22)",
-  display: {
-    type: "icon",
-    width: 896, height: 1024,
-    path: "M608 192l-96 96 224 224-224 224 96 96 288-320-288-320zM288 192l-288 320 288 320 96-96-224-224 224-224-96-96z"
+  menu: {
+    group: "inline", rank: 22,
+    display: {
+      type: "icon",
+      width: 896, height: 1024,
+      path: "M608 192l-96 96 224 224-224 224 96 96 288-320-288-320zM288 192l-288 320 288 320 96-96-224-224 224-224-96-96z"
+    }
   },
   keys: ["Mod-`"]
 })
@@ -110,14 +110,11 @@ const linkIcon = {
 // selection, from the [active marks](#ProseMirror.activeMarks). Will
 // only [select](#Command.select) itself when there is a link in the
 // selection or active marks.
-//
-// Registers itself in the inline [menu group](#CommandSpec.menuGroup).
 LinkMark.register("command", "unset", {
   derive: true,
   label: "Unlink",
-  menuGroup: "inline(30)",
-  active() { return true },
-  display: linkIcon
+  menu: {group: "inline", rank: 30, display: linkIcon},
+  active() { return true }
 })
 
 // ;; #path=link:set #kind=command
@@ -131,9 +128,8 @@ LinkMark.register("command", "unset", {
 // **`title`**`: string`
 //   : The link's title.
 //
-// Adds itself to the inline [menu group](#CommandSpec.menuGroup). Only selects itself when
-// `unlink` isn't selected, so that only one of the two is visible in
-// the menu at any time.
+// Only selects itself when `unlink` isn't selected, so that only one
+// of the two is visible in the menu at any time.
 LinkMark.register("command", "set", {
   derive: {
     inverseSelect: true,
@@ -143,8 +139,7 @@ LinkMark.register("command", "set", {
     ]
   },
   label: "Add link",
-  menuGroup: "inline(30)",
-  display: linkIcon
+  menu: {group: "inline", rank: 30, display: linkIcon}
 })
 
 // Node types
@@ -161,8 +156,6 @@ LinkMark.register("command", "set", {
 //
 // **`title`**`: string`
 //   : A title for the image.
-//
-// Registers itself in the inline [menu group](#CommandSpec.menuGroup).
 Image.register("command", "insert", {
   derive: {
     params: [
@@ -175,10 +168,9 @@ Image.register("command", "insert", {
     ]
   },
   label: "Insert image",
-  display: {
-    type: "icon",
-    width: 1097, height: 1024,
-    path: "M365 329q0 45-32 77t-77 32-77-32-32-77 32-77 77-32 77 32 32 77zM950 548v256h-804v-109l182-182 91 91 292-292zM1005 146h-914q-7 0-12 5t-5 12v694q0 7 5 12t12 5h914q7 0 12-5t5-12v-694q0-7-5-12t-12-5zM1097 164v694q0 37-26 64t-64 26h-914q-37 0-64-26t-26-64v-694q0-37 26-64t64-26h914q37 0 64 26t26 64z"
+  menu: {
+    group: "insert", rank: 20,
+    display: {type: "label", label: "Image"}
   }
 })
 
@@ -186,16 +178,16 @@ Image.register("command", "insert", {
 // Wrap the selection in a bullet list.
 //
 // **Keybindings:** Alt-Right '*', Alt-Right '-'
-//
-// Registers itself in the block [menu group](#CommandSpec.menuGroup).
 BulletList.register("command", "wrap", {
   derive: {list: true},
   label: "Wrap the selection in a bullet list",
-  menuGroup: "block(40)",
-  display: {
-    type: "icon",
-    width: 768, height: 896,
-    path: "M0 512h128v-128h-128v128zM0 256h128v-128h-128v128zM0 768h128v-128h-128v128zM256 512h512v-128h-512v128zM256 256h512v-128h-512v128zM256 768h512v-128h-512v128z"
+  menu: {
+    group: "block", rank: 40,
+    display: {
+      type: "icon",
+      width: 768, height: 896,
+      path: "M0 512h128v-128h-128v128zM0 256h128v-128h-128v128zM0 768h128v-128h-128v128zM256 512h512v-128h-512v128zM256 256h512v-128h-512v128zM256 768h512v-128h-512v128z"
+    }
   },
   keys: ["Alt-Right '*'", "Alt-Right '-'"]
 })
@@ -204,16 +196,16 @@ BulletList.register("command", "wrap", {
 // Wrap the selection in an ordered list.
 //
 // **Keybindings:** Alt-Right '1'
-//
-// Registers itself in the block [menu group](#CommandSpec.menuGroup).
 OrderedList.register("command", "wrap", {
   derive: {list: true},
   label: "Wrap the selection in an ordered list",
-  menuGroup: "block(41)",
-  display: {
-    type: "icon",
-    width: 768, height: 896,
-    path: "M320 512h448v-128h-448v128zM320 768h448v-128h-448v128zM320 128v128h448v-128h-448zM79 384h78v-256h-36l-85 23v50l43-2v185zM189 590c0-36-12-78-96-78-33 0-64 6-83 16l1 66c21-10 42-15 67-15s32 11 32 28c0 26-30 58-110 112v50h192v-67l-91 2c49-30 87-66 87-113l1-1z"
+  menu: {
+    group: "block", rank: 41,
+    display: {
+      type: "icon",
+      width: 768, height: 896,
+      path: "M320 512h448v-128h-448v128zM320 768h448v-128h-448v128zM320 128v128h448v-128h-448zM79 384h78v-256h-36l-85 23v50l43-2v185zM189 590c0-36-12-78-96-78-33 0-64 6-83 16l1 66c21-10 42-15 67-15s32 11 32 28c0 26-30 58-110 112v50h192v-67l-91 2c49-30 87-66 87-113l1-1z"
+    }
   },
   keys: ["Alt-Right '1'"]
 })
@@ -222,16 +214,16 @@ OrderedList.register("command", "wrap", {
 // Wrap the selection in a block quote.
 //
 // **Keybindings:** Alt-Right '>', Alt-Right '"'
-//
-// Registers itself in the block [menu group](#CommandSpec.menuGroup).
 BlockQuote.register("command", "wrap", {
   derive: true,
   label: "Wrap the selection in a block quote",
-  menuGroup: "block(45)",
-  display: {
-    type: "icon",
-    width: 640, height: 896,
-    path: "M0 448v256h256v-256h-128c0 0 0-128 128-128v-128c0 0-256 0-256 256zM640 320v-128c0 0-256 0-256 256v256h256v-256h-128c0 0 0-128 128-128z"
+  menu: {
+    group: "block", rank: 45,
+    display: {
+      type: "icon",
+      width: 640, height: 896,
+      path: "M0 448v256h256v-256h-128c0 0 0-128 128-128v-128c0 0-256 0-256 256zM640 320v-128c0 0-256 0-256 256v256h256v-256h-128c0 0 0-128 128-128z"
+    }
   },
   keys: ["Alt-Right '>'", "Alt-Right '\"'"]
 })
@@ -286,7 +278,12 @@ for (let i = 1; i <= 10; i++)
     if (i <= type.maxLevel) return {
       derive: {name: "make", attrs: {level: i}},
       label: "Change to heading " + i,
-      keys: [`Mod-H '${i}'`]
+      keys: [`Mod-H '${i}'`],
+      menu: {
+        group: "textblockHeading", rank: 30 + i,
+        display: {type: "label", label: "Level " + i},
+        activeDisplay: "Head " + i
+      }
     }
   })
 
@@ -297,7 +294,12 @@ for (let i = 1; i <= 10; i++)
 Paragraph.register("command", "make", {
   derive: true,
   label: "Change to paragraph",
-  keys: ["Mod-P"]
+  keys: ["Mod-P"],
+  menu: {
+    group: "textblock", rank: 10,
+    display: {type: "label", label: "Plain"},
+    activeDisplay: "Plain"
+  }
 })
 
 // ;; #path=code_block:make #kind=command
@@ -307,7 +309,12 @@ Paragraph.register("command", "make", {
 CodeBlock.register("command", "make", {
   derive: true,
   label: "Change to code block",
-  keys: ["Mod-\\"]
+  keys: ["Mod-\\"],
+  menu: {
+    group: "textblock", rank: 20,
+    display: {type: "label", label: "Code"},
+    activeDisplay: "Code"
+  }
 })
 
 // ;; #path=horizontal_rule:insert #kind=command
@@ -317,22 +324,6 @@ CodeBlock.register("command", "make", {
 HorizontalRule.register("command", "insert", {
   derive: true,
   label: "Insert horizontal rule",
-  keys: ["Mod-Shift--"]
+  keys: ["Mod-Shift--"],
+  menu: {group: "insert", rank: 70, display: {type: "label", label: "Horizontal rule"}}
 })
-
-// Used by the textblockType command
-
-Paragraph.register("textblockMenu", "main", {label: "Normal", rank: 10})
-
-CodeBlock.register("textblockMenu", "main", {label: "Code", rank: 20})
-
-for (let i = 1; i <= 10; i++)
-  Heading.registerComputed("textblockMenu", String(i), type => {
-    if (i <= type.maxLevel) return {label: "Head " + i, attrs: {level: i}, rank: 30 + i}
-  })
-
-// Used by the insert command
-
-Image.register("insertMenu", "main", {label: "Image", command: "insert", rank: 20})
-
-HorizontalRule.register("insertMenu", "main", {label: "Horizontal rule", command: "insert", rank: 70})

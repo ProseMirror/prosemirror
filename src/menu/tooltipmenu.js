@@ -53,10 +53,6 @@ defineOption("tooltipMenu", false, function(pm, value) {
   pm.mod.tooltipMenu = value ? new TooltipMenu(pm, value) : null
 })
 
-function getItems(pm, items) {
-  return Array.isArray(items) ? items.map(getItems.bind(null, pm)) : pm.commands[items]
-}
-
 class TooltipMenu {
   constructor(pm, config) {
     this.pm = pm
@@ -135,7 +131,8 @@ class TooltipMenu {
   }
 
   showLink(link, pos) {
-    let node = elt("div", {class: classPrefix + "-linktext"}, elt("a", {href: link.attrs.href, title: link.attrs.title}, link.attrs.href))
+    let node = elt("div", {class: classPrefix + "-linktext"},
+                   elt("a", {href: link.attrs.href, title: link.attrs.title}, link.attrs.href))
     this.tooltip.open(node, pos)
   }
 
