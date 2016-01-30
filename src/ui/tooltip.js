@@ -43,7 +43,7 @@ export class Tooltip {
       class: prefix,
       style: "display: block; position: absolute"
     }, node))
-    let size = {width: wrap.offsetWidth, height: wrap.offsetHeight}
+    let size = {width: wrap.offsetWidth + 1, height: wrap.offsetHeight}
     wrap.parentNode.removeChild(wrap)
     return size
   }

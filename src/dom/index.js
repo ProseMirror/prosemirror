@@ -13,6 +13,7 @@ export function elt(tag, attrs, ...args) {
 function add(value, target) {
   if (typeof value == "string")
     value = document.createTextNode(value)
+
   if (Array.isArray(value)) {
     for (let i = 0; i < value.length; i++) add(value[i], target)
   } else {

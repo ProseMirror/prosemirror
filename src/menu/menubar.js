@@ -2,7 +2,8 @@ import {defineOption} from "../edit"
 import {elt, insertCSS} from "../dom"
 import {UpdateScheduler} from "../ui/update"
 
-import {defaultMenu} from "./menu"
+import {GroupedMenu} from "./menu"
+import {inlineGroup, insertMenu, textblockMenu, blockGroup, historyGroup} from "./defaultmenu"
 
 const prefix = "ProseMirror-menubar"
 
@@ -33,6 +34,13 @@ defineOption("menuBar", false, function(pm, value) {
   if (pm.mod.menuBar) pm.mod.menuBar.detach()
   pm.mod.menuBar = value ? new MenuBar(pm, value) : null
 })
+
+const defaultMenu = new GroupedMenu([
+  inlineGroup,
+  insertMenu,
+  [textblockMenu, blockGroup],
+  historyGroup
+])
 
 class MenuBar {
   constructor(pm, config) {

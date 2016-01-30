@@ -1,6 +1,6 @@
 import {Tooltip} from "../ui/tooltip"
 import {elt, insertCSS} from "../dom"
-import {defineDefaultParamHandler, withParamHandler, Command} from "../edit"
+import {defineDefaultParamHandler} from "../edit"
 import sortedInsert from "../util/sortedinsert"
 import {copyObj} from "../util/obj"
 import {AssertionError} from "../util/error"
@@ -42,183 +42,10 @@ const prefix = "ProseMirror-menu"
 //     command when the parameter is changed. Currently only works for
 //     `"select"` parameters.
 
-export class Menu {
-  constructor(pm, display, reset) {
-    this.display = display
-    this.stack = []
-    this.pm = pm
-    this.resetHandler = reset
-    this.cssHint = ""
-  }
-
-  show(content, displayInfo) {
-    this.stack.length = 0
-    this.enter(content, displayInfo)
-  }
-
-  reset() {
-    this.stack.length = 0
-    this.resetHandler()
-  }
-
-  enter(content, displayInfo) {
-    let pieces = [], close = false, explore = value => {
-      let added = false
-      if (Array.isArray(value)) {
-        for (let i = 0; i < value.length; i++) added = explore(value[i]) || added
-        if (added) close = true
-      } else if (!value.select || value.select(this.pm)) {
-        if (close) {
-          pieces.push(separator)
-          close = false
-        }
-        pieces.push(value)
-        added = true
-      }
-      return added
-    }
-    explore(content)
-
-    if (!pieces.length) return this.display.clear()
-
-    this.stack.push(pieces)
-    this.draw(displayInfo)
-  }
-
-  get active() {
-    return this.stack.length > 1
-  }
-
-  draw(displayInfo) {
-    let cur = this.stack[this.stack.length - 1]
-    let rendered = elt("div", {class: prefix}, cur.map(item => renderItem(item, this)))
-    if (this.stack.length > 1)
-      this.display.enter(rendered, () => this.leave(), displayInfo)
-    else
-      this.display.show(rendered, displayInfo)
-  }
-
-  leave() {
-    this.stack.pop()
-    if (this.display.leave)
-      this.display.leave()
-    else
-      this.draw()
-  }
-}
-
-export class TooltipDisplay {
-  constructor(tooltip) {
-    this.tooltip = tooltip
-  }
-
-  clear() {
-    this.tooltip.close()
-  }
-
-  show(dom, info) {
-    this.tooltip.open(dom, info)
-  }
-
-  enter(dom, back, info) {
-    let button = elt("div", {class: "ProseMirror-tooltip-back", title: "Back"})
-    button.addEventListener("mousedown", e => {
-      e.preventDefault(); e.stopPropagation()
-      back()
-    })
-    this.show(elt("div", {class: "ProseMirror-tooltip-back-wrapper"}, dom, button), info)
-  }
-}
-
 function title(pm, command) {
   if (!command.label) return null
   let key = command.name && pm.keyForCommand(command.name)
   return key ? command.label + " (" + key + ")" : command.label
-}
-
-function execInMenu(menu, command, params) {
-  withParamHandler((_, command, callback) => {
-    menu.enter(readParams(command, callback))
-  }, () => {
-    command.exec(menu.pm, params)
-  })
-}
-
-function renderIcon(command, menu) {
-  let icon = getIcon(command.name, command.spec.display)
-  if (command.active(menu.pm)) icon.className += " ProseMirror-icon-active"
-  icon.addEventListener("mousedown", e => {
-    e.preventDefault(); e.stopPropagation()
-    execInMenu(menu, command)
-  })
-  return icon
-}
-
-function renderDropDown(item, menu) {
-  let param = item.params[0]
-  let deflt = paramDefault(param, menu.pm, item)
-  if (deflt != null) {
-    let options = param.options.call ? param.options(menu.pm) : param.options
-    for (let i = 0; i < options.length; i++) if (options[i].value === deflt) {
-      deflt = options[i]
-      break
-    }
-  }
-
-  let dom = elt("div", {class: "ProseMirror-dropdown ProseMirror-dropdown-command-" + item.name, title: item.label},
-                !deflt ? (param.defaultLabel || "Select...") : deflt.display ? deflt.display(deflt) : deflt.label)
-  let open = null
-  dom.addEventListener("mousedown", e => {
-    e.preventDefault(); e.stopPropagation()
-    if (open && open()) open = null
-    else open = expandDropDown(menu, item, dom)
-  })
-  return dom
-}
-
-export function expandDropDown(menu, item, dom) {
-  let param = item.params[0], pm = menu.pm
-  let options = param.options.call ? param.options(pm) : param.options
-  let menuDOM = elt("div", {class: "ProseMirror-dropdown-menu " + menu.cssHint}, options.map(o => {
-    let dom = elt("div", null, o.display ? o.display(o) : o.label)
-    dom.addEventListener("mousedown", e => {
-      e.preventDefault()
-      execInMenu(menu, item, [o.value])
-      finish()
-    })
-    return dom
-  }))
-  let pos = dom.getBoundingClientRect(), box = pm.wrapper.getBoundingClientRect()
-  menuDOM.style.left = (pos.left - box.left) + "px"
-  menuDOM.style.top = (pos.bottom - box.top) + "px"
-
-  let done = false
-  function finish() {
-    if (done) return
-    done = true
-    document.body.removeEventListener("mousedown", finish)
-    document.body.removeEventListener("keydown", finish)
-    pm.wrapper.removeChild(menuDOM)
-    return true
-  }
-  document.body.addEventListener("mousedown", finish)
-  document.body.addEventListener("keydown", finish)
-  pm.wrapper.appendChild(menuDOM)
-  return finish
-}
-
-function renderItem(item, menu) {
-  let dom
-  if (item instanceof Command) {
-    var display = item.spec.display
-    if (display.type == "icon") dom = renderIcon(item, menu)
-    else if (display.type == "param") dom = renderDropDown(item, menu)
-    else AssertionError.raise("Command " + item.name + " can not be shown in a menu")
-  } else {
-    dom = item.display(menu)
-  }
-  return elt("span", {class: prefix + "item", title: title(menu.pm, item)}, dom)
-
 }
 
 function paramDefault(param, pm, command) {
@@ -331,39 +158,6 @@ export function readParams(command, callback) {
   }}
 }
 
-const separator = {
-  display() { return elt("span", {class: prefix + "separator"}) }
-}
-
-function menuRank(cmd) {
-  let match = /^[^(]+\((\d+)\)$/.exec(cmd.spec.menuGroup)
-  return match ? +match[1] : 50
-}
-
-function computeMenuGroups(pm) {
-  let groups = Object.create(null)
-  for (let name in pm.commands) {
-    let cmd = pm.commands[name], spec = cmd.spec.menuGroup
-    if (!spec) continue
-    let [group] = /^[^(]+/.exec(spec)
-    sortedInsert(groups[group] || (groups[group] = []), cmd, (a, b) => menuRank(a) - menuRank(b))
-  }
-  pm.mod.menuGroups = groups
-  let clear = () => {
-    pm.mod.menuGroups = null
-    pm.off("commandsChanging", clear)
-  }
-  pm.on("commandsChanging", clear)
-  return groups
-}
-
-const empty = []
-
-export function menuGroups(pm, names) {
-  let groups = pm.mod.menuGroups || computeMenuGroups(pm)
-  return names.map(group => groups[group] || empty)
-}
-
 function tooltipParamHandler(pm, command, callback) {
   let tooltip = new Tooltip(pm.wrapper, "center")
   tooltip.open(paramForm(pm, command, params => {
@@ -415,15 +209,12 @@ export class MenuCommand {
     })
     return dom
   }
-
-  static group(name, options) {
-    return new MenuCommandGroup(name, options)
-  }
 }
 
-class MenuCommandGroup {
+export class MenuCommandGroup {
   constructor(name, options) {
-    this.name = name; this.options = options
+    this.name = name
+    this.options = options
   }
 
   collect(pm) {
@@ -440,71 +231,76 @@ class MenuCommandGroup {
       return new MenuCommand(o.cmd, spec)
     })
   }
-}
-
-let setID = 0
-
-export class ControlSet {
-  constructor(content) {
-    this.content = Array.isArray(content) ? content : [content]
-    this.id = this.content.some(e => e instanceof MenuCommandGroup) && "menuControls" + ++setID
-  }
 
   get(pm) {
-    if (this.id)
-      return pm.cached[this.id] || this.build(pm)
-    else
-      return this.content
+    let groups = pm.mod.menuGroups || this.startGroups(pm)
+    return groups[this.name] || (groups[this.name] = this.collect(pm))
   }
 
-  build(pm) {
-    let result = []
-    this.content.forEach(elt => {
-      if (elt instanceof MenuCommandGroup)
-        result = result.concat(elt.collect(pm))
-      else
-        result.push(elt)
-    })
+  startGroups(pm) {
     let clear = () => {
-      pm.cached[this.id] = null
+      pm.mod.menuGroups = null
       pm.off("commandsChanging", clear)
     }
     pm.on("commandsChanging", clear)
-    return pm.cached[this.id] = result
+    return pm.mod.menuGroups = Object.create(null)
   }
+}
+
+function getElements(content, pm) {
+  let result
+  for (let i = 0; i < content.length; i++) {
+    let cur = content[i]
+    if (cur instanceof MenuCommandGroup) {
+      let elts = cur.get(pm)
+      if (content.length == 1) return elts
+      else result = (result || content.slice(0, i)).concat(elts)
+    } else if (result) {
+      result.push(cur)
+    }
+  }
+  return result || content
+}
+
+function ensureArray(value) {
+  return Array.isArray(value) ? value : [value]
+}
+
+export function separator() {
+  return elt("span", {class: prefix + "separator"})
 }
 
 export class GroupedMenu {
   constructor(groups) {
-    this.groups = groups.map(elt => new ControlSet(elt))
+    this.groups = groups.map(ensureArray)
   }
 
   render(pm) {
-    let result = [], needSep = false
+    let result = document.createDocumentFragment(), needSep = false
     for (let i = 0; i < this.groups.length; i++) {
-      let items = this.groups[i].get(pm), added = false
+      let items = getElements(this.groups[i], pm), added = false
       for (let j = 0; j < items.length; j++) {
         let rendered = items[j].render(pm)
         if (rendered) {
-          if (!added && needSep) result.push(elt("span", {class: prefix + "separator"}))
-          result.push(elt("span", {class: prefix + "item"}, rendered))
+          if (!added && needSep) result.appendChild(separator())
+          result.appendChild(elt("span", {class: prefix + "item"}, rendered))
           added = true
         }
       }
       if (added) needSep = true
     }
-    if (result.length) return elt("div", null, result)
+    if (result.childNodes.length) return result
   }
 }
 
 export class Dropdown {
   constructor(options, content) {
     this.options = options || {}
-    this.content = new ControlSet(content)
+    this.content = ensureArray(content)
   }
 
   render(pm) {
-    if (this.content.get(pm).length == 0) return
+    if (getElements(this.content, pm).length == 0) return
 
     let display = (this.options.displayActive && findActiveIn(this, pm)) || this.options.display
     let dom = elt("div", {class: prefix + "-dropdown " + (this.options.class || ""),
@@ -520,7 +316,7 @@ export class Dropdown {
   }
 
   expand(pm, dom) {
-    let rendered = renderDropdownItems(this.content.get(pm), pm)
+    let rendered = renderDropdownItems(getElements(this.content, pm), pm)
     let menuDOM = elt("div", {class: prefix + "-dropdown-menu " + (this.options.className || "")},
                       rendered)
 
@@ -555,7 +351,7 @@ function renderDropdownItems(items, pm) {
 }
 
 function findActiveIn(element, pm) {
-  let items = element.content.get(pm)
+  let items = getElements(element.content, pm)
   for (let i = 0; i < items.length; i++) {
     let cur = items[i]
     if (cur instanceof MenuCommand) {
@@ -571,11 +367,11 @@ function findActiveIn(element, pm) {
 export class DropdownSubmenu {
   constructor(options, content) {
     this.options = options || {}
-    this.content = new ControlSet(content)
+    this.content = ensureArray(content)
   }
 
   render(pm) {
-    let items = this.content.get(pm)
+    let items = getElements(this.content, pm)
     if (!items.length) return
 
     let label = elt("div", {class: prefix + "-submenu-label"}, this.options.label)
@@ -589,24 +385,13 @@ export class DropdownSubmenu {
   }
 }
 
-export const defaultMenu = new GroupedMenu([
-  MenuCommand.group("inline"),
-  new Dropdown({display: "Insert"}, MenuCommand.group("insert")),
-  [new Dropdown({display: "Type..", displayActive: true, class: prefix + "-dropdown-textblock"},
-                [MenuCommand.group("textblock"),
-                 new DropdownSubmenu({label: "Heading"}, MenuCommand.group("textblockHeading"))]),
-   MenuCommand.group("block")
-  ],
-  MenuCommand.group("history")
-])
-
-// FIXME check for obsolete styles
 insertCSS(`
 
 .${prefix} {
   margin: 0 -4px;
   line-height: 1;
 }
+
 .ProseMirror-tooltip .${prefix} {
   width: -webkit-fit-content;
   width: fit-content;
@@ -644,10 +429,6 @@ insertCSS(`
   position: absolute;
   right: 2px;
   top: calc(50% - 2px);
-}
-
-.${prefix}-dropdown-textblock {
-  min-width: 3em;
 }
 
 .${prefix}-dropdown-menu, .${prefix}-submenu {
