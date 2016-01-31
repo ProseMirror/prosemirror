@@ -61,13 +61,13 @@ export class SelectionState {
   }
 
   domChanged() {
-    let sel = getSelection()
+    let sel = window.getSelection()
     return sel.anchorNode != this.lastAnchorNode || sel.anchorOffset != this.lastAnchorOffset ||
       sel.focusNode != this.lastHeadNode || sel.focusOffset != this.lastHeadOffset
   }
 
   storeDOMState() {
-    let sel = getSelection()
+    let sel = window.getSelection()
     this.lastAnchorNode = sel.anchorNode; this.lastAnchorOffset = sel.anchorOffset
     this.lastHeadNode = sel.focusNode; this.lastHeadOffset = sel.focusOffset
   }
@@ -75,7 +75,7 @@ export class SelectionState {
   readUpdate() {
     if (this.pm.input.composing || !hasFocus(this.pm) || !this.domChanged()) return false
 
-    let sel = getSelection(), doc = this.pm.doc
+    let sel = window.getSelection(), doc = this.pm.doc
     let anchor = posFromDOM(this.pm, sel.anchorNode, sel.anchorOffset)
     let head = posFromDOM(this.pm, sel.focusNode, sel.focusOffset)
     let newSel = findSelectionNear(doc, head, this.range.head && this.range.head.cmp(head) < 0 ? -1 : 1)
@@ -285,7 +285,7 @@ export class NodeSelection extends Selection {
 
 export function rangeFromDOMLoose(pm) {
   if (!hasFocus(pm)) return null
-  let sel = getSelection()
+  let sel = window.getSelection()
   return new TextSelection(posFromDOM(pm, sel.anchorNode, sel.anchorOffset, true),
                            posFromDOM(pm, sel.focusNode, sel.focusOffset, true))
 }
