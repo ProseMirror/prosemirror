@@ -270,7 +270,7 @@ export function setDOMSelectionToPos(pm, pos) {
   let range = document.createRange()
   range.setEnd(node, offset)
   range.setStart(node, offset)
-  let sel = getSelection()
+  let sel = window.getSelection()
   sel.removeAllRanges()
   sel.addRange(range)
 }

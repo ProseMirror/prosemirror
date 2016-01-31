@@ -53,7 +53,7 @@ export class Input {
       } else { // Toggle selection to force end of composition
         this.composing = null
         this.skipInput++
-        let sel = getSelection()
+        let sel = window.getSelection()
         if (sel.rangeCount) {
           let range = sel.getRangeAt(0)
           sel.removeAllRanges()

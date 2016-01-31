@@ -81,7 +81,7 @@ function findDiffEndConstrained(a, b, start) {
 // Text-only queries for composition events
 
 export function textContext(data) {
-  let range = getSelection().getRangeAt(0)
+  let range = window.getSelection().getRangeAt(0)
   let start = range.startContainer, end = range.endContainer
   if (start == end && start.nodeType == 3) {
     let value = start.nodeValue, lead = range.startOffset, end = range.endOffset
