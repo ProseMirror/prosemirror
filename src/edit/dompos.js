@@ -149,7 +149,7 @@ export function scrollIntoView(pm, pos) {
     let rect = atBody ? windowRect() : parent.getBoundingClientRect()
     let moveX = 0, moveY = 0
     if (coords.top < rect.top)
-      moveY =  -(rect.top - coords.top + scrollMargin)
+      moveY = -(rect.top - coords.top + scrollMargin)
     else if (coords.bottom > rect.bottom)
       moveY = coords.bottom - rect.bottom + scrollMargin
     if (coords.left < rect.left)
