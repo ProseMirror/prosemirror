@@ -5,28 +5,28 @@
 const methods = {
   // :: (type: string, handler: (...args: [any])) #path=EventMixin.on
   // Register an event handler for the given event type.
-  on(type, f) {
+  on(type, handler) {
     let map = this._handlers || (this._handlers = {})
     let arr = map[type] || (map[type] = [])
-    arr.push(f)
+    arr.push(handler)
   },
 
   // :: (type: string, handler: (...args: [any])) #path=EventMixin.off
   // Unregister an event handler for the given event type.
-  off(type, f) {
+  off(type, handler) {
     let arr = this._handlers && this._handlers[type]
     if (arr) for (let i = 0; i < arr.length; ++i)
-      if (arr[i] == f) { arr.splice(i, 1); break }
+      if (arr[i] == handler) { arr.splice(i, 1); break }
   },
 
   // :: (type: string, ...args: [any]) #path=EventMixin.signal
   // Signal an event of the given type, passing any number of
   // arguments. Will call the handlers for the event, passing them the
   // arguments.
-  signal(type, ...values) {
+  signal(type, ...args) {
     let arr = this._handlers && this._handlers[type]
     if (arr) for (let i = 0; i < arr.length; ++i)
-      arr[i](...values)
+      arr[i](...args)
   },
 
   // :: (type: string, ...args: [any]) #path=EventMixin.signalHandleable
@@ -35,10 +35,10 @@ const methods = {
   // returns something that is not the value `false`. When that
   // happens, the return value of that handler is returned. If that
   // does not happen, `false` is returned.
-  signalHandleable(type, ...values) {
+  signalHandleable(type, ...args) {
     let arr = this._handlers && this._handlers[type]
     if (arr) for (let i = 0; i < arr.length; ++i) {
-      let result = arr[i](...values)
+      let result = arr[i](...args)
       if (result !== false) return result
     }
     return false
