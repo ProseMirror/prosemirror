@@ -206,9 +206,9 @@ export class NodeType extends SchemaItem {
     return true
   }
 
-  // :: (Mark) → bool
+  // :: (MarkType) → bool
   // Test whether this node type can contain children with the given
-  // mark.
+  // mark type.
   canContainMark(mark) {
     let contains = this.containsMarks
     if (contains === true) return true
@@ -260,7 +260,7 @@ export class NodeType extends SchemaItem {
     else return super.computeAttrs(attrs, content)
   }
 
-  // :: (?Object, ?Fragment, ?[Mark]) → Node
+  // :: (?Object, ?union<Fragment, Node, [Node]>, ?[Mark]) → Node
   // Create a `Node` of this type. The given attributes are
   // checked and defaulted (you can pass `null` to use the type's
   // defaults entirely, if no required attributes exist). `content`
@@ -445,7 +445,7 @@ export class MarkType extends SchemaItem {
     return set
   }
 
-  // :: ([Mark]) → bool
+  // :: ([Mark]) → ?Mark
   // Tests whether there is a mark of this type in the given set.
   isInSet(set) {
     for (let i = 0; i < set.length; i++)
@@ -633,9 +633,9 @@ export class Schema {
     }
   }
 
-  // :: (string, (value: *, source: union<NodeType, MarkType>, name: string), ?bool)
+  // :: (string, (name: string, value: *, source: union<NodeType, MarkType>, name: string))
   // Retrieve all registered items under the given name from this
-  // schema. The given function will be called with each item, the
+  // schema. The given function will be called with the name, each item, the
   // element—node type or mark type—that it was associated with, and
   // that element's name in the schema.
   registry(namespace, f) {
