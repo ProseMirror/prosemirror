@@ -196,7 +196,9 @@ export class Node {
 
   // :: ([number]) → Node
   // Get the descendant node at the given path, which is interpreted
-  // as a series of offsets into successively deeper nodes.
+  // as a series of offsets into successively deeper nodes. For example,
+  // if a node contains a paragraph and a list with 3 items, the path
+  // to the first item in the list would be [1, 0].
   path(path) {
     for (var i = 0, node = this; i < path.length; node = node.child(path[i]), i++) {}
     return node
