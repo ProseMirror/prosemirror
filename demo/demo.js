@@ -7,6 +7,7 @@ import "../src/inputrules/autoinput"
 import "../src/menu/tooltipmenu"
 import "../src/menu/menubar"
 import "../src/collab"
+import "../src/ui/prompt"
 
 let te = document.querySelector("#content")
 te.style.display = "none"

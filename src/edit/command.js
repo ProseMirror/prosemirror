@@ -8,7 +8,6 @@ import {NamespaceError, AssertionError} from "../util/error"
 import {copyObj} from "../util/obj"
 
 import {baseCommands} from "./base_commands"
-import {defaultParamPrompt} from "./prompt"
 
 // ;; A command is a named piece of functionality that can be bound to
 // a key, shown in the menu, or otherwise exposed to the user.
@@ -32,20 +31,22 @@ export class Command {
   // :: (ProseMirror, ?[any]) → ?bool
   // Execute this command. If the command takes
   // [parameters](#Command.params), they can be passed as second
-  // argument here, or omitted, in which case a [parameter
-  // handler](#commandParamHandler) will be called to prompt the user
-  // for values.
+  // argument here, or otherwise the user will be prompted for them
+  // using the value of the `commandParamPrompt` option.
   //
   // Returns the value returned by the command spec's [`run`
-  // method](#CommandSpec.run), or `false` if the command could not be
-  // ran.
+  // method](#CommandSpec.run), or a `ParamPrompt` instance if the
+  // command is ran asynchronously through a prompt.
   exec(pm, params) {
     let run = this.spec.run
-    if (!this.params.length) return run.call(this.self, pm)
-    if (params) return run.call(this.self, pm, ...params)
-    let handler = pm.options.commandParamPrompt || defaultParamPrompt
-    if (!handler) return false
-    handler(pm, this)
+    if (!params) {
+      if (!this.params.length) return run.call(this.self, pm)
+      return new pm.options.commandParamPrompt(pm, this).open()
+    } else {
+      if (this.params.length != (params ? params.length : 0))
+        AssertionError.raise("Invalid amount of parameters for command " + this.name)
+      return run.call(this.self, pm, ...params)
+    }
   }
 
   // :: (ProseMirror) → bool
@@ -235,6 +236,11 @@ CommandSet.default = CommandSet.empty.add("schema").add(baseCommands)
 // A function that, given an editor instance (and a `this` bound to
 // the command's source item), tries to derive an initial value for
 // the parameter, or return null if it can't.
+
+// :: (any) → ?string #path=CommandParam.validate
+// An optional function that is called to validate values provided for
+// this parameter. Should return a falsy value when the value is
+// valid, and an error message when it is not.
 
 function deriveKeymap(pm) {
   let bindings = {}, platform = browser.mac ? "mac" : "pc"

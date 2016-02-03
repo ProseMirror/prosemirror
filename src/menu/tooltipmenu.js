@@ -5,8 +5,7 @@ import {Tooltip} from "../ui/tooltip"
 import {UpdateScheduler} from "../ui/update"
 
 import {separator} from "./menu" // FIXME
-import {GroupedMenu} from "./menu"
-import {inlineGroup, insertMenu, textblockMenu, blockGroup} from "./defaultmenu"
+import {GroupedMenu, inlineGroup, insertMenu, textblockMenu, blockGroup} from "./menu"
 
 const classPrefix = "ProseMirror-tooltipmenu"
 
@@ -174,7 +173,7 @@ function topOfNodeSelection(pm) {
 insertCSS(`
 
 .${classPrefix}-linktext a {
-  color: white;
+  color: #444;
   text-decoration: none;
   padding: 0 5px;
 }

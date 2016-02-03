@@ -5,40 +5,17 @@ import {AssertionError} from "../util/error"
 
 import {getIcon} from "./icons"
 
+// !! This module defines a number of building blocks for ProseMirror
+// menus, as consumed by the `menu/menubar` and `menu/tooltipmenu`
+// modules.
+//
+// The types here aren't the only thing you can display in your menu.
+// Anything that has a `render` method taking a `ProseMirror` instance
+// and returning a [DOM
+// node](https://developer.mozilla.org/en-US/docs/Web/API/Node) can be
+// put into a menu structure.
+
 const prefix = "ProseMirror-menu"
-
-// ;; #path=CommandSpec #kind=interface #noAnchor
-// The `menu` module gives meaning to two additional properties of
-// [command specs](#CommandSpec).
-
-// :: string #path=CommandSpec.menuGroup
-//
-// Adds the command to the menugroup with the given name. The value
-// may either be just a name (for example `"inline"` or `"block"`), or
-// a name followed by a parenthesized rank (`"inline(40)"`) to control
-// the order in which the commands appear in the group (from low to
-// high, with 50 as default rank).
-
-// :: Object #path=CommandSpec.display
-//
-// Determines how a command is shown in the menu. The object should
-// have a `type` property, which picks a style of display. These types
-// are supported:
-//
-// **`"icon"`**
-//   : Show the command as an icon. The object may have `{path, width,
-//     height}` properties, where `path` is an [SVG path
-//     spec](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/d),
-//     and `width` and `height` provide the viewbox in which that path
-//     exists. Alternatively, it may have a `text` property specifying
-//     a string of text that makes up the icon, with an optional
-//     `style` property giving additional CSS styling for the text.
-//
-// **`"param"`**
-//   : Render command based on its first and only
-//     [parameter](#CommandSpec.params), and immediately execute the
-//     command when the parameter is changed. Currently only works for
-//     `"select"` parameters.
 
 function title(pm, command) {
   if (!command.label) return null
@@ -46,16 +23,25 @@ function title(pm, command) {
   return key ? command.label + " (" + key + ")" : command.label
 }
 
+// ;; Wraps a [command](#Command) so that it can be rendered in a
+// menu.
 export class MenuCommand {
+  // :: (union<Command, string>, MenuCommandSpec)
   constructor(command, options) {
     this.command_ = command
     this.options = options
   }
 
+  // :: Command
+  // Retrieve the command associated with this object.
   command(pm) {
     return typeof this.command_ == "string" ? pm.commands[this.command_] : this.command_
   }
 
+  // :: (ProseMirror) → DOMNode
+  // Renders the command according to its [display
+  // spec](#MenuCommandSpec.display), and adds an event handler which
+  // executes the command when the representation is clicked.
   render(pm) {
     let cmd = this.command(pm)
     // FIXME allow configuration over select behavior
@@ -70,7 +56,7 @@ export class MenuCommand {
       dom = getIcon(cmd.name, disp)
       if (cmd.active(pm)) dom.className += " ProseMirror-icon-active"
     } else if (disp.type == "label") {
-      dom = elt("div", null, disp.label)
+      dom = elt("div", null, disp.label || cmd.spec.label)
     } else {
       AssertionError.raise("Unsupported command display style: " + disp.type)
     }
@@ -79,14 +65,19 @@ export class MenuCommand {
     if (this.options.css) dom.style.cssText += this.options.css
     dom.addEventListener("mousedown", e => {
       e.preventDefault(); e.stopPropagation()
-      pm.signal("menuReset")
+      pm.signal("interaction")
       cmd.exec(pm, null, dom)
     })
     return dom
   }
 }
 
+// ;; Represents a [group](#MenuCommandSpec.group) of commands, as
+// they appear in the editor's schema.
 export class MenuCommandGroup {
+  // :: (string, ?MenuCommandSpec)
+  // Create a group for the given group name, optionally adding or
+  // overriding fields in the commands' [specs](#MenuCommandSpec).
   constructor(name, options) {
     this.name = name
     this.options = options
@@ -107,6 +98,8 @@ export class MenuCommandGroup {
     })
   }
 
+  // :: (ProseMirror) → [MenuCommand]
+  // Get the group of matching commands in the given editor.
   get(pm) {
     let groups = pm.mod.menuGroups || this.startGroups(pm)
     return groups[this.name] || (groups[this.name] = this.collect(pm))
@@ -139,10 +132,6 @@ function getElements(content, pm) {
 
 function ensureArray(value) {
   return Array.isArray(value) ? value : [value]
-}
-
-export function separator() {
-  return elt("span", {class: prefix + "separator"})
 }
 
 export class GroupedMenu {
@@ -201,18 +190,13 @@ export class Dropdown {
     function finish() {
       if (done) return
       done = true
-      document.body.removeEventListener("mousedown", finish)
-      document.body.removeEventListener("keydown", finish)
-      pm.off("menuReset", finish)
+      pm.off("interaction", finish)
       pm.wrapper.removeChild(menuDOM)
       return true
     }
-    pm.signal("menuReset")
+    pm.signal("interaction")
     pm.wrapper.appendChild(menuDOM)
-
-    document.body.addEventListener("mousedown", finish)
-    document.body.addEventListener("keydown", finish)
-    pm.on("menuReset", finish)
+    pm.on("interaction", finish)
     return finish
   }
 }
@@ -262,7 +246,75 @@ export class DropdownSubmenu {
   }
 }
 
+// :: () → DOMNode
+// Create the default menu separator.
+export function separator() {
+  return elt("span", {class: prefix + "separator"})
+}
+
+// ;; #path=CommandSpec #kind=interface #noAnchor
+// The `menu` module gives meaning to an additional property in
+// [command specs](#CommandSpec).
+
+// :: MenuCommandSpec #path=CommandSpec.menu
+// Adds the command to a menu group, so that it is picked up by
+// `MenuCommandGroup` objects with the matching
+// [name](#MenuCommandSpec.name).
+
+// ;; #path=MenuCommandSpec #kind=interface
+// Configures the way a command shows up in a menu, when wrapped in a
+// `MenuCommand`.
+
+// :: string #path=MenuCommandSpec.group
+// Identifies the group this command should be added to (for example
+// `"inline"` or `"block"`). Only meaningful when associated with a
+// `CommandSpec` (as opposed to passed directly to `MenuCommand`).
+
+// :: number #path=MenuCommandSpec.rank
+// Determines the command's position in its group (lower ranks come
+// first). Only meaningful in a `CommandSpec`.
+
+// :: Object #path=MenuCommandSpec.display
+// Determines how the command is shown in the menu. The object should
+// have a `type` property, which picks a [style of display](#FIXME).
+// These types are supported by default:
+//
+// **`"icon"`**
+//   : Show the command as an icon. The object may have `{path, width,
+//     height}` properties, where `path` is an [SVG path
+//     spec](https://developer.mozilla.org/en-US/docs/Web/SVG/Attribute/d),
+//     and `width` and `height` provide the viewbox in which that path
+//     exists. Alternatively, it may have a `text` property specifying
+//     a string of text that makes up the icon, with an optional
+//     `style` property giving additional CSS styling for the text.
+//
+// **`"label"`**
+//   : Render the command as a label. Mostly useful for commands
+//     wrapped in a [drop-down](#Dropdown) or similar menu. The object
+//     should have a `label` property providing the text to display.
+
+// :: string #path=MenuCommandSpec.class
+// Optionally adds a CSS class to the command's DOM representation.
+
+// :: string #path=MenuCommandSpec.css
+// Optionally adds a string of inline CSS to the command's DOM
+// representation.
+
+export const inlineGroup = new MenuCommandGroup("inline")
+export const insertMenu = new Dropdown({display: "Insert"}, new MenuCommandGroup("insert"))
+export const textblockMenu = new Dropdown(
+  {display: "Type..", displayActive: true, class: "ProseMirror-textblock-dropdown"},
+  [new MenuCommandGroup("textblock"),
+   new DropdownSubmenu({label: "Heading"}, new MenuCommandGroup("textblockHeading"))]
+)
+export const blockGroup = new MenuCommandGroup("block")
+export const historyGroup = new MenuCommandGroup("history")
+
 insertCSS(`
+
+.ProseMirror-textblock-dropdown {
+  min-width: 3em;
+}
 
 .${prefix} {
   margin: 0 -4px;

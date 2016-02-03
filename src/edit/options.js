@@ -1,5 +1,6 @@
 import {defaultSchema} from "../model"
 import {AssertionError} from "../util/error"
+import {ParamPrompt} from "../ui/prompt"
 
 import {CommandSet, updateCommands} from "./command"
 
@@ -61,13 +62,11 @@ defineOption("historyEventDelay", 500)
 // in the menus). Defaults to `CommandSet.default`.
 defineOption("commands", CommandSet.default, updateCommands)
 
-defineOption("promptFunction", null)
-
-// :: (pm: ProseMirror, cmd: Command, callback: (?[any])) #path=commandParamHandler #kind=CommandParamHandler
-// The handler used to prompt the user for [command
-// parameters](#CommandParam). Null (the default) means to use the
-// [default handler](#defineDefaultParamHandler).
-defineOption("commandParamHandler", null)
+// :: ParamPrompt #path=commandParamPrompt #kind=option
+// A default [parameter prompting](#ui/prompt) class to use when a
+// command is [executed](#ProseMirror.execCommand) without providing
+// parameters.
+defineOption("commandParamPrompt", ParamPrompt)
 
 // :: ?string #path=label #kind=option
 // The label of the editor. When set, the editable DOM node gets an

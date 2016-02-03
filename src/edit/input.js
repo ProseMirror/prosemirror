@@ -118,6 +118,12 @@ export function dispatchKey(pm, name, e) {
 }
 
 handlers.keydown = (pm, e) => {
+  // :: () #path=ProseMirror#events#interaction
+  // Fired when the user interacts with the editor, for example by
+  // clicking on it or pressing a key while it is focused. Mostly
+  // useful for closing or resetting transient UI state such as open
+  // menus.
+  pm.signal("interaction")
   if (e.keyCode == 16) pm.input.shiftKey = true
   if (pm.input.composing) return
   let name = Keymap.keyName(e)
@@ -186,6 +192,7 @@ function handleTripleClick(pm, e) {
 }
 
 handlers.mousedown = (pm, e) => {
+  pm.signal("interaction")
   let now = Date.now(), doubleClick = now - lastClick < 500, tripleClick = now - oneButLastClick < 600
   oneButLastClick = lastClick
   lastClick = now

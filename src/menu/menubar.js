@@ -2,8 +2,7 @@ import {defineOption} from "../edit"
 import {elt, insertCSS} from "../dom"
 import {UpdateScheduler} from "../ui/update"
 
-import {GroupedMenu} from "./menu"
-import {inlineGroup, insertMenu, textblockMenu, blockGroup, historyGroup} from "./defaultmenu"
+import {GroupedMenu, inlineGroup, insertMenu, textblockMenu, blockGroup, historyGroup} from "./menu"
 
 const prefix = "ProseMirror-menubar"
 
