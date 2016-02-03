@@ -245,8 +245,9 @@ export class ProseMirror {
   }
 
   startOperation() {
-    this.sel.beforeStartOp()
     this.operation = new Operation(this)
+    if (this.sel.beforeStartOp()) this.operation.sel = this.sel.range
+
     if (!this.flushScheduled) {
       requestAnimationFrame(() => {
         this.flushScheduled = false

@@ -173,6 +173,7 @@ export class SelectionState {
     if (this.pollState == "update" && this.readUpdate()) {
       clearTimeout(this.pollTimeout)
       this.stopPollingForUpdate()
+      return true
     } else {
       this.syncDOM()
     }
