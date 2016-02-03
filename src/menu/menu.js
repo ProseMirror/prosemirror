@@ -1,6 +1,4 @@
-import {Tooltip} from "../ui/tooltip"
 import {elt, insertCSS} from "../dom"
-import {defineDefaultParamHandler} from "../edit"
 import sortedInsert from "../util/sortedinsert"
 import {copyObj} from "../util/obj"
 import {AssertionError} from "../util/error"
@@ -48,129 +46,6 @@ function title(pm, command) {
   return key ? command.label + " (" + key + ")" : command.label
 }
 
-function paramDefault(param, pm, command) {
-  if (param.prefill) {
-    let prefill = param.prefill.call(command.self, pm)
-    if (prefill != null) return prefill
-  }
-  return param.default
-}
-
-// :: Object<{render: (param: CommandParam, value: any) → DOMNode, read: (node: DOMNode) → any}>
-// A collection of default renderers and readers for [parameter
-// types](#CommandParam.type), which [parameter
-// handlers](#commandParamHandler) can optionally use to prompt for
-// parameters. `render` should create a form field for the parameter,
-// and `read` should, given that field, return its value.
-export const paramTypes = Object.create(null)
-
-paramTypes.text = {
-  render(param, value) {
-    return elt("input", {type: "text",
-                         placeholder: param.label,
-                         value,
-                         autocomplete: "off"})
-  },
-  read(dom) {
-    return dom.value
-  }
-}
-
-paramTypes.select = {
-  render(param, value) {
-    let options = param.options.call ? param.options(this) : param.options
-    return elt("select", null, options.map(o => elt("option", {value: o.value, selected: o.value == value ? "true" : null}, o.label)))
-  },
-  read(dom) {
-    return dom.value
-  }
-}
-
-function buildParamForm(pm, command) {
-  let fields = command.params.map((param, i) => {
-    if (!(param.type in paramTypes))
-      AssertionError.raise("Unsupported parameter type: " + param.type)
-    let field = paramTypes[param.type].render.call(pm, param, paramDefault(param, pm, command))
-    field.setAttribute("data-field", i)
-    return elt("div", null, field)
-  })
-  return elt("form", null, fields)
-}
-
-function gatherParams(pm, command, form) {
-  let bad = false
-  let params = command.params.map((param, i) => {
-    let dom = form.querySelector("[data-field=\"" + i + "\"]")
-    let val = paramTypes[param.type].read.call(pm, dom)
-    if (val) return val
-    if (param.default == null) bad = true
-    else return paramDefault(param, pm, command)
-  })
-  return bad ? null : params
-}
-
-function paramForm(pm, command, callback) {
-  let form = buildParamForm(pm, command), done = false
-
-  let finish = result => {
-    if (!done) {
-      done = true
-      callback(result)
-    }
-  }
-
-  let submit = () => {
-    // FIXME error messages
-    finish(gatherParams(pm, command, form))
-  }
-  form.addEventListener("submit", e => {
-    e.preventDefault()
-    submit()
-  })
-  form.addEventListener("keydown", e => {
-    if (e.keyCode == 27) {
-      finish(null)
-    } else if (e.keyCode == 13 && !(e.ctrlKey || e.metaKey || e.shiftKey)) {
-      e.preventDefault()
-      submit()
-    }
-  })
-  // FIXME too hacky?
-  setTimeout(() => {
-    let input = form.querySelector("input, textarea")
-    if (input) input.focus()
-  }, 20)
-
-  return form
-}
-
-export function readParams(command, callback) {
-  return {display(menu) {
-    return paramForm(menu.pm, command, params => {
-      menu.pm.focus()
-      if (params) {
-        callback(params)
-        menu.reset()
-      } else {
-        menu.leave()
-      }
-    })
-  }}
-}
-
-function tooltipParamHandler(pm, command, callback) {
-  let tooltip = new Tooltip(pm.wrapper, "center")
-  tooltip.open(paramForm(pm, command, params => {
-    pm.focus()
-    tooltip.close()
-    callback(params)
-  }))
-}
-
-defineDefaultParamHandler(tooltipParamHandler, false)
-
-/// -------- NEW ----------
-
 export class MenuCommand {
   constructor(command, options) {
     this.command_ = command
@@ -205,7 +80,7 @@ export class MenuCommand {
     dom.addEventListener("mousedown", e => {
       e.preventDefault(); e.stopPropagation()
       pm.signal("menuReset")
-      cmd.exec(pm)
+      cmd.exec(pm, null, dom)
     })
     return dom
   }
@@ -317,7 +192,9 @@ export class Dropdown {
 
   expand(pm, dom) {
     let rendered = renderDropdownItems(getElements(this.content, pm), pm)
-    let menuDOM = elt("div", {class: prefix + "-dropdown-menu " + (this.options.className || "")},
+    let box = dom.getBoundingClientRect(), outer = pm.wrapper.getBoundingClientRect()
+    let menuDOM = elt("div", {class: prefix + "-dropdown-menu " + (this.options.className || ""),
+                              style: "left: " + (box.left - outer.left) + "px; top: " + (box.bottom - outer.top) + "px"},
                       rendered)
 
     let done = false
@@ -327,11 +204,11 @@ export class Dropdown {
       document.body.removeEventListener("mousedown", finish)
       document.body.removeEventListener("keydown", finish)
       pm.off("menuReset", finish)
-      dom.removeChild(menuDOM)
+      pm.wrapper.removeChild(menuDOM)
       return true
     }
     pm.signal("menuReset")
-    dom.appendChild(menuDOM)
+    pm.wrapper.appendChild(menuDOM)
 
     document.body.addEventListener("mousedown", finish)
     document.body.addEventListener("keydown", finish)
@@ -435,13 +312,11 @@ insertCSS(`
   position: absolute;
   background: white;
   color: #666;
-  border: 1px solid #ddd;
+  border: 1px solid #aaa;
   padding: 2px;
 }
 
 .${prefix}-dropdown-menu {
-  top: 100%;
-  left: 0;
   z-index: 15;
   min-width: 6em;
 }

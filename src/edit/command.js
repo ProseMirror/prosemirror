@@ -8,6 +8,7 @@ import {NamespaceError, AssertionError} from "../util/error"
 import {copyObj} from "../util/obj"
 
 import {baseCommands} from "./base_commands"
+import {defaultParamPrompt} from "./prompt"
 
 // ;; A command is a named piece of functionality that can be bound to
 // a key, shown in the menu, or otherwise exposed to the user.
@@ -42,11 +43,9 @@ export class Command {
     let run = this.spec.run
     if (!this.params.length) return run.call(this.self, pm)
     if (params) return run.call(this.self, pm, ...params)
-    let handler = pm.options.commandParamHandler || defaultParamHandler
+    let handler = pm.options.commandParamPrompt || defaultParamPrompt
     if (!handler) return false
-    handler(pm, this, params => {
-      if (params) run.call(this.self, pm, ...params)
-    })
+    handler(pm, this)
   }
 
   // :: (ProseMirror) → bool
@@ -236,19 +235,6 @@ CommandSet.default = CommandSet.empty.add("schema").add(baseCommands)
 // A function that, given an editor instance (and a `this` bound to
 // the command's source item), tries to derive an initial value for
 // the parameter, or return null if it can't.
-
-let defaultParamHandler = null
-
-// :: ((pm: ProseMirror, cmd: Command, callback: (?[any])), bool)
-// Register a default [parameter handler](#commandParamHandler), which
-// is a function that prompts the user to enter values for a command's
-// [parameters](#CommandParam), and calls a callback with the values
-// received. If `override` is set to false, the new handler will be
-// ignored if another handler has already been defined.
-export function defineDefaultParamHandler(handler, override = true) {
-  if (!defaultParamHandler || override)
-    defaultParamHandler = handler
-}
 
 function deriveKeymap(pm) {
   let bindings = {}, platform = browser.mac ? "mac" : "pc"

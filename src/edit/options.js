@@ -61,6 +61,8 @@ defineOption("historyEventDelay", 500)
 // in the menus). Defaults to `CommandSet.default`.
 defineOption("commands", CommandSet.default, updateCommands)
 
+defineOption("promptFunction", null)
+
 // :: (pm: ProseMirror, cmd: Command, callback: (?[any])) #path=commandParamHandler #kind=CommandParamHandler
 // The handler used to prompt the user for [command
 // parameters](#CommandParam). Null (the default) means to use the

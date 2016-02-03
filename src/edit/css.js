@@ -97,4 +97,45 @@ li.ProseMirror-selectednode:after {
   pointer-events: none;
 }
 
+.ProseMirror-prompt {
+  background: white;
+  padding: 2px 6px 2px 15px;
+  border: 1px solid silver;
+  position: absolute;
+  border-radius: 2px;
+  z-index: 11;
+}
+
+.ProseMirror-prompt input[type="text"],
+.ProseMirror-prompt textarea {
+  background: #eee;
+  border: none;
+  outline: none;
+}
+
+.ProseMirror-prompt input[type="text"] {
+  padding: 0 4px;
+}
+
+.ProseMirror-prompt-close {
+  position: absolute;
+  left: 1px; top: 1px;
+  color: #666;
+  border: none; background: transparent; padding: 0;
+}
+
+.ProseMirror-prompt-close:after {
+  content: "✕";
+  font-size: 12px;
+}
+
+.ProseMirror-invalid {
+  background: #ffc;
+  border: 1px solid #cc7;
+  border-radius: 4px;
+  padding: 5px 10px;
+  position: absolute;
+  min-width: 10em;
+}
+
 `)

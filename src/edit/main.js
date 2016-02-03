@@ -20,6 +20,7 @@ import {draw, redraw} from "./draw"
 import {Input} from "./input"
 import {History} from "./history"
 import {RangeStore, MarkedRange} from "./range"
+import {defaultPrompt} from "./prompt"
 
 // ;; This is the class used to represent instances of the editor. A
 // ProseMirror editor holds a [document](#Node) and a
@@ -443,6 +444,14 @@ export class ProseMirror {
   execCommand(name, params) {
     let cmd = this.commands[name]
     return !!(cmd && cmd.exec(this, params) !== false)
+  }
+
+  // :: (DOMNode, ?()) → {close: ()}
+  // Open a dialog in the context of the editor. By default, the
+  // content will be overlaid on the editor, but the `promptFunction`
+  // option can be used to have something else happen.
+  prompt(content, onClose) {
+    return (this.options.promptFunction || defaultPrompt)(this, content, onClose)
   }
 
   // :: (string) → ?string
