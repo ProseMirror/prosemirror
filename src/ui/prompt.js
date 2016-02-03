@@ -53,7 +53,7 @@ export class ParamPrompt {
     let hadFocus = this.pm.hasFocus()
     this.doClose = () => {
       prompt.close()
-      if (hadFocus) this.pm.focus()
+      if (hadFocus) setTimeout(() => this.pm.focus(), 50)
     }
 
     let submit = () => {
