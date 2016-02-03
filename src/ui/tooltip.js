@@ -28,7 +28,7 @@ export class Tooltip {
     })
 
     this.isOpen = false
-    this.lastLeft = this.lastRight = null
+    this.lastLeft = this.lastTop = null
   }
 
   // :: ()
