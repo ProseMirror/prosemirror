@@ -150,7 +150,7 @@ export class ParamPrompt {
 // Read the value from the DOM field created by
 // [`render`](#ParamTypeSpec.render).
 
-// :: (field: DOMNode, message: string)
+// :: (field: DOMNode, message: string) #path=ParamTypeSpec.reportInvalid
 // Report the value in the given field as invalid, showing the given
 // error message. This property is optional, and the prompt
 // implementation will fall back to its own method of showing the

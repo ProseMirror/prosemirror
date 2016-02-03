@@ -4,8 +4,7 @@ import {elt, insertCSS} from "../dom"
 import {Tooltip} from "../ui/tooltip"
 import {UpdateScheduler} from "../ui/update"
 
-import {separator} from "./menu" // FIXME
-import {GroupedMenu, inlineGroup, insertMenu, textblockMenu, blockGroup} from "./menu"
+import {renderGrouped, inlineGroup, insertMenu, textblockMenu, blockGroup} from "./menu"
 
 const classPrefix = "ProseMirror-tooltipmenu"
 
@@ -32,30 +31,21 @@ const classPrefix = "ProseMirror-tooltipmenu"
 //   : When enabled, and a whole block is selected or the cursor is
 //     inside an empty block, the block menu gets shown.
 //
-// **`inlineGroups`**`: [string] = ["inline", "insert"]`
-//   : The menu groups to show when displaying the menu for inline
+// **`inlineContent`**`: [`[`MenuGroup`](#MenuGroup)`]`
+//   : The menu elements to show when displaying the menu for inline
 //     content.
 //
-// **`inlineItems`**`: [union<string, [string]>]`
-//   : Instead of using menu groups, this can be used to completely
-//     override the set of commands shown for inline content. If
-//     nested arrays are used, separators will be shown between items
-//     from different arrays.
-//
-// **`blockGroups`**`: [string] = ["insert", "block"]`
-//   : The menu groups to show when displaying the menu for block
+// **`blockContent`**`: [`[`MenuGroup`](#MenuGroup)`]`
+//   : The menu elements to show when displaying the menu for block
 //     content.
-//
-// **`blockItems`**`: [union<string, [string]>]`
-//   : Overrides the commands shown for block content.
 
 defineOption("tooltipMenu", false, function(pm, value) {
   if (pm.mod.tooltipMenu) pm.mod.tooltipMenu.detach()
   pm.mod.tooltipMenu = value ? new TooltipMenu(pm, value) : null
 })
 
-const defaultInline = new GroupedMenu([inlineGroup, insertMenu])
-const defaultBlock = new GroupedMenu([[textblockMenu, blockGroup]])
+const defaultInline = [inlineGroup, insertMenu]
+const defaultBlock = [[textblockMenu, blockGroup]]
 
 class TooltipMenu {
   constructor(pm, config) {
@@ -80,12 +70,8 @@ class TooltipMenu {
   }
 
   show(inline, block, coords) {
-    let inlineDOM = inline && this.inlineContent.render(this.pm)
-    let blockDOM = block && this.blockContent.render(this.pm)
-    let content = inline && block
-        ? elt("div", null, inlineDOM, separator(), blockDOM)
-        : elt("div", null, inlineDOM || blockDOM)
-    this.tooltip.open(content, coords)
+    let content = inline && block ? this.inlineContent.concat(this.blockContent) : inline ? this.inlineContent : this.blockContent
+    this.tooltip.open(elt("div", null, renderGrouped(this.pm, content)), coords)
   }
 
   update() {

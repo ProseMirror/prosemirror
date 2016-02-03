@@ -2,7 +2,7 @@ import {defineOption} from "../edit"
 import {elt, insertCSS} from "../dom"
 import {UpdateScheduler} from "../ui/update"
 
-import {GroupedMenu, inlineGroup, insertMenu, textblockMenu, blockGroup, historyGroup} from "./menu"
+import {renderGrouped, inlineGroup, insertMenu, textblockMenu, blockGroup, historyGroup} from "./menu"
 
 const prefix = "ProseMirror-menubar"
 
@@ -20,26 +20,20 @@ const prefix = "ProseMirror-menubar"
 //     editor is partially scrolled out of view, by making it float at
 //     the top of the viewport.
 //
-// **`groups`**`: [string] = ["inline", "insert", "block", "history"]`
-//   : Determines the menu groups that are shown in the menu bar.
-//
-// **`items`**`: [union<string, [string]>]`
-//   : Can be used to, rather than getting the commands to display
-//     from menu groups, explicitly provide the full list of commands.
-//     If nested arrays are used, separators will be shown between
-//     items from different arrays.
+// **`content`**`: [`[`MenuGroup`](#MenuGroup)`]`
+//   : Determines the content of the menu.
 
 defineOption("menuBar", false, function(pm, value) {
   if (pm.mod.menuBar) pm.mod.menuBar.detach()
   pm.mod.menuBar = value ? new MenuBar(pm, value) : null
 })
 
-const defaultMenu = new GroupedMenu([
+const defaultMenu = [
   inlineGroup,
   insertMenu,
   [textblockMenu, blockGroup],
   historyGroup
-])
+]
 
 class MenuBar {
   constructor(pm, config) {
@@ -78,8 +72,7 @@ class MenuBar {
 
   update() {
     this.wrapper.textContent = ""
-    let rendered = this.content.render(this.pm)
-    if (rendered) this.wrapper.appendChild(rendered)
+    this.wrapper.appendChild(renderGrouped(this.pm, this.content))
 
     return this.float ? this.updateScrollCursor() : () => {
       if (this.wrapper.offsetWidth != this.widthForMaxHeight) {

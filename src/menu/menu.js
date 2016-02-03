@@ -6,14 +6,24 @@ import {AssertionError} from "../util/error"
 import {getIcon} from "./icons"
 
 // !! This module defines a number of building blocks for ProseMirror
-// menus, as consumed by the `menu/menubar` and `menu/tooltipmenu`
-// modules.
-//
-// The types here aren't the only thing you can display in your menu.
-// Anything that has a `render` method taking a `ProseMirror` instance
-// and returning a [DOM
-// node](https://developer.mozilla.org/en-US/docs/Web/API/Node) can be
-// put into a menu structure.
+// menus, as consumed by the [`menubar`](#menu/menubar) and
+// [`tooltipmenu`](#menu/tooltipmenu) modules.
+
+// ;; #path=MenuElement #kind=interface
+// The types defined in this module aren't the only thing you can
+// display in your menu. Anything that conforms to this interface can
+// be put into a menu structure.
+
+// :: (pm: ProseMirror) → ?DOMNode #path=MenuElement.render
+// Render the element for display in the menu. Returning `null` can be
+// used to signal that this element shouldn't be displayed for the
+// given editor state.
+
+// ;; #path=MenuGroup #kind=interface
+// A menu group represents a group of things that may appear in a
+// menu. It may be either a `MenuElement`, a `MenuCommandGroup`, or an
+// array of such values. Can be reduced to an array of `MenuElement`s
+// using `resolveGroup`.
 
 const prefix = "ProseMirror-menu"
 
@@ -43,9 +53,12 @@ export class MenuCommand {
   // spec](#MenuCommandSpec.display), and adds an event handler which
   // executes the command when the representation is clicked.
   render(pm) {
-    let cmd = this.command(pm)
-    // FIXME allow configuration over select behavior
-    if (!cmd || !cmd.select(pm)) return
+    let cmd = this.command(pm), disabled = false
+    if (!cmd) return
+    if (this.options.select != "ignore" && !cmd.select(pm)) {
+      if (this.options.select == null || this.options.select == "hide") return null
+      else if (this.options.select == "disable") disabled = true
+    }
 
     let disp = this.options.display
     if (!disp) AssertionError.raise("No display style defined for menu command " + cmd.name)
@@ -54,7 +67,7 @@ export class MenuCommand {
     let dom
     if (disp.type == "icon") {
       dom = getIcon(cmd.name, disp)
-      if (cmd.active(pm)) dom.className += " ProseMirror-icon-active"
+      if (!disabled && cmd.active(pm)) dom.classList.add(prefix + "-active")
     } else if (disp.type == "label") {
       dom = elt("div", null, disp.label || cmd.spec.label)
     } else {
@@ -62,6 +75,7 @@ export class MenuCommand {
     }
     dom.setAttribute("title", title(pm, cmd))
     if (this.options.class) dom.classList.add(this.options.class)
+    if (disabled) dom.classList.add(prefix + "-disabled")
     if (this.options.css) dom.style.cssText += this.options.css
     dom.addEventListener("mousedown", e => {
       e.preventDefault(); e.stopPropagation()
@@ -115,61 +129,46 @@ export class MenuCommandGroup {
   }
 }
 
-function getElements(content, pm) {
-  let result
-  for (let i = 0; i < content.length; i++) {
-    let cur = content[i]
-    if (cur instanceof MenuCommandGroup) {
-      let elts = cur.get(pm)
-      if (content.length == 1) return elts
-      else result = (result || content.slice(0, i)).concat(elts)
-    } else if (result) {
-      result.push(cur)
-    }
-  }
-  return result || content
-}
-
-function ensureArray(value) {
-  return Array.isArray(value) ? value : [value]
-}
-
-export class GroupedMenu {
-  constructor(groups) {
-    this.groups = groups.map(ensureArray)
-  }
-
-  render(pm) {
-    let result = document.createDocumentFragment(), needSep = false
-    for (let i = 0; i < this.groups.length; i++) {
-      let items = getElements(this.groups[i], pm), added = false
-      for (let j = 0; j < items.length; j++) {
-        let rendered = items[j].render(pm)
-        if (rendered) {
-          if (!added && needSep) result.appendChild(separator())
-          result.appendChild(elt("span", {class: prefix + "item"}, rendered))
-          added = true
-        }
-      }
-      if (added) needSep = true
-    }
-    if (result.childNodes.length) return result
-  }
-}
-
+// ;; A drop-down menu, displayed as a label with a downwards-pointing
+// triangle to the right of it.
 export class Dropdown {
+  // :: (Object, MenuGroup)
+  // Create a dropdown wrapping the given group. Options may include
+  // the following properties:
+  //
+  // **`label`**`: string`
+  //   : The label to show on the drop-down control. When
+  //     `activeLabel` is also given, this one is used as a
+  //     fallback.
+  //
+  // **`activeLabel`**`: bool`
+  //   : Instead of showing a fixed label, enabling this causes the
+  //     element to search through its content, looking for an
+  //     [active](#CommandSpec.active) command. If one is found, its
+  //     [`activeLabel`](#MenuCommandSpec.activeLabel) property is
+  //     shown as the drop-down's label.
+  //
+  // **`title`**`: string`
+  //   : Sets the
+  //     [`title`](https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/title)
+  //     attribute given to the menu control.
+  //
+  // **`class`**`: string`
+  //   : When given, adds an extra CSS class to the menu control.
   constructor(options, content) {
     this.options = options || {}
-    this.content = ensureArray(content)
+    this.content = content
   }
 
+  // :: (ProseMirror) → DOMNode
+  // Returns a node showing the collapsed menu, which expands when clicked.
   render(pm) {
-    if (getElements(this.content, pm).length == 0) return
+    if (resolveGroup(pm, this.content).length == 0) return
 
-    let display = (this.options.displayActive && findActiveIn(this, pm)) || this.options.display
+    let label = (this.options.activeLabel && this.findActiveIn(this, pm)) || this.options.label
     let dom = elt("div", {class: prefix + "-dropdown " + (this.options.class || ""),
                           style: this.options.css,
-                          title: this.options.label}, display)
+                          title: this.options.title}, label)
     let open = null
     dom.addEventListener("mousedown", e => {
       e.preventDefault(); e.stopPropagation()
@@ -180,9 +179,9 @@ export class Dropdown {
   }
 
   expand(pm, dom) {
-    let rendered = renderDropdownItems(getElements(this.content, pm), pm)
+    let rendered = renderDropdownItems(resolveGroup(pm, this.content), pm)
     let box = dom.getBoundingClientRect(), outer = pm.wrapper.getBoundingClientRect()
-    let menuDOM = elt("div", {class: prefix + "-dropdown-menu " + (this.options.className || ""),
+    let menuDOM = elt("div", {class: prefix + "-dropdown-menu " + (this.options.class || ""),
                               style: "left: " + (box.left - outer.left) + "px; top: " + (box.bottom - outer.top) + "px"},
                       rendered)
 
@@ -199,6 +198,20 @@ export class Dropdown {
     pm.on("interaction", finish)
     return finish
   }
+
+  findActiveIn(element, pm) {
+    let items = resolveGroup(pm, element.content)
+    for (let i = 0; i < items.length; i++) {
+      let cur = items[i]
+      if (cur instanceof MenuCommand) {
+        let active = cur.command(pm).active(pm)
+        if (active) return cur.options.activeLabel
+      } else if (cur instanceof DropdownSubmenu) {
+        let found = this.findActiveIn(cur, pm)
+        if (found) return found
+      }
+    }
+  }
 }
 
 function renderDropdownItems(items, pm) {
@@ -211,28 +224,24 @@ function renderDropdownItems(items, pm) {
   return rendered
 }
 
-function findActiveIn(element, pm) {
-  let items = getElements(element.content, pm)
-  for (let i = 0; i < items.length; i++) {
-    let cur = items[i]
-    if (cur instanceof MenuCommand) {
-      let active = cur.command(pm).active(pm)
-      if (active) return cur.options.activeDisplay
-    } else if (cur instanceof DropdownSubmenu) {
-      let found = findActiveIn(cur, pm)
-      if (found) return found
-    }
-  }
-}
-
+// ;; Represents a submenu wrapping a group of items that start hidden
+// and expand to the right when hovered over or tapped.
 export class DropdownSubmenu {
+  // :: (Object, MenuGroup)
+  // Creates a submenu for the given group of menu elements. The
+  // following options are recognized:
+  //
+  // **`label`**`: string`
+  //   : The label to show on the submenu.
   constructor(options, content) {
     this.options = options || {}
-    this.content = ensureArray(content)
+    this.content = content
   }
 
+  // :: (ProseMirror) → DOMNode
+  // Renders the submenu.
   render(pm) {
-    let items = getElements(this.content, pm)
+    let items = resolveGroup(pm, this.content)
     if (!items.length) return
 
     let label = elt("div", {class: prefix + "-submenu-label"}, this.options.label)
@@ -246,9 +255,46 @@ export class DropdownSubmenu {
   }
 }
 
-// :: () → DOMNode
-// Create the default menu separator.
-export function separator() {
+// :: (ProseMirror, MenuGroup) → [MenuElement]
+// Resolve the given `MenuGroup` into a flat array of renderable
+// elements.
+export function resolveGroup(pm, content) {
+  let result, isArray = Array.isArray(content)
+  for (let i = 0; i < (isArray ? content.length : 1); i++) {
+    let cur = isArray ? content[i] : content
+    if (cur instanceof MenuCommandGroup) {
+      let elts = cur.get(pm)
+      if (!isArray || content.length == 1) return elts
+      else result = (result || content.slice(0, i)).concat(elts)
+    } else if (result) {
+      result.push(cur)
+    }
+  }
+  return result || (isArray ? content : [content])
+}
+
+// :: (ProseMirror, [MenuGroup]) → ?DOMFragment
+// Render the given menu groups into a document fragment, placing
+// separators between them (and ensuring no superfluous separators
+// appear when some of the groups turn out to be empty).
+export function renderGrouped(pm, content) {
+  let result = document.createDocumentFragment(), needSep = false
+  for (let i = 0; i < content.length; i++) {
+    let items = resolveGroup(pm, content[i]), added = false
+    for (let j = 0; j < items.length; j++) {
+      let rendered = items[j].render(pm)
+      if (rendered) {
+        if (!added && needSep) result.appendChild(separator())
+        result.appendChild(elt("span", {class: prefix + "item"}, rendered))
+        added = true
+      }
+    }
+    if (added) needSep = true
+  }
+  return result
+}
+
+function separator() {
   return elt("span", {class: prefix + "separator"})
 }
 
@@ -293,6 +339,18 @@ export function separator() {
 //     wrapped in a [drop-down](#Dropdown) or similar menu. The object
 //     should have a `label` property providing the text to display.
 
+// :: string #path=MenuCommandSpec.activeLabel
+// When used in a `Dropdown` with `activeLabel` enabled, this should
+// provide the text shown when the command is active.
+
+// :: string #path=MenuCommandSpec.select
+// Controls whether the command's [`select`](#CommandSpec.select)
+// method has influence on its appearance. When set to `"hide"`, or
+// not given, the command is hidden when it is not selectable. When
+// set to `"ignore"`, the `select` method is not called. When set to
+// `"disable"`, the command is shown in disabled form when `select`
+// returns false.
+
 // :: string #path=MenuCommandSpec.class
 // Optionally adds a CSS class to the command's DOM representation.
 
@@ -301,9 +359,9 @@ export function separator() {
 // representation.
 
 export const inlineGroup = new MenuCommandGroup("inline")
-export const insertMenu = new Dropdown({display: "Insert"}, new MenuCommandGroup("insert"))
+export const insertMenu = new Dropdown({label: "Insert"}, new MenuCommandGroup("insert"))
 export const textblockMenu = new Dropdown(
-  {display: "Type..", displayActive: true, class: "ProseMirror-textblock-dropdown"},
+  {label: "Type..", displayActive: true, class: "ProseMirror-textblock-dropdown"},
   [new MenuCommandGroup("textblock"),
    new DropdownSubmenu({label: "Heading"}, new MenuCommandGroup("textblockHeading"))]
 )
@@ -407,6 +465,20 @@ insertCSS(`
   min-width: 4em;
   left: 100%;
   top: -3px;
+}
+
+.${prefix}-active {
+  background: #eee;
+  border-radius: 4px;
+}
+
+.${prefix}-active {
+  background: #eee;
+  border-radius: 4px;
+}
+
+.${prefix}-disabled {
+  opacity: .3;
 }
 
 .${prefix}-submenu-wrap:hover .${prefix}-submenu, .${prefix}-submenu-wrap-active .${prefix}-submenu {

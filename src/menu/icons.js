@@ -48,11 +48,6 @@ insertCSS(`
   cursor: pointer;
 }
 
-.${prefix}-active {
-  background: #eee;
-  border-radius: 4px;
-}
-
 .${prefix} svg {
   fill: currentColor;
   height: 1em;
