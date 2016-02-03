@@ -127,6 +127,7 @@ function isDelStep(step) {
 
 const compressStepCount = 150
 
+// ; A branch is a history of steps.
 class Branch {
   constructor(maxDepth) {
     this.maxDepth = maxDepth
@@ -176,6 +177,8 @@ class Branch {
     this.events[this.events.length - 1].push(new InvertedStep(step, this.version, id))
   }
 
+  // : (Transform, ?[number])
+  // Add a transform to the branch's history.
   addTransform(transform, ids) {
     this.abortCompression()
     for (let i = 0; i < transform.steps.length; i++) {
@@ -184,6 +187,9 @@ class Branch {
     }
   }
 
+  // : (Node, bool) → {transform: Transform, ids: [number]}
+  // Pop the latest event off the branch's history and apply it
+  // to a document transform, returning the transform and the step ID.
   popEvent(doc, allowCollapsing) {
     this.abortCompression()
     let event = this.events.pop()
@@ -295,6 +301,7 @@ class Branch {
 
 const compressDelay = 750
 
+// ;; An undo/redo history manager for an editor instance.
 export class History {
   constructor(pm) {
     this.pm = pm
@@ -310,6 +317,8 @@ export class History {
     pm.on("transform", (transform, options) => this.recordTransform(transform, options))
   }
 
+  // :: (Transform, Object)
+  // Record a transformation in undo history.
   recordTransform(transform, options) {
     if (this.ignoreTransform) return
 
@@ -337,6 +346,9 @@ export class History {
   canUndo() { return this.done.events.length > 0 }
   canRedo() { return this.undone.events.length > 0 }
 
+  // :: (Branch, Branch)
+  // Apply the latest event from one branch to the document and shift
+  // the event onto the other branch.
   shift(from, to) {
     let event = from.popEvent(this.pm.doc, this.allowCollapsing)
     if (!event) return false
