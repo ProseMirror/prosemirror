@@ -205,14 +205,14 @@ export function openPrompt(pm, content, options) {
 
   pm.wrapper.appendChild(wrapper)
   if (options && options.pos) {
-    wrapper.style.left = options.pos.left + "px"
-    wrapper.style.pos = options.pos.top + "px"
+    wrapper.style.left = (options.pos.left - outerBox.left) + "px"
+    wrapper.style.pos = (options.pos.top - outerBox.top) + "px"
   } else {
     let blockBox = wrapper.getBoundingClientRect()
-    wrapper.style.left = (Math.max(0, outerBox.left) + Math.min(window.innerWidth, outerBox.right)
-                          - blockBox.width) / 2 + "px"
-    wrapper.style.top = (Math.max(0, outerBox.top) + Math.min(window.innerHeight, outerBox.bottom)
-                         - blockBox.height) / 2 + "px"
+    let cX = Math.max(0, outerBox.left) + Math.min(window.innerWidth, outerBox.right) - blockBox.width
+    let cY = Math.max(0, outerBox.top) + Math.min(window.innerHeight, outerBox.bottom) - blockBox.height
+    wrapper.style.left = (cX / 2 - outerBox.left) + "px"
+    wrapper.style.top = (cY / 2 - outerBox.top) + "px"
   }
 
   let close = () => {
