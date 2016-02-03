@@ -411,7 +411,7 @@ insertCSS(`
   margin-right: 3px;
 }
 
-.${prefix}-dropdown {
+.${prefix}-dropdown, .${prefix}-dropdown-menu {
   font-size: 90%;
 }
 
