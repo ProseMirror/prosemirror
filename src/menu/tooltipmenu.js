@@ -38,6 +38,11 @@ const classPrefix = "ProseMirror-tooltipmenu"
 // **`blockContent`**`: [`[`MenuGroup`](#MenuGroup)`]`
 //   : The menu elements to show when displaying the menu for block
 //     content.
+//
+// **`selectedBlockContent`**`: [MenuGroup]`
+//   : The elements to show when a full block has been selected and
+//     `selectedBlockMenu` is enabled. Defaults to concatenating
+//     `inlineContent` and `blockContent`.
 
 defineOption("tooltipMenu", false, function(pm, value) {
   if (pm.mod.tooltipMenu) pm.mod.tooltipMenu.detach()
@@ -61,6 +66,7 @@ class TooltipMenu {
     this.tooltip = new Tooltip(pm.wrapper, "above")
     this.inlineContent = this.config.inlineContent || defaultInline
     this.blockContent = this.config.blockContent || defaultBlock
+    this.selectedBlockContent = this.config.selectedBlockContent || this.inlineContent.concat(this.blockContent)
   }
 
   detach() {
@@ -69,8 +75,7 @@ class TooltipMenu {
     this.pm.content.removeEventListener("contextmenu", this.onContextMenu)
   }
 
-  show(inline, block, coords) {
-    let content = inline && block ? this.inlineContent.concat(this.blockContent) : inline ? this.inlineContent : this.blockContent
+  show(content, coords) {
     this.tooltip.open(elt("div", null, renderGrouped(this.pm, content)), coords)
   }
 
@@ -81,19 +86,19 @@ class TooltipMenu {
     } else if (node && node.isBlock) {
       return () => {
         let coords = topOfNodeSelection(this.pm)
-        return () => this.show(false, true, coords)
+        return () => this.show(this.blockContent, coords)
       }
     } else if (!empty) {
       return () => {
         let coords = node ? topOfNodeSelection(this.pm) : topCenterOfSelection()
         let showBlock = this.selectedBlockMenu && Pos.samePath(from.path, to.path) &&
             from.offset == 0 && to.offset == this.pm.doc.path(from.path).size
-        return () => this.show(true, showBlock, coords)
+        return () => this.show(showBlock ? this.selectedBlockContent : this.inlineContent, coords)
       }
     } else if (this.selectedBlockMenu && this.pm.doc.path(from.path).size == 0) {
       return () => {
         let coords = this.pm.coordsAtPos(from)
-        return () => this.show(false, true, coords)
+        return () => this.show(this.blockContent, coords)
       }
     } else if (this.showLinks && (link = this.linkUnderCursor())) {
       return () => {
@@ -125,7 +130,7 @@ class TooltipMenu {
 
     this.pm.setTextSelection(pos, pos)
     this.pm.flush()
-    this.show(true, false, topCenterOfSelection())
+    this.show(this.inlineContent, topCenterOfSelection())
   }
 }
 
