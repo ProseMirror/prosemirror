@@ -7,7 +7,7 @@ export {ProseMirror} from "./main"
 export {defineOption} from "./options"
 export {Range, SelectionError} from "./selection"
 export {MarkedRange} from "./range"
-export {CommandSet, defineDefaultParamHandler, withParamHandler, Command} from "./command"
+export {CommandSet, Command} from "./command"
 export {baseCommands} from "./base_commands"
 import "./schema_commands"
 
