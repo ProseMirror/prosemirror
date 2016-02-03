@@ -63,9 +63,10 @@ export class MenuCommand {
     let disp = this.options.display
     if (!disp) AssertionError.raise("No display style defined for menu command " + cmd.name)
 
-    // FIXME allow extension of supported types
     let dom
-    if (disp.type == "icon") {
+    if (disp.render) {
+      dom = disp.render(cmd)
+    } else if (disp.type == "icon") {
       dom = getIcon(cmd.name, disp)
       if (!disabled && cmd.active(pm)) dom.classList.add(prefix + "-active")
     } else if (disp.type == "label") {
@@ -321,9 +322,10 @@ function separator() {
 // first). Only meaningful in a `CommandSpec`.
 
 // :: Object #path=MenuCommandSpec.display
-// Determines how the command is shown in the menu. The object should
-// have a `type` property, which picks a [style of display](#FIXME).
-// These types are supported by default:
+// Determines how the command is shown in the menu. It may have either
+// a `type` property containing one of the strings shown below, or a
+// `render` property that, when called with the command as argument,
+// returns a DOM node representing the command's menu representation.
 //
 // **`"icon"`**
 //   : Show the command as an icon. The object may have `{path, width,
@@ -358,14 +360,28 @@ function separator() {
 // Optionally adds a string of inline CSS to the command's DOM
 // representation.
 
+// :: MenuCommandGroup
+// The inline command group.
 export const inlineGroup = new MenuCommandGroup("inline")
+
+// :: Dropdown
+// The default insert dropdown menu.
 export const insertMenu = new Dropdown({label: "Insert"}, new MenuCommandGroup("insert"))
+
+// :: Dropdown
+// The default textblock type menu.
 export const textblockMenu = new Dropdown(
   {label: "Type..", displayActive: true, class: "ProseMirror-textblock-dropdown"},
   [new MenuCommandGroup("textblock"),
    new DropdownSubmenu({label: "Heading"}, new MenuCommandGroup("textblockHeading"))]
 )
+
+// :: MenuCommandGroup
+// The block command group.
 export const blockGroup = new MenuCommandGroup("block")
+
+// :: MenuCommandGroup
+// The history command group.
 export const historyGroup = new MenuCommandGroup("history")
 
 insertCSS(`
