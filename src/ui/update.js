@@ -1,5 +1,5 @@
-const UPDATE_TIMEOUT = 200
-const MIN_FLUSH_DELAY = 200
+const UPDATE_TIMEOUT = 50
+const MIN_FLUSH_DELAY = 100
 
 class CentralScheduler {
   constructor(pm) {

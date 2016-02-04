@@ -47,7 +47,7 @@ function setSel(node, offset) {
 test("read", pm => {
   function test(node, offset, expected, comment) {
     setSel(node, offset)
-    pm.sel.pollForUpdate()
+    pm.sel.readFromDOM()
     cmpStr(pm.selection.head, expected, comment)
     pm.flush()
   }

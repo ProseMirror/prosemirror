@@ -128,7 +128,7 @@ handlers.keydown = (pm, e) => {
   if (pm.input.composing) return
   let name = Keymap.keyName(e)
   if (name && dispatchKey(pm, name, e)) return
-  pm.sel.pollForUpdate()
+  pm.sel.fastPoll()
 }
 
 handlers.keyup = (pm, e) => {
@@ -160,11 +160,11 @@ handlers.keypress = (pm, e) => {
 
 function selectClickedNode(pm, e) {
   let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY}, true)
-  if (!pos) return pm.sel.pollForUpdate()
+  if (!pos) return pm.sel.fastPoll()
 
   let {node, from} = pm.selection
   if (node && pos.depth >= from.depth && pos.shorten(from.depth).cmp(from) == 0) {
-    if (from.depth == 0) return pm.sel.pollForUpdate()
+    if (from.depth == 0) return pm.sel.fastPoll()
     pos = from.shorten()
   }
 
@@ -219,7 +219,7 @@ class MouseDown {
 
     addEventListener("mouseup", this.up = this.up.bind(this))
     addEventListener("mousemove", this.move = this.move.bind(this))
-    pm.sel.pollForUpdate()
+    pm.sel.fastPoll()
   }
 
   done() {
@@ -236,7 +236,7 @@ class MouseDown {
     this.done()
 
     if (this.leaveToBrowser) {
-      this.pm.sel.pollForUpdate()
+      this.pm.sel.fastPoll()
     } else if (this.event.ctrlKey) {
       selectClickedNode(this.pm, this.event)
     } else if (!handleNodeClick(this.pm, "handleClick", this.event, true)) {
@@ -245,7 +245,7 @@ class MouseDown {
         this.pm.setNodeSelection(pos)
         this.pm.focus()
       } else {
-        this.pm.sel.pollForUpdate()
+        this.pm.sel.fastPoll()
       }
     }
   }
@@ -254,12 +254,12 @@ class MouseDown {
     if (!this.leaveToBrowser && (Math.abs(this.x - event.clientX) > 4 ||
                                  Math.abs(this.y - event.clientY) > 4))
       this.leaveToBrowser = true
-    this.pm.sel.pollForUpdate()
+    this.pm.sel.fastPoll()
   }
 }
 
 handlers.touchdown = pm => {
-  pm.sel.pollForUpdate()
+  pm.sel.fastPoll()
 }
 
 handlers.contextmenu = (pm, e) => {
@@ -331,7 +331,7 @@ handlers.input = (pm) => {
     return
   }
 
-  pm.sel.stopPollingForUpdate()
+  pm.startOperation({readSelection: false})
   applyDOMChange(pm)
   pm.scrollIntoView()
 }
