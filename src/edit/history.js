@@ -244,7 +244,7 @@ class Branch {
 
   isAtVersion(version) {
     let step = this.lastStep()
-    return this.version == version && (step && step.id) == version.lastID
+    return this.version == version.version && (step && step.id) == version.lastID
   }
 
   findVersion(version) {

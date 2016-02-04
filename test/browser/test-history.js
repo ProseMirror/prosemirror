@@ -1,6 +1,6 @@
 import {namespace} from "./def"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "../build"
-import {cmp, cmpNode, P} from "../cmp"
+import {is, cmp, cmpNode, P} from "../cmp"
 
 const test = namespace("history")
 
@@ -158,3 +158,31 @@ test("setDocResets", pm => {
   cmp(pm.history.undo(), false)
   cmpNode(pm.doc, doc(p("aah")))
 }, {doc: doc(p("okay"))})
+
+test("isAtVersion", pm => {
+  type(pm, "hello")
+  cut(pm)
+  let version = pm.history.getVersion()
+  type(pm, "ok")
+  is(!pm.history.isAtVersion(version), "ahead")
+  pm.history.undo()
+  is(pm.history.isAtVersion(version), "went back")
+  pm.history.undo()
+  is(!pm.history.isAtVersion(version), "behind")
+  pm.history.redo()
+  is(pm.history.isAtVersion(version), "went forward")
+})
+
+test("rollback", pm => {
+  type(pm, "hello")
+  let version = pm.history.getVersion()
+  type(pm, "ok")
+  cut(pm)
+  type(pm, "more")
+  is(pm.history.backToVersion(version), "rollback")
+  cmpNode(pm.doc, doc(p("hello")), "back to start")
+  is(pm.history.backToVersion(version), "no-op rollback")
+  cmpNode(pm.doc, doc(p("hello")), "no-op had no effect")
+  pm.history.undo()
+  is(!pm.history.backToVersion(version), "failed rollback")
+})
