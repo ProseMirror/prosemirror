@@ -2,6 +2,8 @@ import {Pos} from "../model"
 import {contains} from "../dom"
 import {AssertionError} from "../util/error"
 
+// :: (ProseMirror, DOMNode) → [number]
+// Get the path for a given a DOM node in a document.
 export function pathFromDOM(pm, node) {
   let path = []
   for (; node != pm.content;) {
