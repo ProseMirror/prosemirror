@@ -104,6 +104,8 @@ function movePast(dom) {
 }
 
 export function redraw(pm, dirty, doc, prev) {
+  if (dirty.get(prev) == DIRTY_REDRAW) return draw(pm, doc)
+
   let opts = options([], pm.ranges.activeRangeTracker())
 
   function scan(dom, node, prev) {

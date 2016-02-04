@@ -497,6 +497,10 @@ export class ProseMirror {
       }
     }
   }
+
+  markAllDirty() {
+    this.dirtyNodes.set(this.doc, DIRTY_REDRAW)
+  }
 }
 
 // :: Object

@@ -52,7 +52,7 @@ export function applyDOMChange(pm) {
   if (changeStart) {
     let changeEnd = findDiffEndConstrained(pm.doc.content, updated.content, changeStart)
     // Mark nodes touched by this change as 'to be redrawn'
-    pm.markRangeDirty(pm.doc.siblingRange(changeStart, changeEnd.a))
+    markDirtyFor(pm, changeStart, changeEnd)
 
     pm.tr.replace(changeStart, changeEnd.a, updated, changeStart, changeEnd.b).apply()
     return true
@@ -76,6 +76,23 @@ function findDiffEndConstrained(a, b, start) {
   if (end.a.cmp(start) < 0) return {a: start, b: offsetBy(end.a, start, end.b)}
   if (end.b.cmp(start) < 0) return {a: offsetBy(end.b, start, end.a), b: start}
   return end
+}
+
+function sameDepth(a, b) {
+  let max = Math.min(a.depth, b.depth)
+  for (let i = 0; i < max; i++)
+    if (a.path[i] != b.path[i]) return i
+  return max
+}
+
+function markDirtyFor(pm, start, end) {
+  let depth = Math.min(sameDepth(start, end.a), sameDepth(start, end.b))
+  if (depth == 0) {
+    pm.markAllDirty()
+  } else {
+    let pos = Pos.from(start.path.slice(0, depth))
+    pm.markRangeDirty({from: pos, to: pos.move(1)})
+  }
 }
 
 // Text-only queries for composition events
