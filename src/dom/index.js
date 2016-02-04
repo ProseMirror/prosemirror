@@ -60,6 +60,8 @@ export function addClass(node, cls) {
 }
 
 
+// :: (DOMNode, DOMNode) → bool
+// Check whether a DOM node is an ancestor of another DOM node.
 export function contains(parent, child) {
   // Android browser and IE will return false if child is a text node.
   if (child.nodeType != 1)
