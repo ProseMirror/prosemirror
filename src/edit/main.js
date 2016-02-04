@@ -163,6 +163,7 @@ export class ProseMirror {
     // :: Node The current document.
     this.doc = doc
     this.ranges = new RangeStore(this)
+    // :: History The edit history for the editor.
     this.history = new History(this)
   }
 

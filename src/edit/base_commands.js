@@ -580,7 +580,7 @@ baseCommands.selectNodeDown = {
 baseCommands.undo = {
   label: "Undo last change",
   run(pm) { pm.scrollIntoView(); return pm.history.undo() },
-  select(pm) { return pm.history.canUndo() },
+  select(pm) { return pm.history.undoDepth > 0 },
   menu: {
     group: "history", rank: 10,
     display: {
@@ -599,7 +599,7 @@ baseCommands.undo = {
 baseCommands.redo = {
   label: "Redo last undone change",
   run(pm) { pm.scrollIntoView(); return pm.history.redo() },
-  select(pm) { return pm.history.canRedo() },
+  select(pm) { return pm.history.redoDepth > 0 },
   menu: {
     group: "history", rank: 20,
     display: {

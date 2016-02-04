@@ -1,6 +1,8 @@
 import {Pos} from "../model"
 import {Transform, Step, Remapping} from "../transform"
 
+// Steps are stored in inverted form (so that they can be applied to
+// undo the original).
 class InvertedStep {
   constructor(step, version, id) {
     this.step = step
@@ -127,7 +129,8 @@ function isDelStep(step) {
 
 const compressStepCount = 150
 
-// ; A branch is a history of steps.
+// A branch is a history of steps. There'll be one for the undo and
+// one for the redo history.
 class Branch {
   constructor(maxDepth) {
     this.maxDepth = maxDepth
@@ -227,18 +230,29 @@ class Branch {
     return {transform: tr, ids}
   }
 
+  lastStep() {
+    for (let i = this.events.length - 1; i >= 0; i--) {
+      let event = this.events[i]
+      if (event.length) return event[event.length - 1]
+    }
+  }
+
   getVersion() {
-    return {id: this.nextStepID, version: this.version}
+    let step = this.lastStep()
+    return {lastID: step && step.id, version: this.version}
+  }
+
+  isAtVersion(version) {
+    let step = this.lastStep()
+    return this.version == version && (step && step.id) == version.lastID
   }
 
   findVersion(version) {
     for (let i = this.events.length - 1; i >= 0; i--) {
       let event = this.events[i]
-      for (let j = event.length - 1; j >= 0; j--) {
-        let step = event[j]
-        if (step.id == version.id) return {event: i, step: j}
-        else if (step.id < version.id) return {event: i, step: j + 1}
-      }
+      for (let j = event.length - 1; j >= 0; j--)
+        if (event[j].id <= version.lastID)
+          return {event: i, step: j + 1}
     }
   }
 
@@ -317,7 +331,7 @@ export class History {
     pm.on("transform", (transform, options) => this.recordTransform(transform, options))
   }
 
-  // :: (Transform, Object)
+  // : (Transform, Object)
   // Record a transformation in undo history.
   recordTransform(transform, options) {
     if (this.ignoreTransform) return
@@ -340,15 +354,33 @@ export class History {
     this.maybeScheduleCompression()
   }
 
+  // :: () → bool
+  // Undo one history event. The return value indicates whether
+  // anything was actually undone. Note that in a collaborative
+  // context, or when changes are [applied](#ProseMirror.apply)
+  // without adding them to the history, it is possible for
+  // [`undoDepth`](#History.undoDepth) to have a positive value, but
+  // this method to still return `false`, when non-history changes
+  // overwrote all remaining changes in the history.
   undo() { return this.shift(this.done, this.undone) }
+
+  // :: () → bool
+  // Redo one history event. The return value indicates whether
+  // anything was actually redone.
   redo() { return this.shift(this.undone, this.done) }
 
-  canUndo() { return this.done.events.length > 0 }
-  canRedo() { return this.undone.events.length > 0 }
+  // :: number
+  // The amount of undoable events available.
+  get undoDepth() { return this.done.events.length }
 
-  // :: (Branch, Branch)
+  // :: number
+  // The amount of redoable events available.
+  get redoDepth() { return this.undone.events.length }
+
+  // : (Branch, Branch) → bool
   // Apply the latest event from one branch to the document and shift
-  // the event onto the other branch.
+  // the event onto the other branch. Returns true when an event could
+  // be shifted.
   shift(from, to) {
     let event = from.popEvent(this.pm.doc, this.allowCollapsing)
     if (!event) return false
@@ -369,19 +401,36 @@ export class History {
     return true
   }
 
+  // :: () → Object
+  // Get the current ‘version’ of the editor content. This can be used
+  // to later [check](#History.isAtVersion) whether anything changed, or
+  // to [roll back](#History.backToVersion) to this version.
   getVersion() { return this.done.getVersion() }
 
+  // :: (Object) → bool
+  // Returns `true` when the editor history is in the state that it
+  // was when the given [version](#History.getVersion) was recorded.
+  // That means either no changes were made, or changes were
+  // done/undone and then undone/redone again.
+  isAtVersion(version) { return this.done.isAtVersion(version) }
+
+  // :: (Object) → bool
+  // Rolls back all changes made since the given
+  // [version](#History.getVersion) was recorded. Returns `false` if
+  // that version was no longer found in the history, and thus the
+  // action could not be completed.
   backToVersion(version) {
     let found = this.done.findVersion(version)
     if (!found) return false
     let event = this.done.events[found.event]
-    if (found.event == this.done.events.length - 1 && found.step == event.length) return
+    if (found.event == this.done.events.length - 1 && found.step == event.length) return true
     let combined = this.done.events.slice(found.event + 1)
         .reduce((comb, arr) => comb.concat(arr), event.slice(found.step))
     this.done.events.length = found.event + ((event.length = found.step) ? 1 : 0)
     this.done.events.push(combined)
 
     this.shift(this.done)
+    return true
   }
 
   rebased(newMaps, rebasedTransform, positions) {
