@@ -1,3 +1,42 @@
+## [0.3.0](http://prosemirror.net/version/0.3.0.html) (2016-02-04)
+
+### Breaking changes
+
+The way menu items for menu modules are configured now works
+differently, expecting types from the [`menu`](http://prosemirror.net/version/0.3.0.html#menu/menu) module.
+The way commands declare themselves to be part of a menu group is also
+different—the information previously stored in the `menuGroup` and
+`display` properties now goes, in a somewhat different format, in the
+[`menu`](http://prosemirror.net/version/0.3.0.html#CommandSpec.menu) property.
+
+The command parameter prompting functionality was changed. The
+`paramHandler` option has been replaced by a
+[`commandParamPrompt`](http://prosemirror.net/version/0.3.0.html#commandParamPrompt) option. The prompting
+functionality now lives in the [`prompt`](http://prosemirror.net/version/0.3.0.html#ui/prompt) module, and
+should be easier to extend.
+
+The styling and animation of menus and tooltips was changed to be
+simpler and easier to maintain. Fancy UI looks are now considered out
+of scope for this module, and something that should be implemented in
+third-party modules.
+
+### Bug fixes
+
+Selection on mobile should work much better now (though probably still
+far from perfect).
+
+Pressing enter on a mobile device will no longer corrupt
+the display.
+
+### New features
+
+New menu building blocks in the [`menu`](http://prosemirror.net/version/0.3.0.html#menu/menu) module allow
+more control and flexibility when defining menus.
+
+[`ProseMirror.history`](http://prosemirror.net/version/0.3.0.html#History) is now documented and received a
+new [`isAtVersion`](http://prosemirror.net/version/0.3.0.html#History.isAtVersion) method to check whether an
+editor is 'clean' relative to a given version.
+
 ## [0.2.0](http://prosemirror.net/version/0.2.0.html) (2016-01-28)
 
 ### Breaking changes
