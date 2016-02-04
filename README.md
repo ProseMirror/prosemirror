@@ -1,5 +1,7 @@
 # ProseMirror
 
+[![Join the chat at https://gitter.im/ProseMirror/prosemirror](https://badges.gitter.im/ProseMirror/prosemirror.svg)](https://gitter.im/ProseMirror/prosemirror?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 This is a well-behaved rich semantic content editor based on
 contentEditable, with support for collaborative editing and
 customizable document models.
