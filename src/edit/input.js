@@ -366,6 +366,8 @@ function getCopied(pm, dataTransfer, plainText) {
     doc = parseFrom(pm.schema, pm.signalPipelined("transformPastedText", txt),
                     knownSource("markdown") ? "markdown" : "text")
   }
+  doc = pm.signalPipelined("transformPastedParsed", doc)
+
   return {doc, from: findSelectionAtStart(doc).from, to: findSelectionAtEnd(doc).to}
 }
 
