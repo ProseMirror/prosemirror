@@ -13,7 +13,6 @@ export class SelectionState {
     this.range = range
 
     this.lastNonNodePos = null
-    this.lastFocusTime = this.lastFastPollTime = 0
 
     this.polling = null
     this.lastAnchorNode = this.lastHeadNode = this.lastAnchorOffset = this.lastHeadOffset = null
@@ -51,7 +50,6 @@ export class SelectionState {
   }
 
   fastPoll() {
-    this.lastFastPollTime = Date.now()
     this.startPolling()
   }
 
@@ -79,21 +77,6 @@ export class SelectionState {
     let anchor = posFromDOM(this.pm, sel.anchorNode, sel.anchorOffset)
     let head = sel.isCollapsed ? anchor : posFromDOM(this.pm, sel.focusNode, sel.focusOffset)
 
-    // Ignore selection changes that look like 'selection resets',
-    // caused by some browsers when an editable element is focused but
-    // does not have the selection (as happens for node selections),
-    // for example when the page gains focus.
-    //
-    // If we have a node selection, were recently focused, did not
-    // recently fast-poll, and have a collapsed selection at the start
-    // of the document, ignore it and reset to our stored selection.
-    if (this.range.node && sel.isCollapsed &&
-        this.lastFocusTime > Date.now() - 100 &&
-        this.lastFastPollTime < Date.now() - 100) {
-      let minPos = findSelectionAtStart(this.pm.doc, undefined, true)
-      if (minPos && anchor.cmp(minPos.anchor) == 0) return this.toDOM()
-    }
-
     let newRange = findSelectionNear(doc, head, this.range.head && this.range.head.cmp(head) < 0 ? -1 : 1)
     if (newRange instanceof TextSelection && doc.path(anchor.path).isTextblock)
       newRange = new TextSelection(anchor, newRange.head)
@@ -109,42 +92,37 @@ export class SelectionState {
   }
 
   toDOM(takeFocus) {
-    if (this.range instanceof NodeSelection)
-      this.nodeToDOM(takeFocus)
-    else
-      this.rangeToDOM(takeFocus)
-  }
-
-  nodeToDOM(takeFocus) {
-    window.getSelection().removeAllRanges()
-    if (takeFocus) this.pm.content.focus()
-    let dom = pathToDOM(this.pm.content, this.range.from.toPath())
-    if (dom != this.lastNode) {
-      this.clearNode()
-      dom.classList.add("ProseMirror-selectednode")
-      this.lastNode = dom
-    }
-  }
-
-  clearNode() {
-    if (this.lastNode) {
-      this.lastNode.classList.remove("ProseMirror-selectednode")
-      this.lastNode = null
-      return true
-    }
-  }
-
-  rangeToDOM(takeFocus) {
-    if (!this.clearNode() && !hasFocus(this.pm)) {
+    if (!hasFocus(this.pm)) {
       if (!takeFocus) return
       // See https://bugzilla.mozilla.org/show_bug.cgi?id=921444
       else if (browser.gecko) this.pm.content.focus()
     }
-    if (!this.domChanged()) return
+    if (this.range instanceof NodeSelection)
+      this.nodeToDOM()
+    else
+      this.rangeToDOM()
+  }
 
-    let content = this.pm.content
-    let anchor = DOMFromPos(content, this.range.anchor)
-    let head = DOMFromPos(content, this.range.head)
+  nodeToDOM() {
+    let dom = pathToDOM(this.pm.content, this.range.from.toPath())
+    if (dom != this.lastNode) {
+      this.clearNode()
+      dom.classList.add("ProseMirror-selectednode")
+      this.pm.content.classList.add("ProseMirror-nodeselection")
+      this.lastNode = dom
+    }
+    let range = document.createRange(), sel = window.getSelection()
+    range.selectNode(dom)
+    sel.removeAllRanges()
+    sel.addRange(range)
+    this.storeDOMState()
+  }
+
+  rangeToDOM() {
+    this.clearNode()
+
+    let anchor = DOMFromPos(this.pm.content, this.range.anchor)
+    let head = DOMFromPos(this.pm.content, this.range.head)
 
     let sel = window.getSelection(), range = document.createRange()
     if (sel.extend) {
@@ -162,8 +140,16 @@ export class SelectionState {
     this.storeDOMState()
   }
 
+  clearNode() {
+    if (this.lastNode) {
+      this.lastNode.classList.remove("ProseMirror-selectednode")
+      this.pm.content.classList.remove("ProseMirror-nodeselection")
+      this.lastNode = null
+      return true
+    }
+  }
+
   receivedFocus() {
-    this.lastFocusTime = Date.now()
     if (this.polling == null) this.startPolling()
   }
 }

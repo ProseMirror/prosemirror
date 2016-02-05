@@ -43,6 +43,10 @@ insertCSS(`
   outline: 2px solid #8cf;
 }
 
+.ProseMirror-nodeselection *::selection {
+  background: transparent;
+}
+
 .ProseMirror-content p:first-child,
 .ProseMirror-content h1:first-child,
 .ProseMirror-content h2:first-child,
