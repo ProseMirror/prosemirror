@@ -1,6 +1,6 @@
 import Keymap from "browserkeymap"
 import {Pos} from "../model"
-import {knownSource, parseFrom, fromHTML, fromText, toHTML, toText} from "../format"
+import {knownSource, parseFrom, fromDOM, toHTML, toText} from "../format"
 
 import {captureKeys} from "./capturekeys"
 import {elt, browser} from "../dom"
@@ -336,48 +336,65 @@ handlers.input = (pm) => {
   pm.scrollIntoView()
 }
 
-let lastCopied = null
-
-function setCopied(doc, from, to, dataTransfer) {
+function toClipboard(doc, from, to, dataTransfer) {
   let fragment = doc.sliceBetween(from, to)
-  lastCopied = {doc, from, to,
-                schema: doc.type.schema,
-                html: toHTML(fragment),
-                text: toText(fragment)}
-  if (dataTransfer) {
-    dataTransfer.clearData()
-    dataTransfer.setData("text/html", lastCopied.html)
-    dataTransfer.setData("text/plain", lastCopied.text)
-  }
+  let html = `<div pm-sides="${from.depth} ${to.depth}">${toHTML(fragment)}</div>`
+  dataTransfer.clearData()
+  dataTransfer.setData("text/html", html)
+  dataTransfer.setData("text/plain", toText(fragment))
 }
 
-function getCopied(pm, dataTransfer, plainText) {
+function fromClipboard(pm, dataTransfer, plainText) {
   let txt = dataTransfer.getData("text/plain")
   let html = dataTransfer.getData("text/html")
   if (!html && !txt) return null
-  let doc
-  if (plainText && txt) {
-    doc = fromText(pm.schema, pm.signalPipelined("transformPastedText", txt))
-  } else if (lastCopied && lastCopied.html == html && lastCopied.schema == pm.schema) {
-    return lastCopied
-  } else if (html) {
-    doc = fromHTML(pm.schema, pm.signalPipelined("transformPastedHTML", html))
-  } else {
+  let doc, from, to
+  if ((plainText || !html) && txt) {
     doc = parseFrom(pm.schema, pm.signalPipelined("transformPastedText", txt),
-                    knownSource("markdown") ? "markdown" : "text")
+                    !plainText && knownSource("markdown") ? "markdown" : "text")
+  } else {
+    let dom = document.createElement("div")
+    dom.innerHTML = pm.signalPipelined("transformPastedHTML", html)
+    let wrap = dom.querySelector("[pm-sides]"), depths
+    if (wrap && (depths = /^(\d+) (\d+)$/.exec(wrap.getAttribute("pm-sides")))) {
+      doc = fromDOM(pm.schema, wrap)
+      from = posAtLeft(doc, +depths[1])
+      to = posAtRight(doc, +depths[2])
+    } else {
+      doc = fromDOM(pm.schema, dom)
+    }
   }
-  return {doc, from: findSelectionAtStart(doc).from, to: findSelectionAtEnd(doc).to}
+  return {doc,
+          from: from || findSelectionAtStart(doc).from,
+          to: to || findSelectionAtEnd(doc).to}
+}
+
+function posAtLeft(doc, depth) {
+  let path = []
+  for (let i = 0, node = doc; i < depth; i++) {
+    if (!(node = node.firstChild)) break
+    path.push(0)
+  }
+  return new Pos(path, 0)
+}
+
+function posAtRight(doc, depth) {
+  let path = [], node = doc
+  for (let i = 0; i < depth; i++) {
+    if (!node.size) break
+    path.push(node.size - 1)
+    node = node.firstChild
+  }
+  return new Pos(path, node.size)
 }
 
 handlers.copy = handlers.cut = (pm, e) => {
   let {from, to, empty} = pm.selection
-  if (empty) return
-  setCopied(pm.doc, from, to, e.clipboardData)
-  if (e.clipboardData) {
-    e.preventDefault()
-    if (e.type == "cut" && !empty)
-      pm.tr.delete(from, to).apply()
-  }
+  if (empty || !e.clipboardData) return
+  toClipboard(pm.doc, from, to, e.clipboardData)
+  e.preventDefault()
+  if (e.type == "cut" && !empty)
+    pm.tr.delete(from, to).apply()
 }
 
 // :: (text: string) → string #path=ProseMirror#events#transformPastedText
@@ -393,7 +410,7 @@ handlers.copy = handlers.cut = (pm, e) => {
 handlers.paste = (pm, e) => {
   if (!e.clipboardData) return
   let sel = pm.selection
-  let fragment = getCopied(pm, e.clipboardData, pm.input.shiftKey)
+  let fragment = fromClipboard(pm, e.clipboardData, pm.input.shiftKey)
   if (fragment) {
     e.preventDefault()
     pm.tr.replace(sel.from, sel.to, fragment.doc, fragment.from, fragment.to).apply()
@@ -419,7 +436,7 @@ handlers.dragstart = (pm, e) => {
   if (fragment) {
     // FIXME the document could change during a drag, invalidating this range
     pm.input.draggingFrom = fragment
-    setCopied(pm.doc, fragment.from, fragment.to, e.dataTransfer)
+    toClipboard(pm.doc, fragment.from, fragment.to, e.dataTransfer)
   }
 }
 
@@ -449,7 +466,7 @@ handlers.drop = (pm, e) => {
 
   if (!e.dataTransfer) return
 
-  let fragment = getCopied(pm, e.dataTransfer)
+  let fragment = fromClipboard(pm, e.dataTransfer)
   if (fragment) {
     e.preventDefault()
     let insertPos = pm.posAtCoords({left: e.clientX, top: e.clientY}), origPos = insertPos
