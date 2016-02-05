@@ -67,6 +67,8 @@ export function posFromDOM(pm, dom, domOffset, loose) {
   return new Pos(path, offset + extraOffset)
 }
 
+// : (DOMNode, number, ?bool)
+// Get a child node of a parent node at a given offset.
 export function findByPath(node, n, fromEnd) {
   let container = childContainer(node)
   for (let ch = fromEnd ? container.lastChild : container.firstChild; ch;
@@ -77,6 +79,8 @@ export function findByPath(node, n, fromEnd) {
   }
 }
 
+// : (DOMNode, [number]) → DOMNode
+// Get a descendant node at a path relative to an ancestor node.
 export function pathToDOM(parent, path) {
   let node = parent
   for (let i = 0; i < path.length; i++) {
