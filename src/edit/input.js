@@ -3,7 +3,7 @@ import {Pos} from "../model"
 import {knownSource, parseFrom, fromHTML, fromText, toHTML, toText} from "../format"
 
 import {captureKeys} from "./capturekeys"
-import {elt, browser, addClass, rmClass} from "../dom"
+import {elt, browser} from "../dom"
 
 import {applyDOMChange, textContext, textInContext} from "./domchange"
 import {TextSelection, rangeFromDOMLoose, findSelectionAtStart, findSelectionAtEnd} from "./selection"
@@ -471,14 +471,14 @@ handlers.drop = (pm, e) => {
 }
 
 handlers.focus = pm => {
-  addClass(pm.wrapper, "ProseMirror-focused")
+  pm.wrapper.classList.add("ProseMirror-focused")
   // :: () #path=ProseMirror#events#focus
   // Fired when the editor gains focus.
   pm.signal("focus")
 }
 
 handlers.blur = pm => {
-  rmClass(pm.wrapper, "ProseMirror-focused")
+  pm.wrapper.classList.remove("ProseMirror-focused")
   // :: () #path=ProseMirror#events#blur
   // Fired when the editor loses focus.
   pm.signal("blur")
