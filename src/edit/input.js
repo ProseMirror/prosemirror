@@ -413,8 +413,9 @@ handlers.paste = (pm, e) => {
   let fragment = fromClipboard(pm, e.clipboardData, pm.input.shiftKey)
   if (fragment) {
     e.preventDefault()
-    pm.tr.replace(sel.from, sel.to, fragment.doc, fragment.from, fragment.to).apply()
+    let tr = pm.tr.replace(sel.from, sel.to, fragment.doc, fragment.from, fragment.to).apply()
     pm.scrollIntoView()
+    pm.signal("pasted", sel.from, tr.map(sel.from).pos)
   }
 }
 
