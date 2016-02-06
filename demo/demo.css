@@ -1,0 +1,24 @@
+body {
+  font-family: Georgia;
+  margin: 0 1em
+}
+
+textarea {
+  width: 100%;
+  border: 1px solid silver;
+  min-height: 40em;
+  padding: 4px 8px;
+}
+
+.left, .right {
+  width: 50%;
+  float: left;
+}
+
+.full {
+  max-width: 50em;
+}
+
+.marked {
+  background: #ff6
+}

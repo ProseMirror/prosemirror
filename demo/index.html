@@ -1,0 +1,99 @@
+<!doctype html>
+
+<meta charset="utf-8"/>
+<title>ProseMirror demo page</title>
+<link rel=stylesheet href="demo.css">
+
+<h1>ProseMirror demo page &nbsp; <button id="switch">try single editor</button> <button id="mark">mark</button></h1>
+
+<div class="left"></div><div class="right"></div><div class="full"></div>
+
+<textarea id="content" spellcheck="false">
+<h2>Demonstration Text</h2>
+
+<p>In a ProseMirror document, you can have the
+usual <strong>strong</strong> and <em>emphasized</em> text, <code>code
+font</code>, and <a href="http://marijnhaverbeke.nl">links</a>. There
+are also images: <img alt="demo picture" src="img.png">.</p>
+
+<p>On the block level you can have:</p>
+
+<ol>
+  <li>Ordered lists (such as this one)</li>
+  <li>Bullet lists</li>
+  <li>Blockquotes</li>
+  <li>Code blocks</li>
+  <li>Horizontal rules</li>
+</ol>
+
+<p>That is about it, though you can also bind extra commands and menu
+items that insert custom raw HTML blocks. These are not editable
+inside the editor, only though site-defined interface elements.</p>
+
+<hr>
+
+<h2>The Interface</h2>
+
+<p>The current interface will show a widget for inline styling when
+you select a piece of text. It will keep a “hamburger button” floating
+to the right of the currently focused block, though which you can
+manipulate block-level structure.</p>
+
+<p>There are also a number of keys bound to commands, which can be
+customized. Here are a few examples:</p>
+
+<ul>
+  <li><code>Ctrl-B</code> and <code>Ctrl-I</code> for strong and emphasized</li>
+  <li><code>Alt-Left</code> to dedent a block</li>
+  <li><code>Alt-Up</code> to join it to a similar block above it</li>
+  <li><p><code>Alt-Right</code> plus a second keypress to wrap a block</p>
+    <ul>
+      <li>“*” for bullet list</li>
+      <li>“1” for numbered list</li>
+      <li>“>” for blockquote</li>
+    </ul></li>
+  <li><code>Ctrl-Enter</code> to insert a hard break</li>
+  <li><code>Ctrl-Z</code> and <code>Ctrl-Y</code> to un- and redo</li>
+</ul>
+
+<p>And finally, there is support for defining “input rules” where some
+types of typed input cause something to happen. This demo has
+automatic quotes enabled, so that when you type single or double
+quotes in a non-code context, they'll be converted to the appropriate
+Unicode quote, and allows you to start a list or a quote by typing
+“>”, “*”, or “1.”, followed by a space, at the start of a
+paragraph.</p>
+
+<hr>
+
+<h2>The Model</h2>
+
+<p>Blockquotes and lists can nest arbitrarily deep. Thus, the document
+forms a tree, not dissimilar to the browser's DOM tree.</p>
+
+<p>At the inline level, the model works differently. Each block of
+text is a single node containing a flat series of inline elements.
+These are serialized as a tree structure when outputting HTML.</p>
+
+<p>Positions in the document are represented as a path (an array of
+offsets) through the block tree, and then an offset into the inline
+content of the block. Blocks that have no inline content (such as
+horizontal rules and HTML blocks) can not have the cursor inside of
+them. User-exposed operations on the document preserve the invariant
+that there is always at least a single valid cursor position.</p>
+
+<hr>
+
+<h2>Examples</h2>
+
+<blockquote><blockquote><p>We did not see a nested blockquote
+yet.</p></blockquote></blockquote>
+
+<pre><code class="lang-markdown">Nor did we see a code block
+
+Note that the content of a code block can't be styled.</code></pre>
+
+<p>This paragraph has<br>a hard break inside of it.</p>
+</textarea>
+
+<script src="/moduleserve/load.js" data-module="./demo"></script>
