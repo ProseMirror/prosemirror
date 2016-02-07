@@ -84,7 +84,7 @@ Step.define("removeMark", {
   }
 })
 
-// :: (Pos, Pos, union<Mark, MarkType>) → Transform
+// :: (Pos, Pos, ?union<Mark, MarkType>) → Transform
 // Remove the given mark, or all marks of the given type, from inline
 // nodes between `from` and `to`.
 Transform.prototype.removeMark = function(from, to, mark = null) {

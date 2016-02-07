@@ -29,7 +29,7 @@ const methods = {
       arr[i](...args)
   },
 
-  // :: (type: string, ...args: [any]) #path=EventMixin.signalHandleable
+  // :: (type: string, ...args: [any]) → any #path=EventMixin.signalHandleable
   // Signal a handleable event of the given type. All handlers for the
   // event will be called with the given arguments, until one of them
   // returns something that is not the value `false`. When that
@@ -44,7 +44,7 @@ const methods = {
     return false
   },
 
-  // :: (type: string, value: any)
+  // :: (type: string, value: any) → any #path=EventMixin.signalPipelined
   // Give all handlers for an event a chance to transform a value. The
   // value returned from a handler will be passed to the next handler.
   // The method returns the value returned by the final handler (or

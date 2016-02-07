@@ -102,7 +102,7 @@ export class CommandSet {
     this.op = op
   }
 
-  // :: (union<Object<CommandSpec>, string>, ?(string, CommandSpec) → bool) → CommandSet
+  // :: (union<Object<CommandSpec>, "schema">, ?(string, CommandSpec) → bool) → CommandSet
   // Add a set of commands, creating a new command set. If `set` is
   // the string `"schema"`, the commands are retrieved from the
   // editor's schema's [registry](#Schema.registry), otherwise, it

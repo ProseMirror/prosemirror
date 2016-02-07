@@ -24,6 +24,7 @@ function options(path, ranges) {
     onContainer(node) {
       node.setAttribute("pm-container", true)
     },
+    // : (Node, DOMNode, number) → DOMNode
     renderInlineFlat(node, dom, offset) {
       ranges.advanceTo(new Pos(path, offset))
       let end = new Pos(path, offset + node.width)

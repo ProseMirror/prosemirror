@@ -104,6 +104,7 @@ function findByOffset(node, offset, after) {
   }
 }
 
+// : (node: DOMNode, offset: number) → {node: DOMNode, offset: number}
 function leafAt(node, offset) {
   for (;;) {
     let child = node.firstChild

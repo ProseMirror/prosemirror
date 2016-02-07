@@ -369,6 +369,7 @@ function fromClipboard(pm, dataTransfer, plainText) {
           to: to || findSelectionAtEnd(doc).to}
 }
 
+// : (Node, number) → Pos
 function posAtLeft(doc, depth) {
   let path = []
   for (let i = 0, node = doc; i < depth; i++) {
@@ -378,6 +379,7 @@ function posAtLeft(doc, depth) {
   return new Pos(path, 0)
 }
 
+// : (Node, number) → Pos
 function posAtRight(doc, depth) {
   let path = [], node = doc
   for (let i = 0; i < depth; i++) {
