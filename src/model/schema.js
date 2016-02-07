@@ -409,7 +409,7 @@ export class MarkType extends SchemaItem {
   // guarantee what it will be.)
   static get rank() { return 50 }
 
-  // :: (Object) → Mark
+  // :: (?Object) → Mark
   // Create a mark of this type. `attrs` may be `null` or an object
   // containing only some of the mark's attributes. The others, if
   // they have defaults, will be added.

@@ -202,7 +202,7 @@ export class ProseMirror {
   // Create an editor- and selection-aware `Transform` for this editor.
   get tr() { return new EditorTransform(this) }
 
-  // :: (Transform, ?Object) → ?Transform
+  // :: (Transform, ?Object) → union<Transform,bool>
   // Apply a transformation (which you might want to create with the
   // [`tr` getter](#ProseMirror.tr)) to the document in the editor.
   // The following options are supported:
