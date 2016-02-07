@@ -4,9 +4,9 @@ This is a well-behaved rich semantic content editor based on
 contentEditable, with support for collaborative editing and
 customizable document models.
 
-The project page, which has a number of demos, is
-[prosemirror.net](http://prosemirror.net). It also has a
-[reference manual](http://prosemirror.net/doc/manual.html).
+The [project page](http://prosemirror.net) has a number of
+[demos](http://prosemirror.net/#demos) and the
+[documentation](http://prosemirror.net/docs.html).
 
 **NOTE:** This project is in *BETA* stage. It isn't thoroughly tested,
 and the API might still change across `0.x` releases. You are welcome
