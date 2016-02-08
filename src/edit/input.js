@@ -383,7 +383,7 @@ function posAtRight(doc, depth) {
   for (let i = 0; i < depth; i++) {
     if (!node.size) break
     path.push(node.size - 1)
-    node = node.firstChild
+    node = node.lastChild
   }
   return new Pos(path, node.size)
 }
