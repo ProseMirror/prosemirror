@@ -80,7 +80,10 @@ export class Pos {
   // can pass a negative or positive integer to move it backward or
   // forward (**note**: this method performs no bounds checking).
   shorten(to = null, offset = 0) {
-    if (to >= this.depth) return this
+    if (to >= this.depth) {
+      if (to == this.depth && !offset) return new Pos(this.path, this.offset + offset)
+      else ModelError.raise("Invalid shorten depth " + to + " for " + this)
+    }
     return Pos.shorten(this.path, to, offset)
   }
 
