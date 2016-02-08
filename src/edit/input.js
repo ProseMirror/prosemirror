@@ -148,7 +148,7 @@ function inputText(pm, range, text) {
 
 handlers.keypress = (pm, e) => {
   if (pm.input.composing || !e.charCode || e.ctrlKey && !e.altKey || browser.mac && e.metaKey) return
-  if (dispatchKey(pm, Keymap.keyName(e))) return
+  if (dispatchKey(pm, Keymap.keyName(e), e)) return
   let sel = pm.selection
   if (sel.node && sel.node.contains == null) {
     pm.tr.delete(sel.from, sel.to).apply()
