@@ -33,6 +33,10 @@ function title(pm, command) {
   return key ? command.label + " (" + key + ")" : command.label
 }
 
+function getCommandData(command) {
+  return typeof command === "string" ? command : command.name
+}
+
 // ;; Wraps a [command](#Command) so that it can be rendered in a
 // menu.
 export class MenuCommand {
@@ -223,7 +227,11 @@ function renderDropdownItems(items, pm) {
   let rendered = []
   for (let i = 0; i < items.length; i++) {
     let inner = items[i].render(pm)
-    if (inner) rendered.push(elt("div", {class: prefix + "-dropdown-item"}, inner))
+    if (inner) {
+      let element = elt("div", {class: prefix + "-dropdown-item"}, inner)
+      if (items[i].command_) element.setAttribute("data-cmd", getCommandData(items[i].command_))
+      rendered.push(element)
+    }
   }
   return rendered
 }
@@ -289,7 +297,9 @@ export function renderGrouped(pm, content) {
       let rendered = items[j].render(pm)
       if (rendered) {
         if (!added && needSep) result.appendChild(separator())
-        result.appendChild(elt("span", {class: prefix + "item"}, rendered))
+        let menuItem = elt("span", {class: prefix + "item"}, rendered)
+        if (items[j].command_) menuItem.setAttribute("data-cmd", getCommandData(items[j].command_))
+        result.appendChild(menuItem)
         added = true
       }
     }
