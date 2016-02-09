@@ -64,7 +64,8 @@ export class Fragment {
   // the fragment's children.
   some(f) {
     for (let iter = this.iter(), n; n = iter.next().value;)
-      if (f(n)) return n
+      if (f(n)) return true
+    return false
   }
 
   close(depth, side) {
