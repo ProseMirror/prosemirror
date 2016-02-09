@@ -75,6 +75,7 @@ export class MenuCommand {
       AssertionError.raise("Unsupported command display style: " + disp.type)
     }
     dom.setAttribute("title", title(pm, cmd))
+    dom.setAttribute("data-cmd", cmd.name)
     if (this.options.class) dom.classList.add(this.options.class)
     if (disabled) dom.classList.add(prefix + "-disabled")
     if (this.options.css) dom.style.cssText += this.options.css
