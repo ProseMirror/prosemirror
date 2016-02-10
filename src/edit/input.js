@@ -148,7 +148,7 @@ function inputText(pm, range, text) {
 
 handlers.keypress = (pm, e) => {
   if (pm.input.composing || !e.charCode || e.ctrlKey && !e.altKey || browser.mac && e.metaKey) return
-  if (dispatchKey(pm, Keymap.keyName(e))) return
+  if (dispatchKey(pm, Keymap.keyName(e), e)) return
   let sel = pm.selection
   if (sel.node && sel.node.contains == null) {
     pm.tr.delete(sel.from, sel.to).apply()
@@ -383,7 +383,7 @@ function posAtRight(doc, depth) {
   for (let i = 0; i < depth; i++) {
     if (!node.size) break
     path.push(node.size - 1)
-    node = node.firstChild
+    node = node.lastChild
   }
   return new Pos(path, node.size)
 }
@@ -465,7 +465,11 @@ handlers.dragleave = pm => pm.input.dropTarget.style.display = ""
 handlers.drop = (pm, e) => {
   pm.input.dropTarget.style.display = ""
 
-  if (!e.dataTransfer) return
+  // :: (event: DOMEvent) #path=ProseMirror#events#drop
+  // Fired when a drop event occurs on the editor content. A handler
+  // may declare the event handled by calling `preventDefault` on it
+  // or returning a truthy value.
+  if (!e.dataTransfer || pm.signalDOM(e)) return
 
   let fragment = fromClipboard(pm, e.dataTransfer)
   if (fragment) {
