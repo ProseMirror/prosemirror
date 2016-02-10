@@ -211,6 +211,8 @@ export class Node {
     return pos.offset < parent.size ? parent.child(pos.offset) : null
   }
 
+  // :: ([number]) → [Node]
+  // Get an array of all nodes along a path.
   pathNodes(path) {
     let nodes = []
     for (var i = 0, node = this;; i++) {

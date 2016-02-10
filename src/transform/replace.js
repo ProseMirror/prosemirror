@@ -114,6 +114,10 @@ function shiftFromStack(stack, depth) {
     shifted = stack[i] = stack[i].replace(0, shifted)
 }
 
+// : ([Node], Node, Pos, Pos) → {repl: Node, depth: number}
+// Given a document that should be inserted into another document,
+// create a modified document that can be inserted into the other
+// based on schema context.
 // FIXME find a not so horribly confusing way to express this
 function buildInserted(nodesLeft, source, start, end) {
   let sliced = source.sliceBetween(start, end)
@@ -134,6 +138,8 @@ function buildInserted(nodesLeft, source, start, end) {
   for (;;) {
     let node = nodesRight[searchRight], type = node.type, matched = null
     let outside = searchRight <= same
+    // Find the first node (searching from leaf to trunk) which can
+    // contain the content to be inserted.
     for (let i = searchLeft; i >= 0; i--) {
       let left = nodesLeft[i]
       if (outside ? left.type.canContainContent(node.type) : left.type == type) {
