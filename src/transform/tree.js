@@ -68,6 +68,8 @@ export function replaceHasEffect(doc, from, to) {
   }
 }
 
+// : (Pos, Pos) → number
+// Get the number of path levels that two positions have in common.
 export function samePathDepth(a, b) {
   for (let i = 0;; i++)
     if (i == a.path.length || i == b.path.length || a.path[i] != b.path[i])
