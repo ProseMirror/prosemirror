@@ -464,7 +464,11 @@ handlers.dragleave = pm => pm.input.dropTarget.style.display = ""
 handlers.drop = (pm, e) => {
   pm.input.dropTarget.style.display = ""
 
-  if (!e.dataTransfer) return
+  // :: (event: DOMEvent) #path=ProseMirror#events#drop
+  // Fired when a drop event occurs on the editor content. A handler
+  // may declare the event handled by calling `preventDefault` on it
+  // or returning a truthy value.
+  if (!e.dataTransfer || pm.signalDOM(e)) return
 
   let fragment = fromClipboard(pm, e.dataTransfer)
   if (fragment) {

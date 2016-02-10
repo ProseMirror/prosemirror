@@ -56,6 +56,20 @@ const methods = {
     return value
   },
 
+  // :: (DOMEvent, ?string) → bool
+  // Fire all handlers for `event.type` (or override the type name
+  // with the `type` parameter), until one of them calls
+  // `preventDefault` on the event or returns `true` to indicate it
+  // handled the event. Return `true` when one of the handlers handled
+  // the event.
+  signalDOM(event, type) {
+    let arr = this._handlers && this._handlers[type || event.type]
+    if (arr) for (let i = 0; i < arr.length; ++i) {
+      if (arr[i](event) || event.defaultPrevented) return true
+    }
+    return false
+  },
+
   // :: (type: string) → bool #path=EventMixin.hasHandler
   // Query whether there are any handlers for this event type.
   hasHandler(type) {
