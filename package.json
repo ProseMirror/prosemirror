@@ -26,6 +26,7 @@
     "babel-register": "^6.3.13",
     "blint": "^0.4.0",
     "moduleserve": "^0.6.0",
+    "distfs": "^0.1.1",
     "punycode": "^1.4.0",
     "rimraf": "^2.5.0",
     "xmldom": "^0.1.0"
