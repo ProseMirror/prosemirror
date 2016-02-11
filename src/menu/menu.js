@@ -219,7 +219,11 @@ function renderDropdownItems(items, pm) {
   let rendered = []
   for (let i = 0; i < items.length; i++) {
     let inner = items[i].render(pm)
-    if (inner) rendered.push(elt("div", {class: prefix + "-dropdown-item"}, inner))
+    if (inner) {
+      let element = elt("div", {class: prefix + "-dropdown-item"}, inner)
+      if (items[i].command_) element.setAttribute("data-cmd", items[i].command_.name)
+      rendered.push(element)
+    }
   }
   if (!rendered.length) rendered.push(elt("div", {class: prefix + "-dropdown-empty"}, "(empty)"))
   return rendered
