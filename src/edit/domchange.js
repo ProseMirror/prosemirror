@@ -33,7 +33,8 @@ function parseNearSelection(pm) {
       if (toEnd && endOffset < node.size - 1) endOffset++
       let parsed = fromDOM(pm.schema, dom, {topNode: node.copy(),
                                             from: startOffset,
-                                            to: dom.childNodes.length - (node.size - endOffset)})
+                                            to: dom.childNodes.length - (node.size - endOffset),
+                                            preserveWhitespace: true})
       parsed = parsed.copy(node.content.slice(0, startOffset).append(parsed.content).append(node.content.slice(endOffset)))
       for (let i = depth - 1; i >= 0; i--) {
         let wrap = pm.doc.path(from.path.slice(0, i))
