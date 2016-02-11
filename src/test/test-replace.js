@@ -1,9 +1,8 @@
 import {replace} from "../transform/replace"
 import {MovedRange} from "../transform/map"
 
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
+import {doc, blockquote, h1, p} from "./build"
 
-import {Failure} from "./failure"
 import {defTest} from "./tests"
 import {cmpNode, cmpStr, P} from "./cmp"
 

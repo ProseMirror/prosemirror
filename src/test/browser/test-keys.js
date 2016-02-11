@@ -28,7 +28,7 @@ test("basic", pm => {
   dispatch(pm, "'B'")
   cmp(pm.mod.b, 2)
 })
-  
+
 test("multi", pm => {
   pm.addKeymap(extraMap)
   dispatch(pm, "Ctrl-X")

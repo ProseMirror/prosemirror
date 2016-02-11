@@ -1,5 +1,5 @@
 import {namespace} from "./def"
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "../build"
+import {doc, p} from "../build"
 import {is, cmp, cmpNode, P} from "../cmp"
 
 const test = namespace("history")

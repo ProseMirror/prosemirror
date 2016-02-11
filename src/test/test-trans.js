@@ -3,7 +3,6 @@ import {Transform, Remapping} from "../transform"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
-import {Failure} from "./failure"
 import {defTest} from "./tests"
 import {cmpNode, cmpStr} from "./cmp"
 import {testStepJSON} from "./test-json"
@@ -21,7 +20,7 @@ function testMapping(maps, pos, newPos, label) {
   let mapped = pos
   maps.forEach(m => mapped = m.map(mapped, 1).pos)
   cmpStr(mapped, newPos, label)
-  
+
   let ident = {}
   for (let i = 0; i < maps.length; i++) ident[-i - 1] = i
   let remap = new Remapping(maps.map(x => x.invert()), maps, ident)
@@ -259,7 +258,7 @@ split("invalid_start",
 split("invalid_end",
       doc(blockquote(p("x"), "<a>")),
       doc(blockquote(p("x"))))
-      
+
 
 function lift(name, doc, expect) {
   defTest("lift_" + name, () => {

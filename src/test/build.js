@@ -1,7 +1,5 @@
 import {defaultSchema as schema, Pos} from "../model"
 
-let inlineContext = null
-
 function buildInline(style) {
   return function() {
     return {type: "span", style: style, content: arguments}
@@ -32,7 +30,7 @@ function parseDoc(value, content, path) {
     out += value.slice(pos)
     if (out) content.push(schema.text(out, styles))
   } else if (value.type == "span") {
-    let start = styles, result = []
+    let start = styles
     styles = value.style.addToSet(styles)
     for (let i = 0; i < value.content.length; i++)
       parseDoc(value.content[i], content, path)

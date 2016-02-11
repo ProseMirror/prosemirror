@@ -2,7 +2,7 @@ import {rebaseSteps} from "../collab/rebase"
 import {Pos, defaultSchema as schema} from "../model"
 import {Transform} from "../transform"
 
-import {doc, blockquote, h1, p, li, ol, ul, em, a, br} from "./build"
+import {doc, blockquote, p, li, ul, em} from "./build"
 import {Failure} from "./failure"
 import {defTest} from "./tests"
 import {cmpNode, cmpStr} from "./cmp"

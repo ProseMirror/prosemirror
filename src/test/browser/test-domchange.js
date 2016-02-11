@@ -1,7 +1,7 @@
 import {applyDOMChange} from "../../edit/domchange"
 
 import {namespace} from "./def"
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "../build"
+import {doc, p, em} from "../build"
 import {cmpNode} from "../cmp"
 import {findTextNode} from "./test-selection"
 

@@ -1,4 +1,4 @@
-import {doc, blockquote, pre, pre2, h1, h2, p, hr, li, ol, ul, em, strong, code, a, a2, br, img, dataImage} from "./build"
+import {doc, blockquote, h1, h2, p, hr, li, ol, ul, em, strong, code, a, br, img, dataImage} from "./build"
 import {cmpNode, cmpStr, is} from "./cmp"
 import {defTest} from "./tests"
 

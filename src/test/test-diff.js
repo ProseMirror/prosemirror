@@ -1,6 +1,6 @@
 import {findDiffStart, findDiffEnd} from "../model"
 
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
+import {doc, blockquote, h1, p, em, strong} from "./build"
 
 import {defTest} from "./tests"
 import {cmpStr, P} from "./cmp"

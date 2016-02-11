@@ -1,5 +1,5 @@
-import {doc, blockquote, pre, pre2, h1, h2, p, hr, li, ol, ul, em, strong, code, a, br, img, dataImage} from "./build"
-import {cmpNode, cmpStr} from "./cmp"
+import {doc, blockquote, p, hr, li, ul, em, strong, a, img} from "./build"
+import {cmpNode} from "./cmp"
 import {defTest} from "./tests"
 
 import {defaultSchema as schema} from "../model"
@@ -25,7 +25,6 @@ node("nesting",
      doc(blockquote(ul(li(p("a"), p("b")), li(p(img))), p("c")), p("d")))
 
 export function testStepJSON(tr) {
-  let json = tr.steps.map(s => s.toJSON())
   let newTR = new Transform(tr.before)
   tr.steps.forEach(step => newTR.step(Step.fromJSON(schema, step.toJSON())))
   cmpNode(tr.doc, newTR.doc)
