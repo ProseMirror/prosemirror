@@ -3,7 +3,7 @@ import {tempEditor, namespace} from "./def"
 import {cmpNode, is} from "../cmp"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "../build"
 
-import {CommandSet} from "../../src/edit"
+import {CommandSet} from "../../edit"
 
 const used = Object.create(null)
 

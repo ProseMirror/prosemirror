@@ -5,8 +5,8 @@ import {defTest} from "./tests"
 
 import xmlDOM from "xmldom"
 
-import {defaultSchema as schema} from "../src/model"
-import {toDOM, fromDOM} from "../src/format"
+import {defaultSchema as schema} from "../model"
+import {toDOM, fromDOM} from "../format"
 
 function domFor(str) {
   return (new xmlDOM.DOMParser).parseFromString("<!doctype html><html>" + str + "</html>")

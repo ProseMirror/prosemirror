@@ -31,8 +31,9 @@
     "xmldom": "^0.1.0"
   },
   "scripts": {
-    "test": "node test/start.js",
-    "demo": "moduleserve --transform babel demo",
+    "test": "node src/test/start.js",
+    "demo": "moduleserve demo",
+    "distfs": "distfs src dist",
     "dist": "babel -d dist src",
     "dist-watch": "babel -w -d dist src",
     "lint": "blint --browser --ecmaVersion 6 --forbidSemicolons src",

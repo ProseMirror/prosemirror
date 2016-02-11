@@ -1,5 +1,5 @@
-import {defaultSchema as schema} from "../src/model"
-import {Transform, Remapping} from "../src/transform"
+import {defaultSchema as schema} from "../model"
+import {Transform, Remapping} from "../transform"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 

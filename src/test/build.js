@@ -1,4 +1,4 @@
-import {defaultSchema as schema, Pos} from "../src/model"
+import {defaultSchema as schema, Pos} from "../model"
 
 let inlineContext = null
 

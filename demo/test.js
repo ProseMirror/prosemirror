@@ -1,30 +1,30 @@
-import {tests, filter} from "../test/tests"
-import {Failure} from "../test/failure"
-import "../test/all"
-import "../test/browser/all"
+var tests = require("../dist/test/tests")
+var Failure = require("../dist/test/failure").Failure
+require("../dist/test/all")
+require("../dist/test/browser/all")
 
-let gen = 0
+var gen = 0
 
 function runTests() {
-  let filters = document.location.hash.slice(1).split(",")
-  let myGen = ++gen
-  let runnable = []
-  for (let name in tests) if (filter(name, filters)) runnable.push(name)
+  var filters = document.location.hash.slice(1).split(",")
+  var myGen = ++gen
+  var runnable = []
+  for (var name in tests.tests) if (tests.filter(name, filters)) runnable.push(name)
 
   document.querySelector("#output").textContent = ""
 
   function run(i) {
-    let t0 = Date.now()
+    var t0 = Date.now()
     for (;; i++) {
       if (gen != myGen) return
       if (i == runnable.length) return finish()
-      let name = runnable[i]
+      var name = runnable[i]
       document.querySelector("#info").textContent = (i + 1) + " of " + runnable.length + " tests"
       document.querySelector("#status").textContent = "Running " + name
       document.querySelector("#measure").style.width = (((i + 1) / runnable.length) * 100) + "%"
 
       try {
-        tests[name]()
+        tests.tests[name]()
       } catch(e) {
         logFailure(name, e)
       }
@@ -35,19 +35,19 @@ function runTests() {
     }
   }
 
-  let failed = 0
+  var failed = 0
 
   function finish() {
     document.querySelector("#info").textContent = "Ran " + runnable.length + " tests"
-    let status = document.querySelector("#status")
+    var status = document.querySelector("#status")
     status.textContent = failed ? failed + " failed" : "All passed"
     status.className = failed ? "bad" : "good"
   }
 
   function logFailure(name, err) {
     ++failed
-    let elt = document.querySelector("#output").appendChild(document.createElement("pre"))
-    let nm = elt.appendChild(document.createElement("a"))
+    var elt = document.querySelector("#output").appendChild(document.createElement("pre"))
+    var nm = elt.appendChild(document.createElement("a"))
     nm.className = "bad"
     nm.href= "#" + name
     nm.textContent = name

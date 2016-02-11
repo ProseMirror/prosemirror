@@ -1,4 +1,4 @@
-import {defineOption} from "../../src/edit"
+import {defineOption} from "../../edit"
 
 import {namespace} from "./def"
 import {cmp} from "../cmp"

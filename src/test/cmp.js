@@ -1,5 +1,5 @@
 import {Failure} from "./failure"
-import {Pos, Mark} from "../src/model"
+import {Pos, Mark} from "../model"
 
 export function cmpNode(a, b, comment) {
   function raise(msg, path) {

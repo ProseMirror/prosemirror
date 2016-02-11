@@ -1,4 +1,4 @@
-import "../../src/collab"
+import "../../collab"
 
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "../build"
 import {defTest} from "../tests"

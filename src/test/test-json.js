@@ -2,8 +2,8 @@ import {doc, blockquote, pre, pre2, h1, h2, p, hr, li, ol, ul, em, strong, code,
 import {cmpNode, cmpStr} from "./cmp"
 import {defTest} from "./tests"
 
-import {defaultSchema as schema} from "../src/model"
-import {Transform, Step} from "../src/transform"
+import {defaultSchema as schema} from "../model"
+import {Transform, Step} from "../transform"
 
 function node(name, doc) {
   defTest("json_node_" + name, () => cmpNode(schema.nodeFromJSON(doc.toJSON()), doc))

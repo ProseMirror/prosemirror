@@ -1,4 +1,4 @@
-import {applyDOMChange} from "../../src/edit/domchange"
+import {applyDOMChange} from "../../edit/domchange"
 
 import {namespace} from "./def"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "../build"
