@@ -75,7 +75,6 @@ export class MenuCommand {
       AssertionError.raise("Unsupported command display style: " + disp.type)
     }
     dom.setAttribute("title", title(pm, cmd))
-    dom.setAttribute("data-cmd", cmd.name)
     if (this.options.class) dom.classList.add(this.options.class)
     if (disabled) dom.classList.add(prefix + "-disabled")
     if (this.options.css) dom.style.cssText += this.options.css
@@ -287,7 +286,9 @@ export function renderGrouped(pm, content) {
       let rendered = items[j].render(pm)
       if (rendered) {
         if (!added && needSep) result.appendChild(separator())
-        result.appendChild(elt("span", {class: prefix + "item"}, rendered))
+        let menuItem = elt("span", {class: prefix + "item"}, rendered)
+        if (items[j].command_) menuItem.setAttribute("data-cmd", items[j].command_.name)
+        result.appendChild(menuItem)
         added = true
       }
     }
