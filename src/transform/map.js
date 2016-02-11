@@ -1,6 +1,6 @@
 import {Pos} from "../model"
 
-// ;; #kind=interface #path=Mappable
+// ;; #path=Mappable #kind=interface
 // There are various things that positions can be mapped through.
 // We'll denote those as 'mappable'. This is not an actual class in
 // the codebase, only an agreed-on interface.
