@@ -109,7 +109,7 @@ Step.define("replace", {
 })
 
 function shiftFromStack(stack, depth) {
-  let shifted = stack[depth] = stack[depth].splice(0, 1, emptyFragment)
+  let shifted = stack[depth] = stack[depth].slice(1)
   for (let i = depth - 1; i >= 0; i--)
     shifted = stack[i] = stack[i].replace(0, shifted)
 }
