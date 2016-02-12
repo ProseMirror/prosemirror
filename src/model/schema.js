@@ -185,7 +185,7 @@ export class NodeType extends SchemaItem {
   // `"textblock paragraph"`). When you want to extend the superclass'
   // set of kinds, you can do something like
   //
-  //     static get kinds() { return super.kind + " mykind" }
+  //     static get kinds() { return super.kinds + " mykind" }
   static get kinds() { return "node" }
 
   // :: (Fragment) → bool
