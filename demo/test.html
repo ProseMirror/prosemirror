@@ -1,0 +1,32 @@
+<!doctype html>
+
+<meta charset="utf-8"/>
+<title>ProseMirror tests</title>
+
+<style>
+  body { max-width: 60em }
+  #progress { border: 1px solid orange; line-height: 1.5; text-align: center; position: relative }
+  #progress_wrap { border: 1px solid orange; padding: 1px; margin-bottom: 10px }
+  #measure { position: absolute; top: 0; left: 0; bottom: 0; background: orange; z-index: -1 }
+  #workspace { height: 0; opacity: 0 }
+  #info { font-size: 20px; color: white; text-shadow: 0 0 1px orange, 0 0 2px orange, 0 0 3px orange }
+  .bad { color: #c00; text-decoration: none }
+  .good { color: #0b0 }
+</style>
+
+<h1>ProseMirror Tests</h1>
+
+<div id="progress_wrap">
+  <div id="progress">
+    <span id="info">Starting...</span>
+    <div id="measure"></div>
+  </div>
+</div>
+
+<div id="status"></div>
+
+<div id="output"></div>
+
+<div id="workspace"></div>
+
+<script src="/moduleserve/load.js" data-module="./test"></script>
