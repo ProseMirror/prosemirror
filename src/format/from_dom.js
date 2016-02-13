@@ -309,7 +309,7 @@ CodeBlock.register("parseDOM", "pre", {parse: function(dom, state) {
   let params = dom.firstChild && /^code$/i.test(dom.firstChild.nodeName) && dom.firstChild.getAttribute("class")
   if (params && /fence/.test(params)) {
     let found = [], re = /(?:^|\s)lang-(\S+)/g, m
-    while (m = re.test(params)) found.push(m[1])
+    while (m = re.exec(params)) found.push(m[1])
     params = found.join(" ")
   } else {
     params = null
