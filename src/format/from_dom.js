@@ -16,7 +16,7 @@ export function fromDOM(schema, dom, options) {
   let end = options.to != null && dom.childNodes[options.to] || null
   context.addAll(start, end, true)
   let doc
-  while (context.stack.length) doc = context.leave()
+  do { doc = context.leave() } while (context.stack.length)
   return doc
 }
 
