@@ -168,7 +168,7 @@ export function scrollIntoView(pm, pos) {
 
 function findOffsetInNode(node, coords) {
   let closest, dyClosest = 1e8, coordsClosest, offset = 0
-  for (let child = node.firstChild, i = 0; child; child = child.nextSibling, i++) {
+  for (let child = node.firstChild; child; child = child.nextSibling) {
     let rects
     if (child.nodeType == 1) rects = child.getClientRects()
     else if (child.nodeType == 3) rects = textRects(child)
