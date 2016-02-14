@@ -238,7 +238,7 @@ export class ProseMirror {
   // must also fall within a textblock node.
   checkPos(pos, textblock) {
     if (!pos.isValid(this.doc, textblock))
-      AssertionError.raise("Position " + pos + " is not valid in current document")
+      AssertionError.raise("Position " + pos.toString() + " is not valid in current document")
   }
 
   ensureOperation() {
