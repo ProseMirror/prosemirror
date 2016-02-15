@@ -31,11 +31,12 @@ export class ParamPrompt {
         AssertionError.raise("Unsupported parameter type: " + param.type)
       return this.paramTypes[param.type].render.call(this.pm, param, this.defaultValue(param))
     })
+    let promtTitle = elt("h5", {}, (command.spec && command.spec.label) ? command.spec.label : '')
     let submitButton = elt("button", {type: "submit", class: "ProseMirror-prompt-submit"}, "Ok")
     let cancelLink = elt("a", {class: "ProseMirror-prompt-cancel"}, "Cancel")
     // :: DOMNode
     // An HTML form wrapping the fields.
-    this.form = elt("form", null, this.fields.map(f => elt("div", null, f)), submitButton, cancelLink)
+    this.form = elt("form", null, promtTitle, this.fields.map(f => elt("div", null, f)), submitButton, cancelLink)
   }
 
   // :: ()
@@ -241,6 +242,10 @@ insertCSS(`
   position: absolute;
   border-radius: 3px;
   z-index: 11;
+}
+
+.ProseMirror-prompt h5 {
+  display:none;
 }
 
 .ProseMirror-prompt input[type="text"],
