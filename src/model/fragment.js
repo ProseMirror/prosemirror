@@ -59,9 +59,9 @@ export class Fragment {
     return Fragment.fromArray(this.toArray(undefined, undefined, f))
   }
 
-  // :: ((Node) → bool) → bool
-  // Returns `true` if the given function returned `true` for any of
-  // the fragment's children.
+  // :: ((Node) → bool) → ?Node
+  // Returns the first child node for which the given function returns
+  // `true`, or undefined otherwise.
   some(f) {
     for (let iter = this.iter(), n; n = iter.next().value;)
       if (f(n)) return n
