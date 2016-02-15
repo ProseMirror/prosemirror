@@ -135,7 +135,7 @@ function buildInserted(nodesLeft, source, start, end) {
     shiftFromStack(nodesRight, searchRight)
   }
 
-  for (;;) {
+  for (;; searchRight--) {
     let node = nodesRight[searchRight], type = node.type, matched = null
     let outside = searchRight <= same
     // Find the first node (searching from leaf to trunk) which can
@@ -162,9 +162,8 @@ function buildInserted(nodesLeft, source, start, end) {
     }
     if (matched != null || node.size == 0) {
       if (outside) break
-      if (searchRight) shiftFromStack(nodesRight, searchRight - 1)
+      shiftFromStack(nodesRight, searchRight - 1)
     }
-    searchRight--
   }
 
   let repl = {content: result ? result.content : emptyFragment,
