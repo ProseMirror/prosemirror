@@ -89,11 +89,16 @@ export class ParamPrompt {
     let result = []
     for (let i = 0; i < this.command.params.length; i++) {
       let param = this.command.params[i], dom = this.fields[i]
-      let type = this.paramTypes[param.type], value = type.read.call(this.pm, dom), bad
-      if (param.validate)
-        bad = param.validate(value)
-      else if (!value && param.default == null)
-        bad = "No default value available"
+      let type = this.paramTypes[param.type], value, bad
+      if (type.validate)
+        bad = type.validate(dom)
+      if (!bad) {
+        value = type.read.call(this.pm, dom)
+        if (param.validate)
+          bad = param.validate(value)
+        else if (!value && param.default == null)
+          bad = "No default value available"
+      }
 
       if (bad) {
         if (type.reportInvalid)
@@ -149,6 +154,10 @@ export class ParamPrompt {
 // :: (field: DOMNode) → any #path=ParamTypeSpec.read
 // Read the value from the DOM field created by
 // [`render`](#ParamTypeSpec.render).
+
+// :: (field: DOMNode) → ?string #path=ParamTypeSpec.validate
+// Optional. Validate the value in the given field, and return a
+// string message if it is not a valid input for this type.
 
 // :: (field: DOMNode, message: string) #path=ParamTypeSpec.reportInvalid
 // Report the value in the given field as invalid, showing the given
