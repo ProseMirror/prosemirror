@@ -28,7 +28,8 @@
     "distfs": "^0.1.1",
     "punycode": "^1.4.0",
     "rimraf": "^2.5.0",
-    "xmldom": "^0.1.0"
+    "xmldom": "^0.1.0",
+    "source-map-support": "^0.2.10"
   },
   "scripts": {
     "test": "node dist/test/run.js",

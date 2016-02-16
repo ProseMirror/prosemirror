@@ -1,5 +1,6 @@
 import {Failure} from "./failure"
 import "./all"
+require("source-map-support").install()
 
 import {tests, filter} from "./tests"
 
