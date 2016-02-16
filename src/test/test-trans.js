@@ -485,7 +485,7 @@ repl("cut_empty_node_after",
 repl("cut_empty_node_at_start",
      doc(p("<a>x")),
      doc(blockquote(p("hi"), "<a>"), p("b<b>")),
-     doc(p("bx")))
+     doc(p(), p("bx")))
 repl("cut_empty_node_at_end",
      doc(p("<a>x")),
      doc(p("b<a>"), blockquote("<b>", p("hi"))),
