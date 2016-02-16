@@ -3,7 +3,7 @@ import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         EmMark, StrongMark, LinkMark, CodeMark} from "../model"
 import {defineTarget} from "../format"
 
-// :: (Node, ?options) → string
+// :: (Node, ?Object) → string
 // Serialize the content of the given node to [CommonMark](http://commonmark.org/).
 //
 // To define serialization behavior for your own [node
@@ -31,6 +31,8 @@ class MarkdownSerializer {
     this.delim = this.out = ""
     this.closed = false
     this.inTightList = false
+    // :: Object
+    // The options passed to the serializer.
     this.options = options
   }
 

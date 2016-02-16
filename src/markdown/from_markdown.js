@@ -6,7 +6,7 @@ import {defineSource} from "../format"
 import {AssertionError} from "../util/error"
 import sortedInsert from "../util/sortedinsert"
 
-// :: (Schema, string, ?options) → Node
+// :: (Schema, string, ?Object) → Node
 // Parse a string as [CommonMark](http://commonmark.org/) markup, and
 // create a ProseMirror document corresponding to its meaning. Note
 // that, by default, some CommonMark features, namely inline HTML and
@@ -90,6 +90,8 @@ class MarkdownParseState {
     this.tokens = tokens
     this.marks = noMarks
     this.tokenTypes = tokenTypeInfo(schema)
+    // :: Object
+    // The options passed to the parser.
     this.options = options
   }
 
