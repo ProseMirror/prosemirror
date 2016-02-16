@@ -76,7 +76,7 @@ class Collab {
     this.pm.history.allowCollapsing = true
   }
 
-  // :: () -> bool
+  // :: () → bool
   // Reports whether the editor has any unsent steps.
   hasSendableSteps() {
     return this.unconfirmedSteps.length > 0

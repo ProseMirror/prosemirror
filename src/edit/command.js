@@ -199,7 +199,7 @@ CommandSet.default = CommandSet.empty.add("schema").add(baseCommands)
 // [active](#Command.active). `this` refers to the associated node or
 // mark type.
 
-// :: union<string, [string]> #path=CommandSpec.keys
+// :: union<Object<[string]>, [string]> #path=CommandSpec.keys
 // The default key bindings for this command. May either be an array
 // of strings containing [key
 // names](https://github.com/marijnh/browserkeymap#a-string-notation-for-key-events),

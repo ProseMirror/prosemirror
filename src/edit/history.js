@@ -190,7 +190,7 @@ class Branch {
     }
   }
 
-  // : (Node, bool) → {transform: Transform, ids: [number]}
+  // : (Node, bool) → ?{transform: Transform, ids: [number]}
   // Pop the latest event off the branch's history and apply it
   // to a document transform, returning the transform and the step ID.
   popEvent(doc, allowCollapsing) {
@@ -378,9 +378,9 @@ export class History {
   // The amount of redoable events available.
   get redoDepth() { return this.undone.events.length }
 
-  // : (Branch, Branch) → bool
-  // Apply the latest event from one branch to the document and shift
-  // the event onto the other branch. Returns true when an event could
+  // : (Branch, ?Branch) → bool
+  // Apply the latest event from one branch to the document and optionally
+  // shift the event onto the other branch. Returns true when an event could
   // be shifted.
   shift(from, to) {
     let event = from.popEvent(this.pm.doc, this.allowCollapsing)

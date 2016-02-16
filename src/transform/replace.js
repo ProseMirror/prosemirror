@@ -114,7 +114,7 @@ function shiftFromStack(stack, depth) {
     shifted = stack[i] = stack[i].replace(0, shifted)
 }
 
-// : ([Node], Node, Pos, Pos) → {repl: Node, depth: number}
+// : ([Node], Node, Pos, Pos) → {repl: {content: Fragment, openLeft: number, openRight: number}, depth: number}
 // Given a document that should be inserted into another document,
 // create a modified document that can be inserted into the other
 // based on schema context.
