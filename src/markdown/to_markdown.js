@@ -3,7 +3,7 @@ import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         EmMark, StrongMark, LinkMark, CodeMark} from "../model"
 import {defineTarget} from "../format"
 
-// :: (Node) → string
+// :: (Node, ?options) → string
 // Serialize the content of the given node to [CommonMark](http://commonmark.org/).
 //
 // To define serialization behavior for your own [node
@@ -15,8 +15,8 @@ import {defineTarget} from "../format"
 // `closeMarkdown` properties, which provide the markup text that
 // marked content should be wrapped in. They may hold either a string
 // or a function from a `MarkdownSerializer` and a `Mark` to a string.
-export function toMarkdown(doc) {
-  let state = new MarkdownSerializer
+export function toMarkdown(doc, options) {
+  let state = new MarkdownSerializer(options)
   state.renderContent(doc)
   return state.out
 }
@@ -27,10 +27,11 @@ defineTarget("markdown", toMarkdown)
 // methods related to markdown serialization. Instances are passed to
 // node and mark serialization methods (see `toMarkdown`).
 class MarkdownSerializer {
-  constructor() {
+  constructor(options) {
     this.delim = this.out = ""
     this.closed = false
     this.inTightList = false
+    this.options = options
   }
 
   flushClose(size) {
