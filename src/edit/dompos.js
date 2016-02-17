@@ -157,10 +157,12 @@ export function scrollIntoView(pm, pos) {
     else if (coords.right > rect.right)
       moveX = coords.right - rect.right + scrollMargin
     if (moveX || moveY) {
-      if (atBody) window.scrollBy(moveX, moveY)
-    } else {
-      if (moveY) parent.scrollTop += moveY
-      if (moveX) parent.scrollLeft += moveX
+      if (atBody) {
+        window.scrollBy(moveX, moveY)
+      } else {
+        if (moveY) parent.scrollTop += moveY
+        if (moveX) parent.scrollLeft += moveX
+      }
     }
     if (atBody) break
   }
