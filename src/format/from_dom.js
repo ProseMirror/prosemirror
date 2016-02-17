@@ -349,7 +349,7 @@ LinkMark.register("parseDOM", "a", {parse: function(dom, state) {
 
 EmMark.register("parseDOM", "i", {parse: "mark"})
 EmMark.register("parseDOM", "em", {parse: "mark"})
-StrongMark.register("parseDOMStyle", "font-style", {parse: function(value, state, inner) {
+EmMark.register("parseDOMStyle", "font-style", {parse: function(value, state, inner) {
   if (value == "italic") state.wrapMark(inner, this)
   else inner()
 }})
