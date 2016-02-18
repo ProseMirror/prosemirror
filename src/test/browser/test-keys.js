@@ -3,9 +3,9 @@ import {doc, p, ul, li, pre} from "../build"
 import {cmp, cmpNode, is} from "../cmp"
 import {defTest} from "../tests"
 
-import {dispatchKey} from "../../src/edit/input"
-import {Keymap} from "../../src/edit"
-import {Pos} from "../../src/model"
+import {dispatchKey} from "../../edit/input"
+import {Keymap} from "../../edit"
+import {Pos} from "../../model"
 
 function trace(prop) { return pm => pm.mod[prop] = (pm.mod[prop] || 0) + 1 }
 
@@ -28,7 +28,7 @@ test("basic", pm => {
   dispatch(pm, "'B'")
   cmp(pm.mod.b, 2)
 })
-  
+
 test("multi", pm => {
   pm.addKeymap(extraMap)
   dispatch(pm, "Ctrl-X")

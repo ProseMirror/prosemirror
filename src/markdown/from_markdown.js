@@ -6,14 +6,14 @@ import {defineSource} from "../format"
 import {AssertionError} from "../util/error"
 import sortedInsert from "../util/sortedinsert"
 
-// :: (Schema, string) → Node
+// :: (Schema, string, ?Object) → Node
 // Parse a string as [CommonMark](http://commonmark.org/) markup, and
 // create a ProseMirror document corresponding to its meaning. Note
 // that, by default, some CommonMark features, namely inline HTML and
 // tight lists, are not supported.
-export function fromMarkdown(schema, text) {
+export function fromMarkdown(schema, text, options) {
   let tokens = configureMarkdown(schema).parse(text, {})
-  let state = new MarkdownParseState(schema, tokens), doc
+  let state = new MarkdownParseState(schema, tokens, options), doc
   state.parseTokens(tokens)
   do { doc = state.closeNode() } while (state.stack.length)
   return doc
@@ -82,7 +82,7 @@ function maybeMerge(a, b) {
 // and to expose parsing-related methods to node-specific parsing
 // functions.
 class MarkdownParseState {
-  constructor(schema, tokens) {
+  constructor(schema, tokens, options) {
     // :: Schema
     // The schema into which we are parsing.
     this.schema = schema
@@ -90,6 +90,9 @@ class MarkdownParseState {
     this.tokens = tokens
     this.marks = noMarks
     this.tokenTypes = tokenTypeInfo(schema)
+    // :: Object
+    // The options passed to the parser.
+    this.options = options
   }
 
   top() {

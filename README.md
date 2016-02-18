@@ -32,7 +32,18 @@ Inside the project directory, install the project's node dependencies
 npm install
 ```
 
-Start the demo server (resolves modules, compiles ES6):
+Make sure you have an up-to-date `dist/` dir:
+
+```bash
+npm run dist
+# or, to keep compiling as files are changed
+npm run dist-watch
+# or, to mount a virtual ES6-compiling filesystem
+# (might not work on non-Linux OSs)
+npm run distfs
+```
+
+Start the demo server (serves demo files, resolves modules):
 
 ```bash
 npm run demo

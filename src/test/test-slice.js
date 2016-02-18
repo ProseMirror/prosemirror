@@ -1,6 +1,5 @@
 import {doc, p, li, ul, em, a} from "./build"
 
-import {Failure} from "./failure"
 import {defTest} from "./tests"
 import {cmpNode} from "./cmp"
 

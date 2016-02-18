@@ -1,4 +1,4 @@
-import {Pos} from "../src/model"
+import {Pos} from "../model"
 
 import {Failure} from "./failure"
 import {defTest} from "./tests"

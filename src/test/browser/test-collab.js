@@ -1,6 +1,6 @@
-import "../../src/collab"
+import "../../collab"
 
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "../build"
+import {doc, p} from "../build"
 import {defTest} from "../tests"
 import {P, cmpNode} from "../cmp"
 import {tempEditors} from "./def"
@@ -23,7 +23,7 @@ class DummyServer {
     pm.mod.collab.confirmSteps(toSend)
   }
 
-  send(pm, version, steps) {
+  send(pm, _version, steps) {
     this.version += steps.length
     for (let i = 0; i < this.pms.length; i++)
       if (this.pms[i] != pm) this.pms[i].mod.collab.receive(steps)

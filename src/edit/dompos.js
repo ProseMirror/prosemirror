@@ -149,7 +149,7 @@ export function scrollIntoView(pm, pos) {
     let rect = atBody ? windowRect() : parent.getBoundingClientRect()
     let moveX = 0, moveY = 0
     if (coords.top < rect.top)
-      moveY =  -(rect.top - coords.top + scrollMargin)
+      moveY = -(rect.top - coords.top + scrollMargin)
     else if (coords.bottom > rect.bottom)
       moveY = coords.bottom - rect.bottom + scrollMargin
     if (coords.left < rect.left)
@@ -157,10 +157,12 @@ export function scrollIntoView(pm, pos) {
     else if (coords.right > rect.right)
       moveX = coords.right - rect.right + scrollMargin
     if (moveX || moveY) {
-      if (atBody) window.scrollBy(moveX, moveY)
-    } else {
-      if (moveY) parent.scrollTop += moveY
-      if (moveX) parent.scrollLeft += moveX
+      if (atBody) {
+        window.scrollBy(moveX, moveY)
+      } else {
+        if (moveY) parent.scrollTop += moveY
+        if (moveX) parent.scrollLeft += moveX
+      }
     }
     if (atBody) break
   }
@@ -168,7 +170,7 @@ export function scrollIntoView(pm, pos) {
 
 function findOffsetInNode(node, coords) {
   let closest, dyClosest = 1e8, coordsClosest, offset = 0
-  for (let child = node.firstChild, i = 0; child; child = child.nextSibling, i++) {
+  for (let child = node.firstChild; child; child = child.nextSibling) {
     let rects
     if (child.nodeType == 1) rects = child.getClientRects()
     else if (child.nodeType == 3) rects = textRects(child)

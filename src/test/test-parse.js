@@ -1,9 +1,9 @@
-import {doc, blockquote, pre, pre2, h1, h2, p, hr, li, ol, ul, em, strong, code, a, a2, br, img, dataImage} from "./build"
+import {doc, blockquote, h1, h2, p, hr, li, ol, ul, em, strong, code, a, br, img, dataImage} from "./build"
 import {cmpNode, cmpStr, is} from "./cmp"
 import {defTest} from "./tests"
 
-import {defaultSchema as schema} from "../src/model"
-import {fromMarkdown, toMarkdown} from "../src/markdown"
+import {defaultSchema as schema} from "../model"
+import {fromMarkdown, toMarkdown} from "../markdown"
 
 function t(name, text, doc) {
   defTest("parse_" + name, () => {

@@ -1,5 +1,5 @@
 import {namespace} from "./def"
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, img, strong, code, a, a2, br, hr} from "../build"
+import {doc, blockquote, pre, p, li, ul, img, br, hr} from "../build"
 import {cmp, cmpStr, cmpNode, is, P} from "../cmp"
 
 const test = namespace("nodeselection")

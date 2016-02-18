@@ -1,7 +1,7 @@
-import {Mark, defaultSchema as schema} from "../src/model"
+import {Mark, defaultSchema as schema} from "../model"
 import {Failure} from "./failure"
 import {defTest} from "./tests"
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, a, a2, br} from "./build"
+import {doc, p, em, a} from "./build"
 
 function assert(name, value) {
   if (!value) throw new Failure("Assertion failed: " + name)

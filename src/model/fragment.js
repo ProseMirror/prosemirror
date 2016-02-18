@@ -59,9 +59,9 @@ export class Fragment {
     return Fragment.fromArray(this.toArray(undefined, undefined, f))
   }
 
-  // :: ((Node) → bool) → bool
-  // Returns `true` if the given function returned `true` for any of
-  // the fragment's children.
+  // :: ((Node) → bool) → ?Node
+  // Returns the first child node for which the given function returns
+  // `true`, or undefined otherwise.
   some(f) {
     for (let iter = this.iter(), n; n = iter.next().value;)
       if (f(n)) return n
@@ -117,9 +117,10 @@ export class Fragment {
   // Build a fragment from an array of nodes.
   static fromArray(array) {
     if (!array.length) return emptyFragment
-    let hasText = false, joined
+    let hasText = false, joined, size = 0
     for (let i = 0; i < array.length; i++) {
       let node = array[i]
+      size += node.width
       if (node.isText) {
         hasText = true
         if (i && array[i - 1].sameMarkup(node)) {
@@ -130,7 +131,7 @@ export class Fragment {
       }
       if (joined) joined.push(node)
     }
-    return hasText ? new TextFragment(joined || array) : new FlatFragment(array)
+    return hasText ? new TextFragment(joined || array, size) : new FlatFragment(array)
   }
 
   // :: (?union<Fragment, Node, [Node]>) → Fragment
@@ -424,7 +425,7 @@ class TextFragment extends Fragment {
 
   slice(from = 0, to = this.size) {
     if (from == to) return emptyFragment
-    return new TextFragment(this.toArray(from, to))
+    return new TextFragment(this.toArray(from, to), to - from)
   }
 
   replace(off, node) {
@@ -437,7 +438,7 @@ class TextFragment extends Fragment {
     if (curNode.isText) ModelError.raise("Can not replace text content with replace method")
     let copy = this.content.slice()
     copy[index] = node
-    return new TextFragment(copy)
+    return new TextFragment(copy, this.size)
   }
 
   appendInner(other, joinLeft, joinRight) {

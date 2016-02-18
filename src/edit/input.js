@@ -217,14 +217,14 @@ class MouseDown {
 
     this.x = event.clientX; this.y = event.clientY
 
-    addEventListener("mouseup", this.up = this.up.bind(this))
-    addEventListener("mousemove", this.move = this.move.bind(this))
+    window.addEventListener("mouseup", this.up = this.up.bind(this))
+    window.addEventListener("mousemove", this.move = this.move.bind(this))
     pm.sel.fastPoll()
   }
 
   done() {
-    removeEventListener("mouseup", this.up)
-    removeEventListener("mousemove", this.move)
+    window.removeEventListener("mouseup", this.up)
+    window.removeEventListener("mousemove", this.move)
     if (this.mightDrag) {
       this.event.target.draggable = false
       if (browser.gecko && this.setContentEditable)

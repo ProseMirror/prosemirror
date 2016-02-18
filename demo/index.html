@@ -4,11 +4,11 @@
 <title>ProseMirror demo page</title>
 <link rel=stylesheet href="demo.css">
 
-<h1>ProseMirror demo page &nbsp; <button id="switch">try single editor</button> <button id="mark">mark</button></h1>
+<h1>ProseMirror demo page &nbsp; <button id="mark">mark</button></h1>
 
-<div class="left"></div><div class="right"></div><div class="full"></div>
+<div class="full"></div>
 
-<textarea id="content" spellcheck="false">
+<div id=content style="display: none">
 <h2>Demonstration Text</h2>
 
 <p>In a ProseMirror document, you can have the
@@ -94,6 +94,6 @@ yet.</p></blockquote></blockquote>
 Note that the content of a code block can't be styled.</code></pre>
 
 <p>This paragraph has<br>a hard break inside of it.</p>
-</textarea>
+</div>
 
 <script src="/moduleserve/load.js" data-module="./demo"></script>

@@ -541,7 +541,7 @@ function selectNodeVertically(pm, dir) {
     setDOMSelectionToPos(pm, last)
     return false
   }
-  pm.setSelectionDirect(beyond)
+  if (beyond) pm.setSelectionDirect(beyond)
   return true
 }
 

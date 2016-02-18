@@ -16,7 +16,7 @@ export function fromDOM(schema, dom, options) {
   let end = options.to != null && dom.childNodes[options.to] || null
   context.addAll(start, end, true)
   let doc
-  while (context.stack.length) doc = context.leave()
+  do { doc = context.leave() } while (context.stack.length)
   return doc
 }
 
@@ -102,14 +102,16 @@ class DOMParseState {
       let value = dom.nodeValue
       let top = this.top, last
       if (/\S/.test(value) || top.type.isTextblock) {
-        value = value.replace(/\s+/g, " ")
-        // If this starts with whitespace, and there is either no node
-        // before it or a node that ends with whitespace, strip the
-        // leading space.
-        if (/^\s/.test(value) &&
-            (!(last = top.content[top.content.length - 1]) ||
-             (last.type.name == "text" && /\s$/.test(last.text))))
-          value = value.slice(1)
+        if (!this.options.preserveWhitespace) {
+          value = value.replace(/\s+/g, " ")
+          // If this starts with whitespace, and there is either no node
+          // before it or a node that ends with whitespace, strip the
+          // leading space.
+          if (/^\s/.test(value) &&
+              (!(last = top.content[top.content.length - 1]) ||
+               (last.type.name == "text" && /\s$/.test(last.text))))
+            value = value.slice(1)
+        }
         if (value)
           this.insertNode(this.schema.text(value, this.marks))
       }
@@ -214,7 +216,7 @@ class DOMParseState {
     if (this.marks.length) this.marks = noMarks
     let top = this.stack.pop()
     let last = top.content[top.content.length - 1]
-    if (last && last.isText && /\s$/.test(last.text))
+    if (!this.options.preserveWhitespace && last && last.isText && /\s$/.test(last.text))
       top.content[top.content.length - 1] = last.copy(last.text.slice(0, last.text.length - 1))
     let node = top.type.createAutoFill(top.attrs, top.content)
     if (this.stack.length) this.insertNode(node)
@@ -307,7 +309,7 @@ CodeBlock.register("parseDOM", "pre", {parse: function(dom, state) {
   let params = dom.firstChild && /^code$/i.test(dom.firstChild.nodeName) && dom.firstChild.getAttribute("class")
   if (params && /fence/.test(params)) {
     let found = [], re = /(?:^|\s)lang-(\S+)/g, m
-    while (m = re.test(params)) found.push(m[1])
+    while (m = re.exec(params)) found.push(m[1])
     params = found.join(" ")
   } else {
     params = null
@@ -347,7 +349,7 @@ LinkMark.register("parseDOM", "a", {parse: function(dom, state) {
 
 EmMark.register("parseDOM", "i", {parse: "mark"})
 EmMark.register("parseDOM", "em", {parse: "mark"})
-StrongMark.register("parseDOMStyle", "font-style", {parse: function(value, state, inner) {
+EmMark.register("parseDOMStyle", "font-style", {parse: function(value, state, inner) {
   if (value == "italic") state.wrapMark(inner, this)
   else inner()
 }})

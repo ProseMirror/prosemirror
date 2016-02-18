@@ -65,7 +65,7 @@ export class MenuCommand {
 
     let dom
     if (disp.render) {
-      dom = disp.render(cmd)
+      dom = disp.render(cmd, pm)
     } else if (disp.type == "icon") {
       dom = getIcon(cmd.name, disp)
       if (!disabled && cmd.active(pm)) dom.classList.add(prefix + "-active")
@@ -324,8 +324,9 @@ function separator() {
 // :: Object #path=MenuCommandSpec.display
 // Determines how the command is shown in the menu. It may have either
 // a `type` property containing one of the strings shown below, or a
-// `render` property that, when called with the command as argument,
-// returns a DOM node representing the command's menu representation.
+// `render` property that, when called with the command and a
+// `ProseMirror` instance as arguments, returns a DOM node
+// representing the command's menu representation.
 //
 // **`"icon"`**
 //   : Show the command as an icon. The object may have `{path, width,

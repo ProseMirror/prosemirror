@@ -109,7 +109,7 @@ Step.define("replace", {
 })
 
 function shiftFromStack(stack, depth) {
-  let shifted = stack[depth] = stack[depth].splice(0, 1, emptyFragment)
+  let shifted = stack[depth] = stack[depth].slice(1)
   for (let i = depth - 1; i >= 0; i--)
     shifted = stack[i] = stack[i].replace(0, shifted)
 }
@@ -126,7 +126,7 @@ function buildInserted(nodesLeft, source, start, end) {
     nodesRight.push(node)
   let same = samePathDepth(start, end)
   let searchLeft = nodesLeft.length - 1, searchRight = nodesRight.length - 1
-  let result = null
+  let result = null, dLeft = start.depth, dRight = end.depth
 
   let inner = nodesRight[searchRight]
   if (inner.isTextblock && inner.size && nodesLeft[searchLeft].isTextblock) {
@@ -135,7 +135,7 @@ function buildInserted(nodesLeft, source, start, end) {
     shiftFromStack(nodesRight, searchRight)
   }
 
-  for (;;) {
+  for (;; searchRight--) {
     let node = nodesRight[searchRight], type = node.type, matched = null
     let outside = searchRight <= same
     // Find the first node (searching from leaf to trunk) which can
@@ -159,17 +159,19 @@ function buildInserted(nodesLeft, source, start, end) {
           searchLeft--
         }
       }
+      if (outside) break
+    } else {
+      --dLeft
     }
     if (matched != null || node.size == 0) {
-      if (outside) break
-      if (searchRight) shiftFromStack(nodesRight, searchRight - 1)
+      if (outside && matched == null) --dRight
+      shiftFromStack(nodesRight, searchRight - 1)
     }
-    searchRight--
   }
 
   let repl = {content: result ? result.content : emptyFragment,
-              openLeft: start.depth - searchRight,
-              openRight: end.depth - searchRight}
+              openLeft: dLeft - searchRight,
+              openRight: dRight - searchRight}
   return {repl, depth: searchLeft + 1}
 }
 

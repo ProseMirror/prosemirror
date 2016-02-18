@@ -1,9 +1,9 @@
 import {defTest} from "../tests"
 import {tempEditor, namespace} from "./def"
 import {cmpNode, is} from "../cmp"
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "../build"
+import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, br, hr} from "../build"
 
-import {CommandSet} from "../../src/edit"
+import {CommandSet} from "../../edit"
 
 const used = Object.create(null)
 
@@ -69,7 +69,7 @@ test("em:toggle",
 test("em:toggle",
      doc(p(em("f<a>o<b>o"))),
      doc(p(em("f"), "o", em("o"))))
-     
+
 test("code:set",
      doc(p("f<a>o<b>o")),
      doc(p("f", code("o"), "o")))
@@ -293,7 +293,7 @@ test("bullet_list:wrap",
      doc(blockquote(ul(li(p("foo"))))))
 test("bullet_list:wrap",
      doc(p("foo"), p("ba<a>r"), p("ba<b>z")),
-     doc(p("foo"), ul(li(p("bar")), li(p("baz"))))) 
+     doc(p("foo"), ul(li(p("bar")), li(p("baz")))))
 test("bullet_list:wrap",
      doc(ul(li(p("<a>foo")))),
      doc(ul(li(p("foo")))))

@@ -1,8 +1,8 @@
 import {namespace} from "./def"
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, img, strong, code, a, a2, br, hr} from "../build"
+import {doc, blockquote, p, em, img, strong, code, br, hr} from "../build"
 import {cmp, cmpNode, gt, cmpStr, P} from "../cmp"
 
-import {Pos} from "../../src/model"
+import {Pos} from "../../model"
 
 function allPositions(doc) {
   let found = [], path = []
@@ -154,7 +154,7 @@ test("coords_cornercases", pm => {
 })
 
 test("coords_round_trip", pm => {
-  [P(0, 0), P(0, 1), P(0, 3), P(1, 0, 0), P(1, 1, 2), P(1, 1, 3)].forEach(pos => {
+  ;[P(0, 0), P(0, 1), P(0, 3), P(1, 0, 0), P(1, 1, 2), P(1, 1, 3)].forEach(pos => {
     let coords = pm.coordsAtPos(pos)
     let found = pm.posAtCoords(coords)
     cmpStr(found, pos)

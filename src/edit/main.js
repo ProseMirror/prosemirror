@@ -40,7 +40,7 @@ export class ProseMirror {
     // :: Schema
     // The schema for this editor's document.
     this.schema = opts.schema
-    if (opts.doc == null) opts.doc = this.schema.node("doc", null, [this.schema.node("paragraph")])
+     if (opts.doc == null) opts.doc = this.schema.node("doc", null, [this.schema.node("paragraph")])
     // :: DOMNode
     // The editable DOM node containing the document.
     this.content = elt("div", {class: "ProseMirror-content", "pm-container": true})
