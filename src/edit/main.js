@@ -119,7 +119,7 @@ export class ProseMirror {
     if (!node.type.selectable)
       SelectionError.raise("Trying to select a non-selectable node")
     this.input.maybeAbortComposition()
-    this.sel.setAndSignal(new NodeSelection(pos, pos.move(1), node))
+    this.sel.setAndSignal(new NodeSelection(pos, pos.move(1), node), false)
   }
 
   // :: (Selection)
