@@ -36,6 +36,7 @@ function onPasted (pm, from, to) {
   let pasteFragment = pm.doc.sliceBetween(from, to)
 
   function fixFragment(transform) {
+    from = transform.map(from).pos
     to = transform.map(to).pos
     pasteFragment = pm.doc.sliceBetween(from, to)
   }
