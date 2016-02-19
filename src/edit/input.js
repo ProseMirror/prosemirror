@@ -396,7 +396,7 @@ function posAtRight(doc, depth) {
 
 function parseFromContext(dom, contextNode, openLeft, openRight) {
   let schema = contextNode.schema, top = schema.nodes.doc
-  let doc = fromDOM(schema, dom, {topNode: contextNode.create()})
+  let doc = fromDOM(schema, dom, {topNode: contextNode.create(), preserveWhitespace: true})
   if (contextNode != top) {
     let path = top.findConnection(contextNode)
     if (!path) return null
