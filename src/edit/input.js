@@ -1,6 +1,6 @@
 import Keymap from "browserkeymap"
 import {Pos} from "../model"
-import {knownSource, parseFrom, fromDOM, toHTML, toText} from "../format"
+import {parseFrom, fromDOM, toHTML, toText} from "../format"
 
 import {captureKeys} from "./capturekeys"
 import {elt, browser} from "../dom"
@@ -337,11 +337,18 @@ handlers.input = (pm) => {
 }
 
 function toClipboard(doc, from, to, dataTransfer) {
-  let fragment = doc.sliceBetween(from, to)
-  let html = `<div pm-sides="${from.depth} ${to.depth}">${toHTML(fragment)}</div>`
+  let found
+  for (let depth = 0, node = doc.sliceBetween(from, to);; depth++) {
+    if (node.type.defaultAttrs) found = {depth, node}
+    if (node.size > 1) break
+    node = node.firstChild
+  }
+
+  let attr = `${found.node.type.name} ${from.depth - found.depth} ${to.depth - found.depth}`
+  let html = `<div pm-context="${attr}">${toHTML(found.node)}</div>`
   dataTransfer.clearData()
   dataTransfer.setData("text/html", html)
-  dataTransfer.setData("text/plain", toText(fragment))
+  dataTransfer.setData("text/plain", toText(found.node))
 }
 
 function fromClipboard(pm, dataTransfer, plainText) {
@@ -350,16 +357,15 @@ function fromClipboard(pm, dataTransfer, plainText) {
   if (!html && !txt) return null
   let doc, from, to
   if ((plainText || !html) && txt) {
-    doc = parseFrom(pm.schema, pm.signalPipelined("transformPastedText", txt),
-                    !plainText && knownSource("markdown") ? "markdown" : "text")
+    doc = parseFrom(pm.schema, pm.signalPipelined("transformPastedText", txt), "text")
   } else {
     let dom = document.createElement("div")
     dom.innerHTML = pm.signalPipelined("transformPastedHTML", html)
-    let wrap = dom.querySelector("[pm-sides]"), depths
-    if (wrap && (depths = /^(\d+) (\d+)$/.exec(wrap.getAttribute("pm-sides")))) {
-      doc = fromDOM(pm.schema, wrap)
-      from = posAtLeft(doc, +depths[1])
-      to = posAtRight(doc, +depths[2])
+    let wrap = dom.querySelector("[pm-context]"), context, contextNode, found
+    if (wrap && (context = /^(\w+) (\d+) (\d+)$/.exec(wrap.getAttribute("pm-context"))) &&
+        (contextNode = pm.schema.nodes[context[1]]) && contextNode.defaultAttrs &&
+        (found = parseFromContext(wrap, contextNode, +context[2], +context[3]))) {
+      ;({doc, from, to} = found)
     } else {
       doc = fromDOM(pm.schema, dom)
     }
@@ -386,6 +392,21 @@ function posAtRight(doc, depth) {
     node = node.lastChild
   }
   return new Pos(path, node.size)
+}
+
+function parseFromContext(dom, contextNode, openLeft, openRight) {
+  let schema = contextNode.schema, top = schema.nodes.doc
+  let doc = fromDOM(schema, dom, {topNode: contextNode.create()})
+  if (contextNode != top) {
+    let path = top.findConnection(contextNode)
+    if (!path) return null
+    for (let i = path.length - 1; i >= -1; i--) {
+      doc = (i < 0 ? top : path[i]).create(null, doc)
+      ++openLeft
+      ++openRight
+    }
+  }
+  return {doc, from: posAtLeft(doc, openLeft), to: posAtRight(doc, openRight)}
 }
 
 handlers.copy = handlers.cut = (pm, e) => {
