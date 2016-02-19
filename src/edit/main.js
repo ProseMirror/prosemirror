@@ -114,10 +114,10 @@ export class ProseMirror {
     this.checkPos(pos, false)
     let parent = this.doc.path(pos.path)
     if (pos.offset >= parent.size)
-      SelectionError.raise("Trying to set a node selection at the end of a node")
+      throw new SelectionError("Trying to set a node selection at the end of a node")
     let node = parent.child(pos.offset)
     if (!node.type.selectable)
-      SelectionError.raise("Trying to select a non-selectable node")
+      throw new SelectionError("Trying to select a non-selectable node")
     this.input.maybeAbortComposition()
     this.sel.setAndSignal(new NodeSelection(pos, pos.move(1), node))
   }
@@ -159,7 +159,7 @@ export class ProseMirror {
 
   setDocInner(doc) {
     if (doc.type != this.schema.nodes.doc)
-      AssertionError.raise("Trying to set a document with a different schema")
+      throw new AssertionError("Trying to set a document with a different schema")
     // :: Node The current document.
     this.doc = doc
     this.ranges = new RangeStore(this)
@@ -220,7 +220,7 @@ export class ProseMirror {
   apply(transform, options = nullOptions) {
     if (transform.doc == this.doc) return false
     if (transform.docs[0] != this.doc && findDiffStart(transform.docs[0], this.doc))
-      AssertionError.raise("Applying a transform that does not start with the current document")
+      throw new AssertionError("Applying a transform that does not start with the current document")
 
     this.updateDoc(transform.doc, transform, options.selection)
     // :: (Transform, Object) #path=ProseMirror#events#transform
@@ -238,7 +238,7 @@ export class ProseMirror {
   // must also fall within a textblock node.
   checkPos(pos, textblock) {
     if (!pos.isValid(this.doc, textblock))
-      AssertionError.raise("Position " + pos + " is not valid in current document")
+      throw new AssertionError("Position " + pos + " is not valid in current document")
   }
 
   ensureOperation() {

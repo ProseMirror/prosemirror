@@ -14,7 +14,7 @@ export const baseCommands = Object.create(null)
 // Get an offset moving backward from a current offset inside a node.
 function moveBackward(parent, offset, by) {
   if (by != "char" && by != "word")
-    AssertionError.raise("Unknown motion unit: " + by)
+    throw new AssertionError("Unknown motion unit: " + by)
 
   let cat = null, counted = 0
   for (;;) {
@@ -155,7 +155,7 @@ baseCommands.deleteWordBefore = {
 
 function moveForward(parent, offset, by) {
   if (by != "char" && by != "word")
-    AssertionError.raise("Unknown motion unit: " + by)
+    throw new AssertionError("Unknown motion unit: " + by)
 
   let cat = null, counted = 0
   for (;;) {

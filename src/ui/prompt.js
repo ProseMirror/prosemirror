@@ -28,7 +28,7 @@ export class ParamPrompt {
     // the command's parameters.
     this.fields = command.params.map(param => {
       if (!(param.type in this.paramTypes))
-        AssertionError.raise("Unsupported parameter type: " + param.type)
+        throw new AssertionError("Unsupported parameter type: " + param.type)
       return this.paramTypes[param.type].render.call(this.pm, param, this.defaultValue(param))
     })
     // :: DOMNode

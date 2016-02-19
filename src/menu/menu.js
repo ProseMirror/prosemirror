@@ -61,7 +61,7 @@ export class MenuCommand {
     }
 
     let disp = this.options.display
-    if (!disp) AssertionError.raise("No display style defined for menu command " + cmd.name)
+    if (!disp) throw new AssertionError("No display style defined for menu command " + cmd.name)
 
     let dom
     if (disp.render) {
@@ -72,7 +72,7 @@ export class MenuCommand {
     } else if (disp.type == "label") {
       dom = elt("div", null, disp.label || cmd.spec.label)
     } else {
-      AssertionError.raise("Unsupported command display style: " + disp.type)
+      throw new AssertionError("Unsupported command display style: " + disp.type)
     }
     dom.setAttribute("title", title(pm, cmd))
     if (this.options.class) dom.classList.add(this.options.class)

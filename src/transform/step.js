@@ -12,7 +12,7 @@ export class Step {
   // type, and the shape of the positions and parameter should be
   // appropriate for that type.
   constructor(type, from, to, pos, param = null) {
-    if (!(type in steps)) NamespaceError.raise("Unknown step type: " + type)
+    if (!(type in steps)) throw new NamespaceError("Unknown step type: " + type)
     // :: string
     // The type of the step.
     this.type = type

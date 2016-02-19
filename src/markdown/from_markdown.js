@@ -188,7 +188,7 @@ function registerTokens(tokens, name, type, info) {
   } else if (info.parse) {
     tokens[name] = info.parse.bind(type)
   } else {
-    AssertionError.raise("Unrecognized markdown parsing spec: " + info)
+    throw new AssertionError("Unrecognized markdown parsing spec: " + info)
   }
 }
 
@@ -211,7 +211,7 @@ function configFromSchema(schema) {
     let modifiers = []
     schema.registry("configureMarkdown", (name, f) => {
       if (name == "init") {
-        if (init) AssertionError.raise("Two markdown parser initializers defined in schema")
+        if (init) throw new AssertionError("Two markdown parser initializers defined in schema")
         init = f
       } else {
         let rank = (/_(\d+)$/.exec(name) || [0, 50])[1]

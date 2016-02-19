@@ -65,7 +65,7 @@ class Collab {
       this.signal("mustSend")
     })
     pm.on("beforeSetDoc", this.onSetDoc = () => {
-      AssertionError.raise("setDoc is not supported on a collaborative editor")
+      throw new AssertionError("setDoc is not supported on a collaborative editor")
     })
     pm.history.allowCollapsing = false
   }

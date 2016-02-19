@@ -22,7 +22,7 @@ export function widthFromDOM(dom) {
 
 export function posFromDOM(pm, dom, domOffset, loose) {
   if (!loose && pm.operation && pm.doc != pm.operation.doc)
-    AssertionError.raise("Fetching a position from an outdated DOM structure")
+    throw new AssertionError("Fetching a position from an outdated DOM structure")
 
   if (domOffset == null) {
     domOffset = Array.prototype.indexOf.call(dom.parentNode.childNodes, dom)
@@ -85,7 +85,7 @@ export function pathToDOM(parent, path) {
   let node = parent
   for (let i = 0; i < path.length; i++) {
     node = findByPath(node, path[i])
-    if (!node) AssertionError.raise("Failed to resolve path " + path.join("/"))
+    if (!node) throw new AssertionError("Failed to resolve path " + path.join("/"))
   }
   return node
 }

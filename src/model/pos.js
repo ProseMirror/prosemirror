@@ -82,7 +82,7 @@ export class Pos {
   shorten(to = null, offset = 0) {
     if (to >= this.depth) {
       if (to == this.depth && !offset) return new Pos(this.path, this.offset + offset)
-      else ModelError.raise("Invalid shorten depth " + to + " for " + this)
+      else throw new ModelError("Invalid shorten depth " + to + " for " + this)
     }
     return Pos.shorten(this.path, to, offset)
   }
@@ -138,7 +138,7 @@ export class Pos {
   // [`toPath`](#Pos.toPath)), taking the last element of the array as
   // offset and optionally moving it by `move`.
   static from(array, move = 0) {
-    if (!array.length) ModelError.raise("Can't create a pos from an empty array")
+    if (!array.length) throw new ModelError("Can't create a pos from an empty array")
     return new Pos(array.slice(0, array.length - 1), array[array.length - 1] + move)
   }
 

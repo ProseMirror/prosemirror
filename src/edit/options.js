@@ -98,8 +98,8 @@ export function initOptions(pm) {
 
 export function setOption(pm, name, value) {
   let desc = options[name]
-  if (desc === undefined) AssertionError.raise("Option '" + name + "' is not defined")
-  if (desc.update === false) AssertionError.raise("Option '" + name + "' can not be changed")
+  if (desc === undefined) throw new AssertionError("Option '" + name + "' is not defined")
+  if (desc.update === false) throw new AssertionError("Option '" + name + "' can not be changed")
   let old = pm.options[name]
   pm.options[name] = value
   if (desc.update) desc.update(pm, value, old, false)

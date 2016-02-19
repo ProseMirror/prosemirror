@@ -53,7 +53,7 @@ class SchemaItem {
         else if (attr.compute)
           value = attr.compute(this, arg)
         else
-          SchemaError.raise("No value supplied for attribute " + name)
+          throw new SchemaError("No value supplied for attribute " + name)
       }
       built[name] = value
     }
@@ -293,10 +293,10 @@ export class NodeType extends SchemaItem {
     for (let name in result) {
       let contains = result[name].contains
       if (contains && !(contains in schema.kinds))
-        SchemaError.raise("Node type " + name + " is specified to contain non-existing kind " + contains)
+        throw new SchemaError("Node type " + name + " is specified to contain non-existing kind " + contains)
     }
-    if (!result.doc) SchemaError.raise("Every schema needs a 'doc' type")
-    if (!result.text) SchemaError.raise("Every schema needs a 'text' type")
+    if (!result.doc) throw new SchemaError("Every schema needs a 'doc' type")
+    if (!result.text) throw new SchemaError("Every schema needs a 'text' type")
 
     return result
   }
@@ -319,7 +319,7 @@ export class Block extends NodeType {
   defaultContent() {
     let inner = this.schema.defaultTextblockType().create()
     let conn = this.findConnection(inner.type)
-    if (!conn) SchemaError.raise("Can't create default content for " + this.name)
+    if (!conn) throw new SchemaError("Can't create default content for " + this.name)
     for (let i = conn.length - 1; i >= 0; i--) inner = conn[i].create(null, inner)
     return Fragment.from(inner)
   }
@@ -520,7 +520,7 @@ export class Schema {
     // A map from mark names to mark type objects.
     this.marks = MarkType.compile(spec.marks, this)
     for (let prop in this.nodes)
-      if (prop in this.marks) SchemaError.raise(prop + " can not be both a node and a mark")
+      if (prop in this.marks) throw new SchemaError(prop + " can not be both a node and a mark")
 
     // :: Object
     // An object for storing whatever values modules may want to
@@ -550,9 +550,9 @@ export class Schema {
     if (typeof type == "string")
       type = this.nodeType(type)
     else if (!(type instanceof NodeType))
-      SchemaError.raise("Invalid node type: " + type)
+      throw new SchemaError("Invalid node type: " + type)
     else if (type.schema != this)
-      SchemaError.raise("Node type from different schema used (" + type.name + ")")
+      throw new SchemaError("Node type from different schema used (" + type.name + ")")
 
     return type.create(attrs, content, marks)
   }
@@ -580,7 +580,8 @@ export class Schema {
   // :: (string, ?Object) → Mark
   // Create a mark with the named type
   mark(name, attrs) {
-    let spec = this.marks[name] || SchemaError.raise("No mark named " + name)
+    let spec = this.marks[name]
+    if (!spec) throw new SchemaError("No mark named " + name)
     return spec.create(attrs)
   }
 
@@ -608,16 +609,18 @@ export class Schema {
   // Get the `NodeType` associated with the given name in
   // this schema, or raise an error if it does not exist.
   nodeType(name) {
-    return this.nodes[name] || SchemaError.raise("Unknown node type: " + name)
+    let found = this.nodes[name]
+    if (!found) throw new SchemaError("Unknown node type: " + name)
+    return found
   }
 
   registerKind(kind, sup) {
     if (kind in this.kinds) {
       if (this.kinds[kind] == sup) return
-      SchemaError.raise(`Inconsistent superkinds for kind ${kind}: ${sup} and ${this.kinds[kind]}`)
+      throw new SchemaError(`Inconsistent superkinds for kind ${kind}: ${sup} and ${this.kinds[kind]}`)
     }
     if (this.subKind(kind, sup))
-      SchemaError.raise(`Conflicting kind hierarchy through ${kind} and ${sup}`)
+      throw new SchemaError(`Conflicting kind hierarchy through ${kind} and ${sup}`)
     this.kinds[kind] = sup
   }
 

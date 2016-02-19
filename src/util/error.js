@@ -16,14 +16,6 @@ export class ProseMirrorError extends Error {
   get name() {
     return this.constructor.name || functionName(this.constructor) || "ProseMirrorError"
   }
-
-  // :: (string)
-  // Raise an exception of this type, with the given message.
-  // (Somewhat shorter than `throw new ...`, and can appear in
-  // expression position.)
-  static raise(message) {
-    throw new this(message)
-  }
 }
 
 // ;; Error type used to signal miscellaneous invariant violations.
