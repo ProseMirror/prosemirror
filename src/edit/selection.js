@@ -7,21 +7,31 @@ import {posFromDOM, pathToDOM, DOMFromPos, coordsAtPos} from "./dompos"
 // ;; Error type used to signal selection-related problems.
 export class SelectionError extends ProseMirrorError {}
 
+// ; Track the state of the current editor selection. Keeps the editor
+// selection in sync with the DOM selection by polling for changes,
+// as there is no DOM event for DOM selection changes.
 export class SelectionState {
   constructor(pm, range) {
     this.pm = pm
+    // The current editor selection.
     this.range = range
 
     this.lastNonNodePos = null
 
+    // The timeout ID for the poller when active.
     this.polling = null
+    // Track the state of the DOM selection.
     this.lastAnchorNode = this.lastHeadNode = this.lastAnchorOffset = this.lastHeadOffset = null
+    // The corresponding DOM node when a node selection is active.
     this.lastNode = null
 
     pm.content.addEventListener("focus", () => this.receivedFocus())
+
     this.poller = this.poller.bind(this)
   }
 
+  // : (Selection, boolean)
+  // Set the current selection and signal an event on the editor.
   setAndSignal(range, clearLast) {
     this.set(range, clearLast)
     // :: () #path=ProseMirror#events#selectionChange
@@ -29,6 +39,8 @@ export class SelectionState {
     this.pm.signal("selectionChange")
   }
 
+  // : (Selection, boolean)
+  // Set the current selection.
   set(range, clearLast) {
     this.pm.ensureOperation({readSelection: false})
     this.range = range
@@ -59,18 +71,24 @@ export class SelectionState {
     this.polling = null
   }
 
+  // : () → bool
+  // Whether the DOM selection has changed from the last known state.
   domChanged() {
     let sel = window.getSelection()
     return sel.anchorNode != this.lastAnchorNode || sel.anchorOffset != this.lastAnchorOffset ||
       sel.focusNode != this.lastHeadNode || sel.focusOffset != this.lastHeadOffset
   }
 
+  // ; Store the current state of the DOM selection.
   storeDOMState() {
     let sel = window.getSelection()
     this.lastAnchorNode = sel.anchorNode; this.lastAnchorOffset = sel.anchorOffset
     this.lastHeadNode = sel.focusNode; this.lastHeadOffset = sel.focusOffset
   }
 
+  // ; () → bool
+  // When the DOM selection changes in a notable manner, modify the
+  // current selection state to match.
   readFromDOM() {
     if (this.pm.input.composing || !hasFocus(this.pm) || !this.domChanged()) return false
 
@@ -104,6 +122,7 @@ export class SelectionState {
       this.rangeToDOM()
   }
 
+  // ; Make changes to the DOM for a node selection.
   nodeToDOM() {
     let dom = pathToDOM(this.pm.content, this.range.from.toPath())
     if (dom != this.lastNode) {
@@ -119,6 +138,7 @@ export class SelectionState {
     this.storeDOMState()
   }
 
+  // ; Make changes to the DOM for a text selection.
   rangeToDOM() {
     this.clearNode()
 
@@ -141,6 +161,7 @@ export class SelectionState {
     this.storeDOMState()
   }
 
+  // ; Clear all DOM statefulness of the last node selection.
   clearNode() {
     if (this.lastNode) {
       this.lastNode.classList.remove("ProseMirror-selectednode")
