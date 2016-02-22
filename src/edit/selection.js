@@ -30,6 +30,7 @@ export class SelectionState {
   }
 
   set(range, clearLast) {
+    this.pm.ensureOperation({readSelection: false})
     this.range = range
     if (!range.node) this.lastNonNodePos = null
     if (clearLast !== false) this.lastAnchorNode = null

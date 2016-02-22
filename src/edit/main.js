@@ -247,8 +247,8 @@ export class ProseMirror {
       throw new AssertionError("Position " + pos + " is not valid in current document")
   }
 
-  ensureOperation() {
-    return this.operation || this.startOperation()
+  ensureOperation(options) {
+    return this.operation || this.startOperation(options)
   }
 
   startOperation(options) {
