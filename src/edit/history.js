@@ -345,7 +345,8 @@ export class History {
     } else {
       this.undone.clear()
       let now = Date.now()
-      if (now > this.lastAddedAt + this.pm.options.historyEventDelay)
+      // Group transforms that occur in quick succession into one event.
+      if (now > this.lastAddedAt + this.pm.options.historyEventDelay) {
         this.done.newEvent()
 
       this.done.addTransform(transform)
