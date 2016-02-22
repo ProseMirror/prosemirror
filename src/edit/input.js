@@ -337,8 +337,8 @@ handlers.input = (pm) => {
 }
 
 function toClipboard(doc, from, to, dataTransfer) {
-  let found
-  for (let depth = 0, node = doc.sliceBetween(from, to);; depth++) {
+  let found, max = Math.min(from.depth, to.depth)
+  for (let depth = 0, node = doc.sliceBetween(from, to); depth <= max; depth++) {
     if (node.type.defaultAttrs) found = {depth, node}
     if (node.size > 1) break
     node = node.firstChild
