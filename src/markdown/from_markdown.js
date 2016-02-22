@@ -218,7 +218,7 @@ function configFromSchema(schema) {
         sortedInsert(modifiers, {f, rank}, (a, b) => a.rank - b.rank)
       }
     })
-    found = {init: init || (() => markdownit("commonmark")), modifiers: modifiers.map(spec => spec.f)}
+    found = {init: init || (() => markdownit("commonmark", {html: false})), modifiers: modifiers.map(spec => spec.f)}
   }
   return found
 }
