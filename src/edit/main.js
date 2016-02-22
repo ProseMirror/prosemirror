@@ -247,10 +247,15 @@ export class ProseMirror {
       throw new AssertionError("Position " + pos + " is not valid in current document")
   }
 
+  // : (?Object) → Operation
+  // Ensure that an operation has started.
   ensureOperation(options) {
     return this.operation || this.startOperation(options)
   }
 
+  // : (?Object) → Operation
+  // Start an operation and schedule a flush so that any effect of
+  // the operation shows up in the DOM.
   startOperation(options) {
     this.operation = new Operation(this)
     if (!(options && options.readSelection === false) && this.sel.readFromDOM())
@@ -520,6 +525,8 @@ const nullOptions = {}
 
 eventMixin(ProseMirror)
 
+// An operation represents that the user is performing
+// a change to the document.
 class Operation {
   constructor(pm) {
     this.doc = pm.doc
