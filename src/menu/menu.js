@@ -164,7 +164,8 @@ export class Dropdown {
   // :: (ProseMirror) → DOMNode
   // Returns a node showing the collapsed menu, which expands when clicked.
   render(pm) {
-    if (resolveGroup(pm, this.content).length == 0) return
+    let items = renderDropdownItems(resolveGroup(pm, this.content), pm)
+    if (!items.length) return
 
     let label = (this.options.activeLabel && this.findActiveIn(this, pm)) || this.options.label
     let dom = elt("div", {class: prefix + "-dropdown " + (this.options.class || ""),
@@ -174,17 +175,20 @@ export class Dropdown {
     dom.addEventListener("mousedown", e => {
       e.preventDefault(); e.stopPropagation()
       if (open && open()) open = null
-      else open = this.expand(pm, dom)
+      else open = this.expand(pm, dom, items)
     })
     return dom
   }
 
-  expand(pm, dom) {
-    let rendered = renderDropdownItems(resolveGroup(pm, this.content), pm)
+  select(pm) {
+    return resolveGroup(pm, this.content).some(e => e.select(pm))
+  }
+
+  expand(pm, dom, items) {
     let box = dom.getBoundingClientRect(), outer = pm.wrapper.getBoundingClientRect()
     let menuDOM = elt("div", {class: prefix + "-dropdown-menu " + (this.options.class || ""),
                               style: "left: " + (box.left - outer.left) + "px; top: " + (box.bottom - outer.top) + "px"},
-                      rendered)
+                      items)
 
     let done = false
     function finish() {
@@ -221,7 +225,6 @@ function renderDropdownItems(items, pm) {
     let inner = items[i].render(pm)
     if (inner) rendered.push(elt("div", {class: prefix + "-dropdown-item"}, inner))
   }
-  if (!rendered.length) rendered.push(elt("div", {class: prefix + "-dropdown-empty"}, "(empty)"))
   return rendered
 }
 
@@ -242,12 +245,12 @@ export class DropdownSubmenu {
   // :: (ProseMirror) → DOMNode
   // Renders the submenu.
   render(pm) {
-    let items = resolveGroup(pm, this.content)
+    let items = renderDropdownItems(resolveGroup(pm, this.content), pm)
     if (!items.length) return
 
     let label = elt("div", {class: prefix + "-submenu-label"}, this.options.label)
     let wrap = elt("div", {class: prefix + "-submenu-wrap"}, label,
-                   elt("div", {class: prefix + "-submenu"}, renderDropdownItems(items, pm)))
+                   elt("div", {class: prefix + "-submenu"}, items))
     label.addEventListener("mousedown", e => {
       e.preventDefault(); e.stopPropagation()
       wrap.classList.toggle(prefix + "-submenu-wrap-active")
@@ -456,10 +459,6 @@ insertCSS(`
 
 .${prefix}-dropdown-item:hover {
   background: #f2f2f2;
-}
-
-.${prefix}-dropdown-empty {
-  opacity: 0.4;
 }
 
 .${prefix}-submenu-wrap {
