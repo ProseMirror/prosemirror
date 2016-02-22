@@ -43,9 +43,8 @@ insertCSS(`
   outline: 2px solid #8cf;
 }
 
-.ProseMirror-nodeselection *::selection {
-  background: transparent;
-}
+.ProseMirror-nodeselection *::selection { background: transparent; }
+.ProseMirror-nodeselection *::-moz-selection { background: transparent; }
 
 .ProseMirror-content p:first-child,
 .ProseMirror-content h1:first-child,
