@@ -34,10 +34,10 @@
   "scripts": {
     "test": "node dist/test/run.js",
     "demo": "moduleserve demo",
-    "distfs": "distfs src dist",
+    "distfs": "mkdir -p dist && distfs src dist",
     "dist": "babel -d dist src",
     "dist-watch": "babel -w -d dist src",
     "lint": "blint --browser --ecmaVersion 6 --forbidSemicolons src",
-    "prepublish": "rimraf dist/* && babel -d dist src"
+    "prepublish": "rimraf dist && babel -d dist src"
   }
 }
