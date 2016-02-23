@@ -439,6 +439,7 @@ NodeType.deriveableCommands.make = conf => ({
     let {from, to} = pm.selection
     return pm.tr.setBlockType(from, to, this, conf.attrs).apply(pm.apply.scroll)
   },
+  // FIXME deal with situations where not all text blocks have the same kind
   select(pm) {
     let {from, to, node} = pm.selection
     if (node)
