@@ -17,9 +17,11 @@ export function getIcon(name, data) {
     svg.style.width = (data.width / data.height) + "em"
     let use = svg.appendChild(document.createElementNS(SVG, "use"))
     use.setAttributeNS(XLINK, "href", "#pm-icon-" + name)
+  } else if (data.dom) {
+    node.appendChild(data.dom.cloneNode(true))
   } else {
     node.appendChild(document.createElement("span")).textContent = data.text || ''
-    if (data.css) node.firstChild.style.cssText = data.css
+    if (data.style) node.firstChild.style.cssText = data.style
   }
   return node
 }

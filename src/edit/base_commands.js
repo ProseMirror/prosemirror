@@ -444,7 +444,7 @@ baseCommands.selectParentNode = {
   },
   menu: {
     group: "block", rank: 90,
-    display: {type: "icon", text: "\u2b1a", style: "font-weight: bold; vertical-align: 20%"}
+    display: {type: "icon", text: "\u2b1a", style: "font-weight: bold"}
   },
   keys: ["Esc"]
 }

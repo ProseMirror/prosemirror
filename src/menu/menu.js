@@ -338,7 +338,8 @@ function separator() {
 //     and `width` and `height` provide the viewbox in which that path
 //     exists. Alternatively, it may have a `text` property specifying
 //     a string of text that makes up the icon, with an optional
-//     `style` property giving additional CSS styling for the text.
+//     `style` property giving additional CSS styling for the text,
+//     _or_ a `dom` property containing a DOM node.
 //
 // **`"label"`**
 //   : Render the command as a label. Mostly useful for commands
