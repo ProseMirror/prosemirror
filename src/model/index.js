@@ -19,7 +19,7 @@ export {Mark} from "./mark"
 
 export {SchemaSpec, Schema, SchemaError,
         NodeType, Block, Textblock, Inline, Text,
-        MarkType, Attribute} from "./schema"
+        MarkType, Attribute, NodeKind} from "./schema"
 export {defaultSchema, Doc, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         CodeMark, EmMark, StrongMark, LinkMark} from "./defaultschema"
