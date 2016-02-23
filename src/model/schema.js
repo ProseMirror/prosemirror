@@ -122,12 +122,11 @@ class SchemaItem {
 // serializing it to various formats, information to guide
 // deserialization, and so on).
 export class NodeType extends SchemaItem {
-  constructor(name, kind, schema) {
+  constructor(name, schema) {
     super()
     // :: string
     // The name the node type has in this schema.
     this.name = name
-    this.kind = kind
     // Freeze the attributes, to avoid calling a potentially expensive
     // getter all the time.
     this.freezeAttrs()
@@ -172,21 +171,16 @@ export class NodeType extends SchemaItem {
   // Controls whether this node type is locked.
   get locked() { return false }
 
-  // :: ?string
+  // :: ?NodeKind
   // The kind of nodes this node may contain. `null` means it's a
   // leaf node.
   get contains() { return null }
 
-  // :: string
-  // Controls the _kind_ of the node, which is used to determine valid
-  // parent/child [relations](#NodeType.contains). Should be a single
-  // name or space-separated string of kind names, where later names
-  // are considered to be sub-kinds of former ones (for example
-  // `"textblock paragraph"`). When you want to extend the superclass'
-  // set of kinds, you can do something like
-  //
-  //     static get kinds() { return super.kind + " mykind" }
-  static get kinds() { return "node" }
+  // :: ?NodeKind Sets the _kind_ of the node, which is used to
+  // determine valid parent/child [relations](#NodeType.contains).
+  // Should only be `null` for nodes that can't be child nodes (i.e.
+  // the document top node).
+  get kind() { return null }
 
   // :: (Fragment) → bool
   // Test whether the content of the given fragment could be contained
@@ -221,7 +215,7 @@ export class NodeType extends SchemaItem {
   // Test whether this node type can contain nodes of the given node
   // type.
   canContainType(type) {
-    return this.schema.subKind(type.kind, this.contains)
+    return type.kind && type.kind.isSubKind(this.contains)
   }
 
   // :: (NodeType) → bool
@@ -229,7 +223,7 @@ export class NodeType extends SchemaItem {
   // type are a sub-type of the nodes that can be contained in this
   // type.
   canContainContent(type) {
-    return this.schema.subKind(type.contains, this.contains)
+    return type.contains && type.contains.isSubKind(this.contains)
   }
 
   // :: (NodeType) → ?[NodeType]
@@ -245,11 +239,12 @@ export class NodeType extends SchemaItem {
       let current = active.shift()
       for (let name in this.schema.nodes) {
         let type = this.schema.nodes[name]
-        if (type.defaultAttrs && !(type.contains in seen) && current.from.canContainType(type)) {
+        if (type.contains && type.defaultAttrs && !(type.contains.id in seen) &&
+            current.from.canContainType(type)) {
           let via = current.via.concat(type)
           if (type.canContainType(other)) return via
           active.push({from: type, via: via})
-          seen[type.contains] = true
+          seen[type.contains.id] = true
         }
       }
     }
@@ -283,18 +278,9 @@ export class NodeType extends SchemaItem {
 
   static compile(types, schema) {
     let result = Object.create(null)
-    for (let name in types) {
-      let type = types[name]
-      let kinds = type.kinds.split(" ")
-      for (let i = 0; i < kinds.length; i++)
-        schema.registerKind(kinds[i], i ? kinds[i - 1] : null)
-      result[name] = new type(name, kinds[kinds.length - 1], schema)
-    }
-    for (let name in result) {
-      let contains = result[name].contains
-      if (contains && !(contains in schema.kinds))
-        throw new SchemaError("Node type " + name + " is specified to contain non-existing kind " + contains)
-    }
+    for (let name in types)
+      result[name] = new types[name](name, schema)
+
     if (!result.doc) throw new SchemaError("Every schema needs a 'doc' type")
     if (!result.text) throw new SchemaError("Every schema needs a 'text' type")
 
@@ -308,10 +294,48 @@ export class NodeType extends SchemaItem {
   get containsMarks() { return false }
 }
 
+// ;; Class used to represent node [kind](#NodeType.kind).
+export class NodeKind {
+  // :: (string, ?NodeKind)
+  // Create a new node kind. These are compared by identity. The
+  // `name` field is only for debugging purposes.
+  constructor(name, superKind = null) {
+    this.name = name
+    this.superKind = superKind
+    this.id = ++NodeKind.nextID
+  }
+
+  // :: (NodeKind) → bool
+  // Test whether `other` is a subkind of this kind (or the same
+  // kind).
+  isSubKind(other) {
+    for (let cur = this; cur; cur = cur.superKind)
+      if (cur == other) return true
+    return false
+  }
+
+  // :: (string) → NodeKind
+  // Create a new kind object that is a subkind of this one.
+  subKind(name) {
+    return new NodeKind(name, this)
+  }
+}
+
+NodeKind.nextID = 0
+
+// :: NodeKind The node kind used for generic block nodes.
+NodeKind.block = new NodeKind("block")
+
+// :: NodeKind The node kind used for generic inline nodes.
+NodeKind.inline = new NodeKind("inline")
+
+// :: NodeKind The node kind used for text nodes.
+NodeKind.text = NodeKind.inline.subKind("text")
+
 // ;; Base type for block nodetypes.
 export class Block extends NodeType {
-  get contains() { return "block" }
-  static get kinds() { return "block" }
+  get contains() { return NodeKind.block }
+  get kind() { return NodeKind.block }
   get isBlock() { return true }
 
   get canBeEmpty() { return this.contains == null }
@@ -327,7 +351,7 @@ export class Block extends NodeType {
 
 // ;; Base type for textblock node types.
 export class Textblock extends Block {
-  get contains() { return "inline" }
+  get contains() { return NodeKind.inline }
   get containsMarks() { return true }
   get isTextblock() { return true }
   get canBeEmpty() { return true }
@@ -335,7 +359,7 @@ export class Textblock extends Block {
 
 // ;; Base type for inline node types.
 export class Inline extends NodeType {
-  static get kinds() { return "inline" }
+  get kind() { return NodeKind.inline }
   get isInline() { return true }
 }
 
@@ -343,7 +367,7 @@ export class Inline extends NodeType {
 export class Text extends Inline {
   get selectable() { return false }
   get isText() { return true }
-  static get kinds() { return super.kinds + " text" }
+  get kind() { return NodeKind.text }
 
   create(attrs, content, marks) {
     return new TextNode(this, this.computeAttrs(attrs, content), content, marks)
@@ -457,9 +481,7 @@ export class MarkType extends SchemaItem {
 // a set of node types, their names, attributes, and nesting behavior.
 
 // ;; A schema specification is a blueprint for an actual
-// `Schema`. It maps names to node and mark types, along
-// with extra information, such as additional attributes and changes
-// to node kinds and relations.
+// `Schema`. It maps names to node and mark types.
 //
 // A specification consists of an object that associates node names
 // with node type constructors and another similar object associating
@@ -511,7 +533,6 @@ export class Schema {
     // :: SchemaSpec
     // The specification on which the schema is based.
     this.spec = spec
-    this.kinds = Object.create(null)
 
     // :: Object<NodeType>
     // An object mapping the schema's node names to node type objects.
@@ -612,26 +633,6 @@ export class Schema {
     let found = this.nodes[name]
     if (!found) throw new SchemaError("Unknown node type: " + name)
     return found
-  }
-
-  registerKind(kind, sup) {
-    if (kind in this.kinds) {
-      if (this.kinds[kind] == sup) return
-      throw new SchemaError(`Inconsistent superkinds for kind ${kind}: ${sup} and ${this.kinds[kind]}`)
-    }
-    if (this.subKind(kind, sup))
-      throw new SchemaError(`Conflicting kind hierarchy through ${kind} and ${sup}`)
-    this.kinds[kind] = sup
-  }
-
-  // :: (string, string) → bool
-  // Test whether a node kind is a sub-kind of another kind.
-  subKind(sub, sup) {
-    for (;;) {
-      if (sub == sup) return true
-      sub = this.kinds[sub]
-      if (!sub) return false
-    }
   }
 
   // :: (string, (name: string, value: *, source: union<NodeType, MarkType>, name: string))

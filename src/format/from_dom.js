@@ -183,6 +183,7 @@ class DOMParseState {
     if (this.top.type.canContain(node)) {
       this.doClose()
     } else {
+      let found
       for (let i = this.stack.length - 1; i >= 0; i--) {
         let route = this.stack[i].type.findConnection(node.type)
         if (!route) continue
@@ -191,21 +192,22 @@ class DOMParseState {
         } else {
           while (this.stack.length > i + 1) this.leave()
         }
-        for (let j = 0; j < route.length; j++)
-          this.enter(route[j])
-        if (this.marks.length) this.marks = noMarks
+        found = route
         break
       }
+      if (!found) return
+      for (let j = 0; j < found.length; j++)
+        this.enter(found[j])
+      if (this.marks.length) this.marks = noMarks
     }
     this.top.content.push(node)
-    return node
   }
 
   // :: (DOMNode, NodeType, ?Object, [Node]) → Node
   // Insert a node of the given type, with the given content, based on
   // `dom`, at the current position in the document.
   insert(type, attrs, content) {
-    return this.insertNode(type.createAutoFill(attrs, content, this.marks))
+    this.insertNode(type.createAutoFill(attrs, content, this.marks))
   }
 
   enter(type, attrs) {

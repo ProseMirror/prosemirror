@@ -64,11 +64,6 @@ t("horizontal_rule",
   "one two\n\n---\n\nthree",
   doc(p("one two"), hr, p("three")))
 
-defTest("parse_html_inline", () => {
-  try {
-    fromMarkdown(schema, "Foo <em>bar</em>")
-    is(false, "Did not throw")
-  } catch(e) {
-    is(/html_inline/.test(e.message), "Expected message")
-  }
-})
+t("ignore_html",
+  "Foo < img> bar",
+  doc(p("Foo < img> bar")))

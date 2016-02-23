@@ -1,29 +1,33 @@
-import {SchemaSpec, Schema, Block, Textblock, Inline, Text, Attribute, MarkType} from "./schema"
+import {SchemaSpec, Schema, Block, Textblock, Inline, Text, Attribute, MarkType, NodeKind} from "./schema"
 
 // ;; The default top-level document node type.
 export class Doc extends Block {
-  static get kinds() { return "doc" }
+  get kind() { return null }
 }
 
 // ;; The default blockquote node type.
 export class BlockQuote extends Block {}
 
+// :: NodeKind The node kind used for list items in the default
+// schema.
+NodeKind.list_item = new NodeKind("list_item")
+
 // ;; The default ordered list node type. Has a single attribute,
 // `order`, which determines the number at which the list starts
 // counting, and defaults to 1.
 export class OrderedList extends Block {
-  get contains() { return "list_item" }
+  get contains() { return NodeKind.list_item }
   get attrs() { return {order: new Attribute({default: "1"})} }
 }
 
 // ;; The default bullet list node type.
 export class BulletList extends Block {
-  get contains() { return "list_item" }
+  get contains() { return NodeKind.list_item }
 }
 
 // ;; The default list item node type.
 export class ListItem extends Block {
-  static get kinds() { return "list_item" }
+  get kind() { return NodeKind.list_item }
 }
 
 // ;; The default horizontal rule node type.
@@ -44,7 +48,7 @@ export class Heading extends Textblock {
 // ;; The default code block / listing node type. Only
 // allows unmarked text nodes inside of it.
 export class CodeBlock extends Textblock {
-  get contains() { return "text" }
+  get contains() { return NodeKind.text }
   get containsMarks() { return false }
   get isCode() { return true }
 }
