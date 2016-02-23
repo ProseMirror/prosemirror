@@ -358,15 +358,15 @@ baseCommands.newlineInCode = {
 }
 
 // ;; #kind=command
-// If a content-less block node is selected, create an empty paragraph
-// before (if it is its parent's first child) or after it.
+// If a block node is selected, create an empty paragraph before (if
+// it is its parent's first child) or after it.
 //
 // **Keybindings:** Enter
 baseCommands.createParagraphNear = {
-  label: "Create a paragraph near the selected leaf block",
+  label: "Create a paragraph near the selected block",
   run(pm) {
     let {from, to, node} = pm.selection
-    if (!node || !node.isBlock || node.type.contains) return false
+    if (!node || !node.isBlock) return false
     let side = from.offset ? to : from
     pm.tr.insert(side, pm.schema.defaultTextblockType().create()).apply(pm.apply.scroll)
     pm.setTextSelection(new Pos(side.toPath(), 0))
