@@ -49,11 +49,11 @@ defineOption("autoInput", false, function(pm, val) {
 
 autoInputRules.emDash = new InputRule(/--$/, "-", "—")
 
-autoInputRules.openDoubleQuote = new InputRule(/(?:^|[\s\{\[\(\<'"\u2018\u201C])(")$/, '"', "“")
+autoInputRules.openDoubleQuote = new InputRule(/(?:^|[\s\{\[\(\<\u2018\u201C])(")$/, '"', "“")
 
 autoInputRules.closeDoubleQuote = new InputRule(/"$/, '"', "”")
 
-autoInputRules.openSingleQuote = new InputRule(/(?:^|[\s\{\[\(\<'"\u2018\u201C])(')$/, "'", "‘")
+autoInputRules.openSingleQuote = new InputRule(/(?:^|[\s\{\[\(\<\u2018\u201C])(')$/, "'", "‘")
 
 autoInputRules.closeSingleQuote = new InputRule(/'$/, "'", "’")
 
