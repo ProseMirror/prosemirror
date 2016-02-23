@@ -1,5 +1,5 @@
 import {doc, blockquote, h1, h2, p, hr, li, ol, ul, em, strong, code, a, br, img, dataImage} from "./build"
-import {cmpNode, cmpStr, is} from "./cmp"
+import {cmpNode, cmpStr} from "./cmp"
 import {defTest} from "./tests"
 
 import {defaultSchema as schema} from "../model"

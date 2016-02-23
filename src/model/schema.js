@@ -296,31 +296,26 @@ export class NodeType extends SchemaItem {
 
 // ;; Class used to represent node [kind](#NodeType.kind).
 export class NodeKind {
-  // :: (string, ?NodeKind)
-  // Create a new node kind. These are compared by identity. The
-  // `name` field is only for debugging purposes.
-  constructor(name, superKind = null) {
+  // :: (string, [NodeKind])
+  // Create a new node kind with the given set of superkinds (the new
+  // kind counts as a member of each of the superkinds). The `name`
+  // field is only for debugging purposes—kind equivalens is defined
+  // by identity.
+  constructor(name, ...supers) {
     this.name = name
-    this.superKind = superKind
+    this.supers = Object.create(null)
     this.id = ++NodeKind.nextID
+    this.supers[this.id] = true
+    supers.forEach(sup => { for (let id in sup.supers) this.supers[id] = true })
   }
 
   // :: (NodeKind) → bool
   // Test whether `other` is a subkind of this kind (or the same
   // kind).
   isSubKind(other) {
-    for (let cur = this; cur; cur = cur.superKind)
-      if (cur == other) return true
-    return false
-  }
-
-  // :: (string) → NodeKind
-  // Create a new kind object that is a subkind of this one.
-  subKind(name) {
-    return new NodeKind(name, this)
+    return other && (other.id in this.supers) || false
   }
 }
-
 NodeKind.nextID = 0
 
 // :: NodeKind The node kind used for generic block nodes.
@@ -329,8 +324,9 @@ NodeKind.block = new NodeKind("block")
 // :: NodeKind The node kind used for generic inline nodes.
 NodeKind.inline = new NodeKind("inline")
 
-// :: NodeKind The node kind used for text nodes.
-NodeKind.text = NodeKind.inline.subKind("text")
+// :: NodeKind The node kind used for text nodes. Subkind of
+// `NodeKind.inline`.
+NodeKind.text = new NodeKind("text", NodeKind.inline)
 
 // ;; Base type for block nodetypes.
 export class Block extends NodeType {
