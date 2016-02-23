@@ -219,8 +219,10 @@ class DOMParseState {
     if (this.marks.length) this.marks = noMarks
     let top = this.stack.pop()
     let last = top.content[top.content.length - 1]
-    if (!this.options.preserveWhitespace && last && last.isText && /\s$/.test(last.text))
-      top.content[top.content.length - 1] = last.copy(last.text.slice(0, last.text.length - 1))
+    if (!this.options.preserveWhitespace && last && last.isText && /\s$/.test(last.text)) {
+      if (last.text.length == 1) top.content.pop()
+      else top.content[top.content.length - 1] = last.copy(last.text.slice(0, last.text.length - 1))
+    }
     let node = top.type.createAutoFill(top.attrs, top.content)
     if (this.stack.length) this.insertNode(node)
     return node
