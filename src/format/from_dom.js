@@ -201,13 +201,14 @@ class DOMParseState {
       if (this.marks.length) this.marks = noMarks
     }
     this.top.content.push(node)
+    return node
   }
 
-  // :: (DOMNode, NodeType, ?Object, [Node]) → Node
+  // :: (DOMNode, NodeType, ?Object, [Node]) → ?Node
   // Insert a node of the given type, with the given content, based on
   // `dom`, at the current position in the document.
   insert(type, attrs, content) {
-    this.insertNode(type.createAutoFill(attrs, content, this.marks))
+    return this.insertNode(type.createAutoFill(attrs, content, this.marks))
   }
 
   enter(type, attrs) {
