@@ -525,8 +525,15 @@ const nullOptions = {}
 
 eventMixin(ProseMirror)
 
-// An operation represents that the user is performing
-// a change to the document.
+// Operations are used to delay/batch DOM updates. When a change to
+// the editor state happens, it is not immediately flushed to the DOM,
+// but rather a call to `ProseMirror.flush` is scheduled using
+// `requestAnimationFrame`. An object of this class is stored in the
+// editor's `operation` property, and holds information about the
+// state at the start of the operation, which can be used to determine
+// the minimal DOM update needed. It also stores information about
+// whether a focus needs to happen on flush, and whether something
+// needs to be scrolled into view.
 class Operation {
   constructor(pm) {
     this.doc = pm.doc
