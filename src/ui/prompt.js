@@ -70,10 +70,13 @@ export class ParamPrompt {
     })
 
     this.form.addEventListener("keydown", e => {
-      if (e.keyCode == 27)
+      if (e.keyCode == 27) {
+        e.preventDefault()
         prompt.close()
-      else if (e.keyCode == 13 && !(e.ctrlKey || e.metaKey || e.shiftKey))
+      } else if (e.keyCode == 13 && !(e.ctrlKey || e.metaKey || e.shiftKey)) {
+        e.preventDefault()
         submit()
+      }
     })
 
     let input = this.form.querySelector("input, textarea")
