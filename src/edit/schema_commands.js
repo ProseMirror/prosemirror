@@ -273,12 +273,12 @@ for (let i = 1; i <= 10; i++)
   // The commands `make1` to `make6` set the textblocks in the
   // selection to become headers with the given level.
   //
-  // **Keybindings:** Mod-H '1' through Mod-H '6'
+  // **Keybindings:** Mod-1 through Mod-6
   Heading.registerComputed("command", "make" + i, type => {
     if (i <= type.maxLevel) return {
       derive: {name: "make", attrs: {level: i}},
       label: "Change to heading " + i,
-      keys: [`Mod-H '${i}'`],
+      keys: i < 10 && [`Mod-${i}`],
       menu: {
         group: "textblockHeading", rank: 30 + i,
         display: {type: "label", label: "Level " + i},
@@ -290,11 +290,11 @@ for (let i = 1; i <= 10; i++)
 // ;; #path=paragraph:make #kind=command
 // Set the textblocks in the selection to be regular paragraphs.
 //
-// **Keybindings:** Mod-P
+// **Keybindings:** Mod-0
 Paragraph.register("command", "make", {
   derive: true,
   label: "Change to paragraph",
-  keys: ["Mod-P"],
+  keys: ["Mod-0"],
   menu: {
     group: "textblock", rank: 10,
     display: {type: "label", label: "Plain"},
