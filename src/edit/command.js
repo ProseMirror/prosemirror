@@ -86,7 +86,7 @@ function deriveCommandSpec(type, spec, name) {
   if (!spec.derive) return spec
   let conf = typeof spec.derive == "object" ? spec.derive : {}
   let dname = conf.name || name
-  let derive = type.constructor.deriveableCommands[dname]
+  let derive = type.constructor.derivableCommands[dname]
   if (!derive) throw new AssertionError("Don't know how to derive command " + dname)
   let derived = derive.call(type, conf)
   for (let prop in spec) if (prop != "derive") derived[prop] = spec[prop]
@@ -352,10 +352,10 @@ function fillAttrs(conf, givenParams) {
   return attrs
 }
 
-NodeType.deriveableCommands = Object.create(null)
-MarkType.deriveableCommands = Object.create(null)
+NodeType.derivableCommands = Object.create(null)
+MarkType.derivableCommands = Object.create(null)
 
-MarkType.deriveableCommands.set = function(conf) {
+MarkType.derivableCommands.set = function(conf) {
   return {
     run(pm, ...params) {
       pm.setMark(this, true, fillAttrs(conf, params))
@@ -369,12 +369,12 @@ MarkType.deriveableCommands.set = function(conf) {
   }
 }
 
-MarkType.deriveableCommands.unset = () => ({
+MarkType.derivableCommands.unset = () => ({
   run(pm) { pm.setMark(this, false) },
   select(pm) { return markActive(pm, this) }
 })
 
-MarkType.deriveableCommands.toggle = () => ({
+MarkType.derivableCommands.toggle = () => ({
   run(pm) { pm.setMark(this, null) },
   active(pm) { return markActive(pm, this) },
   select(pm) { return markApplies(pm, this) }
@@ -387,7 +387,7 @@ function isAtTopOfListItem(doc, from, to, listType) {
     listType.canContain(doc.path(from.path.slice(0, from.path.length - 1)))
 }
 
-NodeType.deriveableCommands.wrap = function(conf) {
+NodeType.derivableCommands.wrap = function(conf) {
   return {
     run(pm, ...params) {
       let {from, to, head} = pm.selection, doJoin = false
@@ -434,7 +434,7 @@ function activeTextblockIs(pm, type, attrs) {
   return node.hasMarkup(type, attrs)
 }
 
-NodeType.deriveableCommands.make = conf => ({
+NodeType.derivableCommands.make = conf => ({
   run(pm) {
     let {from, to} = pm.selection
     return pm.tr.setBlockType(from, to, this, conf.attrs).apply(pm.apply.scroll)
@@ -452,7 +452,7 @@ NodeType.deriveableCommands.make = conf => ({
   }
 })
 
-NodeType.deriveableCommands.insert = function(conf) {
+NodeType.derivableCommands.insert = function(conf) {
   return {
     run(pm, ...params) {
       return pm.tr.replaceSelection(this.create(fillAttrs(conf, params))).apply(pm.apply.scroll)
