@@ -302,13 +302,13 @@ BlockQuote.register("parseDOM", "blockquote", {parse: "block"})
 
 for (let i = 1; i <= 6; i++) Heading.registerComputed("parseDOM", "h" + i, type => {
   if (i <= type.maxLevel) return {
-    parse: function(dom, state) { state.wrapIn(dom, this, {level: i}) }
+    parse(dom, state) { state.wrapIn(dom, this, {level: i}) }
   }
 })
 
 HorizontalRule.register("parseDOM", "hr", {parse: "block"})
 
-CodeBlock.register("parseDOM", "pre", {parse: function(dom, state) {
+CodeBlock.register("parseDOM", "pre", {parse(dom, state) {
   let params = dom.firstChild && /^code$/i.test(dom.firstChild.nodeName) && dom.firstChild.getAttribute("class")
   if (params && /fence/.test(params)) {
     let found = [], re = /(?:^|\s)lang-(\S+)/g, m
@@ -323,18 +323,18 @@ CodeBlock.register("parseDOM", "pre", {parse: function(dom, state) {
 
 BulletList.register("parseDOM", "ul", {parse: "block"})
 
-OrderedList.register("parseDOM", "ol", {parse: function(dom, state) {
+OrderedList.register("parseDOM", "ol", {parse(dom, state) {
   let attrs = {order: dom.getAttribute("start") || 1}
   state.wrapIn(dom, this, attrs)
 }})
 
 ListItem.register("parseDOM", "li", {parse: "block"})
 
-HardBreak.register("parseDOM", "br", {parse: function(_, state) {
+HardBreak.register("parseDOM", "br", {parse(_, state) {
   state.insert(this)
 }})
 
-Image.register("parseDOM", "img", {parse: function(dom, state) {
+Image.register("parseDOM", "img", {parse(dom, state) {
   state.insert(this, {
     src: dom.getAttribute("src"),
     title: dom.getAttribute("title") || null,
@@ -344,7 +344,7 @@ Image.register("parseDOM", "img", {parse: function(dom, state) {
 
 // Inline style tokens
 
-LinkMark.register("parseDOM", "a", {parse: function(dom, state) {
+LinkMark.register("parseDOM", "a", {parse(dom, state) {
   let href = dom.getAttribute("href")
   if (!href) return false
   state.wrapMark(dom, this.create({href, title: dom.getAttribute("title")}))
@@ -352,14 +352,14 @@ LinkMark.register("parseDOM", "a", {parse: function(dom, state) {
 
 EmMark.register("parseDOM", "i", {parse: "mark"})
 EmMark.register("parseDOM", "em", {parse: "mark"})
-EmMark.register("parseDOMStyle", "font-style", {parse: function(value, state, inner) {
+EmMark.register("parseDOMStyle", "font-style", {parse(value, state, inner) {
   if (value == "italic") state.wrapMark(inner, this)
   else inner()
 }})
 
 StrongMark.register("parseDOM", "b", {parse: "mark"})
 StrongMark.register("parseDOM", "strong", {parse: "mark"})
-StrongMark.register("parseDOMStyle", "font-weight", {parse: function(value, state, inner) {
+StrongMark.register("parseDOMStyle", "font-weight", {parse(value, state, inner) {
   if (value == "bold" || value == "bolder" || !/\D/.test(value) && +value >= 500) state.wrapMark(inner, this)
   else inner()
 }})
