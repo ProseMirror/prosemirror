@@ -27,7 +27,7 @@ const classPrefix = "ProseMirror-tooltipmenu"
 //   : Causes a tooltip with the link target to show up when the
 //     cursor is inside of a link (without a selection).
 //
-// **`selectedBlockMenu`**: bool = false`
+// **`selectedBlockMenu`**`: bool = false`
 //   : When enabled, and a whole block is selected or the cursor is
 //     inside an empty block, the block menu gets shown.
 //
