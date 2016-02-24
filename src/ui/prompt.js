@@ -79,7 +79,7 @@ export class ParamPrompt {
         submit()
     })
 
-    this.form.querySelector('.ProseMirror-prompt-cancel').addEventListener("click", e => {
+    this.form.querySelector('.ProseMirror-prompt-cancel').addEventListener("click", () => {
       prompt.close()
     })
 
