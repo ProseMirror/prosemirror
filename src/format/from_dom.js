@@ -158,8 +158,9 @@ class DOMParseState {
   tryParsers(parsers, dom) {
     if (parsers) for (let i = 0; i < parsers.length; i++) {
       let parser = parsers[i]
-      if(!parser.selector || dom.matches(parser.selector))
-        if (parser.parse.call(parser.type, dom, this) !== false) return true
+      if ((!parser.selector || matches(dom, parser.selector)) &&
+          parser.parse.call(parser.type, dom, this) !== false)
+        return true
     }
   }
 
@@ -269,6 +270,10 @@ class DOMParseState {
   }
 }
 
+function matches(dom, selector) {
+  return (dom.matches || dom.msMatchesSelector || dom.webkitMatchesSelector || dom.mozMatchesSelector).call(dom, selector)
+}
+
 function parseStyles(style) {
   let re = /\s*([\w-]+)\s*:\s*([^;]+)/g, m, result = []
   while (m = re.exec(style)) result.push(m[1], m[2].trim())
@@ -352,11 +357,13 @@ Image.register("parseDOM", "img", {parse(dom, state) {
 
 // Inline style tokens
 
-LinkMark.register("parseDOM", "a", {parse(dom, state) {
-  let href = dom.getAttribute("href")
-  if (!href) return false
-  state.wrapMark(dom, this.create({href, title: dom.getAttribute("title")}))
-}})
+LinkMark.register("parseDOM", "a", {
+  parse(dom, state) {
+    state.wrapMark(dom, this.create({href: dom.getAttribute("href"),
+                                     title: dom.getAttribute("title")}))
+  },
+  selector: "[href]"
+})
 
 EmMark.register("parseDOM", "i", {parse: "mark"})
 EmMark.register("parseDOM", "em", {parse: "mark"})
