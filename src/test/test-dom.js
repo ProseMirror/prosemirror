@@ -73,9 +73,11 @@ t("code_block",
   "<blockquote><pre><code>some code</code></pre></blockquote><p>and</p>")
 
 function recover(name, html, doc) {
-  let dom = document.createElement("div")
-  dom.innerHTML = html
-  defTest("dom_recover_" + name, () => cmpNode(fromDOM(schema, dom), doc))
+  defTest("dom_recover_" + name, () => {
+    let dom = document.createElement("div")
+    dom.innerHTML = html
+    cmpNode(fromDOM(schema, dom), doc)
+  })
 }
 
 recover("list",
@@ -107,7 +109,7 @@ recover("find_place",
         doc(ul(li(p("hi")), li(p("whoah")), li(p("again")))))
 
 recover("move_up",
-        "<p>hello<hr/>bye</p>",
+        "<div>hello<hr/>bye</div>",
         doc(p("hello"), hr, p("bye")))
 
 recover("dont_ignore_whitespace",
