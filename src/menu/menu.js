@@ -42,7 +42,7 @@ export class MenuCommand {
     this.options = options
   }
 
-  // :: Command
+  // :: (ProseMirror) → Command
   // Retrieve the command associated with this object.
   command(pm) {
     return typeof this.command_ == "string" ? pm.commands[this.command_] : this.command_

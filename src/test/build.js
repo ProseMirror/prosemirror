@@ -37,7 +37,7 @@ function parseDoc(value, content, path) {
     styles = start
   } else if (value.type == "insert") {
     let type = schema.nodeType(value.style)
-    if (type.type == "span")
+    if (type.isText)
       content.push(schema.node(type, value.attrs, value.text, styles))
     else
       content.push(schema.node(type, value.attrs, value.content))
