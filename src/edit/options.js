@@ -4,9 +4,15 @@ import {ParamPrompt} from "../ui/prompt"
 
 import {CommandSet, updateCommands} from "./command"
 
+// An option encapsulates functionality for an editor instance,
+// e.g. the amount of history events that the editor should hold
+// onto or the document's schema.
 class Option {
   constructor(defaultValue, update, updateOnInit) {
     this.defaultValue = defaultValue
+    // A function that will be invoked with the option's old and new
+    // value every time the option is [set](#ProseMirror.setOption).
+    // This function should bootstrap option functionality.
     this.update = update
     this.updateOnInit = updateOnInit !== false
   }
