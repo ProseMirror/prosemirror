@@ -3,34 +3,24 @@ import {Failure} from "./failure"
 import {cmpNode} from "./cmp"
 import {defTest} from "./tests"
 
-import xmlDOM from "xmldom"
-
 import {defaultSchema as schema} from "../model"
 import {toDOM, fromDOM} from "../format"
 
-function domFor(str) {
-  return (new xmlDOM.DOMParser).parseFromString("<!doctype html><html>" + str + "</html>")
-}
-
-function domText(dom) {
-  var out = "", ser = new xmlDOM.XMLSerializer
-  for (var node = dom.documentElement.firstChild; node; node = node.nextSibling)
-    out += ser.serializeToString(node)
-  return out
-}
+let document = typeof window == "undefined" ? require("jsdom").jsdom() : window.document
 
 function t(name, doc, dom) {
   defTest("dom_" + name, () => {
-    let derivedDOM = domFor("")
-    derivedDOM.documentElement.appendChild(toDOM(doc, {document: derivedDOM}))
-    let declaredDOM = domFor(dom)
+    let derivedDOM = document.createElement("div")
+    derivedDOM.appendChild(toDOM(doc, {document}))
+    let declaredDOM = document.createElement("div")
+    declaredDOM.innerHTML = dom
 
-    var derivedText = domText(derivedDOM)
-    var declaredText = domText(declaredDOM)
+    var derivedText = derivedDOM.innerHTML
+    var declaredText = declaredDOM.innerHTML
     if (derivedText != declaredText)
       throw new Failure("DOM text mismatch: " + derivedText + " vs " + declaredText)
 
-    cmpNode(doc, fromDOM(schema, derivedDOM.documentElement))
+    cmpNode(doc, fromDOM(schema, derivedDOM))
   })
 }
 
@@ -83,7 +73,9 @@ t("code_block",
   "<blockquote><pre><code>some code</code></pre></blockquote><p>and</p>")
 
 function recover(name, html, doc) {
-  defTest("dom_recover_" + name, () => cmpNode(fromDOM(schema, domFor(html)), doc))
+  let dom = document.createElement("div")
+  dom.innerHTML = html
+  defTest("dom_recover_" + name, () => cmpNode(fromDOM(schema, dom), doc))
 }
 
 recover("list",
