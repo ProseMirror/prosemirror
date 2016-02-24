@@ -36,7 +36,7 @@ export class ParamPrompt {
     let cancelLink = elt("a", {class: "ProseMirror-prompt-cancel"}, "Cancel")
     // :: DOMNode
     // An HTML form wrapping the fields.
-    this.form = elt("form", null, promtTitle, this.fields.map(f => elt("div", null, f)), submitButton, cancelLink)
+    this.form = elt("form", null, promptTitle, this.fields.map(f => elt("div", null, f)), submitButton, cancelLink)
   }
 
   // :: ()
