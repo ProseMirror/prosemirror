@@ -483,7 +483,7 @@ export class MarkType extends SchemaItem {
 // with node type constructors and another similar object associating
 // mark names with mark type constructors.
 export class SchemaSpec {
-  // :: (?Object<NodeType>, ?Object<MarkType>)
+  // :: (?Object<constructor<NodeType>>, ?Object<constructor<MarkType>>)
   // Create a schema specification from scratch. The arguments map
   // node names to node type constructors and mark names to mark type
   // constructors.
