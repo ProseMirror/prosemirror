@@ -1,3 +1,57 @@
+## [0.4.0](http://prosemirror.net/version/0.4.0.html) (2016-02-24)
+
+### Breaking changes
+
+The way valid parent-child relations for [node types](http://prosemirror.net/version/0.4.0.html#NodeType) are
+specified was changed. Instead of relying on strings, node
+[kinds](http://prosemirror.net/version/0.4.0.html#NodeKind) are now objects that specify arbitrary sub-kind
+relations. The static `kinds` property on node types replaced by a
+non-static `kind` property holding such a kind object, and the
+`contains` property is now expected to hold a kind object instead of a
+string.
+
+The keybindings for make-paragraph and make-heading were changed. To
+make the current textblock a paragraph, you now press Ctrl/Cmd-0, and
+to make it a heading, you press Ctrl/Cmd-N, where N is the level of
+the heading.
+
+### Bug fixes
+
+Copy-pasting between ProseMirror instances is now more robust (the
+question of whether the selection cuts through nodes at the start and
+end of the fragment is preserved).
+
+Selection management on mobile platforms should now be improved (no
+longer unusable, probably still quite buggy).
+
+Fix a problem where reading a change from the DOM was confused by
+trailing whitespace in a text block.
+
+Fix a bug in scrolling things into view that would break scrolling of
+anything except the whole document.
+
+Don't render menu dropdown elements unless they actuall have content.
+
+Fix bug that would reset the selection when a
+[`selectionChange` event](http://prosemirror.net/version/0.4.0.html#ProseMirror.event_selectionChange) handler
+tried to access it.
+
+The [selection](http://prosemirror.net/version/0.3.0.html#Selection) classes are now properly exported from
+the `edit` module.
+
+### New features
+
+Drop events can now be [intercepted](http://prosemirror.net/version/0.4.0.html#ProseMirror.event_drop).
+
+The [`beforeTransform`](http://prosemirror.net/version/0.4.0.html#ProseMirror.event_beforeTransform) event is
+now fired before a transform is [applied](http://prosemirror.net/version/0.4.0.html#ProseMirror.apply).
+
+Menu command icon [specs](http://prosemirror.net/version/0.4.0.html#MenuCommandSpec.display) can now provide a
+`dom` property to provide a piece of DOM structure as their icon.
+
+[DOM parser specs](http://prosemirror.net/version/0.4.0.html#DOMParseSpec) can now include a `selector`
+property to only run the parser on nodes that match the selector.
+
 ## [0.3.0](http://prosemirror.net/version/0.3.0.html) (2016-02-04)
 
 ### Breaking changes
