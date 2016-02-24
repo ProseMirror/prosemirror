@@ -31,7 +31,7 @@ export class ParamPrompt {
         AssertionError.raise("Unsupported parameter type: " + param.type)
       return this.paramTypes[param.type].render.call(this.pm, param, this.defaultValue(param))
     })
-    let promtTitle = elt("h5", {}, (command.spec && command.spec.label) ? command.spec.label : '')
+    let promptTitle = elt("h5", {}, (command.spec && command.spec.label) ? command.spec.label : '')
     let submitButton = elt("button", {type: "submit", class: "ProseMirror-prompt-submit"}, "Ok")
     let cancelLink = elt("a", {class: "ProseMirror-prompt-cancel"}, "Cancel")
     // :: DOMNode
