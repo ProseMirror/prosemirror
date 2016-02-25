@@ -296,17 +296,40 @@ export class NodeType extends SchemaItem {
 
 // ;; Class used to represent node [kind](#NodeType.kind).
 export class NodeKind {
-  // :: (string, [NodeKind])
+  // :: (string, ?[NodeKind], ?[NodeKind])
   // Create a new node kind with the given set of superkinds (the new
-  // kind counts as a member of each of the superkinds). The `name`
-  // field is only for debugging purposes—kind equivalens is defined
-  // by identity.
-  constructor(name, ...supers) {
+  // kind counts as a member of each of the superkinds) and subkinds
+  // (which will count as a member of this new kind). The `name` field
+  // is only for debugging purposes—kind equivalens is defined by
+  // identity.
+  constructor(name, supers, subs) {
     this.name = name
-    this.supers = Object.create(null)
+    // FIXME temporary backwards-compatibility kludge
+    if (supers && supers instanceof NodeKind) {
+      supers = Array.prototype.slice.call(arguments, 1)
+      subs = null
+    }
     this.id = ++NodeKind.nextID
+    this.supers = Object.create(null)
     this.supers[this.id] = true
-    supers.forEach(sup => { for (let id in sup.supers) this.supers[id] = true })
+    this.subs = subs || []
+
+    if (supers) supers.forEach(sup => this.addSuper(sup))
+    if (subs) subs.forEach(sub => this.addSub(sub))
+  }
+
+  addSuper(sup) {
+    for (let id in sup.supers) {
+      this.supers[id] = true
+      sup.subs.push(this)
+    }
+  }
+
+  addSub(sub) {
+    if (this.supers[sub.id])
+      throw new SchemaError("Circular subkind relation")
+    sub.supers[this.id] = true
+    sub.subs.forEach(next => this.addSub(next))
   }
 
   // :: (NodeKind) → bool
@@ -326,7 +349,7 @@ NodeKind.inline = new NodeKind("inline")
 
 // :: NodeKind The node kind used for text nodes. Subkind of
 // `NodeKind.inline`.
-NodeKind.text = new NodeKind("text", NodeKind.inline)
+NodeKind.text = new NodeKind("text", [NodeKind.inline])
 
 // ;; Base type for block nodetypes.
 export class Block extends NodeType {
