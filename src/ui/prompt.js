@@ -31,12 +31,14 @@ export class ParamPrompt {
         throw new AssertionError("Unsupported parameter type: " + param.type)
       return this.paramTypes[param.type].render.call(this.pm, param, this.defaultValue(param))
     })
-    let promptTitle = elt("h5", {}, (command.spec && command.spec.label) ? command.spec.label : '')
+    let promptTitle = elt("h5", {}, (command.spec && command.spec.label) ? command.spec.label : "")
     let submitButton = elt("button", {type: "submit", class: "ProseMirror-prompt-submit"}, "Ok")
-    let cancelLink = elt("a", {class: "ProseMirror-prompt-cancel"}, "Cancel")
+    let cancelButton = elt("button", {type: "button", class: "ProseMirror-prompt-cancel"}, "Cancel")
+    cancelButton.addEventListener("click", () => this.close())
     // :: DOMNode
     // An HTML form wrapping the fields.
-    this.form = elt("form", null, promptTitle, this.fields.map(f => elt("div", null, f)), submitButton, cancelLink)
+    this.form = elt("form", null, promptTitle, this.fields.map(f => elt("div", null, f)),
+                    elt("div", {class: "ProseMirror-prompt-buttons"}, submitButton, " ", cancelButton))
   }
 
   // :: ()
@@ -80,10 +82,6 @@ export class ParamPrompt {
         e.preventDefault()
         submit()
       }
-    })
-
-    this.form.querySelector('.ProseMirror-prompt-cancel').addEventListener("click", () => {
-      prompt.close()
     })
 
     let input = this.form.querySelector("input, textarea")
@@ -257,7 +255,10 @@ insertCSS(`
 }
 
 .ProseMirror-prompt h5 {
-  display:none;
+  margin: 0;
+  font-weight: normal;
+  font-size: 100%;
+  color: #444;
 }
 
 .ProseMirror-prompt input[type="text"],
@@ -283,11 +284,6 @@ insertCSS(`
   font-size: 12px;
 }
 
-.ProseMirror-prompt-submit,
-.ProseMirror-prompt-cancel {
-  display: none;
-}
-
 .ProseMirror-invalid {
   background: #ffc;
   border: 1px solid #cc7;
@@ -296,4 +292,10 @@ insertCSS(`
   position: absolute;
   min-width: 10em;
 }
+
+.ProseMirror-prompt-buttons {
+  margin-top: 5px;
+  display: none;
+}
+
 `)
