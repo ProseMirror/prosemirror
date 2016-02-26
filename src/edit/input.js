@@ -198,6 +198,7 @@ handlers.mousedown = (pm, e) => {
   lastClick = now
 
   if (tripleClick) handleTripleClick(pm, e)
+  else if (doubleClick && handleNodeClick(pm, "handleDoubleClick", e, true)) {}
   else pm.input.mouseDown = new MouseDown(pm, e, doubleClick)
 }
 

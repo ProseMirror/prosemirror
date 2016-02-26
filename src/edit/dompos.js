@@ -329,6 +329,11 @@ export function selectableNodeAbove(pm, dom, coords, liberal) {
 // event.
 
 // :: (pm: ProseMirror, event: MouseEvent, path: [number], node: Node) → bool
+// #path=NodeType.prototype.handleDoubleClick
+// This works like [`handleClick`](#NodeType.handleClick), but is
+// called for double clicks instead.
+
+// :: (pm: ProseMirror, event: MouseEvent, path: [number], node: Node) → bool
 // #path=NodeType.prototype.handleContextMenu
 //
 // When the [context
