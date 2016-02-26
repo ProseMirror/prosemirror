@@ -183,10 +183,10 @@ export class SelectionState {
 // [head](#TextSelection.head) and [anchor](#TextSelection.anchor)).
 export class Selection {
   // :: Pos #path=Selection.prototype.from
-  // The start of the selection.
+  // The left-bound of the selection.
 
   // :: Pos #path=Selection.prototype.to
-  // The end of the selection.
+  // The right-bound of the selection.
 
   // :: bool #path=Selection.empty
   // True if the selection is an empty text selection (head an anchor
@@ -285,10 +285,14 @@ export function hasFocus(pm) {
   return sel.rangeCount && contains(pm.content, sel.anchorNode)
 }
 
+// Create a selection inside the node at the given path coming
+// from a given direction.
 function findSelectionIn(doc, path, offset, dir, text) {
   let node = doc.path(path)
   if (node.isTextblock) return new TextSelection(new Pos(path, offset))
 
+  // Iteratve over child nodes recursively coming from the given
+  // direction and return the first viable selection.
   for (let i = offset + (dir > 0 ? 0 : -1); dir > 0 ? i < node.size : i >= 0; i += dir) {
     let child = node.child(i)
     if (!text && child.type.contains == null && child.type.selectable)
@@ -302,6 +306,10 @@ function findSelectionIn(doc, path, offset, dir, text) {
 
 // FIXME we'll need some awareness of bidi motion when determining block start and end
 
+// Create a selection which is moved relative to a position in a
+// given direction. When a selection isn't found at the given position,
+// walks up the document tree one level and one step in the
+// desired direction.
 export function findSelectionFrom(doc, pos, dir, text) {
   for (let path = pos.path.slice(), offset = pos.offset;;) {
     let found = findSelectionIn(doc, path, offset, dir, text)
@@ -317,14 +325,23 @@ export function findSelectionNear(doc, pos, bias = 1, text) {
   return result
 }
 
+// Create a selection in a document at the beginning of the node
+// at a given path.
+// TODO should we change the variable here to "doc" for clarity?
 export function findSelectionAtStart(node, path = [], text) {
   return findSelectionIn(node, path.slice(), 0, 1, text)
 }
 
+// Create a selection in a document at the end of the node
+// at a given path.
+// TODO should we change the variable here to "doc" for clarity?
 export function findSelectionAtEnd(node, path = [], text) {
   return findSelectionIn(node, path.slice(), node.size, -1, text)
 }
 
+// : (ProseMirror, Pos, number)
+// Whether vertical position motion in a given direction
+// from a position would leave a text block.
 export function verticalMotionLeavesTextblock(pm, pos, dir) {
   let dom = pathToDOM(pm.content, pos.path)
   let coords = coordsAtPos(pm, pos)
