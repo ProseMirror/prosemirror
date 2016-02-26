@@ -63,8 +63,13 @@ baseCommands.deleteSelection = {
 function deleteBarrier(pm, cut) {
   let around = pm.doc.path(cut.path)
   let before = around.child(cut.offset - 1), after = around.child(cut.offset)
-  if (before.type.canContainContent(after.type) && pm.tr.join(cut).apply(pm.apply.scroll) !== false)
-    return
+  if (before.type.canContainContent(after.type)) {
+    let tr = pm.tr.join(cut)
+    if (tr.steps.length && before.size == 0 && !before.sameMarkup(after))
+      tr.setNodeType(cut.move(-1), after.type, after.attrs)
+    if (tr.apply(pm.apply.scroll) !== false)
+      return
+  }
 
   let conn
   if (after.isTextblock && (conn = before.type.findConnection(after.type))) {
