@@ -12,7 +12,7 @@ var pm = window.pm = new ProseMirror({
   docFormat: "dom"
 })
 
-document.querySelector("#mark").addEventListener("mousedown", e => {
+document.querySelector("#mark").addEventListener("mousedown", function(e) {
   pm.markRange(pm.selection.from, pm.selection.to, {className: "marked"})
   e.preventDefault()
 })
