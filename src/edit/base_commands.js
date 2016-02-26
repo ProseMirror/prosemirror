@@ -516,6 +516,8 @@ baseCommands.selectNodeRight = {
   keys: ["Right", "Mod-Right"]
 }
 
+// : (ProseMirror, number)
+// Move the selection vertically in a given direction.
 function selectNodeVertically(pm, dir) {
   let {empty, node, from, to} = pm.selection
   if (!empty && !node) return false
