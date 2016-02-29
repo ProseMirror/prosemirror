@@ -6,7 +6,7 @@ import {captureKeys} from "./capturekeys"
 import {elt, browser} from "../dom"
 
 import {applyDOMChange, textContext, textInContext} from "./domchange"
-import {TextSelection, rangeFromDOMLoose, findSelectionAtStart, findSelectionAtEnd} from "./selection"
+import {TextSelection, rangeFromDOMLoose, findSelectionAtStart, findSelectionAtEnd, hasFocus} from "./selection"
 import {coordsAtPos, pathFromDOM, handleNodeClick, selectableNodeAbove} from "./dompos"
 
 let stopSeq = null
@@ -123,6 +123,7 @@ handlers.keydown = (pm, e) => {
   // clicking on it or pressing a key while it is focused. Mostly
   // useful for closing or resetting transient UI state such as open
   // menus.
+  if (!hasFocus(pm)) return
   pm.signal("interaction")
   if (e.keyCode == 16) pm.input.shiftKey = true
   if (pm.input.composing) return
@@ -147,7 +148,8 @@ function inputText(pm, range, text) {
 }
 
 handlers.keypress = (pm, e) => {
-  if (pm.input.composing || !e.charCode || e.ctrlKey && !e.altKey || browser.mac && e.metaKey) return
+  if (!hasFocus(pm) || pm.input.composing || !e.charCode ||
+      e.ctrlKey && !e.altKey || browser.mac && e.metaKey) return
   if (dispatchKey(pm, Keymap.keyName(e), e)) return
   let sel = pm.selection
   if (sel.node && sel.node.contains == null) {
@@ -286,7 +288,7 @@ class Composing {
 }
 
 handlers.compositionstart = (pm, e) => {
-  if (pm.input.maybeAbortComposition()) return
+  if (!hasFocus(pm) || pm.input.maybeAbortComposition()) return
 
   pm.flush()
   pm.input.composing = new Composing(pm, e.data)
@@ -295,6 +297,7 @@ handlers.compositionstart = (pm, e) => {
 }
 
 handlers.compositionupdate = (pm, e) => {
+  if (!hasFocus(pm)) return
   let info = pm.input.composing
   if (info && info.data != e.data) {
     info.data = e.data
@@ -306,6 +309,7 @@ handlers.compositionupdate = (pm, e) => {
 }
 
 handlers.compositionend = (pm, e) => {
+  if (!hasFocus(pm)) return
   let info = pm.input.composing
   if (info) {
     pm.input.composing.finished = true
@@ -325,6 +329,7 @@ function finishComposing(pm) {
 }
 
 handlers.input = (pm) => {
+  if (!hasFocus(pm)) return
   if (pm.input.skipInput) return --pm.input.skipInput
 
   if (pm.input.composing) {
@@ -432,6 +437,7 @@ handlers.copy = handlers.cut = (pm, e) => {
 // it.
 
 handlers.paste = (pm, e) => {
+  if (!hasFocus(pm)) return
   if (!e.clipboardData) return
   let sel = pm.selection
   let fragment = fromClipboard(pm, e.clipboardData, pm.input.shiftKey)

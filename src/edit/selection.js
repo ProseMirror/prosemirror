@@ -280,6 +280,7 @@ export function rangeFromDOMLoose(pm) {
 }
 
 export function hasFocus(pm) {
+  if (document.activeElement != pm.content) return false
   let sel = window.getSelection()
   return sel.rangeCount && contains(pm.content, sel.anchorNode)
 }
