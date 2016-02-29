@@ -517,7 +517,9 @@ baseCommands.selectNodeRight = {
 }
 
 // : (ProseMirror, number)
-// Move the selection vertically in a given direction.
+// Check whether vertical selection motion would involve node
+// selections. If so, apply it (if not, the result is left to the
+// browser)
 function selectNodeVertically(pm, dir) {
   let {empty, node, from, to} = pm.selection
   if (!empty && !node) return false
