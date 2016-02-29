@@ -42,16 +42,15 @@ class FragmentCursor {
   nextUntil(end) {
     let cur = this.fragment.content[this.index]
     if (!cur || this.pos >= end) return iterEnd
-    let curEnd = this.off + cur.size
+    let curEnd = this.off + cur.size, inside = this.inside
     if (curEnd > end) {
       this.inside = end - this.off
-      return cur.slice(this.inside, this.inside)
+      return cur.slice(inside - !cur.isText, this.inside - !cur.isText)
     } else {
       this.index++
       this.off += cur.size
-      if (this.inside) cur = cur.slice(this.inside)
       this.inside = 0
-      return cur
+      return inside ? cur.slice(inside - !cur.isText) : cur
     }
   }
 
@@ -73,14 +72,17 @@ class FragmentCursor {
   // Get the node that the cursor is pointing before, if any.
   get node() {
     let elt = this.fragment.content[this.index]
-    return elt && (this.inside ? elt.slice(inside) : elt)
+    return elt && (this.inside ? elt.slice(inside - !elt.isText) : elt)
   }
 
   // :: ?node
   // Get the node that the cursor is pointing after, if any.
   get nodeBefore() {
     if (this.index == 0) return null
-    if (this.inside) return this.fragment.content[this.index].slice(0, this.inside)
+    if (this.inside) {
+      let child = this.fragment.content[this.index]
+      return child.slice(0, this.inside - !child.isText)
+    }
     return this.fragment.content[this.index - 1]
   }
 
@@ -240,9 +242,12 @@ export class Fragment {
     let cur = this.cursor(from, -1)
     while (cur.off < to) {
       let start = cur.pos, child = cur.next()
-      child.nodesBetween(Math.max(0, from - start),
-                         Math.min(child.size, to - start),
-                         f, pos + start, parent)
+      if (f(child, pos + start, parent) !== false && child.content.size) {
+        ++start
+        child.nodesBetween(Math.max(0, from - start),
+                           Math.min(child.size - 2, to - start),
+                           f, pos + start, parent)
+      }
     }
   }
 

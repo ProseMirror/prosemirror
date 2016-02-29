@@ -166,7 +166,7 @@ export class Node {
     for (;;) {
       if (pos == 0) return parent
       let cur = this.cursor(pos, -1)
-      pos -= cur.pos
+      pos -= cur.pos + 1
       parent = cur.node
     }
   }
@@ -181,7 +181,7 @@ export class Node {
     for (;;) {
       let cur = this.cursor(pos, -1)
       stack.push(cur)
-      pos -= cur.pos
+      pos -= cur.pos + 1
       if (pos) parent = cur.calue()
     }
     let cx = new PosContext(root, orig, path)
