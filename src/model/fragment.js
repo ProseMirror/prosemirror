@@ -29,9 +29,15 @@ class FragmentCursor {
     let val = this.node
     if (!val) return iterEnd
     this.index++
-    this.off += val.size
+    this.off += val.size + this.inside
     this.inside = 0
     return val
+  }
+
+  // :: bool
+  // Returns true if the cursor is at the end of the fragment.
+  get atEnd() {
+    return this.index == this.fragment.content.length
   }
 
   // :: (number) → union<Node, {done: bool}>
@@ -45,7 +51,7 @@ class FragmentCursor {
     let curEnd = this.off + cur.size, inside = this.inside
     if (curEnd > end) {
       this.inside = end - this.off
-      return cur.slice(inside - !cur.isText, this.inside - !cur.isText)
+      return cur.slice(inside ? inside - !cur.isText : 0, this.inside - !cur.isText)
     } else {
       this.index++
       this.off += cur.size
@@ -68,11 +74,17 @@ class FragmentCursor {
     return val
   }
 
+  // :: bool
+  // Returns true if the cursor is at the start of the fragment.
+  get atStart() {
+    return this.index == 0
+  }
+
   // :: ?Node
   // Get the node that the cursor is pointing before, if any.
   get node() {
     let elt = this.fragment.content[this.index]
-    return elt && (this.inside ? elt.slice(inside - !elt.isText) : elt)
+    return elt && (this.inside ? elt.slice(this.inside - !elt.isText) : elt)
   }
 
   // :: ?node
@@ -140,7 +152,7 @@ export class Fragment {
       return joinRight ? other.replace(0, other.firstChild.close(joinRight - 1, "start")) : other
     if (!other.size)
       return joinLeft ? this.replace(this.size - 1, this.lastChild.close(joinLeft - 1, "end")) : this
-    
+
     let last = this.content.length - 1, content = this.content.slice(0, last)
     let before = this.content[last], after = other.firstChild
     let same = before.sameMarkup(after)
@@ -204,7 +216,7 @@ export class Fragment {
   // old nor the new node may be a text node.
   replace(cursor, node) {
     if (cursor.inside) throw new ModelError("Non-rounded cursor passed to replace")
-    return replaceInner(cursor.index, node)
+    return this.replaceInner(cursor.index, node)
   }
 
   // :: (?number, ?number) → FragmentCursor
@@ -216,12 +228,12 @@ export class Fragment {
   cursor(start, round) {
     if (!start) return new FragmentCursor(this, 0, 0, 0)
     if (start == this.size) return new FragmentCursor(this, start, this.content.length, 0)
-    if (start > this.size || start < 0) throw new ModelError(`Position ${start} outside of ${this}`)
+    if (start > this.size || start < 0) throw new ModelError(`Position ${start} outside of fragment (${this})`)
     for (let i = 0, curPos = 0;; i++) {
       let cur = this.content[i], end = curPos + cur.size
       if (end >= start) {
         if (end == start) return new FragmentCursor(this, end, i + 1, 0)
-        if (cur.isText || !round) return new FragmentCursor(this, start, i, start - curPos)
+        if (cur.isText || !round) return new FragmentCursor(this, curPos, i, start - curPos)
         return new FragmentCursor(this, round < 0 ? curPos : end, i + (round > 0), 0)
       }
       curPos = end
@@ -234,20 +246,20 @@ export class Fragment {
   forEach(f) {
     for (let i = 0, pos = 0; i < this.content.length; i++) {
       let child = this.content[i]
-      f(child, off, off += child.size)
+      f(child, pos, pos += child.size)
     }
   }
 
   nodesBetween(from = 0, to = this.size, f, pos, parent) {
-    let cur = this.cursor(from, -1)
-    while (cur.off < to) {
-      let start = cur.pos, child = cur.next()
-      if (f(child, pos + start, parent) !== false && child.content.size) {
-        ++start
+    for (let i = 0, off = 0; i < this.content.length && off < to; i++) {
+      let child = this.content[i], end = off + child.size
+      if (end > from && f(child, pos + off, parent) !== false && child.content.size) {
+        let start = off + 1
         child.nodesBetween(Math.max(0, from - start),
-                           Math.min(child.size - 2, to - start),
-                           f, pos + start, parent)
+                           Math.min(child.content.size, to - start),
+                           f, pos + start)
       }
+      off = end
     }
   }
 

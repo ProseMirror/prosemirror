@@ -154,20 +154,21 @@ export class Node {
     return this
   }
 
-  // :: (?number) → ?FragmentCursor
+  // :: (?number, ?number) → ?FragmentCursor
   // Get a cursor into this node's content.
   cursor(pos, round) {
-    return this.content.cursor(pos || 0, round)
+    return this.content.cursor(pos, round)
   }
 
   // :: (number) → Node
+  // Find the node after the given position.
   nodeAt(pos) {
-    let parent = this
+    let node = this
     for (;;) {
-      if (pos == 0) return parent
-      let cur = this.cursor(pos, -1)
+      let cur = node.cursor(pos, -1)
+      node = cur.node
+      if (cur.pos == pos) return node
       pos -= cur.pos + 1
-      parent = cur.node
     }
   }
 
@@ -179,8 +180,8 @@ export class Node {
 
     let root = this, orig = pos, parent = this, path = []
     for (;;) {
-      let cur = this.cursor(pos, -1)
-      stack.push(cur)
+      let cur = parent.cursor(pos, -1)
+      path.push(cur)
       pos -= cur.pos + 1
       if (pos) parent = cur.calue()
     }
@@ -206,17 +207,15 @@ export class Node {
   // the callback with the node, its position, and its parent
   // node. `from` and `to` may be left off, to denote
   // starting at the start of the node or ending at its end.
-  nodesBetween(from = 0, to = this.size, f, pos = 0, parent = null) {
-    if (from == 0 && to == this.size && f(this, pos, parent) === false) return
-    if (this.content.size)
-      this.content.nodesBetween(from || 1, Math.min(to, this.size - 1), f, pos + 1, this)
+  nodesBetween(from, to, f, pos = 0) {
+    this.content.nodesBetween(from, to, f, pos, this)
   }
 
   // :: (?number, ?number) → Node
   // Returns a copy of this node containing only the content between
   // `from` and `to`. You can omit either argument to start
   // or end at the start or end of the node.
-  slice(from = 1, to = this.size - 1) {
+  slice(from, to) {
     return this.copy(this.content.slice(from, to))
   }
 
@@ -230,7 +229,7 @@ export class Node {
     return leaf ? leaf.marks : emptyArray
   }
 
-  // :: (?Pos, ?Pos, MarkType) → bool
+  // :: (?number, ?number, MarkType) → bool
   // Test whether a mark of the given type occurs in this document
   // between the two given positions.
   rangeHasMark(from, to, type) {
@@ -325,6 +324,10 @@ export class TextNode extends Node {
     return new TextNode(this.type, this.attrs, this.text, marks)
   }
 
+  slice(from = 0, to = this.text.length) {
+    return this.copy(this.text.slice(from, to))
+  }
+
   toJSON() {
     let base = super.toJSON()
     base.text = this.text
@@ -360,7 +363,7 @@ class PosContext {
   posAt(level = this.depth) {
     let pos = 0
     for (let i = 0; i < level; i++)
-      pos += this.path[level].pos + 1
+      pos += this.path[level].pos + (i ? 1 : 0)
     return pos
   }
 
@@ -381,4 +384,4 @@ class PosContext {
   }
 }
 
-const cachedDoc = [], cachedPos = [], cachedCx = [], cachePos = 0, cacheMax = 5
+let cachedDoc = [], cachedPos = [], cachedCx = [], cachePos = 0, cacheMax = 5
