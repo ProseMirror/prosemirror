@@ -49,10 +49,10 @@ defTest("mark_remove", () => {
          [link("http://foo")])
 })
 
-function has(name, doc, st, result) {
+function has(name, doc, mark, result) {
   defTest("has_mark_" + name, function() {
-    if (st.isInSet(doc.marksAt(doc.tag.a)) != result)
-      throw new Failure("hasMark(" + doc + ", " + doc.tag.a + ", " + st.type + ") returned " + !result)
+    if (mark.isInSet(doc.marksAt(doc.tag.a)) != result)
+      throw new Failure("hasMark(" + doc + ", " + doc.tag.a + ", " + mark.type.name + ") returned " + !result)
   })
 }
 

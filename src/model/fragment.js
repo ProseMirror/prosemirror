@@ -98,8 +98,8 @@ class FragmentCursor {
     return this.fragment.content[this.index - 1]
   }
 
-  get nodeAround() {
-    return this.fragment.content[this.index]
+  get nodeBeforeOrAround() {
+    return this.fragment.content[this.index && !this.inside ? this.index - 1 : this.index]
   }
 
   // :: () → FragmentCursor

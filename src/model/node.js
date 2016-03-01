@@ -182,12 +182,13 @@ export class Node {
     let cached = PosContext.cached(this, pos)
     if (cached) return cached
 
-    let root = this, orig = pos, parent = this, path = []
-    for (;;) {
-      let cur = parent.cursor(pos, -1)
+    let root = this, orig = pos, path = []
+    for (let node = this;;) {
+      let cur = node.cursor(pos, -1)
       path.push(cur)
+      if (cur.pos == pos) break
+      node = cur.node
       pos -= cur.pos + 1
-      if (pos) parent = cur.calue()
     }
     let cx = new PosContext(root, orig, path)
     PosContext.addToCache(this, pos, cx)
@@ -229,7 +230,7 @@ export class Node {
   // after it.
   marksAt(pos) {
     let cx = this.context(pos), top = cx.path[cx.path.length - 1]
-    let leaf = top.nodeAround || top.nodeBefore
+    let leaf = top.nodeBeforeOrAround
     return leaf ? leaf.marks : emptyArray
   }
 
