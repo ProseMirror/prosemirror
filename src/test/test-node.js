@@ -1,10 +1,10 @@
 import {Fragment, defaultSchema as schema} from "../model"
 
-import {doc, blockquote, h1, p, li, ul, em, strong, code, br, img} from "./build"
+import {doc, blockquote, p, li, ul, em, strong, code, br, img} from "./build"
 
 import {Failure} from "./failure"
 import {defTest} from "./tests"
-import {is, cmpNode, cmpStr} from "./cmp"
+import {cmpNode, cmpStr} from "./cmp"
 
 function str(name, node, str) {
   defTest("node_string_" + name, () => cmpStr(node, str))

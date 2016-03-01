@@ -2,26 +2,27 @@ import {Failure} from "./failure"
 import {Pos, Mark} from "../model"
 
 export function cmpNode(a, b, comment) {
+  let add = comment ? " (" + comment + ")" : ""
   function inner(a, b) {
-    if (a.type != b.type) throw new Failure(`types differ: ${a.type.name} vs ${b.type.name}`)
+    if (a.type != b.type) throw new Failure(`types differ: ${a.type.name} vs ${b.type.name}${add}`)
     for (var name in b.attrs) {
       if (!(name in a.attrs) && b.attrs[name])
-        throw new Failure("missing attr " + name + " on left in " + a.type.name)
+        throw new Failure("missing attr " + name + " on left in " + a.type.name + add)
       if (a.attrs[name] != b.attrs[name])
-        throw new Failure("attribute " + name + " mismatched in " + a.type.name + " -- " + a.attrs[name] + " vs " + b.attrs[name])
+        throw new Failure("attribute " + name + " mismatched in " + a.type.name + " -- " + a.attrs[name] + " vs " + b.attrs[name] + add)
     }
     for (var name in a.attrs)
       if (!(name in b.attrs) && a.attrs[name])
-        throw new Failure("missing attr " + name + " on right in " + a.type.name)
+        throw new Failure("missing attr " + name + " on right in " + a.type.name + add)
     if (a.isText && a.text != b.text) throw new Failure("different text " + a.text + " vs " + b.text)
-    if (a.marks && !Mark.sameSet(a.marks, b.marks)) throw new Failure("different marks in " + a + " vs " + b)
+    if (a.marks && !Mark.sameSet(a.marks, b.marks)) throw new Failure("different marks in " + a + " vs " + b + add)
 
     for (let curA = a.cursor(), curB = b.cursor();;) {
       if (curA.atEnd) {
         if (curB.atEnd) break
-        throw new Failure("Extra content in " + a.type.name + " on right: " + b.content.slice(curB.pos))
+        throw new Failure("Extra content in " + a.type.name + " on right: " + b.content.slice(curB.pos) + add)
       } else if (curB.atEnd) {
-        throw new Failure("Extra content in " + a.type.name + " on left: " + a.content.slice(curA.pos))
+        throw new Failure("Extra content in " + a.type.name + " on left: " + a.content.slice(curA.pos) + add)
       }
       inner(curA.next(), curB.next())
     }
