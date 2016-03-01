@@ -31,7 +31,9 @@ export class Mark {
       var other = set[i]
       if (other.type == this.type) {
         if (this.eq(other)) return set
-        else return set.slice(0, i).concat(this).concat(set.slice(i + 1))
+        let copy = set.slice()
+        copy[i] = this
+        return copy
       }
       if (other.type.rank > this.type.rank)
         return set.slice(0, i).concat(this).concat(set.slice(i))

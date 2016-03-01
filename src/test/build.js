@@ -69,7 +69,7 @@ function block(type, attrs) {
 function mark(type, attrs) {
   let mark = schema.mark(type, attrs)
   return function() {
-    let flat = flatten(arguments, n => n.mark(mark.addToSet(n.marks)))
+    let flat = flatten(arguments, n => mark.type.isInSet(n.marks) ? n : n.mark(mark.addToSet(n.marks)))
     return {flat, tag}
   }
 }
