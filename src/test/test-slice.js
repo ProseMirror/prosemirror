@@ -5,12 +5,12 @@ import {cmpNode} from "./cmp"
 
 function t(name, doc, expect) {
   defTest("slice_" + name, () => {
-    if (doc.tag.a && doc.tag.b)
-      cmpNode(doc.sliceBetween(doc.tag.a, doc.tag.b), expect)
-    else if (doc.tag.a)
-      cmpNode(doc.sliceBetween(null, doc.tag.a), expect)
+    if (doc.tag.a != null && doc.tag.b != null)
+      cmpNode(doc.slice(doc.tag.a, doc.tag.b), expect)
+    else if (doc.tag.a != null)
+      cmpNode(doc.slice(0, doc.tag.a), expect)
     else
-      cmpNode(doc.sliceBetween(doc.tag.b, null), expect)
+      cmpNode(doc.slice(doc.tag.b), expect)
   })
 }
 
