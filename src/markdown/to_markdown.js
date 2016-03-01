@@ -182,7 +182,7 @@ class MarkdownSerializer {
 
     let prevTight = this.inTightList
     this.inTightList = node.attrs.tight
-    for (let i = node.iter(), n = 0, item; item = i.next().value; n++) {
+    for (let i = node.cursor(), n = 0, item; item = i.next().value; n++) {
       if (n && node.attrs.tight) this.flushClose(1)
       this.wrapBlock(delim, firstDelim(n), node, () => this.render(item))
     }
@@ -255,7 +255,7 @@ def(BulletList, (state, node) => {
 
 def(OrderedList, (state, node) => {
   let start = Number(node.attrs.order || 1)
-  let maxW = String(start + node.size - 1).length
+  let maxW = String(start + node.childCount - 1).length
   let space = state.repeat(" ", maxW + 2)
   state.renderList(node, space, i => {
     let nStr = String(start + i)

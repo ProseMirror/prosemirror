@@ -1,7 +1,7 @@
 import "./test-node"
 import "./test-diff"
-/*
 import "./test-parse"
+/*
 import "./test-dom"
 import "./test-slice"
 import "./test-mark"

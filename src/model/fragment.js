@@ -322,6 +322,8 @@ export class Fragment {
   // :: ?Node
   // The last child of the fragment, or `null` if it is empty.
   get lastChild() { return this.content.length ? this.content[this.content.length - 1] : null }
+
+  get childCount() { return this.content.length }
 }
 
 // :: Fragment

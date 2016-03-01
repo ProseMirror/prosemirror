@@ -43,6 +43,10 @@ export class Node {
   // is the size of the content plus two (the start and end token).
   get size() { return this.type.contains ? 2 + this.content.size : 1 }
 
+  // :: number
+  // The number of children that the node has.
+  get childCount() { return this.content.childCount }
+
   // :: ((node: Node, pos: number))
   // Call the given function for each child node. The function will be
   // given the node, as well as its start and end offsets, as
