@@ -1,5 +1,5 @@
-import "./test-pos"
 import "./test-node"
+/*
 import "./test-diff"
 import "./test-parse"
 import "./test-dom"
@@ -9,3 +9,4 @@ import "./test-rebase"
 import "./test-replace"
 import "./test-trans"
 import "./test-json"
+*/
