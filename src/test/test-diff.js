@@ -3,7 +3,7 @@ import {findDiffStart, findDiffEnd} from "../model"
 import {doc, blockquote, h1, p, em, strong} from "./build"
 
 import {defTest} from "./tests"
-import {cmpStr, P} from "./cmp"
+import {cmpStr} from "./cmp"
 import {Failure} from "./failure"
 
 function t(name, type, a, b, pos) {
@@ -15,99 +15,82 @@ function t(name, type, a, b, pos) {
       let found = findDiffEnd(a.content, b.content)
       result = found && found.a
     }
-    if (!pos) {
-      if (result) throw new Failure("Unexpectedly found a difference")
+    if (pos == null) {
+      if (result != null) throw new Failure("Unexpectedly found a difference")
     } else {
-      if (!result) throw new Failure("Unexpectedly found no difference")
+      if (result == null) throw new Failure("Unexpectedly found no difference")
       cmpStr(result, pos)
     }
   })
 }
 
-function sta(name, a, b, pos) { t(name, "start", a, b, pos) }
-function end(name, a, b, pos) { t(name, "end", a, b, pos) }
+function sta(name, a, b) { t(name, "start", a, b, a.tag.a) }
+function end(name, a, b) { t(name, "end", a, b, a.tag.a) }
 
 sta("none",
     doc(p("a", em("b")), p("hello"), blockquote(h1("bye"))),
-    doc(p("a", em("b")), p("hello"), blockquote(h1("bye"))),
-    null)
+    doc(p("a", em("b")), p("hello"), blockquote(h1("bye"))))
 
 sta("at_end_longer",
-    doc(p("a", em("b")), p("hello"), blockquote(h1("bye"))),
-    doc(p("a", em("b")), p("hello"), blockquote(h1("bye")), p("oops")),
-    P(3))
+    doc(p("a", em("b")), p("hello"), blockquote(h1("bye")), "<a>"),
+    doc(p("a", em("b")), p("hello"), blockquote(h1("bye")), p("oops")))
 
 sta("at_end_shorter",
-    doc(p("a", em("b")), p("hello"), blockquote(h1("bye")), p("oops")),
-    doc(p("a", em("b")), p("hello"), blockquote(h1("bye"))),
-    P(3))
+    doc(p("a", em("b")), p("hello"), blockquote(h1("bye")), "<a>", p("oops")),
+    doc(p("a", em("b")), p("hello"), blockquote(h1("bye"))))
 
 sta("diff_styles",
-    doc(p("a", em("b"))),
-    doc(p("a", strong("b"))),
-    P(0, 1))
+    doc(p("a<a>", em("b"))),
+    doc(p("a", strong("b"))))
 
 sta("longer_text",
-    doc(p("foobar", em("b"))),
-    doc(p("foo", em("b"))),
-    P(0, 3))
+    doc(p("foo<a>bar", em("b"))),
+    doc(p("foo", em("b"))))
 
 sta("different_text",
-    doc(p("foobar")),
-    doc(p("foocar")),
-    P(0, 3))
+    doc(p("foo<a>bar")),
+    doc(p("foocar")))
 
 sta("different_node",
-    doc(p("a"), p("b")),
-    doc(p("a"), h1("b")),
-    P(1))
+    doc(p("a"), "<a>", p("b")),
+    doc(p("a"), h1("b")))
 
 sta("at_start",
-    doc(p("b")),
-    doc(h1("b")),
-    P(0))
+    doc("<a>", p("b")),
+    doc(h1("b")))
 
 end("none",
     doc(p("a", em("b")), p("hello"), blockquote(h1("bye"))),
-    doc(p("a", em("b")), p("hello"), blockquote(h1("bye"))),
-    null)
+    doc(p("a", em("b")), p("hello"), blockquote(h1("bye"))))
 
 end("at_start_longer",
-    doc(p("a", em("b")), p("hello"), blockquote(h1("bye"))),
-    doc(p("oops"), p("a", em("b")), p("hello"), blockquote(h1("bye"))),
-    P(0))
+    doc("<a>", p("a", em("b")), p("hello"), blockquote(h1("bye"))),
+    doc(p("oops"), p("a", em("b")), p("hello"), blockquote(h1("bye"))))
 
 end("at_start_shorter",
-    doc(p("oops"), p("a", em("b")), p("hello"), blockquote(h1("bye"))),
-    doc(p("a", em("b")), p("hello"), blockquote(h1("bye"))),
-    P(1))
+    doc(p("oops"), "<a>", p("a", em("b")), p("hello"), blockquote(h1("bye"))),
+    doc(p("a", em("b")), p("hello"), blockquote(h1("bye"))))
 
 end("diff_styles",
-    doc(p("a", em("b"), "c")),
-    doc(p("a", strong("b"), "c")),
-    P(0, 2))
+    doc(p("a", em("b"), "<a>c")),
+    doc(p("a", strong("b"), "c")))
 
 end("longer_text",
-    doc(p("barfoo", em("b"))),
-    doc(p("foo", em("b"))),
-    P(0, 3))
+    doc(p("bar<a>foo", em("b"))),
+    doc(p("foo", em("b"))))
 
 end("different_text",
-    doc(p("foobar")),
-    doc(p("foocar")),
-    P(0, 4))
+    doc(p("foob<a>ar")),
+    doc(p("foocar")))
 
 end("different_node",
-    doc(p("a"), p("b")),
-    doc(h1("a"), p("b")),
-    P(1))
+    doc(p("a"), "<a>", p("b")),
+    doc(h1("a"), p("b")))
 
 end("at_end",
-    doc(p("b")),
-    doc(h1("b")),
-    P(1))
+    doc(p("b"), "<a>"),
+    doc(h1("b")))
 
 end("similar_start",
-    doc(p("hello")),
-    doc(p("hey"), p("hello")),
-    P(0))
+    doc("<a>", p("hello")),
+    doc(p("hey"), p("hello")))

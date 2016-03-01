@@ -4,7 +4,7 @@
 export function findDiffStart(a, b, pos = 0) {
   let curA = a.cursor(), curB = b.cursor()
   for (;;) {
-    if (curA.atEnd() || curB.atEnd())
+    if (curA.atEnd || curB.atEnd)
       return a.size == b.size ? null : pos
 
     let childA = curA.next(), childB = curB.next()
@@ -35,7 +35,7 @@ export function findDiffEnd(a, b, posA = a.size, posB = b.size) {
   let curA = a.cursor(a.size), curB = b.cursor(b.size)
 
   for (;;) {
-    if (curA.atStart() || curB.atStart())
+    if (curA.atStart || curB.atStart)
       return a.size == b.size ? null : {a: posA, b: posB}
 
     let childA = curA.prev(), childB = curB.prev()
