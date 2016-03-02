@@ -1,11 +1,17 @@
 import {defaultSchema as schema, Pos} from "../model"
 
+// : (string) → Function
+// Create a function for creating inline nodes with brevity.
+// For use with `doc()`.
 function buildInline(style) {
   return function() {
     return {type: "span", style: style, content: arguments}
   }
 }
 
+// : (string, Object) → Function
+// Create a function which creating block nodes with brevity.
+// For use with `doc()`.
 function build(type, attrs) {
   return function() {
     return {type: "block", style: type, content: arguments, attrs: attrs}
@@ -50,6 +56,9 @@ function parseDoc(value, content, path) {
 
 let tags = Object.create(null)
 
+// : (...nodes: Node) → Doc
+// Create a document node. Child nodes can be added with
+// abbreviated node notation, see `build()`.
 export function doc() {
   let content = []
   for (let i = 0; i < arguments.length; i++)
