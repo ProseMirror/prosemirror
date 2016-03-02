@@ -128,7 +128,10 @@ class MarkdownSerializer {
         this.text("`", false)
         stack.pop()
       }
-      for (let j = 0; j < stack.length; j++) {
+      // Check the stack for opening marks that have been serialized,
+      // and serialize a closing mark if the mark doesn't continue
+      // into the next node.
+      for (let j = stack.length - 1; j >= 0; j--) {
         let cur = stack[j], found = false
         for (let k = 0; k < marks.length; k++) {
           if (marks[k].eq(stack[j])) {
@@ -139,7 +142,7 @@ class MarkdownSerializer {
         }
         if (!found) {
           this.text(this.markString(cur, false), false)
-          stack.splice(j--, 1)
+          stack.splice(j, 1)
         }
       }
       for (let j = 0; j < marks.length; j++) {
@@ -191,6 +194,8 @@ class MarkdownSerializer {
     return out
   }
 
+  // :: (Mark, bool) → string
+  // Get the markdown string for a given opening or closing mark.
   markString(mark, open) {
     let value = open ? mark.type.openMarkdown : mark.type.closeMarkdown
     return typeof value == "string" ? value : value(this, mark)
