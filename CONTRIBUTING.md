@@ -42,18 +42,21 @@ Before reporting a bug, read these pointers.
 
 - Fork [the repository](https://github.com/prosemirror/prosemirror/)
   ([how to fork a repo](https://help.github.com/articles/fork-a-repo))
-  
-- Make your changes, and commit them
 
-- If your changes are easy to test or likely to regress, add tests in
-  the `test/` directory. Either put them in an existing `test-*.js`
-  file, if they fit there, or add a new file.
+- Make your changes, and commit them
 
 - Follow the code style of the rest of the project (see below). Run
   `npm run lint` to verify that the linter is happy (you'll need to
   run `npm install` first).
 
-- Make sure all tests pass.
+- If your changes are easy to test or likely to regress, add tests in
+  the `test/` directory. Either put them in an existing `test-*.js`
+  file, if they fit there, or add a new file.
+
+- Make sure all tests pass. Run `npm run test` verify tests pass.
+  Also run browser tests by starting the demo (`npm run demo`) and
+  visiting [http://localhost:8080/test.html](http://localhost:8080/test.html)
+  in a browser.
 
 - Submit a pull request ([how to create a pull request](https://help.github.com/articles/fork-a-repo)).
   Don't put more than one feature/fix in a single pull request.
