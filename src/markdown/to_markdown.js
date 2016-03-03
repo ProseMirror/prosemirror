@@ -123,8 +123,8 @@ class MarkdownSerializer {
     let stack = []
     let progress = node => {
       let marks = node ? node.marks.slice() : []
-      if (stack.length && stack[stack.length - 1].type == "code" &&
-          (!marks.length || marks[marks.length - 1].type != "code")) {
+      if (stack.length && stack[stack.length - 1].type.name == "code" &&
+          (!marks.length || marks[marks.length - 1].type.name != "code")) {
         this.text("`", false)
         stack.pop()
       }
