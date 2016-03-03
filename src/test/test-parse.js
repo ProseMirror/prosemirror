@@ -44,9 +44,17 @@ t("inline",
   "Hello. Some *em* text, some **strong** text, and some `code`",
   doc(p("Hello. Some ", em("em"), " text, some ", strong("strong"), " text, and some ", code("code"))))
 
-t("inline_overlap",
+t("inline_overlap_mix",
   "This is **strong *emphasized text with `code` in* it**",
   doc(p("This is ", strong("strong ", em("emphasized text with ", code("code"), " in"), " it"))))
+
+t("inline_overlap_link",
+  "**[link](http://foo) is bold**",
+  doc(p(strong(a("link"), " is bold"))))
+
+t("inline_overlap_code",
+  "**`code` is bold**",
+  doc(p(strong(code("code"), " is bold"))))
 
 t("link",
   "My [link](http://foo) goes to foo",

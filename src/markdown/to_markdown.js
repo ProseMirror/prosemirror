@@ -120,37 +120,55 @@ class MarkdownSerializer {
   // :: (Node)
   // Render the contents of `parent` as inline content.
   renderInline(parent) {
-    let stack = []
+    let active = []
     let progress = node => {
-      let marks = node ? node.marks.slice() : []
-      if (stack.length && stack[stack.length - 1].type.isCode &&
-          (!marks.length || marks[marks.length - 1].type.isCode)) {
-        this.text("`", false)
-        stack.pop()
-      }
-      // Check the stack for opening marks that have been serialized,
-      // and serialize a closing mark if the mark doesn't continue
-      // into the next node.
-      for (let j = stack.length - 1; j >= 0; j--) {
-        let cur = stack[j], found = false
-        for (let k = 0; k < marks.length; k++) {
-          if (marks[k].eq(stack[j])) {
-            marks.splice(k, 1)
-            found = true
-            break
+      let marks = node ? node.marks : []
+      let code = marks.length && marks[marks.length - 1].type.isCode && marks[marks.length - 1]
+      let len = marks.length - (code ? 1 : 0)
+
+      // Try to reorder 'mixable' marks, such as em and strong, which
+      // in Markdown may be opened and closed in different order, so
+      // that order of the marks for the token matches the order in
+      // active.
+      outer: for (let i = 0; i < len; i++) {
+        let mark = marks[i]
+        if (!mark.type.markdownMixable) break
+        for (let j = 0; j < active.length; j++) {
+          let other = active[j]
+          if (!other.type.markdownMixable) break
+          if (mark.eq(other)) {
+            if (i > j)
+              marks = marks.slice(0, j).concat(mark).concat(marks.slice(j, i)).concat(marks.slice(i + 1), len)
+            else if (j > i)
+              marks = marks.slice(0, i).concat(marks.slice(i + 1, j)).concat(mark).concat(marks.slice(j, len))
+            continue outer
           }
         }
-        if (!found) {
-          this.text(this.markString(cur, false), false)
-          stack.splice(j, 1)
-        }
       }
-      for (let j = 0; j < marks.length; j++) {
-        let cur = marks[j]
-        stack.push(cur)
-        this.text(this.markString(cur, true), false)
+
+      // Find the prefix of the mark set that didn't change
+      let keep = 0
+      while (keep < Math.min(active.length, len) && marks[keep].eq(active[keep])) ++keep
+
+      // Close the marks that need to be closed
+      while (keep < active.length)
+        this.text(this.markString(active.pop(), false), false)
+
+      // Open the marks that need to be opened
+      while (active.length < len) {
+        let add = marks[active.length]
+        active.push(add)
+        this.text(this.markString(add, true), false)
       }
-      if (node) this.render(node)
+
+      // Render the node. Special case code marks, since their content
+      // may not be escaped.
+      if (node) {
+        if (code && node.isText)
+          this.text(this.markString(code, false) + node.text + this.markString(code, true), false)
+        else
+          this.render(node)
+      }
     }
     parent.forEach(progress)
     progress(null)
@@ -265,16 +283,14 @@ def(Text, (state, node) => state.text(node.text))
 
 // Marks
 
-function defMark(mark, open, close) {
-  mark.prototype.openMarkdown = open
-  mark.prototype.closeMarkdown = close
-}
+EmMark.prototype.openMarkdown = EmMark.prototype.closeMarkdown = "*"
+EmMark.prototype.markdownMixable = true
 
-defMark(EmMark, "*", "*")
+StrongMark.prototype.openMarkdown = StrongMark.prototype.closeMarkdown = "**"
+StrongMark.prototype.markdownMixable = true
 
-defMark(StrongMark, "**", "**")
+LinkMark.prototype.openMarkdown = "["
+LinkMark.prototype.closeMarkdown = (state, mark) =>
+  "](" + state.esc(mark.attrs.href) + (mark.attrs.title ? " " + state.quote(mark.attrs.title) : "") + ")"
 
-defMark(LinkMark, "[",
-        (state, mark) => "](" + state.esc(mark.attrs.href) + (mark.attrs.title ? " " + state.quote(mark.attrs.title) : "") + ")")
-
-defMark(CodeMark, "`", "`")
+CodeMark.prototype.openMarkdown = CodeMark.prototype.closeMarkdown = "`"

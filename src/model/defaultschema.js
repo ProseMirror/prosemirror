@@ -83,12 +83,12 @@ export class HardBreak extends Inline {
 
 // ;; The default emphasis mark type.
 export class EmMark extends MarkType {
-  static get rank() { return 51 }
+  static get rank() { return 31 }
 }
 
 // ;; The default strong mark type.
 export class StrongMark extends MarkType {
-  static get rank() { return 52 }
+  static get rank() { return 32 }
 }
 
 // ;; The default link mark type. Has these attributes:
@@ -96,7 +96,7 @@ export class StrongMark extends MarkType {
 // - **`href`** (required): The link target.
 // - **`title`**: The link's title.
 export class LinkMark extends MarkType {
-  static get rank() { return 25 }
+  static get rank() { return 60 }
   get attrs() {
     return {
       href: new Attribute,
