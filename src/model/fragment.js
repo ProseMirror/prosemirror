@@ -1,128 +1,41 @@
 import {ModelError} from "./error"
 
-const iterEnd = {done: true, value: null}
+let foundPos = 0
+function findIndex(fragment, pos, round = -1) {
+  if (pos == 0) { foundPos = pos; return 0 }
+  if (pos == fragment.size) { foundPos = pos; return fragment.content.length }
+  if (pos > fragment.size || pos < 0) throw new ModelError(`Position ${pos} outside of fragment (${fragment})`)
+  for (let i = 0, curPos = 0;; i++) {
+    let cur = fragment.content[i], end = curPos + cur.size
+    if (end >= pos) {
+      if (end == start || round < 0) { foundPos = end; return i + 1 }
+      foundPos = curPos; return i
+    }
+    curPos = end
+  }
+}
 
-// ;; Fragment cursors serve two purposes. They are 'pointers' into
-// the content of a fragment, and can be used to find and represent
-// positions in that content. They can also be used as ES6-style
-// stateful iterators.
-class FragmentCursor {
-  constructor(fragment, off, index, inside) {
+class FragmentIndex {
+  constructor(fragment, index, pos) {
     this.fragment = fragment
-    this.off = off
-    this.inside = inside
     this.index = index
+    this.pos = pos
   }
 
-  // :: number
-  // The offset into the pointed at element.
-  get pos() {
-    return this.off + this.inside
-  }
+  get nodeAfter() { this.fragment.content[this.index] }
 
-  // :: () → union<Node, {done: bool}>
-  // Advance to the next element, if any. Will return a `Node` object
-  // (which has a `value` getter returning itself, to conform to the
-  // iterator spec) when there is a next element, or an object `{done:
-  // true}` if there isn't.
+  get nodeBefore() { this.fragment.content[this.index - 1] }
+
   next() {
-    let val = this.node
-    if (!val) return iterEnd
-    this.index++
-    this.off += val.size + this.inside
-    this.inside = 0
-    return val
+    if (this.index == this.fragment.content.length)
+      throw new ModelError("Offset already at end of fragment")
+    return new FragmentIndex(this.fragment, this.index + 1, this.pos + this.nodeAfter.size)
   }
 
-  // :: bool
-  // Returns true if the cursor is at the end of the fragment.
-  get atEnd() {
-    return this.index == this.fragment.content.length
-  }
-
-  // :: (number) → union<Node, {done: bool}>
-  // Like [`next`](#FragmentCursor.next), but will stop at the given
-  // end instead of at the end of the fragment. When a node falls only
-  // partially before the end, it will be sliced so that only the part
-  // before the end is returned.
-  nextUntil(end) {
-    let cur = this.fragment.content[this.index]
-    if (!cur || this.pos >= end) return iterEnd
-    let curEnd = this.off + cur.size, inside = this.inside
-    if (curEnd > end) {
-      this.inside = end - this.off
-      return cur.slice(inside ? inside - !cur.isText : 0, this.inside - !cur.isText)
-    } else {
-      this.index++
-      this.off += cur.size
-      this.inside = 0
-      return inside ? cur.slice(inside - !cur.isText) : cur
-    }
-  }
-
-  // :: () → union<Node, {done: bool}>
-  // Iterate backwards, towards the start of the fragment.
   prev() {
-    if (this.index == 0) return iterEnd
-    let val = this.nodeBefore
-    if (this.inside) {
-      this.inside = 0
-    } else {
-      this.index--
-      this.off -= val.size
-    }
-    return val
-  }
-
-  // :: bool
-  // Returns true if the cursor is at the start of the fragment.
-  get atStart() {
-    return this.index == 0
-  }
-
-  // :: ?Node
-  // Get the node that the cursor is pointing before, if any.
-  get node() {
-    let elt = this.fragment.content[this.index]
-    return elt && (this.inside ? elt.slice(this.inside - !elt.isText) : elt)
-  }
-
-  // :: ?node
-  // Get the node that the cursor is pointing after, if any.
-  get nodeBefore() {
-    if (this.index == 0) return null
-    if (this.inside) {
-      let child = this.fragment.content[this.index]
-      return child.slice(0, this.inside - !child.isText)
-    }
-    return this.fragment.content[this.index - 1]
-  }
-
-  get nodeBeforeOrAround() {
-    return this.fragment.content[this.index && !this.inside ? this.index - 1 : this.index]
-  }
-
-  // :: () → FragmentCursor
-  // Get a new cursor pointing one position after this one.
-  after() {
-    let cur = this.fragment.content[this.index].size
-    if (!cur) throw new ModelError("Cursor is at end of fragment")
-    return new FragmentCursor(this.fragment, this.pos + cur.size - this.inside,
-                              this.index + 1, 0)
-  }
-
-  // :: () → FragmentCursor
-  // Get a new cursor pointing one position before this one.
-  before() {
-    if (this.index == 0) throw new ModelError("Cursor is at start of fragment")
-    if (this.inside) return new FragmentCursor(this.fragment, this.pos - this.inside, this.index, 0)
-    return new FragmentCursor(this.fragment, this.pos - this.fragment.content[this.index - 1].size, this.index - 1, 0)
-  }
-
-  // :: () → FragmentCursor
-  // Make a copy of this cursor.
-  copy() {
-    return new FragmentCursor(this.fragment, this.pos, this.index, this.inside)
+    if (this.index == 0)
+      throw new ModelError("Offset already at start of fragment")
+    return new FragmentIndex(this.fragment, this.index - 1, this.pos - this.nodeBefore.size)
   }
 }
 
@@ -214,30 +127,8 @@ export class Fragment {
   // Return a fragment in which the node at the position pointed at by
   // the cursor is replaced by the given replacement node. Neither the
   // old nor the new node may be a text node.
-  replace(cursor, node) {
-    if (cursor.inside) throw new ModelError("Non-rounded cursor passed to replace")
-    return this.replaceInner(cursor.index, node)
-  }
-
-  // :: (?number, ?number) → FragmentCursor
-  // Create a cursor (iterator) pointing into this fragment, starting
-  // at the given position. If `round` is zero or not given, the
-  // iterator may start in the middle of a (non-text) child node. It
-  // it is -1, positions inside a child will be rounded down, if it is
-  // 1, they will be rounded up.
-  cursor(start, round) {
-    if (!start) return new FragmentCursor(this, 0, 0, 0)
-    if (start == this.size) return new FragmentCursor(this, start, this.content.length, 0)
-    if (start > this.size || start < 0) throw new ModelError(`Position ${start} outside of fragment (${this})`)
-    for (let i = 0, curPos = 0;; i++) {
-      let cur = this.content[i], end = curPos + cur.size
-      if (end >= start) {
-        if (end == start) return new FragmentCursor(this, end, i + 1, 0)
-        if (cur.isText || !round) return new FragmentCursor(this, curPos, i, start - curPos)
-        return new FragmentCursor(this, round < 0 ? curPos : end, i + (round > 0), 0)
-      }
-      curPos = end
-    }
+  replace(index, node) {
+    return this.replaceInner(index.index, node)
   }
 
   // :: ((node: Node, start: number, end: number))
@@ -250,25 +141,34 @@ export class Fragment {
     }
   }
 
-  nodesBetween(from = 0, to = this.size, f, pos, parent) {
-    for (let i = 0, off = 0; i < this.content.length && off < to; i++) {
-      let child = this.content[i], end = off + child.size
-      if (end > from && f(child, pos + off, parent) !== false && child.content.size) {
-        let start = off + 1
+  nodesBetween(from, to, f, nodePos, parent) {
+    for (let i = 0, pos = 0; pos < to; i++) {
+      let child = this.content[i], end = pos + child.size
+      if (end > from && f(child, nodePos + 1 + pos, parent) !== false && child.content.size) {
+        let start = pos + 1
         child.nodesBetween(Math.max(0, from - start),
                            Math.min(child.content.size, to - start),
-                           f, pos + start)
+                           f, nodePos + start)
       }
-      off = end
+      pos = end
     }
   }
 
   // :: (?number, ?number) → Fragment
   // Slice out the sub-fragment between the two given positions.
-  slice(from = 0, to = this.size) {
-    let cur = this.cursor(from), child, result = []
-    while (child = cur.nextUntil(to).value)
-      result.push(child)
+  slice(from, to) {
+    if (from == 0 && to == this.size) return this
+    let result = []
+    for (let i = 0, pos = 0; pos < to; i++) {
+      let child = this.content[i], end = pos + child.size
+      if (end > from) {
+        if (pos < from || end > to)
+          child = child.slice(Math.max(0, from - pos + !child.isText),
+                              Math.min(child.size, to - pos) - (child.isText ? 0 : 2))
+        result.push(child)
+      }
+      pos = end
+    }
     return new Fragment(result, to - from)
   }
 
@@ -331,10 +231,3 @@ export class Fragment {
 // contain anything (rather than allocating a new empty fragment for
 // each leaf node).
 export const emptyFragment = new Fragment([], 0)
-
-if (typeof Symbol != "undefined") {
-  // :: () → Iterator<Node>
-  // A fragment is iterable, in the ES6 sense.
-  Fragment.prototype[Symbol.iterator] = function() { return this.cursor() }
-  FragmentCursor.prototype[Symbol.iterator] = function() { return this }
-}

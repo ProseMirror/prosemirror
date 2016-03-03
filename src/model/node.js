@@ -108,6 +108,7 @@ export class Node {
   // given offsets. If `to` is not given, it defaults to the end of
   // the node.
   slice(from, to) {
+    if (from == 0 && to == this.text.length) return this
     return this.copy(this.content.slice(from, to))
   }
 
