@@ -2,12 +2,11 @@
 // Find the first position at which nodes `a` and `b` differ, or
 // `null` if they are the same.
 export function findDiffStart(a, b, pos = 0) {
-  let curA = a.cursor(), curB = b.cursor()
-  for (;;) {
-    if (curA.atEnd || curB.atEnd)
-      return a.size == b.size ? null : pos
+  for (let i = 0;; i++) {
+    if (i == a.childCount || i == b.childCount)
+      return a.childCount == b.childCount ? null : pos
 
-    let childA = curA.next(), childB = curB.next()
+    let childA = a.child(i), childB = b.child(i)
     if (childA == childB) { pos += childA.size; continue }
 
     if (!childA.sameMarkup(childB)) return pos
@@ -17,7 +16,6 @@ export function findDiffStart(a, b, pos = 0) {
         pos++
       return pos
     }
-
     if (childA.content.size || childB.content.size) {
       let inner = findDiffStart(childA.content, childB.content, pos + 1)
       if (inner != null) return inner
@@ -32,13 +30,11 @@ export function findDiffStart(a, b, pos = 0) {
 // will not be the same in both nodes, an object with two separate
 // positions is returned.
 export function findDiffEnd(a, b, posA = a.size, posB = b.size) {
-  let curA = a.cursor(a.size), curB = b.cursor(b.size)
+  for (let iA = a.childCount, iB = b.childCount;;) {
+    if (iA == 0 || iB == 0)
+      return iA == iB ? null : {a: posA, b: posB}
 
-  for (;;) {
-    if (curA.atStart || curB.atStart)
-      return a.size == b.size ? null : {a: posA, b: posB}
-
-    let childA = curA.prev(), childB = curB.prev()
+    let childA = a.child(--iA), childB = b.child(--iB)
     if (childA == childB) {
       posA -= childA.size; posB -= childB.size
       continue
