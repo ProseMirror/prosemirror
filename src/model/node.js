@@ -53,6 +53,8 @@ export class Node {
 
   child(index) { return this.content.child(index) }
 
+  forEach(f) { this.content.forEach(f) }
+
   // :: string
   // Concatenate all the text nodes found in this fragment and its
   // children.

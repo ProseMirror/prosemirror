@@ -125,6 +125,14 @@ export class Fragment {
     if (!found) throw new ModelError("Index " + index + " out of range for " + this)
     return found
   }
+
+  forEach(f) {
+    for (let i = 0, p = 0; i < this.content.length; i++) {
+      let child = this.content[i]
+      f(child, p)
+      p += child.size
+    }
+  }
 }
 
 // :: Fragment

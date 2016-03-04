@@ -50,10 +50,11 @@ class DOMSerializer {
   }
 
   renderBlocksInto(parent, where) {
-    for (let i = parent.cursor(), child; child = i.next().value;) {
-      if (this.options.path) this.options.path.push(i.offset - child.width)
+    for (let i = 0; i < parent.childCount; i++) {
+      let child = parent.child(i)
+//      if (this.options.path) this.options.path.push(i.offset - child.width) FIXME
       where.appendChild(this.renderNode(child, i.offset - child.width))
-      if (this.options.path) this.options.path.pop()
+//      if (this.options.path) this.options.path.pop() FIXME
     }
   }
 

@@ -182,9 +182,9 @@ class MarkdownSerializer {
 
     let prevTight = this.inTightList
     this.inTightList = node.attrs.tight
-    for (let i = node.cursor(), n = 0, item; item = i.next().value; n++) {
-      if (n && node.attrs.tight) this.flushClose(1)
-      this.wrapBlock(delim, firstDelim(n), node, () => this.render(item))
+    for (let i = 0; i < node.childCount; i++) {
+      if (i && node.attrs.tight) this.flushClose(1)
+      this.wrapBlock(delim, firstDelim(i), node, () => this.render(node.child(i)))
     }
     this.inTightList = prevTight
   }
