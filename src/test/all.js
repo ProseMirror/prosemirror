@@ -4,9 +4,9 @@ import "./test-parse"
 import "./test-dom"
 import "./test-slice"
 import "./test-mark"
+import "./test-json"
+import "./test-replace"
 /*
 import "./test-rebase"
-import "./test-replace"
 import "./test-trans"
-import "./test-json"
 */

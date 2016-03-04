@@ -1,4 +1,4 @@
-import {Pos, Fragment, emptyFragment} from "../model"
+import {Pos, Fragment} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
@@ -72,7 +72,7 @@ export function replace(node, from, to, root, repl, depth = 0) {
   }
 }
 
-const nullRepl = {content: emptyFragment, openLeft: 0, openRight: 0}
+const nullRepl = {content: Fragment.empty, openLeft: 0, openRight: 0}
 
 Step.define("replace", {
   apply(doc, step) {
@@ -169,7 +169,7 @@ function buildInserted(nodesLeft, source, start, end) {
     }
   }
 
-  let repl = {content: result ? result.content : emptyFragment,
+  let repl = {content: result ? result.content : Fragment.empty,
               openLeft: dLeft - searchRight,
               openRight: dRight - searchRight}
   return {repl, depth: searchLeft + 1}

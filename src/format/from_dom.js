@@ -214,7 +214,7 @@ class DOMParseState {
   // Insert a node of the given type, with the given content, based on
   // `dom`, at the current position in the document.
   insert(type, attrs, content) {
-    return this.insertNode(type.createAutoFill(attrs, content, this.marks))
+    return this.insertNode(type.close(attrs, content, this.marks))
   }
 
   enter(type, attrs) {
@@ -229,7 +229,7 @@ class DOMParseState {
       if (last.text.length == 1) top.content.pop()
       else top.content[top.content.length - 1] = last.copy(last.text.slice(0, last.text.length - 1))
     }
-    let node = top.type.createAutoFill(top.attrs, top.content)
+    let node = top.type.close(top.attrs, top.content)
     if (this.stack.length) this.insertNode(node)
     return node
   }

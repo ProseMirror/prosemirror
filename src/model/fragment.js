@@ -76,14 +76,14 @@ export class Fragment {
   // :: (Schema, Object) → Fragment
   // Deserialize a fragment from its JSON representation.
   static fromJSON(schema, value) {
-    return value ? new Fragment(value.map(schema.nodeFromJSON)) : emptyFragment
+    return value ? new Fragment(value.map(schema.nodeFromJSON)) : Fragment.empty
   }
 
   // :: ([Node]) → Fragment
   // Build a fragment from an array of nodes. Ensures that adjacent
   // text nodes with the same style are joined together.
   static fromArray(array) {
-    if (!array.length) return emptyFragment
+    if (!array.length) return Fragment.empty
     let joined, size = 0
     for (let i = 0; i < array.length; i++) {
       let node = array[i]
@@ -104,7 +104,7 @@ export class Fragment {
   // fragment, the fragment itself. For a node or array of nodes, a
   // fragment containing those nodes.
   static from(nodes) {
-    if (!nodes) return emptyFragment
+    if (!nodes) return Fragment.empty
     if (nodes instanceof Fragment) return nodes
     if (Array.isArray(nodes)) return this.fromArray(nodes)
     return new Fragment([nodes], nodes.size)
@@ -139,4 +139,4 @@ export class Fragment {
 // An empty fragment. Intended to be reused whenever a node doesn't
 // contain anything (rather than allocating a new empty fragment for
 // each leaf node).
-export const emptyFragment = new Fragment([], 0)
+Fragment.empty = new Fragment([], 0)

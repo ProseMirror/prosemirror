@@ -140,7 +140,7 @@ class MarkdownParseState {
   // :: (NodeType, ?Object, ?[Node]) → Node
   // Add a node at the current position.
   addNode(type, attrs, content) {
-    let node = type.createAutoFill(attrs, content, this.marks)
+    let node = type.close(attrs, content, this.marks)
     this.push(node)
     return node
   }

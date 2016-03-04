@@ -11,8 +11,8 @@
 // This module does not depend on the browser API being available
 // (i.e. you can load it into any JavaScript environment).
 
-export {Node} from "./node"
-export {Fragment, emptyFragment} from "./fragment"
+export {Node, Slice, PosContext, ReplaceError} from "./node"
+export {Fragment} from "./fragment"
 export {Mark} from "./mark"
 
 export {SchemaSpec, Schema, SchemaError,

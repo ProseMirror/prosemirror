@@ -1,4 +1,4 @@
-import {Fragment, emptyFragment} from "./fragment"
+import {Fragment} from "./fragment"
 import {Mark} from "./mark"
 import {ProseMirrorError} from "../util/error"
 import {ModelError} from "./error"
@@ -33,7 +33,7 @@ export class Node {
 
     // :: Fragment
     // The node's content.
-    this.content = content || emptyFragment
+    this.content = content || Fragment.empty
 
     // :: [Mark]
     // The marks (things like whether it is emphasized or part of a
@@ -115,7 +115,7 @@ export class Node {
   }
 
   slice(from, to = this.content.size) {
-    if (from == to) return new Slice(emptyFragment, 0, 0)
+    if (from == to) return Slice.empty
 
     from = getContext(this, from)
     to = getContext(this, to)
@@ -127,9 +127,11 @@ export class Node {
   replace(from, to, slice) {
     from = getContext(this, from)
     to = getContext(this, to)
-    if (to.depth - slice.openLeft != from.depth - slice.openRight)
+    if (slice.openLeft > from.depth)
+      throw new ReplaceError("Inserted content deeper than insertion position")
+    if (from.depth - slice.openLeft != to.depth - slice.openRight)
       throw new ReplaceError("Inconsistent open depths")
-    return replaceOuter(this, from, to, slice, 0)
+    return replaceOuter(from, to, slice, 0)
   }
 
   // :: (number) → Node
@@ -138,8 +140,8 @@ export class Node {
     for (let node = this;;) {
       let index = findIndex(node.content, pos)
       node = node.child(index)
-      if (foundPos == pos || node.isText) return node
-      pos -= foundPos + 1
+      if (foundOffset == pos || node.isText) return node
+      pos -= foundOffset + 1
     }
   }
 
@@ -152,9 +154,7 @@ export class Node {
     this.content.nodesBetween(from, to, f, pos, this)
   }
 
-  context(pos) {
-    return PosContext.resolve(this, pos)
-  }
+  context(pos) { return getContext(this, pos) }
 
   // :: (number) → [Mark]
   // Get the marks of the node before the given position or, if that
@@ -273,22 +273,22 @@ function wrapMarks(marks, str) {
   return str
 }
 
-let foundPos = 0
+let foundOffset = 0
 function findIndex(fragment, pos, round = -1) {
-  if (pos == 0) { foundPos = pos; return 0 }
-  if (pos == fragment.size) { foundPos = pos; return fragment.content.length }
+  if (pos == 0) { foundOffset = pos; return 0 }
+  if (pos == fragment.size) { foundOffset = pos; return fragment.content.length }
   if (pos > fragment.size || pos < 0) throw new ModelError(`Position ${pos} outside of fragment (${fragment})`)
   for (let i = 0, curPos = 0;; i++) {
     let cur = fragment.content[i], end = curPos + cur.size
     if (end >= pos) {
-      if (end == pos || round > 0) { foundPos = end; return i + 1 }
-      foundPos = curPos; return i
+      if (end == pos || round > 0) { foundOffset = end; return i + 1 }
+      foundOffset = curPos; return i
     }
     curPos = end
   }
 }
 
-class PosContext {
+export class PosContext {
   constructor(pos, node, index, offset) {
     this.pos = pos
     this.node = node
@@ -320,9 +320,9 @@ class PosContext {
 
   move(pos) {
     let diff = pos - this.pos
-    let index = this.index.slice(), offset = this.offset.slice()
-    index[this.depth] = findIndex(this.parent.content, this.innerOffset + diff)
-    offset[this.depth] = foundPos
+    let index = this.index.slice(), offset = this.offset.slice(), parent = this.parent
+    let i = index[this.depth] = findIndex(parent.content, this.innerOffset + diff)
+    offset[this.depth] = i < parent.childCount && parent.child(i).isText ? this.innerOffset + diff : foundOffset
     return new PosContext(pos, this.node, index, offset)
   }
 
@@ -330,10 +330,10 @@ class PosContext {
     let nodes = [], index = [], offset = []
     for (let rem = pos, node = doc;;) {
       let i = findIndex(node.content, rem)
-      rem -= foundPos
+      rem -= foundOffset
       let next = rem && node.child(i)
       nodes.push(node)
-      offset.push(foundPos + (next.isText ? rem : 0))
+      offset.push(foundOffset + (next.isText ? rem : 0))
       index.push(i)
       if (!rem || next.isText) break
       node = next
@@ -343,7 +343,7 @@ class PosContext {
   }
 }
 
-class Slice {
+export class Slice {
   constructor(content, openLeft, openRight) {
     this.content = content
     this.openLeft = openLeft
@@ -358,10 +358,12 @@ class Slice {
   }
 
   static fromJSON(schema, json) {
-    if (!json) return new Slice(emptyFragment, 0, 0)
+    if (!json) return new Slice.empty
     return new Slice(Fragment.fromJSON(schema, json.content), json.openLeft, json.openRight)
   }
 }
+
+Slice.empty = new Slice(Fragment.empty, 0, 0)
 
 let contextCache = [], contextCachePos = 0, contextCacheSize = 6
 function getContext(doc, pos) {
@@ -378,9 +380,8 @@ function getContext(doc, pos) {
   let result = near ? near.move(pos) : PosContext.resolve(doc, pos)
   contextCache[contextCachePos] = result
   contextCachePos = (contextCachePos + 1) % contextCacheSize
-  return result    
+  return result
 }
-
 
 function replaceOuter(from, to, slice, depth) {
   let index = from.index[depth], node = from.node[depth]
@@ -388,39 +389,50 @@ function replaceOuter(from, to, slice, depth) {
     let inner = replaceOuter(from, to, slice, depth + 1)
     return node.copy(node.content.replace(index, inner))
   } else if (slice.content.size) {
-    let {left, right} = prepareSliceForReplace(slice, from)
-    return node.copy(replaceThreeWay(from, left, right, to, depth))
+    let {start, end} = prepareSliceForReplace(slice, from)
+    return node.copy(replaceThreeWay(from, start, end, to, depth))
   } else {
     return node.copy(replaceTwoWay(from, to, depth))
   }
 }
 
-function checkJoin(before, after) {
-  let main = before, sub = after
-  if (!before.content.size && after.content.size) { sub = before; main = after }
+function checkJoin(main, sub) {
   if (!main.type.canContainContent(sub.type))
     throw new ReplaceError("Can not join " + sub.type.name + " onto " + main.type.name)
+}
+
+function joinType(before, after, depth) {
+  let main = before.node[depth], sub = after.node[depth]
+  if (before.offset[depth] == 0 && after.offset[depth] < sub.content.size) {
+    let tmp = main
+    main = sub
+    sub = tmp
+  }
+  checkJoin(main, sub)
   return main
 }
 
+// FIXME use helper to merge text nodes, instead of .fromArray
+
 function replaceThreeWay(from, start, end, to, depth) {
-  let openLeft = from.depth > depth && checkJoin(from.node[depth + 1], start.node[depth + 1])
-  let openRight = to.depth > depth && checkJoin(end.node[depth + 1], to.node[depth + 1])
+  let openLeft = from.depth > depth && joinType(from, start, depth + 1)
+  let openRight = to.depth > depth && joinType(end, to, depth + 1)
 
   let content = from.node[depth].content.toArray(0, from.offset[depth])
   if (openLeft && openRight && start.index[depth] == end.index[depth]) {
-    let type = checkJoin(openLeft, openRight)
+    checkJoin(openLeft, openRight)
     let joined = replaceThreeWay(from, start, end, to, depth + 1)
-    content.push(type.type.close(type.attrs, joined))
+    content.push(openLeft.type.close(openLeft.attrs, joined))
   } else {
     if (openLeft)
       content.push(openLeft.type.close(openLeft.attrs, replaceTwoWay(from, start, depth + 1)))
-    let between = start.node[depth].content.toArray(start.offset[depth], end.offset[depth])
+    let between = start.node[depth].content.toArray(start.offset[depth] + (openLeft ? start.node[depth + 1].size : 0),
+                                                    end.offset[depth])
     for (let i = 0; i < between.length; i++) content.push(between[i])
     if (openRight)
       content.push(openRight.type.close(openRight.attrs, replaceTwoWay(end, to, depth + 1)))
   }
-  let after = to.node[depth].content.toArray(to.offset[depth])
+  let after = to.node[depth].content.toArray(to.offset[depth] + (openRight ? to.node[depth + 1].size : 0))
   for (let i = 0; i < after.length; i++) content.push(after[i])
   return Fragment.fromArray(content)
 }
@@ -428,10 +440,10 @@ function replaceThreeWay(from, start, end, to, depth) {
 function replaceTwoWay(from, to, depth) {
   let content = from.node[depth].content.toArray(0, from.offset[depth])
   if (from.depth > depth) {
-    let type = checkJoin(from.node[depth + 1], to.node[depth + 1])
+    let type = joinType(from, to, depth + 1)
     content.push(type.type.close(type.attrs, replaceTwoWay(from, to, depth + 1)))
   }
-  let after = to.node[depth].content.toArray(to.offset[depth])
+  let after = to.node[depth].content.toArray(to.offset[depth] + (from.depth > depth ? to.node[depth + 1].size : 0))
   for (let i = 0; i < after.length; i++) content.push(after[i])
   return Fragment.fromArray(content)
 }
@@ -445,5 +457,5 @@ function prepareSliceForReplace(slice, along) {
   for (let i = extra - 1; i >= 0; i--)
     node = along.node[i].copy(Fragment.from(node))
   return {start: PosContext.resolve(node, slice.openLeft + extra),
-          end: PosContext.resolve(node, node.size - slice.openRight - extra)}
+          end: PosContext.resolve(node, node.content.size - slice.openRight - extra)}
 }

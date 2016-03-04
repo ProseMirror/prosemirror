@@ -1,85 +1,142 @@
-import {replace} from "../transform/replace"
-import {MovedRange} from "../transform/map"
+import {Slice, ReplaceError} from "../model"
 
-import {doc, blockquote, h1, p} from "./build"
-
+import {doc, blockquote, h1, p, ul, li} from "./build"
 import {defTest} from "./tests"
-import {cmpNode, cmpStr, P} from "./cmp"
+import {cmpNode} from "./cmp"
+import {Failure} from "./failure"
 
-function test(name, doc, insert, expected, moved) {
-  defTest("replace_inner_" + name, () => {
-    let sliced = insert.sliceBetween(insert.tag.a, insert.tag.b)
-    let repl
-    for (let left = insert.tag.a, right = insert.tag.b, i = 0, node = sliced;; i++) {
-      if (i == left.path.length || i == right.path.length || left.path[i] != right.path[i] ||
-          insert.tag.root && i == insert.tag.root.path.length) {
-        repl = {content: node.content, openLeft: left.path.length - i, openRight: right.path.length - i}
-        break
-      }
-      node = node.child(left.path[i])
-    }
-    let result = replace(doc, doc.tag.a, doc.tag.b, doc.tag.root.path, repl)
-    cmpNode(result.doc, expected)
-    if (moved) cmpStr("\n" + result.moved.join("\n"), "\n" + moved.join("\n"))
+function test(name, doc, insert, expected) {
+  defTest("node_replace_" + name, () => {
+    let slice = insert ? insert.slice(insert.tag.a, insert.tag.b) : Slice.empty
+    cmpNode(doc.replace(doc.tag.a, doc.tag.b, slice), expected)
   })
 }
 
 test("delete_join",
-     doc(p("on<a>e"), "<root>", p("t<b>wo")),
-     doc("<a><b>"),
-     doc(p("onwo")),
-     [new MovedRange(P(2), 0, new P(1)),
-      new MovedRange(P(1, 1), 2, P(0, 2))])
+     doc(p("on<a>e"), p("t<b>wo")),
+     null,
+     doc(p("onwo")))
 
 test("merge_simple",
-     doc(p("on<a>e"), "<root>", p("t<b>wo")),
+     doc(p("on<a>e"), p("t<b>wo")),
      doc(p("xx<a>xx"), p("yy<b>yy")),
-     doc(p("onxx"), p("yywo")),
-     [new MovedRange(P(1, 1), 2, P(1, 2))])
-
-test("not_open",
-     doc(p("on<a>e"), "<root>", p("t<b>wo")),
-     doc("<a>", p("x"), p("y"), "<b>"),
-     doc(p("on"), p("x"), p("y"), p("wo")),
-     [new MovedRange(P(2), 0, P(4)),
-      new MovedRange(P(1, 1), 2, P(3, 0))])
+     doc(p("onxx"), p("yywo")))
 
 test("replace_with_text",
-     doc(p("on<a>e"), "<root>", p("t<b>wo")),
-     doc("<root>", p("<a>H<b>")),
-     doc(p("onHwo")),
-     [new MovedRange(P(2), 0, P(1)),
-      new MovedRange(P(1, 1), 2, P(0, 3))])
+     doc(p("on<a>e"), p("t<b>wo")),
+     doc(p("<a>H<b>")),
+     doc(p("onHwo")))
+
+test("insert_text",
+     doc(p("before"), p("on<a><b>e"), p("after")),
+     doc(p("<a>H<b>")),
+     doc(p("before"), p("onHe"), p("after")))
 
 test("non_matching",
-     doc(p("on<a>e"), "<root>", p("t<b>wo")),
-     doc("<root>", h1("<a>H<b>")),
-     doc(p("on"), h1("H"), p("wo")),
-     [new MovedRange(P(2), 0, P(3)),
-      new MovedRange(P(1, 1), 2, P(2, 0))])
+     doc(p("on<a>e"), p("t<b>wo")),
+     doc(h1("<a>H<b>")),
+     doc(p("onHwo")))
 
 test("deep",
-     doc(blockquote(blockquote(p("on<a>e"), "<root>", p("t<b>wo")))),
-     doc("<root>", p("<a>H<b>")),
-     doc(blockquote(blockquote(p("onHwo")))),
-     [new MovedRange(P(0, 0, 2), 0, P(0, 0, 1)),
-      new MovedRange(P(0, 0, 1, 1), 2, P(0, 0, 0, 3))])
+     doc(blockquote(blockquote(p("on<a>e"), p("t<b>wo")))),
+     doc(p("<a>H<b>")),
+     doc(blockquote(blockquote(p("onHwo")))))
 
 test("same_block",
-     doc(p("a<a><root>bc<b>d")),
+     doc(blockquote(p("a<a>bc<b>d"))),
      doc(p("x<a>y<b>z")),
-     doc(p("ayd")),
-     [new MovedRange(P(0, 3), 1, P(0, 2))])
+     doc(blockquote(p("ayd"))))
 
 test("deep_lopsided",
-     doc(blockquote("<root>", blockquote(p("on<a>e"), p("two"), "<b>", p("three")))),
-     doc("<root>", blockquote(p("aa<a>aa"), p("bb"), p("cc"), "<b>", p("dd"))),
-     doc(blockquote(blockquote(p("onaa"), p("bb"), p("cc"), p("three")))),
-     [new MovedRange(P(0, 0, 2), 1, P(0, 0, 3))])
+     doc(blockquote(blockquote(p("on<a>e"), p("two"), "<b>", p("three")))),
+     doc(blockquote(p("aa<a>aa"), p("bb"), p("cc"), "<b>", p("dd"))),
+     doc(blockquote(blockquote(p("onaa"), p("bb"), p("cc"), p("three")))))
 
-test("deep_lopsided_mismatched",
-     doc(blockquote("<root>", blockquote(p("one"), "<a>", p("two"), p("th<b>ree")))),
-     doc("<root>", blockquote(p("aa<a>aa"), p("bb"), p("cc"), "<b>", p("dd"))),
-     doc(blockquote(blockquote(p("one"), p("aa"), p("bb"), p("cc"), p("ree")))),
-     [new MovedRange(P(0, 0, 3), 0, P(0, 0, 5)),
-      new MovedRange(P(0, 0, 2, 2), 3, P(0, 0, 4, 0))])
+test("deeper_lopsided",
+     doc(blockquote(blockquote(p("on<a>e"), p("two"), p("three")), "<b>", p("x"))),
+     doc(blockquote(p("aa<a>aa"), p("bb"), p("cc")), "<b>", p("dd")),
+     doc(blockquote(blockquote(p("onaa"), p("bb"), p("cc")), p("x"))))
+
+test("wide_split_delete",
+     doc(blockquote(blockquote(p("hell<a>o"))), blockquote(blockquote(p("<b>a")))),
+     null,
+     doc(blockquote(blockquote(p("hella")))))
+
+test("wide_split_insert",
+     doc(blockquote(blockquote(p("hell<a>o"))), blockquote(blockquote(p("<b>a")))),
+     doc(p("<a>i<b>")),
+     doc(blockquote(blockquote(p("hellia")))))
+
+test("insert_split",
+     doc(p("foo<a><b>bar")),
+     doc(p("<a>x"), p("y<b>")),
+     doc(p("foox"), p("ybar")))
+
+test("insert_deep_split",
+     doc(blockquote(p("foo<a>x<b>bar"))),
+     doc(blockquote(p("<a>x")), blockquote(p("y<b>"))),
+     doc(blockquote(p("foox")), blockquote(p("ybar"))))
+
+test("branched",
+     doc(blockquote(p("foo<a>u"), p("v<b>bar"))),
+     doc(blockquote(p("<a>x")), blockquote(p("y<b>"))),
+     doc(blockquote(p("foox")), blockquote(p("ybar"))))
+
+test("close_blockquote",
+     doc(blockquote("<a>", p("hi"), "<b>")),
+     null,
+     doc(blockquote(p())))
+
+test("close_blockquote_joined",
+     doc(blockquote("<a>", p("hi")), "<b>"),
+     doc(blockquote("hi", "<a>"), "<b>"),
+     doc(blockquote(p())))
+
+test("keep_first",
+     doc(h1("foo<a>bar"), "<b>"),
+     doc(p("foo<a>baz"), "<b>"),
+     doc(h1("foobaz")))
+
+test("keep_second_if_empty",
+     doc(h1("<a>bar"), "<b>"),
+     doc(p("foo<a>baz"), "<b>"),
+     doc(p("baz")))
+
+function err(name, doc, insert, pattern) {
+  defTest("node_replace_error_" + name, () => {
+    let slice = insert ? insert.slice(insert.tag.a, insert.tag.b) : Slice.empty
+    try {
+      doc.replace(doc.tag.a, doc.tag.b, slice)
+      throw new Failure("No error raised")
+    } catch(e) {
+      if (!(e instanceof ReplaceError)) throw e
+      if (e.message.toLowerCase().indexOf(pattern) == -1)
+        throw new Failure("Wrong error raised: " + e.message)
+    }
+  })
+}
+
+err("negative",
+    doc(p("<a><b>")),
+    doc(blockquote(p("<a>")), "<b>"),
+    "deeper")
+
+err("inconsistent",
+    doc(p("<a><b>")),
+    doc("<a>", p("<b>")),
+    "inconsistent")
+
+err("bad_fit",
+    doc("<a><b>"),
+    doc(p("<a>foo<b>")),
+    "can not be placed")
+
+err("bad_join",
+    doc(ul(li(p("a")), "<a>"), "<b>"),
+    doc(p("foo", "<a>"), "<b>"),
+    "can not join")
+
+err("bad_join_delete",
+    doc(blockquote(p("a"), "<a>"), ul("<b>", li(p("b")))),
+    null,
+    "can not join")
