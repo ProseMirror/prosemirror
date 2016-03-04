@@ -1,33 +1,27 @@
 import {Failure} from "./failure"
 import {Pos, Mark} from "../model"
 
-export function cmpNode(a, b, comment) {
-  function fail(a, b) {
-    throw new Failure("different nodes:\n  " + a + "\nvs\n  " + b + (comment ? "\n(" + comment + ")" : ""))
-  }
-  let add = comment ? " (" + comment + ")" : ""
-  function inner(a, b) {
-    if (a.type != b.type) fail(a, b)
-    for (var name in b.attrs) {
-      if (!(name in a.attrs) && b.attrs[name]) fail(a, b)
-      if (a.attrs[name] != b.attrs[name]) fail(a, b)
-    }
-    for (var name in a.attrs)
-      if (!(name in b.attrs) && a.attrs[name]) fail(a, b)
-    if (a.isText && a.text != b.text) fail(a, b)
-    if (a.marks && !Mark.sameSet(a.marks, b.marks)) fail(a, b)
+function fail(a, b, comment) {
+  throw new Failure("different values:\n  " + a + "\nvs\n  " + b + (comment ? "\n(" + comment + ")" : ""))
+}
 
-    for (let i = 0;; i++) {
-      if (i == a.childCount) {
-        if (i == b.childCount) break
-        fail(a, b)
-      } else if (i == b.childCount) {
-        fail(a, b)
-      }
-      inner(a.child(i), b.child(i))
-    }
+export function cmpNode(a, b, comment) {
+  if (a.type != b.type) fail(a, b, comment)
+  for (var name in b.attrs) {
+    if (!(name in a.attrs) && b.attrs[name] ||
+        a.attrs[name] != b.attrs[name]) fail(a, b, comment)
   }
-  inner(a, b)
+  for (var name in a.attrs)
+    if (!(name in b.attrs) && a.attrs[name]) fail(a, b, comment)
+  if (a.isText && a.text != b.text ||
+      !Mark.sameSet(a.marks, b.marks)) fail(a, b, comment)
+  cmpFragment(a.content, b.content, comment)
+}
+
+export function cmpFragment(a, b, comment) {
+  if (a.childCount != b.childCount) fail(a, b, comment)
+  for (let i = 0; i < a.childCount && i < b.childCount; i++)
+    cmpNode(a.child(i), b.child(i))
 }
 
 export function cmpStr(a, b, comment) {

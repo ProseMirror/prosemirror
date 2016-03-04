@@ -114,14 +114,13 @@ export class Node {
     return this.copy(this.content.cut(from, to))
   }
 
-  slice(from, to) {
+  slice(from, to = this.content.size) {
     if (from == to) return new Slice(emptyFragment, 0, 0)
 
     from = getContext(this, from)
     to = getContext(this, to)
-    let depth = 0
-    while (from.index[depth + 1] == to.index[depth + 1]) ++depth
-    let content = from.node[depth].cut(from.offset[depth], to.offset[depth])
+    let depth = from.sameDepth(to), start = from.start(depth)
+    let content = from.node[depth].content.cut(from.pos - start, to.pos - start)
     return new Slice(content, from.depth - depth, to.depth - depth)
   }
 
@@ -153,13 +152,17 @@ export class Node {
     this.content.nodesBetween(from, to, f, pos, this)
   }
 
+  context(pos) {
+    return PosContext.resolve(this, pos)
+  }
+
   // :: (number) → [Mark]
   // Get the marks of the node before the given position or, if that
   // position is at the start of a non-empty node, those of the node
   // after it.
   marksAt(pos) {
-    let cx = this.context(pos), top = cx.path[cx.path.length - 1]
-    let leaf = top.nodeBeforeOrAround
+    let cx = this.context(pos), top = cx.parent, index = cx.index[cx.depth]
+    let leaf = index ? top.child(index - 1) : index < top.childCount ? top.child(index) : null
     return leaf ? leaf.marks : emptyArray
   }
 
@@ -293,26 +296,32 @@ class PosContext {
     this.offset = offset
   }
 
-  get offset() { return this.offset[this.depth] }
+  get innerOffset() { return this.offset[this.depth] }
 
   get parent() { return this.node[this.depth] }
 
   get depth() { return this.node.length - 1 }
 
+  sameDepth(other) {
+    let depth = 0, max = Math.min(this.depth, other.depth)
+    while (depth < max && this.index[depth] == other.index[depth]) ++depth
+    return depth
+  }
+
   start(depth = this.depth) {
     let pos = 0
-    for (let i = 0; i < depth; i++) pos += this.offset[i] + (i ? 1 : 0)
+    for (let i = 0; i < depth; i++) pos += this.offset[i] + 1
     return pos
   }
 
   end(depth) {
-    return this.start(depth) + this.node[depth].size
+    return this.start(depth) + this.node[depth].content.size
   }
 
   move(pos) {
     let diff = pos - this.pos
     let index = this.index.slice(), offset = this.offset.slice()
-    index[this.depth] = findIndex(this.parent.content, this.offset + diff)
+    index[this.depth] = findIndex(this.parent.content, this.innerOffset + diff)
     offset[this.depth] = foundPos
     return new PosContext(pos, this.node, index, offset)
   }
@@ -320,12 +329,14 @@ class PosContext {
   static resolve(doc, pos) {
     let nodes = [], index = [], offset = []
     for (let rem = pos, node = doc;;) {
-      let index = findIndex(node.content, rem)
+      let i = findIndex(node.content, rem)
       rem -= foundPos
+      let next = rem && node.child(i)
       nodes.push(node)
-      offset.push(foundPos)
-      index.push(index)
-      if (!rem || (node = node.child(index)).isText) break
+      offset.push(foundPos + (next.isText ? rem : 0))
+      index.push(i)
+      if (!rem || next.isText) break
+      node = next
       rem -= 1
     }
     return new PosContext(pos, nodes, index, offset)
@@ -360,12 +371,14 @@ function getContext(doc, pos) {
     if (cached.node[0] == doc) {
       if (cached.pos == pos) return cached
       let start = cached.start()
-      if (cached.depth && pos > start && pos < start + cached.parent.size)
+      if (cached.depth && pos > start && pos < start + cached.parent.content.size)
         near = cached
     }
   }
-  return contextCache[contextCachePos = (contextCachePos + 1) % contextCacheSize] =
-    near ? near.move(pos) : PosContext.resolve(doc, pos)
+  let result = near ? near.move(pos) : PosContext.resolve(doc, pos)
+  contextCache[contextCachePos] = result
+  contextCachePos = (contextCachePos + 1) % contextCacheSize
+  return result    
 }
 
 
