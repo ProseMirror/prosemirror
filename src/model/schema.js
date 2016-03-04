@@ -186,9 +186,9 @@ export class NodeType extends SchemaItem {
   // Test whether the content of the given fragment could be contained
   // in this node type.
   canContainFragment(fragment) {
-    let ok = true
-    fragment.forEach(n => { if (!this.canContain(n)) ok = false })
-    return ok
+    for (let i = 0; i < fragment.childCount; i++)
+      if (!this.canContain(fragment.child(i))) return false
+    return true
   }
 
   // :: (Node) → bool

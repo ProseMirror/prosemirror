@@ -22,53 +22,33 @@ str("marks",
     doc(p("foo", em("bar", strong("quux")), code("baz"))),
     'doc(paragraph("foo", em("bar"), em(strong("quux")), code("baz")))')
 
-function slice(name, doc, sliced) {
-  defTest("node_slice_" + name, () => cmpNode(doc.slice(doc.tag.a, doc.tag.b), sliced))
+function cut(name, doc, cut) {
+  defTest("node_cut_" + name, () => cmpNode(doc.cut(doc.tag.a || 0, doc.tag.b), cut))
 }
 
-slice("block",
-      doc(p("foo"), "<a>", p("bar"), "<b>", p("baz")),
-      doc(p("bar")))
+cut("block",
+    doc(p("foo"), "<a>", p("bar"), "<b>", p("baz")),
+    doc(p("bar")))
 
-slice("text",
-      doc(p("0"), p("foo<a>bar<b>baz"), p("2")),
-      doc(p("bar")))
+cut("text",
+    doc(p("0"), p("foo<a>bar<b>baz"), p("2")),
+    doc(p("bar")))
 
-slice("deep",
-      doc(blockquote(ul(li(p("a"), p("b<a>c")), li(p("d")), "<b>", li(p("e"))), p("3"))),
-      doc(blockquote(ul(li(p("c")), li(p("d"))))))
+cut("deep",
+    doc(blockquote(ul(li(p("a"), p("b<a>c")), li(p("d")), "<b>", li(p("e"))), p("3"))),
+    doc(blockquote(ul(li(p("c")), li(p("d"))))))
 
-slice("left",
-      doc(blockquote(p("foo<b>bar"))),
-      doc(blockquote(p("foo"))))
+cut("left",
+    doc(blockquote(p("foo<b>bar"))),
+    doc(blockquote(p("foo"))))
 
-slice("right",
-      doc(blockquote(p("foo<a>bar"))),
-      doc(blockquote(p("bar"))))
+cut("right",
+    doc(blockquote(p("foo<a>bar"))),
+    doc(blockquote(p("bar"))))
 
-slice("inline",
-      doc(p("foo", em("ba<a>r", img, strong("baz"), br), "qu<b>ux", code("xyz"))),
-      doc(p(em("r", img, strong("baz"), br), "qu")))
-
-function append(name, before, after, result) {
-  defTest("node_append_" + name, () => {
-    let left = before.content.slice(0, before.tag.a)
-    let right = after.content.slice(after.tag.a)
-    cmpNode(before.copy(left.append(right)), result)
-  })
-}
-
-append("blocks",
-       blockquote(p("a"), "<a>", p("b")), blockquote("<a>", p("c")),
-       blockquote(p("a"), p("c")))
-
-append("inline",
-       p("foo<a>bar"), p("baz<a>quux"),
-       p("fooquux"))
-
-append("inline_styled",
-       p(em(strong("foo<a>bar"))), p(code("baz<a>quux")),
-       p(em(strong("foo")), code("quux")))
+cut("inline",
+    doc(p("foo", em("ba<a>r", img, strong("baz"), br), "qu<b>ux", code("xyz"))),
+    doc(p(em("r", img, strong("baz"), br), "qu")))
 
 function between(name, doc, ...nodes) {
   defTest("node_between_" + name, () => {
@@ -96,50 +76,6 @@ between("deep",
 between("inline",
         doc(p(em("x"), "f<a>oo", em("bar", img, strong("baz"), br), "quux", code("xy<b>z"))),
         "paragraph", "foo", "bar", "image", "baz", "hard_break", "quux", "xyz")
-
-function testCursor(cur, r, results) {
-  for (let i = 0;; i += 2) {
-    let end = r ? cur.atStart : cur.atEnd
-    if (i == results.length) {
-      if (end) return
-      throw new Failure("More cursor results than expected")
-    } else if (end) {
-      throw new Failure("Less cursor results than expected")
-    }
-    let node = r ? cur.prev() : cur.next()
-    let compare = node.isText ? node.text : node.type.name
-    if (results[i] != compare)
-      throw new Failure("Unexpected cursor result: " + JSON.stringify(compare) + " instead of " + JSON.stringify(results[i]))
-    if (results[i + 1] != cur.pos)
-      throw new Failure("Unexpected cursor pos: " + cur.pos + " instead of " + results[i + 1])
-  }
-}
-
-function cursor(name, node, ...results) {
-  defTest("node_cursor_" + name, () => {
-    testCursor(node.cursor(node.tag.a), false, results)
-  })
-}
-
-function rCursor(name, node, ...results) {
-  defTest("node_rcursor_" + name, () => {
-    testCursor(node.cursor(node.tag.a), true, results)
-  })
-}
-
-cursor("block",
-       doc("<a>", p("foo"), blockquote(p("bar"))),
-       "paragraph", 5, "blockquote", 12)
-rCursor("block",
-        doc(p("foo"), blockquote(p("bar")), "<a>"),
-        "blockquote", 5, "paragraph", 0)
-
-cursor("inline",
-       p("fo<a>o", img, em("bar", strong("baz")), "quux"),
-       "o", 3, "image", 4, "bar", 7, "baz", 10, "quux", 14)
-rCursor("inline",
-        p("foo", img, em("bar", strong("baz")), "qu<a>ux"),
-        "qu", 10, "baz", 7, "bar", 4, "image", 3, "foo", 0)
 
 function from(name, arg, expect) {
   defTest("node_fragment_from_" + name, () => {

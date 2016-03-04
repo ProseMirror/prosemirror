@@ -1,5 +1,9 @@
 import {Fragment, emptyFragment} from "./fragment"
 import {Mark} from "./mark"
+import {ProseMirrorError} from "../util/error"
+import {ModelError} from "./error"
+
+export class ReplaceError extends ProseMirrorError {}
 
 const emptyArray = [], emptyAttrs = Object.create(null)
 
@@ -47,11 +51,7 @@ export class Node {
   // The number of children that the node has.
   get childCount() { return this.content.childCount }
 
-  // :: ((node: Node, pos: number))
-  // Call the given function for each child node. The function will be
-  // given the node, as well as its start and end offsets, as
-  // arguments.
-  forEach(f) { this.content.forEach(f) }
+  child(index) { return this.content.child(index) }
 
   // :: string
   // Concatenate all the text nodes found in this fragment and its
@@ -107,105 +107,39 @@ export class Node {
   // Create a copy of this node with only the content between the
   // given offsets. If `to` is not given, it defaults to the end of
   // the node.
+  cut(from, to) {
+    if (from == 0 && to == this.content.size) return this
+    return this.copy(this.content.cut(from, to))
+  }
+
   slice(from, to) {
-    if (from == 0 && to == this.text.length) return this
-    return this.copy(this.content.slice(from, to))
+    if (from == to) return new Slice(emptyFragment, 0, 0)
+
+    from = getContext(this, from)
+    to = getContext(this, to)
+    let depth = 0
+    while (from.index[depth + 1] == to.index[depth + 1]) ++depth
+    let content = from.node[depth].cut(from.offset[depth], to.offset[depth])
+    return new Slice(content, from.depth - depth, to.depth - depth)
   }
 
-  // :: (number, number, Fragment) → Node
-  // Create a copy of this node with the content between the given
-  // offsets replaced by the given fragment.
-  splice(from, to, replace) {
-    return this.copy(this.content.slice(0, from).append(replace).append(this.content.slice(to)))
-  }
-
-  // :: (Fragment, ?number, ?number) → Node
-  // [Append](#Fragment.append) the given fragment to this node's
-  // content, and create a new node with the result.
-  append(fragment, joinLeft = 0, joinRight = 0) {
-    return this.copy(this.content.append(fragment, joinLeft, joinRight))
-  }
-
-  // :: (number, Node) → Node
-  // Return a copy of this node with the child at the given offset
-  // replaced by the given node. **Note**: The offset should not fall
-  // within a text node.
-  replace(pos, node) {
-    return this.copy(this.content.replace(pos, node))
-  }
-
-  // :: ([number], Node) → Node
-  // Return a copy of this node with the descendant at `path` replaced
-  // by the given replacement node. This will copy as many sub-nodes as
-  // there are elements in `path`.
-  replaceDeep(context, node, depth = 0) {
-    if (depth == context.depth) return node
-    let cur = context.path[depth]
-    return this.replace(cur, cur.node.replaceDeep(context, node, depth + 1))
-  }
-
-  // :: (number, string) → Node
-  // “Close” this node by making sure that, if it is empty, and is not
-  // allowed to be so, it has its default content inserted. When depth
-  // is greater than zero, sub-nodes at the given side (which can be
-  // `"start"` or `"end"`) are closed too. Returns itself if no work
-  // is necessary, or a closed copy if something did need to happen.
-  close(depth, side) {
-    if (depth == 0 && this.size == 0 && !this.type.canBeEmpty)
-      return this.copy(this.type.defaultContent())
-    let closedContent
-    if (depth > 0 && (closedContent = this.content.close(depth - 1, side)) != this.content)
-      return this.copy(closedContent)
-    return this
-  }
-
-  // :: (?number, ?number) → ?FragmentCursor
-  // Get a cursor into this node's content.
-  cursor(pos, round) {
-    return this.content.cursor(pos, round)
+  replace(from, to, slice) {
+    from = getContext(this, from)
+    to = getContext(this, to)
+    if (to.depth - slice.openLeft != from.depth - slice.openRight)
+      throw new ReplaceError("Inconsistent open depths")
+    return replaceOuter(this, from, to, slice, 0)
   }
 
   // :: (number) → Node
   // Find the node after the given position.
   nodeAt(pos) {
-    let node = this
-    for (;;) {
-      let cur = node.cursor(pos, -1)
-      node = cur.node
-      if (cur.pos == pos) return node
-      pos -= cur.pos + 1
-    }
-  }
-
-  // :: (number) → PosContext
-  // Creates a context information object describing the path to the given position.
-  context(pos) {
-    let cached = PosContext.cached(this, pos)
-    if (cached) return cached
-
-    let root = this, orig = pos, path = []
     for (let node = this;;) {
-      let cur = node.cursor(pos, -1)
-      path.push(cur)
-      if (cur.pos == pos) break
-      node = cur.node
-      pos -= cur.pos + 1
+      let index = findIndex(node.content, pos)
+      node = node.child(index)
+      if (foundPos == pos || node.isText) return node
+      pos -= foundPos + 1
     }
-    let cx = new PosContext(root, orig, path)
-    PosContext.addToCache(this, pos, cx)
-    return cx
-  }
-
-  // :: (number, number) → {from: number, to: number}
-  // Finds the narrowest sibling range (two positions that both point
-  // into the same node) that encloses the given positions.
-  siblingRange(from, to) {
-    let cxFrom = this.context(from), cxTo = this.context(to), depth = 0
-    for (let d = 1, max = Math.min(cxFrom.depth, cxTo.depth); d <= max; d++) {
-      if (cxFrom.parent(d) != cxTo.parent(d)) break
-      depth = d
-    }
-    return {from: cxFrom.posAt(depth), to: cxTo.posAt(depth) + cxTo.child(depth).size}
   }
 
   // :: (?number, ?number, (node: Node, pos: number, parent: Node))
@@ -215,14 +149,6 @@ export class Node {
   // starting at the start of the node or ending at its end.
   nodesBetween(from, to, f, pos = 0) {
     this.content.nodesBetween(from, to, f, pos, this)
-  }
-
-  // :: (?number, ?number) → Node
-  // Returns a copy of this node containing only the content between
-  // `from` and `to`. You can omit either argument to start
-  // or end at the start or end of the node.
-  slice(from, to) {
-    return this.copy(this.content.slice(from, to))
   }
 
   // :: (number) → [Mark]
@@ -290,9 +216,6 @@ export class Node {
     return obj
   }
 
-  // This is a hack to be able to treat a node object as an iterator result
-  get value() { return this }
-
   // :: (Schema, Object) → Node
   // Deserialize a node from its JSON representation.
   static fromJSON(schema, json) {
@@ -300,12 +223,9 @@ export class Node {
     let content = json.text != null ? json.text : Fragment.fromJSON(schema, json.content)
     return type.create(json.attrs, content, json.marks && json.marks.map(schema.markFromJSON))
   }
-}
 
-if (typeof Symbol != "undefined") {
-  // :: () → Iterator<Node>
-  // A fragment is iterable, in the ES6 sense.
-  Node.prototype[Symbol.iterator] = function() { return this.cursor() }
+  // This is a hack to be able to treat a node object as an iterator result
+  get value() { return this }
 }
 
 // ;; #forward=Node
@@ -330,7 +250,8 @@ export class TextNode extends Node {
     return new TextNode(this.type, this.attrs, this.text, marks)
   }
 
-  slice(from = 0, to = this.text.length) {
+  cut(from = 0, to = this.text.length) {
+    if (from == 0 && to == this.text.length) return this
     return this.copy(this.text.slice(from, to))
   }
 
@@ -347,47 +268,167 @@ function wrapMarks(marks, str) {
   return str
 }
 
-class PosContext {
-  constructor(root, pos, path) {
-    this.root = root
-    this.pos = pos
-    this.path = path
-  }
-
-  parent(level = this.depth) {
-    return level ? this.root : this.path[level - 1].node
-  }
-
-  child(level = this.depth) {
-    return this.path[level].node
-  }
-
-  offset(level = this.depth) {
-    return this.path[level].pos
-  }
-
-  posAt(level = this.depth) {
-    let pos = 0
-    for (let i = 0; i < level; i++)
-      pos += this.path[level].pos + (i ? 1 : 0)
-    return pos
-  }
-
-  get depth() {
-    return this.path.length - 1
-  }
-
-  static cached(doc, pos) {
-    for (let i = 0; i < cachedDoc.length; i++)
-      if (cachedDoc[i] = doc && cachedPos[i] == pos) return cachedCx[i]
-  }
-
-  static addToCache(doc, pos, cx) {
-    cachedDoc[cachePos] = doc
-    cachedPos[cachePos] = pos
-    cachedCx[cachePos] = cx
-    cachePos = (cachePos + 1) % cacheMax
+let foundPos = 0
+function findIndex(fragment, pos, round = -1) {
+  if (pos == 0) { foundPos = pos; return 0 }
+  if (pos == fragment.size) { foundPos = pos; return fragment.content.length }
+  if (pos > fragment.size || pos < 0) throw new ModelError(`Position ${pos} outside of fragment (${fragment})`)
+  for (let i = 0, curPos = 0;; i++) {
+    let cur = fragment.content[i], end = curPos + cur.size
+    if (end >= pos) {
+      if (end == pos || round > 0) { foundPos = end; return i + 1 }
+      foundPos = curPos; return i
+    }
+    curPos = end
   }
 }
 
-let cachedDoc = [], cachedPos = [], cachedCx = [], cachePos = 0, cacheMax = 5
+class PosContext {
+  constructor(pos, node, index, offset) {
+    this.pos = pos
+    this.node = node
+    this.index = index
+    this.offset = offset
+  }
+
+  get offset() { return this.offset[this.depth] }
+
+  get parent() { return this.node[this.depth] }
+
+  get depth() { return this.node.length - 1 }
+
+  start(depth = this.depth) {
+    let pos = 0
+    for (let i = 0; i < depth; i++) pos += this.offset[i] + (i ? 1 : 0)
+    return pos
+  }
+
+  end(depth) {
+    return this.start(depth) + this.node[depth].size
+  }
+
+  move(pos) {
+    let diff = pos - this.pos
+    let index = this.index.slice(), offset = this.offset.slice()
+    index[this.depth] = findIndex(this.parent.content, this.offset + diff)
+    offset[this.depth] = foundPos
+    return new PosContext(pos, this.node, index, offset)
+  }
+
+  static resolve(doc, pos) {
+    let nodes = [], index = [], offset = []
+    for (let rem = pos, node = doc;;) {
+      let index = findIndex(node.content, rem)
+      rem -= foundPos
+      nodes.push(node)
+      offset.push(foundPos)
+      index.push(index)
+      if (!rem || (node = node.child(index)).isText) break
+      rem -= 1
+    }
+    return new PosContext(pos, nodes, index, offset)
+  }
+}
+
+class Slice {
+  constructor(content, openLeft, openRight) {
+    this.content = content
+    this.openLeft = openLeft
+    this.openRight = openRight
+  }
+
+  toJSON() {
+    if (!this.content.size) return null
+    return {content: this.content.toJSON(),
+            openLeft: this.openLeft,
+            openRight: this.openRight}
+  }
+
+  static fromJSON(schema, json) {
+    if (!json) return new Slice(emptyFragment, 0, 0)
+    return new Slice(Fragment.fromJSON(schema, json.content), json.openLeft, json.openRight)
+  }
+}
+
+let contextCache = [], contextCachePos = 0, contextCacheSize = 6
+function getContext(doc, pos) {
+  let near = null
+  for (let i = 0; i < contextCache.length; i++) {
+    let cached = contextCache[i]
+    if (cached.node[0] == doc) {
+      if (cached.pos == pos) return cached
+      let start = cached.start()
+      if (cached.depth && pos > start && pos < start + cached.parent.size)
+        near = cached
+    }
+  }
+  return contextCache[contextCachePos = (contextCachePos + 1) % contextCacheSize] =
+    near ? near.move(pos) : PosContext.resolve(doc, pos)
+}
+
+
+function replaceOuter(from, to, slice, depth) {
+  let index = from.index[depth], node = from.node[depth]
+  if (index == to.index[depth] && depth < from.depth - slice.openFrom) {
+    let inner = replaceOuter(from, to, slice, depth + 1)
+    return node.copy(node.content.replace(index, inner))
+  } else if (slice.content.size) {
+    let {left, right} = prepareSliceForReplace(slice, from)
+    return node.copy(replaceThreeWay(from, left, right, to, depth))
+  } else {
+    return node.copy(replaceTwoWay(from, to, depth))
+  }
+}
+
+function checkJoin(before, after) {
+  let main = before, sub = after
+  if (!before.content.size && after.content.size) { sub = before; main = after }
+  if (!main.type.canContainContent(sub.type))
+    throw new ReplaceError("Can not join " + sub.type.name + " onto " + main.type.name)
+  return main
+}
+
+function replaceThreeWay(from, start, end, to, depth) {
+  let openLeft = from.depth > depth && checkJoin(from.node[depth + 1], start.node[depth + 1])
+  let openRight = to.depth > depth && checkJoin(end.node[depth + 1], to.node[depth + 1])
+
+  let content = from.node[depth].content.toArray(0, from.offset[depth])
+  if (openLeft && openRight && start.index[depth] == end.index[depth]) {
+    let type = checkJoin(openLeft, openRight)
+    let joined = replaceThreeWay(from, start, end, to, depth + 1)
+    content.push(type.type.close(type.attrs, joined))
+  } else {
+    if (openLeft)
+      content.push(openLeft.type.close(openLeft.attrs, replaceTwoWay(from, start, depth + 1)))
+    let between = start.node[depth].content.toArray(start.offset[depth], end.offset[depth])
+    for (let i = 0; i < between.length; i++) content.push(between[i])
+    if (openRight)
+      content.push(openRight.type.close(openRight.attrs, replaceTwoWay(end, to, depth + 1)))
+  }
+  let after = to.node[depth].content.toArray(to.offset[depth])
+  for (let i = 0; i < after.length; i++) content.push(after[i])
+  return Fragment.fromArray(content)
+}
+
+function replaceTwoWay(from, to, depth) {
+  let content = from.node[depth].content.toArray(0, from.offset[depth])
+  if (from.depth > depth) {
+    let type = checkJoin(from.node[depth + 1], to.node[depth + 1])
+    content.push(type.type.close(type.attrs, replaceTwoWay(from, to, depth + 1)))
+  }
+  let after = to.node[depth].content.toArray(to.offset[depth])
+  for (let i = 0; i < after.length; i++) content.push(after[i])
+  return Fragment.fromArray(content)
+}
+
+function prepareSliceForReplace(slice, along) {
+  let extra = along.depth - slice.openLeft, parent = along.node[extra]
+  if (!parent.type.canContainFragment(slice.content))
+    throw new ReplaceError("Content " + slice + " can not be placed in " + parent.type.name)
+  let node = parent.copy(slice.content)
+  // FIXME only copy up to start depth? rest won't be used
+  for (let i = extra - 1; i >= 0; i--)
+    node = along.node[i].copy(Fragment.from(node))
+  return {start: PosContext.resolve(node, slice.openLeft + extra),
+          end: PosContext.resolve(node, node.size - slice.openRight - extra)}
+}
