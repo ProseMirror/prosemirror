@@ -1,156 +1,106 @@
-import {Pos} from "../model"
-
 // ;; #path=Mappable #kind=interface
 // There are various things that positions can be mapped through.
 // We'll denote those as 'mappable'. This is not an actual class in
 // the codebase, only an agreed-on interface.
 
-// :: (pos: Pos, bias: ?number) → MapResult
+// :: (pos: number, bias: ?number) → MapResult
 // #path=Mappable.map
 // Map a position through this object. When given, the `bias`
 // determines in which direction to move when a chunk of content is
 // inserted at or around the mapped position.
 
-export class MovedRange {
-  constructor(start, size, dest = null) {
-    this.start = start
-    this.size = size
-    this.dest = dest
-  }
-
-  get end() {
-    return new Pos(this.start.path, this.start.offset + this.size)
-  }
-
-  toString() {
-    return "[moved " + this.start + "+" + this.size + " to " + this.dest + "]"
-  }
-}
-
-class Side {
-  constructor(from, to, ref) {
-    this.from = from
-    this.to = to
-    this.ref = ref
-  }
-}
-
 export class ReplacedRange {
-  constructor(from, to, newFrom, newTo, ref = from, newRef = newFrom) {
-    this.before = new Side(from, to, ref)
-    this.after = new Side(newFrom, newTo, newRef)
+  constructor(pos, oldSize, newSize) {
+    this.pos = pos
+    this.oldSize = oldSize
+    this.newSize = newSize
   }
+
+  size(old) { return old ? this.oldSize : this.newSize }
 
   toString() {
-    return "[replaced " + this.before.from + "-" + this.before.to + " with " + this.after.from + "-" + this.after.to + "]"
+    return "[@" + this.pos + " " + this.oldSize + "->" + this.newSize + "]"
   }
 }
 
-const empty = []
-
-function offsetFrom(base, pos) {
-  if (pos.path.length > base.path.length) {
-    let path = [pos.path[base.path.length] - base.offset]
-    for (let i = base.path.length + 1; i < pos.path.length; i++)
-      path.push(pos.path[i])
-    return new Pos(path, pos.offset)
-  } else {
-    return new Pos([], pos.offset - base.offset)
+function mapThrough(ranges, pos, bias = 1, back) {
+  let diff = 0
+  for (let i = 0; i < ranges.length; i++) {
+    let range = ranges[i], rangePos = range.pos - (back ? diff : 0)
+    if (rangePos > pos) break
+    let oldSize = range.size(!back), newSize = range.size(back)
+    if (pos == rangePos) {
+      if (bias > 0 && oldSize == 0)
+        return new MapResult(rangePos + newSize + diff)
+      break
+    }
+    let end = rangePos + oldSize
+    if (pos < end)
+      return new MapResult(rangePos + (bias < 0 ? 0 : newSize) + diff, {index: i, offset: pos - rangePos})
+    if (pos == end && bias < 0 && oldSize == 0)
+      return new MapResult(rangePos + diff)
+    diff += newSize - oldSize
   }
+  return new MapResult(pos + diff)
 }
 
-function mapThrough(map, pos, bias = 1, back) {
-  for (let i = 0; i < map.replaced.length; i++) {
-    let range = map.replaced[i], side = back ? range.after : range.before
-    let left, right
-    if ((left = pos.cmp(side.from)) >= 0 &&
-        (right = pos.cmp(side.to)) <= 0) {
-      let other = back ? range.before : range.after
-      return new MapResult(bias < 0 ? other.from : other.to,
-                           !!(left && right),
-                           {rangeID: i, offset: offsetFrom(side.ref, pos)})
-    }
+// ;; The return value of mapping a position.
+export class MapResult {
+  constructor(pos, deleted = null) {
+    // :: number The mapped version of the position.
+    this.pos = pos
+    // :: ?Object Tells you whether the position was deleted, that is,
+    // whether the step removed its surroundings from the document.
+    this.deleted = deleted
   }
-
-  for (let i = 0; i < map.moved.length; i++) {
-    let range = map.moved[i]
-    let start = back ? range.dest : range.start
-    if (pos.cmp(start) >= 0 &&
-        Pos.cmp(pos.path, pos.offset, start.path, start.offset + range.size) <= 0) {
-      let dest = back ? range.start : range.dest
-      let depth = start.depth
-      if (pos.depth > depth) {
-        let offset = dest.offset + (pos.path[depth] - start.offset)
-        return new MapResult(new Pos(dest.path.concat(offset).concat(pos.path.slice(depth + 1)), pos.offset))
-      } else {
-        return new MapResult(new Pos(dest.path, dest.offset + (pos.offset - start.offset)))
-      }
-    }
-  }
-
-  return new MapResult(pos)
 }
 
 // ;; A position map, holding information about the way positions in
 // the pre-step version of a document correspond to positions in the
 // post-step version. This class implements `Mappable`.
 export class PosMap {
-  constructor(moved, replaced) {
-    this.moved = moved || empty
-    this.replaced = replaced || empty
-  }
+  constructor(ranges) { this.ranges = ranges }
 
   recover(offset) {
-    return this.replaced[offset.rangeID].after.ref.extend(offset.offset)
+    return this.ranges[offset.index].pos + offset.offset
   }
 
-  // :: (Pos, ?number) → MapResult
+  // :: (number, ?number) → MapResult
   // Map the given position through this map. The `bias` parameter can
   // be used to control what happens when the transform inserted
   // content at (or around) this position—if `bias` is negative, the a
   // position before the inserted content will be returned, if it is
   // positive, a position after the insertion is returned.
   map(pos, bias) {
-    return mapThrough(this, pos, bias, false)
+    return mapThrough(this.ranges, pos, bias, false)
   }
 
   // :: () → PosMap
   // Create an inverted version of this map. The result can be used to
   // map positions in the post-step document to the pre-step document.
-  invert() { return new InvertedPosMap(this) }
+  invert() { return new InvertedPosMap(this.ranges) }
 
-  toString() { return this.moved.concat(this.replaced).join(" ") }
-}
-
-// ;; The return value of mapping a position.
-export class MapResult {
-  constructor(pos, deleted = false, recover = null) {
-    // :: Pos The mapped version of the position.
-    this.pos = pos
-    // :: bool Tells you whether the position was deleted, that is,
-    // whether the step removed its surroundings from the document.
-    this.deleted = deleted
-    this.recover = recover
-  }
+  toString() { return this.ranges.join(" ") }
 }
 
 class InvertedPosMap {
-  constructor(map) { this.inner = map }
+  constructor(ranges) { this.ranges = ranges }
 
   recover(offset) {
-    return this.inner.replaced[offset.rangeID].before.ref.extend(offset.offset)
+    let diff = 0
+    for (let i = 0; i < offset.index; i++)
+      diff += this.ranges[i].newSize - this.ranges[i].oldSize
+    return this.ranges[offset.index].pos + diff + offset.offset
   }
 
-  map(pos, bias) {
-    return mapThrough(this.inner, pos, bias, true)
-  }
+  map(pos, bias) { return mapThrough(this.ranges, pos, bias, true) }
 
-  invert() { return this.inner }
+  invert() { return new PosMap(this.ranges) }
 
-  toString() { return "-" + this.inner }
+  toString() { return "-" + this.ranges.join(" ") }
 }
 
-export const nullMap = new PosMap
+PosMap.empty = new PosMap([])
 
 // ;; A remapping represents a pipeline of zero or more mappings. It
 // is a specialized data structured used to manage mapping through a
@@ -199,24 +149,24 @@ export class Remapping {
     return id < 0 ? this.head[-id - 1] : this.tail[id]
   }
 
-  // :: (Pos, ?number) → MapResult
+  // :: (number, ?number) → MapResult
   // Map a position through this remapping, optionally passing a bias
   // direction.
   map(pos, bias) {
-    let deleted = false
+    let deleted = null
 
     for (let i = -this.head.length; i < this.tail.length; i++) {
       let map = this.get(i)
       let result = map.map(pos, bias)
-      if (result.recover) {
+      if (result.deleted) {
         let corr = this.mirror[i]
         if (corr != null) {
           i = corr
-          pos = this.get(corr).recover(result.recover)
+          pos = this.get(corr).recover(result.deleted)
           continue
         }
+        deleted = true
       }
-      if (result.deleted) deleted = true
       pos = result.pos
     }
 

@@ -290,11 +290,21 @@ export class PosContext {
     this.offset = offset
   }
 
-  get innerOffset() { return this.offset[this.depth] }
+  get parentOffset() { return this.offset[this.depth] }
 
   get parent() { return this.node[this.depth] }
 
   get depth() { return this.node.length - 1 }
+
+  get nodeAfter() {
+    let parent = this.parent, index = this.index[this.depth]
+    return index == parent.childCount ? null : parent.child(index)
+  }
+
+  get nodeBefore() {
+    let index = this.index[this.depth]
+    return index == 0 ? null : this.parent.child(index)
+  }
 
   sameDepth(other) {
     let depth = 0, max = Math.min(this.depth, other.depth)
@@ -315,8 +325,8 @@ export class PosContext {
   move(pos) {
     let diff = pos - this.pos
     let index = this.index.slice(), offset = this.offset.slice(), parent = this.parent
-    let i = index[this.depth] = findIndex(parent.content, this.innerOffset + diff)
-    offset[this.depth] = i < parent.childCount && parent.child(i).isText ? this.innerOffset + diff : foundOffset
+    let i = index[this.depth] = findIndex(parent.content, this.parentOffset + diff)
+    offset[this.depth] = i < parent.childCount && parent.child(i).isText ? this.parentOffset + diff : foundOffset
     return new PosContext(pos, this.node, index, offset)
   }
 
