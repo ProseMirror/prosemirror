@@ -3,7 +3,7 @@ import {Pos} from "../model"
 import {parseFrom, fromDOM, toHTML, toText} from "../format"
 
 import {captureKeys} from "./capturekeys"
-import {elt, browser} from "../dom"
+import {elt, browser, contains} from "../dom"
 
 import {applyDOMChange, textContext, textInContext} from "./domchange"
 import {TextSelection, rangeFromDOMLoose, findSelectionAtStart, findSelectionAtEnd, hasFocus} from "./selection"
@@ -235,15 +235,15 @@ class MouseDown {
     }
   }
 
-  up() {
+  up(event) {
     this.done()
 
-    if (this.leaveToBrowser) {
+    if (this.leaveToBrowser || !contains(this.pm.content, event.target)) {
       this.pm.sel.fastPoll()
     } else if (this.event.ctrlKey) {
-      selectClickedNode(this.pm, this.event)
-    } else if (!handleNodeClick(this.pm, "handleClick", this.event, true)) {
-      let pos = selectableNodeAbove(this.pm, this.event.target, {left: this.x, top: this.y})
+      selectClickedNode(this.pm, event)
+    } else if (!handleNodeClick(this.pm, "handleClick", event, true)) {
+      let pos = selectableNodeAbove(this.pm, event.target, {left: this.x, top: this.y})
       if (pos) {
         this.pm.setNodeSelection(pos)
         this.pm.focus()
