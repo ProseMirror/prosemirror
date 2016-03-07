@@ -1,6 +1,8 @@
-import {namespace} from "./def"
+import {namespace, tempEditor} from "./def"
 import {doc, p} from "../build"
 import {is, cmp, cmpNode, P} from "../cmp"
+import {defTest} from "../tests"
+import {Pos} from "../../model"
 
 const test = namespace("history")
 
@@ -185,4 +187,24 @@ test("rollback", pm => {
   cmpNode(pm.doc, doc(p("hello")), "no-op had no effect")
   pm.history.undo()
   is(!pm.history.backToVersion(version), "failed rollback")
+})
+
+defTest("history_setSelectionOnUndo", (pm = tempEditor({historyEventDelay: -1})) => {
+  type(pm, "hi")
+  pm.setTextSelection(P(0, 0), P(0, 2))
+  let selection = pm.selection
+  pm.tr.replaceWith(selection.from, selection.to, pm.schema.text("hello", [])).apply()
+  let selection2 = pm.selection
+  pm.execCommand("undo")
+  is(pm.selection.eq(selection), "failed restoring selection after undo")
+  pm.execCommand("redo")
+  is(pm.selection.eq(selection2), "failed restoring selection after redo")
+})
+
+
+defTest("history_rebaseSelectionOnUndo", (pm = tempEditor({historyEventDelay: -1})) => {
+  type(pm, "hi")
+  pm.setTextSelection(P(0, 0), P(0, 2))
+  let selection = pm.selection
+  let tr = pm.tr.insert(new Pos([0],0), pm.schema.text("hello", []))
 })
