@@ -114,7 +114,7 @@ test("undo", (pm1, pm2) => {
   pm2.execCommand("undo")
   type(pm2, "D")
   type(pm1, "E")
-  conv(pm1, pm2, "ACDE")
+  conv(pm1, pm2, "ADCE")
 })
 
 test("redo", (pm1, pm2) => {
