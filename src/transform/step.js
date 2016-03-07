@@ -1,4 +1,3 @@
-import {Pos} from "../model"
 import {NamespaceError} from "../util/error"
 
 import {nullMap} from "./map"
@@ -7,28 +6,25 @@ import {nullMap} from "./map"
 // only to the document it was created for, since the positions
 // associated with it will only make sense for that document.
 export class Step {
-  // :: (string, ?Pos, ?Pos, ?Pos, ?any)
+  // :: (string, number, number, ?any)
   // Build a step. The type should name a [defined](Step.define) step
   // type, and the shape of the positions and parameter should be
   // appropriate for that type.
-  constructor(type, from, to, pos, param = null) {
+  constructor(type, from, to, param = null) {
     if (!(type in steps)) throw new NamespaceError("Unknown step type: " + type)
     // :: string
     // The type of the step.
     this.type = type
-    // :: ?Pos
+    // :: ?number
     // The start of the step's range, if any. Which of the three
     // optional positions associated with a step a given step type
     // uses differs. The way each of these positions is mapped when
     // the step is mapped over a [position mapping](#PosMap) depends
     // on its role.
     this.from = from
-    // :: ?Pos
+    // :: ?number
     // The end of the step's range.
     this.to = to
-    // :: ?Pos
-    // The base position for this step.
-    this.pos = pos
     // :: ?any
     // Extra step-type-specific information associated with the step.
     this.param = param
@@ -57,7 +53,7 @@ export class Step {
   // the step was entirely deleted by the mapping.
   map(remapping) {
     let allDeleted = true
-    let from = null, to = null, pos = null
+    let from = null, to = null
 
     if (this.from) {
       let result = remapping.map(this.from, 1)
@@ -65,26 +61,15 @@ export class Step {
       if (!result.deleted) allDeleted = false
     }
     if (this.to) {
-      if (this.to.cmp(this.from) == 0) {
+      if (this.to == this.from) {
         to = from
       } else {
         let result = remapping.map(this.to, -1)
-        to = result.pos.max(from)
+        to = Math.max(result.pos, from)
         if (!result.deleted) allDeleted = false
       }
     }
-    if (this.pos) {
-      if (from && this.pos.cmp(this.from) == 0) {
-        pos = from
-      } else if (to && this.pos.cmp(this.to) == 0) {
-        pos = to
-      } else {
-        let result = remapping.map(this.pos, 1)
-        pos = result.pos
-        if (!result.deleted) allDeleted = false
-      }
-    }
-    return allDeleted ? null : new Step(this.type, from, to, pos, this.param)
+    return allDeleted ? null : new Step(this.type, from, to, this.param)
   }
 
   // :: () → Object
@@ -95,7 +80,6 @@ export class Step {
       type: this.type,
       from: this.from,
       to: this.to,
-      pos: this.pos,
       param: impl.paramToJSON ? impl.paramToJSON(this.param) : this.param
     }
   }
@@ -106,9 +90,8 @@ export class Step {
     let impl = steps[json.type]
     return new Step(
       json.type,
-      json.from && Pos.fromJSON(json.from),
-      json.to && Pos.fromJSON(json.to),
-      json.pos && Pos.fromJSON(json.pos),
+      json.from,
+      json.to,
       impl.paramFromJSON ? impl.paramFromJSON(schema, json.param) : json.param)
   }
 

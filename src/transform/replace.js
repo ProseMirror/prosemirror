@@ -92,7 +92,7 @@ Step.define("replace", {
   },
   invert(step, oldDoc, map) {
     let depth = step.pos.depth
-    return new Step("replace", step.from, map.map(step.to).pos, step.from.shorten(depth), {
+    return new Step("replace", step.from, map.map(step.to).pos, {
       content: oldDoc.path(step.pos.path).content.sliceBetween(step.from, step.to, depth),
       openLeft: step.from.depth - depth,
       openRight: step.to.depth - depth
@@ -190,7 +190,7 @@ function moveText(tr, doc, before, after) {
     existing.shift()
   }
   if (existing.length || wanted.length)
-    tr.step("ancestor", start, end, null, {
+    tr.step("ancestor", start, end, {
       depth: existing.length,
       types: wanted.map(n => n.type),
       attrs: wanted.map(n => n.attrs)
@@ -225,7 +225,7 @@ Transform.prototype.replace = function(from, to, source, start, end) {
   }
   let root = from.shorten(depth), docAfter = doc, after = to
   if (repl.content.size || replaceHasEffect(doc, from, to)) {
-    let result = this.step("replace", from, to, root, repl)
+    let result = this.step("replace", from, to, repl)
     docAfter = result.doc
     after = result.map.map(to).pos
   }
@@ -272,9 +272,9 @@ Transform.prototype.replace = function(from, to, source, start, end) {
 Transform.prototype.replaceWith = function(from, to, content) {
   if (!(content instanceof Fragment)) content = Fragment.from(content)
   if (Pos.samePath(from.path, to.path))
-    this.step("replace", from, to, from, {content, openLeft: 0, openRight: 0})
+    this.step("replace", from, to, {content, openLeft: 0, openRight: 0})
   else
-    this.delete(from, to).step("replace", from, from, from, {content, openLeft: 0, openRight: 0})
+    this.delete(from, to).step("replace", from, from, {content, openLeft: 0, openRight: 0})
   return this
 }
 

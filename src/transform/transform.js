@@ -44,9 +44,9 @@ export class Transform {
   // applying it is returned, and an element is added to the
   // [`steps`](#Transform.steps), [`docs`](#Transform.docs), and
   // [`maps`](#Transform.maps) arrays.
-  step(step, from, to, pos, param) {
+  step(step, from, to, param) {
     if (typeof step == "string")
-      step = new Step(step, from, to, pos, param)
+      step = new Step(step, from, to, param)
     let result = step.apply(this.doc)
     if (result) {
       this.steps.push(step)
@@ -56,7 +56,7 @@ export class Transform {
     return result
   }
 
-  // :: (Pos, ?number) → MapResult
+  // :: (number, ?number) → MapResult
   // Map a position through the whole transformation (all the position
   // maps in [`maps`](#Transform.maps)), and return the result.
   map(pos, bias) {

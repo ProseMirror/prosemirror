@@ -23,7 +23,7 @@ Step.define("addMark", {
     }))
   },
   invert(step, _oldDoc, map) {
-    return new Step("removeMark", step.from, map.map(step.to).pos, null, step.param)
+    return new Step("removeMark", step.from, map.map(step.to).pos, step.param)
   },
   paramToJSON(param) {
     return param.toJSON()
@@ -46,7 +46,7 @@ Transform.prototype.addMark = function(from, to, mark) {
         if (removing && removing.param.eq(rm)) {
           removing.to = new Pos(path, end)
         } else {
-          removing = new Step("removeMark", new Pos(path, start), new Pos(path, end), null, rm)
+          removing = new Step("removeMark", new Pos(path, start), new Pos(path, end), rm)
           removed.push(removing)
         }
       } else if (removing) {
@@ -55,7 +55,7 @@ Transform.prototype.addMark = function(from, to, mark) {
       if (adding) {
         adding.to = new Pos(path, end)
       } else {
-        adding = new Step("addMark", new Pos(path, start), new Pos(path, end), null, mark)
+        adding = new Step("addMark", new Pos(path, start), new Pos(path, end), mark)
         added.push(adding)
       }
     }
@@ -74,7 +74,7 @@ Step.define("removeMark", {
     }))
   },
   invert(step, _oldDoc, map) {
-    return new Step("addMark", step.from, map.map(step.to).pos, null, step.param)
+    return new Step("addMark", step.from, map.map(step.to).pos, step.param)
   },
   paramToJSON(param) {
     return param.toJSON()
@@ -117,7 +117,7 @@ Transform.prototype.removeMark = function(from, to, mark = null) {
       }
     }
   })
-  matched.forEach(m => this.step("removeMark", m.from, m.to, null, m.style))
+  matched.forEach(m => this.step("removeMark", m.from, m.to, m.style))
   return this
 }
 
@@ -131,14 +131,14 @@ Transform.prototype.clearMarkup = function(from, to, newParent) {
     if (newParent ? !newParent.canContainType(type) : !type.isText) {
       path = path.slice()
       let from = new Pos(path, start)
-      delSteps.push(new Step("replace", from, new Pos(path, end), from))
+      delSteps.push(new Step("replace", from, new Pos(path, end)))
       return
     }
     for (let i = 0; i < marks.length; i++) {
       let mark = marks[i]
       if (!newParent || !newParent.canContainMark(mark.type)) {
         path = path.slice()
-        this.step("removeMark", new Pos(path, start), new Pos(path, end), null, mark)
+        this.step("removeMark", new Pos(path, start), new Pos(path, end), mark)
       }
     }
   })

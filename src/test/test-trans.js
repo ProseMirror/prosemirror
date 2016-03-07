@@ -1,47 +1,10 @@
-import {defaultSchema as schema} from "../model"
-import {Transform, Remapping} from "../transform"
-
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
 import {defTest} from "./tests"
-import {cmpNode, cmpStr} from "./cmp"
-import {testStepJSON} from "./test-json"
-
-function Tr(doc) { return new Transform(doc) }
-
-function invert(transform) {
-  let doc = transform.doc, out = Tr(doc)
-  for (let i = transform.steps.length - 1; i >= 0; i--)
-    out.step(transform.steps[i].invert(transform.docs[i], transform.maps[i]))
-  return out
-}
-
-function testMapping(maps, pos, newPos, label) {
-  let mapped = pos
-  maps.forEach(m => mapped = m.map(mapped, 1).pos)
-  cmpStr(mapped, newPos, label)
-
-  let ident = {}
-  for (let i = 0; i < maps.length; i++) ident[-i - 1] = i
-  let remap = new Remapping(maps.map(x => x.invert()), maps, ident)
-  cmpStr(remap.map(newPos, 1).pos, newPos, label + " back")
-}
-
-function testTransform(doc, expect, tr) {
-  cmpNode(tr.doc, expect)
-  let inverted = invert(tr)
-  cmpNode(inverted.doc, doc, "inverted")
-
-  testStepJSON(tr)
-
-  for (let tag in expect.tag)
-    testMapping(tr.maps, doc.tag[tag], expect.tag[tag], tag)
-}
-
-function add(name, doc, expect, style) {
-  defTest("addMark_" + name, () => {
-    testTransform(doc, expect, Tr(doc).addMark(doc.tag.a, doc.tag.b, style))
-  })
+import {tr, testTransform} from "./trans"
+/*
+function add(name, doc, tr, expect) {
+  defTest("addMark_" + name, () => testTransform(tr.get(doc), expect))
 }
 
 add("simple",
@@ -190,11 +153,9 @@ txt("before_br",
     doc(p("<a>", br, "ok")),
     doc(p("ay", br, "ok")),
     "ay")
-
+*/
 function join(name, doc, expect) {
-  defTest("join_" + name, () => {
-    testTransform(doc, expect, Tr(doc).join(doc.tag.a))
-  })
+  defTest("join_" + name, () => testTransform(tr.join().get(doc), expect))
 }
 
 join("simple",
@@ -215,9 +176,8 @@ join("inline",
 
 function split(name, doc, expect, args) {
   defTest("split_" + name, () => {
-    testTransform(doc, expect, Tr(doc).split(doc.tag.a, args && args.depth,
-                                             args && args.type && schema.nodeType(args.type),
-                                             args && args.attrs))
+    let {depth, type, attrs} = args || {}
+    testTransform(tr.split("a", depth, type, attrs).get(doc), expect)
   })
 }
 
@@ -252,14 +212,14 @@ split("change_type",
       doc(h1("hell<a>o!")),
       doc(h1("hell"), p("<a>o!")),
       {type: "paragraph"})
-split("invalid_start",
+split("blockquote_start",
       doc(blockquote("<a>", p("x"))),
-      doc(blockquote(p("x"))))
-split("invalid_end",
+      doc(blockquote(p()), blockquote(p("x"))))
+split("blockquote_end",
       doc(blockquote(p("x"), "<a>")),
-      doc(blockquote(p("x"))))
+      doc(blockquote(p("x")), blockquote(p())))
 
-
+/*
 function lift(name, doc, expect) {
   defTest("lift_" + name, () => {
     testTransform(doc, expect, Tr(doc).lift(doc.tag.a, doc.tag.b))
@@ -490,3 +450,4 @@ repl("cut_empty_node_at_end",
      doc(p("<a>x")),
      doc(p("b<a>"), blockquote("<b>", p("hi"))),
      doc(p(), blockquote(p()), p("x")))
+*/

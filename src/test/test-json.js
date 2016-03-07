@@ -3,7 +3,6 @@ import {cmpNode} from "./cmp"
 import {defTest} from "./tests"
 
 import {defaultSchema as schema} from "../model"
-import {Transform, Step} from "../transform"
 
 function node(name, doc) {
   defTest("json_node_" + name, () => cmpNode(schema.nodeFromJSON(doc.toJSON()), doc))
@@ -23,9 +22,3 @@ node("block_leaf",
 
 node("nesting",
      doc(blockquote(ul(li(p("a"), p("b")), li(p(img))), p("c")), p("d")))
-
-export function testStepJSON(tr) {
-  let newTR = new Transform(tr.before)
-  tr.steps.forEach(step => newTR.step(Step.fromJSON(schema, step.toJSON())))
-  cmpNode(tr.doc, newTR.doc)
-}

@@ -85,7 +85,7 @@ Step.define("ancestor", {
     }
     let newFrom = map.map(step.from).pos
     let newTo = step.from.cmp(step.to) ? map.map(step.to, -1).pos : newFrom
-    return new Step("ancestor", newFrom, newTo, null,
+    return new Step("ancestor", newFrom, newTo,
                     {depth: step.param.types ? step.param.types.length : 0,
                      types, attrs})
   },
@@ -168,7 +168,7 @@ Transform.prototype.lift = function(from, to = from) {
     range = {from: new Pos(path, 0), to: new Pos(path, size)}
     ++depth
   }
-  this.step("ancestor", range.from, range.to, null, {depth: depth})
+  this.step("ancestor", range.from, range.to, {depth: depth})
   return this
 }
 
@@ -194,7 +194,7 @@ Transform.prototype.wrap = function(from, to, type, wrapAttrs) {
   let {range, around, inside} = can
   let types = around.concat(type).concat(inside)
   let attrs = around.map(() => null).concat(wrapAttrs).concat(inside.map(() => null))
-  this.step("ancestor", range.from, range.to, null, {types, attrs})
+  this.step("ancestor", range.from, range.to, {types, attrs})
   if (inside.length) {
     let toInner = range.from.path.slice()
     for (let i = 0; i < around.length + inside.length + 1; i++)
@@ -215,7 +215,7 @@ Transform.prototype.setBlockType = function(from, to, type, attrs) {
       // Ensure all markup that isn't allowed in the new node type is cleared
       this.clearMarkup(new Pos(path, 0), new Pos(path, node.size), type)
       this.step("ancestor", new Pos(path, 0), new Pos(path, this.doc.path(path).size),
-                null, {depth: 1, types: [type], attrs: [attrs]})
+                {depth: 1, types: [type], attrs: [attrs]})
       return false
     }
   })
@@ -227,7 +227,7 @@ Transform.prototype.setBlockType = function(from, to, type, attrs) {
 Transform.prototype.setNodeType = function(pos, type, attrs) {
   let node = this.doc.nodeAfter(pos)
   let path = pos.toPath()
-  this.step("ancestor", new Pos(path, 0), new Pos(path, node.size), null,
+  this.step("ancestor", new Pos(path, 0), new Pos(path, node.size),
             {depth: 1, types: [type], attrs: [attrs]})
   return this
 }

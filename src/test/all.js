@@ -6,7 +6,5 @@ import "./test-slice"
 import "./test-mark"
 import "./test-json"
 import "./test-replace"
-/*
-import "./test-rebase"
 import "./test-trans"
-*/
+// import "./test-rebase"
