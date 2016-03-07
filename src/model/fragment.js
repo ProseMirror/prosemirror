@@ -40,9 +40,12 @@ export class Fragment {
     }
   }
 
-  toArray(from, to) {
+  // :: (number, ?number) → Fragment
+  // Cut out the sub-fragment between the two given positions.
+  cut(from, to) {
     if (to == null) to = this.size
-    let result = []
+    if (from == 0 && to == this.size) return this
+    let result = [], size = 0
     if (to > from) for (let i = 0, pos = 0; pos < to; i++) {
       let child = this.content[i], end = pos + child.size
       if (end > from) {
@@ -53,18 +56,11 @@ export class Fragment {
             child = child.cut(Math.max(0, from - pos - 1), Math.min(child.content.size, to - pos - 1))
         }
         result.push(child)
+        size += child.size
       }
       pos = end
     }
-    return result
-  }
-
-  // :: (number, ?number) → Fragment
-  // Cut out the sub-fragment between the two given positions.
-  cut(from, to) {
-    if (to == null) to = this.size
-    if (from == 0 && to == this.size) return this
-    return new Fragment(this.toArray(from, to))
+    return new Fragment(result, size)
   }
 
   // :: () → Object

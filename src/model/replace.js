@@ -54,7 +54,7 @@ function checkJoin(main, sub) {
 
 function joinType(before, after, depth) {
   let main = before.node[depth], sub = after.node[depth]
-  if (before.offset[depth] == 0 && after.offset[depth] < sub.content.size) {
+  if (depth == before.depth && before.parentOffset == 0 && after.parentOffset < sub.content.size) {
     let tmp = main
     main = sub
     sub = tmp
@@ -63,40 +63,61 @@ function joinType(before, after, depth) {
   return main
 }
 
-// FIXME use helper to merge text nodes, instead of .fromArray
+function addNode(child, target) {
+  let last = target.length - 1
+  if (last >= 0 && child.isText && child.sameMarkup(target[last]))
+    target[last] = child.copy(target[last].text + child.text)
+  else
+    target.push(child)
+}
+
+function addRange(start, end, depth, target) {
+  let node = (end || start).node[depth]
+  let startIndex = 0, endIndex = end ? end.index[depth] : node.childCount
+  if (start) {
+    startIndex = start.index[depth]
+    if (start.depth > depth) {
+      startIndex++
+    } else if (start.parentOffset != start.offset[depth]) {
+      addNode(start.nodeAfter, target)
+      startIndex++
+    }
+  }
+  for (let i = startIndex; i < endIndex; i++) addNode(node.child(i), target)
+  if (end && end.depth == depth && end.parentOffset != end.offset[depth])
+    addNode(end.nodeBefore, target)
+}
 
 function replaceThreeWay(from, start, end, to, depth) {
   let openLeft = from.depth > depth && joinType(from, start, depth + 1)
   let openRight = to.depth > depth && joinType(end, to, depth + 1)
 
-  let content = from.node[depth].content.toArray(0, from.offset[depth])
+  let content = []
+  addRange(null, from, depth, content)
   if (openLeft && openRight && start.index[depth] == end.index[depth]) {
     checkJoin(openLeft, openRight)
     let joined = replaceThreeWay(from, start, end, to, depth + 1)
-    content.push(openLeft.type.close(openLeft.attrs, joined))
+    addNode(openLeft.type.close(openLeft.attrs, joined), content)
   } else {
     if (openLeft)
-      content.push(openLeft.type.close(openLeft.attrs, replaceTwoWay(from, start, depth + 1)))
-    let between = start.node[depth].content.toArray(start.offset[depth] + (openLeft ? start.node[depth + 1].size : 0),
-                                                    end.offset[depth])
-    for (let i = 0; i < between.length; i++) content.push(between[i])
+      addNode(openLeft.type.close(openLeft.attrs, replaceTwoWay(from, start, depth + 1)), content)
+    addRange(start, end, depth, content)
     if (openRight)
-      content.push(openRight.type.close(openRight.attrs, replaceTwoWay(end, to, depth + 1)))
+      addNode(openRight.type.close(openRight.attrs, replaceTwoWay(end, to, depth + 1)), content)
   }
-  let after = to.node[depth].content.toArray(to.offset[depth] + (openRight ? to.node[depth + 1].size : 0))
-  for (let i = 0; i < after.length; i++) content.push(after[i])
-  return Fragment.fromArray(content)
+  addRange(to, null, depth, content)
+  return new Fragment(content)
 }
 
 function replaceTwoWay(from, to, depth) {
-  let content = from.node[depth].content.toArray(0, from.offset[depth])
+  let content = []
+  addRange(null, from, depth, content)
   if (from.depth > depth) {
     let type = joinType(from, to, depth + 1)
-    content.push(type.type.close(type.attrs, replaceTwoWay(from, to, depth + 1)))
+    addNode(type.type.close(type.attrs, replaceTwoWay(from, to, depth + 1)), content)
   }
-  let after = to.node[depth].content.toArray(to.offset[depth] + (from.depth > depth ? to.node[depth + 1].size : 0))
-  for (let i = 0; i < after.length; i++) content.push(after[i])
-  return Fragment.fromArray(content)
+  addRange(to, null, depth, content)
+  return new Fragment(content)
 }
 
 function prepareSliceForReplace(slice, along) {

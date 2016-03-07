@@ -273,7 +273,7 @@ function findIndex(fragment, pos, round = -1) {
   if (pos == fragment.size) { foundOffset = pos; return fragment.content.length }
   if (pos > fragment.size || pos < 0) throw new ModelError(`Position ${pos} outside of fragment (${fragment})`)
   for (let i = 0, curPos = 0;; i++) {
-    let cur = fragment.content[i], end = curPos + cur.size
+    let cur = fragment.child(i), end = curPos + cur.size
     if (end >= pos) {
       if (end == pos || round > 0) { foundOffset = end; return i + 1 }
       foundOffset = curPos; return i
@@ -283,14 +283,13 @@ function findIndex(fragment, pos, round = -1) {
 }
 
 export class PosContext {
-  constructor(pos, node, index, offset) {
+  constructor(pos, node, index, offset, parentOffset) {
     this.pos = pos
     this.node = node
     this.index = index
     this.offset = offset
+    this.parentOffset = parentOffset
   }
-
-  get parentOffset() { return this.offset[this.depth] }
 
   get parent() { return this.node[this.depth] }
 
@@ -298,12 +297,16 @@ export class PosContext {
 
   get nodeAfter() {
     let parent = this.parent, index = this.index[this.depth]
-    return index == parent.childCount ? null : parent.child(index)
+    if (index == parent.childCount) return null
+    let dOff = this.parentOffset - this.offset[this.depth], child = parent.child(index)
+    return dOff ? parent.child(index).cut(dOff) : child
   }
 
   get nodeBefore() {
     let index = this.index[this.depth]
-    return index == 0 ? null : this.parent.child(index)
+    let dOff = this.parentOffset - this.offset[this.depth]
+    if (dOff) return this.parent.child(index).cut(0, dOff)
+    return index == 0 ? null : this.parent.child(index - 1)
   }
 
   sameDepth(other) {
@@ -325,25 +328,26 @@ export class PosContext {
   move(pos) {
     let diff = pos - this.pos
     let index = this.index.slice(), offset = this.offset.slice(), parent = this.parent
-    let i = index[this.depth] = findIndex(parent.content, this.parentOffset + diff)
-    offset[this.depth] = i < parent.childCount && parent.child(i).isText ? this.parentOffset + diff : foundOffset
-    return new PosContext(pos, this.node, index, offset)
+    let parentOffset = this.parentOffset + diff
+    index[this.depth] = findIndex(parent.content, parentOffset)
+    offset[this.depth] = foundOffset
+    return new PosContext(pos, this.node, index, offset, parentOffset)
   }
 
   static resolve(doc, pos) {
-    let nodes = [], index = [], offset = []
-    for (let rem = pos, node = doc;;) {
-      let i = findIndex(node.content, rem)
-      rem -= foundOffset
-      let next = rem && node.child(i)
+    let nodes = [], index = [], offset = [], parentOffset = pos
+    for (let node = doc;;) {
+      let i = findIndex(node.content, parentOffset)
+      let rem = parentOffset - foundOffset
       nodes.push(node)
-      offset.push(foundOffset + (next.isText ? rem : 0))
+      offset.push(foundOffset)
       index.push(i)
-      if (!rem || next.isText) break
-      node = next
-      rem -= 1
+      if (!rem) break
+      node = node.child(i)
+      if (node.isText) break
+      parentOffset = rem - 1
     }
-    return new PosContext(pos, nodes, index, offset)
+    return new PosContext(pos, nodes, index, offset, parentOffset)
   }
 }
 
