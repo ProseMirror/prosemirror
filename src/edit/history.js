@@ -248,6 +248,10 @@ class Branch {
   }
 
   findVersion(version) {
+    // FIXME this is not accurate when the actual revision has fallen
+    // off the end of the history. Current representation of versions
+    // does not allow us to recognize that case.
+    if (version.lastID == null) return {event: 0, step: 0}
     for (let i = this.events.length - 1; i >= 0; i--) {
       let event = this.events[i]
       for (let j = event.length - 1; j >= 0; j--)
