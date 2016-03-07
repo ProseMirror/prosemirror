@@ -512,6 +512,15 @@ export class ProseMirror {
   markAllDirty() {
     this.dirtyNodes.set(this.doc, DIRTY_REDRAW)
   }
+
+  // :: (string) → string
+  // Return a translated string, if a translate function has been supplied,
+  // or the original string.
+  translate(string) {
+    return (typeof this._translate === "function")
+      ? this._translate(string)
+      : `${string}`
+  }
 }
 
 // :: Object
