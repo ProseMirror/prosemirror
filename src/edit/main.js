@@ -517,9 +517,9 @@ export class ProseMirror {
   // Return a translated string, if a translate function has been supplied,
   // or the original string.
   translate(string) {
-    return (typeof this._translate === "function")
-      ? this._translate(string)
-      : `${string}`
+    return (typeof this.options.translate === "function")
+      ? this.options.translate(string)
+      : string
   }
 }
 
