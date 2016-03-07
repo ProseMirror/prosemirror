@@ -36,14 +36,14 @@ export function replace(from, to, slice) {
 
 function replaceOuter(from, to, slice, depth) {
   let index = from.index[depth], node = from.node[depth]
-  if (index == to.index[depth] && depth < from.depth - slice.openFrom) {
+  if (index == to.index[depth] && depth < from.depth - slice.openLeft) {
     let inner = replaceOuter(from, to, slice, depth + 1)
     return node.copy(node.content.replace(index, inner))
   } else if (slice.content.size) {
     let {start, end} = prepareSliceForReplace(slice, from)
-    return node.copy(replaceThreeWay(from, start, end, to, depth))
+    return close(node, replaceThreeWay(from, start, end, to, depth))
   } else {
-    return node.copy(replaceTwoWay(from, to, depth))
+    return close(node, replaceTwoWay(from, to, depth))
   }
 }
 
@@ -88,6 +88,10 @@ function addRange(start, end, depth, target) {
     addNode(end.nodeBefore, target)
 }
 
+function close(node, content) {
+  return node.type.close(node.attrs, content, node.marks)
+}
+
 function replaceThreeWay(from, start, end, to, depth) {
   let openLeft = from.depth > depth && joinType(from, start, depth + 1)
   let openRight = to.depth > depth && joinType(end, to, depth + 1)
@@ -96,14 +100,13 @@ function replaceThreeWay(from, start, end, to, depth) {
   addRange(null, from, depth, content)
   if (openLeft && openRight && start.index[depth] == end.index[depth]) {
     checkJoin(openLeft, openRight)
-    let joined = replaceThreeWay(from, start, end, to, depth + 1)
-    addNode(openLeft.type.close(openLeft.attrs, joined), content)
+    addNode(close(openLeft, replaceThreeWay(from, start, end, to, depth + 1)), content)
   } else {
     if (openLeft)
-      addNode(openLeft.type.close(openLeft.attrs, replaceTwoWay(from, start, depth + 1)), content)
+      addNode(close(openLeft, replaceTwoWay(from, start, depth + 1)), content)
     addRange(start, end, depth, content)
     if (openRight)
-      addNode(openRight.type.close(openRight.attrs, replaceTwoWay(end, to, depth + 1)), content)
+      addNode(close(openRight, replaceTwoWay(end, to, depth + 1)), content)
   }
   addRange(to, null, depth, content)
   return new Fragment(content)
@@ -114,7 +117,7 @@ function replaceTwoWay(from, to, depth) {
   addRange(null, from, depth, content)
   if (from.depth > depth) {
     let type = joinType(from, to, depth + 1)
-    addNode(type.type.close(type.attrs, replaceTwoWay(from, to, depth + 1)), content)
+    addNode(close(type, replaceTwoWay(from, to, depth + 1)), content)
   }
   addRange(to, null, depth, content)
   return new Fragment(content)

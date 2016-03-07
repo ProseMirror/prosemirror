@@ -82,7 +82,7 @@ test("branched",
      doc(blockquote(p("<a>x")), blockquote(p("y<b>"))),
      doc(blockquote(p("foox")), blockquote(p("ybar"))))
 
-test("close_blockquote",
+test("close_blockquote_simple",
      doc(blockquote("<a>", p("hi"), "<b>")),
      null,
      doc(blockquote(p())))

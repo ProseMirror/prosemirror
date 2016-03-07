@@ -63,6 +63,13 @@ export class Fragment {
     return new Fragment(result, size)
   }
 
+  replace(index, node) {
+    let copy = this.content.slice()
+    let size = this.size + node.size - copy[index].size
+    copy[index] = node
+    return new Fragment(copy, size)
+  }
+
   // :: () → Object
   // Create a JSON-serializeable representation of this fragment.
   toJSON() {
