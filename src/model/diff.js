@@ -7,7 +7,7 @@ export function findDiffStart(a, b, pos = 0) {
       return a.childCount == b.childCount ? null : pos
 
     let childA = a.child(i), childB = b.child(i)
-    if (childA == childB) { pos += childA.size; continue }
+    if (childA == childB) { pos += childA.nodeSize; continue }
 
     if (!childA.sameMarkup(childB)) return pos
 
@@ -20,7 +20,7 @@ export function findDiffStart(a, b, pos = 0) {
       let inner = findDiffStart(childA.content, childB.content, pos + 1)
       if (inner != null) return inner
     }
-    pos += childA.size
+    pos += childA.nodeSize
   }
 }
 
@@ -34,9 +34,9 @@ export function findDiffEnd(a, b, posA = a.size, posB = b.size) {
     if (iA == 0 || iB == 0)
       return iA == iB ? null : {a: posA, b: posB}
 
-    let childA = a.child(--iA), childB = b.child(--iB)
+    let childA = a.child(--iA), childB = b.child(--iB), size = childA.nodeSize
     if (childA == childB) {
-      posA -= childA.size; posB -= childB.size
+      posA -= size; posB -= size
       continue
     }
 
@@ -53,6 +53,6 @@ export function findDiffEnd(a, b, posA = a.size, posB = b.size) {
       let inner = findDiffEnd(childA.content, childB.content, posA - 1, posB - 1)
       if (inner) return inner
     }
-    posA -= childA.size; posB -= childB.size
+    posA -= size; posB -= size
   }
 }

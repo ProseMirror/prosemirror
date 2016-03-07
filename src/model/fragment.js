@@ -11,7 +11,7 @@ export class Fragment {
     this.content = content
     this.size = size || 0
     if (size == null) for (let i = 0; i < content.length; i++)
-      this.size += content[i].size
+      this.size += content[i].nodeSize
   }
 
   // :: string
@@ -29,7 +29,7 @@ export class Fragment {
 
   nodesBetween(from, to, f, nodeStart, parent) {
     for (let i = 0, pos = 0; pos < to; i++) {
-      let child = this.content[i], end = pos + child.size
+      let child = this.content[i], end = pos + child.nodeSize
       if (end > from && f(child, nodeStart + pos, parent) !== false && child.content.size) {
         let start = pos + 1
         child.nodesBetween(Math.max(0, from - start),
@@ -47,7 +47,7 @@ export class Fragment {
     if (from == 0 && to == this.size) return this
     let result = [], size = 0
     if (to > from) for (let i = 0, pos = 0; pos < to; i++) {
-      let child = this.content[i], end = pos + child.size
+      let child = this.content[i], end = pos + child.nodeSize
       if (end > from) {
         if (pos < from || end > to) {
           if (child.isText)
@@ -56,7 +56,7 @@ export class Fragment {
             child = child.cut(Math.max(0, from - pos - 1), Math.min(child.content.size, to - pos - 1))
         }
         result.push(child)
-        size += child.size
+        size += child.nodeSize
       }
       pos = end
     }
@@ -65,7 +65,7 @@ export class Fragment {
 
   replace(index, node) {
     let copy = this.content.slice()
-    let size = this.size + node.size - copy[index].size
+    let size = this.size + node.nodeSize - copy[index].nodeSize
     copy[index] = node
     return new Fragment(copy, size)
   }
@@ -90,7 +90,7 @@ export class Fragment {
     let joined, size = 0
     for (let i = 0; i < array.length; i++) {
       let node = array[i]
-      size += node.size
+      size += node.nodeSize
       if (i && node.isText && array[i - 1].sameMarkup(node)) {
         if (!joined) joined = array.slice(0, i)
         joined[joined.length - 1] = node.copy(joined[joined.length - 1].text + node.text)
@@ -110,7 +110,7 @@ export class Fragment {
     if (!nodes) return Fragment.empty
     if (nodes instanceof Fragment) return nodes
     if (Array.isArray(nodes)) return this.fromArray(nodes)
-    return new Fragment([nodes], nodes.size)
+    return new Fragment([nodes], nodes.nodeSize)
   }
 
   // :: ?Node
@@ -132,8 +132,8 @@ export class Fragment {
   forEach(f) {
     for (let i = 0, p = 0; i < this.content.length; i++) {
       let child = this.content[i]
-      f(child, p)
-      p += child.size
+      f(child, i, p)
+      p += child.nodeSize
     }
   }
 }

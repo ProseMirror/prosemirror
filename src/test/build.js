@@ -38,12 +38,12 @@ function flatten(children, f) {
     } else if (child.flat) {
       for (let j = 0; j < child.flat.length; j++) {
         let node = f(child.flat[j])
-        pos += node.size
+        pos += node.nodeSize
         result.push(node)
       }
     } else {
       let node = f(child)
-      pos += node.size
+      pos += node.nodeSize
       result.push(node)
     }
   }

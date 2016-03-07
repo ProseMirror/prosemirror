@@ -43,7 +43,7 @@ export class Node {
   // The size of this node. For text node, this is the amount of
   // characters. For leaf nodes, it is one. And for non-leaf nodes, it
   // is the size of the content plus two (the start and end token).
-  get size() { return this.type.contains ? 2 + this.content.size : 1 }
+  get nodeSize() { return this.type.contains ? 2 + this.content.size : 1 }
 
   // :: number
   // The number of children that the node has.
@@ -208,7 +208,7 @@ export class Node {
       obj.attrs = this.attrs
       break
     }
-    if (this.size)
+    if (this.content.size)
       obj.content = this.content.toJSON()
     if (this.marks.length)
       obj.marks = this.marks.map(n => n.toJSON())
@@ -243,7 +243,7 @@ export class TextNode extends Node {
 
   get textContent() { return this.text }
 
-  get size() { return this.text.length }
+  get nodeSize() { return this.text.length }
 
   mark(marks) {
     return new TextNode(this.type, this.attrs, this.text, marks)
@@ -273,7 +273,7 @@ function findIndex(fragment, pos, round = -1) {
   if (pos == fragment.size) { foundOffset = pos; return fragment.content.length }
   if (pos > fragment.size || pos < 0) throw new ModelError(`Position ${pos} outside of fragment (${fragment})`)
   for (let i = 0, curPos = 0;; i++) {
-    let cur = fragment.child(i), end = curPos + cur.size
+    let cur = fragment.child(i), end = curPos + cur.nodeSize
     if (end >= pos) {
       if (end == pos || round > 0) { foundOffset = end; return i + 1 }
       foundOffset = curPos; return i
