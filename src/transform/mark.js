@@ -16,7 +16,7 @@ import {copyInline, copyStructure} from "./tree"
 Step.define("addMark", {
   apply(doc, step) {
     return new StepResult(copyStructure(doc, step.from, step.to, (node, from, to) => {
-      if (!node.type.canContainMark(step.param)) return node
+      if (!node.type.canContainMark(step.param.type)) return node
       return copyInline(node, from, to, node => {
         return node.mark(step.param.addToSet(node.marks))
       })
