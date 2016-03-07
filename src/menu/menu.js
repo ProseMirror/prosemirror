@@ -29,8 +29,9 @@ const prefix = "ProseMirror-menu"
 
 function title(pm, command) {
   if (!command.label) return null
+  let label = pm.translate(command.label)
   let key = command.name && pm.keyForCommand(command.name)
-  return key ? command.label + " (" + key + ")" : command.label
+  return key ? label + " (" + key + ")" : label
 }
 
 // ;; Wraps a [command](#Command) so that it can be rendered in a
@@ -74,7 +75,8 @@ export class MenuCommand {
       dom = getIcon(cmd.name, disp)
       if (!disabled && cmd.active(pm)) dom.classList.add(prefix + "-active")
     } else if (disp.type == "label") {
-      dom = elt("div", null, disp.label || cmd.spec.label)
+      let label = pm.translate(disp.label || cmd.spec.label)
+      dom = elt("div", null, label)
     } else {
       throw new AssertionError("Unsupported command display style: " + disp.type)
     }
@@ -173,6 +175,7 @@ export class Dropdown {
     if (!items.length) return
 
     let label = (this.options.activeLabel && this.findActiveIn(this, pm)) || this.options.label
+    label = pm.translate(label)
     let dom = elt("div", {class: prefix + "-dropdown " + (this.options.class || ""),
                           style: this.options.css,
                           title: this.options.title}, label)
@@ -253,7 +256,7 @@ export class DropdownSubmenu {
     let items = renderDropdownItems(resolveGroup(pm, this.content), pm)
     if (!items.length) return
 
-    let label = elt("div", {class: prefix + "-submenu-label"}, this.options.label)
+    let label = elt("div", {class: prefix + "-submenu-label"}, pm.translate(this.options.label))
     let wrap = elt("div", {class: prefix + "-submenu-wrap"}, label,
                    elt("div", {class: prefix + "-submenu"}, items))
     label.addEventListener("mousedown", e => {
