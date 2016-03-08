@@ -16,7 +16,7 @@ Step.define("split", {
     let cut = [parent.copy(), step.param ? step.param.type.create(step.attrs) : parent.copy()]
     return StepResult.fromReplace(doc, pos.pos, pos.pos, new Slice(Fragment.fromArray(cut), 1, 1))
   },
-  getMap(step) {
+  posMap(step) {
     return new PosMap([new ReplacedRange(step.from, 0, 2)])
   },
   invert(step) {

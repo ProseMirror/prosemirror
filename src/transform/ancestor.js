@@ -1,9 +1,9 @@
-import {Pos, Fragment} from "../model"
+import {Pos, Slice} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
 import {isFlatRange} from "./tree"
-import {PosMap, MovedRange, ReplacedRange} from "./map"
+import {PosMap, ReplacedRange} from "./map"
 
 // !! **`ancestor`**
 //    : Change the stack of nodes that wrap the part of the document
@@ -21,73 +21,60 @@ import {PosMap, MovedRange, ReplacedRange} from "./map"
 //      should be an array of `NodeType`s, and the second, optionally,
 //      an array of attribute objects.
 
+function isFlatRange(from, to) {
+  if (from.depth != to.depth) return false
+  for (let i = 0; i < from.depth; i++)
+    if (from.index[i] != to.index[i]) return false
+  return from.parentOffset <= to.parentOffset
+}
+
 Step.define("ancestor", {
   apply(doc, step) {
-    let from = step.from, to = step.to
-    if (!isFlatRange(from, to)) return null
-    let toParent = from.path, start = from.offset, end = to.offset
-    let {depth = 0, types = [], attrs = []} = step.param
-    let inner = doc.path(from.path)
-    for (let i = 0; i < depth; i++) {
-      if (start > 0 || end < doc.path(toParent).size || toParent.length == 0) return null
-      start = toParent[toParent.length - 1]
-      end = start + 1
-      toParent = toParent.slice(0, toParent.length - 1)
-    }
-    if (depth == 0 && types.length == 0) return null
+    let from = doc.resolve(step.from), to = doc.resolve(step.to)
+    if (!isFlatRange(from, to)) return StepResult.fail("Not a flat range")
 
-    let parent = doc.path(toParent), parentSize = parent.size, newParent
-    if (parent.type.locked) return null
+    let {depth = 0, types = [], attrs = []} = step.param
+    if (depth == 0 && types.length == 0) return StepResult.ok(doc)
+
+    let startDepth = from.depth
+    for (let i = 0; i < depth; i++) {
+      let parent = from.node[startDepth]
+      if (from.offset[startDepth] > 0 || to.offset[startDepth] < parent.content.size)
+        return StepResult.fail("Parent at depth " + i + " not fully covered")
+      startDepth--
+    }
+
+    let inner = from.parent, slice
     if (types.length) {
       let lastWrapper = types[types.length - 1]
-      let content = inner.content.slice(from.offset, to.offset)
-      if (!parent.type.canContainType(types[0]) ||
-          content.some(n => !lastWrapper.canContain(n)) ||
-          !inner.size && !lastWrapper.canBeEmpty ||
-          lastWrapper.locked)
-        return null
-      let node = null
+      let content = inner.content.cut(from.parentOffset, to.parentOffset)
+      if (!lastWrapper.checkContent(content, attrs[types.length - 1]))
+        return StepResult.fail("Content can not be wrapped in ancestor " + lastWrapper.node.type)
       for (let i = types.length - 1; i >= 0; i--)
-        node = types[i].create(attrs[i], node || content)
-      newParent = parent.splice(start, end, Fragment.from(node))
+        content = types[i].create(attrs[i], content)
+      slice = new Slice(content, 0, 0)
     } else {
-      if (!parent.type.canContainFragment(inner.content) ||
-          !inner.size && start == 0 && end == parent.size && !parent.type.canBeEmpty)
-        return null
-      newParent = parent.splice(start, end, inner.content)
+      slice = new Slice(inner.content, 0, 0)
     }
-    let copy = doc.replaceDeep(toParent, newParent)
-
-    let toInner = toParent.slice()
-    for (let i = 0; i < types.length; i++) toInner.push(i ? 0 : start)
-    let startOfInner = new Pos(toInner, types.length ? 0 : start)
-    let replaced = null
-    let insertedSize = types.length ? 1 : to.offset - from.offset
-    if (depth != types.length || depth > 1 || types.length > 1) {
-      let posBefore = new Pos(toParent, start)
-      let posAfter1 = new Pos(toParent, end), posAfter2 = new Pos(toParent, start + insertedSize)
-      let endOfInner = new Pos(toInner, startOfInner.offset + (to.offset - from.offset))
-      replaced = [new ReplacedRange(posBefore, from, posBefore, startOfInner),
-                  new ReplacedRange(to, posAfter1, endOfInner, posAfter2, posAfter1, posAfter2)]
-    }
-    let moved = [new MovedRange(from, to.offset - from.offset, startOfInner)]
-    if (end - start != insertedSize)
-      moved.push(new MovedRange(new Pos(toParent, end), parentSize - end,
-                                new Pos(toParent, start + insertedSize)))
-    return new StepResult(copy, new PosMap(moved, replaced))
+    return StepResult.fromReplace(doc, from.pos - depth, to.pos - depth, slice)
   },
-  invert(step, oldDoc, map) {
+  posMap(step) {
+    let depth = step.param.depth || 0, newDepth = step.param.types ? step.param.types.length : 0
+    return new PosMap([new ReplacedRange(step.from - depth, depth, newDepth),
+                       new ReplacedRange(step.to, depth, newDepth)])
+  },
+  invert(step, oldDoc) {
     let types = [], attrs = []
-    if (step.param.depth) for (let i = 0; i < step.param.depth; i++) {
-      let parent = oldDoc.path(step.from.path.slice(0, step.from.path.length - i))
+    let from = oldDoc.resolve(step.from)
+    let oldDepth = step.param.depth || 0, newDepth = step.param.types ? step.param.types.length : 0
+    for (let i = 0; i < oldDepth; i++) {
+      let parent = from.node[from.depth - i]
       types.unshift(parent.type)
       attrs.unshift(parent.attrs)
     }
-    let newFrom = map.map(step.from).pos
-    let newTo = step.from.cmp(step.to) ? map.map(step.to, -1).pos : newFrom
-    return new Step("ancestor", newFrom, newTo,
-                    {depth: step.param.types ? step.param.types.length : 0,
-                     types, attrs})
+    let newFrom = step.from - oldDepth + newDepth
+    let newTo = step.to - oldDepth + newDepth
+    return new Step("ancestor", newFrom, newTo, {depth: newDepth, types, attrs})
   },
   paramToJSON(param) {
     return {depth: param.depth,
@@ -101,76 +88,67 @@ Step.define("ancestor", {
   }
 })
 
-function canBeLifted(doc, range) {
-  let content = [doc.path(range.from.path)], unwrap = false
-  for (;;) {
-    let parentDepth = -1
-    for (let node = doc, i = 0; i < range.from.path.length; i++) {
-      if (!content.some(inner => !node.type.canContainContent(inner.type)))
-        parentDepth = i
-      node = node.child(range.from.path[i])
-    }
-    if (parentDepth > -1)
-      return {path: range.from.path.slice(0, parentDepth), unwrap}
-    if (unwrap || !content[0].isBlock) return null
-    content = content[0].content.slice(range.from.offset, range.to.offset)
-    unwrap = true
-  }
+// :: (Node, number, ?number) → bool
+// Tells you whether the range in the given positions' shared
+// ancestor, or any of _its_ ancestor nodes, can be lifted out of a
+// parent.
+export function canLift(doc, from, to) {
+  return !!findLiftable(doc.resolve(from), doc.resolve(to))
 }
 
-// :: (Node, Pos, ?Pos) → bool
-// Tells you whether the given positions' [sibling
-// range](#Node.siblingRange), or any of its ancestor nodes, can be
-// lifted out of a parent.
-export function canLift(doc, from, to) {
-  let range = doc.siblingRange(from, to || from)
-  let found = canBeLifted(doc, range)
-  if (found) return {found, range}
+function findLiftable(from, to) {
+  let shared = from.sameDepth(to), parent = from.node[shared]
+  for (let depth = shared; depth >= 0; --depth)
+    if (from.node[depth].type.canContainContent(parent.type))
+      return {depth, shared, unwrap: false}
+
+  if (parent.isBlock) for (let depth = shared; depth >= 0; --depth) {
+    let target = from.node[depth]
+    for (let i = from.index[shared], e = Math.min(to.index[shared] + 1, parent.childCount); i < e; i++)
+      if (!target.type.canContainContent(parent.child(i).type)) continue
+    return {depth, shared, unwrap: true}
+  }
 }
 
 // :: (Pos, ?Pos) → Transform
 // Lift the nearest liftable ancestor of the [sibling
 // range](#Node.siblingRange) of the given positions out of its
 // parent (or do nothing if no such node exists).
-Transform.prototype.lift = function(from, to = from) {
-  let can = canLift(this.doc, from, to)
-  if (!can) return this
-  let {found, range} = can
-  let depth = range.from.path.length - found.path.length
-  let rangeNode = found.unwrap && this.doc.path(range.from.path)
+Transform.register("lift", function(from, to = from) {
+  let rFrom = this.doc.resolve(from), rTo = this.doc.resolve(to)
+  let liftable = findLiftable(rFrom, rTo)
+  if (!liftable) return this.fail("No valid lift target")
 
-  for (let d = 0, pos = range.to;; d++) {
-    if (pos.offset < this.doc.path(pos.path).size) {
-      this.split(pos, depth - d)
-      break
-    }
-    if (d == depth - 1) break
-    pos = pos.shorten(null, 1)
+  let {depth, shared, unwrap} = liftable
+  let startOff = 0, endOff = 0
+  let result = this
+
+  for (let d = shared; d > depth; d--) if (rTo.index[d] < rTo.node[d].childCount) {
+    result = result.split(rTo.after(d + 1), d - depth)
+    endOff += d - depth
+    break
   }
-  for (let d = 0, pos = range.from;; d++) {
-    if (pos.offset > 0) {
-      this.split(pos, depth - d)
-      let cut = range.from.path.length - depth, path = pos.path.slice(0, cut).concat(pos.path[cut] + 1)
-      while (path.length < range.from.path.length) path.push(0)
-      range = {from: new Pos(path, 0), to: new Pos(path, range.to.offset - range.from.offset)}
-      break
-    }
-    if (d == depth - 1) break
-    pos = pos.shorten()
+
+  for (let d = shared; d > depth; d--) if (rFrom.index[d] > 0) {
+    result = result.split(rFrom.before(d + 1), d - depth)
+    startOff += d - depth
+    endOff += 2 * (d - depth)
+    break
   }
-  if (found.unwrap) {
-    for (let i = range.to.offset - 1; i > range.from.offset; i--)
-      this.join(new Pos(range.from.path, i))
-    let size = 0
-    for (let i = rangeNode.iter(range.from.offset, range.to.offset), child; child = i.next().value;)
-      size += child.size
-    let path = range.from.path.concat(range.from.offset)
-    range = {from: new Pos(path, 0), to: new Pos(path, size)}
+
+  if (unwrap) {
+    let joinPos = rFrom.after(shared + 1) + startOff
+    for (let i = rFrom.index[shared] + 1, e = rTo.index[shared] + 1; i < e; i++) {
+      result = result.join(joinPos)
+      joinPos += parent.child(i).nodeSize
+      endOff -= 2
+    }
+    startOff++
+    endOff--
     ++depth
   }
-  this.step("ancestor", range.from, range.to, {depth: depth})
-  return this
-}
+  return result.step("ancestor", rFrom.before(shared + 1) + startOff, rTo.after(shared + 1) + endOff, {depth})
+})
 
 // :: (Node, Pos, ?Pos, NodeType) → bool
 // Determines whether the [sibling range](#Node.siblingRange) of the

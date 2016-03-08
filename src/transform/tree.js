@@ -1,10 +1,3 @@
-export function isFlatRange(from, to) {
-  if (from.path.length != to.path.length) return false
-  for (let i = 0; i < from.path.length; i++)
-    if (from.path[i] != to.path[i]) return false
-  return from.offset <= to.offset
-}
-
 function canBeJoined(node, offset, depth) {
   if (!depth || offset == 0 || offset == node.size) return false
   let left = node.child(offset - 1), right = node.child(offset)

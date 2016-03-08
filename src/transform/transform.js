@@ -30,7 +30,7 @@ export class Transform {
     let result = step.apply(this.doc)
     if (result.doc)
       return new Transform(result.doc, null,
-                           this.history.concat({doc: this.doc, map: step.getMap(this.doc), step}))
+                           this.history.concat({doc: this.doc, map: step.posMap(this.doc), step}))
     else
       return new Transform(null, result.failed, this.history)
   }
@@ -40,6 +40,10 @@ export class Transform {
     if (this.failed) return this
     let ran = action(this)
     return ran.failed ? this : ran
+  }
+
+  fail(value) {
+    return new Transform(null, value, this.history)
   }
 
   // :: (number, ?number) → MapResult

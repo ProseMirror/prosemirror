@@ -40,9 +40,9 @@ export class Step {
     return steps[this.type].apply(doc, this)
   }
 
-  getMap() {
+  posMap() {
     let type = steps[this.type]
-    return type.getMap ? type.getMap(this) : PosMap.empty
+    return type.posMap ? type.posMap(this) : PosMap.empty
   }
 
   // :: (Node, PosMap) → Step
@@ -58,24 +58,10 @@ export class Step {
   // version of that step with its positions adjusted, or `null` if
   // the step was entirely deleted by the mapping.
   map(remapping) {
-    let allDeleted = true
-    let from = null, to = null
-
-    if (this.from) {
-      let result = remapping.map(this.from, 1)
-      from = result.pos
-      if (!result.deleted) allDeleted = false
-    }
-    if (this.to) {
-      if (this.to == this.from) {
-        to = from
-      } else {
-        let result = remapping.map(this.to, -1)
-        to = Math.max(result.pos, from)
-        if (!result.deleted) allDeleted = false
-      }
-    }
-    return allDeleted ? null : new Step(this.type, from, to, this.param)
+    let from = remapping.map(this.from, 1)
+    let to = this.to == this.from ? from : remapping.map(this.to, -1)
+    if (from.deleted && to.deleted) return null
+    return new Step(this.type, from.pos, Math.max(from.pos, to.pos), this.param)
   }
 
   // :: () → Object
@@ -132,7 +118,7 @@ export class StepResult {
     try {
       return StepResult.ok(doc.replace(from, to, slice))
     } catch (e) {
-      if (e instanceof ReplaceError) return StepResult.fail(e)
+      if (e instanceof ReplaceError) return StepResult.fail(e.message)
       throw e
     }
   }

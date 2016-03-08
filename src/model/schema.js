@@ -268,7 +268,10 @@ export class NodeType extends SchemaItem {
 
   // FIXME use declarative schema, maybe tie in with .contains
   checkContent(content, _attrs) {
-    return content.size > 0 || this.canBeEmpty
+    if (content.size == 0) return this.canBeEmpty
+    for (let i = 0; i < content.childCount; i++)
+      if (!this.canContain(content.child(i))) return false
+    return true
   }
 
   fixContent(_content, _attrs) {

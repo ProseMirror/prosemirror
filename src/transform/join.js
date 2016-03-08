@@ -13,10 +13,10 @@ Step.define("join", {
   apply(doc, step) {
     let from = doc.resolve(step.from), to = doc.resolve(step.to)
     if (from.parentOffset < from.parent.content.size || to.parentOffset > 0 || to.pos - from.pos != 2)
-      return StepResult.fail(new Error("Join positions not around a split"))
+      return StepResult.fail("Join positions not around a split")
     return StepResult.fromReplace(doc, from.pos, to.pos, Slice.empty)
   },
-  getMap(step) {
+  posMap(step) {
     return new PosMap([new ReplacedRange(step.from, 2, 0)])
   },
   invert(step) {
@@ -42,7 +42,7 @@ export function joinPoint(doc, pos, dir = -1) {
   for (let d = r.depth; d >= 0; d--) {
     if (joinableBlocks(doc, pos)) return pos
     if (pos.depth == 0) return null
-    pos = dir < 0 ? r.start(d) - 1 : r.end(d) + 1
+    pos = dir < 0 ? r.before(d) : r.after(d)
   }
 }
 

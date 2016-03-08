@@ -332,6 +332,9 @@ export class ResolvedPos {
     return this.start(depth) + this.node[depth].content.size
   }
 
+  before(depth) { return this.start(depth) - 1 }
+  after(depth) { return this.end(depth) + 1 }
+
   move(pos) {
     let diff = pos - this.pos
     let index = this.index.slice(), offset = this.offset.slice(), parent = this.parent
