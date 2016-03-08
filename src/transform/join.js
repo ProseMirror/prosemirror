@@ -11,7 +11,7 @@ import {PosMap, ReplacedRange} from "./map"
 
 Step.define("join", {
   apply(doc, step) {
-    let from = doc.context(step.from), to = doc.context(step.to)
+    let from = doc.resolve(step.from), to = doc.resolve(step.to)
     if (from.parentOffset < from.parent.content.size || to.parentOffset > 0 || to.pos - from.pos != 2)
       return StepResult.fail(new Error("Join positions not around a split"))
     return StepResult.fromReplace(doc, from.pos, to.pos, Slice.empty)
@@ -28,7 +28,7 @@ Step.define("join", {
 // Test whether the blocks before and after a given position can be
 // joined.
 export function joinableBlocks(doc, pos) {
-  let cx = doc.context(pos), before = cx.nodeBefore, after = cx.nodeAfter
+  let r = doc.resolve(pos), before = r.nodeBefore, after = r.nodeAfter
   return before && after && !before.isText && before.type.contains &&
     before.type.canContainContent(after.type)
 }
@@ -38,11 +38,11 @@ export function joinableBlocks(doc, pos) {
 // block before (or after if `dir` is positive). Returns the joinable
 // point, if any.
 export function joinPoint(doc, pos, dir = -1) {
-  let cx = doc.context(pos)
-  for (let d = cx.depth; d >= 0; d--) {
+  let r = doc.resolve(pos)
+  for (let d = r.depth; d >= 0; d--) {
     if (joinableBlocks(doc, pos)) return pos
     if (pos.depth == 0) return null
-    pos = dir < 0 ? cx.start(d) - 1 : cx.end(d) + 1
+    pos = dir < 0 ? r.start(d) - 1 : r.end(d) + 1
   }
 }
 

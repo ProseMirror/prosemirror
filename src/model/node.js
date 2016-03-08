@@ -122,15 +122,15 @@ export class Node {
   slice(from, to = this.content.size) {
     if (from == to) return Slice.empty
 
-    from = getContext(this, from)
-    to = getContext(this, to)
+    from = this.resolve(from)
+    to = this.resolve(to)
     let depth = from.sameDepth(to), start = from.start(depth)
     let content = from.node[depth].content.cut(from.pos - start, to.pos - start)
     return new Slice(content, from.depth - depth, to.depth - depth)
   }
 
   replace(from, to, slice) {
-    return replace(getContext(this, from), getContext(this, to), slice)
+    return replace(this.resolve(from), this.resolve(to), slice)
   }
 
   // :: (number) → Node
@@ -153,8 +153,8 @@ export class Node {
     this.content.nodesBetween(from, to, f, pos, this)
   }
 
-  context(pos, cache) {
-    return cache === false ? PosContext.resolve(this, pos) : getContext(this, pos)
+  resolve(pos, cache) {
+    return cache === false ? ResolvedPos.resolve(this, pos) : resolveCached(this, pos)
   }
 
   // :: (number) → [Mark]
@@ -162,7 +162,7 @@ export class Node {
   // position is at the start of a non-empty node, those of the node
   // after it.
   marksAt(pos) {
-    let cx = this.context(pos), top = cx.parent, index = cx.index[cx.depth]
+    let r = this.resolve(pos), top = r.parent, index = r.index[r.depth]
     let leaf = index ? top.child(index - 1) : index < top.childCount ? top.child(index) : null
     return leaf ? leaf.marks : emptyArray
   }
@@ -289,7 +289,7 @@ function findIndex(fragment, pos, round = -1) {
   }
 }
 
-export class PosContext {
+export class ResolvedPos {
   constructor(pos, node, index, offset, parentOffset) {
     this.pos = pos
     this.node = node
@@ -338,7 +338,7 @@ export class PosContext {
     let parentOffset = this.parentOffset + diff
     index[this.depth] = findIndex(parent.content, parentOffset)
     offset[this.depth] = foundOffset
-    return new PosContext(pos, this.node, index, offset, parentOffset)
+    return new ResolvedPos(pos, this.node, index, offset, parentOffset)
   }
 
   static resolve(doc, pos) {
@@ -354,15 +354,15 @@ export class PosContext {
       if (node.isText) break
       parentOffset = rem - 1
     }
-    return new PosContext(pos, nodes, index, offset, parentOffset)
+    return new ResolvedPos(pos, nodes, index, offset, parentOffset)
   }
 }
 
-let contextCache = [], contextCachePos = 0, contextCacheSize = 6
-function getContext(doc, pos) {
+let resolveCache = [], resolveCachePos = 0, resolveCacheSize = 6
+function resolveCached(doc, pos) {
   let near = null
-  for (let i = 0; i < contextCache.length; i++) {
-    let cached = contextCache[i]
+  for (let i = 0; i < resolveCache.length; i++) {
+    let cached = resolveCache[i]
     if (cached.node[0] == doc) {
       if (cached.pos == pos) return cached
       let start = cached.start()
@@ -370,8 +370,8 @@ function getContext(doc, pos) {
         near = cached
     }
   }
-  let result = near ? near.move(pos) : PosContext.resolve(doc, pos)
-  contextCache[contextCachePos] = result
-  contextCachePos = (contextCachePos + 1) % contextCacheSize
+  let result = near ? near.move(pos) : ResolvedPos.resolve(doc, pos)
+  resolveCache[resolveCachePos] = result
+  resolveCachePos = (resolveCachePos + 1) % resolveCacheSize
   return result
 }

@@ -128,6 +128,6 @@ function prepareSliceForReplace(slice, along) {
   // FIXME only copy up to start depth? rest won't be used
   for (let i = extra - 1; i >= 0; i--)
     node = along.node[i].copy(Fragment.from(node))
-  return {start: node.context(slice.openLeft + extra, false),
-          end: node.context(node.content.size - slice.openRight - extra, false)}
+  return {start: node.resolve(slice.openLeft + extra, false),
+          end: node.resolve(node.content.size - slice.openRight - extra, false)}
 }
