@@ -214,10 +214,10 @@ split("change_type",
       {type: "paragraph"})
 split("blockquote_start",
       doc(blockquote("<a>", p("x"))),
-      doc(blockquote(p()), blockquote(p("x"))))
+      "fail")
 split("blockquote_end",
       doc(blockquote(p("x"), "<a>")),
-      doc(blockquote(p("x")), blockquote(p())))
+      "fail")
 
 /*
 function lift(name, doc, expect) {

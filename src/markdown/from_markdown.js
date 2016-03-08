@@ -1,7 +1,7 @@
 import markdownit from "markdown-it"
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmMark, StrongMark, LinkMark, CodeMark, Mark} from "../model"
+        EmMark, StrongMark, LinkMark, CodeMark, Mark, Fragment} from "../model"
 import {defineSource} from "../format"
 import {AssertionError} from "../util/error"
 import sortedInsert from "../util/sortedinsert"
@@ -137,10 +137,15 @@ class MarkdownParseState {
     }
   }
 
-  // :: (NodeType, ?Object, ?[Node]) → Node
+  // :: (NodeType, ?Object, ?[Node]) → ?Node
   // Add a node at the current position.
   addNode(type, attrs, content) {
-    let node = type.close(attrs, content, this.marks)
+    content = Fragment.from(content)
+    if (!type.checkContent(content, attrs)) {
+      content = type.fixContent(content, attrs)
+      if (!content) return null
+    }
+    let node = type.create(attrs, content, this.marks)
     this.push(node)
     return node
   }
@@ -151,7 +156,7 @@ class MarkdownParseState {
     this.stack.push({type: type, attrs: attrs, content: []})
   }
 
-  // :: () → Node
+  // :: () → ?Node
   // Close and return the node that is currently on top of the stack.
   closeNode() {
     if (this.marks.length) this.marks = noMarks
@@ -239,11 +244,11 @@ ListItem.register("parseMarkdown", "list_item", {parse: "block"})
 BulletList.register("parseMarkdown", "bullet_list", {parse: "block"})
 
 OrderedList.register("parseMarkdown", "ordered_list", {parse: "block", attrs: (state, tok) => ({
-  order: Number(state.getAttr(tok, "order") || 1)
+  order: state.getAttr(tok, "order") || "1"
 })})
 
 Heading.register("parseMarkdown", "heading", {parse: "block", attrs: function(_, tok) {
-  return {level: Math.min(this.maxLevel, +tok.tag.slice(1))}
+  return {level: "" + Math.min(this.maxLevel, +tok.tag.slice(1))}
 }})
 
 function trimTrailingNewline(str) {

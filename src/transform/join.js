@@ -1,4 +1,4 @@
-import {Slice} from "../model"
+import {Slice, ReplaceError} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
@@ -12,12 +12,18 @@ import {PosMap, ReplacedRange} from "./map"
 Step.define("join", {
   apply(doc, step) {
     let from = doc.context(step.from), to = doc.context(step.to)
-    // Positions must be directly around a split
     if (from.parentOffset < from.parent.content.size || to.parentOffset > 0 || to.pos - from.pos != 2)
-      return null
+      return StepResult.fail(new Error("Join positions not around a split"))
 
-    return new StepResult(doc.replace(from.pos, to.pos, Slice.empty),
-                          new PosMap([new ReplacedRange(from.pos, 2, 0)]))
+    try {
+      return StepResult.ok(doc.replace(from.pos, to.pos, Slice.empty))
+    } catch (e) {
+      if (e instanceof ReplaceError) return StepResult.fail(e)
+      throw e
+    }
+  },
+  getMap(step) {
+    return new PosMap([new ReplacedRange(step.from, 2, 0)])
   },
   invert(step) {
     return new Step("split", step.from, step.from) // FIXME restore types
@@ -48,7 +54,6 @@ export function joinPoint(doc, pos, dir = -1) {
 
 // :: (number) → Transform
 // Join the blocks around the given position.
-Transform.prototype.join = function(at) {
-  this.step("join", at - 1, at + 1)
-  return this
-}
+Transform.define("join", function(at) {
+  return this.step("join", at - 1, at + 1)
+})

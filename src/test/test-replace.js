@@ -82,16 +82,6 @@ test("branched",
      doc(blockquote(p("<a>x")), blockquote(p("y<b>"))),
      doc(blockquote(p("foox")), blockquote(p("ybar"))))
 
-test("close_blockquote_simple",
-     doc(blockquote("<a>", p("hi"), "<b>")),
-     null,
-     doc(blockquote(p())))
-
-test("close_blockquote_joined",
-     doc(blockquote("<a>", p("hi")), "<b>"),
-     doc(blockquote("hi", "<a>"), "<b>"),
-     doc(blockquote(p())))
-
 test("keep_first",
      doc(h1("foo<a>bar"), "<b>"),
      doc(p("foo<a>baz"), "<b>"),
@@ -140,3 +130,9 @@ err("bad_join_delete",
     doc(blockquote(p("a"), "<a>"), ul("<b>", li(p("b")))),
     null,
     "can not join")
+
+err("empty_blockquote",
+    doc(blockquote("<a>", p("hi")), "<b>"),
+    doc(blockquote("hi", "<a>"), "<b>"),
+    "invalid content")
+

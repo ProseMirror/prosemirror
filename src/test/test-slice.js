@@ -1,7 +1,7 @@
 import {doc, p, li, ul, em, a, blockquote} from "./build"
 
 import {defTest} from "./tests"
-import {cmpFragment, cmp} from "./cmp"
+import {cmpNode, cmp} from "./cmp"
 
 function t(name, doc, expect, openLeft, openRight) {
   defTest("slice_" + name, () => {
@@ -12,7 +12,7 @@ function t(name, doc, expect, openLeft, openRight) {
       slice = doc.slice(0, doc.tag.a)
     else
       slice = doc.slice(doc.tag.b)
-    cmpFragment(slice.content, expect.content)
+    cmpNode(slice.content, expect.content)
     cmp(slice.openLeft, openLeft, "openLeft")
     cmp(slice.openRight, openRight, "openRight")
   })

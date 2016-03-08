@@ -223,7 +223,7 @@ export class ProseMirror {
   //
   // Has the following property:
   apply(transform, options = nullOptions) {
-    if (transform.doc == this.doc) return false
+    if (!transform.doc.eq(this.doc)) return false
     if (transform.docs[0] != this.doc && findDiffStart(transform.docs[0], this.doc))
       throw new AssertionError("Applying a transform that does not start with the current document")
 

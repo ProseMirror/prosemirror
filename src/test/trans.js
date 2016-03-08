@@ -1,17 +1,18 @@
 import {Transform, Step, Remapping} from "../transform"
 import {cmpNode, cmpStr} from "./cmp"
+import {Failure} from "./failure"
 
 function tag(tr, name) {
-  return tr.map(tr.docs[0].tag[name]).pos
+  return tr.map(tr.before.tag[name]).pos
 }
 
-class Tr {
+class DelayedTransform {
   constructor(steps) {
     this.steps = steps
   }
 
   plus(f) {
-    return new Tr(this.steps.concat(f))
+    return new DelayedTransform(this.steps.concat(f))
   }
 
   add(mark, from, to) {
@@ -67,17 +68,19 @@ class Tr {
 
   get(doc) {
     let tr = new Transform(doc)
-    for (let i = 0; i < this.steps.length; i++) this.steps[i](tr)
+    for (let i = 0; i < this.steps.length; i++) tr = this.steps[i](tr)
     return tr
   }
 }
 
-export const tr = new Tr([])
+export const tr = new DelayedTransform([])
 
 function invert(transform) {
-  let doc = transform.doc, out = new Transform(doc)
-  for (let i = transform.steps.length - 1; i >= 0; i--)
-    out.step(transform.steps[i].invert(transform.docs[i], transform.maps[i]))
+  let out = new Transform(transform.doc)
+  for (let i = transform.history.length - 1; i >= 0; i--) {
+    let hist = transform.history[i]
+    out = out.step(hist.step.invert(out.doc, hist.map))
+  }
   return out
 }
 
@@ -94,16 +97,24 @@ function testMapping(maps, pos, newPos, label) {
 
 function testStepJSON(tr) {
   let newTR = new Transform(tr.before)
-  tr.steps.forEach(step => newTR.step(Step.fromJSON(tr.doc.type.schema, step.toJSON())))
+  tr.history.forEach(h => newTR = newTR.step(Step.fromJSON(tr.doc.type.schema, h.step.toJSON())))
   cmpNode(tr.doc, newTR.doc)
 }
 
 export function testTransform(tr, expect) {
+  if (tr.failed) {
+    if (expect != "fail") throw new Failure("Transform failed unexpectedly: " + tr.failed)
+    return
+  } else if (expect == "fail") {
+    throw new Failure("Transform succeeded unexpectedly")
+  }
+
   cmpNode(tr.doc, expect)
-  cmpNode(invert(tr).doc, tr.docs[0], "inverted")
+  cmpNode(invert(tr).doc, tr.before, "inverted")
 
   testStepJSON(tr)
 
+  let maps = tr.maps
   for (var tag in expect.tag) // FIXME Babel 6.5.1 screws this up when I use let
-    testMapping(tr.maps, tr.docs[0].tag[tag], expect.tag[tag], tag)
+    testMapping(maps, tr.before.tag[tag], expect.tag[tag], tag)
 }

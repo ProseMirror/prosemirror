@@ -84,7 +84,9 @@ function addRange(start, end, depth, target) {
 }
 
 function close(node, content) {
-  return node.type.close(node.attrs, content, node.marks)
+  if (!node.type.checkContent(content, node.attrs))
+    throw new ReplaceError("Invalid content for node " + node.type.name)
+  return node.copy(content)
 }
 
 function replaceThreeWay(from, start, end, to, depth) {

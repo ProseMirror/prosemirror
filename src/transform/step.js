@@ -1,6 +1,6 @@
 import {NamespaceError} from "../util/error"
 
-import {nullMap} from "./map"
+import {PosMap} from "./map"
 
 // ;; A step object wraps an atomic operation. It generally applies
 // only to the document it was created for, since the positions
@@ -37,6 +37,11 @@ export class Step {
   // applied to the given document, this returns `null`.
   apply(doc) {
     return steps[this.type].apply(doc, this)
+  }
+
+  getMap() {
+    let type = steps[this.type]
+    return type.getMap ? type.getMap(this) : PosMap.empty
   }
 
   // :: (Node, PosMap) → Step
@@ -112,17 +117,14 @@ export class Step {
   }
 }
 
-// ;; Objects of this type are returned as the result of
-// applying a transform step to a document.
-export class StepResult {
-  constructor(doc, map = nullMap) {
-    // :: Node The transformed document.
-    this.doc = doc
-    // :: PosMap
-    // The position map that describes the correspondence between the
-    // old and the new document.
-    this.map = map
-  }
-}
-
 const steps = Object.create(null)
+
+export class StepResult {
+  constructor(doc, failed) {
+    this.doc = doc
+    this.failed = failed
+  }
+
+  static ok(doc) { return new StepResult(doc, null) }
+  static fail(val) { return new StepResult(null, val) }
+}

@@ -1,4 +1,4 @@
-import {Slice, Fragment} from "../model"
+import {Slice, Fragment, ReplaceError} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
@@ -12,12 +12,17 @@ import {PosMap, ReplacedRange} from "./map"
 
 Step.define("split", {
   apply(doc, step) {
-    let pos = doc.context(step.from)
-    if (pos.depth == 0) return null
-    let parent = pos.parent
+    let pos = doc.context(step.from), parent = pos.parent
     let cut = [parent.copy(), step.param ? step.param.type.create(step.attrs) : parent.copy()]
-    return new StepResult(doc.replace(pos.pos, pos.pos, new Slice(Fragment.fromArray(cut), 1, 1)),
-                          new PosMap([new ReplacedRange(pos.pos, 0, 2)]))
+    try {
+      return StepResult.ok(doc.replace(pos.pos, pos.pos, new Slice(Fragment.fromArray(cut), 1, 1)))
+    } catch (e) {
+      if (e instanceof ReplaceError) return StepResult.fail(e)
+      throw e
+    }
+  },
+  getMap(step) {
+    return new PosMap([new ReplacedRange(step.from, 0, 2)])
   },
   invert(step) {
     return new Step("join", step.from, step.from + 2)
@@ -35,9 +40,10 @@ Step.define("split", {
 // greater than one, any number of nodes above that. By default, the part
 // split off will inherit the node type of the original node. This can
 // be changed by passing `typeAfter` and `attrsAfter`.
-Transform.prototype.split = function(pos, depth = 1, typeAfter, attrsAfter) {
+Transform.define("split", function(pos, depth = 1, typeAfter, attrsAfter) {
+  let result = this
   for (let i = 0; i < depth; i++)
-    this.step("split", pos + i, pos + i,
-              i == 0 && typeAfter ? {type: typeAfter, attrs: attrsAfter} : null)
-  return this
-}
+    result = result.step("split", pos + i, pos + i,
+                         i == 0 && typeAfter ? {type: typeAfter, attrs: attrsAfter} : null)
+  return result
+})

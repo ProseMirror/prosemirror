@@ -1,6 +1,6 @@
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmMark, StrongMark, LinkMark, CodeMark, Node} from "../model"
+        EmMark, StrongMark, LinkMark, CodeMark, Node, Fragment} from "../model"
 import sortedInsert from "../util/sortedinsert"
 import {defineSource} from "./register"
 
@@ -210,11 +210,21 @@ class DOMParseState {
     return node
   }
 
+  close(type, attrs, content) {
+    content = Fragment.from(content)
+    if (!type.checkContent(content, attrs)) {
+      content = type.fixContent(content, attrs)
+      if (!content) return null
+    }
+    return type.create(attrs, content, this.marks)
+  }
+
   // :: (DOMNode, NodeType, ?Object, [Node]) → ?Node
   // Insert a node of the given type, with the given content, based on
   // `dom`, at the current position in the document.
   insert(type, attrs, content) {
-    return this.insertNode(type.close(attrs, content, this.marks))
+    let closed = this.close(type, attrs, content)
+    if (closed) return this.insertNode(closed)
   }
 
   enter(type, attrs) {
@@ -229,8 +239,8 @@ class DOMParseState {
       if (last.text.length == 1) top.content.pop()
       else top.content[top.content.length - 1] = last.copy(last.text.slice(0, last.text.length - 1))
     }
-    let node = top.type.close(top.attrs, top.content)
-    if (this.stack.length) this.insertNode(node)
+    let node = this.close(top.type, top.attrs, top.content)
+    if (node && this.stack.length) this.insertNode(node)
     return node
   }
 
@@ -315,7 +325,7 @@ BlockQuote.register("parseDOM", "blockquote", {parse: "block"})
 
 for (let i = 1; i <= 6; i++) Heading.registerComputed("parseDOM", "h" + i, type => {
   if (i <= type.maxLevel) return {
-    parse(dom, state) { state.wrapIn(dom, this, {level: i}) }
+    parse(dom, state) { state.wrapIn(dom, this, {level: String(i)}) }
   }
 })
 
@@ -337,7 +347,7 @@ CodeBlock.register("parseDOM", "pre", {parse(dom, state) {
 BulletList.register("parseDOM", "ul", {parse: "block"})
 
 OrderedList.register("parseDOM", "ol", {parse(dom, state) {
-  let attrs = {order: dom.getAttribute("start") || 1}
+  let attrs = {order: dom.getAttribute("start") || "1"}
   state.wrapIn(dom, this, attrs)
 }})
 

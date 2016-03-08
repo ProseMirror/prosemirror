@@ -101,6 +101,13 @@ export class Fragment {
     return new Fragment(joined || array, size)
   }
 
+  eq(other) {
+    if (this.content.length != other.content.length) return false
+    for (let i = 0; i < this.content.length; i++)
+      if (!this.content[i].eq(other.content[i])) return false
+    return true
+  }
+
   // :: (?union<Fragment, Node, [Node]>) → Fragment
   // Create a fragment from something that can be interpreted as a set
   // of nodes. For `null`, it returns the empty fragment. For a

@@ -266,10 +266,13 @@ export class NodeType extends SchemaItem {
     return new Node(this, this.computeAttrs(attrs, content), Fragment.from(content), Mark.setFrom(marks))
   }
 
-  close(attrs, content, marks) {
-    if ((!content || content.size == 0) && !this.canBeEmpty)
-      content = this.defaultContent()
-    return this.create(attrs, content, marks)
+  // FIXME use declarative schema, maybe tie in with .contains
+  checkContent(content, _attrs) {
+    return content.size > 0 || this.canBeEmpty
+  }
+
+  fixContent(_content, _attrs) {
+    return this.defaultContent()
   }
 
   // :: bool
