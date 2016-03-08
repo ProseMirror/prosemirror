@@ -189,6 +189,7 @@ export class ProseMirror {
     this.input.maybeAbortComposition()
     this.ranges.transform(mapping)
     this.doc = doc
+    if (selection && selection.anchor) this.checkPos(selection.anchor, true)
     this.sel.setAndSignal(selection || this.sel.range.map(doc, mapping))
     // :: () #path=ProseMirror#events#change
     // Fired when the document has changed. See
