@@ -72,7 +72,6 @@ export class Node {
   // Test whether two nodes represent the same content.
   eq(other) {
     if (this == other) return true
-    if (!this.sameMarkup(other)) console.log("it's the markup", this.type.name, other.type.name, this.attrs, other.attrs)
     return this.sameMarkup(other) && this.content.eq(other.content)
   }
 

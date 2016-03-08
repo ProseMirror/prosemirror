@@ -1,4 +1,5 @@
 import {NamespaceError} from "../util/error"
+import {ReplaceError} from "../model"
 
 import {PosMap} from "./map"
 
@@ -127,4 +128,12 @@ export class StepResult {
 
   static ok(doc) { return new StepResult(doc, null) }
   static fail(val) { return new StepResult(null, val) }
+  static fromReplace(doc, from, to, slice) {
+    try {
+      return StepResult.ok(doc.replace(from, to, slice))
+    } catch (e) {
+      if (e instanceof ReplaceError) return StepResult.fail(e)
+      throw e
+    }
+  }
 }

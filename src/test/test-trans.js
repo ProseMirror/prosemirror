@@ -1,24 +1,26 @@
+import {defaultSchema as schema} from "../model"
+
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
 
 import {defTest} from "./tests"
 import {tr, testTransform} from "./trans"
-/*
-function add(name, doc, tr, expect) {
-  defTest("addMark_" + name, () => testTransform(tr.get(doc), expect))
+
+function add(name, doc, expect, mark) {
+  defTest("addMark_" + name, () => testTransform(tr.addMark(mark).get(doc), expect))
 }
 
 add("simple",
     doc(p("hello <a>there<b>!")),
     doc(p("hello ", strong("there"), "!")),
-    schema.mark("strong"))
+    "strong")
 add("double_bold",
     doc(p("hello ", strong("<a>there"), "!<b>")),
     doc(p("hello ", strong("there!"))),
-    schema.mark("strong"))
+    "strong")
 add("overlap",
     doc(p("one <a>two ", em("three<b> four"))),
     doc(p("one ", strong("two ", em("three")), em(" four"))),
-    schema.mark("strong"))
+    "strong")
 add("overwrite_link",
     doc(p("this is a ", a("<a>link<b>"))),
     doc(p("this is a ", a2("link"))),
@@ -26,32 +28,30 @@ add("overwrite_link",
 add("code",
     doc(p("before"), blockquote(p("the variable is called <a>i<b>")), p("after")),
     doc(p("before"), blockquote(p("the variable is called ", code("i"))), p("after")),
-    schema.mark("code"))
+    "code")
 add("across_blocks",
     doc(p("hi <a>this"), blockquote(p("is")), p("a docu<b>ment"), p("!")),
     doc(p("hi ", em("this")), blockquote(p(em("is"))), p(em("a docu"), "ment"), p("!")),
-    schema.mark("em"))
+    "em")
 
-function rem(name, doc, expect, style) {
-  defTest("removeMark_" + name, () => {
-    testTransform(doc, expect, Tr(doc).removeMark(doc.tag.a, doc.tag.b, style))
-  })
+function rem(name, doc, expect, mark) {
+  defTest("rmMark_" + name, () => testTransform(tr.rmMark(mark).get(doc), expect))
 }
 
 rem("gap",
     doc(p(em("hello <a>world<b>!"))),
     doc(p(em("hello "), "world", em("!"))),
-    schema.mark("em"))
+    "em")
 rem("nothing_there",
     doc(p(em("hello"), " <a>world<b>!")),
     doc(p(em("hello"), " <a>world<b>!")),
-    schema.mark("em"))
+    "em")
 rem("from_nested",
     doc(p(em("one ", strong("<a>two<b>"), " three"))),
     doc(p(em("one two three"))),
-    schema.mark("strong"))
+    "strong")
 rem("unlink",
-    doc(p("hello ", a("link"))),
+    doc(p("<a>hello ", a("link<b>"))),
     doc(p("hello link")),
     schema.mark("link", {href: "http://foo"}))
 rem("other_link",
@@ -61,12 +61,12 @@ rem("other_link",
 rem("across_blocks",
     doc(blockquote(p(em("much <a>em")), p(em("here too"))), p("between", em("...")), p(em("end<b>"))),
     doc(blockquote(p(em("much "), "em"), p("here too")), p("between..."), p("end")),
-    schema.mark("em"))
+    "em")
 rem("all",
     doc(p("<a>hello, ", em("this is ", strong("much"), " ", a("markup<b>")))),
     doc(p("<a>hello, this is much markup")),
     null)
-
+/*
 function ins(name, doc, expect, nodes) {
   defTest("insert_" + name, () => {
     testTransform(doc, expect, Tr(doc).insert(doc.tag.a, nodes))

@@ -1,4 +1,4 @@
-import {Slice, ReplaceError} from "../model"
+import {Slice} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
@@ -14,13 +14,7 @@ Step.define("join", {
     let from = doc.context(step.from), to = doc.context(step.to)
     if (from.parentOffset < from.parent.content.size || to.parentOffset > 0 || to.pos - from.pos != 2)
       return StepResult.fail(new Error("Join positions not around a split"))
-
-    try {
-      return StepResult.ok(doc.replace(from.pos, to.pos, Slice.empty))
-    } catch (e) {
-      if (e instanceof ReplaceError) return StepResult.fail(e)
-      throw e
-    }
+    return StepResult.fromReplace(doc, from.pos, to.pos, Slice.empty)
   },
   getMap(step) {
     return new PosMap([new ReplacedRange(step.from, 2, 0)])

@@ -1,26 +1,3 @@
-import {Fragment} from "../model"
-
-export function copyStructure(node, from, to, f, depth = 0) {
-  if (node.isTextblock) {
-    return f(node, from ? from.offset : 0, to ? to.offset : node.size)
-  } else {
-    if (!node.size) return node
-    let start = from ? from.path[depth] : 0
-    let end = to ? to.path[depth] + 1 : node.size
-    let content = node.content.toArray(0, start)
-    for (let iter = node.iter(start, end), child; child = iter.next().value;) {
-      let passFrom = iter.offset - child.width == start ? from : null
-      let passTo = iter.offset == end ? to : null
-      content.push(copyStructure(child, passFrom, passTo, f, depth + 1))
-    }
-    return node.copy(Fragment.fromArray(content.concat(node.content.toArray(end))))
-  }
-}
-
-export function copyInline(node, from, to, f) {
-  return node.splice(from, to, node.content.slice(from, to).map(f))
-}
-
 export function isFlatRange(from, to) {
   if (from.path.length != to.path.length) return false
   for (let i = 0; i < from.path.length; i++)

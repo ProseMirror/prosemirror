@@ -6,6 +6,10 @@ function tag(tr, name) {
   return tr.map(tr.before.tag[name]).pos
 }
 
+function mrk(tr, mark) {
+  return mark && (typeof mark == "string" ? tr.doc.type.schema.mark(mark) : mark)
+}
+
 class DelayedTransform {
   constructor(steps) {
     this.steps = steps
@@ -15,12 +19,12 @@ class DelayedTransform {
     return new DelayedTransform(this.steps.concat(f))
   }
 
-  add(mark, from, to) {
-    return this.plus(tr => tr.addMark(tag(tr, from || "a"), tag(tr, to || "b"), mark))
+  addMark(mark, from, to) {
+    return this.plus(tr => tr.addMark(tag(tr, from || "a"), tag(tr, to || "b"), mrk(tr, mark)))
   }
 
-  rem(mark, from, to) {
-    return this.plus(tr => tr.removeMark(tag(tr, from || "a", tag(tr, to || "b"), mark)))
+  rmMark(mark, from, to) {
+    return this.plus(tr => tr.removeMark(tag(tr, from || "a"), tag(tr, to || "b"), mrk(tr, mark)))
   }
 
   ins(nodes, at) {

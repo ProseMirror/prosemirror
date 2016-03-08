@@ -1,4 +1,4 @@
-import {Slice, Fragment, ReplaceError} from "../model"
+import {Slice, Fragment} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
@@ -14,12 +14,7 @@ Step.define("split", {
   apply(doc, step) {
     let pos = doc.context(step.from), parent = pos.parent
     let cut = [parent.copy(), step.param ? step.param.type.create(step.attrs) : parent.copy()]
-    try {
-      return StepResult.ok(doc.replace(pos.pos, pos.pos, new Slice(Fragment.fromArray(cut), 1, 1)))
-    } catch (e) {
-      if (e instanceof ReplaceError) return StepResult.fail(e)
-      throw e
-    }
+    return StepResult.fromReplace(doc, pos.pos, pos.pos, new Slice(Fragment.fromArray(cut), 1, 1))
   },
   getMap(step) {
     return new PosMap([new ReplacedRange(step.from, 0, 2)])

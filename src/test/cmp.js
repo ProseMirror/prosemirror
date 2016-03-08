@@ -1,5 +1,5 @@
 import {Failure} from "./failure"
-import {Pos, Mark} from "../model"
+import {Pos} from "../model"
 
 export function cmpNode(a, b, comment) {
   if (!a.eq(b)) throw new Failure("Different nodes:\n  " + a + "\nvs\n  " +
