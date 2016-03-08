@@ -52,15 +52,10 @@ function checkJoin(main, sub) {
     throw new ReplaceError("Can not join " + sub.type.name + " onto " + main.type.name)
 }
 
-function joinType(before, after, depth) {
-  let main = before.node[depth], sub = after.node[depth]
-  if (depth == before.depth && before.parentOffset == 0 && after.parentOffset < sub.content.size) {
-    let tmp = main
-    main = sub
-    sub = tmp
-  }
-  checkJoin(main, sub)
-  return main
+function joinable(before, after, depth) {
+  let node = before.node[depth]
+  checkJoin(node, after.node[depth])
+  return node
 }
 
 function addNode(child, target) {
@@ -93,8 +88,8 @@ function close(node, content) {
 }
 
 function replaceThreeWay(from, start, end, to, depth) {
-  let openLeft = from.depth > depth && joinType(from, start, depth + 1)
-  let openRight = to.depth > depth && joinType(end, to, depth + 1)
+  let openLeft = from.depth > depth && joinable(from, start, depth + 1)
+  let openRight = to.depth > depth && joinable(end, to, depth + 1)
 
   let content = []
   addRange(null, from, depth, content)
@@ -116,7 +111,7 @@ function replaceTwoWay(from, to, depth) {
   let content = []
   addRange(null, from, depth, content)
   if (from.depth > depth) {
-    let type = joinType(from, to, depth + 1)
+    let type = joinable(from, to, depth + 1)
     addNode(close(type, replaceTwoWay(from, to, depth + 1)), content)
   }
   addRange(to, null, depth, content)

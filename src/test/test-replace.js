@@ -97,10 +97,10 @@ test("keep_first",
      doc(p("foo<a>baz"), "<b>"),
      doc(h1("foobaz")))
 
-test("keep_second_if_empty",
+test("keep_if_empty",
      doc(h1("<a>bar"), "<b>"),
      doc(p("foo<a>baz"), "<b>"),
-     doc(p("baz")))
+     doc(h1("baz")))
 
 function err(name, doc, insert, pattern) {
   defTest("node_replace_error_" + name, () => {
