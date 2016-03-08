@@ -110,6 +110,14 @@ baseCommands.joinBackward = {
     if (!before)
       return pm.tr.lift(head).apply(pm.apply.scroll)
 
+    // If the node below has no content and the node above is
+    // selectable, delete the node below and select the one above.
+    if (pm.doc.path(head.path).size == 0 && before.type.contains == null && before.type.selectable) {
+      let tr = pm.tr.delete(cut, cut.move(1)).apply(pm.apply.scroll)
+      pm.setNodeSelection(cut.move(-1))
+      return tr
+    }
+
     // If the node doesn't allow children, delete it
     if (before.type.contains == null)
       return pm.tr.delete(cut.move(-1), cut).apply(pm.apply.scroll)
