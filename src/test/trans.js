@@ -83,7 +83,7 @@ function invert(transform) {
   let out = new Transform(transform.doc)
   for (let i = transform.history.length - 1; i >= 0; i--) {
     let hist = transform.history[i]
-    out = out.step(hist.step.invert(out.doc, hist.map))
+    out = out.step(hist.step.invert(hist.doc, hist.map))
   }
   return out
 }
@@ -114,7 +114,9 @@ export function testTransform(tr, expect) {
   }
 
   cmpNode(tr.doc, expect)
-  cmpNode(invert(tr).doc, tr.before, "inverted")
+  let inverted = invert(tr)
+  if (inverted.failed) throw new Failure("Inverting transform failed: " + inverted.failed)
+  cmpNode(inverted.doc, tr.before, "inverted")
 
   testStepJSON(tr)
 

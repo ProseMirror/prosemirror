@@ -6,6 +6,7 @@ export class ReplaceError extends ProseMirrorError {}
 
 export class Slice {
   constructor(content, openLeft, openRight) {
+    if (!(content instanceof Fragment)) throw new Error("NO MAN")
     this.content = content
     this.openLeft = openLeft
     this.openRight = openRight

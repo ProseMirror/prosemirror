@@ -1,8 +1,7 @@
-import {Pos, Slice} from "../model"
+import {Pos, Slice, Fragment} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
-import {isFlatRange} from "./tree"
 import {PosMap, ReplacedRange} from "./map"
 
 // !! **`ancestor`**
@@ -49,14 +48,14 @@ Step.define("ancestor", {
       let lastWrapper = types[types.length - 1]
       let content = inner.content.cut(from.parentOffset, to.parentOffset)
       if (!lastWrapper.checkContent(content, attrs[types.length - 1]))
-        return StepResult.fail("Content can not be wrapped in ancestor " + lastWrapper.node.type)
+        return StepResult.fail("Content can not be wrapped in ancestor " + lastWrapper.name)
       for (let i = types.length - 1; i >= 0; i--)
-        content = types[i].create(attrs[i], content)
+        content = Fragment.from(types[i].create(attrs[i], content))
       slice = new Slice(content, 0, 0)
     } else {
       slice = new Slice(inner.content, 0, 0)
     }
-    return StepResult.fromReplace(doc, from.pos - depth, to.pos - depth, slice)
+    return StepResult.fromReplace(doc, from.pos - depth, to.pos + depth, slice)
   },
   posMap(step) {
     let depth = step.param.depth || 0, newDepth = step.param.types ? step.param.types.length : 0
@@ -72,9 +71,8 @@ Step.define("ancestor", {
       types.unshift(parent.type)
       attrs.unshift(parent.attrs)
     }
-    let newFrom = step.from - oldDepth + newDepth
-    let newTo = step.to - oldDepth + newDepth
-    return new Step("ancestor", newFrom, newTo, {depth: newDepth, types, attrs})
+    let dDepth = newDepth - oldDepth
+    return new Step("ancestor", step.from + dDepth, step.to + dDepth, {depth: newDepth, types, attrs})
   },
   paramToJSON(param) {
     return {depth: param.depth,
@@ -97,12 +95,14 @@ export function canLift(doc, from, to) {
 }
 
 function findLiftable(from, to) {
-  let shared = from.sameDepth(to), parent = from.node[shared]
-  for (let depth = shared; depth >= 0; --depth)
+  let shared = from.sameDepth(to)
+  if (from.node[shared].isTextblock) --shared
+  let parent = from.node[shared]
+  for (let depth = shared - 1; depth >= 0; --depth)
     if (from.node[depth].type.canContainContent(parent.type))
       return {depth, shared, unwrap: false}
 
-  if (parent.isBlock) for (let depth = shared; depth >= 0; --depth) {
+  if (parent.isBlock) for (let depth = shared - 1; depth >= 0; --depth) {
     let target = from.node[depth]
     for (let i = from.index[shared], e = Math.min(to.index[shared] + 1, parent.childCount); i < e; i++)
       if (!target.type.canContainContent(parent.child(i).type)) continue
@@ -114,40 +114,40 @@ function findLiftable(from, to) {
 // Lift the nearest liftable ancestor of the [sibling
 // range](#Node.siblingRange) of the given positions out of its
 // parent (or do nothing if no such node exists).
-Transform.register("lift", function(from, to = from) {
+Transform.define("lift", function(from, to = from) {
   let rFrom = this.doc.resolve(from), rTo = this.doc.resolve(to)
   let liftable = findLiftable(rFrom, rTo)
   if (!liftable) return this.fail("No valid lift target")
 
   let {depth, shared, unwrap} = liftable
-  let startOff = 0, endOff = 0
+  let start = rFrom.before(shared + 1), end = rTo.after(shared + 1)
   let result = this
 
   for (let d = shared; d > depth; d--) if (rTo.index[d] < rTo.node[d].childCount) {
     result = result.split(rTo.after(d + 1), d - depth)
-    endOff += d - depth
     break
   }
 
   for (let d = shared; d > depth; d--) if (rFrom.index[d] > 0) {
-    result = result.split(rFrom.before(d + 1), d - depth)
-    startOff += d - depth
-    endOff += 2 * (d - depth)
+    let cut = d - depth
+    result = result.split(rFrom.before(d + 1), cut)
+    start += 2 * cut
+    end += 2 * cut
     break
   }
 
   if (unwrap) {
-    let joinPos = rFrom.after(shared + 1) + startOff
-    for (let i = rFrom.index[shared] + 1, e = rTo.index[shared] + 1; i < e; i++) {
-      result = result.join(joinPos)
+    start++
+    end--
+    let joinPos = start
+    for (let i = rFrom.index[shared], e = rTo.index[shared] + 1, first = true; i < e; i++, first = false) {
+      if (!first) result = result.join(joinPos)
       joinPos += parent.child(i).nodeSize
-      endOff -= 2
+      end -= 2
     }
-    startOff++
-    endOff--
-    ++depth
+    shared++
   }
-  return result.step("ancestor", rFrom.before(shared + 1) + startOff, rTo.after(shared + 1) + endOff, {depth})
+  return result.step("ancestor", start, end, {depth: shared - depth})
 })
 
 // :: (Node, Pos, ?Pos, NodeType) → bool

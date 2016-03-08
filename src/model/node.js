@@ -322,7 +322,7 @@ export class ResolvedPos {
     return depth
   }
 
-  start(depth = this.depth) {
+  start(depth) {
     let pos = 0
     for (let i = 0; i < depth; i++) pos += this.offset[i] + 1
     return pos
@@ -332,8 +332,8 @@ export class ResolvedPos {
     return this.start(depth) + this.node[depth].content.size
   }
 
-  before(depth) { return this.start(depth) - 1 }
-  after(depth) { return this.end(depth) + 1 }
+  before(depth) { return depth == this.offset.length ? this.pos : this.start(depth) - 1 }
+  after(depth) { return depth == this.offset.length ? this.pos : this.end(depth) + 1 }
 
   move(pos) {
     let diff = pos - this.pos

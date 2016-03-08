@@ -219,11 +219,8 @@ split("blockquote_end",
       doc(blockquote(p("x"), "<a>")),
       "fail")
 
-/*
 function lift(name, doc, expect) {
-  defTest("lift_" + name, () => {
-    testTransform(doc, expect, Tr(doc).lift(doc.tag.a, doc.tag.b))
-  })
+  defTest("lift_" + name, () => testTransform(tr.lift().get(doc), expect))
 }
 
 lift("simple_between",
@@ -259,7 +256,7 @@ lift("end_of_list",
 lift("multiple_from_list_with_two_items",
      doc(ul(li(p("one<a>"), p("<half>half")), li(p("two<b>")), li(p("three<after>")))),
      doc(p("one<a>"), p("<half>half"), p("two<b>"), ul(li(p("three<after>")))))
-
+/*
 function wrap(name, doc, expect, type, attrs) {
   defTest("wrap_" + name, () => {
     testTransform(doc, expect, Tr(doc).wrap(doc.tag.a, doc.tag.b, schema.nodeType(type), attrs))
