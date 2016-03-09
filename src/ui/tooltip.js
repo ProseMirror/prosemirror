@@ -17,18 +17,12 @@ export class Tooltip {
   // should return a rectangle determining the space in which the tooltip
   // may appear. Alternatively, `options` may be a string specifying the
   // direction. The direction can be `"above"`, `"below"`, `"right"`,
-  // `"left"`, or `"center"`. In the latter case, the tooltip has no arrow and
-  // is positioned centered in its wrapper node.
+  // `"left"`, or `"center"`. In the latter case, the tooltip has no arrow
+  // and is positioned centered in its wrapper node.
   constructor(wrapper, options) {
     this.wrapper = wrapper
-    let defaultDir = "above"
-    if (typeof options == "object" && options != null) {
-      this.dir = options.direction || defaultDir
-      this.getBoundingRect = options.getBoundingRect
-    }
-    else { // Allow a single string to passed as the direction
-      this.dir = options || defaultDir
-    }
+    this.options = typeof options == "string" ? {direction: options} : options
+    this.dir = this.options.direction || "above"
     this.pointer = wrapper.appendChild(elt("div", {class: prefix + "-pointer-" + this.dir + " " + prefix + "-pointer"}))
     this.pointerWidth = this.pointerHeight = null
     this.dom = wrapper.appendChild(elt("div", {class: prefix}))
@@ -72,14 +66,9 @@ export class Tooltip {
 
     let around = this.wrapper.getBoundingClientRect()
 
-    // Use the window as the bounding rectangle if no getBoundingRect function is defined
-    let boundingRect = this.getBoundingRect
-      ? this.getBoundingRect()
-      : {
-        left: 0, right: window.innerWidth,
-        top: 0, bottom: window.innerHeight,
-        width: window.innerWidth, height: window.innerHeight
-      }
+    // Use the window as the bounding rectangle if no getBoundingRect
+    // function is defined
+    let boundingRect = (this.options.getBoundingRect || windowRect)()
 
     for (let child = this.dom.firstChild, next; child; child = next) {
       next = child.nextSibling
@@ -143,6 +132,13 @@ export class Tooltip {
       this.isOpen = false
       this.dom.style.opacity = this.pointer.style.opacity = 0
     }
+  }
+}
+
+function windowRect() {
+  return {
+    left: 0, right: window.innerWidth,
+    top: 0, bottom: window.innerHeight
   }
 }
 
