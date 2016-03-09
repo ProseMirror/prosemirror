@@ -323,12 +323,12 @@ class TextIterator {
       let node = this.frag.content[this.pos++], end = offset + node.width
       if (end == this.offset) break
       if (end > this.offset) {
-        let sliceEnd = node.width
+        let sliceEnd = node.width, sliceStart = this.offset - offset
         if (end > this.endOffset) {
           sliceEnd = this.endOffset - offset
           end = this.endOffset
         }
-        node = node.copy(node.text.slice(this.offset - offset, sliceEnd))
+        node = sliceEnd > sliceStart ? node.copy(node.text.slice(this.offset - offset, sliceEnd)) : null
         this.offset = end
         return node
       }
