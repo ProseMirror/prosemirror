@@ -11,18 +11,33 @@ class InvertedStep {
   }
 }
 
+class HistoryEvent {
+  constructor(steps, selection) {
+    this.steps = steps
+    this.selection = selection
+  }
+}
+
+// Assists with remapping a step with other changes that have been
+// made since the step was first applied.
 class BranchRemapping {
   constructor(branch) {
     this.branch = branch
     this.remap = new Remapping
+    // Track the internal version of what step the current remapping collection
+    // would put the content at.
     this.version = branch.version
     this.mirrorBuffer = Object.create(null)
   }
 
+  // Add all position maps between the current version
+  // and the desired version to the remapping collection.
   moveToVersion(version) {
     while (this.version > version) this.addNextMap()
   }
 
+  // Add the next map at the current version to the
+  // remapping collection.
   addNextMap() {
     let found = this.branch.mirror[this.version]
     let mapOffset = this.branch.maps.length - (this.branch.version - this.version) - 1
@@ -38,8 +53,14 @@ class BranchRemapping {
   }
 }
 
-const workTime = 100, pauseTime = 150
+// The number of milliseconds the compression worker has to compress.
+const workTime = 100
 
+// The number of milliseconds to pause compression worker if it uses
+// all its work time.
+const pauseTime = 150
+
+// Help compress steps in events for a branch.
 class CompressionWorker {
   constructor(doc, branch, callback) {
     this.branch = branch
@@ -56,6 +77,7 @@ class CompressionWorker {
     this.aborted = false
   }
 
+  // Compress steps in all events in the branch.
   work() {
     if (this.aborted) return
 
@@ -63,16 +85,20 @@ class CompressionWorker {
 
     for (;;) {
       if (this.i == 0) return this.finish()
-      let event = this.branch.events[--this.i], outEvent = []
-      for (let j = event.length - 1; j >= 0; j--) {
-        let {step, version: stepVersion, id: stepID} = event[j]
+      let event = this.branch.events[--this.i]
+      let mappedSelection = event.selection.map(this.doc, this.remap.remap)
+      let outEvent = new HistoryEvent([], mappedSelection)
+      for (let j = event.steps.length - 1; j >= 0; j--) {
+        let {step, version: stepVersion, id: stepID} = event.steps[j]
         this.remap.moveToVersion(stepVersion)
 
         let mappedStep = step.map(this.remap.remap)
+
+        // Combine contiguous delete steps.
         if (mappedStep && isDelStep(step)) {
           let extra = 0, start = step.from
           while (j > 0) {
-            let next = event[j - 1]
+            let next = event.steps[j - 1]
             if (next.version != stepVersion - 1 || !isDelStep(next.step) ||
                 start.cmp(next.step.to))
               break
@@ -91,13 +117,13 @@ class CompressionWorker {
         if (result) {
           this.doc = result.doc
           this.maps.push(result.map.invert())
-          outEvent.push(new InvertedStep(mappedStep, this.version, stepID))
+          outEvent.steps.push(new InvertedStep(mappedStep, this.version, stepID))
           this.version--
         }
         this.remap.movePastStep(result)
       }
-      if (outEvent.length) {
-        outEvent.reverse()
+      if (outEvent.steps.length) {
+        outEvent.steps.reverse()
         this.events.push(outEvent)
       }
       if (Date.now() > endTime) {
@@ -127,6 +153,7 @@ function isDelStep(step) {
     Pos.samePath(step.from.path, step.to.path) && (!step.param || step.param.content.size == 0)
 }
 
+// The minimum number of new steps before a compression is started.
 const compressStepCount = 150
 
 // A branch is a history of steps. There'll be one for the undo and
@@ -154,13 +181,20 @@ class Branch {
     }
   }
 
-  newEvent() {
+  // : (Selection)
+  // Create a new history event at tip of the branch.
+  newEvent(currentSelection) {
     this.abortCompression()
-    this.events.push([])
+    this.events.push(new HistoryEvent([], currentSelection))
+
     while (this.events.length > this.maxDepth)
       this.events.shift()
   }
 
+  // : (PosMap)
+  // Add a position map to the branch, either representing one of the
+  // changes recorded in the branch, or representing a non-history
+  // change that the branch's changes must be mapped through.
   addMap(map) {
     if (!this.empty()) {
       this.maps.push(map)
@@ -170,6 +204,8 @@ class Branch {
     }
   }
 
+  // : () → bool
+  // Whether the branch is empty (has no history events).
   empty() {
     return this.events.length == 0
   }
@@ -177,7 +213,7 @@ class Branch {
   addStep(step, map, id) {
     this.addMap(map)
     if (id == null) id = this.nextStepID++
-    this.events[this.events.length - 1].push(new InvertedStep(step, this.version, id))
+    this.events[this.events.length - 1].steps.push(new InvertedStep(step, this.version, id))
   }
 
   // : (Transform, ?[number])
@@ -190,7 +226,7 @@ class Branch {
     }
   }
 
-  // : (Node, bool) → ?{transform: Transform, ids: [number]}
+  // : (Node, bool) → ?{transform: Transform, ids: [number], selection: Selection}
   // Pop the latest event off the branch's history and apply it
   // to a document transform, returning the transform and the step ID.
   popEvent(doc, allowCollapsing) {
@@ -202,13 +238,15 @@ class Branch {
     let tr = new Transform(doc)
     let ids = []
 
-    for (let i = event.length - 1; i >= 0; i--) {
-      let invertedStep = event[i], step = invertedStep.step
+    for (let i = event.steps.length - 1; i >= 0; i--) {
+      let invertedStep = event.steps[i], step = invertedStep.step
       if (!collapsing || invertedStep.version != remap.version) {
         collapsing = false
+        // Remap the step through any position mappings unrelated to
+        // history (e.g. collaborative edits).
         remap.moveToVersion(invertedStep.version)
-
         step = step.map(remap.remap)
+
         let result = step && tr.step(step)
         if (result) {
           ids.push(invertedStep.id)
@@ -216,7 +254,7 @@ class Branch {
             this.mirror[this.version] = invertedStep.version
         }
 
-        if (i > 0) remap.movePastStep(result)
+        remap.movePastStep(result)
       } else {
         this.version--
         delete this.mirror[this.version]
@@ -226,14 +264,16 @@ class Branch {
         --remap.version
       }
     }
+    let selection = event.selection.map(tr.doc, remap.remap)
+
     if (this.empty()) this.clear(true)
-    return {transform: tr, ids}
+    return {transform: tr, ids, selection}
   }
 
   lastStep() {
     for (let i = this.events.length - 1; i >= 0; i--) {
       let event = this.events[i]
-      if (event.length) return event[event.length - 1]
+      if (event.steps.length) return event.steps[event.steps.length - 1]
     }
   }
 
@@ -254,8 +294,8 @@ class Branch {
     if (version.lastID == null) return {event: 0, step: 0}
     for (let i = this.events.length - 1; i >= 0; i--) {
       let event = this.events[i]
-      for (let j = event.length - 1; j >= 0; j--)
-        if (event[j].id <= version.lastID)
+      for (let j = event.steps.length - 1; j >= 0; j--)
+        if (event.steps[j].id <= version.lastID)
           return {event: i, step: j + 1}
     }
   }
@@ -269,16 +309,16 @@ class Branch {
     // Update and clean up the events
     out: for (let i = this.events.length - 1; i >= 0; i--) {
       let event = this.events[i]
-      for (let j = event.length - 1; j >= 0; j--) {
-        let step = event[j]
+      for (let j = event.steps.length - 1; j >= 0; j--) {
+        let step = event.steps[j]
         if (step.version <= startVersion) break out
         let off = positions[step.version - startVersion - 1]
         if (off == -1) {
-          event.splice(j--, 1)
+          event.steps.splice(j--, 1)
         } else {
           let inv = rebasedTransform.steps[off].invert(rebasedTransform.docs[off],
                                                        rebasedTransform.maps[off])
-          event[j] = new InvertedStep(inv, startVersion + newMaps.length + off + 1, step.id)
+          event.steps[j] = new InvertedStep(inv, startVersion + newMaps.length + off + 1, step.id)
         }
       }
     }
@@ -317,6 +357,7 @@ class Branch {
   }
 }
 
+// Delay between transforms required to compress steps.
 const compressDelay = 750
 
 // ;; An undo/redo history manager for an editor instance.
@@ -332,12 +373,12 @@ export class History {
 
     this.allowCollapsing = true
 
-    pm.on("transform", (transform, options) => this.recordTransform(transform, options))
+    pm.on("transform", (transform, selection, options) => this.recordTransform(transform, selection, options))
   }
 
   // : (Transform, Object)
   // Record a transformation in undo history.
-  recordTransform(transform, options) {
+  recordTransform(transform, selection, options) {
     if (this.ignoreTransform) return
 
     if (options.addToHistory == false) {
@@ -351,7 +392,7 @@ export class History {
       let now = Date.now()
       // Group transforms that occur in quick succession into one event.
       if (now > this.lastAddedAt + this.pm.options.historyEventDelay)
-        this.done.newEvent()
+        this.done.newEvent(selection)
 
       this.done.addTransform(transform)
       this.lastAddedAt = now
@@ -389,16 +430,21 @@ export class History {
   shift(from, to) {
     let event = from.popEvent(this.pm.doc, this.allowCollapsing)
     if (!event) return false
-    let {transform, ids} = event
+    let {transform, ids, selection} = event
+    let selectionBeforeTransform = this.pm.selection
 
     this.ignoreTransform = true
-    this.pm.apply(transform)
+    this.pm.apply(transform, {selection})
     this.ignoreTransform = false
 
     if (!transform.steps.length) return this.shift(from, to)
 
     if (to) {
-      to.newEvent()
+      // Store the selection before transform on the event so that
+      // it can be reapplied if the event is undone or redone (e.g.
+      // redoing a character addition should place the cursor after
+      // the character).
+      to.newEvent(selectionBeforeTransform)
       to.addTransform(transform, ids)
     }
     this.lastAddedAt = 0
@@ -428,11 +474,13 @@ export class History {
     let found = this.done.findVersion(version)
     if (!found) return false
     let event = this.done.events[found.event]
-    if (found.event == this.done.events.length - 1 && found.step == event.length) return true
-    let combined = this.done.events.slice(found.event + 1)
-        .reduce((comb, arr) => comb.concat(arr), event.slice(found.step))
-    this.done.events.length = found.event + ((event.length = found.step) ? 1 : 0)
-    this.done.events.push(combined)
+    if (found.event == this.done.events.length - 1 && found.step == event.steps.length) return true
+    // Combine all steps past the verion to rollback to into
+    // one event, and then "undo" that event.
+    let combinedSteps = this.done.events.slice(found.event + 1)
+        .reduce((comb, arr) => comb.concat(arr.steps), event.steps.slice(found.step))
+    this.done.events.length = found.event + ((event.steps.length = found.step) ? 1 : 0)
+    this.done.events.push(new HistoryEvent(combinedSteps, event.selection))
 
     this.shift(this.done)
     return true
@@ -449,6 +497,8 @@ export class History {
     this.maybeScheduleCompressionForBranch(this.undone)
   }
 
+  // : (Branch)
+  // Schedule compression for a branch if it needs compressing.
   maybeScheduleCompressionForBranch(branch) {
     window.clearTimeout(branch.compressTimeout)
     if (branch.needsCompression())

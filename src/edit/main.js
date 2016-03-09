@@ -222,6 +222,8 @@ export class ProseMirror {
     if (transform.docs[0] != this.doc && findDiffStart(transform.docs[0], this.doc))
       throw new AssertionError("Applying a transform that does not start with the current document")
 
+    let selectionBeforeTransform = this.selection
+
     // :: (transform: Transform, options: Object) #path=ProseMirror#events#beforeTransform
     // Indicates that the given transform is about to be
     // [applied](#ProseMirror.apply). The handler may add additional
@@ -229,11 +231,12 @@ export class ProseMirror {
     // interfere with the editor's state.
     this.signal("beforeTransform", transform, options)
     this.updateDoc(transform.doc, transform, options.selection)
-    // :: (transfom: Transform, options: Object) #path=ProseMirror#events#transform
+    // :: (transform: Transform, selectionBeforeTransform: Selection, options: Object) #path=ProseMirror#events#transform
     // Signals that a (non-empty) transformation has been aplied to
-    // the editor. Passes the `Transform` and the options given to
-    // [`apply`](#ProseMirror.apply) as arguments to the handler.
-    this.signal("transform", transform, options)
+    // the editor. Passes the `Transform`, the selection before the
+    // transform, and the options given to [`apply`](#ProseMirror.apply)
+    // as arguments to the handler.
+    this.signal("transform", transform, selectionBeforeTransform, options)
     if (options.scrollIntoView) this.scrollIntoView()
     return transform
   }

@@ -1,12 +1,12 @@
 import {namespace} from "./def"
 import {doc, p} from "../build"
-import {is, cmp, cmpNode, P} from "../cmp"
+import {is, cmp, cmpStr, cmpNode, P} from "../cmp"
 
 const test = namespace("history")
 
 function type(pm, text) { pm.tr.insertText(pm.selection.head, text).apply() }
 
-function cut(pm) { pm.history.lastAddedAt = 0 }
+function cutHistory(pm) { pm.history.lastAddedAt = 0 }
 
 test("undo", pm => {
   type(pm, "a")
@@ -27,7 +27,7 @@ test("redo", pm => {
 
 test("multiple", pm => {
   type(pm, "a")
-  cut(pm)
+  cutHistory(pm)
   type(pm, "b")
   cmpNode(pm.doc, doc(p("ab")))
   pm.execCommand("undo")
@@ -52,7 +52,7 @@ test("unsynced", pm => {
 
 test("unsynced_complex", pm => {
   type(pm, "hello")
-  cut(pm)
+  cutHistory(pm)
   type(pm, "!")
   pm.tr.insertText(P(0, 0), "....").apply()
   pm.tr.split(P(0, 2)).apply()
@@ -66,7 +66,7 @@ test("unsynced_complex", pm => {
 
 test("overlapping", pm => {
   type(pm, "hello")
-  cut(pm)
+  cutHistory(pm)
   pm.tr.delete(P(0, 0), P(0, 5)).apply()
   cmpNode(pm.doc, doc(p()))
   pm.execCommand("undo")
@@ -78,7 +78,7 @@ test("overlapping", pm => {
 test("overlapping_no_collapse", pm => {
   pm.history.allowCollapsing = false
   type(pm, "hello")
-  cut(pm)
+  cutHistory(pm)
   pm.tr.delete(P(0, 0), P(0, 5)).apply()
   cmpNode(pm.doc, doc(p()))
   pm.execCommand("undo")
@@ -89,7 +89,7 @@ test("overlapping_no_collapse", pm => {
 
 test("overlapping_unsynced_delete", pm => {
   type(pm, "hi")
-  cut(pm)
+  cutHistory(pm)
   type(pm, "hello")
   pm.tr.delete(P(0, 0), P(0, 7)).apply({addToHistory: false})
   cmpNode(pm.doc, doc(p()))
@@ -100,10 +100,10 @@ test("overlapping_unsynced_delete", pm => {
 test("ping_pong", pm => {
   type(pm, "one")
   type(pm, " two")
-  cut(pm)
+  cutHistory(pm)
   type(pm, " three")
   pm.tr.insertText(P(0, 0), "zero ").apply()
-  cut(pm)
+  cutHistory(pm)
   pm.tr.split(P(0, 0)).apply()
   pm.setTextSelection(P(0, 0))
   type(pm, "top")
@@ -118,11 +118,11 @@ test("ping_pong", pm => {
 test("ping_pong_unsynced", pm => {
   type(pm, "one")
   type(pm, " two")
-  cut(pm)
+  cutHistory(pm)
   pm.tr.insertText(pm.selection.head, "xxx").apply({addToHistory: false})
   type(pm, " three")
   pm.tr.insertText(P(0, 0), "zero ").apply()
-  cut(pm)
+  cutHistory(pm)
   pm.tr.split(P(0, 0)).apply()
   pm.setTextSelection(P(0, 0))
   type(pm, "top")
@@ -139,7 +139,7 @@ test("ping_pong_unsynced", pm => {
 test("compressable", pm => {
   type(pm, "XY")
   pm.setTextSelection(P(0, 1))
-  cut(pm)
+  cutHistory(pm)
   type(pm, "one")
   type(pm, "two")
   type(pm, "three")
@@ -148,8 +148,10 @@ test("compressable", pm => {
   cmpNode(pm.doc, doc(p("XonetwothreeY!")))
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p("XY!")))
+  cmpStr(pm.selection.anchor, P(0, 1))
   pm.execCommand("redo")
   cmpNode(pm.doc, doc(p("XonetwothreeY!")))
+  cmpStr(pm.selection.anchor, P(0, 12))
 })
 
 test("setDocResets", pm => {
@@ -161,7 +163,7 @@ test("setDocResets", pm => {
 
 test("isAtVersion", pm => {
   type(pm, "hello")
-  cut(pm)
+  cutHistory(pm)
   let version = pm.history.getVersion()
   type(pm, "ok")
   is(!pm.history.isAtVersion(version), "ahead")
@@ -177,7 +179,7 @@ test("rollback", pm => {
   type(pm, "hello")
   let version = pm.history.getVersion()
   type(pm, "ok")
-  cut(pm)
+  cutHistory(pm)
   type(pm, "more")
   is(pm.history.backToVersion(version), "rollback")
   cmpNode(pm.doc, doc(p("hello")), "back to start")
@@ -185,4 +187,28 @@ test("rollback", pm => {
   cmpNode(pm.doc, doc(p("hello")), "no-op had no effect")
   pm.history.undo()
   is(!pm.history.backToVersion(version), "failed rollback")
+})
+
+test("setSelectionOnUndo", pm => {
+  type(pm, "hi")
+  cutHistory(pm)
+  pm.setTextSelection(P(0, 0), P(0, 2))
+  let selection = pm.selection
+  pm.tr.replaceWith(selection.from, selection.to, pm.schema.text("hello")).apply()
+  let selection2 = pm.selection
+  pm.execCommand("undo")
+  is(pm.selection.eq(selection), "failed restoring selection after undo")
+  pm.execCommand("redo")
+  is(pm.selection.eq(selection2), "failed restoring selection after redo")
+})
+
+
+test("rebaseSelectionOnUndo", pm => {
+  type(pm, "hi")
+  cutHistory(pm)
+  pm.setTextSelection(P(0, 0), P(0, 2))
+  pm.tr.insert(P(0, 0), pm.schema.text("hello")).apply()
+  pm.tr.insert(P(0, 0), pm.schema.text("---")).apply({addToHistory: false})
+  pm.execCommand("undo")
+  cmpStr(pm.selection.head, P(0, 5))
 })
