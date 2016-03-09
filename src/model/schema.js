@@ -598,7 +598,7 @@ export class Schema {
   }
 
   // :: (string, ?[Mark]) → Node
-  // Create a text node in the schema. This method is bound to the Schema.
+  // Create a text node in the schema. This method is bound to the Schema. Empty text nodes are not allowed.
   text(text, marks) {
     return this.nodes.text.create(null, text, Mark.setFrom(marks))
   }
