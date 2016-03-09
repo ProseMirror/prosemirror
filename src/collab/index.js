@@ -1,6 +1,7 @@
 import {defineOption} from "../edit"
 import {eventMixin} from "../util/event"
 import {AssertionError} from "../util/error"
+import {Transform} from "../transform"
 
 import {rebaseSteps} from "./rebase"
 export {rebaseSteps}
@@ -115,11 +116,16 @@ class Collab {
   // steps.
   receive(steps) {
     let doc = this.versionDoc
+    let transformation = new Transformation(doc)
+    transformation.steps = steps
+    let selectionBeforeTransform = this.pm.selection
     let maps = steps.map(step => {
       let result = step.apply(doc)
       doc = result.doc
+      transformation.docs.push(doc)
       return result.map
     })
+    transformation.maps = maps
     this.version += steps.length
     this.versionDoc = doc
 
@@ -129,6 +135,10 @@ class Collab {
 
     this.pm.updateDoc(rebased.doc, rebased.mapping)
     this.pm.history.rebased(maps, rebased.transform, rebased.positions)
+    // :: (transform: Transform, selectionBeforeTransform: Selection) #path=Collab#events#collabTransform
+    // Signals that a transformation has been aplied to the editor. Passes the `Transform` and the selection
+    // before the transform as arguments to the handler.
+    this.signal("collabTransform", transformation, selectionBeforeTransform)
     return maps
   }
 }
