@@ -25,8 +25,11 @@ const methods = {
   // arguments.
   signal(type, ...args) {
     let arr = this._handlers && this._handlers[type]
-    if (arr) for (let i = 0; i < arr.length; ++i)
-      arr[i](...args)
+    if (arr) {
+      arr = [].concat(arr)
+      for (let i = 0; i < arr.length; ++i)
+        arr[i](...args)
+    }
   },
 
   // :: (type: string, ...args: [any]) → any #path=EventMixin.signalHandleable
