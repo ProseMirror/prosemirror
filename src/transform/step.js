@@ -49,8 +49,8 @@ export class Step {
   // Create an inverted version of this step. Needs the document as it
   // was before the step, as well as `PosMap` created by applying the
   // step to that document, as input.
-  invert(oldDoc, map) {
-    return steps[this.type].invert(this, oldDoc, map)
+  invert(oldDoc) {
+    return steps[this.type].invert(this, oldDoc)
   }
 
   // :: (Mappable) → ?Step

@@ -72,10 +72,8 @@ Transform.define("addMark", function(from, to, mark) {
     }
   })
 
-  let result = this
-  removed.forEach(s => result = result.step(s))
-  added.forEach(s => result = result.step(s))
-  return result
+  removed.forEach(s => this.step(s))
+  added.forEach(s => this.step(s))
 })
 
 Step.define("removeMark", {
@@ -88,8 +86,8 @@ Step.define("removeMark", {
     })
     return StepResult.fromReplace(doc, step.from, step.to, slice)
   },
-  invert(step, _oldDoc, map) {
-    return new Step("addMark", step.from, map.map(step.to).pos, step.param)
+  invert(step) {
+    return new Step("addMark", step.from, step.to, step.param)
   },
   paramToJSON(param) {
     return param.toJSON()
@@ -133,9 +131,7 @@ Transform.define("removeMark", function(from, to, mark = null) {
       }
     }
   })
-  let result = this
-  matched.forEach(m => result = result.step("removeMark", m.from, m.to, m.style))
-  return result
+  matched.forEach(m => this.step("removeMark", m.from, m.to, m.style))
 })
 
 // :: (number, number, ?NodeType) → Transform
@@ -143,7 +139,7 @@ Transform.define("removeMark", function(from, to, mark = null) {
 // given, all marks and inline nodes that may not appear as content of
 // `newParent`, from the given range.
 Transform.define("clearMarkup", function(from, to, newParent) {
-  let result = this, delSteps = [] // Must be accumulated and applied in inverse order
+  let delSteps = [] // Must be accumulated and applied in inverse order
   this.doc.nodesBetween(from, to, (node, pos) => {
     if (!node.isInline) return
     if (newParent ? !newParent.canContainType(node.type) : !node.type.isText) {
@@ -153,9 +149,8 @@ Transform.define("clearMarkup", function(from, to, newParent) {
     for (let i = 0; i < node.marks.length; i++) {
       let mark = node.marks[i]
       if (!newParent || !newParent.canContainMark(mark.type))
-        result = result.step("removeMark", Math.max(pos, from), Math.min(pos + node.nodeSize, to), mark)
+        this.step("removeMark", Math.max(pos, from), Math.min(pos + node.nodeSize, to), mark)
     }
   })
-  for (let i = delSteps.length - 1; i >= 0; i--) result = result.step(delSteps[i])
-  return result
+  for (let i = delSteps.length - 1; i >= 0; i--) this.step(delSteps[i])
 })

@@ -125,16 +125,15 @@ Transform.define("lift", function(from, to = from) {
 
   let {depth, shared, unwrap} = liftable
   let start = rFrom.before(shared + 1), end = rTo.after(shared + 1)
-  let result = this
 
   for (let d = shared; d > depth; d--) if (rTo.index[d] + 1 < rTo.node[d].childCount) {
-    result = result.split(rTo.after(d + 1), d - depth)
+    this.split(rTo.after(d + 1), d - depth)
     break
   }
 
   for (let d = shared; d > depth; d--) if (rFrom.index[d] > 0) {
     let cut = d - depth
-    result = result.split(rFrom.before(d + 1), cut)
+    this.split(rFrom.before(d + 1), cut)
     start += 2 * cut
     end += 2 * cut
     break
@@ -144,7 +143,7 @@ Transform.define("lift", function(from, to = from) {
     let joinPos = start, parent = rFrom.node[shared]
     for (let i = rFrom.index[shared], e = rTo.index[shared] + 1, first = true; i < e; i++, first = false) {
       if (!first) {
-        result = result.join(joinPos)
+        this.join(joinPos)
         end -= 2
       }
       joinPos += parent.child(i).nodeSize - (first ? 0 : 2)
@@ -153,7 +152,7 @@ Transform.define("lift", function(from, to = from) {
     start++
     end--
   }
-  return result.step("ancestor", start, end, {depth: shared - depth})
+  this.step("ancestor", start, end, {depth: shared - depth})
 })
 
 // :: (Node, number, ?number, NodeType) → bool
@@ -185,34 +184,31 @@ Transform.define("wrap", function(from, to = from, type, wrapAttrs) {
   let types = around.concat(type).concat(inside)
   let attrs = around.map(() => null).concat(wrapAttrs).concat(inside.map(() => null))
   let start = rFrom.before(shared + 1)
-  let result = this.step("ancestor", start, rTo.after(shared + 1), {types, attrs})
+  this.step("ancestor", start, rTo.after(shared + 1), {types, attrs})
   if (inside.length) {
     let splitPos = start + types.length, parent = rFrom.node[shared]
     for (let i = rFrom.index[shared], e = rTo.index[shared] + 1, first = true; i < e; i++, first = false) {
       if (!first)
-        result = result.split(splitPos, inside.length)
+        this.split(splitPos, inside.length)
       splitPos += parent.child(i).nodeSize + (first ? 0 : 2 * inside.length)
     }
   }
-  return result
 })
 
 // :: (number, ?number, NodeType, ?Object) → Transform
 // Set the type of all textblocks (partly) between `from` and `to` to
 // the given node type with the given attributes.
 Transform.define("setBlockType", function(from, to = from, type, attrs) {
-  let result = this
   this.doc.nodesBetween(from, to, (node, pos) => {
     if (node.isTextblock && !node.hasMarkup(type, attrs)) {
       // Ensure all markup that isn't allowed in the new node type is cleared
       let start = pos + 1, end = start + node.content.size
-      result = result.clearMarkup(start, end, type)
-      result = result.step("ancestor", start, end,
-                           {depth: 1, types: [type], attrs: [attrs]})
+      this.clearMarkup(start, end, type)
+      this.step("ancestor", start, end,
+                {depth: 1, types: [type], attrs: [attrs]})
       return false
     }
   })
-  return result
 })
 
 // :: (number, NodeType, ?Object) → Transform
@@ -221,5 +217,5 @@ Transform.define("setNodeType", function(pos, type, attrs) {
   let rPos = this.doc.resolve(pos)
   let node = rPos.nodeAfter
   if (!node || !node.type.contains) return this.fail("No content node at given position")
-  return this.step("ancestor", pos + 1, pos + 1 + node.content.size, {depth: 1, types: [type], attrs: [attrs]})
+  this.step("ancestor", pos + 1, pos + 1 + node.content.size, {depth: 1, types: [type], attrs: [attrs]})
 })

@@ -36,9 +36,7 @@ Step.define("split", {
 // split off will inherit the node type of the original node. This can
 // be changed by passing `typeAfter` and `attrsAfter`.
 Transform.define("split", function(pos, depth = 1, typeAfter, attrsAfter) {
-  let result = this
   for (let i = 0; i < depth; i++)
-    result = result.step("split", pos + i, pos + i,
-                         i == 0 && typeAfter ? {type: typeAfter, attrs: attrsAfter} : null)
-  return result
+    this.step("split", pos + i, pos + i,
+              i == 0 && typeAfter ? {type: typeAfter, attrs: attrsAfter} : null)
 })

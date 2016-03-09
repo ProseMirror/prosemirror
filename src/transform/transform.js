@@ -1,4 +1,4 @@
-import {Step} from "./step"
+import {Step, StepResult} from "./step"
 import {MapResult} from "./map"
 
 // ;; A change to a document often consists of a series of
@@ -11,39 +11,57 @@ import {MapResult} from "./map"
 export class Transform {
   // :: (Node)
   // Create a transformation that starts with the given document.
-  constructor(doc, failed, history) {
-    this.doc = doc
-    this.failed = failed
-    this.history = history || []
+  constructor(doc) {
+    this.result = new StepResult(doc)
+    this.docs = []
+    this.steps = []
+    this.maps = []
   }
+
+  get doc() { return this.result.doc }
+
+  get failed() { return this.result.failed }
+
+  get before() { return this.docs.length ? this.docs[0] : this.result.doc }
 
   static define(name, impl) {
     this.prototype[name] = function() {
-      return this.failed ? this : impl.apply(this, arguments)
+      if (!this.failed) impl.apply(this, arguments)
+      return this
     }
   }
 
   // :: (Step) → Transform
   step(step, from, to, param) {
-    if (this.failed) return this
-    if (typeof step == "string") step = new Step(step, from, to, param)
+    if (this.failed) return this.result
+    return this.forceStep(typeof step == "string" ? new Step(step, from, to, param) : step)
+  }
+
+  forceStep(step) {
     let result = step.apply(this.doc)
-    if (result.doc)
-      return new Transform(result.doc, null,
-                           this.history.concat({doc: this.doc, map: step.posMap(this.doc), step}))
-    else
-      return new Transform(null, result.failed, this.history)
+    if (result.doc) {
+      this.docs.push(this.result.doc)
+      this.steps.push(step)
+      this.maps.push(step.posMap())
+    }
+    return this.result = result
   }
 
   // :: (?(Transform) → Transform) → Transform
   try(action) {
     if (this.failed) return this
-    let ran = action(this)
-    return ran.failed ? this : ran
+    let oldLen = this.steps.length, oldResult = this.result
+    action(this)
+    if (this.failed) {
+      this.steps.length = this.maps.length = this.docs.length = oldLen
+      this.result = oldResult
+    }
+    return this
   }
 
   fail(value) {
-    return new Transform(null, value, this.history)
+    this.result = new StepResult(null, value)
+    return this
   }
 
   // :: (number, ?number) → MapResult
@@ -51,15 +69,11 @@ export class Transform {
   // maps in [`maps`](#Transform.maps)), and return the result.
   map(pos, bias) {
     let deleted = false
-    for (let i = 0; i < this.history.length; i++) {
-      let result = this.history[i].map.map(pos, bias)
+    for (let i = 0; i < this.maps.length; i++) {
+      let result = this.maps[i].map(pos, bias)
       pos = result.pos
       if (result.deleted) deleted = true
     }
     return new MapResult(pos, deleted)
   }
-
-  get maps() { return this.history.map(h => h.map) }
-
-  get before() { return this.history.length ? this.history[0].doc : this.doc }
 }

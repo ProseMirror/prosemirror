@@ -72,7 +72,7 @@ class DelayedTransform {
 
   get(doc) {
     let tr = new Transform(doc)
-    for (let i = 0; i < this.steps.length; i++) tr = this.steps[i](tr)
+    for (let i = 0; i < this.steps.length; i++) this.steps[i](tr)
     return tr
   }
 }
@@ -81,10 +81,8 @@ export const tr = new DelayedTransform([])
 
 function invert(transform) {
   let out = new Transform(transform.doc)
-  for (let i = transform.history.length - 1; i >= 0; i--) {
-    let hist = transform.history[i]
-    out = out.step(hist.step.invert(hist.doc, hist.map))
-  }
+  for (let i = transform.steps.length - 1; i >= 0; i--)
+    out.step(transform.steps[i].invert(transform.docs[i]))
   return out
 }
 
@@ -101,7 +99,7 @@ function testMapping(maps, pos, newPos, label) {
 
 function testStepJSON(tr) {
   let newTR = new Transform(tr.before)
-  tr.history.forEach(h => newTR = newTR.step(Step.fromJSON(tr.doc.type.schema, h.step.toJSON())))
+  tr.steps.forEach(step => newTR.step(Step.fromJSON(tr.doc.type.schema, step.toJSON())))
   cmpNode(tr.doc, newTR.doc)
 }
 
