@@ -117,6 +117,9 @@ test("joinBackward",
      doc(hr, p("<a>there")),
      doc(p("there")))
 test("joinBackward",
+     doc(hr, p("<a>"), hr),
+     doc(hr, hr))
+test("joinBackward",
      doc(hr, blockquote(p("<a>there"))),
      doc(blockquote(p("there"))))
 test("joinBackward",
