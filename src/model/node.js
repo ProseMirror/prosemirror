@@ -1,6 +1,7 @@
 import {Fragment, emptyFragment} from "./fragment"
 import {Mark} from "./mark"
 import {Pos} from "./pos"
+import {SchemaError} from "./schema"
 
 const emptyArray = [], emptyAttrs = Object.create(null)
 
@@ -362,6 +363,9 @@ if (typeof Symbol != "undefined") {
 export class TextNode extends Node {
   constructor(type, attrs, content, marks) {
     super(type, attrs, null, marks)
+
+    if (!content) throw new SchemaError("Empty text nodes are not allowed")
+
     // :: ?string
     // For text nodes, this contains the node's text content.
     this.text = content
