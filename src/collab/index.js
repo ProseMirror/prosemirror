@@ -115,31 +115,23 @@ class Collab {
   // Returns the [position maps](#PosMap) produced by applying the
   // steps.
   receive(steps) {
-    let doc = this.versionDoc
-    let transformation = new Transformation(doc)
-    transformation.steps = steps
-    let selectionBeforeTransform = this.pm.selection
-    let maps = steps.map(step => {
-      let result = step.apply(doc)
-      doc = result.doc
-      transformation.docs.push(doc)
-      return result.map
-    })
-    transformation.maps = maps
+    let transform = new Transform(this.versionDoc)
+    steps.forEach(step => transform.step(step))
     this.version += steps.length
-    this.versionDoc = doc
+    this.versionDoc = transform.doc
 
-    let rebased = rebaseSteps(doc, maps, this.unconfirmedSteps, this.unconfirmedMaps)
+    let rebased = rebaseSteps(transform.doc, transform.maps, this.unconfirmedSteps, this.unconfirmedMaps)
     this.unconfirmedSteps = rebased.transform.steps.slice()
     this.unconfirmedMaps = rebased.transform.maps.slice()
 
+    let selectionBefore = this.pm.selection
     this.pm.updateDoc(rebased.doc, rebased.mapping)
-    this.pm.history.rebased(maps, rebased.transform, rebased.positions)
+    this.pm.history.rebased(transform.maps, rebased.transform, rebased.positions)
     // :: (transform: Transform, selectionBeforeTransform: Selection) #path=Collab#events#collabTransform
     // Signals that a transformation has been aplied to the editor. Passes the `Transform` and the selection
     // before the transform as arguments to the handler.
-    this.signal("collabTransform", transformation, selectionBeforeTransform)
-    return maps
+    this.signal("collabTransform", transform, selectionBefore)
+    return transform.maps
   }
 }
 
