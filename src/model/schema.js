@@ -231,9 +231,13 @@ export class NodeType extends SchemaItem {
   // to be inserted between this type and `other` to put a node of
   // type `other` into this type.
   findConnection(other) {
+    return other.kind && this.findConnectionToKind(other.kind)
+  }
+
+  findConnectionToKind(kind) {
     // FIXME maybe cache these, since wrap commands compute this every
     // time their .select is called
-    if (this.canContainType(other)) return []
+    if (kind.isSubKind(this.contains)) return []
 
     let seen = Object.create(null)
     let active = [{from: this, via: []}]
@@ -244,13 +248,13 @@ export class NodeType extends SchemaItem {
         if (type.contains && type.defaultAttrs && !(type.contains.id in seen) &&
             current.from.canContainType(type)) {
           let via = current.via.concat(type)
-          if (type.canContainType(other)) return via
+          if (kind.isSubKind(type.contains)) return via
           active.push({from: type, via: via})
           seen[type.contains.id] = true
         }
       }
     }
-  }
+    
 
   computeAttrs(attrs, content) {
     if (!attrs && this.defaultAttrs) return this.defaultAttrs
@@ -319,16 +323,28 @@ export class NodeKind {
     }
     this.id = ++NodeKind.nextID
     this.supers = Object.create(null)
-    this.supers[this.id] = true
+    this.supers[this.id] = this
     this.subs = subs || []
 
     if (supers) supers.forEach(sup => this.addSuper(sup))
     if (subs) subs.forEach(sub => this.addSub(sub))
   }
 
+  sharedSuperKind(other) {
+    if (this.isSubKind(other)) return other
+    if (other.isSubKind(this)) return this
+    let found
+    for (let id in this.supers) {
+      let shared = other.supers[id]
+      if (shared && (!found || shared.isSupKind(found)))
+        found = shared
+    }
+    return found
+  }
+
   addSuper(sup) {
     for (let id in sup.supers) {
-      this.supers[id] = true
+      this.supers[id] = sup.supers[id]
       sup.subs.push(this)
     }
   }

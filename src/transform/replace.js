@@ -1,9 +1,8 @@
-import {Pos, Fragment} from "../model"
+import {Fragment, Slice} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
-import {PosMap, MovedRange, ReplacedRange} from "./map"
-import {replaceHasEffect, samePathDepth} from "./tree"
+import {PosMap, ReplacedRange} from "./map"
 
 // !! **`replace`**
 //   : Delete the part of the document between `from` and `to` and
@@ -29,84 +28,113 @@ import {replaceHasEffect, samePathDepth} from "./tree"
 //     joined. Open nodes that aren't joined are [closed](#Node.close)
 //     to ensure their content (or lack of it) is valid.
 
-function findMovedChunks(oldNode, oldPath, newNode, startDepth) {
-  let moved = []
-  let newPath = oldPath.path.slice(0, startDepth)
-
-  for (let depth = startDepth;; depth++) {
-    let joined = depth == oldPath.depth ? 0 : 1
-    let cut = depth == oldPath.depth ? oldPath.offset : oldPath.path[depth]
-    let afterCut = oldNode.size - cut
-    let newOffset = newNode.size - afterCut
-
-    let from = oldPath.shorten(depth, joined)
-    let to = new Pos(newPath, newOffset + joined)
-    if (from.cmp(to)) moved.push(new MovedRange(from, afterCut - joined, to))
-
-    if (!joined) return moved
-
-    oldNode = oldNode.child(cut)
-    newNode = newNode.child(newOffset)
-    newPath = newPath.concat(newOffset)
-  }
-}
-
-export function replace(node, from, to, root, repl, depth = 0) {
-  if (depth == root.length) {
-    let before = node.sliceBetween(null, from, depth)
-    let after = node.sliceBetween(to, null, depth), result
-    if (!before.type.canContainFragment(repl.content)) return null
-    if (repl.content.size)
-      result = before.append(repl.content, from.depth - depth, repl.openLeft)
-                     .append(after.content, repl.openRight, to.depth - depth)
-    else
-      result = before.append(after.content, from.depth - depth, to.depth - depth)
-    if (!result.size && !result.type.canBeEmpty)
-      result = result.copy(result.type.defaultContent())
-    return {doc: result, moved: findMovedChunks(node, to, result, depth)}
-  } else {
-    let pos = root[depth]
-    let result = replace(node.child(pos), from, to, root, repl, depth + 1)
-    if (!result) return null
-    return {doc: node.replace(pos, result.doc), moved: result.moved}
-  }
-}
-
-const nullRepl = {content: Fragment.empty, openLeft: 0, openRight: 0}
-
 Step.define("replace", {
   apply(doc, step) {
-    let rootPos = step.pos, root = rootPos.path
-    if (step.from.depth < root.length || step.to.depth < root.length)
-      return null
-    for (let i = 0; i < root.length; i++)
-      if (step.from.path[i] != root[i] || step.to.path[i] != root[i])
-        return null
-
-    let result = replace(doc, step.from, step.to, rootPos.path, step.param || nullRepl)
-    if (!result) return null
-    let {doc: out, moved} = result
-    let end = moved.length ? moved[moved.length - 1].dest : step.to
-    let replaced = new ReplacedRange(step.from, step.to, step.from, end, rootPos, rootPos)
-    return new StepResult(out, new PosMap(moved, [replaced]))
+    return StepResult.fromReplace(doc, step.from, step.to, step.param)
   },
-  invert(step, oldDoc, map) {
-    let depth = step.pos.depth
-    return new Step("replace", step.from, map.map(step.to).pos, {
-      content: oldDoc.path(step.pos.path).content.sliceBetween(step.from, step.to, depth),
-      openLeft: step.from.depth - depth,
-      openRight: step.to.depth - depth
-    })
+  posMap(step) {
+    return new PosMap([new ReplacedRange(step.from, step.to - step.from, step.param.content.size)])
   },
-  paramToJSON(param) {
-    return param && {content: param.content.size && param.content.toJSON(),
-                     openLeft: param.openLeft, openRight: param.openRight}
+  invert(step, oldDoc) {
+    return new Step("replace", step.from, step.from + step.param.content.size,
+                    oldDoc.slice(step.from, step.to))
   },
-  paramFromJSON(schema, json) {
-    return json && {content: Fragment.fromJSON(schema, json.content),
-                    openLeft: json.openLeft, openRight: json.openRight}
-  }
+  paramToJSON(param) { return param.toJSON() },
+  paramFromJSON(schema, json) { return Slice.fromJSON(schema, json) }
 })
+
+// :: (number, ?number, ?Slice) → Transform
+// Replace the part of the document between `from` and `to` with the
+// part of the `source` between `start` and `end`.
+Transform.define("replace", function(from, to = from, slice = Slice.empty) {
+  slice = fitSliceInto(this.doc.resolve(from), this.doc.resolve(to), slice)
+  if (from != to || slice.content.size)
+    this.step("replace", from, to, slice)
+})
+
+// FIXME check and fix content restrictions
+function fitSliceInto(from, to, slice) {
+  let open = openSliceLeft(slice)
+  // The part (a Node) of the slice that has been 'fitted' onto
+  // `from`, along with the depth at which it fits.
+  let landed, searchDepth = from.depth
+  // The part (Fragment) of the slice that could not yet be fitted.
+  // Kept in sync with the iteration over the open nodes, so that this
+  // (if non-null) is always of the content type that open[i + 1]
+  // contained.
+  let unlanded
+
+  // Iterate over the left open side of `slice`, trying to 'land' each
+  // level on an open element in `from`.
+  for (let i = open.length - 1; i >= 0; i--) {
+    let {content, node} = open[i], matched = -1
+    for (let j = searchDepth; matched < 0 && j >= i; j--) {
+      let other = from.node[j].type
+      if (node ? other.canContainFragment(content) : other.canContainContent(node.type))
+        matched = j
+    }
+
+    // Any unlanded content fits in here, so try to land it along
+    // with this content
+    if (unlanded) {
+      unlanded = content = Fragment.from(open[i + 1].node.copy(unlanded)).append(content)
+      unlanded = null
+    }
+
+    if (matched != -1) { // Found a place to put this content
+      let parent = from.node[matched]
+      // Combine with existing landed content, if any
+      if (landed) {
+        for (let j = searchDepth; j >= matched + 1; j--)
+          landed = from.node[j].copy(landed)
+        content = Fragment.from(landed).append(content)
+      }
+      landed = parent.copy(content)
+      searchDepth = matched - 1
+    } else { // No matching open node found
+      if (content.size) unlanded = content
+    }
+  }
+
+  // If there is unlanded content left, try to find a place for it
+  // using `findConnection`
+  if (unlanded) {
+    let kind // The most general kind of the unlanded content
+    for (let i = unlanded.childCount - 1; i >= 0; i--)
+      kind = kind ? kind.sharedSuperKind(unlanded.child(i).kind) : unlanded.child(i).kind
+    for (let i = searchDepth; i >= 0; i--) {
+      let parent = from.node[i], path = parent.type.findConnectionToKind(kind)
+      if (!path) continue
+      for (let j = path.length - 1; j >= 0; j--)
+        unlanded = Fragment.from(path[j].create(null, unlanded))
+      if (landed) {
+        for (let j = searchDepth; j >= matched + 1; j--)
+          landed = from.node[j].copy(landed)
+        unlanded = Fragment.from(landed).append(unlanded)
+      }
+      landed = parent.copy(unlanded)
+      searchDepth = i - 1
+      break
+    }
+  }
+
+  // FIXME determine openRight, add empty nodes to match additional open nodes in to
+  return new Slice(landed.content, from.depth - searchDepth, FIXME)
+}
+
+function openSliceLeft(slice) {
+  let open = [], next
+  for (let i = 0; i < slice.openLeft; i++) {
+    let content = (next || slice).content
+    let node = next
+    if (i < slice.openLeft - 1) {
+      next = content.firstChild
+      content = content.cut(next.nodeSize)
+    }
+    open.push({content, node})
+  }
+  return open
+} 
 
 function shiftFromStack(stack, depth) {
   let shifted = stack[depth] = stack[depth].slice(1)
