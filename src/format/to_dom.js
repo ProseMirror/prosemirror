@@ -189,8 +189,7 @@ OrderedList.prototype.countCoordsAsChild = BulletList.prototype.countCoordsAsChi
 
 def(ListItem, (node, s) => s.renderAs(node, "li"))
 
-def(HorizontalRule, (_, s) => s.elt("div", null, s.elt("img", {src: "http://prosemirror.net/img/logo.png"})))
-//  s.elt("hr"))
+def(HorizontalRule, (_, s) => s.elt("div", null, s.elt("hr"))
 
 def(Paragraph, (node, s) => s.renderAs(node, "p"))
 
