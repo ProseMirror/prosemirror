@@ -364,7 +364,7 @@ export class TextNode extends Node {
   constructor(type, attrs, content, marks) {
     super(type, attrs, null, marks)
 
-    if(content === "") throw new SchemaError("Empty text nodes are forbidden. Consider checking content prior to instantiating.")
+    if(!content) throw new SchemaError("Empty text nodes are forbidden. Consider checking content prior to instantiating.")
 
     // :: ?string
     // For text nodes, this contains the node's text content.
