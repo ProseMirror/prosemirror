@@ -8,17 +8,27 @@ const prefix = "ProseMirror-tooltip"
 // when showing the tooltip), and points at that position with a
 // little arrow-like triangle attached to the node.
 export class Tooltip {
-  // :: (DOMNode, string)
+  // :: (DOMNode, ?union<string, Object)
   // Create a new tooltip that lives in the wrapper node, which should
   // be its offset anchor, i.e. it should have a `relative` or
   // `absolute` CSS position. You'll often want to pass an editor's
-  // [`wrapper` node](#ProseMirror.wrapper). `dir` may be `"above"`,
-  // `"below"`, `"right"`, `"left"`, or `"center"`. In the latter
-  // case, the tooltip has no arrow and is positioned centered in its
-  // wrapper node.
-  constructor(wrapper, dir) {
+  // [`wrapper` node](#ProseMirror.wrapper). `options` may be an object
+  // containg a `direction` string and a `getBoundingRect` function which
+  // should return a rectangle determining the space in which the tooltip
+  // may appear. Alternatively, `options` may be a string specifying the
+  // direction. The direction can be `"above"`, `"below"`, `"right"`,
+  // `"left"`, or `"center"`. In the latter case, the tooltip has no arrow and
+  // is positioned centered in its wrapper node.
+  constructor(wrapper, options) {
     this.wrapper = wrapper
-    this.dir = dir || "above"
+    let defaultDir = "above"
+    if (typeof options == "object" && options != null) {
+      this.dir = options.direction || defaultDir
+      this.getBoundingRect = options.getBoundingRect
+    }
+    else { // Allow a single string to passed as the direction
+      this.dir = options || defaultDir
+    }
     this.pointer = wrapper.appendChild(elt("div", {class: prefix + "-pointer-" + this.dir + " " + prefix + "-pointer"}))
     this.pointerWidth = this.pointerHeight = null
     this.dom = wrapper.appendChild(elt("div", {class: prefix}))
@@ -62,6 +72,15 @@ export class Tooltip {
 
     let around = this.wrapper.getBoundingClientRect()
 
+    // Use the window as the bounding rectangle if no getBoundingRect function is defined
+    let boundingRect = this.getBoundingRect
+      ? this.getBoundingRect()
+      : {
+        left: 0, right: window.innerWidth,
+        top: 0, bottom: window.innerHeight,
+        width: window.innerWidth, height: window.innerHeight
+      }
+
     for (let child = this.dom.firstChild, next; child; child = next) {
       next = child.nextSibling
       if (child != this.pointer) this.dom.removeChild(child)
@@ -80,7 +99,7 @@ export class Tooltip {
 
     const margin = 5
     if (this.dir == "above" || this.dir == "below") {
-      let tipLeft = Math.max(0, Math.min(left - size.width / 2, window.innerWidth - size.width))
+      let tipLeft = Math.max(boundingRect.left, Math.min(left - size.width / 2, boundingRect.right - size.width))
       this.dom.style.left = (tipLeft - around.left) + "px"
       this.pointer.style.left = (left - around.left - this.pointerWidth / 2) + "px"
       if (this.dir == "above") {
@@ -105,7 +124,7 @@ export class Tooltip {
         this.pointer.style.left = pointerLeft + "px"
       }
     } else if (this.dir == "center") {
-      let top = Math.max(around.top, 0), bottom = Math.min(around.bottom, window.innerHeight)
+      let top = Math.max(around.top, boundingRect.top), bottom = Math.min(around.bottom, boundingRect.bottom)
       let fromTop = (bottom - top - size.height) / 2
       this.dom.style.left = (around.width - size.width) / 2 + "px"
       this.dom.style.top = (top - around.top + fromTop) + "px"
