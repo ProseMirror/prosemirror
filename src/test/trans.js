@@ -56,7 +56,7 @@ class DelayedTransform {
     return this.plus(tr => tr.wrap(tag(tr, from || "a"), tag(tr, to || "b"), tr.doc.type.schema.nodeType(type), attrs))
   }
 
-  type(type, attrs, from, to) {
+  blockType(type, attrs, from, to) {
     return this.plus(tr => tr.setBlockType(tag(tr, from || "a"), tag(tr, to || "b"),
                                            tr.doc.type.schema.nodeType(type), attrs))
   }

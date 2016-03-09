@@ -256,11 +256,9 @@ lift("end_of_list",
 lift("multiple_from_list_with_two_items",
      doc(ul(li(p("one<a>"), p("<half>half")), li(p("two<b>")), li(p("three<after>")))),
      doc(p("one<a>"), p("<half>half"), p("two<b>"), ul(li(p("three<after>")))))
-/*
+
 function wrap(name, doc, expect, type, attrs) {
-  defTest("wrap_" + name, () => {
-    testTransform(doc, expect, Tr(doc).wrap(doc.tag.a, doc.tag.b, schema.nodeType(type), attrs))
-  })
+  defTest("wrap_" + name, () => testTransform(tr.wrap(type, attrs).get(doc), expect))
 }
 
 wrap("simple",
@@ -281,7 +279,7 @@ wrap("nested_list",
      "ordered_list")
 wrap("not_possible",
      doc(p("hi<a>")),
-     doc(p("hi<a>")),
+     "fail",
      "horizontal_rule")
 wrap("include_parent",
      doc(blockquote(p("<1>one"), p("two<a>")), p("three<b>")),
@@ -293,15 +291,13 @@ wrap("bullet_list",
      "bullet_list")
 
 function type(name, doc, expect, nodeType, attrs) {
-  defTest("setType_" + name, () => {
-    testTransform(doc, expect, Tr(doc).setBlockType(doc.tag.a, doc.tag.b, schema.nodeType(nodeType), attrs))
-  })
+  defTest("blockType_" + name, () => testTransform(tr.blockType(nodeType, attrs).get(doc), expect))
 }
 
 type("simple",
      doc(p("am<a> i")),
      doc(h2("am i")),
-     "heading", {level: 2})
+     "heading", {level: "2"})
 type("multiple",
      doc(h1("<a>hello"), p("there"), p("<b>you"), p("end")),
      doc(pre("hello"), pre("there"), pre("you"), p("end")),
@@ -309,7 +305,7 @@ type("multiple",
 type("inside",
      doc(blockquote(p("one<a>"), p("two<b>"))),
      doc(blockquote(h1("one<a>"), h1("two<b>"))),
-     "heading", {level: 1})
+     "heading", {level: "1"})
 type("clear_markup",
      doc(p("hello<a> ", em("world"))),
      doc(pre("hello world")),
@@ -317,23 +313,21 @@ type("clear_markup",
 type("only_clear_for_code_block",
      doc(p("hello<a> ", em("world"))),
      doc(h1("hello<a> ", em("world"))),
-     "heading", {level: 1})
+     "heading", {level: "1"})
 
 function nodeType(name, doc, expect, type, attrs) {
-  defTest("nodeType_" + name, () => {
-    testTransform(doc, expect, Tr(doc).setNodeType(doc.tag.a, schema.nodeType(type), attrs))
-  })
+  defTest("nodeType_" + name, () => testTransform(tr.nodeType(type, attrs).get(doc), expect))
 }
 
 nodeType("valid",
          doc("<a>", p("foo")),
          doc(h1("foo")),
-         "heading", {level: 1})
+         "heading", {level: "1"})
 nodeType("invalid",
          doc("<a>", p("foo")),
-         doc(p("foo")),
+         "fail",
          "blockquote")
-
+/*
 function repl(name, doc, source, expect) {
   defTest("replace_" + name, () => {
     let tr = source ? Tr(doc).replace(doc.tag.a, doc.tag.b || doc.tag.a,

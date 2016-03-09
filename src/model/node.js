@@ -335,15 +335,6 @@ export class ResolvedPos {
   before(depth) { return depth == this.offset.length ? this.pos : this.start(depth) - 1 }
   after(depth) { return depth == this.offset.length ? this.pos : this.end(depth) + 1 }
 
-  move(pos) {
-    let diff = pos - this.pos
-    let index = this.index.slice(), offset = this.offset.slice(), parent = this.parent
-    let parentOffset = this.parentOffset + diff
-    index[this.depth] = findIndex(parent.content, parentOffset)
-    offset[this.depth] = foundOffset
-    return new ResolvedPos(pos, this.node, index, offset, parentOffset)
-  }
-
   static resolve(doc, pos) {
     let nodes = [], index = [], offset = [], parentOffset = pos
     for (let node = doc;;) {
@@ -363,18 +354,11 @@ export class ResolvedPos {
 
 let resolveCache = [], resolveCachePos = 0, resolveCacheSize = 6
 function resolveCached(doc, pos) {
-  let near = null
   for (let i = 0; i < resolveCache.length; i++) {
     let cached = resolveCache[i]
-    if (cached.node[0] == doc) {
-      if (cached.pos == pos) return cached
-      let start = cached.start()
-      if (cached.depth && pos > start && pos < start + cached.parent.content.size)
-        near = cached
-    }
+    if (cached.pos == pos && cached.node[0] == doc) return cached
   }
-  let result = near ? near.move(pos) : ResolvedPos.resolve(doc, pos)
-  resolveCache[resolveCachePos] = result
+  let result = resolveCache[resolveCachePos] = ResolvedPos.resolve(doc, pos)
   resolveCachePos = (resolveCachePos + 1) % resolveCacheSize
   return result
 }

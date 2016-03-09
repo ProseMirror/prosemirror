@@ -145,6 +145,7 @@ Transform.define("removeMark", function(from, to, mark = null) {
 Transform.define("clearMarkup", function(from, to, newParent) {
   let result = this, delSteps = [] // Must be accumulated and applied in inverse order
   this.doc.nodesBetween(from, to, (node, pos) => {
+    if (!node.isInline) return
     if (newParent ? !newParent.canContainType(node.type) : !node.type.isText) {
       delSteps.push(new Step("replace", pos, pos + node.nodeSize))
       return

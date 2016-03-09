@@ -1,4 +1,4 @@
-import {Pos, Slice, Fragment} from "../model"
+import {Slice, Fragment} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
@@ -35,13 +35,9 @@ Step.define("ancestor", {
     let {depth = 0, types = [], attrs = []} = step.param
     if (depth == 0 && types.length == 0) return StepResult.ok(doc)
 
-    let startDepth = from.depth
-    for (let i = 0; i < depth; i++) {
-      let parent = from.node[startDepth]
-      if (from.offset[startDepth] > 0 || to.offset[startDepth] < parent.content.size)
-        return StepResult.fail("Parent at depth " + i + " not fully covered")
-      startDepth--
-    }
+    for (let i = 0, d = from.depth; i < depth; i++, d--)
+      if (from.start(d) != from.pos - i || to.end(d) != to.pos + i)
+        return StepResult.fail("Parent at depth " + d + " not fully covered")
 
     let inner = from.parent, slice
     if (types.length) {
@@ -59,6 +55,7 @@ Step.define("ancestor", {
   },
   posMap(step) {
     let depth = step.param.depth || 0, newDepth = step.param.types ? step.param.types.length : 0
+    if (depth == newDepth && depth < 2) return PosMap.empty
     return new PosMap([new ReplacedRange(step.from - depth, depth, newDepth),
                        new ReplacedRange(step.to, depth, newDepth)])
   },
@@ -91,12 +88,19 @@ Step.define("ancestor", {
 // ancestor, or any of _its_ ancestor nodes, can be lifted out of a
 // parent.
 export function canLift(doc, from, to) {
-  return !!findLiftable(doc.resolve(from), doc.resolve(to))
+  return !!findLiftable(doc.resolve(from), doc.resolve(to == null ? from : to))
+}
+
+function rangeDepth(from, to) {
+  let shared = from.sameDepth(to)
+  if (from.node[shared].isTextblock) --shared
+  if (from.before(shared) >= to.after(shared)) return null
+  return shared
 }
 
 function findLiftable(from, to) {
-  let shared = from.sameDepth(to)
-  if (from.node[shared].isTextblock) --shared
+  let shared = rangeDepth(from, to)
+  if (shared == null) return null
   let parent = from.node[shared]
   for (let depth = shared - 1; depth >= 0; --depth)
     if (from.node[depth].type.canContainContent(parent.type))
@@ -110,7 +114,7 @@ function findLiftable(from, to) {
   }
 }
 
-// :: (Pos, ?Pos) → Transform
+// :: (number, ?number) → Transform
 // Lift the nearest liftable ancestor of the [sibling
 // range](#Node.siblingRange) of the given positions out of its
 // parent (or do nothing if no such node exists).
@@ -123,7 +127,7 @@ Transform.define("lift", function(from, to = from) {
   let start = rFrom.before(shared + 1), end = rTo.after(shared + 1)
   let result = this
 
-  for (let d = shared; d > depth; d--) if (rTo.index[d] < rTo.node[d].childCount) {
+  for (let d = shared; d > depth; d--) if (rTo.index[d] + 1 < rTo.node[d].childCount) {
     result = result.split(rTo.after(d + 1), d - depth)
     break
   }
@@ -137,75 +141,85 @@ Transform.define("lift", function(from, to = from) {
   }
 
   if (unwrap) {
-    start++
-    end--
-    let joinPos = start
+    let joinPos = start, parent = rFrom.node[shared]
     for (let i = rFrom.index[shared], e = rTo.index[shared] + 1, first = true; i < e; i++, first = false) {
-      if (!first) result = result.join(joinPos)
-      joinPos += parent.child(i).nodeSize
-      end -= 2
+      if (!first) {
+        result = result.join(joinPos)
+        end -= 2
+      }
+      joinPos += parent.child(i).nodeSize - (first ? 0 : 2)
     }
     shared++
+    start++
+    end--
   }
   return result.step("ancestor", start, end, {depth: shared - depth})
 })
 
-// :: (Node, Pos, ?Pos, NodeType) → bool
+// :: (Node, number, ?number, NodeType) → bool
 // Determines whether the [sibling range](#Node.siblingRange) of the
 // given positions can be wrapped in the given node type.
 export function canWrap(doc, from, to, type) {
-  let range = doc.siblingRange(from, to || from)
-  if (range.from.offset == range.to.offset) return null
-  let parent = doc.path(range.from.path)
-  let around = parent.type.findConnection(type)
-  let inside = type.findConnection(parent.child(range.from.offset).type)
-  if (around && inside) return {range, around, inside}
+  return !!checkWrap(doc.resolve(from), doc.resolve(to == null ? from : to), type)
 }
 
-// :: (Pos, ?Pos, NodeType, ?Object) → Transform
+function checkWrap(from, to, type) {
+  let shared = rangeDepth(from, to)
+  if (shared == null) return null
+  let parent = from.node[shared]
+  let around = parent.type.findConnection(type)
+  let inside = type.findConnection(parent.child(from.index[shared]).type)
+  if (around && inside) return {shared, around, inside}
+}
+
+// :: (number, ?number, NodeType, ?Object) → Transform
 // Wrap the [sibling range](#Node.siblingRange) of the given positions
 // in a node of the given type, with the given attributes (if
 // possible).
-Transform.prototype.wrap = function(from, to, type, wrapAttrs) {
-  let can = canWrap(this.doc, from, to, type)
-  if (!can) return this
-  let {range, around, inside} = can
+Transform.define("wrap", function(from, to = from, type, wrapAttrs) {
+  let rFrom = this.doc.resolve(from), rTo = this.doc.resolve(to)
+  let check = checkWrap(rFrom, rTo, type)
+  if (!check) return this.fail("No wrap possible")
+  let {shared, around, inside} = check
+
   let types = around.concat(type).concat(inside)
   let attrs = around.map(() => null).concat(wrapAttrs).concat(inside.map(() => null))
-  this.step("ancestor", range.from, range.to, {types, attrs})
+  let start = rFrom.before(shared + 1)
+  let result = this.step("ancestor", start, rTo.after(shared + 1), {types, attrs})
   if (inside.length) {
-    let toInner = range.from.path.slice()
-    for (let i = 0; i < around.length + inside.length + 1; i++)
-      toInner.push(i ? 0 : range.from.offset)
-    for (let i = range.to.offset - 1 - range.from.offset; i > 0; i--)
-      this.split(new Pos(toInner, i), inside.length)
+    let splitPos = start + types.length, parent = rFrom.node[shared]
+    for (let i = rFrom.index[shared], e = rTo.index[shared] + 1, first = true; i < e; i++, first = false) {
+      if (!first)
+        result = result.split(splitPos, inside.length)
+      splitPos += parent.child(i).nodeSize + (first ? 0 : 2 * inside.length)
+    }
   }
-  return this
-}
+  return result
+})
 
-// :: (Pos, ?Pos, NodeType, ?Object) → Transform
+// :: (number, ?number, NodeType, ?Object) → Transform
 // Set the type of all textblocks (partly) between `from` and `to` to
 // the given node type with the given attributes.
-Transform.prototype.setBlockType = function(from, to, type, attrs) {
-  this.doc.nodesBetween(from, to || from, (node, path) => {
+Transform.define("setBlockType", function(from, to = from, type, attrs) {
+  let result = this
+  this.doc.nodesBetween(from, to, (node, pos) => {
     if (node.isTextblock && !node.hasMarkup(type, attrs)) {
-      path = path.slice()
       // Ensure all markup that isn't allowed in the new node type is cleared
-      this.clearMarkup(new Pos(path, 0), new Pos(path, node.size), type)
-      this.step("ancestor", new Pos(path, 0), new Pos(path, this.doc.path(path).size),
-                {depth: 1, types: [type], attrs: [attrs]})
+      let start = pos + 1, end = start + node.content.size
+      result = result.clearMarkup(start, end, type)
+      result = result.step("ancestor", start, end,
+                           {depth: 1, types: [type], attrs: [attrs]})
       return false
     }
   })
-  return this
-}
+  return result
+})
 
-// :: (Pos, NodeType, ?Object) → Transform
+// :: (number, NodeType, ?Object) → Transform
 // Change the type and attributes of the node after `pos`.
-Transform.prototype.setNodeType = function(pos, type, attrs) {
-  let node = this.doc.nodeAfter(pos)
-  let path = pos.toPath()
-  this.step("ancestor", new Pos(path, 0), new Pos(path, node.size),
-            {depth: 1, types: [type], attrs: [attrs]})
-  return this
-}
+Transform.define("setNodeType", function(pos, type, attrs) {
+  let rPos = this.doc.resolve(pos)
+  let node = rPos.nodeAfter
+  if (!node || !node.type.contains) return this.fail("No content node at given position")
+  return this.step("ancestor", pos + 1, pos + 1 + node.content.size, {depth: 1, types: [type], attrs: [attrs]})
+})

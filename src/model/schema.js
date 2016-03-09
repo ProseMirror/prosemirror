@@ -231,6 +231,8 @@ export class NodeType extends SchemaItem {
   // to be inserted between this type and `other` to put a node of
   // type `other` into this type.
   findConnection(other) {
+    // FIXME maybe cache these, since wrap commands compute this every
+    // time their .select is called
     if (this.canContainType(other)) return []
 
     let seen = Object.create(null)
