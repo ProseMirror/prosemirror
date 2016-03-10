@@ -183,9 +183,8 @@ ParamPrompt.prototype.paramTypes = Object.create(null)
 
 ParamPrompt.prototype.paramTypes.text = {
   render(param, value) {
-    let label = this.translate(param.label)
     return elt("input", {type: "text",
-                         placeholder: label,
+                         placeholder: this.translate(param.label),
                          value,
                          autocomplete: "off"})
   },
@@ -196,9 +195,9 @@ ParamPrompt.prototype.paramTypes.text = {
 
 ParamPrompt.prototype.paramTypes.select = {
   render(param, value) {
-    let translate = this.translate.bind(this)
     let options = param.options.call ? param.options(this) : param.options
-    return elt("select", null, options.map(o => elt("option", {value: o.value, selected: o.value == value ? "true" : null}, translate(o.label))))
+    return elt("select", null, options.map(o => elt("option", {value: o.value, selected: o.value == value ? "true" : null},
+                                                    this.translate(o.label))))
   },
   read(dom) {
     return dom.value

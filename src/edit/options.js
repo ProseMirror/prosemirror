@@ -83,7 +83,7 @@ defineOption("label", null)
 // Optional function to translate strings such as menu labels and prompts.
 // When set, should be a function that takes a string as argument and returns
 // a string, i.e. :: (string) → string
-defineOption("translate", null)
+defineOption("translate", null) // FIXME create a way to explicitly force a menu redraw
 
 export function parseOptions(obj) {
   let result = Object.create(null)
