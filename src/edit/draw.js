@@ -10,14 +10,16 @@ import {childContainer} from "./dompos"
 function options(path, ranges) {
   return {
     onRender(node, dom, offset) {
-      if (!node.isText && node.type.contains == null) {
-        dom.contentEditable = false
-        if (node.isBlock) dom.setAttribute("pm-leaf", "true")
+      if (node.isBlock) {
+        if (node.type.contains == null)
+          dom.setAttribute("pm-leaf", "true")
+        if (offset != null)
+          dom.setAttribute("pm-offset", offset)
+        if (node.isTextblock)
+          adjustTrailingHacks(dom, node)
+        if (dom.contentEditable == "false")
+          dom = elt("div", dom)
       }
-      if (node.isBlock && offset != null)
-        dom.setAttribute("pm-offset", offset)
-      if (node.isTextblock)
-        adjustTrailingHacks(dom, node)
 
       return dom
     },
