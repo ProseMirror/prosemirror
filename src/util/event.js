@@ -36,19 +36,19 @@ const methods = {
     for (let i = 0; i < arr.length; ++i) arr[i](...args)
   },
 
-  // :: (type: string, ...args: [any]) → any #path=EventMixin.signalHandleable
-  // Signal a handleable event of the given type. All handlers for the
-  // event will be called with the given arguments, until one of them
-  // returns something that is not the value `false`. When that
-  // happens, the return value of that handler is returned. If that
-  // does not happen, `false` is returned.
+  // :: (type: string, ...args: [any]) → any
+  // #path=EventMixin.signalHandleable Signal a handleable event of
+  // the given type. All handlers for the event will be called with
+  // the given arguments, until one of them returns something that is
+  // not the value `null` or `undefined`. When that happens, the
+  // return value of that handler is returned. If that does not
+  // happen, `undefined` is returned.
   signalHandleable(type, ...args) {
     let arr = getHandlers(this, type, true)
     for (let i = 0; i < arr.length; ++i) {
       let result = arr[i](...args)
-      if (result !== false) return result
+      if (result != null) return result
     }
-    return false
   },
 
   // :: (type: string, value: any) → any #path=EventMixin.signalPipelined
