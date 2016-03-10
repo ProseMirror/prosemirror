@@ -214,6 +214,11 @@ export class ProseMirror {
   //   : When true, scroll the selection into view on the next
   //     [redraw](#ProseMirror.flush).
   //
+  // **`filter`**: ?bool
+  //   : When set to false, suppresses the ability of the
+  //     [`"filterTransform"` event](#ProseMirror.event_beforeTransform)
+  //     to cancel this transform.
+  //
   // Returns the transform, or `false` if there were no steps in it.
   //
   // Has the following property:
@@ -221,6 +226,13 @@ export class ProseMirror {
     if (transform.doc == this.doc) return false
     if (transform.docs[0] != this.doc && findDiffStart(transform.docs[0], this.doc))
       throw new AssertionError("Applying a transform that does not start with the current document")
+
+    // :: (transform: Transform) #path=ProseMirror#events#filterTransform
+    // Fired before a transform (applied without `filter: false`) is
+    // applied. The handler can return a truthy value to cancel the
+    // transform.
+    if (options.filter !== false && this.signalHandleable("filterTransform", transform))
+      return false
 
     let selectionBeforeTransform = this.selection
 
