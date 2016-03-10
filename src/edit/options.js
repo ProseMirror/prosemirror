@@ -79,6 +79,12 @@ defineOption("commandParamPrompt", ParamPrompt)
 // `aria-label` attribute with this value.
 defineOption("label", null)
 
+// :: ?function #path=translate #kind=option
+// Optional function to translate strings such as menu labels and prompts.
+// When set, should be a function that takes a string as argument and returns
+// a string, i.e. :: (string) → string
+defineOption("translate", null)
+
 export function parseOptions(obj) {
   let result = Object.create(null)
   let given = obj ? [obj].concat(obj.use || []) : []

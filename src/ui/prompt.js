@@ -31,7 +31,7 @@ export class ParamPrompt {
         throw new AssertionError("Unsupported parameter type: " + param.type)
       return this.paramTypes[param.type].render.call(this.pm, param, this.defaultValue(param))
     })
-    let promptTitle = elt("h5", {}, (command.spec && command.spec.label) ? command.spec.label : "")
+    let promptTitle = elt("h5", {}, (command.spec && command.spec.label) ? pm.translate(command.spec.label) : "")
     let submitButton = elt("button", {type: "submit", class: "ProseMirror-prompt-submit"}, "Ok")
     let cancelButton = elt("button", {type: "button", class: "ProseMirror-prompt-cancel"}, "Cancel")
     cancelButton.addEventListener("click", () => this.close())
@@ -183,8 +183,9 @@ ParamPrompt.prototype.paramTypes = Object.create(null)
 
 ParamPrompt.prototype.paramTypes.text = {
   render(param, value) {
+    let label = this.translate(param.label)
     return elt("input", {type: "text",
-                         placeholder: param.label,
+                         placeholder: label,
                          value,
                          autocomplete: "off"})
   },
@@ -195,8 +196,9 @@ ParamPrompt.prototype.paramTypes.text = {
 
 ParamPrompt.prototype.paramTypes.select = {
   render(param, value) {
+    let translate = this.translate.bind(this)
     let options = param.options.call ? param.options(this) : param.options
-    return elt("select", null, options.map(o => elt("option", {value: o.value, selected: o.value == value ? "true" : null}, o.label)))
+    return elt("select", null, options.map(o => elt("option", {value: o.value, selected: o.value == value ? "true" : null}, translate(o.label))))
   },
   read(dom) {
     return dom.value
