@@ -6,7 +6,6 @@ export class ReplaceError extends ProseMirrorError {}
 
 export class Slice {
   constructor(content, openLeft, openRight) {
-    if (!(content instanceof Fragment)) throw new Error("NO MAN")
     this.content = content
     this.openLeft = openLeft
     this.openRight = openRight
@@ -20,7 +19,7 @@ export class Slice {
   }
 
   static fromJSON(schema, json) {
-    if (!json) return new Slice.empty
+    if (!json) return Slice.empty
     return new Slice(Fragment.fromJSON(schema, json.content), json.openLeft, json.openRight)
   }
 }
@@ -50,7 +49,7 @@ function replaceOuter(from, to, slice, depth) {
 
 function checkJoin(main, sub) {
   if (!main.type.canContainContent(sub.type))
-    throw new ReplaceError("Can not join " + sub.type.name + " onto " + main.type.name)
+    throw new ReplaceError("Cannot join " + sub.type.name + " onto " + main.type.name)
 }
 
 function joinable(before, after, depth) {
@@ -124,7 +123,7 @@ function replaceTwoWay(from, to, depth) {
 function prepareSliceForReplace(slice, along) {
   let extra = along.depth - slice.openLeft, parent = along.node[extra]
   if (!parent.type.canContainFragment(slice.content))
-    throw new ReplaceError("Content " + slice + " can not be placed in " + parent.type.name)
+    throw new ReplaceError("Content " + slice.content + " cannot be placed in " + parent.type.name)
   let node = parent.copy(slice.content)
   // FIXME only copy up to start depth? rest won't be used
   for (let i = extra - 1; i >= 0; i--)

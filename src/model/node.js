@@ -71,8 +71,7 @@ export class Node {
   // :: (Node) → bool
   // Test whether two nodes represent the same content.
   eq(other) {
-    if (this == other) return true
-    return this.sameMarkup(other) && this.content.eq(other.content)
+    return this == other || (this.sameMarkup(other) && this.content.eq(other.content))
   }
 
   // :: (Node) → bool
@@ -239,7 +238,7 @@ export class TextNode extends Node {
   constructor(type, attrs, content, marks) {
     super(type, attrs, null, marks)
 
-    if (!content) throw new SchemaError("Empty text nodes are not allowed")
+    if (!content) throw new ModelError("Empty text nodes are not allowed")
 
     // :: ?string
     // For text nodes, this contains the node's text content.
@@ -259,6 +258,10 @@ export class TextNode extends Node {
   cut(from = 0, to = this.text.length) {
     if (from == 0 && to == this.text.length) return this
     return this.copy(this.text.slice(from, to))
+  }
+
+  eq(other) {
+    return this.sameMarkup(other) && this.text == other.text
   }
 
   toJSON() {

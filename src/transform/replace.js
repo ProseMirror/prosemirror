@@ -43,6 +43,12 @@ Step.define("replace", {
   paramFromJSON(schema, json) { return Slice.fromJSON(schema, json) }
 })
 
+// :: (number, number) → Transform
+// Delete the content between the given positions.
+Transform.define("delete", function(from, to) {
+  this.replace(from, to, Slice.empty)
+})
+
 // :: (number, ?number, ?Slice) → Transform
 // Replace the part of the document between `from` and `to` with the
 // part of the `source` between `start` and `end`.
@@ -52,79 +58,61 @@ Transform.define("replace", function(from, to = from, slice = Slice.empty) {
     this.step("replace", from, to, slice)
 })
 
-// FIXME check and fix content restrictions
-function fitSliceInto(from, to, slice) {
-  let open = openSliceLeft(slice)
-  // The part (a Node) of the slice that has been 'fitted' onto
-  // `from`, along with the depth at which it fits.
-  let landed, searchDepth = from.depth
-  // The part (Fragment) of the slice that could not yet be fitted.
-  // Kept in sync with the iteration over the open nodes, so that this
-  // (if non-null) is always of the content type that open[i + 1]
-  // contained.
-  let unlanded
+// :: (number, number, union<Fragment, Node, [Node]>) → Transform
+// Replace the given range with the given content, which may be a
+// fragment, node, or array of nodes.
+Transform.define("replaceWith", function(from, to, content) {
+  this.replace(from, to, new Slice(Fragment.from(content), 0, 0))
+})
 
-  // Iterate over the left open side of `slice`, trying to 'land' each
-  // level on an open element in `from`.
-  for (let i = open.length - 1; i >= 0; i--) {
-    let {content, node} = open[i], matched = -1
-    for (let j = searchDepth; matched < 0 && j >= i; j--) {
-      let other = from.node[j].type
-      if (node ? other.canContainFragment(content) : other.canContainContent(node.type))
-        matched = j
-    }
+// :: (number, union<Fragment, Node, [Node]>) → Transform
+// Insert the given content at the given position.
+Transform.define("insert", function(pos, content) {
+  this.replaceWith(pos, pos, content)
+})
 
-    // Any unlanded content fits in here, so try to land it along
-    // with this content
-    if (unlanded) {
-      unlanded = content = Fragment.from(open[i + 1].node.copy(unlanded)).append(content)
-      unlanded = null
-    }
+// :: (number, string) → Transform
+// Insert the given text at `pos`, inheriting the marks of the
+// existing content at that position.
+Transform.define("insertText", function(pos, text) {
+  this.insert(pos, this.doc.type.schema.text(text, this.doc.marksAt(pos)))
+})
 
-    if (matched != -1) { // Found a place to put this content
-      let parent = from.node[matched]
-      // Combine with existing landed content, if any
-      if (landed) {
-        for (let j = searchDepth; j >= matched + 1; j--)
-          landed = from.node[j].copy(landed)
-        content = Fragment.from(landed).append(content)
+// :: (number, Node) → Transform
+// Insert the given node at `pos`, inheriting the marks of the
+// existing content at that position.
+Transform.define("insertInline", function(pos, node) {
+  this.insert(pos, node.mark(this.doc.marksAt(pos)))
+})
+
+function decomposeSlice(slice) {
+  let slices = [], next, openRight = slice.openRight
+  for (let i = 0; i <= slice.openLeft; i++) {
+    let content = (next || slice).content
+    let node = next, right = openRight
+    if (i < slice.openLeft - 1) {
+      next = content.firstChild
+      content = content.cut(next.nodeSize)
+      if (content.size) {
+        
+      } else {
       }
-      landed = parent.copy(content)
-      searchDepth = matched - 1
-    } else { // No matching open node found
-      if (content.size) unlanded = content
     }
+    slices.push(new Slice(content, 1, right))
   }
+  return slices
+}
 
-  // If there is unlanded content left, try to find a place for it
-  // using `findConnection`
-  if (unlanded) {
-    let kind // The most general kind of the unlanded content
-    for (let i = unlanded.childCount - 1; i >= 0; i--)
-      kind = kind ? kind.sharedSuperKind(unlanded.child(i).kind) : unlanded.child(i).kind
-    for (let i = searchDepth; i >= 0; i--) {
-      let parent = from.node[i], path = parent.type.findConnectionToKind(kind)
-      if (!path) continue
-      for (let j = path.length - 1; j >= 0; j--)
-        unlanded = Fragment.from(path[j].create(null, unlanded))
-      if (landed) {
-        for (let j = searchDepth; j >= matched + 1; j--)
-          landed = from.node[j].copy(landed)
-        unlanded = Fragment.from(landed).append(unlanded)
-      }
-      landed = parent.copy(unlanded)
-      searchDepth = i - 1
-      break
-    }
-  }
-
-  // FIXME determine openRight, add empty nodes to match additional open nodes in to
-  return new Slice(landed.content, from.depth - searchDepth, FIXME)
+function fragmentSuperKind(fragment) {
+  let kind
+  for (let i = fragment.childCount - 1; i >= 0; i--)
+    kind = kind ? kind.sharedSuperKind(fragment.child(i).kind) : fragment.child(i).kind
+  return kind
 }
 
 function openSliceLeft(slice) {
   let open = [], next
-  for (let i = 0; i < slice.openLeft; i++) {
+  for (let i = 0; i <= slice.openLeft; i++) {
     let content = (next || slice).content
     let node = next
     if (i < slice.openLeft - 1) {
@@ -134,75 +122,89 @@ function openSliceLeft(slice) {
     open.push({content, node})
   }
   return open
-} 
-
-function shiftFromStack(stack, depth) {
-  let shifted = stack[depth] = stack[depth].slice(1)
-  for (let i = depth - 1; i >= 0; i--)
-    shifted = stack[i] = stack[i].replace(0, shifted)
 }
 
-// : ([Node], Node, Pos, Pos) → {repl: {content: Fragment, openLeft: number, openRight: number}, depth: number}
-// Given a document that should be inserted into another document,
-// create a modified document that can be inserted into the other
-// based on schema context.
-// FIXME find a not so horribly confusing way to express this
-function buildInserted(nodesLeft, source, start, end) {
-  let sliced = source.sliceBetween(start, end)
-  let nodesRight = []
-  for (let node = sliced, i = 0; i <= start.path.length; i++, node = node.firstChild)
-    nodesRight.push(node)
-  let same = samePathDepth(start, end)
-  let searchLeft = nodesLeft.length - 1, searchRight = nodesRight.length - 1
-  let result = null, dLeft = start.depth, dRight = end.depth
+function findAttachableDepths(from, slice) {
+  let open = openSliceLeft(slice), openRight = slice.openRight
+  let search = open.length - 1, found = []
+  let found = []
 
-  let inner = nodesRight[searchRight]
-  if (inner.isTextblock && inner.size && nodesLeft[searchLeft].isTextblock) {
-    result = nodesLeft[searchLeft--].copy(inner.content)
-    --searchRight
-    shiftFromStack(nodesRight, searchRight)
-  }
-
-  for (;; searchRight--) {
-    let node = nodesRight[searchRight], type = node.type, matched = null
-    let outside = searchRight <= same
-    // Find the first node (searching from leaf to trunk) which can
-    // contain the content to be inserted.
-    for (let i = searchLeft; i >= 0; i--) {
-      let left = nodesLeft[i]
-      if (outside ? left.type.canContainContent(node.type) : left.type == type) {
-        matched = i
-        break
-      }
-    }
-    if (matched != null) {
-      if (!result) {
-        result = nodesLeft[matched].copy(node.content)
-        searchLeft = matched - 1
-      } else {
-        while (searchLeft >= matched) {
-          let wrap = nodesLeft[searchLeft]
-          let content = Fragment.from(result)
-          result = wrap.copy(searchLeft == matched ? content.append(node.content) : content)
-          searchLeft--
-        }
-      }
-      if (outside) break
-    } else {
-      --dLeft
-    }
-    if (matched != null || node.size == 0) {
-      if (outside && matched == null) --dRight
-      shiftFromStack(nodesRight, searchRight - 1)
+  for (let depth = from.depth; depth >= search && search >= 0; --depth) {
+    let cur = open[search], target = from.node[depth].type
+    if (cur.node ? target.canContainContent(cur.node.type) : target.canContainFragment(cur.content)) {
+      found[depth] = cur.content
+      --search
     }
   }
 
-  let repl = {content: result ? result.content : Fragment.empty,
-              openLeft: dLeft - searchRight,
-              openRight: dRight - searchRight}
-  return {repl, depth: searchLeft + 1}
+  let openRight = slice.openRight
+  // Some content couldn't be placed directly into the open side
+  if (search > 0) {
+    let leftover
+    for (let i = search; i >= 0; i--) {
+      let content = open[i].content
+      leftover = leftover ? Fragment.from(open[i + 1].node.copy(leftover)).append(content) : content
+    }
+    console.log("left over " + leftover)
+    let kind = fragmentSuperKind(leftover), landed = false
+    for (let depth = matchedDepth - 1; depth >= 0; --depth) {
+      let node = from.node[depth], conn = node.type.findConnectionToKind(kind)
+      if (conn) {
+        for (let i = conn.length - 1; i >= 0; i--)
+          leftover = Fragment.from(conn[i].create(null, leftover))
+        found[depth] = leftover
+        openRight += conn.length
+        landed = true
+      }
+    }
+    if (!landed) openRight = 0
+  }
+  return {found, openRight}
 }
 
+// FIXME check and fix content restrictions
+function fitSliceInto(from, to, slice) {
+  let {found, openRight} = findAttachableDepths(from, slice)
+  let first = 0
+  while (found[first] == null && first < found.length) ++first
+  let rootDepth = Math.min(first, from.sameDepth(to))
+
+  let fitted = buildFitted(from, to, found, rootDepth, openRight)
+  return new Slice(fitted, from.depth - rootDepth, to.depth - rootDepth)
+}
+
+function buildFitted(from, to, found, depth, openRight) {
+  let moreFrom = from.depth > depth, moreTo = to.depth > depth
+  let content = found[depth] || Fragment.empty
+  if (moreFrom && moreTo && openRight > 0 && !content.size) {
+    content = Fragment.from(from.node[depth].copy(buildFitted(from, to, found, depth + 1, openRight - 1)))
+  } else {
+    if (moreFrom) {
+      let inner = buildFittedLeft(from, found, depth + 1)
+      content = Fragment.from(from.node[depth].copy(inner)).append(content)
+    }
+    if (moreTo) {
+      let inner = buildFittedRight(to, depth + 1, openRight - 1)
+      content = content.append(Fragment.from(to.node[depth].copy(inner)))
+    }
+  }
+  return content
+}
+
+function buildFittedLeft(from, found, depth) {
+  let content = found[depth] || Fragment.empty
+  if (from.depth > depth) {
+    let inner = buildFittedLeft(from, found, depth + 1)
+    content = Fragment.from(from.node[depth].copy(inner)).append(content)
+  }
+  return content
+}
+
+function buildFittedRight(to, depth, open) {
+  !!!wrong
+}
+
+/* FIXME restore something like this
 function moveText(tr, doc, before, after) {
   let root = samePathDepth(before, after)
   let cutAt = after.shorten(null, 1)
@@ -225,103 +227,4 @@ function moveText(tr, doc, before, after) {
     })
   for (let i = root; i < before.path.length; i++)
     tr.join(before.shorten(i, 1))
-}
-
-// :: (Pos, Pos) → Transform
-// Delete the content between the given positions.
-Transform.prototype.delete = function(from, to) {
-  if (from.cmp(to)) this.replace(from, to)
-  return this
-}
-
-// :: (Pos, Pos, Node, Pos, Pos) → Transform
-// Replace the part of the document between `from` and `to` with the
-// part of the `source` between `start` and `end`.
-Transform.prototype.replace = function(from, to, source, start, end) {
-  let repl, depth, doc = this.doc, maxDepth = samePathDepth(from, to)
-  if (source) {
-    ;({repl, depth} = buildInserted(doc.pathNodes(from.path), source, start, end))
-    while (depth > maxDepth) {
-      if (repl.content.size)
-        repl = {content: Fragment.from(doc.path(from.path.slice(0, depth)).copy(repl.content)),
-                openLeft: repl.openLeft + 1, openRight: repl.openRight + 1}
-      depth--
-    }
-  } else {
-    repl = nullRepl
-    depth = maxDepth
-  }
-  let root = from.shorten(depth), docAfter = doc, after = to
-  if (repl.content.size || replaceHasEffect(doc, from, to)) {
-    let result = this.step("replace", from, to, repl)
-    docAfter = result.doc
-    after = result.map.map(to).pos
-  }
-
-  // If no text nodes before or after end of replacement, don't glue text
-  if (!doc.path(to.path).isTextblock) return this
-  if (!(repl.content.size ? source.path(end.path).isTextblock : doc.path(from.path).isTextblock)) return this
-
-  let nodesAfter = doc.path(root.path).pathNodes(to.path.slice(depth)).slice(1)
-  let nodesBefore
-  if (repl.content.size) {
-    let inserted = repl.content
-    nodesBefore = []
-    for (let i = 0; i < repl.openRight; i++) {
-      let last = inserted.child(inserted.size - 1)
-      nodesBefore.push(last)
-      inserted = last.content
-    }
-  } else {
-    nodesBefore = doc.path(root.path).pathNodes(from.path.slice(depth)).slice(1)
-  }
-
-  if (nodesBefore.length &&
-      (nodesAfter.length != nodesBefore.length ||
-       !nodesAfter.every((n, i) => n.sameMarkup(nodesBefore[i])))) {
-    let {path, offset} = after.shorten(root.depth), before
-    for (let node = docAfter.path(path), i = 0;; i++) {
-      if (i == nodesBefore.length) {
-        before = new Pos(path, offset)
-        break
-      }
-      path.push(offset - 1)
-      node = node.child(offset - 1)
-      offset = node.size
-    }
-    moveText(this, docAfter, before, after)
-  }
-  return this
-}
-
-// :: (Pos, Pos, union<Fragment, Node, [Node]>) → Transform
-// Replace the given range with the given content, which may be a
-// fragment, node, or array of nodes.
-Transform.prototype.replaceWith = function(from, to, content) {
-  if (!(content instanceof Fragment)) content = Fragment.from(content)
-  if (Pos.samePath(from.path, to.path))
-    this.step("replace", from, to, {content, openLeft: 0, openRight: 0})
-  else
-    this.delete(from, to).step("replace", from, from, {content, openLeft: 0, openRight: 0})
-  return this
-}
-
-// :: (Pos, union<Fragment, Node, [Node]>) → Transform
-// Insert the given content at the `pos`.
-Transform.prototype.insert = function(pos, content) {
-  return this.replaceWith(pos, pos, content)
-}
-
-// :: (Pos, string) → Transform
-// Insert the given text at `pos`, inheriting the marks of the
-// existing content at that position.
-Transform.prototype.insertText = function(pos, text) {
-  return this.insert(pos, this.doc.type.schema.text(text, this.doc.marksAt(pos)))
-}
-
-// :: (Pos, Node) → Transform
-// Insert the given node at `pos`, inheriting the marks of the
-// existing content at that position.
-Transform.prototype.insertInline = function(pos, node) {
-  return this.insert(pos, node.mark(this.doc.marksAt(pos)))
-}
+}*/

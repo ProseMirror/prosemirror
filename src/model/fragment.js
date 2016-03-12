@@ -63,6 +63,15 @@ export class Fragment {
     return new Fragment(result, size)
   }
 
+  append(other) {
+    if (this.size == 0) return other
+    if (other.size == 0) return this
+    let content = this.content.concat(other.content), last = this.lastChild
+    if (last.isText && other.firstChild.sameMarkup(last))
+      content.splice(this.childCount - 1, 2, last.copy(last.text + other.firstChild.text))
+    return new Fragment(content, this.size + other.size)
+  }
+
   replace(index, node) {
     let copy = this.content.slice()
     let size = this.size + node.nodeSize - copy[index].nodeSize

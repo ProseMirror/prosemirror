@@ -254,7 +254,7 @@ export class NodeType extends SchemaItem {
         }
       }
     }
-    
+  }
 
   computeAttrs(attrs, content) {
     if (!attrs && this.defaultAttrs) return this.defaultAttrs

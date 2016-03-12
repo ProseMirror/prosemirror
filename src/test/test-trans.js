@@ -327,13 +327,10 @@ nodeType("invalid",
          doc("<a>", p("foo")),
          "fail",
          "blockquote")
-/*
+
 function repl(name, doc, source, expect) {
   defTest("replace_" + name, () => {
-    let tr = source ? Tr(doc).replace(doc.tag.a, doc.tag.b || doc.tag.a,
-                                      source, source && source.tag.a, source && source.tag.b)
-                    : Tr(doc).delete(doc.tag.a, doc.tag.b)
-    testTransform(doc, expect, tr)
+    testTransform(tr.repl(source && source.slice(source.tag.a, source.tag.b)).get(doc), expect)
   })
 }
 
@@ -341,6 +338,7 @@ repl("add_text",
      doc(p("hell<a>o y<b>ou")),
      doc(p("<a>i k<b>")),
      doc(p("helli k<a><b>ou")))
+/*
 repl("add_paragraph",
      doc(p("hello<a>you")),
      doc("<a>", p("there"), "<b>"),

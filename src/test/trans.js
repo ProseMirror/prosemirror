@@ -65,9 +65,8 @@ class DelayedTransform {
     return this.plus(tr => tr.setNodeType(tag(tr, at || "a"), tr.doc.type.schema.nodeType(type), attrs))
   }
 
-  repl(other, from, to) {
-    return this.plus(tr => tr.replace(tag(tr, from || "a"), tag(tr, to || "b"),
-                                      other && other.slice(other.tag.a, other.tag.b)))
+  repl(slice, from, to) {
+    return this.plus(tr => tr.replace(tag(tr, from || "a"), tag(tr, to || "b"), slice))
   }
 
   get(doc) {
@@ -112,6 +111,7 @@ export function testTransform(tr, expect) {
   }
 
   cmpNode(tr.doc, expect)
+  console.log("compared\n " + tr.doc + "\n " + expect)
   let inverted = invert(tr)
   if (inverted.failed) throw new Failure("Inverting transform failed: " + inverted.failed)
   cmpNode(inverted.doc, tr.before, "inverted")
