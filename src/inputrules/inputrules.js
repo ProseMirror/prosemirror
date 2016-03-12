@@ -128,7 +128,7 @@ function getContext(doc, pos) {
   let textBefore = ""
   for (let i = parent.iter(0, pos.offset), child; child = i.next().value;) {
     if (child.isText) textBefore += child.text
-    else textBefore = ""
+    else textBefore += "\ufffc"
     if (i.atEnd() && child.marks.some(st => st.type.isCode)) isCode = true
   }
   return {textBefore, isCode}
