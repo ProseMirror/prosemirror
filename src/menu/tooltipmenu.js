@@ -59,7 +59,7 @@ class TooltipMenu {
 
     this.showLinks = this.config.showLinks !== false
     this.selectedBlockMenu = this.config.selectedBlockMenu
-    this.updater = new UpdateScheduler(pm, "change selectionChange blur commandsChanged", () => this.update())
+    this.updater = new UpdateScheduler(pm, "change selectionChange blur focus commandsChanged", () => this.update())
     this.onContextMenu = this.onContextMenu.bind(this)
     pm.content.addEventListener("contextmenu", this.onContextMenu)
 
