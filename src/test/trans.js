@@ -111,7 +111,6 @@ export function testTransform(tr, expect) {
   }
 
   cmpNode(tr.doc, expect)
-  console.log("compared\n " + tr.doc + "\n " + expect)
   let inverted = invert(tr)
   if (inverted.failed) throw new Failure("Inverting transform failed: " + inverted.failed)
   cmpNode(inverted.doc, tr.before, "inverted")

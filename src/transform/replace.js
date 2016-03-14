@@ -85,22 +85,71 @@ Transform.define("insertInline", function(pos, node) {
   this.insert(pos, node.mark(this.doc.marksAt(pos)))
 })
 
-function decomposeSlice(slice) {
-  let slices = [], next, openRight = slice.openRight
-  for (let i = 0; i <= slice.openLeft; i++) {
-    let content = (next || slice).content
-    let node = next, right = openRight
-    if (i < slice.openLeft - 1) {
-      next = content.firstChild
-      content = content.cut(next.nodeSize)
-      if (content.size) {
-        
-      } else {
-      }
-    }
-    slices.push(new Slice(content, 1, right))
+function fitSliceInto(from, to, slice) {
+  let base = from.sameDepth(to)
+  let placed = placeSlice(from, slice)
+  if (placed.length) for (let i = 0;; i++) if (placed[i]) {
+    base = Math.min(i, base)
+    break
   }
-  return slices
+  let fragment = fillBetween(from, to, base, placed)
+  return new Slice(fragment, from.depth - base, to.depth - base)
+}
+
+function fillBetween(from, to, depth, placed) {
+  let fromNext = from.depth > depth && from.node[depth + 1]
+  let toNext = to.depth > depth && to.node[depth + 1]
+  let placedHere = placed[depth]
+
+  if (fromNext && toNext && fromNext.type.canContainContent(toNext.type) && !placedHere)
+    return Fragment.from(fromNext.copy(fillBetween(from, to, depth + 1, placed)))
+
+  let content = placedHere ? placedHere.content : Fragment.empty
+  if (fromNext)
+    content = fromNext.copy(fillFrom(from, depth + 1, placed)).append(content)
+  if (toNext)
+    content = content.append(Fragment.from(toNext.copy(fillTo(to, depth + 1))))
+  return content
+}
+
+function fillFrom(from, depth, placed) {
+  let placedHere = placed[depth]
+  let content = placedHere ? placedHere.content : Fragment.empty
+  if (from.depth > depth)
+    content = Fragment.from(from.node[depth + 1].copy(fillFrom(from, depth + 1), placed)).append(content)
+  return content
+}
+
+// FIXME join/reuse open nodes
+function fillTo(to, depth) {
+  if (to.depth == depth) return Fragment.empty
+  return Fragment.from(to.node[depth + 1].copy(fillTo(to, depth + 1)))
+}
+
+// Algorithm for 'placing' the elements of a slice into a gap:
+//
+// We consider the content of each node that is open to the left to be
+// independently placeable. I.e. in <p("foo"), p("bar")>, when the
+// paragraph on the left is open, "foo" can be placed (somewhere on
+// the left side of the replacement gap) independently from p("bar").
+//
+// So placeSlice splits up a slice into a number of sub-slices,
+// along with information on where they can be placed on the given
+// left-side edge. It works by walking the open side of the slice,
+// from the inside out, and trying to find a landing spot for each
+// element, by simultaneously scanning over the gap side. When no
+// place is found for an open node's content, it is left in that node.
+//
+// If the outer content can't be placed, a set of wrapper nodes is
+// made up for it (by rooting it in the document node type using
+// findConnection), and the algorithm continues to iterate over those.
+// This is guaranteed to find a fit, since both stacks now start with
+// the same node type (doc).
+
+function openNodeLeft(slice, depth) {
+  let content = slice.content
+  for (let i = 1; i < depth; i++) content = content.firstChild.content
+  return content.firstChild
 }
 
 function fragmentSuperKind(fragment) {
@@ -110,98 +159,55 @@ function fragmentSuperKind(fragment) {
   return kind
 }
 
-function openSliceLeft(slice) {
-  let open = [], next
-  for (let i = 0; i <= slice.openLeft; i++) {
-    let content = (next || slice).content
-    let node = next
-    if (i < slice.openLeft - 1) {
-      next = content.firstChild
-      content = content.cut(next.nodeSize)
-    }
-    open.push({content, node})
-  }
-  return open
-}
+function placeSlice(from, slice) {
+  let dFrom = from.depth, unplaced = null, openLeftUnplaced = 0
+  let placed = [], parents = null
 
-function findAttachableDepths(from, slice) {
-  let open = openSliceLeft(slice), openRight = slice.openRight
-  let search = open.length - 1, found = []
-  let found = []
-
-  for (let depth = from.depth; depth >= search && search >= 0; --depth) {
-    let cur = open[search], target = from.node[depth].type
-    if (cur.node ? target.canContainContent(cur.node.type) : target.canContainFragment(cur.content)) {
-      found[depth] = cur.content
-      --search
-    }
-  }
-
-  let openRight = slice.openRight
-  // Some content couldn't be placed directly into the open side
-  if (search > 0) {
-    let leftover
-    for (let i = search; i >= 0; i--) {
-      let content = open[i].content
-      leftover = leftover ? Fragment.from(open[i + 1].node.copy(leftover)).append(content) : content
-    }
-    console.log("left over " + leftover)
-    let kind = fragmentSuperKind(leftover), landed = false
-    for (let depth = matchedDepth - 1; depth >= 0; --depth) {
-      let node = from.node[depth], conn = node.type.findConnectionToKind(kind)
-      if (conn) {
-        for (let i = conn.length - 1; i >= 0; i--)
-          leftover = Fragment.from(conn[i].create(null, leftover))
-        found[depth] = leftover
-        openRight += conn.length
-        landed = true
+  for (let dSlice = slice.openLeft;; --dSlice) {
+    let curType, curAttrs, curFragment
+    if (dSlice >= 0) {
+      if (dSlice > 0) { // Inside slice
+        ;({type: curType, attrs: curAttrs, content: curFragment} = openNodeLeft(slice, dSlice))
+      } else if (dSlice == 0) { // Top of slice
+        curFragment = slice.content
       }
+      if (dSlice < slice.openLeft) curFragment = curFragment.cut(curFragment.firstChild.nodeSize)
+    } else { // Outside slice
+      curFragment = Fragment.empty
+      curType = parents[parents.length - 1 + dSlice]
     }
-    if (!landed) openRight = 0
-  }
-  return {found, openRight}
-}
+    if (unplaced)
+      curFragment = Fragment.from(unplaced).append(curFragment)
 
-// FIXME check and fix content restrictions
-function fitSliceInto(from, to, slice) {
-  let {found, openRight} = findAttachableDepths(from, slice)
-  let first = 0
-  while (found[first] == null && first < found.length) ++first
-  let rootDepth = Math.min(first, from.sameDepth(to))
+    if (curFragment.size == 0 && dSlice > 0) continue
 
-  let fitted = buildFitted(from, to, found, rootDepth, openRight)
-  return new Slice(fitted, from.depth - rootDepth, to.depth - rootDepth)
-}
-
-function buildFitted(from, to, found, depth, openRight) {
-  let moreFrom = from.depth > depth, moreTo = to.depth > depth
-  let content = found[depth] || Fragment.empty
-  if (moreFrom && moreTo && openRight > 0 && !content.size) {
-    content = Fragment.from(from.node[depth].copy(buildFitted(from, to, found, depth + 1, openRight - 1)))
-  } else {
-    if (moreFrom) {
-      let inner = buildFittedLeft(from, found, depth + 1)
-      content = Fragment.from(from.node[depth].copy(inner)).append(content)
+    let found = -1
+    for (let d = dFrom; found == -1 && d >= dSlice; d--) {
+      let fromType = from.node[d].type
+      if (curType ? fromType.canContainContent(curType) : fromType.canContainFragment(curFragment))
+        found = d
     }
-    if (moreTo) {
-      let inner = buildFittedRight(to, depth + 1, openRight - 1)
-      content = content.append(Fragment.from(to.node[depth].copy(inner)))
+
+    if (found > -1) {
+      placed[found] = {content: curFragment,
+                       openLeft: openLeftUnplaced + 1,
+                       openRight: dSlice > 0 ? 0 : slice.openRight - dSlice}
+      unplaced = null
+      openLeftUnplaced = 0
+      if (dSlice <= 0) break
+      dFrom = found - 1
+    } else {
+      if (dSlice == 0) {
+        parents = from.node[0].type.findConnectionToKind(fragmentSuperKind(curFragment))
+        if (!parents) break
+        curType = parents[parents.length - 1]
+      }
+      unplaced = curType.create(curAttrs, curFragment)
+      openLeftUnplaced++
     }
   }
-  return content
-}
 
-function buildFittedLeft(from, found, depth) {
-  let content = found[depth] || Fragment.empty
-  if (from.depth > depth) {
-    let inner = buildFittedLeft(from, found, depth + 1)
-    content = Fragment.from(from.node[depth].copy(inner)).append(content)
-  }
-  return content
-}
-
-function buildFittedRight(to, depth, open) {
-  !!!wrong
+  return placed
 }
 
 /* FIXME restore something like this

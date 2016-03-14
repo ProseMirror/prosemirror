@@ -330,15 +330,24 @@ nodeType("invalid",
 
 function repl(name, doc, source, expect) {
   defTest("replace_" + name, () => {
-    testTransform(tr.repl(source && source.slice(source.tag.a, source.tag.b)).get(doc), expect)
+    testTransform(tr.repl(source ? source.slice(source.tag.a, source.tag.b) : undefined).get(doc), expect)
   })
 }
 
+repl("del_text",
+     doc(p("hell<a>o y<b>ou")),
+     null,
+     doc(p("hell<a><b>ou")))
+repl("del_join",
+     doc(p("hell<a>o"), p("y<b>ou")),
+     null,
+     doc(p("hell<a><b>ou")))
+
+/*
 repl("add_text",
      doc(p("hell<a>o y<b>ou")),
      doc(p("<a>i k<b>")),
      doc(p("helli k<a><b>ou")))
-/*
 repl("add_paragraph",
      doc(p("hello<a>you")),
      doc("<a>", p("there"), "<b>"),

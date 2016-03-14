@@ -119,17 +119,17 @@ err("inconsistent",
 err("bad_fit",
     doc("<a><b>"),
     doc(p("<a>foo<b>")),
-    "can not be placed")
+    "cannot be placed")
 
 err("bad_join",
     doc(ul(li(p("a")), "<a>"), "<b>"),
     doc(p("foo", "<a>"), "<b>"),
-    "can not join")
+    "cannot join")
 
 err("bad_join_delete",
     doc(blockquote(p("a"), "<a>"), ul("<b>", li(p("b")))),
     null,
-    "can not join")
+    "cannot join")
 
 err("empty_blockquote",
     doc(blockquote("<a>", p("hi")), "<b>"),

@@ -339,6 +339,7 @@ export class ResolvedPos {
   after(depth) { return depth == this.offset.length ? this.pos : this.end(depth) + 1 }
 
   static resolve(doc, pos) {
+    if (!(pos >= 0 && pos <= doc.content.size)) throw new ModelError("Position " + pos + " out of range")
     let nodes = [], index = [], offset = [], parentOffset = pos
     for (let node = doc;;) {
       let i = findIndex(node.content, parentOffset)
