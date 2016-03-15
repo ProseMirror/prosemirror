@@ -30,6 +30,7 @@ import {PosMap, ReplacedRange} from "./map"
 
 Step.define("replace", {
   apply(doc, step) {
+//    console.log("apply", step.from, step.to, "to " + doc, "slice=<" + step.param.content + ">")
     return StepResult.fromReplace(doc, step.from, step.to, step.param)
   },
   posMap(step) {

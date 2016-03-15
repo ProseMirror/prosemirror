@@ -66,11 +66,9 @@ rem("all",
     doc(p("<a>hello, ", em("this is ", strong("much"), " ", a("markup<b>")))),
     doc(p("<a>hello, this is much markup")),
     null)
-/*
+
 function ins(name, doc, expect, nodes) {
-  defTest("insert_" + name, () => {
-    testTransform(doc, expect, Tr(doc).insert(doc.tag.a, nodes))
-  })
+  defTest("insert_" + name, () => testTransform(tr.ins(nodes).get(doc), expect))
 }
 
 ins("break",
@@ -96,25 +94,21 @@ ins("start_of_blockquote",
     schema.node("paragraph"))
 
 function del(name, doc, expect) {
-  defTest("delete_" + name, () => {
-    testTransform(doc, expect, Tr(doc).delete(doc.tag.a, doc.tag.b))
-  })
+  defTest("delete_" + name, () => testTransform(tr.del().get(doc), expect))
 }
 
 del("simple",
     doc(p("<1>one"), "<a>", p("tw<2>o"), "<b>", p("<3>three")),
     doc(p("<1>one"), "<a><2>", p("<3>three")))
-del("only_child",
+/*del("only_child",
     doc(blockquote("<a>", p("hi"), "<b>"), p("x")),
-    doc(blockquote(p()), p("x")))
+    doc(blockquote(p()), p("x")))*/
 del("outside_path",
     doc(blockquote(p("a"), "<a>", p("b"), "<b>"), p("c<1>")),
     doc(blockquote(p("a")), p("c<1>")))
 
 function txt(name, doc, expect, text) {
-  defTest("insertText_" + name, () => {
-    testTransform(doc, expect, Tr(doc).insertText(doc.tag.a, text))
-  })
+  defTest("insertText_" + name, () => testTransform(tr.txt(text).get(doc), expect))
 }
 
 txt("inherit_style",
@@ -153,7 +147,7 @@ txt("before_br",
     doc(p("<a>", br, "ok")),
     doc(p("ay", br, "ok")),
     "ay")
-*/
+
 function join(name, doc, expect) {
   defTest("join_" + name, () => testTransform(tr.join().get(doc), expect))
 }
@@ -436,16 +430,16 @@ repl("close_parent",
 /*repl("lopsided",
      doc(blockquote(p("b<a>c"), p("d<b>e"), p("f"))),
      doc(blockquote(p("x<a>y")), p("z<b>")),
-     doc(blockquote(p("by")), p("z<a><b>e"), blockquote(p("f"))))*/
-/*
+     doc(blockquote(p("by")), p("z<a><b>e"), blockquote(p("f"))))
 repl("deep_insert",
      doc(blockquote(blockquote(p("one"), p("tw<a>o"), p("t<b>hree<3>"), p("four<4>")))),
      doc(ol(li(p("hello<a>world")), li(p("bye"))), p("ne<b>xt")),
-     doc(blockquote(blockquote(p("one"), p("twworld"), ol(li(p("bye"))), p("ne<a><b>hree<3>"), p("four<4>")))))
+     doc(blockquote(blockquote(p("one"), p("twworld"), ol(li(p("bye"))), p("ne<a><b>hree<3>"), p("four<4>")))))*/
 repl("join_inequal",
      doc(h1("hello<a>"), p("<b>you<1>")),
      null,
      doc(h1("hello<a><b>you<1>")))
+/*
 repl("delete_whole_doc",
      doc("<a>", h1("hi"), p("you"), "<b>"),
      null,
