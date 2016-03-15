@@ -16,6 +16,10 @@ export class Slice {
     this.openRight = openRight
   }
 
+  get size() {
+    return this.content.size - this.openLeft - this.openRight
+  }
+
   toJSON() {
     if (!this.content.size) return null
     return {content: this.content.toJSON(),

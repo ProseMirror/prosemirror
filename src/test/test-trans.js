@@ -342,16 +342,28 @@ repl("del_join",
      doc(p("hell<a>o"), p("y<b>ou")),
      null,
      doc(p("hell<a><b>ou")))
+repl("del_deeper_left",
+     doc(blockquote(p("ab<a>c")), p("d<b>ef")),
+     null,
+     doc(blockquote(p("ab<a>")), p("<b>ef")))
+repl("del_deeper_right",
+     doc(p("ab<a>c"), blockquote(p("d<b>ef"))),
+     null,
+     doc(p("ab<a>"), blockquote(p("<b>ef"))))
 
-/*
-repl("add_text",
+repl("overwrite_text",
      doc(p("hell<a>o y<b>ou")),
      doc(p("<a>i k<b>")),
-     doc(p("helli k<a><b>ou")))
+     doc(p("hell<a>i k<b>ou")))
+repl("insert_text",
+     doc(p("hell<a><b>o")),
+     doc(p("<a>i k<b>")),
+     doc(p("helli k<a><b>o")))
 repl("add_paragraph",
      doc(p("hello<a>you")),
      doc("<a>", p("there"), "<b>"),
      doc(p("hello"), p("there"), p("<a>you")))
+
 repl("join_text",
      doc(h1("he<a>llo"), p("arg<b>!")),
      doc(p("1<a>2<b>3")),
@@ -364,6 +376,8 @@ repl("merge_block",
      doc(p("a<a>"), p("b"), p("<b>c")),
      null,
      doc(p("a<a><b>c")))
+
+/*
 repl("move_text_down",
      doc(h1("wo<a>ah"), blockquote(p("ah<b>ha"))),
      null,
@@ -372,6 +386,8 @@ repl("move_text_up",
      doc(blockquote(p("foo<a>bar")), p("middle"), h1("quux<b>baz")),
      null,
      doc(blockquote(p("foo<a><b>baz"))))
+*/
+
 repl("stitch_deep",
      doc(blockquote(ul(li(p("a")), li(p("b<a>")), li(p("c")), li(p("<b>d")), li(p("e"))))),
      null,
@@ -387,11 +403,12 @@ repl("insert_paragraph_open_edges",
 repl("overwrite_paragraph",
      doc(p("one<a>"), p("t<inside>wo"), p("<b>three<end>")),
      doc(p("a<a>"), p("TWO"), p("<b>b")),
-     doc(p("one"), p("TWO"), p("<a>three<end>")))
+     doc(p("one<a>"), p("TWO"), p("<inside>three<end>")))
 repl("stitch",
      doc(p("foo ", em("bar<a>baz"), "<b> quux")),
      doc(p("foo ", em("xy<a>zzy"), " foo<b>")),
      doc(p("foo ", em("barzzy"), " foo quux")))
+
 repl("break",
      doc(p("foo<a>b<inside>b<b>bar")),
      doc(p("<a>", br, "<b>")),
@@ -400,26 +417,27 @@ repl("cut_different_block",
      doc(h1("hell<a>o"), p("by<b>e")),
      null,
      doc(h1("helle")))
-repl("restore_list",
-     doc(h1("hell<a>o"), p("by<b>e")),
+repl("restore_list", // FIXME add test for text-after-joining
+     doc(h1("hell<a>o"), "<b>"),
      doc(ol(li(p("on<a>e")), li(p("tw<b>o")))),
-     doc(h1("helle"), ol(li(p("twe")))))
+     doc(h1("helle"), ol(li(p("tw")))))
 repl("in_empty_block",
      doc(p("a"), p("<a>"), p("b")),
      doc(p("x<a>y<b>z")),
      doc(p("a"), p("y<a>"), p("b")))
-repl("dont_shift_everything",
+/*repl("dont_shift_everything",
      doc(p("one<a>"), p("two"), p("three")),
      doc(p("outside<a>"), blockquote(p("inside<b>"))),
-     doc(p("one"), blockquote(p("inside")), p("two"), p("three")))
-repl("del_selection",
-     doc(p("some <a>te<b>xt")),
-     null,
-     doc(p("some <a><b>xt")))
-repl("lopsided",
+     doc(p("one"), blockquote(p("inside")), p("two"), p("three")))*/
+repl("close_parent",
+     doc(blockquote(p("b<a>c"), p("d<b>e"), p("f"))),
+     doc(blockquote(p("x<a>y")), p("after"), "<b>"),
+     doc(blockquote(p("b<a>y")), p("after"), blockquote(p("<b>e"), p("f"))))
+/*repl("lopsided",
      doc(blockquote(p("b<a>c"), p("d<b>e"), p("f"))),
      doc(blockquote(p("x<a>y")), p("z<b>")),
-     doc(blockquote(p("by")), p("z<a><b>e"), blockquote(p("f"))))
+     doc(blockquote(p("by")), p("z<a><b>e"), blockquote(p("f"))))*/
+/*
 repl("deep_insert",
      doc(blockquote(blockquote(p("one"), p("tw<a>o"), p("t<b>hree<3>"), p("four<4>")))),
      doc(ol(li(p("hello<a>world")), li(p("bye"))), p("ne<b>xt")),

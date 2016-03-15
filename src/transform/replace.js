@@ -33,10 +33,10 @@ Step.define("replace", {
     return StepResult.fromReplace(doc, step.from, step.to, step.param)
   },
   posMap(step) {
-    return new PosMap([new ReplacedRange(step.from, step.to - step.from, step.param.content.size)])
+    return new PosMap([new ReplacedRange(step.from, step.to - step.from, step.param.size)])
   },
   invert(step, oldDoc) {
-    return new Step("replace", step.from, step.from + step.param.content.size,
+    return new Step("replace", step.from, step.from + step.param.size,
                     oldDoc.slice(step.from, step.to))
   },
   paramToJSON(param) { return param.toJSON() },
@@ -106,9 +106,9 @@ function fillBetween(from, to, depth, placed) {
 
   let content = placedHere ? placedHere.content : Fragment.empty
   if (fromNext)
-    content = fromNext.copy(fillFrom(from, depth + 1, placed)).append(content)
+    content = Fragment.from(fromNext.copy(fillFrom(from, depth + 1, placed))).append(content)
   if (toNext)
-    content = content.append(Fragment.from(toNext.copy(fillTo(to, depth + 1))))
+    content = closeTo(content, to, depth + 1, placedHere ? placedHere.openRight : 0)
   return content
 }
 
@@ -116,11 +116,19 @@ function fillFrom(from, depth, placed) {
   let placedHere = placed[depth]
   let content = placedHere ? placedHere.content : Fragment.empty
   if (from.depth > depth)
-    content = Fragment.from(from.node[depth + 1].copy(fillFrom(from, depth + 1), placed)).append(content)
+    content = Fragment.from(from.node[depth + 1].copy(fillFrom(from, depth + 1, placed))).append(content)
   return content
 }
 
-// FIXME join/reuse open nodes
+function closeTo(content, to, depth, openDepth) {
+  let after = to.node[depth]
+  if (openDepth == 0 || !after.type.canContainContent(content.lastChild.type))
+    return content.append(Fragment.from(after.copy(fillTo(to, depth))))
+  let inner = content.lastChild.content
+  if (depth < to.depth) inner = closeTo(inner, to, depth + 1, openDepth - 1)
+  return content.replace(content.childCount - 1, after.copy(inner))
+}
+
 function fillTo(to, depth) {
   if (to.depth == depth) return Fragment.empty
   return Fragment.from(to.node[depth + 1].copy(fillTo(to, depth + 1)))
@@ -154,8 +162,10 @@ function openNodeLeft(slice, depth) {
 
 function fragmentSuperKind(fragment) {
   let kind
-  for (let i = fragment.childCount - 1; i >= 0; i--)
-    kind = kind ? kind.sharedSuperKind(fragment.child(i).kind) : fragment.child(i).kind
+  for (let i = fragment.childCount - 1; i >= 0; i--) {
+    let cur = fragment.child(i).type.kind
+    kind = kind ? kind.sharedSuperKind(cur) : cur
+  }
   return kind
 }
 
@@ -174,32 +184,28 @@ function placeSlice(from, slice) {
       if (dSlice < slice.openLeft) curFragment = curFragment.cut(curFragment.firstChild.nodeSize)
     } else { // Outside slice
       curFragment = Fragment.empty
-      curType = parents[parents.length - 1 + dSlice]
+      curType = parents[parents.length + dSlice - 1]
     }
     if (unplaced)
       curFragment = Fragment.from(unplaced).append(curFragment)
 
-    if (curFragment.size == 0 && dSlice > 0) continue
+    if (curFragment.size == 0 && dSlice <= 0) break
 
-    let found = -1
-    for (let d = dFrom; found == -1 && d >= dSlice; d--) {
-      let fromType = from.node[d].type
-      if (curType ? fromType.canContainContent(curType) : fromType.canContainFragment(curFragment))
-        found = d
-    }
-
+    let found = findPlacement(curType, curFragment, from, dFrom)
     if (found > -1) {
-      placed[found] = {content: curFragment,
-                       openLeft: openLeftUnplaced + 1,
-                       openRight: dSlice > 0 ? 0 : slice.openRight - dSlice}
+      if (curFragment.size > 0)
+        placed[found] = {content: curFragment,
+                         openLeft: openLeftUnplaced,
+                         openRight: dSlice > 0 ? 0 : slice.openRight - dSlice}
+      if (dSlice <= 0) break
       unplaced = null
       openLeftUnplaced = 0
-      if (dSlice <= 0) break
-      dFrom = found - 1
+      dFrom = Math.max(0, found - 1)
     } else {
       if (dSlice == 0) {
         parents = from.node[0].type.findConnectionToKind(fragmentSuperKind(curFragment))
         if (!parents) break
+        parents.unshift(from.node[0].type)
         curType = parents[parents.length - 1]
       }
       unplaced = curType.create(curAttrs, curFragment)
@@ -208,6 +214,15 @@ function placeSlice(from, slice) {
   }
 
   return placed
+}
+
+function findPlacement(type, fragment, from, start) {
+  for (let d = start; d >= 0; d--) {
+    let fromType = from.node[d].type
+    if (type ? fromType.canContainContent(type) : fromType.canContainFragment(fragment))
+      return d
+  }
+  return -1
 }
 
 /* FIXME restore something like this
