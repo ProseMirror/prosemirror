@@ -92,7 +92,7 @@ function fitSliceInto(from, to, slice) {
     base = Math.min(i, base)
     break
   }
-  let fragment = fillBetween(from, to, base, placed)
+  let fragment = closeFragment(from.node[base].type, fillBetween(from, to, base, placed), from, to, base)
   return new Slice(fragment, from.depth - base, to.depth - base)
 }
 
@@ -102,11 +102,13 @@ function fillBetween(from, to, depth, placed) {
   let placedHere = placed[depth]
 
   if (fromNext && toNext && fromNext.type.canContainContent(toNext.type) && !placedHere)
-    return Fragment.from(fromNext.copy(fillBetween(from, to, depth + 1, placed)))
+    return Fragment.from(closeNode(fromNext, fillBetween(from, to, depth + 1, placed),
+                                   from, to, depth + 1))
 
   let content = placedHere ? closeLeft(placedHere.content, placedHere.openLeft) : Fragment.empty
   if (fromNext)
-    content = content.addToStart(fromNext.copy(fillFrom(from, depth + 1, placed)))
+    content = content.addToStart(closeNode(fromNext, fillFrom(from, depth + 1, placed),
+                                           from, null, depth + 1))
   if (toNext)
     content = closeTo(content, to, depth + 1, placedHere ? placedHere.openRight : 0)
   else if (placedHere)
@@ -118,14 +120,15 @@ function fillFrom(from, depth, placed) {
   let placedHere = placed[depth]
   let content = placedHere ? placedHere.content : Fragment.empty
   if (from.depth > depth)
-    content = content.addToStart(from.node[depth + 1].copy(fillFrom(from, depth + 1, placed)))
+    content = content.addToStart(closeNode(from.node[depth + 1], fillFrom(from, depth + 1, placed),
+                                           from, null, depth + 1))
   return content
 }
 
 function closeTo(content, to, depth, openDepth) {
   let after = to.node[depth]
   if (openDepth == 0 || !after.type.canContainContent(content.lastChild.type))
-    return closeRight(content, openDepth).addToEnd(after.copy(fillTo(to, depth)))
+    return closeRight(content, openDepth).addToEnd(closeNode(after, fillTo(to, depth), null, to, depth))
   let inner = content.lastChild.content
   if (depth < to.depth) inner = closeTo(inner, to, depth + 1, openDepth - 1)
   return content.replace(content.childCount - 1, after.copy(inner))
@@ -133,30 +136,35 @@ function closeTo(content, to, depth, openDepth) {
 
 function fillTo(to, depth) {
   if (to.depth == depth) return Fragment.empty
-  return Fragment.from(to.node[depth + 1].copy(fillTo(to, depth + 1)))
+  return Fragment.from(closeNode(to.node[depth + 1], fillTo(to, depth + 1), null, to, depth + 1))
 }
 
 // Closing nodes is the process of ensuring that they contain valid
-// content, optionally changing the (inside-of-replace) content to
-// make sure.
+// content, optionally changing the content (that is inside of the
+// replace) to make sure.
 
 function closeRight(content, openDepth) {
   if (openDepth == 0) return content
-  let last = content.lastChild, lastContent = close(last.type, closeRight(last.content, openDepth - 1))
-  return lastContent == last.content ? content : content.replace(content.childCount - 1, last.copy(lastContent))
+  let last = content.lastChild, closed = closeNode(last, closeRight(last.content, openDepth - 1))
+  return closed == last ? content : content.replace(content.childCount - 1, closed)
 }
 
 function closeLeft(content, openDepth) {
   if (openDepth == 0) return content
-  let first = content.firstChild, firstContent = close(first.type, closeLeft(first.content, openDepth - 1))
-  return firstContent == first.content ? content : content.replace(0, first.copy(firstContent))
+  let first = content.firstChild, closed = closeNode(first, first.content)
+  return closed == first ? content : content.replace(0, closed)
 }
 
-function close(type, mid, before = Fragment.empty, after = Fragment.empty) {
+function closeFragment(type, content, to, from, depth) {
   // FIXME replace this with a more general approach
-  if (!type.canBeEmpty && mid.size == 0 && before.size == 0 && after.size == 0)
-    return type.defaultContent()
-  return mid
+  if (type.canBeEmpty) return content
+  let hasContent = content.size || (to && (to.depth > depth || to.index[depth])) ||
+      (from && (from.depth > depth || from.index[depth] < from.node[depth].childCount))
+  return hasContent ? content : type.defaultContent()
+}
+
+function closeNode(node, content, to, from, depth) {
+  return node.copy(closeFragment(node.type, content, to, from, depth))
 }
 
 // Algorithm for 'placing' the elements of a slice into a gap:

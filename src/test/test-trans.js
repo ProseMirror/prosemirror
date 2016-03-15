@@ -100,9 +100,9 @@ function del(name, doc, expect) {
 del("simple",
     doc(p("<1>one"), "<a>", p("tw<2>o"), "<b>", p("<3>three")),
     doc(p("<1>one"), "<a><2>", p("<3>three")))
-/*del("only_child",
+del("only_child",
     doc(blockquote("<a>", p("hi"), "<b>"), p("x")),
-    doc(blockquote(p()), p("x")))*/
+    doc(blockquote(p()), p("x")))
 del("outside_path",
     doc(blockquote(p("a"), "<a>", p("b"), "<b>"), p("c<1>")),
     doc(blockquote(p("a")), p("c<1>")))
@@ -444,14 +444,14 @@ repl("sticking_out_right",
      doc(p("x"), "<a>"),
      doc("<a>", ul(li(p("a")), li("<b>", p("b")))),
      doc(p("x"), ul(li(p("a")), li(p())), "<a>"))
-/*repl("delete_whole_doc",
+repl("delete_whole_doc",
      doc("<a>", h1("hi"), p("you"), "<b>"),
      null,
      doc(p()))
-repl("cut_empty_node_before",
+/*repl("cut_empty_node_before",
      doc(blockquote("<a>", p("hi")), p("b<b>x")),
      doc(p("<a>hi<b>")),
-     doc(blockquote(p("hix"))))
+     doc(blockquote(p("hix"))))*/
 repl("cut_empty_node_after",
      doc(p("x<a>hi"), blockquote(p("yy"), "<b>"), p("c")),
      doc(p("<a>hi<b>")),
@@ -464,4 +464,3 @@ repl("cut_empty_node_at_end",
      doc(p("<a>x")),
      doc(p("b<a>"), blockquote("<b>", p("hi"))),
      doc(p(), blockquote(p()), p("x")))
-*/

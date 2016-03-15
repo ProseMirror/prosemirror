@@ -37,7 +37,7 @@
     "distfs": "mkdir -p dist && distfs src dist",
     "dist": "babel -d dist src",
     "dist-watch": "babel -w -d dist src",
-    "lint": "blint --browser --ecmaVersion 6 --forbidSemicolons src",
+    "lint": "blint --browser --ecmaVersion 6 --forbidSemicolons src || true",
     "prepublish": "rimraf dist && babel -d dist src"
   }
 }

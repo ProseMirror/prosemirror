@@ -99,6 +99,7 @@ export class Node {
   // Create a new node with the same markup as this node, containing
   // the given content (or empty, if no content is given).
   copy(content = null) {
+    if (content == this.content) return this
     return new this.constructor(this.type, this.attrs, content, this.marks)
   }
 
