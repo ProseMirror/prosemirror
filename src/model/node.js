@@ -202,7 +202,7 @@ export class Node {
   toString() {
     let name = this.type.name
     if (this.content.size)
-      name += "(" + this.content.toString() + ")"
+      name += "(" + this.content.toStringInner() + ")"
     return wrapMarks(this.marks, name)
   }
 
@@ -337,6 +337,13 @@ export class ResolvedPos {
 
   before(depth) { return depth == this.offset.length ? this.pos : this.start(depth) - 1 }
   after(depth) { return depth == this.offset.length ? this.pos : this.end(depth) + 1 }
+
+  toString() {
+    let str = ""
+    for (let i = 1; i < this.index.length; i++)
+      str += (str ? "/" : "") + this.node[i].type.name + "_" + this.index[i - 1]
+    return str + ":" + this.parentOffset
+  }
 
   static resolve(doc, pos) {
     if (!(pos >= 0 && pos <= doc.content.size)) throw new ModelError("Position " + pos + " out of range")

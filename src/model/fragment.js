@@ -25,7 +25,9 @@ export class Fragment {
 
   // :: () → string
   // Return a debugging string that describes this fragment.
-  toString() { return this.content.join(", ") }
+  toString() { return "<" + this.toStringInner() + ">" }
+
+  toStringInner() { return this.content.join(", ") }
 
   nodesBetween(from, to, f, nodeStart, parent) {
     for (let i = 0, pos = 0; pos < to; i++) {
