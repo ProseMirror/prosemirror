@@ -15,6 +15,18 @@ export class Slice {
     return this.content.size - this.openLeft - this.openRight
   }
 
+  nodeLeft(depth) {
+    let content = this.content
+    for (let i = 1; i < depth; i++) content = content.firstChild.content
+    return content.firstChild
+  }
+
+  nodeRight(depth) {
+    let content = this.content
+    for (let i = 1; i < depth; i++) content = content.lastChild.content
+    return content.lastChild
+  }
+
   toJSON() {
     if (!this.content.size) return null
     return {content: this.content.toJSON(),

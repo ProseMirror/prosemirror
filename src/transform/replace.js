@@ -53,9 +53,16 @@ Transform.define("delete", function(from, to) {
 // Replace the part of the document between `from` and `to` with the
 // part of the `source` between `start` and `end`.
 Transform.define("replace", function(from, to = from, slice = Slice.empty) {
-  slice = fitSliceInto(this.doc.resolve(from), this.doc.resolve(to), slice)
-  if (from != to || slice.content.size)
-    this.step("replace", from, to, slice)
+  let rFrom = this.doc.resolve(from), rTo = this.doc.resolve(to)
+  let {fitted, distAfter} = fitSliceInto(rFrom, rTo, slice), fSize = fitted.size
+  if (from == to && !fSize) return
+  this.step("replace", from, to, fitted)
+
+  if (!fSize || !rTo.node[rTo.depth].isTextblock) return
+  let after = from + fSize
+  let inner = !slice.size ? from : distAfter < 0 ? -1 : after - distAfter, rInner
+  if (inner == -1 || inner == after || !(rInner = this.doc.resolve(inner)).node[rInner.depth].isTextblock) return
+  mergeTextblockAfter(this, rInner, this.doc.resolve(after))
 })
 
 // :: (number, number, union<Fragment, Node, [Node]>) → Transform
@@ -87,50 +94,62 @@ Transform.define("insertInline", function(pos, node) {
 
 function fitSliceInto(from, to, slice) {
   let base = from.sameDepth(to)
-  let placed = placeSlice(from, slice)
-  if (placed.length) for (let i = 0;; i++) if (placed[i]) {
-    base = Math.min(i, base)
-    break
-  }
-  let fragment = closeFragment(from.node[base].type, fillBetween(from, to, base, placed), from, to, base)
-  return new Slice(fragment, from.depth - base, to.depth - base)
+  let placed = placeSlice(from, slice), outer = outerPlaced(placed)
+  if (outer) base = Math.min(outer.depth, base)
+
+  let distAfter = [-1e10] // FIXME kludge
+  let fragment = closeFragment(from.node[base].type, fillBetween(from, to, base, placed, distAfter), from, to, base)
+  return {fitted: new Slice(fragment, from.depth - base, to.depth - base),
+          distAfter: distAfter[0] - (to.depth - base)}
 }
 
-function fillBetween(from, to, depth, placed) {
+function outerPlaced(placed) {
+  for (let i = 0; i < placed.length; i++) if (placed[i]) return placed[i]
+}
+
+function fillBetween(from, to, depth, placed, distAfter) {
   let fromNext = from.depth > depth && from.node[depth + 1]
   let toNext = to.depth > depth && to.node[depth + 1]
   let placedHere = placed[depth]
 
   if (fromNext && toNext && fromNext.type.canContainContent(toNext.type) && !placedHere)
-    return Fragment.from(closeNode(fromNext, fillBetween(from, to, depth + 1, placed),
+    return Fragment.from(closeNode(fromNext, fillBetween(from, to, depth + 1, placed, distAfter),
                                    from, to, depth + 1))
 
-  let content = placedHere ? closeLeft(placedHere.content, placedHere.openLeft) : Fragment.empty
+  let content = Fragment.empty
+  if (placedHere) {
+    content = closeLeft(placedHere.content, placedHere.openLeft)
+    if (placedHere.isEnd) distAfter[0] = placedHere.openRight
+  }
+
   if (fromNext)
     content = content.addToStart(closeNode(fromNext, fillFrom(from, depth + 1, placed),
                                            from, null, depth + 1))
   if (toNext)
-    content = closeTo(content, to, depth + 1, placedHere ? placedHere.openRight : 0)
+    content = closeTo(content, to, depth + 1, placedHere ? placedHere.openRight : 0, distAfter)
   else if (placedHere)
-    content = closeRight(content, placedHere.openRight)
+    content = closeRight(content, placedHere.openRight, distAfter)
   return content
 }
 
 function fillFrom(from, depth, placed) {
   let placedHere = placed[depth]
-  let content = placedHere ? placedHere.content : Fragment.empty
+  let content = placedHere ? closeRight(placedHere.content, placedHere.openRight) : Fragment.empty
   if (from.depth > depth)
     content = content.addToStart(closeNode(from.node[depth + 1], fillFrom(from, depth + 1, placed),
                                            from, null, depth + 1))
   return content
 }
 
-function closeTo(content, to, depth, openDepth) {
+function closeTo(content, to, depth, openDepth, distAfter) {
   let after = to.node[depth]
-  if (openDepth == 0 || !after.type.canContainContent(content.lastChild.type))
-    return closeRight(content, openDepth).addToEnd(closeNode(after, fillTo(to, depth), null, to, depth))
+  if (openDepth == 0 || !after.type.canContainContent(content.lastChild.type)) {
+    let finish = fillTo(to, depth)
+    distAfter[0] += finish.size
+    return closeRight(content, openDepth).addToEnd(closeNode(after, finish, null, to, depth))
+  }
   let inner = content.lastChild.content
-  if (depth < to.depth) inner = closeTo(inner, to, depth + 1, openDepth - 1)
+  if (depth < to.depth) inner = closeTo(inner, to, depth + 1, openDepth - 1, distAfter)
   return content.replace(content.childCount - 1, after.copy(inner))
 }
 
@@ -187,12 +206,6 @@ function closeNode(node, content, to, from, depth) {
 // This is guaranteed to find a fit, since both stacks now start with
 // the same node type (doc).
 
-function openNodeLeft(slice, depth) {
-  let content = slice.content
-  for (let i = 1; i < depth; i++) content = content.firstChild.content
-  return content.firstChild
-}
-
 function fragmentSuperKind(fragment) {
   let kind
   for (let i = fragment.childCount - 1; i >= 0; i--) {
@@ -210,7 +223,7 @@ function placeSlice(from, slice) {
     let curType, curAttrs, curFragment
     if (dSlice >= 0) {
       if (dSlice > 0) { // Inside slice
-        ;({type: curType, attrs: curAttrs, content: curFragment} = openNodeLeft(slice, dSlice))
+        ;({type: curType, attrs: curAttrs, content: curFragment} = slice.nodeLeft(dSlice))
       } else if (dSlice == 0) { // Top of slice
         curFragment = slice.content
       }
@@ -229,7 +242,9 @@ function placeSlice(from, slice) {
       if (curFragment.size > 0)
         placed[found] = {content: curFragment,
                          openLeft: openLeftUnplaced,
-                         openRight: dSlice > 0 ? 0 : slice.openRight - dSlice}
+                         openRight: dSlice > 0 ? 0 : slice.openRight - dSlice,
+                         isEnd: dSlice <= 0,
+                         depth: found}
       if (dSlice <= 0) break
       unplaced = null
       openLeftUnplaced = 0
@@ -258,27 +273,29 @@ function findPlacement(type, fragment, from, start) {
   return -1
 }
 
-/* FIXME restore something like this
-function moveText(tr, doc, before, after) {
-  let root = samePathDepth(before, after)
-  let cutAt = after.shorten(null, 1)
-  while (cutAt.path.length > root && doc.path(cutAt.path).size == 1)
-    cutAt = cutAt.shorten(null, 1)
-  tr.split(cutAt, cutAt.path.length - root)
-  let start = after, end = new Pos(start.path, doc.path(start.path).size)
-  let parent = doc.path(start.path.slice(0, root))
-  let wanted = parent.pathNodes(before.path.slice(root))
-  let existing = parent.pathNodes(start.path.slice(root))
-  while (wanted.length && existing.length && wanted[0].sameMarkup(existing[0])) {
-    wanted.shift()
-    existing.shift()
-  }
-  if (existing.length || wanted.length)
-    tr.step("ancestor", start, end, {
-      depth: existing.length,
-      types: wanted.map(n => n.type),
-      attrs: wanted.map(n => n.attrs)
-    })
-  for (let i = root; i < before.path.length; i++)
-    tr.join(before.shorten(i, 1))
-}*/
+// When a replace ends in an (open) textblock, and the content that
+// ends up before it also ends in an open textblock, the textblock
+// after is moved to and connected with the one before it. This
+// influences content outside of the replaced range, so it is not done
+// as part of the replace step itself, but instead tacked on as a set
+// of split/ancestor/join steps.
+
+function mergeTextblockAfter(tr, inside, after) {
+  let base = inside.sameDepth(after)
+  tr.try(() => {
+    let end = after.end(after.depth), cutAt = end + 1, cutDepth = after.depth - 1
+    while (cutDepth > base && after.index[cutDepth] + 1 == after.node[cutDepth].childCount) {
+      --cutDepth
+      ++cutAt
+    }
+    if (cutDepth > base) tr.split(cutAt, cutDepth - base)
+    let types = [], attrs = []
+    for (let i = base; i < inside.depth; i++) {
+      let node = inside.node[i]
+      types.push(node.type)
+      attrs.push(node.attrs)
+    }
+    tr.step("ancestor", after.pos, end, {depth: after.depth - base, types, attrs})
+    tr.join(after.pos - (after.depth - base), after.depth - base)
+  })
+}
