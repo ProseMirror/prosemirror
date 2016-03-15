@@ -6,11 +6,6 @@ export class ReplaceError extends ProseMirrorError {}
 
 export class Slice {
   constructor(content, openLeft, openRight) {
-    while (openLeft > 0 && openRight > 0 && content.childCount == 1) {
-      content = content.firstChild.content
-      openLeft--
-      openRight--
-    }
     this.content = content
     this.openLeft = openLeft
     this.openRight = openRight

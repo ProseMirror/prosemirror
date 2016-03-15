@@ -30,7 +30,6 @@ import {PosMap, ReplacedRange} from "./map"
 
 Step.define("replace", {
   apply(doc, step) {
-//    console.log("apply", step.from, step.to, "to " + doc, "slice=<" + step.param.content + ">")
     return StepResult.fromReplace(doc, step.from, step.to, step.param)
   },
   posMap(step) {
@@ -105,11 +104,13 @@ function fillBetween(from, to, depth, placed) {
   if (fromNext && toNext && fromNext.type.canContainContent(toNext.type) && !placedHere)
     return Fragment.from(fromNext.copy(fillBetween(from, to, depth + 1, placed)))
 
-  let content = placedHere ? placedHere.content : Fragment.empty
+  let content = placedHere ? closeLeft(placedHere.content, placedHere.openLeft) : Fragment.empty
   if (fromNext)
     content = content.addToStart(fromNext.copy(fillFrom(from, depth + 1, placed)))
   if (toNext)
     content = closeTo(content, to, depth + 1, placedHere ? placedHere.openRight : 0)
+  else if (placedHere)
+    content = closeRight(content, placedHere.openRight)
   return content
 }
 
@@ -124,7 +125,7 @@ function fillFrom(from, depth, placed) {
 function closeTo(content, to, depth, openDepth) {
   let after = to.node[depth]
   if (openDepth == 0 || !after.type.canContainContent(content.lastChild.type))
-    return content.addToEnd(after.copy(fillTo(to, depth)))
+    return closeRight(content, openDepth).addToEnd(after.copy(fillTo(to, depth)))
   let inner = content.lastChild.content
   if (depth < to.depth) inner = closeTo(inner, to, depth + 1, openDepth - 1)
   return content.replace(content.childCount - 1, after.copy(inner))
@@ -133,6 +134,29 @@ function closeTo(content, to, depth, openDepth) {
 function fillTo(to, depth) {
   if (to.depth == depth) return Fragment.empty
   return Fragment.from(to.node[depth + 1].copy(fillTo(to, depth + 1)))
+}
+
+// Closing nodes is the process of ensuring that they contain valid
+// content, optionally changing the (inside-of-replace) content to
+// make sure.
+
+function closeRight(content, openDepth) {
+  if (openDepth == 0) return content
+  let last = content.lastChild, lastContent = close(last.type, closeRight(last.content, openDepth - 1))
+  return lastContent == last.content ? content : content.replace(content.childCount - 1, last.copy(lastContent))
+}
+
+function closeLeft(content, openDepth) {
+  if (openDepth == 0) return content
+  let first = content.firstChild, firstContent = close(first.type, closeLeft(first.content, openDepth - 1))
+  return firstContent == first.content ? content : content.replace(0, first.copy(firstContent))
+}
+
+function close(type, mid, before = Fragment.empty, after = Fragment.empty) {
+  // FIXME replace this with a more general approach
+  if (!type.canBeEmpty && mid.size == 0 && before.size == 0 && after.size == 0)
+    return type.defaultContent()
+  return mid
 }
 
 // Algorithm for 'placing' the elements of a slice into a gap:

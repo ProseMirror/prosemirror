@@ -439,8 +439,12 @@ repl("join_inequal",
      doc(h1("hello<a>"), p("<b>you<1>")),
      null,
      doc(h1("hello<a><b>you<1>")))
-/*
-repl("delete_whole_doc",
+
+repl("sticking_out_right",
+     doc(p("x"), "<a>"),
+     doc("<a>", ul(li(p("a")), li("<b>", p("b")))),
+     doc(p("x"), ul(li(p("a")), li(p())), "<a>"))
+/*repl("delete_whole_doc",
      doc("<a>", h1("hi"), p("you"), "<b>"),
      null,
      doc(p()))
