@@ -337,13 +337,13 @@ repl("del_join",
      null,
      doc(p("hell<a><b>ou")))
 repl("del_deeper_left",
-     doc(blockquote(p("ab<a>c")), p("d<b>ef")),
+     doc(blockquote(p("ab<a>c")), "<b>", p("def")),
      null,
-     doc(blockquote(p("ab<a>")), p("<b>ef")))
+     doc(blockquote(p("ab<a>")), "<b>", p("def")))
 repl("del_deeper_right",
-     doc(p("ab<a>c"), blockquote(p("d<b>ef"))),
+     doc(p("abc"), "<a>", blockquote(p("d<b>ef"))),
      null,
-     doc(p("ab<a>"), blockquote(p("<b>ef"))))
+     doc(p("abc"), "<a>", blockquote(p("<b>ef"))))
 
 repl("overwrite_text",
      doc(p("hell<a>o y<b>ou")),
@@ -371,7 +371,6 @@ repl("merge_block",
      null,
      doc(p("a<a><b>c")))
 
-/*
 repl("move_text_down",
      doc(h1("wo<a>ah"), blockquote(p("ah<b>ha"))),
      null,
@@ -380,7 +379,6 @@ repl("move_text_up",
      doc(blockquote(p("foo<a>bar")), p("middle"), h1("quux<b>baz")),
      null,
      doc(blockquote(p("foo<a><b>baz"))))
-*/
 
 repl("stitch_deep",
      doc(blockquote(ul(li(p("a")), li(p("b<a>")), li(p("c")), li(p("<b>d")), li(p("e"))))),
@@ -419,22 +417,22 @@ repl("in_empty_block",
      doc(p("a"), p("<a>"), p("b")),
      doc(p("x<a>y<b>z")),
      doc(p("a"), p("y<a>"), p("b")))
-/*repl("dont_shift_everything",
+repl("dont_shift_everything",
      doc(p("one<a>"), p("two"), p("three")),
      doc(p("outside<a>"), blockquote(p("inside<b>"))),
-     doc(p("one"), blockquote(p("inside")), p("two"), p("three")))*/
+     doc(p("one"), blockquote(p("inside")), p("two"), p("three")))
 repl("close_parent",
      doc(blockquote(p("b<a>c"), p("d<b>e"), p("f"))),
      doc(blockquote(p("x<a>y")), p("after"), "<b>"),
      doc(blockquote(p("b<a>y")), p("after"), blockquote(p("<b>e"), p("f"))))
-/*repl("lopsided",
+repl("lopsided",
      doc(blockquote(p("b<a>c"), p("d<b>e"), p("f"))),
      doc(blockquote(p("x<a>y")), p("z<b>")),
-     doc(blockquote(p("by")), p("z<a><b>e"), blockquote(p("f"))))
+     doc(blockquote(p("b<a>y")), p("z<b>e"), blockquote(p("f"))))
 repl("deep_insert",
      doc(blockquote(blockquote(p("one"), p("tw<a>o"), p("t<b>hree<3>"), p("four<4>")))),
      doc(ol(li(p("hello<a>world")), li(p("bye"))), p("ne<b>xt")),
-     doc(blockquote(blockquote(p("one"), p("twworld"), ol(li(p("bye"))), p("ne<a><b>hree<3>"), p("four<4>")))))*/
+     doc(blockquote(blockquote(p("one"), p("tw<a>world")), ol(li(p("bye"))), p("ne<b>hree<3>"), blockquote(p("four<4>")))))
 repl("join_inequal",
      doc(h1("hello<a>"), p("<b>you<1>")),
      null,
@@ -448,10 +446,10 @@ repl("delete_whole_doc",
      doc("<a>", h1("hi"), p("you"), "<b>"),
      null,
      doc(p()))
-/*repl("cut_empty_node_before",
+repl("cut_empty_node_before",
      doc(blockquote("<a>", p("hi")), p("b<b>x")),
      doc(p("<a>hi<b>")),
-     doc(blockquote(p("hix"))))*/
+     doc(blockquote(p("hix"))))
 repl("cut_empty_node_after",
      doc(p("x<a>hi"), blockquote(p("yy"), "<b>"), p("c")),
      doc(p("<a>hi<b>")),

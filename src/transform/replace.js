@@ -92,64 +92,75 @@ Transform.define("insertInline", function(pos, node) {
   this.insert(pos, node.mark(this.doc.marksAt(pos)))
 })
 
+let distAfter = 0
 function fitSliceInto(from, to, slice) {
   let base = from.sameDepth(to)
   let placed = placeSlice(from, slice), outer = outerPlaced(placed)
   if (outer) base = Math.min(outer.depth, base)
 
-  let distAfter = [-1e10] // FIXME kludge
-  let fragment = closeFragment(from.node[base].type, fillBetween(from, to, base, placed, distAfter), from, to, base)
+  distAfter = -1e10 // FIXME kludge
+  let fragment = closeFragment(from.node[base].type, fillBetween(from, to, base, placed), from, to, base)
   return {fitted: new Slice(fragment, from.depth - base, to.depth - base),
-          distAfter: distAfter[0] - (to.depth - base)}
+          distAfter: distAfter - (to.depth - base)}
 }
 
 function outerPlaced(placed) {
   for (let i = 0; i < placed.length; i++) if (placed[i]) return placed[i]
 }
 
-function fillBetween(from, to, depth, placed, distAfter) {
+function fillBetween(from, to, depth, placed) {
   let fromNext = from.depth > depth && from.node[depth + 1]
   let toNext = to.depth > depth && to.node[depth + 1]
   let placedHere = placed[depth]
 
   if (fromNext && toNext && fromNext.type.canContainContent(toNext.type) && !placedHere)
-    return Fragment.from(closeNode(fromNext, fillBetween(from, to, depth + 1, placed, distAfter),
+    return Fragment.from(closeNode(fromNext, fillBetween(from, to, depth + 1, placed),
                                    from, to, depth + 1))
 
   let content = Fragment.empty
   if (placedHere) {
     content = closeLeft(placedHere.content, placedHere.openLeft)
-    if (placedHere.isEnd) distAfter[0] = placedHere.openRight
+    if (placedHere.isEnd) distAfter = placedHere.openRight
   }
 
+  distAfter--
   if (fromNext)
     content = content.addToStart(closeNode(fromNext, fillFrom(from, depth + 1, placed),
                                            from, null, depth + 1))
   if (toNext)
-    content = closeTo(content, to, depth + 1, placedHere ? placedHere.openRight : 0, distAfter)
+    content = closeTo(content, to, depth + 1, placedHere ? placedHere.openRight : 0)
   else if (placedHere)
-    content = closeRight(content, placedHere.openRight, distAfter)
+    content = closeRight(content, placedHere.openRight)
+  distAfter++
+
   return content
 }
 
 function fillFrom(from, depth, placed) {
-  let placedHere = placed[depth]
-  let content = placedHere ? closeRight(placedHere.content, placedHere.openRight) : Fragment.empty
+  let placedHere = placed[depth], content = Fragment.empty
+  if (placedHere) {
+    content = closeRight(placedHere.content, placedHere.openRight)
+    if (placedHere.isEnd) distAfter = placedHere.openRight
+  }
+
+  distAfter--
   if (from.depth > depth)
     content = content.addToStart(closeNode(from.node[depth + 1], fillFrom(from, depth + 1, placed),
                                            from, null, depth + 1))
+  distAfter++
+
   return content
 }
 
-function closeTo(content, to, depth, openDepth, distAfter) {
+function closeTo(content, to, depth, openDepth) {
   let after = to.node[depth]
   if (openDepth == 0 || !after.type.canContainContent(content.lastChild.type)) {
-    let finish = fillTo(to, depth)
-    distAfter[0] += finish.size
-    return closeRight(content, openDepth).addToEnd(closeNode(after, finish, null, to, depth))
+    let finish = closeNode(after, fillTo(to, depth), null, to, depth)
+    distAfter += finish.nodeSize
+    return closeRight(content, openDepth).addToEnd(finish)
   }
   let inner = content.lastChild.content
-  if (depth < to.depth) inner = closeTo(inner, to, depth + 1, openDepth - 1, distAfter)
+  if (depth < to.depth) inner = closeTo(inner, to, depth + 1, openDepth - 1)
   return content.replace(content.childCount - 1, after.copy(inner))
 }
 
@@ -290,12 +301,12 @@ function mergeTextblockAfter(tr, inside, after) {
     }
     if (cutDepth > base) tr.split(cutAt, cutDepth - base)
     let types = [], attrs = []
-    for (let i = base; i < inside.depth; i++) {
+    for (let i = base + 1; i <= inside.depth; i++) {
       let node = inside.node[i]
       types.push(node.type)
       attrs.push(node.attrs)
     }
     tr.step("ancestor", after.pos, end, {depth: after.depth - base, types, attrs})
-    tr.join(after.pos - (after.depth - base), after.depth - base)
+    tr.join(after.pos - (after.depth - base), inside.depth - base)
   })
 }
