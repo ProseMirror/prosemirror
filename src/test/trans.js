@@ -1,9 +1,13 @@
 import {Transform, Step, Remapping} from "../transform"
+import {Node} from "../model"
 import {cmpNode, cmpStr} from "./cmp"
 import {Failure} from "./failure"
 
 function tag(tr, name) {
-  return tr.map(tr.before.tag[name]).pos
+  let calc = /^(.*)([+-]\d+)$/.exec(name), extra = 0
+  if (calc) { name = calc[1]; extra = +calc[2] }
+  let pos = tr.map(tr.before.tag[name]).pos
+  return pos == null ? pos : pos + extra
 }
 
 function mrk(tr, mark) {
@@ -28,7 +32,7 @@ class DelayedTransform {
   }
 
   ins(nodes, at) {
-    return this.plus(tr => tr.insert(tag(tr, at || "a"), nodes))
+    return this.plus(tr => tr.insert(tag(tr, at || "a"), typeof nodes == "string" ? tr.doc.type.schema.node(nodes) : nodes))
   }
 
   del(from, to) {
@@ -66,7 +70,10 @@ class DelayedTransform {
   }
 
   repl(slice, from, to) {
-    return this.plus(tr => tr.replace(tag(tr, from || "a"), tag(tr, to || "b"), slice))
+    return this.plus(tr => {
+      let s = slice instanceof Node ? slice.slice(slice.tag.a, slice.tag.b) : slice
+      tr.replace(tag(tr, from || "a"), tag(tr, to || "b"), s)
+    })
   }
 
   get(doc) {
