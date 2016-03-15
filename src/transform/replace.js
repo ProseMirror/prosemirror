@@ -106,7 +106,7 @@ function fillBetween(from, to, depth, placed) {
 
   let content = placedHere ? placedHere.content : Fragment.empty
   if (fromNext)
-    content = Fragment.from(fromNext.copy(fillFrom(from, depth + 1, placed))).append(content)
+    content = content.addToStart(fromNext.copy(fillFrom(from, depth + 1, placed)))
   if (toNext)
     content = closeTo(content, to, depth + 1, placedHere ? placedHere.openRight : 0)
   return content
@@ -116,14 +116,14 @@ function fillFrom(from, depth, placed) {
   let placedHere = placed[depth]
   let content = placedHere ? placedHere.content : Fragment.empty
   if (from.depth > depth)
-    content = Fragment.from(from.node[depth + 1].copy(fillFrom(from, depth + 1, placed))).append(content)
+    content = content.addToStart(from.node[depth + 1].copy(fillFrom(from, depth + 1, placed)))
   return content
 }
 
 function closeTo(content, to, depth, openDepth) {
   let after = to.node[depth]
   if (openDepth == 0 || !after.type.canContainContent(content.lastChild.type))
-    return content.append(Fragment.from(after.copy(fillTo(to, depth))))
+    return content.addToEnd(after.copy(fillTo(to, depth)))
   let inner = content.lastChild.content
   if (depth < to.depth) inner = closeTo(inner, to, depth + 1, openDepth - 1)
   return content.replace(content.childCount - 1, after.copy(inner))
@@ -187,7 +187,7 @@ function placeSlice(from, slice) {
       curType = parents[parents.length + dSlice - 1]
     }
     if (unplaced)
-      curFragment = Fragment.from(unplaced).append(curFragment)
+      curFragment = curFragment.addToStart(unplaced)
 
     if (curFragment.size == 0 && dSlice <= 0) break
 
