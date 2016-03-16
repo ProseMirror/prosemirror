@@ -6,27 +6,12 @@ import {PosMap, ReplacedRange} from "./map"
 
 // !! **`replace`**
 //   : Delete the part of the document between `from` and `to` and
-//     optionally replace it with another chunk of content. `pos` must
-//     point at the ‘root’ at which the cut starts—a position between
-//     and above `from` and `to`.
+//     optionally replace it with another piece of content.
 //
 //     When new content is to be inserted, the step's parameter should
-//     be an object of shape `{content: `[`Fragment`](#Fragment)`,
-//     openLeft: number, openRight: number}`. The step will insert the
-//     given content at the root of the cut, and `openLeft` and
-//     `openRight` indicate how much of the content on both sides
-//     should be consided ‘open’.
-//
-//     A replace step will try to join open nodes on both sides of the
-//     cut. That is, nodes in the original document that are partially
-//     cut off by `from` and `to`, and nodes at the sides of the
-//     replacement content as specificed by `openLeft` and
-//     `openRight`. For example, if `openLeft` is 2, the first node of
-//     the replacement content as well as its first child is
-//     considered open. Whenever two open nodes with the same
-//     [markup](#Node.sameMarkup) end up next to each other, they are
-//     joined. Open nodes that aren't joined are [closed](#Node.close)
-//     to ensure their content (or lack of it) is valid.
+//     be a `Slice` object that properly fits the 'gap' between `from`
+//     and `to`—the depths must line up, and the surrounding nodes
+//     must be able to be joined with the open sides of the slice.
 
 Step.define("replace", {
   apply(doc, step) {
@@ -58,6 +43,11 @@ Transform.define("replace", function(from, to = from, slice = Slice.empty) {
   if (from == to && !fSize) return
   this.step("replace", from, to, fitted)
 
+  // If the endpoints of the replacement don't end right next to each
+  // other, we may need to move text that occurs directly after the
+  // slice to fit onto the inserted content. But only if there is text
+  // before and after the cut, and if those endpoints aren't already
+  // next to each other.
   if (!fSize || !rTo.node[rTo.depth].isTextblock) return
   let after = from + fSize
   let inner = !slice.size ? from : distAfter < 0 ? -1 : after - distAfter, rInner
@@ -92,12 +82,22 @@ Transform.define("insertInline", function(pos, node) {
   this.insert(pos, node.mark(this.doc.marksAt(pos)))
 })
 
+// This is an output variable for closeFragment and friends, used to
+// track the distance between the end of the resulting slice and the
+// end of the inserted content, so that we can find back the position
+// afterwards.
 let distAfter = 0
+
+// : (ResolvedPos, ResolvedPos, Slice) → {fitted: Slice, distAfter: number}
+// Mangle the content of a slice so that it fits between the given
+// positions.
 function fitSliceInto(from, to, slice) {
   let base = from.sameDepth(to)
   let placed = placeSlice(from, slice), outer = outerPlaced(placed)
   if (outer) base = Math.min(outer.depth, base)
 
+  // distAfter starts negative, and is set to a positive value when
+  // the end of the inserted content is placed.
   distAfter = -1e10 // FIXME kludge
   let fragment = closeFragment(from.node[base].type, fillBetween(from, to, base, placed), from, to, base)
   return {fitted: new Slice(fragment, from.depth - base, to.depth - base),
