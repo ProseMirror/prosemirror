@@ -88,7 +88,7 @@ export class RangeStore {
     this.ranges.push(range)
     this.sorted.insert({type: "open", at: range.from, range: range})
     this.sorted.insert({type: "close", at: range.to, range: range})
-    this.pm.markRangeDirty(range)
+    this.pm.markRangeDirty(range.from, range.to)
   }
 
   removeRange(range) {
@@ -97,7 +97,7 @@ export class RangeStore {
       this.ranges.splice(found, 1)
       this.sorted.remove(range.from, range)
       this.sorted.remove(range.to, range)
-      this.pm.markRangeDirty(range)
+      this.pm.markRangeDirty(range.from, range.to)
       range.remove()
     }
   }

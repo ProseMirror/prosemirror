@@ -109,7 +109,7 @@ function markDirtyFor(pm, start, end) {
     pm.markAllDirty()
   } else {
     let pos = Pos.from(start.path.slice(0, depth))
-    pm.markRangeDirty({from: pos, to: pos.move(1)})
+    pm.markRangeDirty(pos, pos.move(1))
   }
 }
 

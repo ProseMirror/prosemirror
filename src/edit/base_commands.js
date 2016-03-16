@@ -490,7 +490,7 @@ function selectNodeHorizontally(pm, dir) {
 
   let next = moveSelectionBlock(pm, dir)
   if (next && (next instanceof NodeSelection || node)) {
-    pm.setSelectionDirect(next)
+    pm.setSelection(next)
     return true
   }
   return false
@@ -545,7 +545,7 @@ function selectNodeVertically(pm, dir) {
   if (leavingTextblock) {
     let next = moveSelectionBlock(pm, dir)
     if (next && (next instanceof NodeSelection)) {
-      pm.setSelectionDirect(next)
+      pm.setSelection(next)
       if (!node) pm.sel.lastNonNodePos = from
       return true
     }
@@ -564,7 +564,7 @@ function selectNodeVertically(pm, dir) {
     setDOMSelectionToPos(pm, last)
     return false
   }
-  if (beyond) pm.setSelectionDirect(beyond)
+  if (beyond) pm.setSelection(beyond)
   return true
 }
 

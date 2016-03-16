@@ -293,7 +293,7 @@ handlers.compositionstart = (pm, e) => {
   pm.flush()
   pm.input.composing = new Composing(pm, e.data)
   let above = pm.selection.head.shorten()
-  pm.markRangeDirty({from: above, to: above.move(1)})
+  pm.markRangeDirty(above, above.move(1))
 }
 
 handlers.compositionupdate = (pm, e) => {
@@ -325,7 +325,7 @@ function finishComposing(pm) {
   pm.ensureOperation()
   pm.input.composing = null
   if (text != info.data) inputText(pm, info.range, text)
-  if (range && !range.eq(pm.sel.range)) pm.setSelectionDirect(range)
+  if (range && !range.eq(pm.sel.range)) pm.setSelection(range)
 }
 
 handlers.input = (pm, e) => {
