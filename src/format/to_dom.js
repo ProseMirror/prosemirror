@@ -1,6 +1,6 @@
 import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmMark, StrongMark, LinkMark, CodeMark, Pos} from "../model"
+        EmMark, StrongMark, LinkMark, CodeMark} from "../model"
 
 import {defineTarget} from "./register"
 
@@ -32,6 +32,8 @@ class DOMSerializer {
   }
 
   renderNode(node, offset) {
+    if (this.options.preRender)
+      this.options.preRender(node, offset)
     let dom = node.type.serializeDOM(node, this)
     if (this.options.onRender)
       dom = this.options.onRender(node, dom, offset) || dom
@@ -40,6 +42,7 @@ class DOMSerializer {
 
   renderContent(node, where) {
     if (!where) where = this.doc.createDocumentFragment()
+
     if (!node.isTextblock)
       this.renderBlocksInto(node, where)
     else if (this.options.renderInlineFlat)
@@ -50,12 +53,7 @@ class DOMSerializer {
   }
 
   renderBlocksInto(parent, where) {
-    for (let i = 0; i < parent.childCount; i++) {
-      let child = parent.child(i)
-//      if (this.options.path) this.options.path.push(i.offset - child.width) FIXME
-      where.appendChild(this.renderNode(child, i.offset - child.width))
-//      if (this.options.path) this.options.path.pop() FIXME
-    }
+    parent.forEach((node, offset) => where.appendChild(this.renderNode(node, offset)))
   }
 
   renderInlineInto(parent, where) {
@@ -79,10 +77,10 @@ class DOMSerializer {
   }
 
   renderInlineFlatInto(parent, where) {
-    parent.forEach((node, start) => {
-      let dom = this.renderNode(node, start)
+    parent.forEach((node, offset) => {
+      let dom = this.renderNode(node, offset)
       dom = this.wrapInlineFlat(dom, node.marks)
-      dom = this.options.renderInlineFlat(node, dom, start) || dom
+      dom = this.options.renderInlineFlat(node, dom, offset) || dom
       where.appendChild(dom)
     })
   }
@@ -168,23 +166,23 @@ function def(cls, method) { cls.prototype.serializeDOM = method }
 
 def(BlockQuote, (node, s) => s.renderAs(node, "blockquote"))
 
-BlockQuote.prototype.countCoordsAsChild = (_, path, dom, coords) => {
+BlockQuote.prototype.countCoordsAsChild = (_, pos, dom, coords) => {
   let childBox = dom.firstChild.getBoundingClientRect()
-  if (coords.left < childBox.left - 2) return Pos.from(path)
+  if (coords.left < childBox.left - 2) return pos
 }
 
 def(BulletList, (node, s) => s.renderAs(node, "ul"))
 
 def(OrderedList, (node, s) => s.renderAs(node, "ol", {start: node.attrs.order != "1" && node.attrs.order}))
 
-OrderedList.prototype.countCoordsAsChild = BulletList.prototype.countCoordsAsChild = (_, path, dom, coords) => {
-  for (let i = 0; i < dom.childNodes.length; i++) {
-    let child = dom.childNodes[i]
-    if (!child.hasAttribute("pm-offset")) continue
+OrderedList.prototype.countCoordsAsChild = BulletList.prototype.countCoordsAsChild = (_, pos, dom, coords) => {
+  for (let child = dom.firstChild; child; child = child.nextSibling) {
+    let off = child.getAttribute("pm-offset")
+    if (!off) continue
     let childBox = child.getBoundingClientRect()
     if (coords.left > childBox.left - 2) return null
     if (childBox.top <= coords.top && childBox.bottom >= coords.top)
-      return new Pos(path, i)
+      return pos + 1 + (+off)
   }
 }
 

@@ -1,14 +1,15 @@
-import {Pos} from "../model"
 import {toDOM, nodeToDOM} from "../format"
 import {elt} from "../dom"
 
 import {DIRTY_REDRAW} from "./main"
 import {childContainer} from "./dompos"
 
-// FIXME clean up threading of path and offset, maybe remove from DOM renderer entirely
-
-function options(path, ranges) {
+function options(ranges) {
   return {
+    pos: 0,
+    preRender() {
+      this.pos++
+    },
     onRender(node, dom, offset) {
       if (node.isBlock) {
         if (node.type.contains == null)
@@ -21,6 +22,9 @@ function options(path, ranges) {
           dom = elt("div", null, dom)
       }
 
+      if (node.isText) this.pos += node.text.length
+      else if (node.type.contains) this.pos++
+
       return dom
     },
     onContainer(node) {
@@ -28,8 +32,8 @@ function options(path, ranges) {
     },
     // : (Node, DOMNode, number) → DOMNode
     renderInlineFlat(node, dom, offset) {
-      ranges.advanceTo(new Pos(path, offset))
-      let end = new Pos(path, offset + node.width)
+      ranges.advanceTo(this.pos)
+      let pos = this.pos, end = pos + node.nodeSize
       let nextCut = ranges.nextChangeBefore(end)
 
       let inner = dom, wrapped
@@ -37,9 +41,9 @@ function options(path, ranges) {
 
       if (dom.nodeType != 1) {
         dom = elt("span", null, dom)
-        if (!nextCut) wrapped = dom
+        if (nextCut == -1) wrapped = dom
       }
-      if (!wrapped && (nextCut || ranges.current.length)) {
+      if (!wrapped && (nextCut > -1 || ranges.current.length)) {
         wrapped = inner == dom ? (dom = elt("span", null, inner))
                                : inner.parentNode.appendChild(elt("span", null, inner))
       }
@@ -49,16 +53,16 @@ function options(path, ranges) {
         dom.setAttribute("pm-leaf", node.isText ? node.width : "true")
 
       let inlineOffset = 0
-      while (nextCut) {
-        let size = nextCut - offset
+      while (nextCut > -1) {
+        let size = nextCut - pos
         let split = splitSpan(wrapped, size)
         if (ranges.current.length)
           split.className = ranges.current.join(" ")
         split.setAttribute("pm-inner-offset", inlineOffset)
         inlineOffset += size
-        offset += size
-        ranges.advanceTo(new Pos(path, offset))
-        if (!(nextCut = ranges.nextChangeBefore(end)))
+        ranges.advanceTo(nextCut)
+        nextCut = ranges.nextChangeBefore(end)
+        if (nextCut == -1)
           wrapped.setAttribute("pm-inner-offset", inlineOffset)
       }
 
@@ -66,7 +70,7 @@ function options(path, ranges) {
         wrapped.className = ranges.current.join(" ")
       return dom
     },
-    document, path
+    document
   }
 }
 
@@ -79,7 +83,7 @@ function splitSpan(span, at) {
 
 export function draw(pm, doc) {
   pm.content.textContent = ""
-  pm.content.appendChild(toDOM(doc, options([], pm.ranges.activeRangeTracker())))
+  pm.content.appendChild(toDOM(doc, options(pm.ranges.activeRangeTracker())))
 }
 
 function adjustTrailingHacks(dom, node) {
@@ -95,9 +99,12 @@ function adjustTrailingHacks(dom, node) {
   }
 }
 
-function findNodeIn(iter, node) {
-  let copy = iter.copy()
-  for (let child; child = copy.next().value;) if (child == node) return child
+function findNodeIn(parent, i, node) {
+  for (; i < parent.childCount; i++) {
+    let child = parent.child(i)
+    if (child == node) return i
+  }
+  return -1
 }
 
 function movePast(dom) {
@@ -109,23 +116,22 @@ function movePast(dom) {
 export function redraw(pm, dirty, doc, prev) {
   if (dirty.get(prev) == DIRTY_REDRAW) return draw(pm, doc)
 
-  let opts = options([], pm.ranges.activeRangeTracker())
+  let opts = options(pm.ranges.activeRangeTracker())
 
-  function scan(dom, node, prev) {
-    let iNode = node.iter(), iPrev = prev.iter(), pChild = iPrev.next().value
+  function scan(dom, node, prev, pos) {
+    let iPrev = 0, pChild = prev.firstChild
     let domPos = dom.firstChild
 
-    for (let child; child = iNode.next().value;) {
-      let offset = iNode.offset - child.width, matching, reuseDOM
-      if (!node.isTextblock) opts.path.push(offset)
-
-      if (pChild == child) {
-        matching = pChild
-      } else if (matching = findNodeIn(iPrev, child)) {
-        while (pChild != matching) {
-          pChild = iPrev.next().value
+    for (let iNode = 0, offset = 0; iNode < node.childCount; iNode++) {
+      let child = node.child(iNode), matching, reuseDOM
+      let found = pChild == child ? iPrev : findNodeIn(prev, iPrev + 1, child)
+      if (found > -1) {
+        matching = child
+        while (iPrev != found) {
+          iPrev++
           domPos = movePast(domPos)
         }
+        pChild = ++iPrev == prev.childCount ? null : prev.child(iPrev)
       }
 
       if (matching && !dirty.get(matching)) {
@@ -133,8 +139,9 @@ export function redraw(pm, dirty, doc, prev) {
       } else if (pChild && !child.isText && child.sameMarkup(pChild) && dirty.get(pChild) != DIRTY_REDRAW) {
         reuseDOM = true
         if (pChild.type.contains)
-          scan(childContainer(domPos), child, pChild)
+          scan(childContainer(domPos), child, pChild, pos + offset + 1)
       } else {
+        opts.pos = pos + offset
         let rendered = nodeToDOM(child, opts, offset)
         dom.insertBefore(rendered, domPos)
         reuseDOM = false
@@ -145,7 +152,7 @@ export function redraw(pm, dirty, doc, prev) {
         domPos = domPos.nextSibling
         pChild = iPrev.next().value
       }
-      if (!node.isTextblock) opts.path.pop()
+      offset += child.nodeSize
     }
 
     while (pChild) {
