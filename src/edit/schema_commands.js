@@ -1,5 +1,5 @@
 import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
-        StrongMark, EmMark, CodeMark, LinkMark, Image, Pos} from "../model"
+        StrongMark, EmMark, CodeMark, LinkMark, Image} from "../model"
 
 import {selectedNodeAttr} from "./command"
 import {toText} from "../format"
@@ -162,7 +162,7 @@ Image.register("command", "insert", {
       {label: "Image URL", attr: "src"},
       {label: "Description / alternative text", attr: "alt",
        prefill: function(pm) {
-         return selectedNodeAttr(pm, this, "alt") || toText(pm.doc.sliceBetween(pm.selection.from, pm.selection.to))
+         return selectedNodeAttr(pm, this, "alt") || toText(pm.doc.cut(pm.selection.from, pm.selection.to))
        }},
       {label: "Title", attr: "title"}
     ]
@@ -241,7 +241,7 @@ HardBreak.register("command", "insert", {
     let {node, from} = pm.selection
     if (node && node.isBlock)
       return false
-    else if (pm.doc.path(from.path).type.isCode)
+    else if (pm.doc.resolve(from).parent.type.isCode)
       return pm.tr.typeText("\n").apply(pm.apply.scroll)
     else
       return pm.tr.replaceSelection(this.create()).apply(pm.apply.scroll)
@@ -257,12 +257,12 @@ HardBreak.register("command", "insert", {
 ListItem.register("command", "split", {
   label: "Split the current list item",
   run(pm) {
-    let {from, to, node} = pm.selection
+    let {from, to, node} = pm.selection, rFrom = pm.doc.resolve(from)
     if ((node && node.isBlock) ||
-        from.path.length < 2 || !Pos.samePath(from.path, to.path)) return false
-    let toParent = from.shorten(), grandParent = pm.doc.path(toParent.path)
+        rFrom.depth < 2 || !rFrom.sameParent(pm.doc.resolve(to))) return false
+    let grandParent = rFrom.node[rFrom.depth - 1]
     if (grandParent.type != this) return false
-    let nextType = to.offset == grandParent.child(toParent.offset).size ? pm.schema.defaultTextblockType() : null
+    let nextType = to == rFrom.end(rFrom.depth) ? pm.schema.defaultTextblockType() : null
     return pm.tr.delete(from, to).split(from, 2, nextType).apply(pm.apply.scroll)
   },
   keys: ["Enter(50)"]
