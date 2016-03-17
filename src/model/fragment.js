@@ -146,6 +146,10 @@ export class Fragment {
     return found
   }
 
+  maybeChild(index) {
+    return this.content[index]
+  }
+
   forEach(f) {
     for (let i = 0, p = 0; i < this.content.length; i++) {
       let child = this.content[i]

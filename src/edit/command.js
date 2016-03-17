@@ -1,6 +1,6 @@
 import Keymap from "browserkeymap"
 
-import {Pos, NodeType, MarkType} from "../model"
+import {NodeType, MarkType} from "../model"
 import {canWrap} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
@@ -287,7 +287,7 @@ function markActive(pm, type) {
 function canAddInline(pm, type) {
   let {from, to, empty} = pm.selection
   if (empty)
-    return !type.isInSet(pm.activeMarks()) && pm.doc.path(from.path).type.canContainMark(type)
+    return !type.isInSet(pm.activeMarks()) && pm.doc.resolve(from).parent.type.canContainMark(type)
   let can = false
   pm.doc.nodesBetween(from, to, node => {
     if (can || node.isTextblock && !node.type.canContainMark(type)) return false
@@ -314,9 +314,8 @@ function selectedMarkAttr(pm, type, attr) {
   if (empty) {
     start = end = type.isInSet(pm.activeMarks())
   } else {
-    let startParent = pm.doc.path(from.path)
-    let startChunk = startParent.size > from.offset && startParent.chunkAfter(from.offset)
-    start = startChunk ? type.isInSet(startChunk.node.marks) : null
+    let startChunk = pm.doc.resolve(from).nodeAfter
+    start = startChunk ? type.isInSet(startChunk.marks) : null
     end = type.isInSet(pm.doc.marksAt(to))
   }
   if (start && end && start.attrs[attr] == end.attrs[attr])
@@ -381,29 +380,31 @@ MarkType.derivableCommands.toggle = () => ({
 })
 
 function isAtTopOfListItem(doc, from, to, listType) {
-  return Pos.samePath(from.path, to.path) &&
-    from.path.length >= 2 &&
-    from.path[from.path.length - 1] == 0 &&
-    listType.canContain(doc.path(from.path.slice(0, from.path.length - 1)))
+  let rFrom = doc.resolve(from), rTo = doc.resolve(to)
+  return rFrom.sameParent(rTo) &&
+    rFrom.depth >= 2 &&
+    rFrom.index[rFrom.depth - 1] == 0 &&
+    listType.canContain(rFrom.node[rFrom.depth - 1])
 }
 
 NodeType.derivableCommands.wrap = function(conf) {
   return {
     run(pm, ...params) {
       let {from, to, head} = pm.selection, doJoin = false
+      let rFrom = pm.doc.resolve(from)
       if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this)) {
         // Don't do anything if this is the top of the list
-        if (from.path[from.path.length - 2] == 0) return false
+        if (rFrom.index[rFrom.depth - 2] == 0) return false
         doJoin = true
       }
       let tr = pm.tr.wrap(from, to, this, fillAttrs(conf, params))
-      if (doJoin) tr.join(from.shorten(from.depth - 2))
+      if (doJoin) tr.join(rFrom.before(rFrom.depth - 2))
       return tr.apply(pm.apply.scroll)
     },
     select(pm) {
-      let {from, to, head} = pm.selection
+      let {from, to, head} = pm.selection, rFrom
       if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this) &&
-          from.path[from.path.length - 2] == 0)
+          (rFrom = pm.doc.resolve(from)).index[rFrom.depth - 2] == 0)
         return false
       return canWrap(pm.doc, from, to, this, conf.attrs)
     },
@@ -426,8 +427,9 @@ function alreadyHasBlockType(doc, from, to, type, attrs) {
 function activeTextblockIs(pm, type, attrs) {
   let {from, to, node} = pm.selection
   if (!node || node.isInline) {
-    if (!Pos.samePath(from.path, to.path)) return false
-    node = pm.doc.path(from.path)
+    let rFrom = pm.doc.resolve(from)
+    if (!rFrom.sameParent(pm.doc.resolve(to))) return false
+    node = rFrom.parent
   } else if (!node.isTextblock) {
     return false
   }
@@ -458,7 +460,7 @@ NodeType.derivableCommands.insert = function(conf) {
       return pm.tr.replaceSelection(this.create(fillAttrs(conf, params))).apply(pm.apply.scroll)
     },
     select: this.isInline ? function(pm) {
-      return pm.doc.path(pm.selection.from.path).type.canContainType(this)
+      return pm.doc.resolve(pm.selection.from).parent.type.canContainType(this)
     } : null,
     params: deriveParams(this, conf.params)
   }

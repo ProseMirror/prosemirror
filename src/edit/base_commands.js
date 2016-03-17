@@ -1,4 +1,3 @@
-import {Pos} from "../model"
 import {joinPoint, joinableBlocks, canLift} from "../transform"
 import {AssertionError} from "../util/error"
 
@@ -10,38 +9,6 @@ import {setDOMSelectionToPos} from "./dompos"
 // The set of default commands defined by the core library. They are
 // included in the [default command set](#CommandSet.default).
 export const baseCommands = Object.create(null)
-
-// Get an offset moving backward from a current offset inside a node.
-function moveBackward(parent, offset, by) {
-  if (by != "char" && by != "word")
-    throw new AssertionError("Unknown motion unit: " + by)
-
-  let cat = null, counted = 0
-  for (;;) {
-    if (offset == 0) return offset
-    let {start, node} = parent.chunkBefore(offset)
-    if (!node.isText) return cat ? offset : offset - 1
-
-    if (by == "char") {
-      for (let i = offset - start; i > 0; i--) {
-        if (!isExtendingChar(node.text.charAt(i - 1)))
-          return offset - 1
-        offset--
-      }
-    } else if (by == "word") {
-      // Work from the current position backwards through text of a singular
-      // character category (e.g. "cat" of "#!*") until reaching a character in a
-      // different category (i.e. the end of the word).
-      for (let i = offset - start; i > 0; i--) {
-        let nextCharCat = charCategory(node.text.charAt(i - 1))
-        if (cat == null || counted == 1 && cat == "space") cat = nextCharCat
-        else if (cat != nextCharCat) return offset
-        offset--
-        counted++
-      }
-    }
-  }
-}
 
 // ;; #kind=command
 // Delete the selection, if there is one.
@@ -61,22 +28,21 @@ baseCommands.deleteSelection = {
 }
 
 function deleteBarrier(pm, cut) {
-  let around = pm.doc.path(cut.path)
-  let before = around.child(cut.offset - 1), after = around.child(cut.offset)
+  let rCut = pm.doc.resolve(cut), before = rCut.nodeBefore, after = rCut.nodeAfter
   if (before.type.canContainContent(after.type)) {
     let tr = pm.tr.join(cut)
     if (tr.steps.length && before.size == 0 && !before.sameMarkup(after))
-      tr.setNodeType(cut.move(-1), after.type, after.attrs)
+      tr.setNodeType(cut - before.nodeSize, after.type, after.attrs)
     if (tr.apply(pm.apply.scroll) !== false)
       return
   }
 
   let conn
   if (after.isTextblock && (conn = before.type.findConnection(after.type))) {
-    let tr = pm.tr, end = cut.move(1)
+    let tr = pm.tr, end = cut + after.nodeSize
     tr.step("ancestor", cut, end, null, {types: [before.type, ...conn],
                                          attrs: [before.attrs, ...conn.map(() => null)]})
-    tr.join(end)
+    tr.join(end + 2 * conn.length + 2)
     tr.join(cut)
     if (tr.apply(pm.apply.scroll) !== false) return
   }
@@ -97,13 +63,16 @@ baseCommands.joinBackward = {
   label: "Join with the block above",
   run(pm) {
     let {head, empty} = pm.selection
-    if (!empty || head.offset > 0) return false
+    if (!empty) return false
+
+    let rHead = pm.doc.resolve(head)
+    if (rHead.parentOffset > 0) return false
 
     // Find the node before this one
     let before, cut
-    for (let i = head.path.length - 1; !before && i >= 0; i--) if (head.path[i] > 0) {
-      cut = head.shorten(i)
-      before = pm.doc.path(cut.path).child(cut.offset - 1)
+    for (let i = rHead.depth - 1; !before && i >= 0; i--) if (rHead.index[i] > 0) {
+      cut = rHead.before(i + 1)
+      before = rHead.node[i].child(rHead.index[i] - 1)
     }
 
     // If there is no node before this, try to lift
@@ -112,20 +81,57 @@ baseCommands.joinBackward = {
 
     // If the node below has no content and the node above is
     // selectable, delete the node below and select the one above.
-    if (before.type.contains == null && before.type.selectable && pm.doc.path(head.path).size == 0) {
-      let tr = pm.tr.delete(cut, cut.move(1)).apply(pm.apply.scroll)
-      pm.setNodeSelection(cut.move(-1))
+    if (before.type.contains == null && before.type.selectable && rHead.parent.content.size == 0) {
+      let tr = pm.tr.delete(cut, cut + 2).apply(pm.apply.scroll)
+      pm.setNodeSelection(cut - before.nodeSize)
       return tr
     }
 
     // If the node doesn't allow children, delete it
     if (before.type.contains == null)
-      return pm.tr.delete(cut.move(-1), cut).apply(pm.apply.scroll)
+      return pm.tr.delete(cut - before.nodeSize, cut).apply(pm.apply.scroll)
 
     // Apply the joining algorithm
     return deleteBarrier(pm, cut)
   },
   keys: ["Backspace(30)", "Mod-Backspace(30)"]
+}
+
+// Get an offset moving backward from a current offset inside a node.
+function moveBackward(doc, pos, by) {
+  if (by != "char" && by != "word")
+    throw new AssertionError("Unknown motion unit: " + by)
+
+  let rPos = doc.resolve(pos)
+  let parent = rPos.parent, offset = rPos.parentOffset
+
+  let cat = null, counted = 0
+  for (;;) {
+    if (offset == 0) return pos
+    let {start, node} = parent.nodeBefore(offset)
+    if (!node.isText) return cat ? pos : pos - 1
+
+    if (by == "char") {
+      for (let i = offset - start; i > 0; i--) {
+        if (!isExtendingChar(node.text.charAt(i - 1)))
+          return pos - 1
+        offset--
+        pos--
+      }
+    } else if (by == "word") {
+      // Work from the current position backwards through text of a singular
+      // character category (e.g. "cat" of "#!*") until reaching a character in a
+      // different category (i.e. the end of the word).
+      for (let i = offset - start; i > 0; i--) {
+        let nextCharCat = charCategory(node.text.charAt(i - 1))
+        if (cat == null || counted == 1 && cat == "space") cat = nextCharCat
+        else if (cat != nextCharCat) return pos
+        offset--
+        pos--
+        counted++
+      }
+    }
+  }
 }
 
 // ;; #kind=command
@@ -137,9 +143,9 @@ baseCommands.deleteCharBefore = {
   label: "Delete a character before the cursor",
   run(pm) {
     let {head, empty} = pm.selection
-    if (!empty || head.offset == 0) return false
-    let from = moveBackward(pm.doc.path(head.path), head.offset, "char")
-    return pm.tr.delete(new Pos(head.path, from), head).apply(pm.apply.scroll)
+    if (!empty || pm.doc.resolve(head).parentOffset == 0) return false
+    let dest = moveBackward(pm.doc, head, "char")
+    return pm.tr.delete(dest, head).apply(pm.apply.scroll)
   },
   keys: {
     all: ["Backspace(60)"],
@@ -156,41 +162,13 @@ baseCommands.deleteWordBefore = {
   label: "Delete the word before the cursor",
   run(pm) {
     let {head, empty} = pm.selection
-    if (!empty || head.offset == 0) return false
-    let from = moveBackward(pm.doc.path(head.path), head.offset, "word")
-    return pm.tr.delete(new Pos(head.path, from), head).apply(pm.apply.scroll)
+    if (!empty || pm.doc.resolve(head).parentOffset == 0) return false
+    let dest = moveBackward(pm.doc, head, "word")
+    return pm.tr.delete(dest, head).apply(pm.apply.scroll)
   },
   keys: {
     all: ["Mod-Backspace(40)"],
     mac: ["Alt-Backspace(40)"]
-  }
-}
-
-function moveForward(parent, offset, by) {
-  if (by != "char" && by != "word")
-    throw new AssertionError("Unknown motion unit: " + by)
-
-  let cat = null, counted = 0
-  for (;;) {
-    if (offset == parent.size) return offset
-    let {start, node} = parent.chunkAfter(offset)
-    if (!node.isText) return cat ? offset : offset + 1
-
-    if (by == "char") {
-      for (let i = offset - start; i < node.text.length; i++) {
-        if (!isExtendingChar(node.text.charAt(i + 1)))
-          return offset + 1
-        offset++
-      }
-    } else if (by == "word") {
-      for (let i = offset - start; i < node.text.length; i++) {
-        let nextCharCat = charCategory(node.text.charAt(i))
-        if (cat == null || counted == 1 && cat == "space") cat = nextCharCat
-        else if (cat != nextCharCat) return offset
-        offset++
-        counted++
-      }
-    }
   }
 }
 
@@ -205,16 +183,17 @@ function moveForward(parent, offset, by) {
 baseCommands.joinForward = {
   label: "Join with the block below",
   run(pm) {
-    let {head, empty} = pm.selection
-    if (!empty || head.offset < pm.doc.path(head.path).size) return false
+    let {head, empty} = pm.selection, rHead
+    if (!empty || (rHead = pm.doc.resolve(head)).parentOffset < rHead.parent.content.size) return false
 
     // Find the node after this one
     let after, cut
-    for (let i = head.path.length - 1; !after && i >= 0; i--) {
-      cut = head.shorten(i, 1)
-      let parent = pm.doc.path(cut.path)
-      if (cut.offset < parent.size)
-        after = parent.child(cut.offset)
+    for (let i = rHead.depth - 1; !after && i >= 0; i--) {
+      let parent = rHead.node[i]
+      if (rHead.index[i] + 1 < parent.childCount) {
+        after = parent.child(rHead.index[i] + 1)
+        cut = rHead.after(i + 1)
+      }
     }
 
     // If there is no node after this, there's nothing to do
@@ -222,12 +201,45 @@ baseCommands.joinForward = {
 
     // If the node doesn't allow children, delete it
     if (after.type.contains == null)
-      return pm.tr.delete(cut, cut.move(1)).apply(pm.apply.scroll)
+      return pm.tr.delete(cut, cut + after.nodeSize).apply(pm.apply.scroll)
 
     // Apply the joining algorithm
     return deleteBarrier(pm, cut)
   },
   keys: ["Delete(30)", "Mod-Delete(30)"]
+}
+
+function moveForward(doc, pos, by) {
+  if (by != "char" && by != "word")
+    throw new AssertionError("Unknown motion unit: " + by)
+
+  let rPos = doc.resolve(pos)
+  let parent = rPos.parent, offset = rPos.parentOffset
+
+  let cat = null, counted = 0
+  for (;;) {
+    if (offset == parent.content.size) return pos
+    let {start, node} = parent.childAfter(offset)
+    if (!node.isText) return cat ? pos : pos + 1
+
+    if (by == "char") {
+      for (let i = offset - start; i < node.text.length; i++) {
+        if (!isExtendingChar(node.text.charAt(i + 1)))
+          return pos + 1
+        offset++
+        pos++
+      }
+    } else if (by == "word") {
+      for (let i = offset - start; i < node.text.length; i++) {
+        let nextCharCat = charCategory(node.text.charAt(i))
+        if (cat == null || counted == 1 && cat == "space") cat = nextCharCat
+        else if (cat != nextCharCat) return pos
+        offset++
+        pos++
+        counted++
+      }
+    }
+  }
 }
 
 // ;; #kind=command
@@ -238,10 +250,10 @@ baseCommands.joinForward = {
 baseCommands.deleteCharAfter = {
   label: "Delete a character after the cursor",
   run(pm) {
-    let {head, empty} = pm.selection
-    if (!empty || head.offset == pm.doc.path(head.path).size) return false
-    let to = moveForward(pm.doc.path(head.path), head.offset, "char")
-    return pm.tr.delete(head, new Pos(head.path, to)).apply(pm.apply.scroll)
+    let {head, empty} = pm.selection, rHead
+    if (!empty || (rHead = pm.doc.resolve(head)).parentOffset == rHead.parent.content.size) return false
+    let dest = moveForward(pm.doc, head, "char")
+    return pm.tr.delete(head, dest).apply(pm.apply.scroll)
   },
   keys: {
     all: ["Delete(60)"],
@@ -258,10 +270,10 @@ baseCommands.deleteCharAfter = {
 baseCommands.deleteWordAfter = {
   label: "Delete a word after the cursor",
   run(pm) {
-    let {head, empty} = pm.selection
-    if (!empty || head.offset == pm.doc.path(head.path).size) return false
-    let to = moveForward(pm.doc.path(head.path), head.offset, "word")
-    return pm.tr.delete(head, new Pos(head.path, to)).apply(pm.apply.scroll)
+    let {head, empty} = pm.selection, rHead
+    if (!empty || (rHead = pm.doc.resolve(head)).parentOffset == rHead.parent.content.size) return false
+    let dest = moveForward(pm.doc, head, "word")
+    return pm.tr.delete(head, dest).apply(pm.apply.scroll)
   },
   keys: {
     all: ["Mod-Delete(40)"],
@@ -287,7 +299,7 @@ baseCommands.joinUp = {
     let point = joinPointAbove(pm), isNode = pm.selection.node
     if (!point) return false
     pm.tr.join(point).apply()
-    if (isNode) pm.setNodeSelection(point.move(-1))
+    if (isNode) pm.setNodeSelection(point - isNode.nodeSize)
   },
   select(pm) { return joinPointAbove(pm) },
   menu: {
@@ -315,11 +327,11 @@ function joinPointBelow(pm) {
 baseCommands.joinDown = {
   label: "Join with below block",
   run(pm) {
-    let node = pm.selection.node
+    let node = pm.selection.node, nodeAt = pm.selection.from
     let point = joinPointBelow(pm)
     if (!point) return false
     pm.tr.join(point).apply()
-    if (node) pm.setNodeSelection(point.move(-1))
+    if (node) pm.setNodeSelection(nodeAt)
   },
   select(pm) { return joinPointBelow(pm) },
   keys: ["Alt-Down"]
@@ -359,13 +371,11 @@ baseCommands.lift = {
 baseCommands.newlineInCode = {
   label: "Insert newline",
   run(pm) {
-    let {from, to, node} = pm.selection, block
-    if (!node && Pos.samePath(from.path, to.path) &&
-        (block = pm.doc.path(from.path)).type.isCode &&
-        to.offset < block.size)
-      return pm.tr.typeText("\n").apply(pm.apply.scroll)
-    else
-      return false
+    let {from, to, node} = pm.selection
+    if (node) return false
+    let rFrom = pm.doc.resolve(from)
+    if (!rFrom.parent.type.isCode || to >= rFrom.end(rFrom.depth)) return false
+    return pm.tr.typeText("\n").apply(pm.apply.scroll)
   },
   keys: ["Enter(10)"]
 }
@@ -380,9 +390,9 @@ baseCommands.createParagraphNear = {
   run(pm) {
     let {from, to, node} = pm.selection
     if (!node || !node.isBlock) return false
-    let side = from.offset ? to : from
+    let side = pm.doc.resolve(from).parentOffset ? to : from
     pm.tr.insert(side, pm.schema.defaultTextblockType().create()).apply(pm.apply.scroll)
-    pm.setTextSelection(new Pos(side.toPath(), 0))
+    pm.setTextSelection(side + 1)
   },
   keys: ["Enter(20)"]
 }
@@ -395,12 +405,12 @@ baseCommands.createParagraphNear = {
 baseCommands.liftEmptyBlock = {
   label: "Move current block up",
   run(pm) {
-    let {head, empty} = pm.selection
-    if (!empty || head.offset > 0 || pm.doc.path(head.path).size) return false
-    if (head.depth > 1) {
-      let shorter = head.shorten()
-      if (shorter.offset > 0 && shorter.offset < pm.doc.path(shorter.path).size - 1 &&
-          pm.tr.split(shorter).apply() !== false)
+    let {head, empty} = pm.selection, rHead
+    if (!empty || (rHead = pm.doc.resolve(head)).parentOffset > 0 || rHead.parent.content.size) return false
+    if (rHead.depth > 1) {
+      if (rHead.offset[rHead.depth - 1] > 0 &&
+          rHead.index[rHead.depth - 1] < rHead.node[rHead.depth - 1].childCount - 1 &&
+          pm.tr.split(rHead.before(rHead.depth)).apply() !== false)
         return
     }
     return pm.tr.lift(head).apply(pm.apply.scroll)
@@ -416,16 +426,17 @@ baseCommands.liftEmptyBlock = {
 baseCommands.splitBlock = {
   label: "Split the current block",
   run(pm) {
-    let {from, to, node} = pm.selection, block = pm.doc.path(to.path)
+    let {from, to, node} = pm.selection, rFrom = pm.doc.resolve(from)
     if (node && node.isBlock) {
-      if (!from.offset) return false
+      if (!rFrom.parentOffset) return false
       return pm.tr.split(from).apply(pm.apply.scroll)
     } else {
+      let rTo = pm.doc.resolve(to), atEnd = rTo.parentOffset == rTo.parent.content.size
       let deflt = pm.schema.defaultTextblockType()
-      let type = to.offset == block.size ? deflt : null
+      let type = atEnd ? deflt : null
       let tr = pm.tr.delete(from, to).split(from, 1, type)
-      if (to.offset < block.size && !from.offset && pm.doc.path(from.path).type != deflt)
-        tr.setNodeType(from.shorten(), deflt)
+      if (!atEnd && !rFrom.parentOffset && rFrom.parent.type != deflt)
+        tr.setNodeType(rFrom.before(rFrom.depth), deflt)
       return tr.apply(pm.apply.scroll)
     }
   },
@@ -433,11 +444,14 @@ baseCommands.splitBlock = {
 }
 
 function nodeAboveSelection(pm) {
-  let sel = pm.selection, i = 0
-  if (sel.node) return !!sel.from.depth && sel.from.shorten()
-  for (; i < sel.head.depth && i < sel.anchor.depth; i++)
-    if (sel.head.path[i] != sel.anchor.path[i]) break
-  return i == 0 ? false : sel.head.shorten(i - 1)
+  let sel = pm.selection
+  if (sel.node) {
+    let rFrom = pm.doc.resolve(sel.from)
+    return !!rFrom.depth && rFrom.before(rFrom.depth)
+  }
+  let rHead = pm.doc.resolve(sel.head)
+  let same = rHead.sameDepth(pm.doc.resolve(sel.anchor))
+  return same == 0 ? false : rHead.before(same)
 }
 
 // ;; #kind=command
@@ -449,7 +463,7 @@ baseCommands.selectParentNode = {
   label: "Select parent node",
   run(pm) {
     let node = nodeAboveSelection(pm)
-    if (!node) return false
+    if (node === false) return false
     pm.setNodeSelection(node)
   },
   select(pm) {
@@ -464,8 +478,8 @@ baseCommands.selectParentNode = {
 
 function moveSelectionBlock(pm, dir) {
   let {from, to, node} = pm.selection
-  let side = dir > 0 ? to : from
-  return findSelectionFrom(pm.doc, node && node.isBlock ? side : side.shorten(null, dir > 0 ? 1 : 0), dir)
+  let side = pm.doc.resolve(dir > 0 ? to : from)
+  return findSelectionFrom(pm.doc, node && node.isBlock ? side.pos : dir > 0 ? side.after(side.depth) : side.before(side.depth), dir)
 }
 
 function selectNodeHorizontally(pm, dir) {
@@ -477,15 +491,18 @@ function selectNodeHorizontally(pm, dir) {
     return true
   }
 
-  let parent
-  if (!node && (parent = pm.doc.path(from.path)) &&
-      (dir > 0 ? from.offset < parent.size : from.offset)) {
-    let {node: nextNode, start} = dir > 0 ? parent.chunkAfter(from.offset) : parent.chunkBefore(from.offset)
-    if (nextNode.type.selectable && start == from.offset - (dir > 0 ? 0 : 1)) {
-      pm.setNodeSelection(dir < 0 ? from.move(-1) : from)
-      return true
+  if (!node) {
+    let rFrom = pm.doc.resolve(from)
+    let {node: nextNode, offset} = dir > 0
+        ? rFrom.parent.nodeAfter(rFrom.parentOffset)
+        : rFrom.parent.nodeBefore(rFrom.parentOffset)
+    if (nextNode) {
+      if (nextNode.type.selectable && offset == from.parentOffset - (dir > 0 ? 0 : nextNode.nodeSize)) {
+        pm.setNodeSelection(dir < 0 ? from - nextNode.nodeSize : from)
+        return true
+      }
+      return false
     }
-    return false
   }
 
   let next = moveSelectionBlock(pm, dir)
@@ -560,7 +577,7 @@ function selectNodeVertically(pm, dir) {
 
   let last = pm.sel.lastNonNodePos
   let beyond = findSelectionFrom(pm.doc, dir < 0 ? from : to, dir)
-  if (last && beyond && Pos.samePath(last.path, beyond.from.path)) {
+  if (last != null && beyond && pm.doc.resolve(beyond.from).sameParent(pm.doc.resolve(last))) {
     setDOMSelectionToPos(pm, last)
     return false
   }

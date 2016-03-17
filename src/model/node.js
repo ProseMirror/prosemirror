@@ -144,6 +144,18 @@ export class Node {
     }
   }
 
+  nodeAfter(pos) {
+    let index = findIndex(this.content, pos)
+    return {node: this.content.maybeChild(index), index, offset: foundOffset}
+  }
+
+  nodeBefore(pos) {
+    let index = findIndex(this.content, pos)
+    if (foundOffset > pos || pos == 0) return {node: this.content.child(index), index, offset: foundOffset}
+    let node = this.content.maybeChild(index - 1)
+    return {node, index: index - 1, offset: foundOffset - node.childSize}
+  }
+
   // :: (?number, ?number, (node: Node, pos: number, parent: Node))
   // Iterate over all nodes between the given two positions, calling
   // the callback with the node, its position, and its parent
@@ -324,6 +336,10 @@ export class ResolvedPos {
     let depth = 0, max = Math.min(this.depth, other.depth)
     while (depth < max && this.index[depth] == other.index[depth]) ++depth
     return depth
+  }
+
+  sameParent(other) {
+    return this.pos - this.parentOffset == other.pos - other.parentOffset
   }
 
   start(depth) {
