@@ -1,57 +1,55 @@
-import {Pos, findDiffStart, findDiffEnd} from "../model"
+import {findDiffStart, findDiffEnd} from "../model"
 import {fromDOM} from "../format"
-import {samePathDepth} from "../transform/tree"
 
 import {findSelectionFrom} from "./selection"
-import {findByPath} from "./dompos"
+import {DOMFromPos} from "./dompos"
 
-function isAtEnd(node, pos, depth) {
-  for (let i = depth || 0; i < pos.path.length; i++) {
-    let n = pos.path[depth]
-    if (n < node.size - 1) return false
-    node = node.child(n)
-  }
-  return pos.offset == node.size
+function isAtEnd(rPos, depth) {
+  for (let i = depth || 0; i < rPos.depth; i++)
+    if (rPos.index[i] + 1 < rPos.node[i].childCount) return false
+  return rPos.parentOffset == rPos.parent.content.size
 }
-function isAtStart(pos, depth) {
-  if (pos.offset > 0) return false
-  for (let i = depth || 0; i < pos.path.length; i++)
-    if (pos.path[depth] > 0) return false
-  return true
+function isAtStart(rPos, depth) {
+  for (let i = depth || 0; i < rPos.depth; i++)
+    if (rPos.index[0] > 0) return false
+  return rPos.parentOffset == 0
 }
 
 function parseNearSelection(pm) {
-  let dom = pm.content, node = pm.doc
-  let {from, to} = pm.selection
+  let {from, to} = pm.selection, rFrom = pm.doc.resolve(from), rTo = pm.doc.resolve(to)
   for (let depth = 0;; depth++) {
-    let toNode = node.child(to.path[depth])
-    let fromStart = isAtStart(from, depth + 1)
-    let toEnd = isAtEnd(toNode, to, depth + 1)
-    if (fromStart || toEnd || from.path[depth] != to.path[depth] || toNode.isTextblock) {
-      let startOffset = depth == from.depth ? from.offset : from.path[depth]
-      if (fromStart && startOffset > 0) startOffset--
-      let endOffset = depth == to.depth ? to.offset : to.path[depth] + 1
-      if (toEnd && endOffset < node.size - 1) endOffset++
-      let parsed = fromDOM(pm.schema, dom, {topNode: node.copy(),
-                                            from: startOffset,
-                                            to: dom.childNodes.length - (node.size - endOffset),
-                                            preserveWhitespace: true})
-      parsed = parsed.copy(node.content.slice(0, startOffset).append(parsed.content).append(node.content.slice(endOffset)))
+    let fromStart = isAtStart(rFrom, depth + 1), toEnd = isAtEnd(rTo, depth + 1)
+    if (fromStart || toEnd || rFrom.index[depth] != rTo.index[depth] || rTo.node[depth].isTextblock) {
+      let start = rFrom.before(depth + 1), end = rTo.after(depth + 1)
+      if (fromStart && rFrom.index[depth] > 0)
+        start -= rFrom.node[depth].child(rFrom.index[depth] - 1).nodeSize
+      if (toEnd && rTo.index[depth] + 1 < rTo.node[depth].childCount)
+        end += rTo.node[depth].child(rTo.index[depth] + 1).nodeSize
+      let startPos = DOMFromPos(pm.content, start), endPos = DOMFromPos(pm.content, end)
+      let parsed = fromDOM(pm.schema, startPos.node, {
+        topNode: rFrom.node[depth].copy(),
+        from: startPos.offset,
+        to: endPos.offset,
+        preserveWhitespace: true
+      })
+
+      let parentStart = rFrom.start(depth)
+      parsed = parsed.copy(rFrom.parent.content.cut(0, start - parentStart)
+                           .append(parsed.content)
+                           .append(rFrom.parent.content.cut(end - parentStart)))
       for (let i = depth - 1; i >= 0; i--) {
-        let wrap = pm.doc.path(from.path.slice(0, i))
-        parsed = wrap.replace(from.path[i], parsed)
+        let wrap = rFrom.node[i]
+        parsed = wrap.copy(wrap.content.replace(rFrom.index[i], parsed))
       }
       return parsed
     }
-    node = toNode
-    dom = findByPath(dom, from.path[depth], false) // FIXME no longer exists
   }
 }
 
 export function readDOMChange(pm) {
   let updated = parseNearSelection(pm)
   let changeStart = findDiffStart(pm.doc.content, updated.content)
-  if (changeStart) {
+  if (changeStart != null) {
     let changeEnd = findDiffEndConstrained(pm.doc.content, updated.content, changeStart)
     // Mark nodes touched by this change as 'to be redrawn'
     markDirtyFor(pm, changeStart, changeEnd)
@@ -79,38 +77,20 @@ function after(doc, pos) {
     return pos.shorten(null, 1)
 }
 
-function offsetBy(first, second, pos) {
-  let same = samePathDepth(first, second)
-  let firstEnd = same == first.depth, secondEnd = same == second.depth
-  let off = (secondEnd ? second.offset : second.path[same]) - (firstEnd ? first.offset : first.path[same])
-  let shorter = firstEnd ? pos.move(off) : pos.shorten(same, off)
-  if (secondEnd) return shorter
-  else return shorter.extend(new Pos(second.path.slice(same), second.offset))
-}
-
 function findDiffEndConstrained(a, b, start) {
   let end = findDiffEnd(a, b)
   if (!end) return end
-  if (end.a.cmp(start) < 0) return {a: start, b: offsetBy(end.a, start, end.b)}
-  if (end.b.cmp(start) < 0) return {a: offsetBy(end.b, start, end.a), b: start}
+  if (end.a < start) return {a: start, b: end.b + (start - end.a)}
+  if (end.b < start) return {a: end.a + (start - end.b), b: start}
   return end
 }
 
-function sameDepth(a, b) {
-  let max = Math.min(a.depth, b.depth)
-  for (let i = 0; i < max; i++)
-    if (a.path[i] != b.path[i]) return i
-  return max
-}
-
 function markDirtyFor(pm, start, end) {
-  let depth = Math.min(sameDepth(start, end.a), sameDepth(start, end.b))
-  if (depth == 0) {
+  let rStart = pm.doc.resolve(start), rEnd = pm.doc.resolve(end), same = rStart.sameDepth(rEnd)
+  if (same == 0)
     pm.markAllDirty()
-  } else {
-    let pos = Pos.from(start.path.slice(0, depth))
-    pm.markRangeDirty(pos, pos.move(1))
-  }
+  else
+    pm.markRangeDirty(rStart.before(same + 1), rStart.after(same + 1))
 }
 
 // Text-only queries for composition events

@@ -73,7 +73,19 @@ export class Fragment {
     return new Fragment(this.content.concat(node), this.size + node.nodeSize)
   }
 
-  replace(index, node) {
+  append(other) {
+    if (!other.size) return this
+    if (!this.size) return other
+    let last = this.lastChild, first = other.firstChild, content = this.content.slice(), i = 0
+    if (last.isText && last.sameMarkup(first)) {
+      content[content.length - 1] = last.copy(last.text + first.text)
+      i = 1
+    }
+    for (; i < other.content.length; i++) content.push(other.content[i])
+    return new Fragment(content, this.size + other.size)
+  }
+
+  replace(index, node) { // FIXME change name to avoid confusion with Node.replace
     let copy = this.content.slice()
     let size = this.size + node.nodeSize - copy[index].nodeSize
     copy[index] = node
