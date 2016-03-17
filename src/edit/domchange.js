@@ -44,7 +44,7 @@ function parseNearSelection(pm) {
       return parsed
     }
     node = toNode
-    dom = findByPath(dom, from.path[depth], false)
+    dom = findByPath(dom, from.path[depth], false) // FIXME no longer exists
   }
 }
 

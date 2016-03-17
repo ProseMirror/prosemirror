@@ -1,8 +1,7 @@
-import {Pos} from "../model"
 import {ProseMirrorError} from "../util/error"
 import {contains, browser} from "../dom"
 
-import {posFromDOM, pathToDOM, DOMFromPos, coordsAtPos} from "./dompos"
+import {posFromDOM, DOMAfterPos, DOMFromPos, coordsAtPos} from "./dompos"
 
 // ;; Error type used to signal selection-related problems.
 export class SelectionError extends ProseMirrorError {}
@@ -96,13 +95,13 @@ export class SelectionState {
     let anchor = posFromDOM(this.pm, sel.anchorNode, sel.anchorOffset)
     let head = sel.isCollapsed ? anchor : posFromDOM(this.pm, sel.focusNode, sel.focusOffset)
 
-    let newRange = findSelectionNear(doc, head, this.range.head && this.range.head.cmp(head) < 0 ? -1 : 1)
-    if (newRange instanceof TextSelection && doc.path(anchor.path).isTextblock) {
+    let newRange = findSelectionNear(doc, head, this.range.head != null && this.range.head < head ? -1 : 1)
+    if (newRange instanceof TextSelection && doc.resolve(anchor).parent.isTextblock) {
       newRange = new TextSelection(anchor, newRange.head)
-    } else if (newRange instanceof NodeSelection && (anchor.cmp(newRange.from) < 0 || anchor.cmp(newRange.to) > 0)) {
+    } else if (newRange instanceof NodeSelection && (anchor < newRange.from || anchor > newRange.to)) {
       // If head falls on a node, but anchor falls outside of it,
       // create a text selection between them
-      let inv = anchor.cmp(newRange.to) > 0
+      let inv = anchor > newRange.to
       newRange = new TextSelection(findSelectionNear(doc, anchor, inv ? -1 : 1, true).anchor,
                                    findSelectionNear(doc, inv ? newRange.from : newRange.to, inv ? 1 : -1, true).head)
     }
@@ -131,7 +130,7 @@ export class SelectionState {
 
   // Make changes to the DOM for a node selection.
   nodeToDOM() {
-    let dom = pathToDOM(this.pm.content, this.range.from.toPath())
+    let dom = DOMAfterPos(this.pm.content, this.range.from)
     if (dom != this.lastNode) {
       this.clearNode()
       dom.classList.add("ProseMirror-selectednode")
@@ -157,7 +156,7 @@ export class SelectionState {
       range.setEnd(anchor.node, anchor.offset)
       range.collapse(false)
     } else {
-      if (this.range.anchor.cmp(this.range.head) > 0) { let tmp = anchor; anchor = head; head = tmp }
+      if (this.range.anchor > this.range.head) { let tmp = anchor; anchor = head; head = tmp }
       range.setEnd(head.node, head.offset)
       range.setStart(anchor.node, anchor.offset)
     }
@@ -189,10 +188,10 @@ export class SelectionState {
 // selected [node](#NodeSelection.node) or the
 // [head](#TextSelection.head) and [anchor](#TextSelection.anchor)).
 export class Selection {
-  // :: Pos #path=Selection.prototype.from
+  // :: number #path=Selection.prototype.from
   // The left-bound of the selection.
 
-  // :: Pos #path=Selection.prototype.to
+  // :: number #path=Selection.prototype.to
   // The right-bound of the selection.
 
   // :: bool #path=Selection.empty
@@ -212,7 +211,7 @@ export class Selection {
 // side), both of which point into textblock nodes. It can be empty (a
 // regular cursor position).
 export class TextSelection extends Selection {
-  // :: (Pos, ?Pos)
+  // :: (number, ?number)
   // Construct a text selection. When `head` is not given, it defaults
   // to `anchor`.
   constructor(anchor, head) {
@@ -224,24 +223,24 @@ export class TextSelection extends Selection {
     // :: Pos
     // The selection's mobile side (the side that moves when pressing
     // shift-arrow).
-    this.head = head || anchor
+    this.head = head == null ? anchor : head
   }
 
-  get inverted() { return this.anchor.cmp(this.head) > 0 }
-  get from() { return this.inverted ? this.head : this.anchor }
-  get to() { return this.inverted ? this.anchor : this.head }
-  get empty() { return this.anchor.cmp(this.head) == 0 }
+  get inverted() { return this.anchor > this.head }
+  get from() { return Math.min(this.head, this.anchor) }
+  get to() { return Math.max(this.head, this.anchor) }
+  get empty() { return this.anchor == this.head }
 
   eq(other) {
-    return other instanceof TextSelection && !other.head.cmp(this.head) && !other.anchor.cmp(this.anchor)
+    return other instanceof TextSelection && other.head == this.head && other.anchor == this.anchor
   }
 
   map(doc, mapping) {
     let head = mapping.map(this.head).pos
-    if (!doc.path(head.path).isTextblock)
+    if (!doc.resolve(head).parent.isTextblock)
       return findSelectionNear(doc, head)
     let anchor = mapping.map(this.anchor).pos
-    return new TextSelection(doc.path(anchor.path).isTextblock ? anchor : head, head)
+    return new TextSelection(doc.resolve(anchor).parent.isTextblock ? anchor : head, head)
   }
 }
 
@@ -250,7 +249,7 @@ export class TextSelection extends Selection {
 // can be the target of a node selection. In such an object, `from`
 // and `to` point directly before and after the selected node.
 export class NodeSelection extends Selection {
-  // :: (Pos, Pos, Node)
+  // :: (number, number, Node)
   // Create a node selection. Does not verify the validity of its
   // arguments. Use `ProseMirror.setNodeSelection` for an easier,
   // error-checking way to create a node selection.
@@ -265,16 +264,15 @@ export class NodeSelection extends Selection {
   get empty() { return false }
 
   eq(other) {
-    return other instanceof NodeSelection && !this.from.cmp(other.from)
+    return other instanceof NodeSelection && this.from == other.from
   }
 
   map(doc, mapping) {
     let from = mapping.map(this.from, 1).pos
     let to = mapping.map(this.to, -1).pos
-    if (Pos.samePath(from.path, to.path) && from.offset == to.offset - 1) {
-      let node = doc.nodeAfter(from)
-      if (node.type.selectable) return new NodeSelection(from, to, node)
-    }
+    let node = doc.nodeAfter(from)
+    if (node && to == from + node.nodeSize && node.selectable)
+      return new NodeSelection(from, to, node)
     return findSelectionNear(doc, from)
   }
 }
@@ -292,37 +290,39 @@ export function hasFocus(pm) {
   return sel.rangeCount && contains(pm.content, sel.anchorNode)
 }
 
-// Try to find a selection inside the node at the given path coming
-// from a given direction.
-function findSelectionIn(doc, path, offset, dir, text) {
-  let node = doc.path(path)
-  if (node.isTextblock) return new TextSelection(new Pos(path, offset))
-
-  // Iterate over child nodes recursively coming from the given
-  // direction and return the first viable selection.
-  for (let i = offset + (dir > 0 ? 0 : -1); dir > 0 ? i < node.size : i >= 0; i += dir) {
+// Try to find a selection inside the given node. `pos` points at the
+// position where the search starts. When `text` is true, only return
+// text selections.
+function findSelectionIn(node, pos, index, dir, text) {
+  for (let i = index - (dir > 0 ? 0 : 1); dir > 0 ? i < node.childCount : i >= 0; i += dir) {
     let child = node.child(i)
-    if (!text && child.type.contains == null && child.type.selectable)
-      return new NodeSelection(new Pos(path, i), new Pos(path, i + 1), child)
-    path.push(i)
-    let inside = findSelectionIn(doc, path, dir < 0 ? child.size : 0, dir, text)
-    if (inside) return inside
-    path.pop()
+    if (child.isTextblock) return new TextSelection(pos + dir)
+    if (child.type.contains) {
+      let inner = findSelectionIn(child, pos + dir, dir > 0 ? child.childCount : 0, dir, text)
+      if (inner) return inner
+    } else if (!text && child.type.selectable) {
+      return new NodeSelection(pos + (dir > 0 ? 0 : 1))
+    }
+    pos += child.nodeSize * dir
   }
 }
 
-// FIXME we'll need some awareness of bidi motion when determining block start and end
+// FIXME we'll need some awareness of text direction when scanning for selections
 
 // Create a selection which is moved relative to a position in a
 // given direction. When a selection isn't found at the given position,
 // walks up the document tree one level and one step in the
 // desired direction.
 export function findSelectionFrom(doc, pos, dir, text) {
-  for (let path = pos.path.slice(), offset = pos.offset;;) {
-    let found = findSelectionIn(doc, path, offset, dir, text)
+  let rPos = doc.resolve(pos)
+  let inner = rPos.parent.isTextblock ? new TextSelection(pos)
+      : findSelectionIn(rPos.parent, pos, rPos.index[rPos.depth], dir, text)
+  if (inner) return inner
+
+  for (let depth = rPos.depth - 1; depth >= 0; depth--) {
+    let found = dir < 0 ? findSelectionIn(rPos.node[depth], rPos.before(depth + 1), rPos.index[depth], dir, text)
+        : findSelectionIn(rPos.node[depth], rPos.after(depth + 1), rPos.index[depth] + 1, dir, text)
     if (found) return found
-    if (!path.length) break
-    offset = path.pop() + (dir > 0 ? 1 : 0)
   }
 }
 
@@ -332,21 +332,23 @@ export function findSelectionNear(doc, pos, bias = 1, text) {
   return result
 }
 
-// Find the selection closes to the start of the given node.
-export function findSelectionAtStart(node, path = [], text) {
-  return findSelectionIn(node, path.slice(), 0, 1, text)
+// Find the selection closest to the start of the given node. `pos`,
+// if given, should point at the start of the node's content.
+export function findSelectionAtStart(node, pos = 0, text) {
+  return findSelectionIn(node, pos, 0, 1, text)
 }
 
-// Find the selection closes to the end of the given node.
-export function findSelectionAtEnd(node, path = [], text) {
-  return findSelectionIn(node, path.slice(), node.size, -1, text)
+// Find the selection closest to the end of the given node.
+export function findSelectionAtEnd(node, pos = node.content.size, text) {
+  return findSelectionIn(node, pos, node.content.size, -1, text)
 }
 
-// : (ProseMirror, Pos, number)
+// : (ProseMirror, number, number)
 // Whether vertical position motion in a given direction
 // from a position would leave a text block.
 export function verticalMotionLeavesTextblock(pm, pos, dir) {
-  let dom = pathToDOM(pm.content, pos.path)
+  let rPos = pm.doc.resolve(pos)
+  let dom = DOMAfterPos(pm.content, rPos.before(rPos.depth))
   let coords = coordsAtPos(pm, pos)
   for (let child = dom.firstChild; child; child = child.nextSibling) {
     if (child.nodeType != 1) continue

@@ -242,7 +242,7 @@ export class ProseMirror {
     return transform
   }
 
-  // :: (Pos, ?bool)
+  // :: (number, ?bool)
   // Verify that the given position is valid in the current document,
   // and throw an error otherwise. When `textblock` is true, the position
   // must also fall within a textblock node.
@@ -343,7 +343,7 @@ export class ProseMirror {
     }
   }
 
-  // :: (Pos, Pos, ?Object) → MarkedRange
+  // :: (number, number, ?Object) → MarkedRange
   // Create a marked range between the given positions. Marked ranges
   // “track” the part of the document they point to—as the document
   // changes, they are updated to move, grow, and shrink along with
@@ -431,7 +431,7 @@ export class ProseMirror {
       return hasFocus(this)
   }
 
-  // :: ({top: number, left: number}) → ?Pos
+  // :: ({top: number, left: number}) → ?number
   // If the given coordinates (which should be relative to the top
   // left corner of the window—not the page) fall within the editable
   // content, this method will return the document position that
@@ -440,7 +440,7 @@ export class ProseMirror {
     return posAtCoords(this, coords)
   }
 
-  // :: (Pos) → {top: number, left: number, bottom: number}
+  // :: (number) → {top: number, left: number, bottom: number}
   // Find the screen coordinates (relative to top left corner of the
   // window) of the given document position.
   coordsAtPos(pos) {
@@ -448,7 +448,7 @@ export class ProseMirror {
     return coordsAtPos(this, pos)
   }
 
-  // :: (?Pos)
+  // :: (?number)
   // Scroll the given position, or the cursor position if `pos` isn't
   // given, into view.
   scrollIntoView(pos = null) {

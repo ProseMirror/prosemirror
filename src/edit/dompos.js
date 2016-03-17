@@ -1,25 +1,18 @@
-import {Pos} from "../model"
 import {contains} from "../dom"
 import {AssertionError} from "../util/error"
 
 // : (ProseMirror, DOMNode) → [number]
 // Get the path for a given a DOM node in a document.
-export function pathFromDOM(pm, node) {
-  let path = []
-  for (; node != pm.content;) {
-    let attr = node.getAttribute("pm-offset")
-    if (attr) path.unshift(+attr)
-    node = node.parentNode
+export function posBeforeFromDOM(pm, node) {
+  let pos = 0
+  for (let cur = node; cur != pm.content; cur = cur.parentNode) {
+    let attr = cur.getAttribute("pm-offset")
+    if (attr) pos += +attr + (cur == node ? 0 : 1)
   }
-  return path
+  return pos
 }
 
-export function widthFromDOM(dom) {
-  let attr = dom.getAttribute("pm-leaf")
-  return attr && attr != "true" ? +attr : 1
-}
-
-
+// : (ProseMirror, DOMNode, number, bool) → number
 export function posFromDOM(pm, dom, domOffset, loose) {
   if (!loose && pm.operation && pm.doc != pm.operation.doc)
     throw new AssertionError("Fetching a position from an outdated DOM structure")
@@ -29,15 +22,17 @@ export function posFromDOM(pm, dom, domOffset, loose) {
     dom = dom.parentNode
   }
 
-  let extraOffset = 0, tag
+  // Move up to the wrapping container, counting local offset along
+  // the way.
+  let innerOffset = 0, tag
   for (;;) {
     let adjust = 0
     if (dom.nodeType == 3) {
-      extraOffset += domOffset
+      innerOffset += domOffset
     } else if (dom.hasAttribute("pm-container")) {
       break
     } else if (tag = dom.getAttribute("pm-inner-offset")) {
-      extraOffset += +tag
+      innerOffset += +tag
       adjust = -1
     } else if (domOffset && domOffset == dom.childNodes.length) {
       adjust = 1
@@ -48,63 +43,67 @@ export function posFromDOM(pm, dom, domOffset, loose) {
     dom = parent
   }
 
-  let path = pathFromDOM(pm, dom)
-  if (dom.hasAttribute("pm-leaf"))
-    return Pos.from(path, extraOffset + (domOffset ? 1 : 0))
+  let start = posBeforeFromDOM(pm, dom) + 1, before = 0
 
-  let offset = 0
-  for (let i = domOffset - 1; i >= 0; i--) {
-    let child = dom.childNodes[i]
+  for (let child = dom.childNodes(domOffset - 1); child; child = child.previousSibling) {
     if (child.nodeType == 3) {
-      if (loose) extraOffset += child.nodeValue.length
+      if (loose) before += child.nodeValue.length
     } else if (tag = child.getAttribute("pm-offset")) {
-      offset = +tag + widthFromDOM(child)
+      before += +tag + +child.getAttribute("pm-size")
       break
     } else if (loose && !child.hasAttribute("pm-ignore")) {
-      extraOffset += child.textContent.length
+      before += child.textContent.length
     }
   }
-  return new Pos(path, offset + extraOffset)
+  return start + before + innerOffset
 }
 
-// : (DOMNode, number, ?bool)
-// Get a child node of a parent node at a given offset.
-export function findByPath(node, n, fromEnd) {
-  let container = childContainer(node)
-  for (let ch = fromEnd ? container.lastChild : container.firstChild; ch;
-       ch = fromEnd ? ch.previousSibling : ch.nextSibling) {
-    if (ch.nodeType != 1) continue
-    let offset = ch.getAttribute("pm-offset")
-    if (offset && +offset == n) return ch
-  }
-}
-
-// : (DOMNode, [number]) → DOMNode
-// Get a descendant node at a path relative to an ancestor node.
-export function pathToDOM(parent, path) {
-  let node = parent
-  for (let i = 0; i < path.length; i++) {
-    node = findByPath(node, path[i])
-    if (!node) throw new AssertionError("Failed to resolve path " + path.join("/"))
-  }
-  return node
-}
-
+// : (DOMNode) → ?DOMNode
 export function childContainer(dom) {
   return dom.hasAttribute("pm-container") ? dom : dom.querySelector("[pm-container]")
 }
 
-function findByOffset(node, offset, after) {
-  for (let ch = node.firstChild, i = 0, attr; ch; ch = ch.nextSibling, i++) {
-    if (ch.nodeType == 1 && (attr = ch.getAttribute("pm-offset"))) {
-      let diff = offset - +attr, width = widthFromDOM(ch)
-      if (diff >= 0 && (after ? diff <= width : diff < width))
-        return {node: ch, offset: i, innerOffset: diff}
+// : (DOMNode, number) → {node: DOMNode, offset: number}
+// Find the DOM node and offset into that node that the given document
+// position refers to.
+export function DOMFromPos(parent, pos) {
+  let container = parent, offset = pos
+  outer: for (;;) {
+    for (let child = container.firstChild, i = 0;; child = child.nextSibling, i++) {
+      if (!child) {
+        if (offset) throw new AssertionError("Failed to find node at " + pos)
+        return {node: container, offset: i}
+      }
+
+      let size = child.nodeType == 1 && child.getAttribute("pm-size")
+      if (size) {
+        if (!offset) return {node: container, offset: i}
+        size = +size
+        if (offset < size) {
+          container = childContainer(child)
+          if (!container) {
+            return leafAt(child, offset)
+          } else {
+            offset--
+            break
+          }
+        } else {
+          offset -= size
+        }
+      }
     }
   }
 }
 
-// : (node: DOMNode, offset: number) → {node: DOMNode, offset: number}
+// : (DOMNode, number) → DOMNode
+export function DOMAfterPos(parent, pos) {
+  let {node, offset} = DOMFromPos(parent, pos)
+  if (node.nodeType != 1 || offset == node.childNodes.length)
+    throw new AssertionError("No node after pos " + pos)
+  return node.childNodes[offset]
+}
+
+// : (DOMNode, number) → {node: DOMNode, offset: number}
 function leafAt(node, offset) {
   for (;;) {
     let child = node.firstChild
@@ -122,17 +121,6 @@ function leafAt(node, offset) {
     }
     node = child
   }
-}
-
-// Get a DOM element at a given position in the document.
-export function DOMFromPos(parent, pos) {
-  let dom = childContainer(pathToDOM(parent, pos.path))
-  let found = findByOffset(dom, pos.offset, true), inner
-  if (!found) return {node: dom, offset: 0}
-  if (found.node.getAttribute("pm-leaf") == "true" || !(inner = leafAt(found.node, found.innerOffset)))
-    return {node: found.node.parentNode, offset: found.offset + (found.innerOffset ? 1 : 0)}
-  else
-    return inner
 }
 
 function windowRect() {
@@ -241,6 +229,7 @@ function textRects(node) {
   return range.getClientRects()
 }
 
+// : (ProseMirror, number) → ClientRect
 // Given a position in the document model, get a bounding box of the character at
 // that position, relative to the window.
 export function coordsAtPos(pm, pos) {
@@ -289,32 +278,32 @@ export function setDOMSelectionToPos(pm, pos) {
 // You can add several properties to [node types](#NodeType) to
 // influence the way the editor interacts with them.
 
-// :: (node: Node, path: [number], dom: DOMNode, coords: {left: number, top: number}) → ?Pos
+// :: (node: Node, pos: number, dom: DOMNode, coords: {left: number, top: number}) → ?number
 // #path=NodeType.prototype.countCoordsAsChild
 // Specifies that, if this node is clicked, a child node might
 // actually be meant. This is used to, for example, make clicking a
 // list marker (which, in the DOM, is part of the list node) select
 // the list item it belongs to. Should return null if the given
-// coordinates don't refer to a child node, or the [position](#Pos)
+// coordinates don't refer to a child node, or the position
 // before the child otherwise.
 
 export function selectableNodeAbove(pm, dom, coords, liberal) {
   for (; dom && dom != pm.content; dom = dom.parentNode) {
     if (dom.hasAttribute("pm-offset")) {
-      let path = pathFromDOM(pm, dom), node = pm.doc.path(path)
+      let pos = posBeforeFromDOM(pm, dom), node = pm.doc.nodeAt(pos)
       if (node.type.countCoordsAsChild) {
-        let result = node.type.countCoordsAsChild(node, path, dom, coords)
-        if (result) return result
+        let result = node.type.countCoordsAsChild(node, pos, dom, coords)
+        if (result != null) return result
       }
       // Leaf nodes are implicitly clickable
       if ((liberal || node.type.contains == null) && node.type.selectable)
-        return Pos.from(path)
+        return pos
       if (!liberal) return null
     }
   }
 }
 
-// :: (pm: ProseMirror, event: MouseEvent, path: [number], node: Node) → bool
+// :: (pm: ProseMirror, event: MouseEvent, pos: number, node: Node) → bool
 // #path=NodeType.prototype.handleClick
 // If a node is directly clicked (that is, the click didn't land in a
 // DOM node belonging to a child node), and its type has a
@@ -328,12 +317,12 @@ export function selectableNodeAbove(pm, dom, coords, liberal) {
 // ProseMirror has determined that this is not a drag or multi-click
 // event.
 
-// :: (pm: ProseMirror, event: MouseEvent, path: [number], node: Node) → bool
+// :: (pm: ProseMirror, event: MouseEvent, pos: number, node: Node) → bool
 // #path=NodeType.prototype.handleDoubleClick
 // This works like [`handleClick`](#NodeType.handleClick), but is
 // called for double clicks instead.
 
-// :: (pm: ProseMirror, event: MouseEvent, path: [number], node: Node) → bool
+// :: (pm: ProseMirror, event: MouseEvent, pos: number, node: Node) → bool
 // #path=NodeType.prototype.handleContextMenu
 //
 // When the [context
@@ -351,8 +340,8 @@ export function selectableNodeAbove(pm, dom, coords, liberal) {
 export function handleNodeClick(pm, type, event, direct) {
   for (let dom = event.target; dom && dom != pm.content; dom = dom.parentNode) {
     if (dom.hasAttribute("pm-offset")) {
-      let path = pathFromDOM(pm, dom), node = pm.doc.path(path)
-      let handled = node.type[type] && node.type[type](pm, event, path, node) !== false
+      let pos = posBeforeFromDOM(pm, dom), node = pm.doc.nodeAt(pos)
+      let handled = node.type[type] && node.type[type](pm, event, pos, node) !== false
       if (direct || handled) return handled
     }
   }

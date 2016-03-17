@@ -12,10 +12,9 @@ function options(ranges) {
     },
     onRender(node, dom, offset) {
       if (node.isBlock) {
-        if (node.type.contains == null)
-          dom.setAttribute("pm-leaf", "true")
         if (offset != null)
           dom.setAttribute("pm-offset", offset)
+        dom.setAttribute("pm-size", node.nodeSize)
         if (node.isTextblock)
           adjustTrailingHacks(dom, node)
         if (dom.contentEditable == "false")
@@ -49,8 +48,7 @@ function options(ranges) {
       }
 
       dom.setAttribute("pm-offset", offset)
-      if (node.type.contains == null)
-        dom.setAttribute("pm-leaf", node.isText ? node.width : "true")
+      dom.setAttribute("pm-size", node.nodeSize)
 
       let inlineOffset = 0
       while (nextCut > -1) {
