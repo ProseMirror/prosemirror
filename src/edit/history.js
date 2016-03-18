@@ -1,4 +1,3 @@
-import {Pos} from "../model"
 import {Transform, Step, Remapping} from "../transform"
 
 // Steps are stored in inverted form (so that they can be applied to
@@ -150,7 +149,7 @@ class CompressionWorker {
 
 function isDelStep(step) {
   return step.type == "replace" && step.from.offset < step.to.offset &&
-    Pos.samePath(step.from.path, step.to.path) && (!step.param || step.param.content.size == 0)
+    (!step.param || step.param.content.size == 0)
 }
 
 // The minimum number of new steps before a compression is started.
