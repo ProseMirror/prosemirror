@@ -224,7 +224,7 @@ export function openPrompt(pm, content, options) {
   pm.wrapper.appendChild(wrapper)
   if (options && options.pos) {
     wrapper.style.left = (options.pos.left - outerBox.left) + "px"
-    wrapper.style.pos = (options.pos.top - outerBox.top) + "px"
+    wrapper.style.top = (options.pos.top - outerBox.top) + "px"
   } else {
     let blockBox = wrapper.getBoundingClientRect()
     let cX = Math.max(0, outerBox.left) + Math.min(window.innerWidth, outerBox.right) - blockBox.width
