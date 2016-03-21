@@ -85,7 +85,8 @@ export function draw(pm, doc) {
 }
 
 function adjustTrailingHacks(dom, node) {
-  let needs = node.size == 0 || node.lastChild.type.isBR || (node.type.isCode && node.lastChild.isText && /\n$/.test(node.lastChild.text))
+  let needs = node.content.size == 0 || node.lastChild.type.isBR ||
+      (node.type.isCode && node.lastChild.isText && /\n$/.test(node.lastChild.text))
       ? "br" : !node.lastChild.isText && node.lastChild.type.contains == null ? "text" : null
   let last = dom.lastChild
   let has = !last || last.nodeType != 1 || !last.hasAttribute("pm-ignore") ? null
@@ -129,7 +130,6 @@ export function redraw(pm, dirty, doc, prev) {
           iPrev++
           domPos = movePast(domPos)
         }
-        pChild = ++iPrev == prev.childCount ? null : prev.child(iPrev)
       }
 
       if (matching && !dirty.get(matching)) {
@@ -148,14 +148,14 @@ export function redraw(pm, dirty, doc, prev) {
       if (reuseDOM) {
         domPos.setAttribute("pm-offset", offset)
         domPos = domPos.nextSibling
-        pChild = iPrev.next().value
+        pChild = prev.maybeChild(++iPrev)
       }
       offset += child.nodeSize
     }
 
     while (pChild) {
       domPos = movePast(domPos)
-      pChild = iPrev.next().value
+      pChild = prev.maybeChild(++iPrev)
     }
     if (node.isTextblock) adjustTrailingHacks(dom, node)
   }

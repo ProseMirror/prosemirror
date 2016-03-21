@@ -40,8 +40,8 @@ function deleteBarrier(pm, cut) {
   let conn
   if (after.isTextblock && (conn = before.type.findConnection(after.type))) {
     let tr = pm.tr, end = cut + after.nodeSize
-    tr.step("ancestor", cut, end, null, {types: [before.type, ...conn],
-                                         attrs: [before.attrs, ...conn.map(() => null)]})
+    tr.step("ancestor", cut, end, {types: [before.type, ...conn],
+                                   attrs: [before.attrs, ...conn.map(() => null)]})
     tr.join(end + 2 * conn.length + 2)
     tr.join(cut)
     if (tr.apply(pm.apply.scroll) !== false) return
@@ -82,7 +82,7 @@ baseCommands.joinBackward = {
     // If the node below has no content and the node above is
     // selectable, delete the node below and select the one above.
     if (before.type.contains == null && before.type.selectable && rHead.parent.content.size == 0) {
-      let tr = pm.tr.delete(cut, cut + 2).apply(pm.apply.scroll)
+      let tr = pm.tr.delete(cut, cut + rHead.parent.nodeSize).apply(pm.apply.scroll)
       pm.setNodeSelection(cut - before.nodeSize)
       return tr
     }

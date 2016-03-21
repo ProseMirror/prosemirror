@@ -1,6 +1,6 @@
 import {namespace} from "./def"
 import {doc, p} from "../build"
-import {is, cmp, cmpStr, cmpNode, P} from "../cmp"
+import {is, cmp, cmpStr, cmpNode} from "../cmp"
 
 const test = namespace("history")
 
@@ -44,8 +44,8 @@ test("multiple", pm => {
 
 test("unsynced", pm => {
   type(pm, "hello")
-  pm.tr.insertText(P(0, 0), "oops").apply({addToHistory: false})
-  pm.tr.insertText(P(0, 9), "!").apply({addToHistory: false})
+  pm.tr.insertText(1, "oops").apply({addToHistory: false})
+  pm.tr.insertText(10, "!").apply({addToHistory: false})
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p("oops!")))
 })
@@ -54,10 +54,10 @@ test("unsynced_complex", pm => {
   type(pm, "hello")
   cutHistory(pm)
   type(pm, "!")
-  pm.tr.insertText(P(0, 0), "....").apply()
-  pm.tr.split(P(0, 2)).apply()
+  pm.tr.insertText(1, "....").apply()
+  pm.tr.split(3).apply()
   cmpNode(pm.doc, doc(p(".."), p("..hello!")))
-  pm.tr.split(P(0, 1)).apply({addToHistory: false})
+  pm.tr.split(2).apply({addToHistory: false})
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p("."), p("...hello")))
   pm.execCommand("undo")
@@ -67,7 +67,7 @@ test("unsynced_complex", pm => {
 test("overlapping", pm => {
   type(pm, "hello")
   cutHistory(pm)
-  pm.tr.delete(P(0, 0), P(0, 5)).apply()
+  pm.tr.delete(1, 6).apply()
   cmpNode(pm.doc, doc(p()))
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p("hello")))
@@ -79,7 +79,7 @@ test("overlapping_no_collapse", pm => {
   pm.history.allowCollapsing = false
   type(pm, "hello")
   cutHistory(pm)
-  pm.tr.delete(P(0, 0), P(0, 5)).apply()
+  pm.tr.delete(1, 6).apply()
   cmpNode(pm.doc, doc(p()))
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p("hello")))
@@ -91,7 +91,7 @@ test("overlapping_unsynced_delete", pm => {
   type(pm, "hi")
   cutHistory(pm)
   type(pm, "hello")
-  pm.tr.delete(P(0, 0), P(0, 7)).apply({addToHistory: false})
+  pm.tr.delete(1, 8).apply({addToHistory: false})
   cmpNode(pm.doc, doc(p()))
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p()))
@@ -102,10 +102,10 @@ test("ping_pong", pm => {
   type(pm, " two")
   cutHistory(pm)
   type(pm, " three")
-  pm.tr.insertText(P(0, 0), "zero ").apply()
+  pm.tr.insertText(1, "zero ").apply()
   cutHistory(pm)
-  pm.tr.split(P(0, 0)).apply()
-  pm.setTextSelection(P(0, 0))
+  pm.tr.split(1).apply()
+  pm.setTextSelection(1)
   type(pm, "top")
   for (let i = 0; i < 6; i++) {
     let re = i % 2
@@ -121,13 +121,13 @@ test("ping_pong_unsynced", pm => {
   cutHistory(pm)
   pm.tr.insertText(pm.selection.head, "xxx").apply({addToHistory: false})
   type(pm, " three")
-  pm.tr.insertText(P(0, 0), "zero ").apply()
+  pm.tr.insertText(1, "zero ").apply()
   cutHistory(pm)
-  pm.tr.split(P(0, 0)).apply()
-  pm.setTextSelection(P(0, 0))
+  pm.tr.split(1).apply()
+  pm.setTextSelection(1)
   type(pm, "top")
-  pm.tr.insertText(P(0, 0), "yyy").apply({addToHistory: false})
-  pm.tr.insertText(P(0, 6), "zzz").apply({addToHistory: false})
+  pm.tr.insertText(1, "yyy").apply({addToHistory: false})
+  pm.tr.insertText(7, "zzz").apply({addToHistory: false})
   for (let i = 0; i < 6; i++) {
     let re = i % 2
     for (let j = 0; j < 4; j++)
@@ -138,20 +138,20 @@ test("ping_pong_unsynced", pm => {
 
 test("compressable", pm => {
   type(pm, "XY")
-  pm.setTextSelection(P(0, 1))
+  pm.setTextSelection(2)
   cutHistory(pm)
   type(pm, "one")
   type(pm, "two")
   type(pm, "three")
-  pm.tr.insertText(P(0, 13), "!").apply({addToHistory: false})
+  pm.tr.insertText(14, "!").apply({addToHistory: false})
   pm.history.done.startCompression(pm.doc)
   cmpNode(pm.doc, doc(p("XonetwothreeY!")))
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p("XY!")))
-  cmpStr(pm.selection.anchor, P(0, 1))
+  cmpStr(pm.selection.anchor, 2)
   pm.execCommand("redo")
   cmpNode(pm.doc, doc(p("XonetwothreeY!")))
-  cmpStr(pm.selection.anchor, P(0, 12))
+  cmpStr(pm.selection.anchor, 13)
 })
 
 test("setDocResets", pm => {
@@ -192,7 +192,7 @@ test("rollback", pm => {
 test("setSelectionOnUndo", pm => {
   type(pm, "hi")
   cutHistory(pm)
-  pm.setTextSelection(P(0, 0), P(0, 2))
+  pm.setTextSelection(1, 3)
   let selection = pm.selection
   pm.tr.replaceWith(selection.from, selection.to, pm.schema.text("hello")).apply()
   let selection2 = pm.selection
@@ -206,9 +206,9 @@ test("setSelectionOnUndo", pm => {
 test("rebaseSelectionOnUndo", pm => {
   type(pm, "hi")
   cutHistory(pm)
-  pm.setTextSelection(P(0, 0), P(0, 2))
-  pm.tr.insert(P(0, 0), pm.schema.text("hello")).apply()
-  pm.tr.insert(P(0, 0), pm.schema.text("---")).apply({addToHistory: false})
+  pm.setTextSelection(1, 3)
+  pm.tr.insert(1, pm.schema.text("hello")).apply()
+  pm.tr.insert(1, pm.schema.text("---")).apply({addToHistory: false})
   pm.execCommand("undo")
-  cmpStr(pm.selection.head, P(0, 5))
+  cmpStr(pm.selection.head, 6)
 })

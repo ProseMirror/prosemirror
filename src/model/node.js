@@ -51,6 +51,8 @@ export class Node {
 
   child(index) { return this.content.child(index) }
 
+  maybeChild(index) { return this.content.maybeChild(index) }
+
   forEach(f) { this.content.forEach(f) }
 
   // :: string

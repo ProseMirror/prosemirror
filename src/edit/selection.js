@@ -216,11 +216,11 @@ export class TextSelection extends Selection {
   // to `anchor`.
   constructor(anchor, head) {
     super()
-    // :: Pos
+    // :: number
     // The selection's immobile side (does not move when pressing
     // shift-arrow).
     this.anchor = anchor
-    // :: Pos
+    // :: number
     // The selection's mobile side (the side that moves when pressing
     // shift-arrow).
     this.head = head == null ? anchor : head
@@ -298,7 +298,7 @@ function findSelectionIn(node, pos, index, dir, text) {
     let child = node.child(i)
     if (child.isTextblock) return new TextSelection(pos + dir)
     if (child.type.contains) {
-      let inner = findSelectionIn(child, pos + dir, dir > 0 ? child.childCount : 0, dir, text)
+      let inner = findSelectionIn(child, pos + dir, dir < 0 ? child.childCount : 0, dir, text)
       if (inner) return inner
     } else if (!text && child.type.selectable) {
       return new NodeSelection(pos + (dir > 0 ? 0 : 1))
@@ -320,7 +320,8 @@ export function findSelectionFrom(doc, pos, dir, text) {
   if (inner) return inner
 
   for (let depth = rPos.depth - 1; depth >= 0; depth--) {
-    let found = dir < 0 ? findSelectionIn(rPos.node[depth], rPos.before(depth + 1), rPos.index[depth], dir, text)
+    let found = dir < 0
+        ? findSelectionIn(rPos.node[depth], rPos.before(depth + 1), rPos.index[depth], dir, text)
         : findSelectionIn(rPos.node[depth], rPos.after(depth + 1), rPos.index[depth] + 1, dir, text)
     if (found) return found
   }

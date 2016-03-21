@@ -1,6 +1,6 @@
 import {namespace} from "./def"
 import {doc, pre, h1, p} from "../build"
-import {cmp, cmpStr, P} from "../cmp"
+import {cmp, cmpStr} from "../cmp"
 
 const test = namespace("draw")
 
@@ -19,7 +19,7 @@ test("minimal_at_end", pm => {
 
 test("minimal_at_start", pm => {
   let oldP = pm.content.querySelector("p")
-  pm.tr.insertText(P(1, 0), "!").apply()
+  pm.tr.insertText(2, "!").apply()
   pm.flush()
   cmp(pm.content.querySelector("p"), oldP)
 }, {doc: doc(p("foo"), h1("bar"))})
@@ -27,7 +27,7 @@ test("minimal_at_start", pm => {
 test("minimal_around", pm => {
   let oldP = pm.content.querySelector("p")
   let oldPre = pm.content.querySelector("pre")
-  pm.tr.insertText(P(1, 0), "!").apply()
+  pm.tr.insertText(2, "!").apply()
   pm.flush()
   cmp(pm.content.querySelector("p"), oldP)
   cmp(pm.content.querySelector("pre"), oldPre)
@@ -36,7 +36,7 @@ test("minimal_around", pm => {
 test("minimal_on_split", pm => {
   let oldP = pm.content.querySelector("p")
   let oldPre = pm.content.querySelector("pre")
-  pm.tr.split(P(1, 2)).apply()
+  pm.tr.split(8).apply()
   pm.flush()
   cmp(pm.content.querySelector("p"), oldP)
   cmp(pm.content.querySelector("pre"), oldPre)
@@ -45,7 +45,7 @@ test("minimal_on_split", pm => {
 test("minimal_on_join", pm => {
   let oldP = pm.content.querySelector("p")
   let oldPre = pm.content.querySelector("pre")
-  pm.tr.join(P(2)).apply()
+  pm.tr.join(10).apply()
   pm.flush()
   cmp(pm.content.querySelector("p"), oldP)
   cmp(pm.content.querySelector("pre"), oldPre)

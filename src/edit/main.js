@@ -103,7 +103,7 @@ export class ProseMirror {
   // Set the selection to a [text selection](#TextSelection) from
   // `anchor` to `head`, or, if `head` is null, a cursor selection at
   // `anchor`.
-  setTextSelection(anchor, head) {
+  setTextSelection(anchor, head = anchor) {
     this.checkPos(head, true)
     if (anchor != head) this.checkPos(anchor, true)
     this.setSelection(new TextSelection(anchor, head))
@@ -113,7 +113,7 @@ export class ProseMirror {
   // Set the selection to a node selection on the node after `pos`.
   setNodeSelection(pos) {
     this.checkPos(pos, false)
-    let node = this.doc.nodeAfter(pos)
+    let node = this.doc.nodeAt(pos)
     if (!node)
       throw new SelectionError("Trying to set a node selection that doesn't point at a node")
     if (!node.type.selectable)
@@ -391,7 +391,7 @@ export class ProseMirror {
     if (sel.empty) {
       let marks = this.activeMarks()
       if (to == null) to = !type.isInSet(marks)
-      if (to && !this.doc.path(sel.head.path).type.canContainMark(type)) return
+      if (to && !this.doc.resolve(sel.head).parent.type.canContainMark(type)) return
       this.input.storedMarks = to ? type.create(attrs).addToSet(marks) : type.removeFromSet(marks)
       // :: () #path=ProseMirror#events#activeMarkChange
       // Fired when the set of [active marks](#ProseMirror.activeMarks) changes.

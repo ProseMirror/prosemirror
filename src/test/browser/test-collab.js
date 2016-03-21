@@ -2,7 +2,7 @@ import "../../collab"
 
 import {doc, p} from "../build"
 import {defTest} from "../tests"
-import {P, cmpNode} from "../cmp"
+import {cmpNode} from "../cmp"
 import {tempEditors} from "./def"
 
 class DummyServer {
@@ -68,9 +68,9 @@ function conv(...args) {
 
 test("converge_easy", (pm1, pm2) => {
   type(pm1, "hi")
-  type(pm2, "ok", P(0, 2))
-  type(pm1, "!", P(0, 4))
-  type(pm2, "...", P(0, 0))
+  type(pm2, "ok", 3)
+  type(pm1, "!", 5)
+  type(pm2, "...", 1)
   conv(pm1, pm2, "...hiok!")
 })
 
@@ -129,8 +129,8 @@ test("redo", (pm1, pm2) => {
 })
 
 test("undo_deep", (pm1, pm2) => {
-  pm1.setTextSelection(P(0, 5))
-  pm2.setTextSelection(P(1, 3))
+  pm1.setTextSelection(6)
+  pm2.setTextSelection(11)
   type(pm1, "!")
   type(pm2, "!")
   cut(pm1)
@@ -158,12 +158,12 @@ test("undo_deep", (pm1, pm2) => {
 }, {doc: doc(p("hello"), p("bye"))})
 
 test("undo_deleted_event", (pm1, pm2) => {
-  type(pm1, "A", P(0, 5))
+  type(pm1, "A", 6)
   delay(pm1, () => {
-    type(pm1, "B", P(0, 3))
-    type(pm1, "C", P(0, 4))
-    type(pm1, "D", P(0, 0))
-    pm2.apply(pm2.tr.delete(P(0, 1), P(0, 4)))
+    type(pm1, "B", 4)
+    type(pm1, "C", 5)
+    type(pm1, "D", 1)
+    pm2.apply(pm2.tr.delete(2, 5))
   })
   conv(pm1, pm2, "DhoA")
   pm1.execCommand("undo")
@@ -178,9 +178,9 @@ test("undo_deleted_event", (pm1, pm2) => {
 test("tp_2", (pm1, pm2, pm3) => {
   delay(pm1, () => {
     delay(pm3, () => {
-      type(pm1, "x", P(0, 1))
-      type(pm3, "y", P(0, 2))
-      pm2.apply(pm2.tr.delete(P(0, 1), P(0, 2)))
+      type(pm1, "x", 2)
+      type(pm3, "y", 3)
+      pm2.apply(pm2.tr.delete(2, 3))
     })
   })
   conv(pm1, pm2, pm3, doc(p("axyc")))

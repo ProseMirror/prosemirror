@@ -48,9 +48,11 @@ export function joinPoint(doc, pos, dir = -1) {
 
 // :: (number) → Transform
 // Join the blocks around the given position.
-Transform.define("join", function(at, depth = 1) {
+Transform.define("join", function(pos, depth = 1) {
   for (let i = 0; i < depth; i++) {
-    this.step("join", at - 1, at + 1)
-    at--
+    let rPos = this.doc.resolve(pos)
+    if (rPos.parentOffset == 0 || rPos.parentOffset == rPos.parent.content.size) break
+    this.step("join", pos - 1, pos + 1)
+    pos--
   }
 })

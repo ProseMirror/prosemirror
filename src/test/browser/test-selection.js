@@ -1,6 +1,6 @@
 import {namespace} from "./def"
 import {doc, blockquote, p, em, img, strong, code, br, hr} from "../build"
-import {cmp, cmpNode, gt, cmpStr, P} from "../cmp"
+import {cmp, cmpNode, gt, cmpStr} from "../cmp"
 
 import {Pos} from "../../model"
 
@@ -53,17 +53,17 @@ test("read", pm => {
   }
   let one = findTextNode(pm.content, "one")
   let two = findTextNode(pm.content, "two")
-  test(one, 0, P(0, 0), "force 0:0")
-  test(one, 1, P(0, 1), "force 0:1")
-  test(one, 3, P(0, 3), "force 0:3")
-  test(one.parentNode, 0, P(0, 0), "force :0 from one")
-  test(one.parentNode, 1, P(0, 3), "force :1 from one")
-  test(two, 0, P(2, 0, 0), "force 1:0")
-  test(two, 3, P(2, 0, 3), "force 1:3")
-  test(two.parentNode, 1, P(2, 0, 3), "force :1 from two")
+  test(one, 0, 1, "force 0:0")
+  test(one, 1, 2, "force 0:1")
+  test(one, 3, 4, "force 0:3")
+  test(one.parentNode, 0, 1, "force :0 from one")
+  test(one.parentNode, 1, 4, "force :1 from one")
+  test(two, 0, 8, "force 1:0")
+  test(two, 3, 11, "force 1:3")
+  test(two.parentNode, 1, 11, "force :1 from two")
   test(pm.content, 1, undefined, "force :1")
-  test(pm.content, 2, P(2, 0, 0), "force :2")
-  test(pm.content, 3, P(2, 0, 3), "force :3")
+  test(pm.content, 2, 8, "force :2")
+  test(pm.content, 3, 11, "force :3")
 }, {
   doc: doc(p("one"), hr, blockquote(p("two")))
 })
@@ -92,11 +92,11 @@ test("set", pm => {
   let one = findTextNode(pm.content, "one")
   let two = findTextNode(pm.content, "two")
   pm.focus()
-  test(P(0, 0), one, 0)
-  test(P(0, 1), one, 1)
-  test(P(0, 3), one, 3)
-  test(P(2, 0, 0), two, 0)
-  test(P(2, 0, 2), two, 2)
+  test(1, one, 0)
+  test(2, one, 1)
+  test(4, one, 3)
+  test(8, two, 0)
+  test(11, two, 2)
 }, {
   doc: doc(p("one"), hr, blockquote(p("two")))
 })
@@ -104,23 +104,23 @@ test("set", pm => {
 test("change_event", pm => {
   let received = 0
   pm.on("selectionChange", () => ++received)
-  pm.setTextSelection(P(0, 1))
-  pm.setTextSelection(P(0, 1))
+  pm.setTextSelection(2)
+  pm.setTextSelection(2)
   cmp(received, 1, "changed")
-  pm.setTextSelection(P(0, 0))
+  pm.setTextSelection(1)
   cmp(received, 2, "changed back")
   pm.setOption("doc", doc(p("hi")))
   cmp(received, 2, "new doc")
-  pm.tr.insertText(P(0, 2), "you").apply()
+  pm.tr.insertText(3, "you").apply()
   cmp(received, 3, "doc changed")
 }, {doc: doc(p("one"))})
 
 test("coords_order", pm => {
-  let p00 = pm.coordsAtPos(P(0, 0))
-  let p01 = pm.coordsAtPos(P(0, 1))
-  let p03 = pm.coordsAtPos(P(0, 3))
-  let p10 = pm.coordsAtPos(P(1, 0))
-  let p13 = pm.coordsAtPos(P(1, 3))
+  let p00 = pm.coordsAtPos(1)
+  let p01 = pm.coordsAtPos(2)
+  let p03 = pm.coordsAtPos(4)
+  let p10 = pm.coordsAtPos(6)
+  let p13 = pm.coordsAtPos(9)
 
   gt(p00.bottom, p00.top)
   gt(p13.bottom, p13.top)
@@ -139,8 +139,8 @@ test("coords_order", pm => {
 })
 
 test("coords_cornercases", pm => {
-  pm.markRange(P(0, 1), P(0, 4), {className: "foo"})
-  pm.markRange(P(0, 6), P(0, 12), {className: "foo"})
+  pm.markRange(2, 5, {className: "foo"})
+  pm.markRange(7, 13, {className: "foo"})
   let positions = allPositions(pm.doc)
   for (let i = 0; i < positions.length; i++) {
     let coords = pm.coordsAtPos(positions[i])
@@ -154,7 +154,7 @@ test("coords_cornercases", pm => {
 })
 
 test("coords_round_trip", pm => {
-  ;[P(0, 0), P(0, 1), P(0, 3), P(1, 0, 0), P(1, 1, 2), P(1, 1, 3)].forEach(pos => {
+  ;[1, 2, 4, 7, 14, 15].forEach(pos => {
     let coords = pm.coordsAtPos(pos)
     let found = pm.posAtCoords(coords)
     cmpStr(found, pos)
@@ -164,28 +164,28 @@ test("coords_round_trip", pm => {
 })
 
 test("follow_change", pm => {
-  pm.tr.insertText(P(0, 0), "xy").apply()
-  cmpStr(pm.selection.head, P(0, 2))
-  cmpStr(pm.selection.anchor, P(0, 2))
-  pm.tr.insertText(P(0, 0), "zq").apply()
-  cmpStr(pm.selection.head, P(0, 4))
-  cmpStr(pm.selection.anchor, P(0, 4))
-  pm.tr.insertText(P(0, 6), "uv").apply()
-  cmpStr(pm.selection.head, P(0, 4))
-  cmpStr(pm.selection.anchor, P(0, 4))
+  pm.tr.insertText(1, "xy").apply()
+  cmpStr(pm.selection.head, 3)
+  cmpStr(pm.selection.anchor, 3)
+  pm.tr.insertText(1, "zq").apply()
+  cmpStr(pm.selection.head, 5)
+  cmpStr(pm.selection.anchor, 5)
+  pm.tr.insertText(7, "uv").apply()
+  cmpStr(pm.selection.head, 5)
+  cmpStr(pm.selection.anchor, 5)
 }, {
   doc: doc(p("hi"))
 })
 
 test("replace_with_block", pm => {
-  pm.setTextSelection(P(0, 3))
+  pm.setTextSelection(4)
   pm.tr.replaceSelection(pm.schema.node("horizontal_rule")).apply()
   cmpNode(pm.doc, doc(p("foo"), hr, p("bar")), "split paragraph")
-  cmpStr(pm.selection.head, P(2, 0), "moved after rule")
-  pm.setTextSelection(P(2, 3))
+  cmpStr(pm.selection.head, 7, "moved after rule")
+  pm.setTextSelection(10)
   pm.tr.replaceSelection(pm.schema.node("horizontal_rule")).apply()
   cmpNode(pm.doc, doc(p("foo"), hr, p("bar"), hr), "inserted after")
-  cmpStr(pm.selection.head, P(2, 3), "stayed in paragraph")
+  cmpStr(pm.selection.head, 10, "stayed in paragraph")
 }, {
   doc: doc(p("foobar"))
 })

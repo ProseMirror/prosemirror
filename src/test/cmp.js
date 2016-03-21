@@ -1,5 +1,4 @@
 import {Failure} from "./failure"
-import {Pos} from "../model"
 
 export function cmpNode(a, b, comment) {
   if (!a.eq(b)) throw new Failure("Different nodes:\n  " + a + "\nvs\n  " +
@@ -31,5 +30,3 @@ export function is(condition, comment) {
   if (!condition)
     throw new Failure("assertion failed" + (comment ? " (" + comment + ")" : ""))
 }
-
-export function P(...args) { return new Pos(args, args.pop()) }
