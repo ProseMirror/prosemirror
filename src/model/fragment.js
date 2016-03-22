@@ -165,7 +165,7 @@ export class Fragment {
   forEach(f) {
     for (let i = 0, p = 0; i < this.content.length; i++) {
       let child = this.content[i]
-      f(child, i, p)
+      f(child, p)
       p += child.nodeSize
     }
   }

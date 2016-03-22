@@ -43,7 +43,7 @@ export function posFromDOM(pm, dom, domOffset, loose) {
     dom = parent
   }
 
-  let start = posBeforeFromDOM(pm, dom) + 1, before = 0
+  let start = dom == pm.content ? 0 : posBeforeFromDOM(pm, dom) + 1, before = 0
 
   for (let child = dom.childNodes[domOffset - 1]; child; child = child.previousSibling) {
     if (child.nodeType == 3) {

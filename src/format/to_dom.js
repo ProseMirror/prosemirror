@@ -32,8 +32,6 @@ class DOMSerializer {
   }
 
   renderNode(node, offset) {
-    if (this.options.preRender)
-      this.options.preRender(node, offset)
     let dom = node.type.serializeDOM(node, this)
     if (this.options.onRender)
       dom = this.options.onRender(node, dom, offset) || dom
@@ -103,8 +101,12 @@ class DOMSerializer {
   // Render the content of ProseMirror node into a DOM node with the
   // given tag name and attributes.
   renderAs(node, tagName, tagAttrs) {
+    if (this.options.preRenderContent) this.options.preRenderContent(node)
+
     let dom = this.renderFragment(node.content, this.elt(tagName, tagAttrs))
     if (this.options.onContainer) this.options.onContainer(dom)
+
+    if (this.options.postRenderContent) this.options.postRenderContent(node)
     return dom
   }
 }

@@ -95,7 +95,7 @@ export class SelectionState {
     let anchor = posFromDOM(this.pm, sel.anchorNode, sel.anchorOffset)
     let head = sel.isCollapsed ? anchor : posFromDOM(this.pm, sel.focusNode, sel.focusOffset)
 
-    let newRange = findSelectionNear(doc, head, this.range.head != null && this.range.head < head ? -1 : 1)
+    let newRange = findSelectionNear(doc, head, this.range.head != null && this.range.head < head ? 1 : -1)
     if (newRange instanceof TextSelection && doc.resolve(anchor).parent.isTextblock) {
       newRange = new TextSelection(anchor, newRange.head)
     } else if (newRange instanceof NodeSelection && (anchor < newRange.from || anchor > newRange.to)) {

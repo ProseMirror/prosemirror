@@ -7,9 +7,9 @@ import {childContainer} from "./dompos"
 function options(ranges) {
   return {
     pos: 0,
-    preRender() {
-      this.pos++
-    },
+    preRenderContent() { this.pos++ },
+    postRenderContent(node) { this.pos++ },
+
     onRender(node, dom, offset) {
       if (node.isBlock) {
         if (offset != null)
@@ -19,10 +19,8 @@ function options(ranges) {
           adjustTrailingHacks(dom, node)
         if (dom.contentEditable == "false")
           dom = elt("div", null, dom)
+        if (!node.type.contains) this.pos++
       }
-
-      if (node.isText) this.pos += node.text.length
-      else if (node.type.contains) this.pos++
 
       return dom
     },
@@ -62,10 +60,12 @@ function options(ranges) {
         nextCut = ranges.nextChangeBefore(end)
         if (nextCut == -1)
           wrapped.setAttribute("pm-inner-offset", inlineOffset)
+        pos += size
       }
 
       if (ranges.current.length)
         wrapped.className = ranges.current.join(" ")
+      this.pos += node.nodeSize
       return dom
     },
     document

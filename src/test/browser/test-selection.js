@@ -41,7 +41,8 @@ test("read", pm => {
   function test(node, offset, expected, comment) {
     setSel(node, offset)
     pm.sel.readFromDOM()
-    cmpStr(pm.selection.head, expected, comment)
+    let sel = pm.selection
+    cmpStr(sel.head == null ? sel.from : sel.head, expected, comment)
     pm.flush()
   }
   let one = findTextNode(pm.content, "one")
@@ -54,7 +55,8 @@ test("read", pm => {
   test(two, 0, 8, "force 1:0")
   test(two, 3, 11, "force 1:3")
   test(two.parentNode, 1, 11, "force :1 from two")
-  test(pm.content, 1, undefined, "force :1")
+  test(pm.content, 1, 4, "force :1")
+  test(pm.content, 1, 5, "force :1")
   test(pm.content, 2, 8, "force :2")
   test(pm.content, 3, 11, "force :3")
 }, {
@@ -89,7 +91,7 @@ test("set", pm => {
   test(2, one, 1)
   test(4, one, 3)
   test(8, two, 0)
-  test(11, two, 2)
+  test(10, two, 2)
 }, {
   doc: doc(p("one"), hr, blockquote(p("two")))
 })

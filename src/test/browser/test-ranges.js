@@ -1,5 +1,5 @@
 import {namespace} from "./def"
-import {doc, p, li, ul} from "../build"
+import {doc, p, li, ul, hr, blockquote} from "../build"
 import {cmp, cmpStr} from "../cmp"
 
 const test = namespace("ranges", {doc: doc(p("hello"))})
@@ -59,7 +59,7 @@ test("stay_when_empty", pm => {
   cmpStr(range.to, 1)
 })
 
-test("add_class", pm => {
+test("add_class_simple", pm => {
   let range = pm.markRange(2, 5, {className: "foo"})
   pm.flush()
   cmp(pm.content.querySelector(".foo").textContent, "ell")
@@ -68,6 +68,16 @@ test("add_class", pm => {
   cmp(pm.content.querySelector(".foo"), null)
 })
 
+test("add_class_messy", pm => {
+  let big = doc(hr, blockquote(p(), hr, ul(li(p("a"))), p("h<a>ello")), p("y<b>ou"))
+  pm.setContent(big)
+  let range = pm.markRange(big.tag.a, big.tag.b, {className: "foo"})
+  pm.flush()
+  let foos = pm.content.querySelectorAll(".foo")
+  cmp(foos.length, 2)
+  cmpStr(foos[0].textContent, "ello")
+  cmpStr(foos[1].textContent, "y")
+})
 
 test("add_class_multi_block", pm => {
   let range = pm.markRange(2, 19, {className: "foo"})
