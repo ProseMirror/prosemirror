@@ -177,7 +177,7 @@ Image.register("command", "insert", {
 // ;; #path=bullet_list:wrap #kind=command
 // Wrap the selection in a bullet list.
 //
-// **Keybindings:** Alt-Right '*', Alt-Right '-'
+// **Keybindings:** Shift-Mod-8
 BulletList.register("command", "wrap", {
   derive: {list: true},
   label: "Wrap the selection in a bullet list",
@@ -189,13 +189,13 @@ BulletList.register("command", "wrap", {
       path: "M0 512h128v-128h-128v128zM0 256h128v-128h-128v128zM0 768h128v-128h-128v128zM256 512h512v-128h-512v128zM256 256h512v-128h-512v128zM256 768h512v-128h-512v128z"
     }
   },
-  keys: ["Alt-Right '*'", "Alt-Right '-'"]
+  keys: ["Shift-Mod-8"]
 })
 
 // ;; #path=ordered_list:wrap #kind=command
 // Wrap the selection in an ordered list.
 //
-// **Keybindings:** Alt-Right '1'
+// **Keybindings:** Shift-Mod-8
 OrderedList.register("command", "wrap", {
   derive: {list: true},
   label: "Wrap the selection in an ordered list",
@@ -207,13 +207,13 @@ OrderedList.register("command", "wrap", {
       path: "M320 512h448v-128h-448v128zM320 768h448v-128h-448v128zM320 128v128h448v-128h-448zM79 384h78v-256h-36l-85 23v50l43-2v185zM189 590c0-36-12-78-96-78-33 0-64 6-83 16l1 66c21-10 42-15 67-15s32 11 32 28c0 26-30 58-110 112v50h192v-67l-91 2c49-30 87-66 87-113l1-1z"
     }
   },
-  keys: ["Alt-Right '1'"]
+  keys: ["Shift-Mod-9"]
 })
 
 // ;; #path=blockquote:wrap #kind=command
 // Wrap the selection in a block quote.
 //
-// **Keybindings:** Alt-Right '>', Alt-Right '"'
+// **Keybindings:** Shift-Mod-.
 BlockQuote.register("command", "wrap", {
   derive: true,
   label: "Wrap the selection in a block quote",
@@ -225,7 +225,7 @@ BlockQuote.register("command", "wrap", {
       path: "M0 448v256h256v-256h-128c0 0 0-128 128-128v-128c0 0-256 0-256 256zM640 320v-128c0 0-256 0-256 256v256h256v-256h-128c0 0 0-128 128-128z"
     }
   },
-  keys: ["Alt-Right '>'", "Alt-Right '\"'"]
+  keys: ["Shift-Mod-."]
 })
 
 // ;; #path=hard_break:insert #kind=command
@@ -273,12 +273,12 @@ for (let i = 1; i <= 10; i++)
   // The commands `make1` to `make6` set the textblocks in the
   // selection to become headers with the given level.
   //
-  // **Keybindings:** Mod-1 through Mod-6
+  // **Keybindings:** Shift-Mod-1 through Shift-Mod-6
   Heading.registerComputed("command", "make" + i, type => {
     if (i <= type.maxLevel) return {
       derive: {name: "make", attrs: {level: i}},
       label: "Change to heading " + i,
-      keys: i < 10 && [`Mod-${i}`],
+      keys: i <= 6 && [`Shift-Mod-${i}`],
       menu: {
         group: "textblockHeading", rank: 30 + i,
         display: {type: "label", label: "Level " + i},
@@ -290,11 +290,11 @@ for (let i = 1; i <= 10; i++)
 // ;; #path=paragraph:make #kind=command
 // Set the textblocks in the selection to be regular paragraphs.
 //
-// **Keybindings:** Mod-0
+// **Keybindings:** Shift-Mod-0
 Paragraph.register("command", "make", {
   derive: true,
   label: "Change to paragraph",
-  keys: ["Mod-0"],
+  keys: ["Shift-Mod-0"],
   menu: {
     group: "textblock", rank: 10,
     display: {type: "label", label: "Plain"},
@@ -305,11 +305,11 @@ Paragraph.register("command", "make", {
 // ;; #path=code_block:make #kind=command
 // Set the textblocks in the selection to be code blocks.
 //
-// **Keybindings:** Mod-\
+// **Keybindings:** Shift-Mod-\
 CodeBlock.register("command", "make", {
   derive: true,
   label: "Change to code block",
-  keys: ["Mod-\\"],
+  keys: ["Shift-Mod-\\"],
   menu: {
     group: "textblock", rank: 20,
     display: {type: "label", label: "Code"},
