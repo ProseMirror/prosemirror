@@ -507,7 +507,10 @@ baseCommands.selectNodeLeft = {
     if (done) pm.scrollIntoView()
     return done
   },
-  keys: ["Left", "Mod-Left"]
+  keys: {
+    all: ["Left", "Mod-Left"],
+    mac: ["Alt-Left"]
+  }
 }
 
 // ;; #kind=command
@@ -521,7 +524,10 @@ baseCommands.selectNodeRight = {
     if (done) pm.scrollIntoView()
     return done
   },
-  keys: ["Right", "Mod-Right"]
+  keys: {
+    all: ["Right", "Mod-Right"],
+    mac: ["Alt-Left"]
+  }
 }
 
 // : (ProseMirror, number)
