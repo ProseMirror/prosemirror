@@ -301,7 +301,8 @@ function findSelectionIn(node, pos, index, dir, text) {
       let inner = findSelectionIn(child, pos + dir, dir < 0 ? child.childCount : 0, dir, text)
       if (inner) return inner
     } else if (!text && child.type.selectable) {
-      return new NodeSelection(pos + (dir > 0 ? 0 : 1))
+      return new NodeSelection(pos - (dir < 0 ? child.nodeSize : 0),
+                               pos + (dir > 0 ? child.nodeSize : 0), child)
     }
     pos += child.nodeSize * dir
   }

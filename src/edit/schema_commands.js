@@ -275,8 +275,9 @@ for (let i = 1; i <= 10; i++)
   //
   // **Keybindings:** Shift-Mod-1 through Shift-Mod-6
   Heading.registerComputed("command", "make" + i, type => {
+    let attrs = {level: String(i)}
     if (i <= type.maxLevel) return {
-      derive: {name: "make", attrs: {level: i}},
+      derive: {name: "make", attrs},
       label: "Change to heading " + i,
       keys: i <= 6 && [`Shift-Mod-${i}`],
       menu: {

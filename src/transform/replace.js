@@ -31,7 +31,7 @@ Step.define("replace", {
 // :: (number, number) → Transform
 // Delete the content between the given positions.
 Transform.define("delete", function(from, to) {
-  this.replace(from, to, Slice.empty)
+  if (from != to) this.replace(from, to, Slice.empty)
 })
 
 // :: (number, ?number, ?Slice) → Transform

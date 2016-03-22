@@ -398,7 +398,7 @@ NodeType.derivableCommands.wrap = function(conf) {
         doJoin = true
       }
       let tr = pm.tr.wrap(from, to, this, fillAttrs(conf, params))
-      if (doJoin) tr.join(rFrom.before(rFrom.depth - 2))
+      if (doJoin) tr.join(rFrom.before(rFrom.depth - 1))
       return tr.apply(pm.apply.scroll)
     },
     select(pm) {

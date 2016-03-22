@@ -31,7 +31,7 @@ function deleteBarrier(pm, cut) {
   let rCut = pm.doc.resolve(cut), before = rCut.nodeBefore, after = rCut.nodeAfter
   if (before.type.canContainContent(after.type)) {
     let tr = pm.tr.join(cut)
-    if (tr.steps.length && before.size == 0 && !before.sameMarkup(after))
+    if (tr.steps.length && before.content.size == 0 && !before.sameMarkup(after))
       tr.setNodeType(cut - before.nodeSize, after.type, after.attrs)
     if (tr.apply(pm.apply.scroll) !== false)
       return
@@ -108,7 +108,8 @@ function moveBackward(doc, pos, by) {
   let cat = null, counted = 0
   for (;;) {
     if (offset == 0) return pos
-    let {start, node} = parent.nodeBefore(offset)
+    let {offset: start, node} = parent.nodeBefore(offset)
+    if (!node) return pos
     if (!node.isText) return cat ? pos : pos - 1
 
     if (by == "char") {
@@ -219,7 +220,8 @@ function moveForward(doc, pos, by) {
   let cat = null, counted = 0
   for (;;) {
     if (offset == parent.content.size) return pos
-    let {start, node} = parent.childAfter(offset)
+    let {offset: start, node} = parent.nodeAfter(offset)
+    if (!node) return pos
     if (!node.isText) return cat ? pos : pos + 1
 
     if (by == "char") {

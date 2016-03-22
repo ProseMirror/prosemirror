@@ -90,6 +90,8 @@ export class Node {
     return this.type == type && Node.sameAttrs(this.attrs, attrs || emptyAttrs) && Mark.sameSet(this.marks, marks || emptyArray)
   }
 
+  get size() { throw new Error("FIXME no size here") }
+
   static sameAttrs(a, b) {
     if (a == b) return true
     for (let prop in a)
@@ -152,10 +154,11 @@ export class Node {
   }
 
   nodeBefore(pos) {
+    if (pos == 0) return {node: null, index: 0, offset: 0}
     let index = findIndex(this.content, pos)
-    if (foundOffset > pos || pos == 0) return {node: this.content.child(index), index, offset: foundOffset}
-    let node = this.content.maybeChild(index - 1)
-    return {node, index: index - 1, offset: foundOffset - node.childSize}
+    if (foundOffset < pos) return {node: this.content.child(index), index, offset: foundOffset}
+    let node = this.content.child(index - 1)
+    return {node, index: index - 1, offset: foundOffset - node.nodeSize}
   }
 
   // :: (?number, ?number, (node: Node, pos: number, parent: Node))

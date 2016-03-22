@@ -52,9 +52,9 @@ export class EditorTransform extends Transform {
       // Inserting a block node into a textblock. Try to insert it above by splitting the textblock
       if (rFrom.depth && rFrom.node[rFrom.depth - 1].type.canContain(node)) {
         this.delete(from, to)
-        if (rFrom.parentOffset && rFrom.parentOffset < (rFrom = this.doc.resolve(from)).parent.content.size)
+        if (rFrom.parentOffset && rFrom.parentOffset < rFrom.parent.content.size)
           this.split(from)
-        return this.insert(from + 1, node)
+        return this.insert(from + (rFrom.parentOffset ? 1 : -1), node)
       }
     }
 
