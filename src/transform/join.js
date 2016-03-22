@@ -33,7 +33,7 @@ export function joinableBlocks(doc, pos) {
     before.type.canContainContent(after.type)
 }
 
-// :: (Node, number, ?number) → ?Pos
+// :: (Node, number, ?number) → ?number
 // Find an ancestor of the given position that can be joined to the
 // block before (or after if `dir` is positive). Returns the joinable
 // point, if any.
@@ -51,6 +51,7 @@ export function joinPoint(doc, pos, dir = -1) {
 Transform.define("join", function(pos, depth = 1) {
   for (let i = 0; i < depth; i++) {
     let rPos = this.doc.resolve(pos)
+    // FIXME should a bogus join fail the transform?
     if (rPos.parentOffset == 0 || rPos.parentOffset == rPos.parent.content.size) break
     this.step("join", pos - 1, pos + 1)
     pos--

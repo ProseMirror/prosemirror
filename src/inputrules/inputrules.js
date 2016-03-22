@@ -1,4 +1,3 @@
-import {Pos} from "../model"
 import {Keymap} from "../edit"
 
 // :: (ProseMirror, InputRule)
@@ -31,7 +30,7 @@ export function removeInputRule(pm, rule) {
 // changing two dashes into an emdash, wrapping a paragraph starting
 // with `"> "` into a blockquote, or something entirely different.
 export class InputRule {
-  // :: (RegExp, ?string, union<string, (ProseMirror, [string], Pos)>)
+  // :: (RegExp, ?string, union<string, (pm: ProseMirror, match: [string], pos: number)>)
   // Create an input rule. The rule applies when the user typed
   // something and the text directly in front of the cursor matches
   // `match`, which should probably end with `$`. You can optionally
@@ -84,21 +83,22 @@ class InputRules {
     let pos = this.pm.selection.head
     if (!pos) return
 
-    let textBefore, isCode
+    let textBefore, isCode, rPos
     let lastCh = text[text.length - 1]
 
     for (let i = 0; i < this.rules.length; i++) {
       let rule = this.rules[i], match
       if (rule.filter && rule.filter != lastCh) continue
-      if (textBefore == null) {
-        ;({textBefore, isCode} = getContext(this.pm.doc, pos))
+      if (!rPos) {
+        rPos = this.pm.doc.resolve(pos)
+        ;({textBefore, isCode} = getContext(rPos))
         if (isCode) return
       }
       if (match = rule.match.exec(textBefore)) {
         let startVersion = this.pm.history.getVersion()
         if (typeof rule.handler == "string") {
-          let offset = pos.offset - (match[1] || match[0]).length
-          let start = new Pos(pos.path, offset)
+          let offset = rPos.parentOffset - (match[1] || match[0]).length
+          let start = pos - (match[1] || match[0]).length
           let marks = this.pm.doc.marksAt(pos)
           this.pm.tr.delete(start, pos)
                     .insert(start, this.pm.schema.text(rule.handler, marks))
@@ -122,14 +122,15 @@ class InputRules {
   }
 }
 
-function getContext(doc, pos) {
-  let parent = doc.path(pos.path)
-  let isCode = parent.type.isCode
+function getContext(rPos) {
+  let parent = rPos.parent, isCode = parent.type.isCode
   let textBefore = ""
-  for (let i = parent.iter(0, pos.offset), child; child = i.next().value;) {
-    if (child.isText) textBefore += child.text
+  for (let i = 0, rem = rPos.parentOffset; rem > 0; i++) {
+    let child = parent.child(i)
+    if (child.isText) textBefore += child.text.slice(0, rem)
     else textBefore += "\ufffc"
-    if (i.atEnd() && child.marks.some(st => st.type.isCode)) isCode = true
+    rem -= child.nodeSize
+    if (rem <= 0 && child.marks.some(st => st.type.isCode)) isCode = true
   }
   return {textBefore, isCode}
 }

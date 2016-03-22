@@ -301,6 +301,7 @@ baseCommands.joinUp = {
     let point = joinPointAbove(pm), isNode = pm.selection.node
     if (!point) return false
     pm.tr.join(point).apply()
+    // FIXME this can throw error about unselectable node
     if (isNode) pm.setNodeSelection(point - isNode.nodeSize)
   },
   select(pm) { return joinPointAbove(pm) },

@@ -90,8 +90,6 @@ export class Node {
     return this.type == type && Node.sameAttrs(this.attrs, attrs || emptyAttrs) && Mark.sameSet(this.marks, marks || emptyArray)
   }
 
-  get size() { throw new Error("FIXME no size here") }
-
   static sameAttrs(a, b) {
     if (a == b) return true
     for (let prop in a)

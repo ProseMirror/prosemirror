@@ -1,4 +1,4 @@
-import {Pos, BlockQuote, OrderedList, BulletList, CodeBlock, Heading} from "../model"
+import {BlockQuote, OrderedList, BulletList, CodeBlock, Heading} from "../model"
 import {defineOption} from "../edit"
 import {InputRule, addInputRule, removeInputRule} from "./inputrules"
 
@@ -67,7 +67,7 @@ OrderedList.register("autoInput", "startOrderedList", new InputRule(
   function(pm, match, pos) {
     let order = +match[1]
     wrapAndJoin(pm, pos, this, {order: order || null},
-                node => node.size + (node.attrs.order || 1) == order)
+                node => node.childCount + +node.attrs.order == order)
   }
 ))
 
@@ -92,18 +92,18 @@ Heading.registerComputed("autoInput", "startHeading", type => {
 })
 
 function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
-  let before = pos.shorten()
-  let sibling = before.offset > 0 && pm.doc.path(before.path).child(before.offset - 1)
-  let join = sibling && sibling.type.name == type && (!predicate || predicate(sibling))
-  let tr = pm.tr.wrap(pos, pos, type, attrs)
-  let delPos = tr.map(pos).pos
-  tr.delete(new Pos(delPos.path, 0), delPos)
-  if (join) tr.join(before)
+  let rPos = pm.doc.resolve(pos), d1 = rPos.depth - 1
+  let sibling = rPos.index[d1] > 0 && rPos.node[d1].child(rPos.index[d1] - 1)
+  let join = sibling && sibling.type == type && (!predicate || predicate(sibling))
+  let start = pos - rPos.parentOffset
+  let tr = pm.tr.delete(start, pos).wrap(start, start, type, attrs)
+  if (join) tr.join(rPos.before(rPos.depth))
   tr.apply()
 }
 
 function setAs(pm, pos, type, attrs) {
-  pm.tr.setBlockType(pos, pos, type, attrs)
-       .delete(new Pos(pos.path, 0), pos)
+  let rPos = pm.doc.resolve(pos), start = pos - rPos.parentOffset
+  pm.tr.delete(start, pos)
+       .setBlockType(start, start, type, attrs)
        .apply()
 }

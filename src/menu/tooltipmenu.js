@@ -1,4 +1,3 @@
-import {Pos} from "../model"
 import {defineOption} from "../edit"
 import {elt, insertCSS} from "../dom"
 import {Tooltip} from "../ui/tooltip"
@@ -90,12 +89,13 @@ class TooltipMenu {
       }
     } else if (!empty) {
       return () => {
-        let coords = node ? topOfNodeSelection(this.pm) : topCenterOfSelection()
-        let showBlock = this.selectedBlockMenu && Pos.samePath(from.path, to.path) &&
-            from.offset == 0 && to.offset == this.pm.doc.path(from.path).size
+        let coords = node ? topOfNodeSelection(this.pm) : topCenterOfSelection(), rFrom
+        let showBlock = this.selectedBlockMenu &&
+            (rFrom = this.pm.doc.resolve(from)).parentOffset == 0 &&
+            rFrom.end(rFrom.depth) == to
         return () => this.show(showBlock ? this.selectedBlockContent : this.inlineContent, coords)
       }
-    } else if (this.selectedBlockMenu && this.pm.doc.path(from.path).size == 0) {
+    } else if (this.selectedBlockMenu && this.pm.doc.resolve(from).parent.content.size == 0) {
       return () => {
         let coords = this.pm.coordsAtPos(from)
         return () => this.show(this.blockContent, coords)
