@@ -5,7 +5,7 @@ import {parseFrom, fromDOM, toHTML, toText} from "../format"
 import {captureKeys} from "./capturekeys"
 import {elt, browser, contains} from "../dom"
 
-import {applyDOMChange, textContext, textInContext} from "./domchange"
+import {readDOMChange, textContext, textInContext} from "./domchange"
 import {TextSelection, rangeFromDOMLoose, findSelectionAtStart, findSelectionAtEnd, hasFocus} from "./selection"
 import {coordsAtPos, pathFromDOM, handleNodeClick, selectableNodeAbove} from "./dompos"
 
@@ -328,7 +328,7 @@ function finishComposing(pm) {
   if (range && !range.eq(pm.sel.range)) pm.setSelectionDirect(range)
 }
 
-handlers.input = (pm) => {
+handlers.input = (pm, e) => {
   if (!hasFocus(pm)) return
   if (pm.input.skipInput) return --pm.input.skipInput
 
@@ -338,7 +338,13 @@ handlers.input = (pm) => {
   }
 
   pm.startOperation({readSelection: false})
-  applyDOMChange(pm)
+  let change = readDOMChange(pm)
+  if (change) {
+    if (change.type == "enter")
+      dispatchKey(pm, "Enter", e)
+    else
+      change.run()
+  }
   pm.scrollIntoView()
 }
 

@@ -2,6 +2,7 @@ import {Pos, findDiffStart, findDiffEnd} from "../model"
 import {fromDOM} from "../format"
 import {samePathDepth} from "../transform/tree"
 
+import {findSelectionFrom} from "./selection"
 import {findByPath} from "./dompos"
 
 function isAtEnd(node, pos, depth) {
@@ -47,7 +48,7 @@ function parseNearSelection(pm) {
   }
 }
 
-export function applyDOMChange(pm) {
+export function readDOMChange(pm) {
   let updated = parseNearSelection(pm)
   let changeStart = findDiffStart(pm.doc.content, updated.content)
   if (changeStart) {
@@ -55,11 +56,27 @@ export function applyDOMChange(pm) {
     // Mark nodes touched by this change as 'to be redrawn'
     markDirtyFor(pm, changeStart, changeEnd)
 
-    pm.tr.replace(changeStart, changeEnd.a, updated, changeStart, changeEnd.b).apply()
-    return true
+    let near
+    // FIXME when we have a Slice type, just return replace info, & let caller inspect it
+    if (pm.doc.path(changeStart.path).isTextblock &&
+        Pos.samePath(changeStart.path, changeEnd.a.path) &&
+        !Pos.samePath(changeStart.path, changeEnd.b.path) &&
+        (near = findSelectionFrom(updated, after(updated, changeStart), 1, true)) &&
+        !near.head.cmp(changeEnd.b))
+      return {type: "enter"}
+    else
+      return {type: "replace",
+              run: () => pm.tr.replace(changeStart, changeEnd.a, updated, changeStart, changeEnd.b).apply()}
   } else {
     return false
   }
+}
+
+function after(doc, pos) {
+  if (pos.offset < doc.path(pos.path).size)
+    return pos.move(1)
+  else
+    return pos.shorten(null, 1)
 }
 
 function offsetBy(first, second, pos) {
