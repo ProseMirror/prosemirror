@@ -54,17 +54,16 @@ export function readDOMChange(pm) {
     // Mark nodes touched by this change as 'to be redrawn'
     markDirtyFor(pm, changeStart, changeEnd)
 
-    let near
-    // FIXME when we have a Slice type, just return replace info, & let caller inspect it
-    if (pm.doc.path(changeStart.path).isTextblock &&
-        Pos.samePath(changeStart.path, changeEnd.a.path) &&
-        !Pos.samePath(changeStart.path, changeEnd.b.path) &&
-        (near = findSelectionFrom(updated, after(updated, changeStart), 1, true)) &&
-        !near.head.cmp(changeEnd.b))
+    let rStart = updated.resolve(changeStart, false)
+    let rEnd = updated.resolve(changeEnd, false), nextSel
+    // FIXME less ad-hoc return type?
+    if (!rStart.sameParent(rEnd) &&
+        (nextSel = findSelectionFrom(updated, rStart + 1, 1, true)) &&
+        nextSel.head == changeEnd.b)
       return {type: "enter"}
     else
       return {type: "replace",
-              run: () => pm.tr.replace(changeStart, changeEnd.a, updated, changeStart, changeEnd.b).apply()}
+              run: () => pm.tr.replace(changeStart, changeEnd.a, updated.slice(changeStart, changeEnd.b)).apply()}
   } else {
     return false
   }
