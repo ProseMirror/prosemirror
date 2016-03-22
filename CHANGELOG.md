@@ -1,3 +1,37 @@
+## [0.5.0](http://prosemirror.net/version/0.5.0.html) (2016-03-22)
+
+### Bug fixes
+
+ProseMirror now ignores most evens when not focused, so you can have
+focusable fields inside the editor.
+
+The Markdown serializer is now a lot more clever about serializing
+mixed inline styles.
+
+Event handlers unregistering themselves is now safe (used to skip next
+event handler).
+
+### New features
+
+The default command parameter prompt UI now shows the command label
+and a submit button.
+
+When joining an empty textblock with a non-empty one, the resulting
+block now gets the type of the non-empty one.
+
+Node types can now handle double clicks with a `handleDoubleClick`
+method.
+
+Undo and redo now restore the selection that was current when the
+history event was created.
+
+The collab module now fires a `"collabTransform"` event when receiving
+changes.
+
+The `"filterTransform"` event can now be used to cancel transforms.
+
+Node kinds can now specify both their super- and sub-kinds.
+
 ## [0.4.0](http://prosemirror.net/version/0.4.0.html) (2016-02-24)
 
 ### Breaking changes
