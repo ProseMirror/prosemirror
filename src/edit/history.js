@@ -46,9 +46,9 @@ class BranchRemapping {
     return id
   }
 
-  movePastStep(result) {
+  movePastStep(map) {
     let id = this.addNextMap()
-    if (result) this.remap.addToBack(result.map, id)
+    if (map) this.remap.addToBack(map, id)
   }
 }
 
@@ -98,8 +98,7 @@ class CompressionWorker {
           let extra = 0, start = step.from
           while (j > 0) {
             let next = event.steps[j - 1]
-            if (next.version != stepVersion - 1 || !isDelStep(next.step) ||
-                start.cmp(next.step.to))
+            if (next.version != stepVersion - 1 || !isDelStep(next.step) || start != next.step.to)
               break
             extra += next.step.to.offset - next.step.from.offset
             start = next.step.from
@@ -112,14 +111,16 @@ class CompressionWorker {
             mappedStep = new Step("replace", start, mappedStep.to, start)
           }
         }
-        let result = mappedStep && mappedStep.apply(this.doc)
+        // FIXME don't need to apply the steps anymore
+        let result = mappedStep && mappedStep.apply(this.doc), map
         if (result) {
+          map = mappedStep.posMap()
           this.doc = result.doc
-          this.maps.push(result.map.invert())
+          this.maps.push(map.invert())
           outEvent.steps.push(new InvertedStep(mappedStep, this.version, stepID))
           this.version--
         }
-        this.remap.movePastStep(result)
+        this.remap.movePastStep(map)
       }
       if (outEvent.steps.length) {
         outEvent.steps.reverse()
@@ -246,19 +247,20 @@ class Branch {
         remap.moveToVersion(invertedStep.version)
         step = step.map(remap.remap)
 
-        let result = step && tr.step(step)
+        let result = step && tr.maybeStep(step), map
         if (result) {
+          map = step.posMap()
           ids.push(invertedStep.id)
-          if (this.addMap(result.map))
+          if (this.addMap(map))
             this.mirror[this.version] = invertedStep.version
         }
 
-        remap.movePastStep(result)
+        remap.movePastStep(map)
       } else {
         this.version--
         delete this.mirror[this.version]
         this.maps.pop()
-        tr.step(step)
+        tr.maybeStep(step)
         ids.push(invertedStep.id)
         --remap.version
       }

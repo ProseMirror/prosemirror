@@ -26,6 +26,11 @@ function parseNearSelection(pm) {
       if (toEnd && rTo.index[depth] + 1 < rTo.node[depth].childCount)
         end += rTo.node[depth].child(rTo.index[depth] + 1).nodeSize
       let startPos = DOMFromPos(pm.content, start), endPos = DOMFromPos(pm.content, end)
+      while (startPos.offset) {
+        let prev = startPos.node.childNodes[startPos.offset - 1]
+        if (prev.nodeType != 1 || !prev.hasAttribute("pm-offset")) --startPos.offset
+        else break
+      }
       let parsed = fromDOM(pm.schema, startPos.node, {
         topNode: rFrom.node[depth].copy(),
         from: startPos.offset,
@@ -52,13 +57,13 @@ export function readDOMChange(pm) {
   if (changeStart != null) {
     let changeEnd = findDiffEndConstrained(pm.doc.content, updated.content, changeStart)
     // Mark nodes touched by this change as 'to be redrawn'
-    markDirtyFor(pm, changeStart, changeEnd)
+    markDirtyFor(pm, changeStart, changeEnd.a)
 
     let rStart = updated.resolve(changeStart, false)
-    let rEnd = updated.resolve(changeEnd, false), nextSel
+    let rEnd = updated.resolve(changeEnd.b, false), nextSel
     // FIXME less ad-hoc return type?
-    if (!rStart.sameParent(rEnd) &&
-        (nextSel = findSelectionFrom(updated, rStart + 1, 1, true)) &&
+    if (!rStart.sameParent(rEnd) && rStart.pos < updated.content.size &&
+        (nextSel = findSelectionFrom(updated, rStart.pos + 1, 1, true)) &&
         nextSel.head == changeEnd.b)
       return {type: "enter"}
     else
@@ -67,13 +72,6 @@ export function readDOMChange(pm) {
   } else {
     return false
   }
-}
-
-function after(doc, pos) {
-  if (pos.offset < doc.path(pos.path).size)
-    return pos.move(1)
-  else
-    return pos.shorten(null, 1)
 }
 
 function findDiffEndConstrained(a, b, start) {
@@ -89,7 +87,7 @@ function markDirtyFor(pm, start, end) {
   if (same == 0)
     pm.markAllDirty()
   else
-    pm.markRangeDirty(rStart.before(same + 1), rStart.after(same + 1))
+    pm.markRangeDirty(rStart.before(same), rStart.after(same))
 }
 
 // Text-only queries for composition events

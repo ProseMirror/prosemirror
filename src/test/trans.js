@@ -99,8 +99,9 @@ function testMapping(maps, pos, newPos, label) {
 
   let ident = {}
   for (let i = 0; i < maps.length; i++) ident[-i - 1] = i
-  let remap = new Remapping(maps.map(x => x.invert()), maps, ident)
-  cmpStr(remap.map(newPos, 1).pos, newPos, label + " back")
+  let rev = maps.slice().reverse()
+  let remap = new Remapping(rev, rev.map(x => x.invert()), ident)
+  cmpStr(remap.map(pos, 1).pos, pos, label + " round trip")
 }
 
 function testStepJSON(tr) {

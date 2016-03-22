@@ -142,7 +142,8 @@ export class Node {
   nodeAt(pos) {
     for (let node = this;;) {
       let index = findIndex(node.content, pos)
-      node = node.child(index)
+      node = node.maybeChild(index)
+      if (!node) return null
       if (foundOffset == pos || node.isText) return node
       pos -= foundOffset + 1
     }

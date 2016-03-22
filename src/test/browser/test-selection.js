@@ -2,23 +2,16 @@ import {namespace} from "./def"
 import {doc, blockquote, p, em, img, strong, code, br, hr} from "../build"
 import {cmp, cmpNode, gt, cmpStr} from "../cmp"
 
-import {Pos} from "../../model"
-
 function allPositions(doc) {
-  let found = [], path = []
-  function scan(node) {
+  let found = []
+  function scan(node, start) {
     if (node.isTextblock) {
-      let p = path.slice()
-      for (let i = 0; i <= node.size; i++) found.push(new Pos(p, i))
+      for (let i = 0; i <= node.content.size; i++) found.push(start + i)
     } else {
-      node.forEach((child, offset) => {
-        path.push(offset)
-        scan(child)
-        path.pop()
-      })
+      node.forEach((child, offset) => scan(child, start + offset + 1))
     }
   }
-  scan(doc)
+  scan(doc, 0)
   return found
 }
 

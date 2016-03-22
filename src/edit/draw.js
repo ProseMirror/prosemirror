@@ -147,6 +147,7 @@ export function redraw(pm, dirty, doc, prev) {
 
       if (reuseDOM) {
         domPos.setAttribute("pm-offset", offset)
+        domPos.setAttribute("pm-size", child.nodeSize)
         domPos = domPos.nextSibling
         pChild = prev.maybeChild(++iPrev)
       }
@@ -159,5 +160,5 @@ export function redraw(pm, dirty, doc, prev) {
     }
     if (node.isTextblock) adjustTrailingHacks(dom, node)
   }
-  scan(pm.content, doc, prev)
+  scan(pm.content, doc, prev, 0)
 }

@@ -45,7 +45,7 @@ export function posFromDOM(pm, dom, domOffset, loose) {
 
   let start = posBeforeFromDOM(pm, dom) + 1, before = 0
 
-  for (let child = dom.childNodes(domOffset - 1); child; child = child.previousSibling) {
+  for (let child = dom.childNodes[domOffset - 1]; child; child = child.previousSibling) {
     if (child.nodeType == 3) {
       if (loose) before += child.nodeValue.length
     } else if (tag = child.getAttribute("pm-offset")) {
@@ -198,8 +198,8 @@ function findOffsetInText(node, coords) {
     range.setStart(node, i)
     let rect = range.getBoundingClientRect()
     if (rect.top == rect.bottom) continue
-    if (rect.left <= coords.left && rect.right >= coords.left &&
-        rect.top <= coords.top && rect.bottom >= coords.top)
+    if (rect.left - 1 <= coords.left && rect.right + 1 >= coords.left &&
+        rect.top - 1 <= coords.top && rect.bottom + 1 >= coords.top)
       return {node, offset: i + (coords.left >= (rect.left + rect.right) / 2 ? 1 : 0)}
   }
   return {node, offset: 0}

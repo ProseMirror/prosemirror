@@ -109,7 +109,6 @@ export class RangeStore {
       let range = this.ranges[i]
       range.from = mapping.map(range.from, range.options.inclusiveLeft ? -1 : 1).pos
       range.to = mapping.map(range.to, range.options.inclusiveRight ? 1 : -1).pos
-      let diff = range.from.cmp(range.to)
       if (range.options.removeWhenEmpty !== false && range.from >= range.to) {
         this.removeRange(range)
         i--

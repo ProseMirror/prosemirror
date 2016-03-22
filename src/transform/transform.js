@@ -34,17 +34,18 @@ export class Transform {
   // :: (Step) → Transform
   step(step, from, to, param) {
     if (this.failed) return this.result
-    return this.forceStep(typeof step == "string" ? new Step(step, from, to, param) : step)
+    return this.result = this.maybeStep(typeof step == "string" ? new Step(step, from, to, param) : step)
   }
 
-  forceStep(step) {
+  maybeStep(step) {
     let result = step.apply(this.doc)
     if (result.doc) {
       this.docs.push(this.result.doc)
       this.steps.push(step)
       this.maps.push(step.posMap())
+      this.result = result
     }
-    return this.result = result
+    return result
   }
 
   // :: (?(Transform) → Transform) → Transform

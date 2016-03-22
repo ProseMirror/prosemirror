@@ -107,7 +107,7 @@ export class SelectionState {
     }
     this.setAndSignal(newRange)
 
-    if (newRange instanceof NodeSelection || newRange.head.cmp(head) || newRange.anchor.cmp(anchor)) {
+    if (newRange instanceof NodeSelection || newRange.head != head || newRange.anchor != anchor) {
       this.toDOM()
     } else {
       this.clearNode()
@@ -270,8 +270,8 @@ export class NodeSelection extends Selection {
   map(doc, mapping) {
     let from = mapping.map(this.from, 1).pos
     let to = mapping.map(this.to, -1).pos
-    let node = doc.nodeAfter(from)
-    if (node && to == from + node.nodeSize && node.selectable)
+    let node = doc.nodeAt(from)
+    if (node && to == from + node.nodeSize && node.type.selectable)
       return new NodeSelection(from, to, node)
     return findSelectionNear(doc, from)
   }

@@ -115,6 +115,14 @@ test("ping_pong", pm => {
   }
 })
 
+test("eat_neighboring", pm => {
+  type(pm, "o")
+  pm.tr.split(1).apply()
+  pm.tr.insertText(3, "zzz").apply({addToHistory: false})
+  pm.execCommand("undo")
+  cmpNode(pm.doc, doc(p("zzz")))
+})
+
 test("ping_pong_unsynced", pm => {
   type(pm, "one")
   type(pm, " two")
@@ -132,7 +140,7 @@ test("ping_pong_unsynced", pm => {
     let re = i % 2
     for (let j = 0; j < 4; j++)
       cmp(pm.history[re ? "redo" : "undo"](), j < 3)
-    cmpNode(pm.doc, re ? doc(p("yyytopzzz"), p("zero one twoxxx three")) : doc(p("yyyzzz"), p("xxx")))
+    cmpNode(pm.doc, re ? doc(p("yyytopzzz"), p("zero one twoxxx three")) : doc(p("yyyzzz"), p("xxx")), String(i))
   }
 })
 

@@ -499,7 +499,7 @@ function selectNodeHorizontally(pm, dir) {
         ? rFrom.parent.nodeAfter(rFrom.parentOffset)
         : rFrom.parent.nodeBefore(rFrom.parentOffset)
     if (nextNode) {
-      if (nextNode.type.selectable && offset == from.parentOffset - (dir > 0 ? 0 : nextNode.nodeSize)) {
+      if (nextNode.type.selectable && offset == rFrom.parentOffset - (dir > 0 ? 0 : nextNode.nodeSize)) {
         pm.setNodeSelection(dir < 0 ? from - nextNode.nodeSize : from)
         return true
       }

@@ -26,19 +26,14 @@ export class ReplacedRange {
 function mapThrough(ranges, pos, bias = 1, back) {
   let diff = 0
   for (let i = 0; i < ranges.length; i++) {
-    let range = ranges[i], rangePos = range.pos - (back ? diff : 0)
-    if (rangePos > pos) break
-    let oldSize = range.size(!back), newSize = range.size(back)
-    if (pos == rangePos) {
-      if (bias > 0 && oldSize == 0)
-        return new MapResult(rangePos + newSize + diff)
-      break
+    let range = ranges[i], start = range.pos - (back ? diff : 0)
+    if (start > pos) break
+    let oldSize = range.size(!back), newSize = range.size(back), end = start + oldSize
+    if (pos <= end) {
+      let recover = {index: i, offset: pos - start}
+      let side = !oldSize ? bias : pos == start ? -1 : pos == end ? 1 : bias
+      return new MapResult(start + diff + (side < 0 ? 0 : newSize), pos != start && pos != end, recover)
     }
-    let end = rangePos + oldSize
-    if (pos < end)
-      return new MapResult(rangePos + (bias < 0 ? 0 : newSize) + diff, {index: i, offset: pos - rangePos})
-    if (pos == end && bias < 0 && oldSize == 0)
-      return new MapResult(rangePos + diff)
     diff += newSize - oldSize
   }
   return new MapResult(pos + diff)
@@ -46,12 +41,13 @@ function mapThrough(ranges, pos, bias = 1, back) {
 
 // ;; The return value of mapping a position.
 export class MapResult {
-  constructor(pos, deleted = null) {
+  constructor(pos, deleted = false, recover = null) {
     // :: number The mapped version of the position.
     this.pos = pos
-    // :: ?Object Tells you whether the position was deleted, that is,
+    // :: bool Tells you whether the position was deleted, that is,
     // whether the step removed its surroundings from the document.
     this.deleted = deleted
+    this.recover = recover
   }
 }
 
@@ -62,7 +58,10 @@ export class PosMap {
   constructor(ranges) { this.ranges = ranges }
 
   recover(offset) {
-    return this.ranges[offset.index].pos + offset.offset
+    let diff = 0
+    for (let i = 0; i < offset.index; i++)
+      diff += this.ranges[i].oldSize - this.ranges[i].newSize
+    return this.ranges[offset.index].pos + diff + offset.offset
   }
 
   // :: (number, ?number) → MapResult
@@ -87,10 +86,7 @@ class InvertedPosMap {
   constructor(ranges) { this.ranges = ranges }
 
   recover(offset) {
-    let diff = 0
-    for (let i = 0; i < offset.index; i++)
-      diff += this.ranges[i].newSize - this.ranges[i].oldSize
-    return this.ranges[offset.index].pos + diff + offset.offset
+    return this.ranges[offset.index].pos + offset.offset
   }
 
   map(pos, bias) { return mapThrough(this.ranges, pos, bias, true) }
@@ -153,20 +149,20 @@ export class Remapping {
   // Map a position through this remapping, optionally passing a bias
   // direction.
   map(pos, bias) {
-    let deleted = null
+    let deleted = false
 
     for (let i = -this.head.length; i < this.tail.length; i++) {
       let map = this.get(i)
       let result = map.map(pos, bias)
-      if (result.deleted) {
+      if (result.recover) {
         let corr = this.mirror[i]
         if (corr != null) {
           i = corr
-          pos = this.get(corr).recover(result.deleted)
+          pos = this.get(corr).recover(result.recover)
           continue
         }
-        deleted = true
       }
+      if (result.deleted) deleted = true
       pos = result.pos
     }
 

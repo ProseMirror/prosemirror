@@ -5,7 +5,6 @@ import {defTest} from "../tests"
 
 import {dispatchKey} from "../../edit/input"
 import {Keymap} from "../../edit"
-import {Pos} from "../../model"
 
 function trace(prop) { return pm => pm.mod[prop] = (pm.mod[prop] || 0) + 1 }
 
@@ -70,12 +69,12 @@ test("addKeymap_bottom", pm => {
 test("multiBindings", pm => {
   dispatch(pm, "Enter")
   cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def"))), p("foo")))
-  pm.setTextSelection(new Pos([1, 0, 0], 3))
+  pm.setTextSelection(12)
   dispatch(pm, "Enter")
   cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def")), li(p())), p("foo")))
   dispatch(pm, "Enter")
   cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def"))), p(), p("foo")))
-  pm.setTextSelection(new Pos([3], 1))
+  pm.setTextSelection(19)
   dispatch(pm, "Enter")
   cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def"))), p(), p("f"), p("oo")))
 }, {
