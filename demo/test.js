@@ -53,7 +53,7 @@ function runTests() {
     nm.textContent = name
     elt.appendChild(document.createTextNode(": " + err))
     if (!(err instanceof Failure))
-      console.log(name + ": " + (err.stack || err))
+      setTimeout(function() { throw err }, 20)
   }
 
   setTimeout(() => run(0), 50)
