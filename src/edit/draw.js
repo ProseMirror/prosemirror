@@ -18,7 +18,7 @@ function options(path, ranges) {
         if (node.isTextblock)
           adjustTrailingHacks(dom, node)
         if (dom.contentEditable == "false")
-          dom = elt("div", dom)
+          dom = elt("div", null, dom)
       }
 
       return dom
