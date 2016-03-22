@@ -86,7 +86,7 @@ class CompressionWorker {
     for (;;) {
       if (this.i == 0) return this.finish()
       let event = this.branch.events[--this.i]
-      let mappedSelection = event.selection.map(this.doc, this.remap.remap)
+      let mappedSelection = event.selection && event.selection.map(this.doc, this.remap.remap)
       let outEvent = new HistoryEvent([], mappedSelection)
       for (let j = event.steps.length - 1; j >= 0; j--) {
         let {step, version: stepVersion, id: stepID} = event.steps[j]
@@ -264,7 +264,7 @@ class Branch {
         --remap.version
       }
     }
-    let selection = event.selection.map(tr.doc, remap.remap)
+    let selection = event.selection && event.selection.map(tr.doc, remap.remap)
 
     if (this.empty()) this.clear(true)
     return {transform: tr, ids, selection}
@@ -480,7 +480,7 @@ export class History {
     let combinedSteps = this.done.events.slice(found.event + 1)
         .reduce((comb, arr) => comb.concat(arr.steps), event.steps.slice(found.step))
     this.done.events.length = found.event + ((event.steps.length = found.step) ? 1 : 0)
-    this.done.events.push(new HistoryEvent(combinedSteps, event.selection))
+    this.done.events.push(new HistoryEvent(combinedSteps, null))
 
     this.shift(this.done)
     return true
