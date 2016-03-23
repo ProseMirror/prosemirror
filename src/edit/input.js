@@ -346,13 +346,10 @@ handlers.input = (pm, e) => {
 
   pm.startOperation({readSelection: false})
   let change = readDOMChange(pm)
-  if (change) {
-    if (change.type == "enter")
-      dispatchKey(pm, "Enter", e)
-    else
-      change.run()
-  }
-  pm.scrollIntoView()
+  if (change && change.key)
+    dispatchKey(pm, change.key, e)
+  else if (change && change.transform)
+    pm.apply(change.transform, pm.apply.scroll)
 }
 
 function toClipboard(doc, from, to, dataTransfer) {

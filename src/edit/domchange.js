@@ -61,14 +61,12 @@ export function readDOMChange(pm) {
 
     let $start = updated.resolveNoCache(changeStart)
     let $end = updated.resolveNoCache(changeEnd.b), nextSel
-    // FIXME less ad-hoc return type?
     if (!$start.sameParent($end) && $start.pos < updated.content.size &&
         (nextSel = findSelectionFrom(updated, $start.pos + 1, 1, true)) &&
         nextSel.head == changeEnd.b)
-      return {type: "enter"}
+      return {key: "Enter"}
     else
-      return {type: "replace",
-              run: () => pm.tr.replace(changeStart, changeEnd.a, updated.slice(changeStart, changeEnd.b)).apply()}
+      return {transform: pm.tr.replace(changeStart, changeEnd.a, updated.slice(changeStart, changeEnd.b))}
   } else {
     return false
   }

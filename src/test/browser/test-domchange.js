@@ -8,7 +8,7 @@ import {findTextNode} from "./test-selection"
 const test = namespace("domchange", {doc: doc(p("hello"))})
 
 function apply(pm) {
-  readDOMChange(pm).run()
+  pm.apply(readDOMChange(pm).transform)
 }
 
 test("add_text", pm => {
@@ -68,5 +68,5 @@ test("detect_enter", pm => {
   findTextNode(pm.content, "hello").nodeValue = "hel"
   pm.content.appendChild(document.createElement("p")).innerHTML = "lo"
   let change = readDOMChange(pm)
-  cmp(change && change.type, "enter")
+  cmp(change && change.key, "Enter")
 })
