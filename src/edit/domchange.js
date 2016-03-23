@@ -4,27 +4,27 @@ import {fromDOM} from "../format"
 import {findSelectionFrom} from "./selection"
 import {DOMFromPos} from "./dompos"
 
-function isAtEnd(rPos, depth) {
-  for (let i = depth || 0; i < rPos.depth; i++)
-    if (rPos.index(i) + 1 < rPos.node(i).childCount) return false
-  return rPos.parentOffset == rPos.parent.content.size
+function isAtEnd($pos, depth) {
+  for (let i = depth || 0; i < $pos.depth; i++)
+    if ($pos.index(i) + 1 < $pos.node(i).childCount) return false
+  return $pos.parentOffset == $pos.parent.content.size
 }
-function isAtStart(rPos, depth) {
-  for (let i = depth || 0; i < rPos.depth; i++)
-    if (rPos.index(0) > 0) return false
-  return rPos.parentOffset == 0
+function isAtStart($pos, depth) {
+  for (let i = depth || 0; i < $pos.depth; i++)
+    if ($pos.index(0) > 0) return false
+  return $pos.parentOffset == 0
 }
 
 function parseNearSelection(pm) {
-  let {from, to} = pm.selection, rFrom = pm.doc.resolve(from), rTo = pm.doc.resolve(to)
+  let {from, to} = pm.selection, $from = pm.doc.resolve(from), $to = pm.doc.resolve(to)
   for (let depth = 0;; depth++) {
-    let fromStart = isAtStart(rFrom, depth + 1), toEnd = isAtEnd(rTo, depth + 1)
-    if (fromStart || toEnd || rFrom.index(depth) != rTo.index(depth) || rTo.node(depth).isTextblock) {
-      let start = rFrom.before(depth + 1), end = rTo.after(depth + 1)
-      if (fromStart && rFrom.index(depth) > 0)
-        start -= rFrom.node(depth).child(rFrom.index(depth) - 1).nodeSize
-      if (toEnd && rTo.index(depth) + 1 < rTo.node(depth).childCount)
-        end += rTo.node(depth).child(rTo.index(depth) + 1).nodeSize
+    let fromStart = isAtStart($from, depth + 1), toEnd = isAtEnd($to, depth + 1)
+    if (fromStart || toEnd || $from.index(depth) != $to.index(depth) || $to.node(depth).isTextblock) {
+      let start = $from.before(depth + 1), end = $to.after(depth + 1)
+      if (fromStart && $from.index(depth) > 0)
+        start -= $from.node(depth).child($from.index(depth) - 1).nodeSize
+      if (toEnd && $to.index(depth) + 1 < $to.node(depth).childCount)
+        end += $to.node(depth).child($to.index(depth) + 1).nodeSize
       let startPos = DOMFromPos(pm.content, start), endPos = DOMFromPos(pm.content, end)
       while (startPos.offset) {
         let prev = startPos.node.childNodes[startPos.offset - 1]
@@ -32,19 +32,19 @@ function parseNearSelection(pm) {
         else break
       }
       let parsed = fromDOM(pm.schema, startPos.node, {
-        topNode: rFrom.node(depth).copy(),
+        topNode: $from.node(depth).copy(),
         from: startPos.offset,
         to: endPos.offset,
         preserveWhitespace: true
       })
 
-      let parentStart = rFrom.start(depth)
-      parsed = parsed.copy(rFrom.parent.content.cut(0, start - parentStart)
+      let parentStart = $from.start(depth)
+      parsed = parsed.copy($from.parent.content.cut(0, start - parentStart)
                            .append(parsed.content)
-                           .append(rFrom.parent.content.cut(end - parentStart)))
+                           .append($from.parent.content.cut(end - parentStart)))
       for (let i = depth - 1; i >= 0; i--) {
-        let wrap = rFrom.node(i)
-        parsed = wrap.copy(wrap.content.replaceChild(rFrom.index(i), parsed))
+        let wrap = $from.node(i)
+        parsed = wrap.copy(wrap.content.replaceChild($from.index(i), parsed))
       }
       return parsed
     }
@@ -59,11 +59,11 @@ export function readDOMChange(pm) {
     // Mark nodes touched by this change as 'to be redrawn'
     markDirtyFor(pm, changeStart, changeEnd.a)
 
-    let rStart = updated.resolveNoCache(changeStart)
-    let rEnd = updated.resolveNoCache(changeEnd.b), nextSel
+    let $start = updated.resolveNoCache(changeStart)
+    let $end = updated.resolveNoCache(changeEnd.b), nextSel
     // FIXME less ad-hoc return type?
-    if (!rStart.sameParent(rEnd) && rStart.pos < updated.content.size &&
-        (nextSel = findSelectionFrom(updated, rStart.pos + 1, 1, true)) &&
+    if (!$start.sameParent($end) && $start.pos < updated.content.size &&
+        (nextSel = findSelectionFrom(updated, $start.pos + 1, 1, true)) &&
         nextSel.head == changeEnd.b)
       return {type: "enter"}
     else
@@ -83,11 +83,11 @@ function findDiffEndConstrained(a, b, start) {
 }
 
 function markDirtyFor(pm, start, end) {
-  let rStart = pm.doc.resolve(start), rEnd = pm.doc.resolve(end), same = rStart.sameDepth(rEnd)
+  let $start = pm.doc.resolve(start), $end = pm.doc.resolve(end), same = $start.sameDepth($end)
   if (same == 0)
     pm.markAllDirty()
   else
-    pm.markRangeDirty(rStart.before(same), rStart.after(same))
+    pm.markRangeDirty($start.before(same), $start.after(same))
 }
 
 // Text-only queries for composition events

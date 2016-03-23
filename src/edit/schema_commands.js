@@ -257,12 +257,12 @@ HardBreak.register("command", "insert", {
 ListItem.register("command", "split", {
   label: "Split the current list item",
   run(pm) {
-    let {from, to, node} = pm.selection, rFrom = pm.doc.resolve(from)
+    let {from, to, node} = pm.selection, $from = pm.doc.resolve(from)
     if ((node && node.isBlock) ||
-        rFrom.depth < 2 || !rFrom.sameParent(pm.doc.resolve(to))) return false
-    let grandParent = rFrom.node(rFrom.depth - 1)
+        $from.depth < 2 || !$from.sameParent(pm.doc.resolve(to))) return false
+    let grandParent = $from.node($from.depth - 1)
     if (grandParent.type != this) return false
-    let nextType = to == rFrom.end(rFrom.depth) ? pm.schema.defaultTextblockType() : null
+    let nextType = to == $from.end($from.depth) ? pm.schema.defaultTextblockType() : null
     return pm.tr.delete(from, to).split(from, 2, nextType).apply(pm.apply.scroll)
   },
   keys: ["Enter(50)"]

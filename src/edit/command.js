@@ -380,31 +380,31 @@ MarkType.derivableCommands.toggle = () => ({
 })
 
 function isAtTopOfListItem(doc, from, to, listType) {
-  let rFrom = doc.resolve(from), rTo = doc.resolve(to)
-  return rFrom.sameParent(rTo) &&
-    rFrom.depth >= 2 &&
-    rFrom.index(rFrom.depth - 1) == 0 &&
-    listType.canContain(rFrom.node(rFrom.depth - 1))
+  let $from = doc.resolve(from)
+  return $from.sameParent(doc.resolve(to)) &&
+    $from.depth >= 2 &&
+    $from.index($from.depth - 1) == 0 &&
+    listType.canContain($from.node($from.depth - 1))
 }
 
 NodeType.derivableCommands.wrap = function(conf) {
   return {
     run(pm, ...params) {
       let {from, to, head} = pm.selection, doJoin = false
-      let rFrom = pm.doc.resolve(from)
+      let $from = pm.doc.resolve(from)
       if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this)) {
         // Don't do anything if this is the top of the list
-        if (rFrom.index(rFrom.depth - 2) == 0) return false
+        if ($from.index($from.depth - 2) == 0) return false
         doJoin = true
       }
       let tr = pm.tr.wrap(from, to, this, fillAttrs(conf, params))
-      if (doJoin) tr.join(rFrom.before(rFrom.depth - 1))
+      if (doJoin) tr.join($from.before($from.depth - 1))
       return tr.apply(pm.apply.scroll)
     },
     select(pm) {
-      let {from, to, head} = pm.selection, rFrom
+      let {from, to, head} = pm.selection, $from
       if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this) &&
-          (rFrom = pm.doc.resolve(from)).index(rFrom.depth - 2) == 0)
+          ($from = pm.doc.resolve(from)).index($from.depth - 2) == 0)
         return false
       return canWrap(pm.doc, from, to, this, conf.attrs)
     },
@@ -427,9 +427,9 @@ function alreadyHasBlockType(doc, from, to, type, attrs) {
 function activeTextblockIs(pm, type, attrs) {
   let {from, to, node} = pm.selection
   if (!node || node.isInline) {
-    let rFrom = pm.doc.resolve(from)
-    if (!rFrom.sameParent(pm.doc.resolve(to))) return false
-    node = rFrom.parent
+    let $from = pm.doc.resolve(from)
+    if (!$from.sameParent(pm.doc.resolve(to))) return false
+    node = $from.parent
   } else if (!node.isTextblock) {
     return false
   }

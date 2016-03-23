@@ -83,15 +83,15 @@ class InputRules {
     let pos = this.pm.selection.head
     if (!pos) return
 
-    let textBefore, isCode, rPos
+    let textBefore, isCode, $pos
     let lastCh = text[text.length - 1]
 
     for (let i = 0; i < this.rules.length; i++) {
       let rule = this.rules[i], match
       if (rule.filter && rule.filter != lastCh) continue
-      if (!rPos) {
-        rPos = this.pm.doc.resolve(pos)
-        ;({textBefore, isCode} = getContext(rPos))
+      if (!$pos) {
+        $pos = this.pm.doc.resolve(pos)
+        ;({textBefore, isCode} = getContext($pos))
         if (isCode) return
       }
       if (match = rule.match.exec(textBefore)) {
@@ -121,10 +121,10 @@ class InputRules {
   }
 }
 
-function getContext(rPos) {
-  let parent = rPos.parent, isCode = parent.type.isCode
+function getContext($pos) {
+  let parent = $pos.parent, isCode = parent.type.isCode
   let textBefore = ""
-  for (let i = 0, rem = rPos.parentOffset; rem > 0; i++) {
+  for (let i = 0, rem = $pos.parentOffset; rem > 0; i++) {
     let child = parent.child(i)
     if (child.isText) textBefore += child.text.slice(0, rem)
     else textBefore += "\ufffc"

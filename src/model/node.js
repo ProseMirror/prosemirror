@@ -136,11 +136,10 @@ export class Node {
   slice(from, to = this.content.size) {
     if (from == to) return Slice.empty
 
-    from = this.resolve(from)
-    to = this.resolve(to)
-    let depth = from.sameDepth(to), start = from.start(depth)
-    let content = from.node(depth).content.cut(from.pos - start, to.pos - start)
-    return new Slice(content, from.depth - depth, to.depth - depth)
+    let $from = this.resolve(from), $to = this.resolve(to)
+    let depth = $from.sameDepth($to), start = $from.start(depth)
+    let content = $from.node(depth).content.cut($from.pos - start, $to.pos - start)
+    return new Slice(content, $from.depth - depth, $to.depth - depth)
   }
 
   // :: (number, number, Slice) → Node
@@ -154,7 +153,7 @@ export class Node {
     return replace(this.resolve(from), this.resolve(to), slice)
   }
 
-  // :: (number) → Node
+  // :: (number) → ?Node
   // Find the node after the given position.
   nodeAt(pos) {
     for (let node = this;;) {

@@ -493,14 +493,14 @@ export class ProseMirror {
   markRangeDirty(from, to) {
     this.ensureOperation()
     let dirty = this.dirtyNodes
-    let rFrom = this.doc.resolve(from), rTo = this.doc.resolve(to)
-    let same = rFrom.sameDepth(rTo)
+    let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
+    let same = $from.sameDepth($to)
     for (let depth = 0; depth <= same; depth++) {
-      let child = rFrom.node(depth)
+      let child = $from.node(depth)
       if (!dirty.has(child)) dirty.set(child, DIRTY_RESCAN)
     }
-    let start = rFrom.index(same), end = Math.max(start + 1, rTo.index(same) + (same == rTo.depth ? 0 : 1))
-    let parent = rFrom.node(same)
+    let start = $from.index(same), end = Math.max(start + 1, $to.index(same) + (same == $to.depth ? 0 : 1))
+    let parent = $from.node(same)
     for (let i = start; i < end; i++)
       dirty.set(parent.child(i), DIRTY_REDRAW)
   }

@@ -169,10 +169,10 @@ function selectClickedNode(pm, e) {
 
   let {node, from} = pm.selection
   if (node) {
-    let rPos = pm.doc.resolve(pos), rFrom = pm.doc.resolve(from)
-    if (rPos.depth >= rFrom.depth && rPos.before(rFrom.depth) == from) {
-      if (rFrom.depth == 0) return pm.sel.fastPoll()
-      pos = rPos.before(rPos.depth)
+    let $pos = pm.doc.resolve(pos), $from = pm.doc.resolve(from)
+    if ($pos.depth >= $from.depth && $pos.before($from.depth) == from) {
+      if ($from.depth == 0) return pm.sel.fastPoll()
+      pos = $pos.before($pos.depth)
     }
   }
 
@@ -187,11 +187,11 @@ function handleTripleClick(pm, e) {
   e.preventDefault()
   let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY}, true)
   if (pos != null) {
-    let rPos = pm.doc.resolve(pos), node = rPos.nodeAfter
+    let $pos = pm.doc.resolve(pos), node = $pos.nodeAfter
     if (node.isBlock && !node.isTextblock) // Non-textblock block, select it
       pm.setNodeSelection(pos)
     else if (node.isInline) // Inline node, select whole parent
-      pm.setTextSelection(rPos.start(rPos.depth), rPos.end(rPos.depth))
+      pm.setTextSelection($pos.start($pos.depth), $pos.end($pos.depth))
     else // Textblock, select content
       pm.setTextSelection(pos + 1, pos + 1 + node.content.size)
     pm.focus()
@@ -283,11 +283,11 @@ class Composing {
     this.endData = null
     let range = pm.selection
     if (data) {
-      let rHead = pm.doc.resolve(range.head)
-      let found = rHead.parent.textContent.indexOf(data, rHead.parentOffset - data.length)
-      if (found > -1 && found <= rHead.parentOffset + data.length) {
-        let start = rHead.pos - rHead.parentOffset
-        range = new TextSelection(start, rHead.parent.content.size)
+      let $head = pm.doc.resolve(range.head)
+      let found = $head.parent.textContent.indexOf(data, $head.parentOffset - data.length)
+      if (found > -1 && found <= $head.parentOffset + data.length) {
+        let start = $head.pos - $head.parentOffset
+        range = new TextSelection(start, $head.parent.content.size)
       }
     }
     this.range = range
@@ -299,8 +299,8 @@ handlers.compositionstart = (pm, e) => {
 
   pm.flush()
   pm.input.composing = new Composing(pm, e.data)
-  let rHead = pm.doc.resolve(pm.selection.head)
-  pm.markRangeDirty(rHead.before(rHead.depth), rHead.after(rHead.depth))
+  let $head = pm.doc.resolve(pm.selection.head)
+  pm.markRangeDirty($head.before($head.depth), $head.after($head.depth))
 }
 
 handlers.compositionupdate = (pm, e) => {
@@ -356,8 +356,8 @@ handlers.input = (pm, e) => {
 }
 
 function toClipboard(doc, from, to, dataTransfer) {
-  let slice = doc.slice(from, to), rFrom = doc.resolve(from)
-  let parent = rFrom.node(rFrom.depth - slice.openLeft)
+  let slice = doc.slice(from, to), $from = doc.resolve(from)
+  let parent = $from.node($from.depth - slice.openLeft)
   let attr = `${parent.type.name} ${slice.openLeft} ${slice.openRight}`
   let html = `<div pm-context="${attr}">${toHTML(slice.content)}</div>`
   dataTransfer.clearData()

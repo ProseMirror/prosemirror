@@ -27,11 +27,11 @@ function mapFragment(fragment, f, parent) {
 
 Step.define("addMark", {
   apply(doc, step) {
-    let slice = doc.slice(step.from, step.to), pos = doc.resolve(step.from)
+    let slice = doc.slice(step.from, step.to), $pos = doc.resolve(step.from)
     slice.content = mapFragment(slice.content, (node, parent) => {
       if (!parent.type.canContainMark(step.param.type)) return node
       return node.mark(step.param.addToSet(node.marks))
-    }, pos.node(pos.depth - slice.openLeft))
+    }, $pos.node($pos.depth - slice.openLeft))
     return StepResult.fromReplace(doc, step.from, step.to, slice)
   },
   invert(step) {

@@ -89,10 +89,10 @@ class TooltipMenu {
       }
     } else if (!empty) {
       return () => {
-        let coords = node ? topOfNodeSelection(this.pm) : topCenterOfSelection(), rFrom
+        let coords = node ? topOfNodeSelection(this.pm) : topCenterOfSelection(), $from
         let showBlock = this.selectedBlockMenu &&
-            (rFrom = this.pm.doc.resolve(from)).parentOffset == 0 &&
-            rFrom.end(rFrom.depth) == to
+            ($from = this.pm.doc.resolve(from)).parentOffset == 0 &&
+            $from.end($from.depth) == to
         return () => this.show(showBlock ? this.selectedBlockContent : this.inlineContent, coords)
       }
     } else if (this.selectedBlockMenu && this.pm.doc.resolve(from).parent.content.size == 0) {

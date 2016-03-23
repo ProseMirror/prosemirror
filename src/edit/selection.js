@@ -315,15 +315,15 @@ function findSelectionIn(node, pos, index, dir, text) {
 // walks up the document tree one level and one step in the
 // desired direction.
 export function findSelectionFrom(doc, pos, dir, text) {
-  let rPos = doc.resolve(pos)
-  let inner = rPos.parent.isTextblock ? new TextSelection(pos)
-      : findSelectionIn(rPos.parent, pos, rPos.index(rPos.depth), dir, text)
+  let $pos = doc.resolve(pos)
+  let inner = $pos.parent.isTextblock ? new TextSelection(pos)
+      : findSelectionIn($pos.parent, pos, $pos.index($pos.depth), dir, text)
   if (inner) return inner
 
-  for (let depth = rPos.depth - 1; depth >= 0; depth--) {
+  for (let depth = $pos.depth - 1; depth >= 0; depth--) {
     let found = dir < 0
-        ? findSelectionIn(rPos.node(depth), rPos.before(depth + 1), rPos.index(depth), dir, text)
-        : findSelectionIn(rPos.node(depth), rPos.after(depth + 1), rPos.index(depth) + 1, dir, text)
+        ? findSelectionIn($pos.node(depth), $pos.before(depth + 1), $pos.index(depth), dir, text)
+        : findSelectionIn($pos.node(depth), $pos.after(depth + 1), $pos.index(depth) + 1, dir, text)
     if (found) return found
   }
 }
@@ -349,8 +349,8 @@ export function findSelectionAtEnd(node, pos = node.content.size, text) {
 // Whether vertical position motion in a given direction
 // from a position would leave a text block.
 export function verticalMotionLeavesTextblock(pm, pos, dir) {
-  let rPos = pm.doc.resolve(pos)
-  let dom = DOMAfterPos(pm.content, rPos.before(rPos.depth))
+  let $pos = pm.doc.resolve(pos)
+  let dom = DOMAfterPos(pm.content, $pos.before($pos.depth))
   let coords = coordsAtPos(pm, pos)
   for (let child = dom.firstChild; child; child = child.nextSibling) {
     if (child.nodeType != 1) continue

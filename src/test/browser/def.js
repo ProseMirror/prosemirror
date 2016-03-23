@@ -15,8 +15,7 @@ export function tempEditors(options) {
     let pm = new ProseMirror(options)
     let a = options.doc && options.doc.tag && options.doc.tag.a
     if (a != null) {
-      let rA = options.doc.resolve(a)
-      if (rA.parent.isTextblock) pm.setTextSelection(a, options.doc.tag.b)
+      if (options.doc.resolve(a).parent.isTextblock) pm.setTextSelection(a, options.doc.tag.b)
       else pm.setNodeSelection(a)
     }
     return pm

@@ -38,8 +38,8 @@ Transform.define("delete", function(from, to) {
 // Replace the part of the document between `from` and `to` with the
 // part of the `source` between `start` and `end`.
 Transform.define("replace", function(from, to = from, slice = Slice.empty) {
-  let rFrom = this.doc.resolve(from), rTo = this.doc.resolve(to)
-  let {fitted, distAfter} = fitSliceInto(rFrom, rTo, slice), fSize = fitted.size
+  let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
+  let {fitted, distAfter} = fitSliceInto($from, $to, slice), fSize = fitted.size
   if (from == to && !fSize) return
   this.step("replace", from, to, fitted)
 
@@ -48,11 +48,11 @@ Transform.define("replace", function(from, to = from, slice = Slice.empty) {
   // slice to fit onto the inserted content. But only if there is text
   // before and after the cut, and if those endpoints aren't already
   // next to each other.
-  if (!fSize || !rTo.node(rTo.depth).isTextblock) return
+  if (!fSize || !$to.node($to.depth).isTextblock) return
   let after = from + fSize
-  let inner = !slice.size ? from : distAfter < 0 ? -1 : after - distAfter, rInner
-  if (inner == -1 || inner == after || !(rInner = this.doc.resolve(inner)).node(rInner.depth).isTextblock) return
-  mergeTextblockAfter(this, rInner, this.doc.resolve(after))
+  let inner = !slice.size ? from : distAfter < 0 ? -1 : after - distAfter, $inner
+  if (inner == -1 || inner == after || !($inner = this.doc.resolve(inner)).node($inner.depth).isTextblock) return
+  mergeTextblockAfter(this, $inner, this.doc.resolve(after))
 })
 
 // :: (number, number, union<Fragment, Node, [Node]>) → Transform
@@ -93,31 +93,31 @@ let distAfter = 0
 // : (ResolvedPos, ResolvedPos, Slice) → {fitted: Slice, distAfter: number}
 // Mangle the content of a slice so that it fits between the given
 // positions.
-function fitSliceInto(from, to, slice) {
-  let base = from.sameDepth(to)
-  let placed = placeSlice(from, slice), outer = outerPlaced(placed)
+function fitSliceInto($from, $to, slice) {
+  let base = $from.sameDepth($to)
+  let placed = placeSlice($from, slice), outer = outerPlaced(placed)
   if (outer) base = Math.min(outer.depth, base)
 
   // distAfter starts negative, and is set to a positive value when
   // the end of the inserted content is placed.
   distAfter = -1e10 // FIXME kludge
-  let fragment = closeFragment(from.node(base).type, fillBetween(from, to, base, placed), from, to, base)
-  return {fitted: new Slice(fragment, from.depth - base, to.depth - base),
-          distAfter: distAfter - (to.depth - base)}
+  let fragment = closeFragment($from.node(base).type, fillBetween($from, $to, base, placed), $from, $to, base)
+  return {fitted: new Slice(fragment, $from.depth - base, $to.depth - base),
+          distAfter: distAfter - ($to.depth - base)}
 }
 
 function outerPlaced(placed) {
   for (let i = 0; i < placed.length; i++) if (placed[i]) return placed[i]
 }
 
-function fillBetween(from, to, depth, placed) {
-  let fromNext = from.depth > depth && from.node(depth + 1)
-  let toNext = to.depth > depth && to.node(depth + 1)
+function fillBetween($from, $to, depth, placed) {
+  let fromNext = $from.depth > depth && $from.node(depth + 1)
+  let toNext = $to.depth > depth && $to.node(depth + 1)
   let placedHere = placed[depth]
 
   if (fromNext && toNext && fromNext.type.canContainContent(toNext.type) && !placedHere)
-    return Fragment.from(closeNode(fromNext, fillBetween(from, to, depth + 1, placed),
-                                   from, to, depth + 1))
+    return Fragment.from(closeNode(fromNext, fillBetween($from, $to, depth + 1, placed),
+                                   $from, $to, depth + 1))
 
   let content = Fragment.empty
   if (placedHere) {
@@ -127,10 +127,10 @@ function fillBetween(from, to, depth, placed) {
 
   distAfter--
   if (fromNext)
-    content = content.addToStart(closeNode(fromNext, fillFrom(from, depth + 1, placed),
-                                           from, null, depth + 1))
+    content = content.addToStart(closeNode(fromNext, fillFrom($from, depth + 1, placed),
+                                           $from, null, depth + 1))
   if (toNext)
-    content = closeTo(content, to, depth + 1, placedHere ? placedHere.openRight : 0)
+    content = closeTo(content, $to, depth + 1, placedHere ? placedHere.openRight : 0)
   else if (placedHere)
     content = closeRight(content, placedHere.openRight)
   distAfter++
@@ -138,7 +138,7 @@ function fillBetween(from, to, depth, placed) {
   return content
 }
 
-function fillFrom(from, depth, placed) {
+function fillFrom($from, depth, placed) {
   let placedHere = placed[depth], content = Fragment.empty
   if (placedHere) {
     content = closeRight(placedHere.content, placedHere.openRight)
@@ -146,23 +146,23 @@ function fillFrom(from, depth, placed) {
   }
 
   distAfter--
-  if (from.depth > depth)
-    content = content.addToStart(closeNode(from.node(depth + 1), fillFrom(from, depth + 1, placed),
-                                           from, null, depth + 1))
+  if ($from.depth > depth)
+    content = content.addToStart(closeNode($from.node(depth + 1), fillFrom($from, depth + 1, placed),
+                                           $from, null, depth + 1))
   distAfter++
 
   return content
 }
 
-function closeTo(content, to, depth, openDepth) {
-  let after = to.node(depth)
+function closeTo(content, $to, depth, openDepth) {
+  let after = $to.node(depth)
   if (openDepth == 0 || !after.type.canContainContent(content.lastChild.type)) {
-    let finish = closeNode(after, fillTo(to, depth), null, to, depth)
+    let finish = closeNode(after, fillTo($to, depth), null, $to, depth)
     distAfter += finish.nodeSize
     return closeRight(content, openDepth).addToEnd(finish)
   }
   let inner = content.lastChild.content
-  if (depth < to.depth) inner = closeTo(inner, to, depth + 1, openDepth - 1)
+  if (depth < $to.depth) inner = closeTo(inner, $to, depth + 1, openDepth - 1)
   return content.replaceChild(content.childCount - 1, after.copy(inner))
 }
 
@@ -187,16 +187,16 @@ function closeLeft(content, openDepth) {
   return closed == first ? content : content.replaceChild(0, closed)
 }
 
-function closeFragment(type, content, to, from, depth) {
+function closeFragment(type, content, $to, $from, depth) {
   // FIXME replace this with a more general approach
   if (type.canBeEmpty) return content
-  let hasContent = content.size || (to && (to.depth > depth || to.index(depth))) ||
-      (from && (from.depth > depth || from.index(depth) < from.node(depth).childCount))
+  let hasContent = content.size || ($to && ($to.depth > depth || $to.index(depth))) ||
+      ($from && ($from.depth > depth || $from.index(depth) < $from.node(depth).childCount))
   return hasContent ? content : type.defaultContent()
 }
 
-function closeNode(node, content, to, from, depth) {
-  return node.copy(closeFragment(node.type, content, to, from, depth))
+function closeNode(node, content, $to, $from, depth) {
+  return node.copy(closeFragment(node.type, content, $to, $from, depth))
 }
 
 // Algorithm for 'placing' the elements of a slice into a gap:
@@ -234,8 +234,8 @@ function nodeLeft(slice, depth) {
   return content.firstChild
 }
 
-function placeSlice(from, slice) {
-  let dFrom = from.depth, unplaced = null, openLeftUnplaced = 0
+function placeSlice($from, slice) {
+  let dFrom = $from.depth, unplaced = null, openLeftUnplaced = 0
   let placed = [], parents = null
 
   for (let dSlice = slice.openLeft;; --dSlice) {
@@ -256,7 +256,7 @@ function placeSlice(from, slice) {
 
     if (curFragment.size == 0 && dSlice <= 0) break
 
-    let found = findPlacement(curType, curFragment, from, dFrom)
+    let found = findPlacement(curType, curFragment, $from, dFrom)
     if (found > -1) {
       if (curFragment.size > 0)
         placed[found] = {content: curFragment,
@@ -270,9 +270,9 @@ function placeSlice(from, slice) {
       dFrom = Math.max(0, found - 1)
     } else {
       if (dSlice == 0) {
-        parents = from.node(0).type.findConnectionToKind(fragmentSuperKind(curFragment))
+        parents = $from.node(0).type.findConnectionToKind(fragmentSuperKind(curFragment))
         if (!parents) break
-        parents.unshift(from.node(0).type)
+        parents.unshift($from.node(0).type)
         curType = parents[parents.length - 1]
       }
       unplaced = curType.create(curAttrs, curFragment)
@@ -283,9 +283,9 @@ function placeSlice(from, slice) {
   return placed
 }
 
-function findPlacement(type, fragment, from, start) {
+function findPlacement(type, fragment, $from, start) {
   for (let d = start; d >= 0; d--) {
-    let fromType = from.node(d).type
+    let fromType = $from.node(d).type
     if (type ? fromType.canContainContent(type) : fromType.canContainFragment(fragment))
       return d
   }
@@ -299,22 +299,22 @@ function findPlacement(type, fragment, from, start) {
 // as part of the replace step itself, but instead tacked on as a set
 // of split/ancestor/join steps.
 
-function mergeTextblockAfter(tr, inside, after) {
-  let base = inside.sameDepth(after)
+function mergeTextblockAfter(tr, $inside, $after) {
+  let base = $inside.sameDepth($after)
   tr.try(() => {
-    let end = after.end(after.depth), cutAt = end + 1, cutDepth = after.depth - 1
-    while (cutDepth > base && after.index(cutDepth) + 1 == after.node(cutDepth).childCount) {
+    let end = $after.end($after.depth), cutAt = end + 1, cutDepth = $after.depth - 1
+    while (cutDepth > base && $after.index(cutDepth) + 1 == $after.node(cutDepth).childCount) {
       --cutDepth
       ++cutAt
     }
     if (cutDepth > base) tr.split(cutAt, cutDepth - base)
     let types = [], attrs = []
-    for (let i = base + 1; i <= inside.depth; i++) {
-      let node = inside.node(i)
+    for (let i = base + 1; i <= $inside.depth; i++) {
+      let node = $inside.node(i)
       types.push(node.type)
       attrs.push(node.attrs)
     }
-    tr.step("ancestor", after.pos, end, {depth: after.depth - base, types, attrs})
-    tr.join(after.pos - (after.depth - base), inside.depth - base)
+    tr.step("ancestor", $after.pos, end, {depth: $after.depth - base, types, attrs})
+    tr.join($after.pos - ($after.depth - base), $inside.depth - base)
   })
 }

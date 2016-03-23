@@ -20,29 +20,29 @@ import {PosMap, ReplacedRange} from "./map"
 //      should be an array of `NodeType`s, and the second, optionally,
 //      an array of attribute objects.
 
-function isFlatRange(from, to) {
-  if (from.depth != to.depth) return false
-  for (let i = 0; i < from.depth; i++)
-    if (from.index(i) != to.index(i)) return false
-  return from.parentOffset <= to.parentOffset
+function isFlatRange($from, $to) {
+  if ($from.depth != $to.depth) return false
+  for (let i = 0; i < $from.depth; i++)
+    if ($from.index(i) != $to.index(i)) return false
+  return $from.parentOffset <= $to.parentOffset
 }
 
 Step.define("ancestor", {
   apply(doc, step) {
-    let from = doc.resolve(step.from), to = doc.resolve(step.to)
-    if (!isFlatRange(from, to)) return StepResult.fail("Not a flat range")
+    let $from = doc.resolve(step.from), $to = doc.resolve(step.to)
+    if (!isFlatRange($from, $to)) return StepResult.fail("Not a flat range")
 
     let {depth = 0, types = [], attrs = []} = step.param
     if (depth == 0 && types.length == 0) return StepResult.ok(doc)
 
-    for (let i = 0, d = from.depth; i < depth; i++, d--)
-      if (from.start(d) != from.pos - i || to.end(d) != to.pos + i)
+    for (let i = 0, d = $from.depth; i < depth; i++, d--)
+      if ($from.start(d) != $from.pos - i || $to.end(d) != $to.pos + i)
         return StepResult.fail("Parent at depth " + d + " not fully covered")
 
-    let inner = from.parent, slice
+    let inner = $from.parent, slice
     if (types.length) {
       let lastWrapper = types[types.length - 1]
-      let content = inner.content.cut(from.parentOffset, to.parentOffset)
+      let content = inner.content.cut($from.parentOffset, $to.parentOffset)
       if (!lastWrapper.checkContent(content, attrs[types.length - 1]))
         return StepResult.fail("Content can not be wrapped in ancestor " + lastWrapper.name)
       for (let i = types.length - 1; i >= 0; i--)
@@ -51,7 +51,7 @@ Step.define("ancestor", {
     } else {
       slice = new Slice(inner.content, 0, 0)
     }
-    return StepResult.fromReplace(doc, from.pos - depth, to.pos + depth, slice)
+    return StepResult.fromReplace(doc, $from.pos - depth, $to.pos + depth, slice)
   },
   posMap(step) {
     let depth = step.param.depth || 0, newDepth = step.param.types ? step.param.types.length : 0
@@ -61,10 +61,10 @@ Step.define("ancestor", {
   },
   invert(step, oldDoc) {
     let types = [], attrs = []
-    let from = oldDoc.resolve(step.from)
+    let $from = oldDoc.resolve(step.from)
     let oldDepth = step.param.depth || 0, newDepth = step.param.types ? step.param.types.length : 0
     for (let i = 0; i < oldDepth; i++) {
-      let parent = from.node(from.depth - i)
+      let parent = $from.node($from.depth - i)
       types.unshift(parent.type)
       attrs.unshift(parent.attrs)
     }
@@ -119,29 +119,29 @@ function findLiftable(from, to) {
 // range](#Node.siblingRange) of the given positions out of its
 // parent (or do nothing if no such node exists).
 Transform.define("lift", function(from, to = from) {
-  let rFrom = this.doc.resolve(from), rTo = this.doc.resolve(to)
-  let liftable = findLiftable(rFrom, rTo)
+  let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
+  let liftable = findLiftable($from, $to)
   if (!liftable) return this.fail("No valid lift target")
 
   let {depth, shared, unwrap} = liftable
-  let start = rFrom.before(shared + 1), end = rTo.after(shared + 1)
+  let start = $from.before(shared + 1), end = $to.after(shared + 1)
 
-  for (let d = shared; d > depth; d--) if (rTo.index(d) + 1 < rTo.node(d).childCount) {
-    this.split(rTo.after(d + 1), d - depth)
+  for (let d = shared; d > depth; d--) if ($to.index(d) + 1 < $to.node(d).childCount) {
+    this.split($to.after(d + 1), d - depth)
     break
   }
 
-  for (let d = shared; d > depth; d--) if (rFrom.index(d) > 0) {
+  for (let d = shared; d > depth; d--) if ($from.index(d) > 0) {
     let cut = d - depth
-    this.split(rFrom.before(d + 1), cut)
+    this.split($from.before(d + 1), cut)
     start += 2 * cut
     end += 2 * cut
     break
   }
 
   if (unwrap) {
-    let joinPos = start, parent = rFrom.node(shared)
-    for (let i = rFrom.index(shared), e = rTo.index(shared) + 1, first = true; i < e; i++, first = false) {
+    let joinPos = start, parent = $from.node(shared)
+    for (let i = $from.index(shared), e = $to.index(shared) + 1, first = true; i < e; i++, first = false) {
       if (!first) {
         this.join(joinPos)
         end -= 2
@@ -162,12 +162,12 @@ export function canWrap(doc, from, to, type) {
   return !!checkWrap(doc.resolve(from), doc.resolve(to == null ? from : to), type)
 }
 
-function checkWrap(from, to, type) {
-  let shared = rangeDepth(from, to)
+function checkWrap($from, $to, type) {
+  let shared = rangeDepth($from, $to)
   if (shared == null) return null
-  let parent = from.node(shared)
+  let parent = $from.node(shared)
   let around = parent.type.findConnection(type)
-  let inside = type.findConnection(parent.child(from.index(shared)).type)
+  let inside = type.findConnection(parent.child($from.index(shared)).type)
   if (around && inside) return {shared, around, inside}
 }
 
@@ -176,18 +176,18 @@ function checkWrap(from, to, type) {
 // in a node of the given type, with the given attributes (if
 // possible).
 Transform.define("wrap", function(from, to = from, type, wrapAttrs) {
-  let rFrom = this.doc.resolve(from), rTo = this.doc.resolve(to)
-  let check = checkWrap(rFrom, rTo, type)
+  let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
+  let check = checkWrap($from, $to, type)
   if (!check) return this.fail("No wrap possible")
   let {shared, around, inside} = check
 
   let types = around.concat(type).concat(inside)
   let attrs = around.map(() => null).concat(wrapAttrs).concat(inside.map(() => null))
-  let start = rFrom.before(shared + 1)
-  this.step("ancestor", start, rTo.after(shared + 1), {types, attrs})
+  let start = $from.before(shared + 1)
+  this.step("ancestor", start, $to.after(shared + 1), {types, attrs})
   if (inside.length) {
-    let splitPos = start + types.length, parent = rFrom.node(shared)
-    for (let i = rFrom.index(shared), e = rTo.index(shared) + 1, first = true; i < e; i++, first = false) {
+    let splitPos = start + types.length, parent = $from.node(shared)
+    for (let i = $from.index(shared), e = $to.index(shared) + 1, first = true; i < e; i++, first = false) {
       if (!first)
         this.split(splitPos, inside.length)
       splitPos += parent.child(i).nodeSize + (first ? 0 : 2 * inside.length)
@@ -214,8 +214,7 @@ Transform.define("setBlockType", function(from, to = from, type, attrs) {
 // :: (number, NodeType, ?Object) → Transform #path=Transform.prototype.setNodeType
 // Change the type and attributes of the node after `pos`.
 Transform.define("setNodeType", function(pos, type, attrs) {
-  let rPos = this.doc.resolve(pos)
-  let node = rPos.nodeAfter
+  let node = this.doc.nodeAt(pos)
   if (!node || !node.type.contains) return this.fail("No content node at given position")
   this.step("ancestor", pos + 1, pos + 1 + node.content.size, {depth: 1, types: [type], attrs: [attrs]})
 })

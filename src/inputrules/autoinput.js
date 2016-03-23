@@ -92,17 +92,17 @@ Heading.registerComputed("autoInput", "startHeading", type => {
 })
 
 function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
-  let rPos = pm.doc.resolve(pos), d1 = rPos.depth - 1
-  let sibling = rPos.index(d1) > 0 && rPos.node(d1).child(rPos.index(d1) - 1)
+  let $pos = pm.doc.resolve(pos), d1 = $pos.depth - 1
+  let sibling = $pos.index(d1) > 0 && $pos.node(d1).child($pos.index(d1) - 1)
   let join = sibling && sibling.type == type && (!predicate || predicate(sibling))
-  let start = pos - rPos.parentOffset
+  let start = pos - $pos.parentOffset
   let tr = pm.tr.delete(start, pos).wrap(start, start, type, attrs)
-  if (join) tr.join(rPos.before(rPos.depth))
+  if (join) tr.join($pos.before($pos.depth))
   tr.apply()
 }
 
 function setAs(pm, pos, type, attrs) {
-  let rPos = pm.doc.resolve(pos), start = pos - rPos.parentOffset
+  let $pos = pm.doc.resolve(pos), start = pos - $pos.parentOffset
   pm.tr.delete(start, pos)
        .setBlockType(start, start, type, attrs)
        .apply()

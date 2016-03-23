@@ -11,10 +11,10 @@ import {PosMap, ReplacedRange} from "./map"
 
 Step.define("join", {
   apply(doc, step) {
-    let from = doc.resolve(step.from), to = doc.resolve(step.to)
-    if (from.parentOffset < from.parent.content.size || to.parentOffset > 0 || to.pos - from.pos != 2)
+    let $from = doc.resolve(step.from), $to = doc.resolve(step.to)
+    if ($from.parentOffset < $from.parent.content.size || $to.parentOffset > 0 || $to.pos - $from.pos != 2)
       return StepResult.fail("Join positions not around a split")
-    return StepResult.fromReplace(doc, from.pos, to.pos, Slice.empty)
+    return StepResult.fromReplace(doc, $from.pos, $to.pos, Slice.empty)
   },
   posMap(step) {
     return new PosMap([new ReplacedRange(step.from, 2, 0)])
@@ -28,7 +28,7 @@ Step.define("join", {
 // Test whether the blocks before and after a given position can be
 // joined.
 export function joinableBlocks(doc, pos) {
-  let r = doc.resolve(pos), before = r.nodeBefore, after = r.nodeAfter
+  let $pos = doc.resolve(pos), before = $pos.nodeBefore, after = $pos.nodeAfter
   return before && after && !before.isText && before.type.contains &&
     before.type.canContainContent(after.type)
 }
@@ -38,11 +38,11 @@ export function joinableBlocks(doc, pos) {
 // block before (or after if `dir` is positive). Returns the joinable
 // point, if any.
 export function joinPoint(doc, pos, dir = -1) {
-  let r = doc.resolve(pos)
-  for (let d = r.depth; d >= 0; d--) {
+  let $pos = doc.resolve(pos)
+  for (let d = $pos.depth; d >= 0; d--) {
     if (joinableBlocks(doc, pos)) return pos
     if (pos.depth == 0) return null
-    pos = dir < 0 ? r.before(d) : r.after(d)
+    pos = dir < 0 ? $pos.before(d) : $pos.after(d)
   }
 }
 
@@ -50,9 +50,9 @@ export function joinPoint(doc, pos, dir = -1) {
 // Join the blocks around the given position.
 Transform.define("join", function(pos, depth = 1) {
   for (let i = 0; i < depth; i++) {
-    let rPos = this.doc.resolve(pos)
+    let $pos = this.doc.resolve(pos)
     // FIXME should a bogus join fail the transform?
-    if (rPos.parentOffset == 0 || rPos.parentOffset == rPos.parent.content.size) break
+    if ($pos.parentOffset == 0 || $pos.parentOffset == $pos.parent.content.size) break
     this.step("join", pos - 1, pos + 1)
     pos--
   }
