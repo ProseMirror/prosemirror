@@ -235,8 +235,12 @@ export class NodeType extends SchemaItem {
   }
 
   findConnectionToKind(kind) {
-    // FIXME maybe cache these, since wrap commands compute this every
-    // time their .select is called
+    let cache = this.schema.cached.connections, key = this.name + "-" + kind.id
+    if (key in cache) return cache[key]
+    return cache[key] = this.findConnectionToKindInner(kind)
+  }
+
+  findConnectionToKindInner(kind) {
     if (kind.isSubKind(this.contains)) return []
 
     let seen = Object.create(null)
@@ -316,11 +320,6 @@ export class NodeKind {
   // identity.
   constructor(name, supers, subs) {
     this.name = name
-    // FIXME temporary backwards-compatibility kludge
-    if (supers && supers instanceof NodeKind) {
-      supers = Array.prototype.slice.call(arguments, 1)
-      subs = null
-    }
     this.id = ++NodeKind.nextID
     this.supers = Object.create(null)
     this.supers[this.id] = this
@@ -591,6 +590,7 @@ export class Schema {
     // compute and cache per schema. (If you want to store something
     // in it, try to use property names unlikely to clash.)
     this.cached = Object.create(null)
+    this.cached.connections = Object.create(null)
 
     this.node = this.node.bind(this)
     this.text = this.text.bind(this)
