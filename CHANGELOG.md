@@ -1,3 +1,10 @@
+## 0.5.1 (2016-03-23)
+
+### Bug fixes
+
+Fix malformed call that caused any nodes rendered with
+`contenteditable=false` to be replaced by a bogus `<div>`.
+
 ## [0.5.0](http://prosemirror.net/version/0.5.0.html) (2016-03-22)
 
 ### Bug fixes
