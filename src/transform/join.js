@@ -19,8 +19,13 @@ Step.define("join", {
   posMap(step) {
     return new PosMap([new ReplacedRange(step.from, 2, 0)])
   },
-  invert(step) {
-    return new Step("split", step.from, step.from) // FIXME restore types
+  invert(step, doc) {
+    let $before = doc.resolve(step.from), d1 = $before.depth - 1
+    let parentAfter = $before.node(d1).child($before.index(d1) + 1)
+    let param = null
+    if (!$before.parent.sameMarkup(parentAfter))
+      param = {type: parentAfter.type, attrs: parentAfter.attrs}
+    return new Step("split", step.from, step.from, param)
   }
 })
 

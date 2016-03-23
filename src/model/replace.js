@@ -146,7 +146,6 @@ function prepareSliceForReplace(slice, $along) {
   if (!parent.type.canContainFragment(slice.content))
     throw new ReplaceError("Content " + slice.content + " cannot be placed in " + parent.type.name)
   let node = parent.copy(slice.content)
-  // FIXME only copy up to start depth? rest won't be used
   for (let i = extra - 1; i >= 0; i--)
     node = $along.node(i).copy(Fragment.from(node))
   return {start: node.resolveNoCache(slice.openLeft + extra),

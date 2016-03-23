@@ -155,6 +155,9 @@ function join(name, doc, expect) {
 join("simple",
      doc(blockquote(p("<before>a")), "<a>", blockquote(p("b")), p("after<after>")),
      doc(blockquote(p("<before>a"), "<a>", p("b")), p("after<after>")))
+join("different",
+     doc(h1("foo"), "<a>", p("bar")),
+     doc(h1("foobar")))
 join("deeper",
      doc(blockquote(blockquote(p("a"), p("b<before>")), "<a>", blockquote(p("c"), p("d<after>")))),
      doc(blockquote(blockquote(p("a"), p("b<before>"), "<a>", p("c"), p("d<after>")))))
@@ -409,10 +412,14 @@ repl("cut_different_block",
      doc(h1("hell<a>o"), p("by<b>e")),
      null,
      doc(h1("helle")))
-repl("restore_list", // FIXME add test for text-after-joining
+repl("restore_list",
      doc(h1("hell<a>o"), "<b>"),
      doc(ol(li(p("on<a>e")), li(p("tw<b>o")))),
      doc(h1("helle"), ol(li(p("tw")))))
+repl("restore_list_text_after",
+     doc(h1("hell<a>o"), p("yo<b>u")),
+     doc(ol(li(p("on<a>e")), li(p("tw<b>o")))),
+     doc(h1("helle"), ol(li(p("twu")))))
 repl("in_empty_block",
      doc(p("a"), p("<a>"), p("b")),
      doc(p("x<a>y<b>z")),
