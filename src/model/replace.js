@@ -51,8 +51,8 @@ export function replace(from, to, slice) {
 }
 
 function replaceOuter(from, to, slice, depth) {
-  let index = from.index[depth], node = from.node[depth]
-  if (index == to.index[depth] && depth < from.depth - slice.openLeft) {
+  let index = from.index(depth), node = from.node(depth)
+  if (index == to.index(depth) && depth < from.depth - slice.openLeft) {
     let inner = replaceOuter(from, to, slice, depth + 1)
     return node.copy(node.content.replace(index, inner))
   } else if (slice.content.size) {
@@ -69,8 +69,8 @@ function checkJoin(main, sub) {
 }
 
 function joinable(before, after, depth) {
-  let node = before.node[depth]
-  checkJoin(node, after.node[depth])
+  let node = before.node(depth)
+  checkJoin(node, after.node(depth))
   return node
 }
 
@@ -83,19 +83,19 @@ function addNode(child, target) {
 }
 
 function addRange(start, end, depth, target) {
-  let node = (end || start).node[depth]
-  let startIndex = 0, endIndex = end ? end.index[depth] : node.childCount
+  let node = (end || start).node(depth)
+  let startIndex = 0, endIndex = end ? end.index(depth) : node.childCount
   if (start) {
-    startIndex = start.index[depth]
+    startIndex = start.index(depth)
     if (start.depth > depth) {
       startIndex++
-    } else if (start.parentOffset != start.offset[depth]) {
+    } else if (start.parentOffset != start.offset(depth)) {
       addNode(start.nodeAfter, target)
       startIndex++
     }
   }
   for (let i = startIndex; i < endIndex; i++) addNode(node.child(i), target)
-  if (end && end.depth == depth && end.parentOffset != end.offset[depth])
+  if (end && end.depth == depth && end.parentOffset != end.offset(depth))
     addNode(end.nodeBefore, target)
 }
 
@@ -111,7 +111,7 @@ function replaceThreeWay(from, start, end, to, depth) {
 
   let content = []
   addRange(null, from, depth, content)
-  if (openLeft && openRight && start.index[depth] == end.index[depth]) {
+  if (openLeft && openRight && start.index(depth) == end.index(depth)) {
     checkJoin(openLeft, openRight)
     addNode(close(openLeft, replaceThreeWay(from, start, end, to, depth + 1)), content)
   } else {
@@ -137,13 +137,13 @@ function replaceTwoWay(from, to, depth) {
 }
 
 function prepareSliceForReplace(slice, along) {
-  let extra = along.depth - slice.openLeft, parent = along.node[extra]
+  let extra = along.depth - slice.openLeft, parent = along.node(extra)
   if (!parent.type.canContainFragment(slice.content))
     throw new ReplaceError("Content " + slice.content + " cannot be placed in " + parent.type.name)
   let node = parent.copy(slice.content)
   // FIXME only copy up to start depth? rest won't be used
   for (let i = extra - 1; i >= 0; i--)
-    node = along.node[i].copy(Fragment.from(node))
-  return {start: node.resolve(slice.openLeft + extra, false),
-          end: node.resolve(node.content.size - slice.openRight - extra, false)}
+    node = along.node(i).copy(Fragment.from(node))
+  return {start: node.resolveNoCache(slice.openLeft + extra),
+          end: node.resolveNoCache(node.content.size - slice.openRight - extra)}
 }

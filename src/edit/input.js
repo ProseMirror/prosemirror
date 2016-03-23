@@ -357,7 +357,7 @@ handlers.input = (pm, e) => {
 
 function toClipboard(doc, from, to, dataTransfer) {
   let slice = doc.slice(from, to), rFrom = doc.resolve(from)
-  let parent = rFrom.node[rFrom.depth - slice.openLeft]
+  let parent = rFrom.node(rFrom.depth - slice.openLeft)
   let attr = `${parent.type.name} ${slice.openLeft} ${slice.openRight}`
   let html = `<div pm-context="${attr}">${toHTML(slice.content)}</div>`
   dataTransfer.clearData()

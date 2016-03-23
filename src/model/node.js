@@ -2,6 +2,7 @@ import {Fragment} from "./fragment"
 import {Mark} from "./mark"
 import {ModelError} from "./error"
 import {Slice, replace} from "./replace"
+import {ResolvedPos} from "./resolvedpos"
 
 const emptyArray = [], emptyAttrs = Object.create(null)
 
@@ -49,10 +50,18 @@ export class Node {
   // The number of children that the node has.
   get childCount() { return this.content.childCount }
 
+  // :: (number) → Node
+  // Get the child node at the given index. Raise an error when the
+  // index is out of range.
   child(index) { return this.content.child(index) }
 
+  // :: (number) → ?Node
+  // Get the child node at the given index, if it exists.
   maybeChild(index) { return this.content.maybeChild(index) }
 
+  // :: ((node: Node, offset: number))
+  // Call `f` for every child node, passing the node and its offset
+  // into this parent node.
   forEach(f) { this.content.forEach(f) }
 
   // :: string
@@ -121,16 +130,26 @@ export class Node {
     return this.copy(this.content.cut(from, to))
   }
 
+  // :: (number, ?number) → Slice
+  // Cut out the part of the document between the given positions, and
+  // return it as a `Slice` object.
   slice(from, to = this.content.size) {
     if (from == to) return Slice.empty
 
     from = this.resolve(from)
     to = this.resolve(to)
     let depth = from.sameDepth(to), start = from.start(depth)
-    let content = from.node[depth].content.cut(from.pos - start, to.pos - start)
+    let content = from.node(depth).content.cut(from.pos - start, to.pos - start)
     return new Slice(content, from.depth - depth, to.depth - depth)
   }
 
+  // :: (number, number, Slice) → Node
+  // Replace the part of the document between the given positions with
+  // the given slice. The slice must 'fit', meaning its open sides
+  // must be able to connect to the surrounding content, and its
+  // content nodes must be valid children for the node they are placed
+  // into. If any of this is violated, an error of type `ReplaceError`
+  // is thrown.
   replace(from, to, slice) {
     return replace(this.resolve(from), this.resolve(to), slice)
   }
@@ -147,11 +166,19 @@ export class Node {
     }
   }
 
+  // :: (number) → {node: ?Node, index: number, offset: number}
+  // Find the (direct) child node after the given offset, if any,
+  // and return it along with its index and offset relative to this
+  // node.
   nodeAfter(pos) {
     let index = findIndex(this.content, pos)
     return {node: this.content.maybeChild(index), index, offset: foundOffset}
   }
 
+  // :: (number) → {node: ?Node, index: number, offset: number}
+  // Find the (direct) child node before the given offset, if any,
+  // and return it along with its index and offset relative to this
+  // node.
   nodeBefore(pos) {
     if (pos == 0) return {node: null, index: 0, offset: 0}
     let index = findIndex(this.content, pos)
@@ -169,16 +196,19 @@ export class Node {
     this.content.nodesBetween(from, to, f, pos, this)
   }
 
-  resolve(pos, cache) {
-    return cache === false ? ResolvedPos.resolve(this, pos) : resolveCached(this, pos)
-  }
+  // :: (number) → ResolvedPos
+  // Resolve the given position in the document, returning an object
+  // describing its path through the document.
+  resolve(pos) { return resolvePosCached(this, pos) }
+
+  resolveNoCache(pos) { return resolvePos(this, pos) }
 
   // :: (number) → [Mark]
   // Get the marks of the node before the given position or, if that
   // position is at the start of a non-empty node, those of the node
   // after it.
   marksAt(pos) {
-    let r = this.resolve(pos), top = r.parent, index = r.index[r.depth]
+    let r = this.resolve(pos), top = r.parent, index = r.index(r.depth)
     let leaf = index ? top.child(index - 1) : index < top.childCount ? top.child(index) : null
     return leaf ? leaf.marks : emptyArray
   }
@@ -309,88 +339,30 @@ function findIndex(fragment, pos, round = -1) {
   }
 }
 
-export class ResolvedPos {
-  constructor(pos, node, index, offset, parentOffset) {
-    this.pos = pos
-    this.node = node
-    this.index = index
-    this.offset = offset
-    this.parentOffset = parentOffset
+function resolvePos(doc, pos) {
+  if (!(pos >= 0 && pos <= doc.content.size)) throw new ModelError("Position " + pos + " out of range")
+  let nodes = [], index = [], offset = [], parentOffset = pos
+  for (let node = doc;;) {
+    let i = findIndex(node.content, parentOffset)
+    let rem = parentOffset - foundOffset
+    nodes.push(node)
+    offset.push(foundOffset)
+    index.push(i)
+    if (!rem) break
+    node = node.child(i)
+    if (node.isText) break
+    parentOffset = rem - 1
   }
-
-  get parent() { return this.node[this.depth] }
-
-  get depth() { return this.node.length - 1 }
-
-  get nodeAfter() {
-    let parent = this.parent, index = this.index[this.depth]
-    if (index == parent.childCount) return null
-    let dOff = this.parentOffset - this.offset[this.depth], child = parent.child(index)
-    return dOff ? parent.child(index).cut(dOff) : child
-  }
-
-  get nodeBefore() {
-    let index = this.index[this.depth]
-    let dOff = this.parentOffset - this.offset[this.depth]
-    if (dOff) return this.parent.child(index).cut(0, dOff)
-    return index == 0 ? null : this.parent.child(index - 1)
-  }
-
-  sameDepth(other) {
-    let depth = 0, max = Math.min(this.depth, other.depth)
-    while (depth < max && this.index[depth] == other.index[depth]) ++depth
-    return depth
-  }
-
-  sameParent(other) {
-    return this.pos - this.parentOffset == other.pos - other.parentOffset
-  }
-
-  start(depth) {
-    let pos = 0
-    for (let i = 0; i < depth; i++) pos += this.offset[i] + 1
-    return pos
-  }
-
-  end(depth) {
-    return this.start(depth) + this.node[depth].content.size
-  }
-
-  before(depth) { return depth == this.offset.length ? this.pos : this.start(depth) - 1 }
-  after(depth) { return depth == this.offset.length ? this.pos : this.end(depth) + 1 }
-
-  toString() {
-    let str = ""
-    for (let i = 1; i < this.index.length; i++)
-      str += (str ? "/" : "") + this.node[i].type.name + "_" + this.index[i - 1]
-    return str + ":" + this.parentOffset
-  }
-
-  static resolve(doc, pos) {
-    if (!(pos >= 0 && pos <= doc.content.size)) throw new ModelError("Position " + pos + " out of range")
-    let nodes = [], index = [], offset = [], parentOffset = pos
-    for (let node = doc;;) {
-      let i = findIndex(node.content, parentOffset)
-      let rem = parentOffset - foundOffset
-      nodes.push(node)
-      offset.push(foundOffset)
-      index.push(i)
-      if (!rem) break
-      node = node.child(i)
-      if (node.isText) break
-      parentOffset = rem - 1
-    }
-    return new ResolvedPos(pos, nodes, index, offset, parentOffset)
-  }
+  return new ResolvedPos(pos, nodes, index, offset, parentOffset)
 }
 
 let resolveCache = [], resolveCachePos = 0, resolveCacheSize = 6
-function resolveCached(doc, pos) {
+function resolvePosCached(doc, pos) {
   for (let i = 0; i < resolveCache.length; i++) {
     let cached = resolveCache[i]
-    if (cached.pos == pos && cached.node[0] == doc) return cached
+    if (cached.pos == pos && cached.node(0) == doc) return cached
   }
-  let result = resolveCache[resolveCachePos] = ResolvedPos.resolve(doc, pos)
+  let result = resolveCache[resolveCachePos] = resolvePos(doc, pos)
   resolveCachePos = (resolveCachePos + 1) % resolveCacheSize
   return result
 }

@@ -317,13 +317,13 @@ function findSelectionIn(node, pos, index, dir, text) {
 export function findSelectionFrom(doc, pos, dir, text) {
   let rPos = doc.resolve(pos)
   let inner = rPos.parent.isTextblock ? new TextSelection(pos)
-      : findSelectionIn(rPos.parent, pos, rPos.index[rPos.depth], dir, text)
+      : findSelectionIn(rPos.parent, pos, rPos.index(rPos.depth), dir, text)
   if (inner) return inner
 
   for (let depth = rPos.depth - 1; depth >= 0; depth--) {
     let found = dir < 0
-        ? findSelectionIn(rPos.node[depth], rPos.before(depth + 1), rPos.index[depth], dir, text)
-        : findSelectionIn(rPos.node[depth], rPos.after(depth + 1), rPos.index[depth] + 1, dir, text)
+        ? findSelectionIn(rPos.node(depth), rPos.before(depth + 1), rPos.index(depth), dir, text)
+        : findSelectionIn(rPos.node(depth), rPos.after(depth + 1), rPos.index(depth) + 1, dir, text)
     if (found) return found
   }
 }

@@ -23,7 +23,7 @@ import {PosMap, ReplacedRange} from "./map"
 function isFlatRange(from, to) {
   if (from.depth != to.depth) return false
   for (let i = 0; i < from.depth; i++)
-    if (from.index[i] != to.index[i]) return false
+    if (from.index(i) != to.index(i)) return false
   return from.parentOffset <= to.parentOffset
 }
 
@@ -64,7 +64,7 @@ Step.define("ancestor", {
     let from = oldDoc.resolve(step.from)
     let oldDepth = step.param.depth || 0, newDepth = step.param.types ? step.param.types.length : 0
     for (let i = 0; i < oldDepth; i++) {
-      let parent = from.node[from.depth - i]
+      let parent = from.node(from.depth - i)
       types.unshift(parent.type)
       attrs.unshift(parent.attrs)
     }
@@ -93,7 +93,7 @@ export function canLift(doc, from, to) {
 
 function rangeDepth(from, to) {
   let shared = from.sameDepth(to)
-  if (from.node[shared].isTextblock) --shared
+  if (from.node(shared).isTextblock) --shared
   if (from.before(shared) >= to.after(shared)) return null
   return shared
 }
@@ -101,14 +101,14 @@ function rangeDepth(from, to) {
 function findLiftable(from, to) {
   let shared = rangeDepth(from, to)
   if (shared == null) return null
-  let parent = from.node[shared]
+  let parent = from.node(shared)
   for (let depth = shared - 1; depth >= 0; --depth)
-    if (from.node[depth].type.canContainContent(parent.type))
+    if (from.node(depth).type.canContainContent(parent.type))
       return {depth, shared, unwrap: false}
 
   if (parent.isBlock) for (let depth = shared - 1; depth >= 0; --depth) {
-    let target = from.node[depth]
-    for (let i = from.index[shared], e = Math.min(to.index[shared] + 1, parent.childCount); i < e; i++)
+    let target = from.node(depth)
+    for (let i = from.index(shared), e = Math.min(to.index(shared) + 1, parent.childCount); i < e; i++)
       if (!target.type.canContainContent(parent.child(i).type)) continue
     return {depth, shared, unwrap: true}
   }
@@ -126,12 +126,12 @@ Transform.define("lift", function(from, to = from) {
   let {depth, shared, unwrap} = liftable
   let start = rFrom.before(shared + 1), end = rTo.after(shared + 1)
 
-  for (let d = shared; d > depth; d--) if (rTo.index[d] + 1 < rTo.node[d].childCount) {
+  for (let d = shared; d > depth; d--) if (rTo.index(d) + 1 < rTo.node(d).childCount) {
     this.split(rTo.after(d + 1), d - depth)
     break
   }
 
-  for (let d = shared; d > depth; d--) if (rFrom.index[d] > 0) {
+  for (let d = shared; d > depth; d--) if (rFrom.index(d) > 0) {
     let cut = d - depth
     this.split(rFrom.before(d + 1), cut)
     start += 2 * cut
@@ -140,8 +140,8 @@ Transform.define("lift", function(from, to = from) {
   }
 
   if (unwrap) {
-    let joinPos = start, parent = rFrom.node[shared]
-    for (let i = rFrom.index[shared], e = rTo.index[shared] + 1, first = true; i < e; i++, first = false) {
+    let joinPos = start, parent = rFrom.node(shared)
+    for (let i = rFrom.index(shared), e = rTo.index(shared) + 1, first = true; i < e; i++, first = false) {
       if (!first) {
         this.join(joinPos)
         end -= 2
@@ -165,9 +165,9 @@ export function canWrap(doc, from, to, type) {
 function checkWrap(from, to, type) {
   let shared = rangeDepth(from, to)
   if (shared == null) return null
-  let parent = from.node[shared]
+  let parent = from.node(shared)
   let around = parent.type.findConnection(type)
-  let inside = type.findConnection(parent.child(from.index[shared]).type)
+  let inside = type.findConnection(parent.child(from.index(shared)).type)
   if (around && inside) return {shared, around, inside}
 }
 
@@ -186,8 +186,8 @@ Transform.define("wrap", function(from, to = from, type, wrapAttrs) {
   let start = rFrom.before(shared + 1)
   this.step("ancestor", start, rTo.after(shared + 1), {types, attrs})
   if (inside.length) {
-    let splitPos = start + types.length, parent = rFrom.node[shared]
-    for (let i = rFrom.index[shared], e = rTo.index[shared] + 1, first = true; i < e; i++, first = false) {
+    let splitPos = start + types.length, parent = rFrom.node(shared)
+    for (let i = rFrom.index(shared), e = rTo.index(shared) + 1, first = true; i < e; i++, first = false) {
       if (!first)
         this.split(splitPos, inside.length)
       splitPos += parent.child(i).nodeSize + (first ? 0 : 2 * inside.length)

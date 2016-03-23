@@ -260,7 +260,7 @@ ListItem.register("command", "split", {
     let {from, to, node} = pm.selection, rFrom = pm.doc.resolve(from)
     if ((node && node.isBlock) ||
         rFrom.depth < 2 || !rFrom.sameParent(pm.doc.resolve(to))) return false
-    let grandParent = rFrom.node[rFrom.depth - 1]
+    let grandParent = rFrom.node(rFrom.depth - 1)
     if (grandParent.type != this) return false
     let nextType = to == rFrom.end(rFrom.depth) ? pm.schema.defaultTextblockType() : null
     return pm.tr.delete(from, to).split(from, 2, nextType).apply(pm.apply.scroll)

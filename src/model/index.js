@@ -12,6 +12,7 @@
 // (i.e. you can load it into any JavaScript environment).
 
 export {Node, PosContext} from "./node"
+export {ResolvedPos} from "./resolvedpos"
 export {Fragment} from "./fragment"
 export {Slice, ReplaceError} from "./replace"
 export {Mark} from "./mark"

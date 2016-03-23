@@ -6,12 +6,12 @@ import {DOMFromPos} from "./dompos"
 
 function isAtEnd(rPos, depth) {
   for (let i = depth || 0; i < rPos.depth; i++)
-    if (rPos.index[i] + 1 < rPos.node[i].childCount) return false
+    if (rPos.index(i) + 1 < rPos.node(i).childCount) return false
   return rPos.parentOffset == rPos.parent.content.size
 }
 function isAtStart(rPos, depth) {
   for (let i = depth || 0; i < rPos.depth; i++)
-    if (rPos.index[0] > 0) return false
+    if (rPos.index(0) > 0) return false
   return rPos.parentOffset == 0
 }
 
@@ -19,12 +19,12 @@ function parseNearSelection(pm) {
   let {from, to} = pm.selection, rFrom = pm.doc.resolve(from), rTo = pm.doc.resolve(to)
   for (let depth = 0;; depth++) {
     let fromStart = isAtStart(rFrom, depth + 1), toEnd = isAtEnd(rTo, depth + 1)
-    if (fromStart || toEnd || rFrom.index[depth] != rTo.index[depth] || rTo.node[depth].isTextblock) {
+    if (fromStart || toEnd || rFrom.index(depth) != rTo.index(depth) || rTo.node(depth).isTextblock) {
       let start = rFrom.before(depth + 1), end = rTo.after(depth + 1)
-      if (fromStart && rFrom.index[depth] > 0)
-        start -= rFrom.node[depth].child(rFrom.index[depth] - 1).nodeSize
-      if (toEnd && rTo.index[depth] + 1 < rTo.node[depth].childCount)
-        end += rTo.node[depth].child(rTo.index[depth] + 1).nodeSize
+      if (fromStart && rFrom.index(depth) > 0)
+        start -= rFrom.node(depth).child(rFrom.index(depth) - 1).nodeSize
+      if (toEnd && rTo.index(depth) + 1 < rTo.node(depth).childCount)
+        end += rTo.node(depth).child(rTo.index(depth) + 1).nodeSize
       let startPos = DOMFromPos(pm.content, start), endPos = DOMFromPos(pm.content, end)
       while (startPos.offset) {
         let prev = startPos.node.childNodes[startPos.offset - 1]
@@ -32,7 +32,7 @@ function parseNearSelection(pm) {
         else break
       }
       let parsed = fromDOM(pm.schema, startPos.node, {
-        topNode: rFrom.node[depth].copy(),
+        topNode: rFrom.node(depth).copy(),
         from: startPos.offset,
         to: endPos.offset,
         preserveWhitespace: true
@@ -43,8 +43,8 @@ function parseNearSelection(pm) {
                            .append(parsed.content)
                            .append(rFrom.parent.content.cut(end - parentStart)))
       for (let i = depth - 1; i >= 0; i--) {
-        let wrap = rFrom.node[i]
-        parsed = wrap.copy(wrap.content.replace(rFrom.index[i], parsed))
+        let wrap = rFrom.node(i)
+        parsed = wrap.copy(wrap.content.replace(rFrom.index(i), parsed))
       }
       return parsed
     }
@@ -59,8 +59,8 @@ export function readDOMChange(pm) {
     // Mark nodes touched by this change as 'to be redrawn'
     markDirtyFor(pm, changeStart, changeEnd.a)
 
-    let rStart = updated.resolve(changeStart, false)
-    let rEnd = updated.resolve(changeEnd.b, false), nextSel
+    let rStart = updated.resolveNoCache(changeStart)
+    let rEnd = updated.resolveNoCache(changeEnd.b), nextSel
     // FIXME less ad-hoc return type?
     if (!rStart.sameParent(rEnd) && rStart.pos < updated.content.size &&
         (nextSel = findSelectionFrom(updated, rStart.pos + 1, 1, true)) &&

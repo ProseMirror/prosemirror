@@ -383,8 +383,8 @@ function isAtTopOfListItem(doc, from, to, listType) {
   let rFrom = doc.resolve(from), rTo = doc.resolve(to)
   return rFrom.sameParent(rTo) &&
     rFrom.depth >= 2 &&
-    rFrom.index[rFrom.depth - 1] == 0 &&
-    listType.canContain(rFrom.node[rFrom.depth - 1])
+    rFrom.index(rFrom.depth - 1) == 0 &&
+    listType.canContain(rFrom.node(rFrom.depth - 1))
 }
 
 NodeType.derivableCommands.wrap = function(conf) {
@@ -394,7 +394,7 @@ NodeType.derivableCommands.wrap = function(conf) {
       let rFrom = pm.doc.resolve(from)
       if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this)) {
         // Don't do anything if this is the top of the list
-        if (rFrom.index[rFrom.depth - 2] == 0) return false
+        if (rFrom.index(rFrom.depth - 2) == 0) return false
         doJoin = true
       }
       let tr = pm.tr.wrap(from, to, this, fillAttrs(conf, params))
@@ -404,7 +404,7 @@ NodeType.derivableCommands.wrap = function(conf) {
     select(pm) {
       let {from, to, head} = pm.selection, rFrom
       if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this) &&
-          (rFrom = pm.doc.resolve(from)).index[rFrom.depth - 2] == 0)
+          (rFrom = pm.doc.resolve(from)).index(rFrom.depth - 2) == 0)
         return false
       return canWrap(pm.doc, from, to, this, conf.attrs)
     },

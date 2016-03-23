@@ -31,7 +31,7 @@ Step.define("addMark", {
     slice.content = mapFragment(slice.content, (node, parent) => {
       if (!parent.type.canContainMark(step.param.type)) return node
       return node.mark(step.param.addToSet(node.marks))
-    }, pos.node[pos.depth - slice.openLeft])
+    }, pos.node(pos.depth - slice.openLeft))
     return StepResult.fromReplace(doc, step.from, step.to, slice)
   },
   invert(step) {

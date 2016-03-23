@@ -70,9 +70,9 @@ baseCommands.joinBackward = {
 
     // Find the node before this one
     let before, cut
-    for (let i = rHead.depth - 1; !before && i >= 0; i--) if (rHead.index[i] > 0) {
+    for (let i = rHead.depth - 1; !before && i >= 0; i--) if (rHead.index(i) > 0) {
       cut = rHead.before(i + 1)
-      before = rHead.node[i].child(rHead.index[i] - 1)
+      before = rHead.node(i).child(rHead.index(i) - 1)
     }
 
     // If there is no node before this, try to lift
@@ -190,9 +190,9 @@ baseCommands.joinForward = {
     // Find the node after this one
     let after, cut
     for (let i = rHead.depth - 1; !after && i >= 0; i--) {
-      let parent = rHead.node[i]
-      if (rHead.index[i] + 1 < parent.childCount) {
-        after = parent.child(rHead.index[i] + 1)
+      let parent = rHead.node(i)
+      if (rHead.index(i) + 1 < parent.childCount) {
+        after = parent.child(rHead.index(i) + 1)
         cut = rHead.after(i + 1)
       }
     }
@@ -411,8 +411,8 @@ baseCommands.liftEmptyBlock = {
     let {head, empty} = pm.selection, rHead
     if (!empty || (rHead = pm.doc.resolve(head)).parentOffset > 0 || rHead.parent.content.size) return false
     if (rHead.depth > 1) {
-      if (rHead.offset[rHead.depth - 1] > 0 &&
-          rHead.index[rHead.depth - 1] < rHead.node[rHead.depth - 1].childCount - 1 &&
+      if (rHead.offset(rHead.depth - 1) > 0 &&
+          rHead.index(rHead.depth - 1) < rHead.node(rHead.depth - 1).childCount - 1 &&
           pm.tr.split(rHead.before(rHead.depth)).apply() !== false)
         return
     }

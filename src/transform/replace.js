@@ -48,10 +48,10 @@ Transform.define("replace", function(from, to = from, slice = Slice.empty) {
   // slice to fit onto the inserted content. But only if there is text
   // before and after the cut, and if those endpoints aren't already
   // next to each other.
-  if (!fSize || !rTo.node[rTo.depth].isTextblock) return
+  if (!fSize || !rTo.node(rTo.depth).isTextblock) return
   let after = from + fSize
   let inner = !slice.size ? from : distAfter < 0 ? -1 : after - distAfter, rInner
-  if (inner == -1 || inner == after || !(rInner = this.doc.resolve(inner)).node[rInner.depth].isTextblock) return
+  if (inner == -1 || inner == after || !(rInner = this.doc.resolve(inner)).node(rInner.depth).isTextblock) return
   mergeTextblockAfter(this, rInner, this.doc.resolve(after))
 })
 
@@ -99,7 +99,7 @@ function fitSliceInto(from, to, slice) {
   // distAfter starts negative, and is set to a positive value when
   // the end of the inserted content is placed.
   distAfter = -1e10 // FIXME kludge
-  let fragment = closeFragment(from.node[base].type, fillBetween(from, to, base, placed), from, to, base)
+  let fragment = closeFragment(from.node(base).type, fillBetween(from, to, base, placed), from, to, base)
   return {fitted: new Slice(fragment, from.depth - base, to.depth - base),
           distAfter: distAfter - (to.depth - base)}
 }
@@ -109,8 +109,8 @@ function outerPlaced(placed) {
 }
 
 function fillBetween(from, to, depth, placed) {
-  let fromNext = from.depth > depth && from.node[depth + 1]
-  let toNext = to.depth > depth && to.node[depth + 1]
+  let fromNext = from.depth > depth && from.node(depth + 1)
+  let toNext = to.depth > depth && to.node(depth + 1)
   let placedHere = placed[depth]
 
   if (fromNext && toNext && fromNext.type.canContainContent(toNext.type) && !placedHere)
@@ -145,7 +145,7 @@ function fillFrom(from, depth, placed) {
 
   distAfter--
   if (from.depth > depth)
-    content = content.addToStart(closeNode(from.node[depth + 1], fillFrom(from, depth + 1, placed),
+    content = content.addToStart(closeNode(from.node(depth + 1), fillFrom(from, depth + 1, placed),
                                            from, null, depth + 1))
   distAfter++
 
@@ -153,7 +153,7 @@ function fillFrom(from, depth, placed) {
 }
 
 function closeTo(content, to, depth, openDepth) {
-  let after = to.node[depth]
+  let after = to.node(depth)
   if (openDepth == 0 || !after.type.canContainContent(content.lastChild.type)) {
     let finish = closeNode(after, fillTo(to, depth), null, to, depth)
     distAfter += finish.nodeSize
@@ -166,7 +166,7 @@ function closeTo(content, to, depth, openDepth) {
 
 function fillTo(to, depth) {
   if (to.depth == depth) return Fragment.empty
-  return Fragment.from(closeNode(to.node[depth + 1], fillTo(to, depth + 1), null, to, depth + 1))
+  return Fragment.from(closeNode(to.node(depth + 1), fillTo(to, depth + 1), null, to, depth + 1))
 }
 
 // Closing nodes is the process of ensuring that they contain valid
@@ -188,8 +188,8 @@ function closeLeft(content, openDepth) {
 function closeFragment(type, content, to, from, depth) {
   // FIXME replace this with a more general approach
   if (type.canBeEmpty) return content
-  let hasContent = content.size || (to && (to.depth > depth || to.index[depth])) ||
-      (from && (from.depth > depth || from.index[depth] < from.node[depth].childCount))
+  let hasContent = content.size || (to && (to.depth > depth || to.index(depth))) ||
+      (from && (from.depth > depth || from.index(depth) < from.node(depth).childCount))
   return hasContent ? content : type.defaultContent()
 }
 
@@ -262,9 +262,9 @@ function placeSlice(from, slice) {
       dFrom = Math.max(0, found - 1)
     } else {
       if (dSlice == 0) {
-        parents = from.node[0].type.findConnectionToKind(fragmentSuperKind(curFragment))
+        parents = from.node(0).type.findConnectionToKind(fragmentSuperKind(curFragment))
         if (!parents) break
-        parents.unshift(from.node[0].type)
+        parents.unshift(from.node(0).type)
         curType = parents[parents.length - 1]
       }
       unplaced = curType.create(curAttrs, curFragment)
@@ -277,7 +277,7 @@ function placeSlice(from, slice) {
 
 function findPlacement(type, fragment, from, start) {
   for (let d = start; d >= 0; d--) {
-    let fromType = from.node[d].type
+    let fromType = from.node(d).type
     if (type ? fromType.canContainContent(type) : fromType.canContainFragment(fragment))
       return d
   }
@@ -295,14 +295,14 @@ function mergeTextblockAfter(tr, inside, after) {
   let base = inside.sameDepth(after)
   tr.try(() => {
     let end = after.end(after.depth), cutAt = end + 1, cutDepth = after.depth - 1
-    while (cutDepth > base && after.index[cutDepth] + 1 == after.node[cutDepth].childCount) {
+    while (cutDepth > base && after.index(cutDepth) + 1 == after.node(cutDepth).childCount) {
       --cutDepth
       ++cutAt
     }
     if (cutDepth > base) tr.split(cutAt, cutDepth - base)
     let types = [], attrs = []
     for (let i = base + 1; i <= inside.depth; i++) {
-      let node = inside.node[i]
+      let node = inside.node(i)
       types.push(node.type)
       attrs.push(node.attrs)
     }

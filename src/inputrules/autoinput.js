@@ -93,7 +93,7 @@ Heading.registerComputed("autoInput", "startHeading", type => {
 
 function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
   let rPos = pm.doc.resolve(pos), d1 = rPos.depth - 1
-  let sibling = rPos.index[d1] > 0 && rPos.node[d1].child(rPos.index[d1] - 1)
+  let sibling = rPos.index(d1) > 0 && rPos.node(d1).child(rPos.index(d1) - 1)
   let join = sibling && sibling.type == type && (!predicate || predicate(sibling))
   let start = pos - rPos.parentOffset
   let tr = pm.tr.delete(start, pos).wrap(start, start, type, attrs)

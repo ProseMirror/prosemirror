@@ -40,8 +40,8 @@ export class EditorTransform extends Transform {
     } else if (selNode) {
       // This node can not simply be removed/replaced. Remove its parent as well
       let rFrom = this.doc.resolve(from), depth = rFrom.depth
-      while (depth && rFrom.node[depth].childCount == 1 &&
-             !(node ? rFrom.node[depth].type.canContain(node) : rFrom.node[depth].type.canBeEmpty))
+      while (depth && rFrom.node(depth).childCount == 1 &&
+             !(node ? rFrom.node(depth).type.canContain(node) : rFrom.node(depth).type.canBeEmpty))
         depth--
       if (depth < rFrom.depth) {
         from = rFrom.before(depth + 1)
@@ -50,7 +50,7 @@ export class EditorTransform extends Transform {
     } else if (node && node.isBlock) {
       let rFrom = this.doc.resolve(from)
       // Inserting a block node into a textblock. Try to insert it above by splitting the textblock
-      if (rFrom.depth && rFrom.node[rFrom.depth - 1].type.canContain(node)) {
+      if (rFrom.depth && rFrom.node(rFrom.depth - 1).type.canContain(node)) {
         this.delete(from, to)
         if (rFrom.parentOffset && rFrom.parentOffset < rFrom.parent.content.size)
           this.split(from)
