@@ -298,11 +298,12 @@ function joinPointAbove(pm) {
 baseCommands.joinUp = {
   label: "Join with above block",
   run(pm) {
-    let point = joinPointAbove(pm), isNode = pm.selection.node
+    let point = joinPointAbove(pm), selectNode
     if (!point) return false
+    if (pm.selection.node)
+      selectNode = point - pm.doc.resolve(point).nodeBefore.nodeSize
     pm.tr.join(point).apply()
-    // FIXME this can throw error about unselectable node
-    if (isNode) pm.setNodeSelection(point - isNode.nodeSize)
+    if (selectNode != null) pm.setNodeSelection(selectNode)
   },
   select(pm) { return joinPointAbove(pm) },
   menu: {
