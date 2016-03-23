@@ -28,13 +28,13 @@ Step.define("replace", {
   paramFromJSON(schema, json) { return Slice.fromJSON(schema, json) }
 })
 
-// :: (number, number) → Transform
+// :: (number, number) → Transform #path=Transform.prototype.delete
 // Delete the content between the given positions.
 Transform.define("delete", function(from, to) {
   if (from != to) this.replace(from, to, Slice.empty)
 })
 
-// :: (number, ?number, ?Slice) → Transform
+// :: (number, ?number, ?Slice) → Transform #path=Transform.prototype.replace
 // Replace the part of the document between `from` and `to` with the
 // part of the `source` between `start` and `end`.
 Transform.define("replace", function(from, to = from, slice = Slice.empty) {
@@ -56,6 +56,7 @@ Transform.define("replace", function(from, to = from, slice = Slice.empty) {
 })
 
 // :: (number, number, union<Fragment, Node, [Node]>) → Transform
+// #path=Transform.prototype.replaceWith
 // Replace the given range with the given content, which may be a
 // fragment, node, or array of nodes.
 Transform.define("replaceWith", function(from, to, content) {
@@ -63,19 +64,20 @@ Transform.define("replaceWith", function(from, to, content) {
 })
 
 // :: (number, union<Fragment, Node, [Node]>) → Transform
+// #path=Transform.prototype.insert
 // Insert the given content at the given position.
 Transform.define("insert", function(pos, content) {
   this.replaceWith(pos, pos, content)
 })
 
-// :: (number, string) → Transform
+// :: (number, string) → Transform #path=Transform.prototype.insertText
 // Insert the given text at `pos`, inheriting the marks of the
 // existing content at that position.
 Transform.define("insertText", function(pos, text) {
   this.insert(pos, this.doc.type.schema.text(text, this.doc.marksAt(pos)))
 })
 
-// :: (number, Node) → Transform
+// :: (number, Node) → Transform #path=Transform.prototype.insertInline
 // Insert the given node at `pos`, inheriting the marks of the
 // existing content at that position.
 Transform.define("insertInline", function(pos, node) {

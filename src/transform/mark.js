@@ -45,7 +45,7 @@ Step.define("addMark", {
   }
 })
 
-// :: (number, number, Mark) → Transform
+// :: (number, number, Mark) → Transform #path=Transform.prototype.addMark
 // Add the given mark to the inline content between `from` and `to`.
 Transform.define("addMark", function(from, to, mark) {
   let removed = [], added = [], removing = null, adding = null
@@ -98,6 +98,7 @@ Step.define("removeMark", {
 })
 
 // :: (number, number, ?union<Mark, MarkType>) → Transform
+// #path=Transform.prototype.removeMark
 // Remove the given mark, or all marks of the given type, from inline
 // nodes between `from` and `to`.
 Transform.define("removeMark", function(from, to, mark = null) {
@@ -134,7 +135,7 @@ Transform.define("removeMark", function(from, to, mark = null) {
   matched.forEach(m => this.step("removeMark", m.from, m.to, m.style))
 })
 
-// :: (number, number, ?NodeType) → Transform
+// :: (number, number, ?NodeType) → Transform #path=Transform.prototype.clearMarkup
 // Remove all marks and non-text inline nodes, or if `newParent` is
 // given, all marks and inline nodes that may not appear as content of
 // `newParent`, from the given range.

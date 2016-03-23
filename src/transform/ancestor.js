@@ -114,7 +114,7 @@ function findLiftable(from, to) {
   }
 }
 
-// :: (number, ?number) → Transform
+// :: (number, ?number) → Transform #path=Transform.prototype.lift
 // Lift the nearest liftable ancestor of the [sibling
 // range](#Node.siblingRange) of the given positions out of its
 // parent (or do nothing if no such node exists).
@@ -171,7 +171,7 @@ function checkWrap(from, to, type) {
   if (around && inside) return {shared, around, inside}
 }
 
-// :: (number, ?number, NodeType, ?Object) → Transform
+// :: (number, ?number, NodeType, ?Object) → Transform #path=Transform.prototype.wrap
 // Wrap the [sibling range](#Node.siblingRange) of the given positions
 // in a node of the given type, with the given attributes (if
 // possible).
@@ -195,7 +195,7 @@ Transform.define("wrap", function(from, to = from, type, wrapAttrs) {
   }
 })
 
-// :: (number, ?number, NodeType, ?Object) → Transform
+// :: (number, ?number, NodeType, ?Object) → Transform #path=Transform.prototype.setBlockType
 // Set the type of all textblocks (partly) between `from` and `to` to
 // the given node type with the given attributes.
 Transform.define("setBlockType", function(from, to = from, type, attrs) {
@@ -211,7 +211,7 @@ Transform.define("setBlockType", function(from, to = from, type, attrs) {
   })
 })
 
-// :: (number, NodeType, ?Object) → Transform
+// :: (number, NodeType, ?Object) → Transform #path=Transform.prototype.setNodeType
 // Change the type and attributes of the node after `pos`.
 Transform.define("setNodeType", function(pos, type, attrs) {
   let rPos = this.doc.resolve(pos)

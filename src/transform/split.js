@@ -30,7 +30,7 @@ Step.define("split", {
   }
 })
 
-// :: (number, ?number, ?NodeType, ?Object) → Transform
+// :: (number, ?number, ?NodeType, ?Object) → Transform #path=Transform.prototype.split
 // Split the node at the given position, and optionally, if `depth` is
 // greater than one, any number of nodes above that. By default, the part
 // split off will inherit the node type of the original node. This can

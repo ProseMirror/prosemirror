@@ -46,7 +46,7 @@ export function joinPoint(doc, pos, dir = -1) {
   }
 }
 
-// :: (number) → Transform
+// :: (number) → Transform #path=Transform.prototype.join
 // Join the blocks around the given position.
 Transform.define("join", function(pos, depth = 1) {
   for (let i = 0; i < depth; i++) {
