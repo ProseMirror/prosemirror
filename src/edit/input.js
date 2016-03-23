@@ -447,6 +447,7 @@ handlers.dragstart = (pm, e) => {
 
   if (dragging) {
     // FIXME the document could change during a drag, invalidating this range
+    // use a marked range?
     pm.input.draggingFrom = dragging
     toClipboard(pm.doc, dragging.from, dragging.to, e.dataTransfer)
   }

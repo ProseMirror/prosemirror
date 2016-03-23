@@ -51,8 +51,8 @@ export function joinPoint(doc, pos, dir = -1) {
 Transform.define("join", function(pos, depth = 1) {
   for (let i = 0; i < depth; i++) {
     let $pos = this.doc.resolve(pos)
-    // FIXME should a bogus join fail the transform?
-    if ($pos.parentOffset == 0 || $pos.parentOffset == $pos.parent.content.size) break
+    if ($pos.parentOffset == 0 || $pos.parentOffset == $pos.parent.content.size)
+      return this.fail(new Error("Nothing to join at " + pos))
     this.step("join", pos - 1, pos + 1)
     pos--
   }

@@ -42,13 +42,13 @@ function deleteBarrier(pm, cut) {
     let tr = pm.tr, end = cut + after.nodeSize
     tr.step("ancestor", cut, end, {types: [before.type, ...conn],
                                    attrs: [before.attrs, ...conn.map(() => null)]})
-    tr.join(end + 2 * conn.length + 2)
+    tr.try(() => tr.join(end + 2 * conn.length + 2))
     tr.join(cut)
     if (tr.apply(pm.apply.scroll) !== false) return
   }
 
   let selAfter = findSelectionFrom(pm.doc, cut, 1)
-  return pm.tr.lift(selAfter.from, selAfter.to).apply(pm.apply.scroll)
+  return pm.tr.try(tr => tr.lift(selAfter.from, selAfter.to)).apply(pm.apply.scroll)
 }
 
 // ;; #kind=command
@@ -77,7 +77,7 @@ baseCommands.joinBackward = {
 
     // If there is no node before this, try to lift
     if (!before)
-      return pm.tr.lift(head).apply(pm.apply.scroll)
+      return pm.tr.try(tr => tr.lift(head)).apply(pm.apply.scroll)
 
     // If the node below has no content and the node above is
     // selectable, delete the node below and select the one above.
@@ -350,7 +350,7 @@ baseCommands.lift = {
   label: "Lift out of enclosing block",
   run(pm) {
     let {from, to} = pm.selection
-    return pm.tr.lift(from, to).apply(pm.apply.scroll)
+    return pm.tr.try(tr => tr.lift(from, to)).apply(pm.apply.scroll)
   },
   select(pm) {
     let {from, to} = pm.selection
@@ -417,7 +417,7 @@ baseCommands.liftEmptyBlock = {
           pm.tr.split($head.before($head.depth)).apply() !== false)
         return
     }
-    return pm.tr.lift(head).apply(pm.apply.scroll)
+    return pm.tr.try(tr => tr.lift(head)).apply(pm.apply.scroll)
   },
   keys: ["Enter(30)"]
 }
