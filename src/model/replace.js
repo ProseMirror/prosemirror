@@ -59,7 +59,7 @@ function replaceOuter(from, to, slice, depth) {
   let index = from.index(depth), node = from.node(depth)
   if (index == to.index(depth) && depth < from.depth - slice.openLeft) {
     let inner = replaceOuter(from, to, slice, depth + 1)
-    return node.copy(node.content.replace(index, inner))
+    return node.copy(node.content.replaceChild(index, inner))
   } else if (slice.content.size) {
     let {start, end} = prepareSliceForReplace(slice, from)
     return close(node, replaceThreeWay(from, start, end, to, depth))

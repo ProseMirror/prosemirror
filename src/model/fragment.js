@@ -65,14 +65,9 @@ export class Fragment {
     return new Fragment(result, size)
   }
 
-  addToStart(node) {
-    return new Fragment([node].concat(this.content), this.size + node.nodeSize)
-  }
-
-  addToEnd(node) {
-    return new Fragment(this.content.concat(node), this.size + node.nodeSize)
-  }
-
+  // :: (Fragment) → Fragment
+  // Create a new fragment containing the content of this fragment and
+  // `other`.
   append(other) {
     if (!other.size) return this
     if (!this.size) return other
@@ -85,11 +80,28 @@ export class Fragment {
     return new Fragment(content, this.size + other.size)
   }
 
-  replace(index, node) { // FIXME change name to avoid confusion with Node.replace
+  // :: (number, Node) → Fragment
+  // Create a new fragment in which the node at the given index is
+  // replaced by the given node.
+  replaceChild(index, node) {
     let copy = this.content.slice()
     let size = this.size + node.nodeSize - copy[index].nodeSize
     copy[index] = node
     return new Fragment(copy, size)
+  }
+
+  // (Node) → Fragment
+  // Create a new fragment by prepending the given node to this
+  // fragment.
+  addToStart(node) {
+    return new Fragment([node].concat(this.content), this.size + node.nodeSize)
+  }
+
+  // (Node) → Fragment
+  // Create a new fragment by appending the given node to this
+  // fragment.
+  addToEnd(node) {
+    return new Fragment(this.content.concat(node), this.size + node.nodeSize)
   }
 
   // :: () → Object
@@ -123,6 +135,8 @@ export class Fragment {
     return new Fragment(joined || array, size)
   }
 
+  // :: (Fragment) → bool
+  // Compare this fragment to another one.
   eq(other) {
     if (this.content.length != other.content.length) return false
     for (let i = 0; i < this.content.length; i++)
@@ -150,18 +164,28 @@ export class Fragment {
   // The last child of the fragment, or `null` if it is empty.
   get lastChild() { return this.content.length ? this.content[this.content.length - 1] : null }
 
+  // :: number
+  // The number of child nodes in this fragment.
   get childCount() { return this.content.length }
 
+  // :: (number) → Node
+  // Get the child node at the given index. Raise an error when the
+  // index is out of range.
   child(index) {
     let found = this.content[index]
     if (!found) throw new ModelError("Index " + index + " out of range for " + this)
     return found
   }
 
+  // :: (number) → ?Node
+  // Get the child node at the given index, if it exists.
   maybeChild(index) {
     return this.content[index]
   }
 
+  // :: ((node: Node, offset: number))
+  // Call `f` for every child node, passing the node and its offset
+  // into this parent node.
   forEach(f) {
     for (let i = 0, p = 0; i < this.content.length; i++) {
       let child = this.content[i]

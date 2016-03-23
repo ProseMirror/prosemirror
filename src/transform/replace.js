@@ -161,7 +161,7 @@ function closeTo(content, to, depth, openDepth) {
   }
   let inner = content.lastChild.content
   if (depth < to.depth) inner = closeTo(inner, to, depth + 1, openDepth - 1)
-  return content.replace(content.childCount - 1, after.copy(inner))
+  return content.replaceChild(content.childCount - 1, after.copy(inner))
 }
 
 function fillTo(to, depth) {
@@ -176,13 +176,13 @@ function fillTo(to, depth) {
 function closeRight(content, openDepth) {
   if (openDepth == 0) return content
   let last = content.lastChild, closed = closeNode(last, closeRight(last.content, openDepth - 1))
-  return closed == last ? content : content.replace(content.childCount - 1, closed)
+  return closed == last ? content : content.replaceChild(content.childCount - 1, closed)
 }
 
 function closeLeft(content, openDepth) {
   if (openDepth == 0) return content
   let first = content.firstChild, closed = closeNode(first, first.content)
-  return closed == first ? content : content.replace(0, closed)
+  return closed == first ? content : content.replaceChild(0, closed)
 }
 
 function closeFragment(type, content, to, from, depth) {

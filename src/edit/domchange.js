@@ -44,7 +44,7 @@ function parseNearSelection(pm) {
                            .append(rFrom.parent.content.cut(end - parentStart)))
       for (let i = depth - 1; i >= 0; i--) {
         let wrap = rFrom.node(i)
-        parsed = wrap.copy(wrap.content.replace(rFrom.index(i), parsed))
+        parsed = wrap.copy(wrap.content.replaceChild(rFrom.index(i), parsed))
       }
       return parsed
     }
