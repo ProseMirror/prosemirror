@@ -2,31 +2,32 @@ import {ProseMirrorError} from "../util/error"
 
 import {Fragment} from "./fragment"
 
+// ;; Error type raised by `Node.replace` when given an invalid
+// replacement.
 export class ReplaceError extends ProseMirrorError {}
 
+// ;; A slice represents a piece cut out of a larger document. It
+// stores not only a fragment, but also the depth up to which nodes on
+// both side are 'open' / cut through.
 export class Slice {
+  // :: (Fragment, number, number)
   constructor(content, openLeft, openRight) {
+    // :: Fragment The slice's content nodes.
     this.content = content
+    // :: number The open depth at the start.
     this.openLeft = openLeft
+    // :: number The open depth at the end.
     this.openRight = openRight
   }
 
+  // :: number
+  // The size this slice would add when inserted into a document.
   get size() {
     return this.content.size - this.openLeft - this.openRight
   }
 
-  nodeLeft(depth) {
-    let content = this.content
-    for (let i = 1; i < depth; i++) content = content.firstChild.content
-    return content.firstChild
-  }
-
-  nodeRight(depth) {
-    let content = this.content
-    for (let i = 1; i < depth; i++) content = content.lastChild.content
-    return content.lastChild
-  }
-
+  // :: () → ?Object
+  // Convert a slice to a JSON-serializable representation.
   toJSON() {
     if (!this.content.size) return null
     return {content: this.content.toJSON(),
@@ -34,12 +35,16 @@ export class Slice {
             openRight: this.openRight}
   }
 
+  // :: (Schema, ?Object) → Slice
+  // Deserialize a slice from its JSON representation.
   static fromJSON(schema, json) {
     if (!json) return Slice.empty
     return new Slice(Fragment.fromJSON(schema, json.content), json.openLeft, json.openRight)
   }
 }
 
+// :: Slice
+// The empty slice.
 Slice.empty = new Slice(Fragment.empty, 0, 0)
 
 export function replace(from, to, slice) {

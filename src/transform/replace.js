@@ -226,6 +226,12 @@ function fragmentSuperKind(fragment) {
   return kind
 }
 
+function nodeLeft(slice, depth) {
+  let content = slice.content
+  for (let i = 1; i < depth; i++) content = content.firstChild.content
+  return content.firstChild
+}
+
 function placeSlice(from, slice) {
   let dFrom = from.depth, unplaced = null, openLeftUnplaced = 0
   let placed = [], parents = null
@@ -234,7 +240,7 @@ function placeSlice(from, slice) {
     let curType, curAttrs, curFragment
     if (dSlice >= 0) {
       if (dSlice > 0) { // Inside slice
-        ;({type: curType, attrs: curAttrs, content: curFragment} = slice.nodeLeft(dSlice))
+        ;({type: curType, attrs: curAttrs, content: curFragment} = nodeLeft(slice, dSlice))
       } else if (dSlice == 0) { // Top of slice
         curFragment = slice.content
       }
