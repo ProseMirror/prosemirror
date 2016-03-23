@@ -97,7 +97,6 @@ class InputRules {
       if (match = rule.match.exec(textBefore)) {
         let startVersion = this.pm.history.getVersion()
         if (typeof rule.handler == "string") {
-          let offset = rPos.parentOffset - (match[1] || match[0]).length
           let start = pos - (match[1] || match[0]).length
           let marks = this.pm.doc.marksAt(pos)
           this.pm.tr.delete(start, pos)

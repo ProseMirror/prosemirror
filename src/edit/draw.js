@@ -8,7 +8,7 @@ function options(ranges) {
   return {
     pos: 0,
     preRenderContent() { this.pos++ },
-    postRenderContent(node) { this.pos++ },
+    postRenderContent() { this.pos++ },
 
     onRender(node, dom, offset) {
       if (node.isBlock) {
