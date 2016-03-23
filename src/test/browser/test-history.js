@@ -54,7 +54,7 @@ test("unsynced_complex", pm => {
   type(pm, "hello")
   cutHistory(pm)
   type(pm, "!")
-  pm.tr.insertText(1, "....").apply()
+  pm.tr.insertText(1, "....").apply({addToHistory: false})
   pm.tr.split(3).apply()
   cmpNode(pm.doc, doc(p(".."), p("..hello!")))
   pm.tr.split(2).apply({addToHistory: false})

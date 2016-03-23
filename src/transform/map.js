@@ -39,6 +39,18 @@ function mapThrough(ranges, pos, bias = 1, back) {
   return new MapResult(pos + diff)
 }
 
+function touches(ranges, pos, offset, back) {
+  let diff = 0
+  for (let i = 0; i < ranges.length; i++) {
+    let range = ranges[i], start = range.pos - (back ? diff : 0)
+    if (start > pos) break
+    let oldSize = range.size(!back), newSize = range.size(back), end = start + oldSize
+    if (i == offset.index && pos <= end) return true
+    diff += newSize - oldSize
+  }
+  return false
+}
+
 // ;; The return value of mapping a position.
 export class MapResult {
   constructor(pos, deleted = false, recover = null) {
@@ -74,6 +86,8 @@ export class PosMap {
     return mapThrough(this.ranges, pos, bias, false)
   }
 
+  touches(pos, offset) { return touches(this.ranges, pos, offset, false) }
+
   // :: () → PosMap
   // Create an inverted version of this map. The result can be used to
   // map positions in the post-step document to the pre-step document.
@@ -90,6 +104,8 @@ class InvertedPosMap {
   }
 
   map(pos, bias) { return mapThrough(this.ranges, pos, bias, true) }
+
+  touches(pos, offset) { return touches(this.ranges, pos, offset, true) }
 
   invert() { return new PosMap(this.ranges) }
 
@@ -149,19 +165,30 @@ export class Remapping {
   // Map a position through this remapping, optionally passing a bias
   // direction.
   map(pos, bias) {
-    let deleted = false
+    let deleted = false, recoverables = null
 
     for (let i = -this.head.length; i < this.tail.length; i++) {
-      let map = this.get(i)
+      let map = this.get(i), rec
+
+      if ((rec = recoverables && recoverables[i]) && map.touches(pos, rec)) {
+        pos = map.recover(rec)
+        continue
+      }
+
       let result = map.map(pos, bias)
       if (result.recover) {
         let corr = this.mirror[i]
         if (corr != null) {
-          i = corr
-          pos = this.get(corr).recover(result.recover)
-          continue
+          if (result.deleted) {
+            i = corr
+            pos = this.get(corr).recover(result.recover)
+            continue
+          } else {
+            ;(recoverables || (recoverables = Object.create(null)))[corr] = result.recover
+          }
         }
       }
+
       if (result.deleted) deleted = true
       pos = result.pos
     }
