@@ -388,8 +388,16 @@ function fromClipboard(pm, dataTransfer, plainText) {
 function parseFromContext(dom, contextNode, openLeft, openRight) {
   let schema = contextNode.schema
   let parsed = fromDOM(schema, dom, {topNode: contextNode.create(), preserveWhitespace: true})
-  // FIXME verify that openLeft/Right is valid
-  return new Slice(parsed.content, openLeft, openRight)
+  return new Slice(parsed.content, clipOpen(parsed.content, openLeft, true), clipOpen(parsed.content, openRight, false))
+}
+
+function clipOpen(fragment, max, start) {
+  for (let i = 0; i < max; i++) {
+    let node = start ? fragment.firstChild : fragment.lastChild
+    if (!node || node.type.contains == null) return i
+    fragment = node.content
+  }
+  return max
 }
 
 handlers.copy = handlers.cut = (pm, e) => {
