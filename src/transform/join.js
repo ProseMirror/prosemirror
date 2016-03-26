@@ -57,7 +57,7 @@ Transform.define("join", function(pos, depth = 1) {
   for (let i = 0; i < depth; i++) {
     let $pos = this.doc.resolve(pos)
     if ($pos.parentOffset == 0 || $pos.parentOffset == $pos.parent.content.size)
-      return this.fail(new Error("Nothing to join at " + pos))
+      return this.fail("Nothing to join at " + pos)
     this.step("join", pos - 1, pos + 1)
     pos--
   }
