@@ -1,7 +1,7 @@
 import {contains} from "../dom"
 import {AssertionError} from "../util/error"
 
-// : (ProseMirror, DOMNode) → [number]
+// : (ProseMirror, DOMNode) → number
 // Get the path for a given a DOM node in a document.
 export function posBeforeFromDOM(pm, node) {
   let pos = 0
@@ -12,7 +12,7 @@ export function posBeforeFromDOM(pm, node) {
   return pos
 }
 
-// : (ProseMirror, DOMNode, number, bool) → number
+// : (ProseMirror, DOMNode, number, ?bool) → number
 export function posFromDOM(pm, dom, domOffset, loose) {
   if (!loose && pm.operation && pm.doc != pm.operation.doc)
     throw new AssertionError("Fetching a position from an outdated DOM structure")
