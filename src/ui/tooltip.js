@@ -8,7 +8,7 @@ const prefix = "ProseMirror-tooltip"
 // when showing the tooltip), and points at that position with a
 // little arrow-like triangle attached to the node.
 export class Tooltip {
-  // :: (DOMNode, ?union<string, Object>)
+  // :: (DOMNode, union<string, Object>)
   // Create a new tooltip that lives in the wrapper node, which should
   // be its offset anchor, i.e. it should have a `relative` or
   // `absolute` CSS position. You'll often want to pass an editor's

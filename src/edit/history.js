@@ -377,7 +377,7 @@ export class History {
     pm.on("transform", (transform, selection, options) => this.recordTransform(transform, selection, options))
   }
 
-  // : (Transform, Object)
+  // : (Transform, Selection, Object)
   // Record a transformation in undo history.
   recordTransform(transform, selection, options) {
     if (this.ignoreTransform) return

@@ -122,7 +122,7 @@ PosMap.empty = new PosMap([])
 // `Mappable`.
 export class Remapping {
   // :: (?[PosMap], ?[PosMap])
-  constructor(head = [], tail = [], mirror = Object.create(null)) {
+  constructor(head = [], tail = []) {
     // :: [PosMap]
     // The maps in the head of the mapping are applied to input
     // positions first, back-to-front. So the map at the end of this
@@ -130,7 +130,7 @@ export class Remapping {
     this.head = head
     // The maps in the tail are applied last, front-to-back.
     this.tail = tail
-    this.mirror = mirror
+    this.mirror = Object.create(null)
   }
 
   // :: (PosMap, ?number) → number

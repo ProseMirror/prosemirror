@@ -81,8 +81,6 @@ Step.define("removeMark", {
     let slice = doc.slice(step.from, step.to)
     slice.content = mapFragment(slice.content, node => {
       return node.mark(step.param.removeFromSet(node.marks))
-      if (!parent.type.canContainMark(step.param.type)) return node
-      return node.mark(step.param.addToSet(node.marks))
     })
     return StepResult.fromReplace(doc, step.from, step.to, slice)
   },

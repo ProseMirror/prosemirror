@@ -362,7 +362,7 @@ function toClipboard(doc, from, to, dataTransfer) {
   dataTransfer.setData("text/plain", toText(slice.content))
 }
 
-// : (ProseMirror, DataTransfer, bool) → ?Slice
+// : (ProseMirror, DataTransfer, ?bool) → ?Slice
 function fromClipboard(pm, dataTransfer, plainText) {
   let txt = dataTransfer.getData("text/plain")
   let html = dataTransfer.getData("text/html")
