@@ -45,10 +45,9 @@ export class Step {
     return type.posMap ? type.posMap(this) : PosMap.empty
   }
 
-  // :: (Node, PosMap) → Step
+  // :: (Node) → Step
   // Create an inverted version of this step. Needs the document as it
-  // was before the step, as well as `PosMap` created by applying the
-  // step to that document, as input.
+  // was before the step as input.
   invert(oldDoc) {
     return steps[this.type].invert(this, oldDoc)
   }
@@ -93,7 +92,7 @@ export class Step {
   //
   // **`apply`**`(doc: Node, step: Step) → ?StepResult
   //   : Applies the step to a document.
-  // **`invert`**`(step: Step, oldDoc: Node, map: PosMap) → Step
+  // **`invert`**`(step: Step, oldDoc: Node) → Step
   //   : Create an inverted version of the step.
   // **`paramToJSON`**`(param: ?any) → ?Object
   //   : Serialize this step type's parameter to JSON.

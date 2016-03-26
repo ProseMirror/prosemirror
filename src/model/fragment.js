@@ -104,7 +104,7 @@ export class Fragment {
     return new Fragment(this.content.concat(node), this.size + node.nodeSize)
   }
 
-  // :: () → Object
+  // :: () → union<Object, null>
   // Create a JSON-serializeable representation of this fragment.
   toJSON() {
     return this.content.length ? this.content.map(n => n.toJSON()) : null
