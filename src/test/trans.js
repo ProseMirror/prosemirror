@@ -99,8 +99,8 @@ function testMapping(maps, pos, newPos, label) {
 
   let remap = new Remapping()
   for (let i = maps.length - 1; i >= 0; i--) {
-    remap.addToFront(maps[i])
-    remap.addToBack(maps[i].invert(), i - maps.length)
+    let id = remap.addToFront(maps[i])
+    remap.addToBack(maps[i].invert(), id)
   }
   cmpStr(remap.map(pos, 1).pos, pos, label + " round trip")
 }
