@@ -104,13 +104,13 @@ export class Fragment {
     return new Fragment(this.content.concat(node), this.size + node.nodeSize)
   }
 
-  // :: () → union<Object, null>
+  // :: () → ?Object
   // Create a JSON-serializeable representation of this fragment.
   toJSON() {
     return this.content.length ? this.content.map(n => n.toJSON()) : null
   }
 
-  // :: (Schema, Object) → Fragment
+  // :: (Schema, ?Object) → Fragment
   // Deserialize a fragment from its JSON representation.
   static fromJSON(schema, value) {
     return value ? new Fragment(value.map(schema.nodeFromJSON)) : Fragment.empty
