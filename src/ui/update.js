@@ -7,13 +7,18 @@ class CentralScheduler {
     this.timeout = null
     this.lastForce = 0
     this.pm = pm
-    this.force = this.force.bind(this)
+    this.timedOut = () => {
+      if (this.pm.operation)
+        this.timeout = setTimeout(this.timedOut, UPDATE_TIMEOUT)
+      else
+        this.force()
+    }
     pm.on("flush", this.onFlush.bind(this))
   }
 
   set(f) {
     if (this.waiting.length == 0)
-      this.timeout = setTimeout(this.force, UPDATE_TIMEOUT)
+      this.timeout = setTimeout(this.timedOut, UPDATE_TIMEOUT)
     if (this.waiting.indexOf(f) == -1) this.waiting.push(f)
   }
 
