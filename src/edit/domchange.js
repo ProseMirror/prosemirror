@@ -25,7 +25,7 @@ function parseNearSelection(pm) {
         start -= $from.node(depth).child($from.index(depth) - 1).nodeSize
       if (toEnd && $to.index(depth) + 1 < $to.node(depth).childCount)
         end += $to.node(depth).child($to.index(depth) + 1).nodeSize
-      let startPos = DOMFromPos(pm.content, start), endPos = DOMFromPos(pm.content, end)
+      let startPos = DOMFromPos(pm, start), endPos = DOMFromPos(pm, end)
       while (startPos.offset) {
         let prev = startPos.node.childNodes[startPos.offset - 1]
         if (prev.nodeType != 1 || !prev.hasAttribute("pm-offset")) --startPos.offset

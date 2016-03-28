@@ -130,7 +130,7 @@ export class SelectionState {
 
   // Make changes to the DOM for a node selection.
   nodeToDOM() {
-    let dom = DOMAfterPos(this.pm.content, this.range.from)
+    let dom = DOMAfterPos(this.pm, this.range.from)
     if (dom != this.lastNode) {
       this.clearNode()
       dom.classList.add("ProseMirror-selectednode")
@@ -148,8 +148,8 @@ export class SelectionState {
   rangeToDOM() {
     this.clearNode()
 
-    let anchor = DOMFromPos(this.pm.content, this.range.anchor)
-    let head = DOMFromPos(this.pm.content, this.range.head)
+    let anchor = DOMFromPos(this.pm, this.range.anchor)
+    let head = DOMFromPos(this.pm, this.range.head)
 
     let sel = window.getSelection(), range = document.createRange()
     if (sel.extend) {
@@ -350,7 +350,7 @@ export function findSelectionAtEnd(node, text) {
 // from a position would leave a text block.
 export function verticalMotionLeavesTextblock(pm, pos, dir) {
   let $pos = pm.doc.resolve(pos)
-  let dom = DOMAfterPos(pm.content, $pos.before($pos.depth))
+  let dom = DOMAfterPos(pm, $pos.before($pos.depth))
   let coords = coordsAtPos(pm, pos)
   for (let child = dom.firstChild; child; child = child.nextSibling) {
     if (child.nodeType != 1) continue

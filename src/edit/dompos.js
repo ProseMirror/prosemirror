@@ -66,8 +66,11 @@ export function childContainer(dom) {
 // : (DOMNode, number) → {node: DOMNode, offset: number}
 // Find the DOM node and offset into that node that the given document
 // position refers to.
-export function DOMFromPos(parent, pos) {
-  let container = parent, offset = pos
+export function DOMFromPos(pm, pos) {
+  if (pm.operation && pm.doc != pm.operation.doc)
+    throw new AssertionError("Resolving a position in an outdated DOM structure")
+
+  let container = pm.content, offset = pos
   outer: for (;;) {
     for (let child = container.firstChild, i = 0;; child = child.nextSibling, i++) {
       if (!child) {
@@ -96,8 +99,8 @@ export function DOMFromPos(parent, pos) {
 }
 
 // : (DOMNode, number) → DOMNode
-export function DOMAfterPos(parent, pos) {
-  let {node, offset} = DOMFromPos(parent, pos)
+export function DOMAfterPos(pm, pos) {
+  let {node, offset} = DOMFromPos(pm, pos)
   if (node.nodeType != 1 || offset == node.childNodes.length)
     throw new AssertionError("No node after pos " + pos)
   return node.childNodes[offset]
@@ -233,7 +236,7 @@ function textRects(node) {
 // Given a position in the document model, get a bounding box of the character at
 // that position, relative to the window.
 export function coordsAtPos(pm, pos) {
-  let {node, offset} = DOMFromPos(pm.content, pos)
+  let {node, offset} = DOMFromPos(pm, pos)
   let side, rect
   if (node.nodeType == 3) {
     if (offset < node.nodeValue.length) {
@@ -264,7 +267,7 @@ export function coordsAtPos(pm, pos) {
 }
 
 export function setDOMSelectionToPos(pm, pos) {
-  let {node, offset} = DOMFromPos(pm.content, pos)
+  let {node, offset} = DOMFromPos(pm, pos)
   let range = document.createRange()
   range.setEnd(node, offset)
   range.setStart(node, offset)
