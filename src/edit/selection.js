@@ -336,13 +336,13 @@ export function findSelectionNear(doc, pos, bias = 1, text) {
 
 // Find the selection closest to the start of the given node. `pos`,
 // if given, should point at the start of the node's content.
-export function findSelectionAtStart(node, pos = 0, text) {
-  return findSelectionIn(node, pos, 0, 1, text)
+export function findSelectionAtStart(node, text) {
+  return findSelectionIn(node, 0, 0, 1, text)
 }
 
 // Find the selection closest to the end of the given node.
-export function findSelectionAtEnd(node, pos = node.content.size, text) {
-  return findSelectionIn(node, pos, node.content.size, -1, text)
+export function findSelectionAtEnd(node, text) {
+  return findSelectionIn(node, node.content.size, node.childCount, -1, text)
 }
 
 // : (ProseMirror, number, number)
