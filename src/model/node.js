@@ -207,8 +207,8 @@ export class Node {
   // position is at the start of a non-empty node, those of the node
   // after it.
   marksAt(pos) {
-    let r = this.resolve(pos), top = r.parent, index = r.index(r.depth)
-    let leaf = index ? top.child(index - 1) : index < top.childCount ? top.child(index) : null
+    let $pos = this.resolve(pos), top = $pos.parent, index = $pos.index($pos.depth)
+    let leaf = $pos.offset($pos.depth) == $pos.parentOffset && index ? top.child(index - 1) : top.maybeChild(index)
     return leaf ? leaf.marks : emptyArray
   }
 
