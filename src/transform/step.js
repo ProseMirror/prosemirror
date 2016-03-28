@@ -108,11 +108,11 @@ const steps = Object.create(null)
 // ;; The result of [applying](#Step.apply) a step. Contains either a
 // new document or a failure value.
 export class StepResult {
-  // :: (union<Node, null>, union<string, null>)
+  // :: (?Node, ?string)
   constructor(doc, failed) {
-    // :: Node The transformed document.
+    // :: ?Node The transformed document.
     this.doc = doc
-    // :: string A text providing information about a failed step.
+    // :: ?string A text providing information about a failed step.
     this.failed = failed
   }
 
