@@ -1,7 +1,7 @@
 export {Transform} from "./transform"
 export {Step, StepResult} from "./step"
 export {canLift, canWrap} from "./ancestor"
-export {joinPoint, joinableBlocks} from "./join"
+export {joinPoint, joinable} from "./join"
 export {PosMap, MapResult, Remapping} from "./map"
 import "./mark"
 import "./split"

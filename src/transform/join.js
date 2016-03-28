@@ -32,10 +32,13 @@ Step.define("join", {
 // :: (Node, number) → bool
 // Test whether the blocks before and after a given position can be
 // joined.
-export function joinableBlocks(doc, pos) {
-  let $pos = doc.resolve(pos), before = $pos.nodeBefore, after = $pos.nodeAfter
-  return before && after && !before.isText && before.type.contains &&
-    before.type.canContainContent(after.type)
+export function joinable(doc, pos) {
+  let $pos = doc.resolve(pos)
+  return canJoin($pos.nodeBefore, $pos.nodeAfter)
+}
+
+function canJoin(a, b) {
+  return a && b && !a.isText && a.type.contains && a.type.canContainContent(b.type)
 }
 
 // :: (Node, number, ?number) → ?number
@@ -45,8 +48,18 @@ export function joinableBlocks(doc, pos) {
 export function joinPoint(doc, pos, dir = -1) {
   let $pos = doc.resolve(pos)
   for (let d = $pos.depth; d >= 0; d--) {
-    if (joinableBlocks(doc, pos)) return pos
-    if (pos.depth == 0) return null
+    let before, after
+    if (d == $pos.depth) {
+      before = $pos.nodeBefore
+      after = $pos.nodeAfter
+    } else if (dir > 0) {
+      before = $pos.node(d + 1)
+      after = $pos.node(d).maybeChild($pos.index(d) + 1)
+    } else {
+      before = $pos.node(d).maybeChild($pos.index(d) - 1)
+      after = $pos.node(d + 1)
+    }
+    if (before && !before.isTextblock && canJoin(before, after)) return pos
     pos = dir < 0 ? $pos.before(d) : $pos.after(d)
   }
 }

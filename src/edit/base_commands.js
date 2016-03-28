@@ -1,4 +1,4 @@
-import {joinPoint, joinableBlocks, canLift} from "../transform"
+import {joinPoint, joinable, canLift} from "../transform"
 import {AssertionError} from "../util/error"
 
 import {charCategory, isExtendingChar} from "./char"
@@ -285,7 +285,7 @@ baseCommands.deleteWordAfter = {
 
 function joinPointAbove(pm) {
   let {node, from} = pm.selection
-  if (node) return joinableBlocks(pm.doc, from) ? from : null
+  if (node) return joinable(pm.doc, from) ? from : null
   else return joinPoint(pm.doc, from, -1)
 }
 
@@ -319,7 +319,7 @@ baseCommands.joinUp = {
 
 function joinPointBelow(pm) {
   let {node, to} = pm.selection
-  if (node) return joinableBlocks(pm.doc, to) ? to : null
+  if (node) return joinable(pm.doc, to) ? to : null
   else return joinPoint(pm.doc, to, 1)
 }
 
