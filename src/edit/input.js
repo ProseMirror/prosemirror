@@ -426,7 +426,7 @@ handlers.paste = (pm, e) => {
   let slice = fromClipboard(pm, e.clipboardData, pm.input.shiftKey)
   if (slice) {
     e.preventDefault()
-    pm.tr.replace(sel.from, sel.to).apply(pm.apply.scroll)
+    pm.tr.replace(sel.from, sel.to, slice).apply(pm.apply.scroll)
   }
 }
 
