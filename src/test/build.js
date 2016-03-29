@@ -88,6 +88,7 @@ export const ol = block("ordered_list")
 
 export const br = schema.node("hard_break")
 export const img = schema.node("image", {src: dataImage, alt: "x"})
+export const img2 = schema.node("image", {src: dataImage, alt: "y"})
 export const hr = schema.node("horizontal_rule")
 
 export const em = mark("em")

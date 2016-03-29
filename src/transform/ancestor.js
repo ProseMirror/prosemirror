@@ -217,10 +217,14 @@ Transform.prototype.setBlockType = function(from, to = from, type, attrs) {
   return this
 }
 
-// :: (number, NodeType, ?Object) → Transform
+// :: (number, ?NodeType, ?Object) → Transform
 // Change the type and attributes of the node after `pos`.
 Transform.prototype.setNodeType = function(pos, type, attrs) {
   let node = this.doc.nodeAt(pos)
-  if (!node || !node.type.contains) throw new AssertionError("No content node at given position")
-  return this.step("ancestor", pos + 1, pos + 1 + node.content.size, {depth: 1, types: [type], attrs: [attrs]})
+  if (!node) throw new AssertionError("No node at given position")
+  if (!type) type = node.type
+  if (node.type.contains)
+    return this.step("ancestor", pos + 1, pos + 1 + node.content.size, {depth: 1, types: [type], attrs: [attrs]})
+  else
+    return this.replaceWith(pos, pos + node.nodeSize, type.create(attrs, null, node.marks))
 }

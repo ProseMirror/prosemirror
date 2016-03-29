@@ -1,6 +1,6 @@
 import {defaultSchema as schema} from "../model"
 
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, hr} from "./build"
+import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, img, img2, dataImage, br, hr} from "./build"
 
 import {defTest} from "./tests"
 import {tr, testTransform} from "./trans"
@@ -320,6 +320,10 @@ nodeType("invalid",
          doc("<a>", p("foo")),
          "fail",
          "blockquote")
+nodeType("inline",
+         doc(p("foo<a>", img, "bar")),
+         doc(p("foo", img2, "bar")),
+         "image", {src: dataImage, alt: "y"})
 
 function repl(name, doc, source, expect) {
   defTest("replace_" + name, () => {
