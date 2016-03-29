@@ -124,9 +124,7 @@ export function testTransform(delayedTr, doc, expect) {
     throw new Failure("Transform succeeded unexpectedly")
 
   cmpNode(tr.doc, expect)
-  let inverted = invert(tr)
-  if (inverted.failed) throw new Failure("Inverting transform failed: " + inverted.failed)
-  cmpNode(inverted.doc, tr.before, "inverted")
+  cmpNode(invert(tr).doc, tr.before, "inverted")
 
   testStepJSON(tr)
 
