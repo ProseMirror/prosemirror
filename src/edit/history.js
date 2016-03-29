@@ -113,7 +113,7 @@ class CompressionWorker {
         }
         // FIXME don't need to apply the steps anymore
         let result = mappedStep && mappedStep.apply(this.doc), map
-        if (result) {
+        if (result.doc) {
           map = mappedStep.posMap()
           this.doc = result.doc
           this.maps.push(map.invert())
@@ -248,7 +248,7 @@ class Branch {
         step = step.map(remap.remap)
 
         let result = step && tr.maybeStep(step), map
-        if (result) {
+        if (result.doc) {
           map = step.posMap()
           ids.push(invertedStep.id)
           if (this.addMap(map))
