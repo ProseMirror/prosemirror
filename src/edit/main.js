@@ -212,7 +212,6 @@ export class ProseMirror {
   //
   // Has the following property:
   apply(transform, options = nullOptions) {
-    if (transform.failed) throw transform.failed
     if (!transform.steps.length) return false
     if (!transform.docs[0].eq(this.doc))
       throw new AssertionError("Applying a transform that does not start with the current document")

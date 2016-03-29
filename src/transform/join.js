@@ -1,3 +1,4 @@
+import {AssertionError} from "../util/error"
 import {Slice} from "../model"
 
 import {Transform} from "./transform"
@@ -64,14 +65,19 @@ export function joinPoint(doc, pos, dir = -1) {
   }
 }
 
-// :: (number) → Transform #path=Transform.prototype.join
-// Join the blocks around the given position.
-Transform.define("join", function(pos, depth = 1) {
+// :: (number, ?number, ?bool) → Transform
+// Join the blocks around the given position. When `silent` is true,
+// the method will return without raising an error if the position
+// isn't a valid place to join.
+Transform.prototype.join = function(pos, depth = 1, silent = false) {
   for (let i = 0; i < depth; i++) {
     let $pos = this.doc.resolve(pos)
-    if ($pos.parentOffset == 0 || $pos.parentOffset == $pos.parent.content.size)
-      return this.fail("Nothing to join at " + pos)
+    if ($pos.parentOffset == 0 || $pos.parentOffset == $pos.parent.content.size) {
+      if (!silent) throw new AssertionError("Nothing to join at " + pos)
+      break
+    }
     this.step("join", pos - 1, pos + 1)
     pos--
   }
-})
+  return this
+}

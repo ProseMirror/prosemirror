@@ -30,21 +30,22 @@ Step.define("split", {
   }
 })
 
-// :: (number, ?number, ?NodeType, ?Object) → Transform #path=Transform.prototype.split
+// :: (number, ?number, ?NodeType, ?Object) → Transform
 // Split the node at the given position, and optionally, if `depth` is
 // greater than one, any number of nodes above that. By default, the part
 // split off will inherit the node type of the original node. This can
 // be changed by passing `typeAfter` and `attrsAfter`.
-Transform.define("split", function(pos, depth = 1, typeAfter, attrsAfter) {
+Transform.prototype.split = function(pos, depth = 1, typeAfter, attrsAfter) {
   for (let i = 0; i < depth; i++)
     this.step("split", pos + i, pos + i,
               i == 0 && typeAfter ? {type: typeAfter, attrs: attrsAfter} : null)
-})
+  return this
+}
 
-// :: (number, ?number) → Transform #path=Transform.prototype.splitIfNeeded
+// :: (number, ?number) → Transform
 // Split at the given position, up to the given depth, if that
 // position isn't already at the start or end of its parent node.
-Transform.define("splitIfNeeded", function(pos, depth = 1) {
+Transform.prototype.splitIfNeeded = function(pos, depth = 1) {
   let $pos = this.doc.resolve(pos), before = true
   for (let i = 0; i < depth; i++) {
     let d = $pos.depth - i, offset = i == 0 ? $pos.parentOffset : $pos.offset(d) + (before ? 0 : $pos.node(d + 1).nodeSize)
@@ -53,4 +54,4 @@ Transform.define("splitIfNeeded", function(pos, depth = 1) {
     before = offset == 0
   }
   return this
-})
+}

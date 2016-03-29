@@ -6,7 +6,7 @@ import {defTest} from "./tests"
 import {tr, testTransform} from "./trans"
 
 function add(name, doc, expect, mark) {
-  defTest("addMark_" + name, () => testTransform(tr.addMark(mark).get(doc), expect))
+  defTest("addMark_" + name, () => testTransform(tr.addMark(mark), doc, expect))
 }
 
 add("simple",
@@ -35,7 +35,7 @@ add("across_blocks",
     "em")
 
 function rem(name, doc, expect, mark) {
-  defTest("rmMark_" + name, () => testTransform(tr.rmMark(mark).get(doc), expect))
+  defTest("rmMark_" + name, () => testTransform(tr.rmMark(mark), doc, expect))
 }
 
 rem("gap",
@@ -68,7 +68,7 @@ rem("all",
     null)
 
 function ins(name, doc, expect, nodes) {
-  defTest("insert_" + name, () => testTransform(tr.ins(nodes).get(doc), expect))
+  defTest("insert_" + name, () => testTransform(tr.ins(nodes), doc, expect))
 }
 
 ins("break",
@@ -94,7 +94,7 @@ ins("start_of_blockquote",
     schema.node("paragraph"))
 
 function del(name, doc, expect) {
-  defTest("delete_" + name, () => testTransform(tr.del().get(doc), expect))
+  defTest("delete_" + name, () => testTransform(tr.del(), doc, expect))
 }
 
 del("simple",
@@ -108,7 +108,7 @@ del("outside_path",
     doc(blockquote(p("a")), p("c<1>")))
 
 function txt(name, doc, expect, text) {
-  defTest("insertText_" + name, () => testTransform(tr.txt(text).get(doc), expect))
+  defTest("insertText_" + name, () => testTransform(tr.txt(text), doc, expect))
 }
 
 txt("inherit_style",
@@ -149,7 +149,7 @@ txt("before_br",
     "ay")
 
 function join(name, doc, expect) {
-  defTest("join_" + name, () => testTransform(tr.join().get(doc), expect))
+  defTest("join_" + name, () => testTransform(tr.join(), doc, expect))
 }
 
 join("simple",
@@ -174,7 +174,7 @@ join("inline",
 function split(name, doc, expect, args) {
   defTest("split_" + name, () => {
     let {depth, type, attrs} = args || {}
-    testTransform(tr.split("a", depth, type, attrs).get(doc), expect)
+    testTransform(tr.split("a", depth, type, attrs), doc, expect)
   })
 }
 
@@ -217,7 +217,7 @@ split("blockquote_end",
       "fail")
 
 function lift(name, doc, expect) {
-  defTest("lift_" + name, () => testTransform(tr.lift().get(doc), expect))
+  defTest("lift_" + name, () => testTransform(tr.lift(), doc, expect))
 }
 
 lift("simple_between",
@@ -255,7 +255,7 @@ lift("multiple_from_list_with_two_items",
      doc(p("one<a>"), p("<half>half"), p("two<b>"), ul(li(p("three<after>")))))
 
 function wrap(name, doc, expect, type, attrs) {
-  defTest("wrap_" + name, () => testTransform(tr.wrap(type, attrs).get(doc), expect))
+  defTest("wrap_" + name, () => testTransform(tr.wrap(type, attrs), doc, expect))
 }
 
 wrap("simple",
@@ -274,10 +274,6 @@ wrap("nested_list",
      doc(ol(li(p("<1>one")), li(p("<a>two"), p("<b>three")), li(p("<4>four")))),
      doc(ol(li(p("<1>one")), li(ol(li(p("<a>two")), li(p("<b>three")))), li(p("<4>four")))),
      "ordered_list")
-wrap("not_possible",
-     doc(p("hi<a>")),
-     "fail",
-     "horizontal_rule")
 wrap("include_parent",
      doc(blockquote(p("<1>one"), p("two<a>")), p("three<b>")),
      doc(blockquote(blockquote(p("<1>one"), p("two<a>")), p("three<b>"))),
@@ -288,7 +284,7 @@ wrap("bullet_list",
      "bullet_list")
 
 function type(name, doc, expect, nodeType, attrs) {
-  defTest("blockType_" + name, () => testTransform(tr.blockType(nodeType, attrs).get(doc), expect))
+  defTest("blockType_" + name, () => testTransform(tr.blockType(nodeType, attrs), doc, expect))
 }
 
 type("simple",
@@ -313,7 +309,7 @@ type("only_clear_for_code_block",
      "heading", {level: "1"})
 
 function nodeType(name, doc, expect, type, attrs) {
-  defTest("nodeType_" + name, () => testTransform(tr.nodeType(type, attrs).get(doc), expect))
+  defTest("nodeType_" + name, () => testTransform(tr.nodeType(type, attrs), doc, expect))
 }
 
 nodeType("valid",
@@ -327,7 +323,7 @@ nodeType("invalid",
 
 function repl(name, doc, source, expect) {
   defTest("replace_" + name, () => {
-    testTransform(tr.repl(source ? source.slice(source.tag.a, source.tag.b) : undefined).get(doc), expect)
+    testTransform(tr.repl(source ? source.slice(source.tag.a, source.tag.b) : undefined), doc, expect)
   })
 }
 

@@ -45,9 +45,9 @@ Step.define("addMark", {
   }
 })
 
-// :: (number, number, Mark) → Transform #path=Transform.prototype.addMark
+// :: (number, number, Mark) → Transform
 // Add the given mark to the inline content between `from` and `to`.
-Transform.define("addMark", function(from, to, mark) {
+Transform.prototype.addMark = function(from, to, mark) {
   let removed = [], added = [], removing = null, adding = null
   this.doc.nodesBetween(from, to, (node, pos, parent) => {
     if (!node.isInline) return
@@ -74,7 +74,8 @@ Transform.define("addMark", function(from, to, mark) {
 
   removed.forEach(s => this.step(s))
   added.forEach(s => this.step(s))
-})
+  return this
+}
 
 Step.define("removeMark", {
   apply(doc, step) {
@@ -96,10 +97,9 @@ Step.define("removeMark", {
 })
 
 // :: (number, number, ?union<Mark, MarkType>) → Transform
-// #path=Transform.prototype.removeMark
 // Remove the given mark, or all marks of the given type, from inline
 // nodes between `from` and `to`.
-Transform.define("removeMark", function(from, to, mark = null) {
+Transform.prototype.removeMark = function(from, to, mark = null) {
   let matched = [], step = 0
   this.doc.nodesBetween(from, to, (node, pos) => {
     if (!node.isInline) return
@@ -131,13 +131,14 @@ Transform.define("removeMark", function(from, to, mark = null) {
     }
   })
   matched.forEach(m => this.step("removeMark", m.from, m.to, m.style))
-})
+  return this
+}
 
-// :: (number, number, ?NodeType) → Transform #path=Transform.prototype.clearMarkup
+// :: (number, number, ?NodeType) → Transform
 // Remove all marks and non-text inline nodes, or if `newParent` is
 // given, all marks and inline nodes that may not appear as content of
 // `newParent`, from the given range.
-Transform.define("clearMarkup", function(from, to, newParent) {
+Transform.prototype.clearMarkup = function(from, to, newParent) {
   let delSteps = [] // Must be accumulated and applied in inverse order
   this.doc.nodesBetween(from, to, (node, pos) => {
     if (!node.isInline) return
@@ -152,4 +153,5 @@ Transform.define("clearMarkup", function(from, to, newParent) {
     }
   })
   for (let i = delSteps.length - 1; i >= 0; i--) this.step(delSteps[i])
-})
+  return this
+}

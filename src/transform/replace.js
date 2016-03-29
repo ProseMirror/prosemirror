@@ -28,19 +28,20 @@ Step.define("replace", {
   paramFromJSON(schema, json) { return Slice.fromJSON(schema, json) }
 })
 
-// :: (number, number) → Transform #path=Transform.prototype.delete
+// :: (number, number) → Transform
 // Delete the content between the given positions.
-Transform.define("delete", function(from, to) {
+Transform.prototype.delete = function(from, to) {
   if (from != to) this.replace(from, to, Slice.empty)
-})
+  return this
+}
 
-// :: (number, ?number, ?Slice) → Transform #path=Transform.prototype.replace
+// :: (number, ?number, ?Slice) → Transform
 // Replace the part of the document between `from` and `to` with the
 // part of the `source` between `start` and `end`.
-Transform.define("replace", function(from, to = from, slice = Slice.empty) {
+Transform.prototype.replace = function(from, to = from, slice = Slice.empty) {
   let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
   let {fitted, distAfter} = fitSliceInto($from, $to, slice), fSize = fitted.size
-  if (from == to && !fSize) return
+  if (from == to && !fSize) return this
   this.step("replace", from, to, fitted)
 
   // If the endpoints of the replacement don't end right next to each
@@ -48,41 +49,40 @@ Transform.define("replace", function(from, to = from, slice = Slice.empty) {
   // slice to fit onto the inserted content. But only if there is text
   // before and after the cut, and if those endpoints aren't already
   // next to each other.
-  if (!fSize || !$to.node($to.depth).isTextblock) return
+  if (!fSize || !$to.node($to.depth).isTextblock) return this
   let after = from + fSize
   let inner = !slice.size ? from : distAfter < 0 ? -1 : after - distAfter, $inner
-  if (inner == -1 || inner == after || !($inner = this.doc.resolve(inner)).node($inner.depth).isTextblock) return
+  if (inner == -1 || inner == after || !($inner = this.doc.resolve(inner)).node($inner.depth).isTextblock) return this
   mergeTextblockAfter(this, $inner, this.doc.resolve(after))
-})
+  return this
+}
 
 // :: (number, number, union<Fragment, Node, [Node]>) → Transform
-// #path=Transform.prototype.replaceWith
 // Replace the given range with the given content, which may be a
 // fragment, node, or array of nodes.
-Transform.define("replaceWith", function(from, to, content) {
-  this.replace(from, to, new Slice(Fragment.from(content), 0, 0))
-})
+Transform.prototype.replaceWith = function(from, to, content) {
+  return this.replace(from, to, new Slice(Fragment.from(content), 0, 0))
+}
 
 // :: (number, union<Fragment, Node, [Node]>) → Transform
-// #path=Transform.prototype.insert
 // Insert the given content at the given position.
-Transform.define("insert", function(pos, content) {
-  this.replaceWith(pos, pos, content)
-})
+Transform.prototype.insert = function(pos, content) {
+  return this.replaceWith(pos, pos, content)
+}
 
-// :: (number, string) → Transform #path=Transform.prototype.insertText
+// :: (number, string) → Transform
 // Insert the given text at `pos`, inheriting the marks of the
 // existing content at that position.
-Transform.define("insertText", function(pos, text) {
-  this.insert(pos, this.doc.type.schema.text(text, this.doc.marksAt(pos)))
-})
+Transform.prototype.insertText = function(pos, text) {
+  return this.insert(pos, this.doc.type.schema.text(text, this.doc.marksAt(pos)))
+}
 
-// :: (number, Node) → Transform #path=Transform.prototype.insertInline
+// :: (number, Node) → Transform
 // Insert the given node at `pos`, inheriting the marks of the
 // existing content at that position.
-Transform.define("insertInline", function(pos, node) {
-  this.insert(pos, node.mark(this.doc.marksAt(pos)))
-})
+Transform.prototype.insertInline = function(pos, node) {
+  return this.insert(pos, node.mark(this.doc.marksAt(pos)))
+}
 
 // This is an output variable for closeFragment and friends, used to
 // track the distance between the end of the resulting slice and the
@@ -301,20 +301,19 @@ function findPlacement(type, fragment, $from, start) {
 
 function mergeTextblockAfter(tr, $inside, $after) {
   let base = $inside.sameDepth($after)
-  tr.try(() => {
-    let end = $after.end($after.depth), cutAt = end + 1, cutDepth = $after.depth - 1
-    while (cutDepth > base && $after.index(cutDepth) + 1 == $after.node(cutDepth).childCount) {
-      --cutDepth
-      ++cutAt
-    }
-    if (cutDepth > base) tr.split(cutAt, cutDepth - base)
-    let types = [], attrs = []
-    for (let i = base + 1; i <= $inside.depth; i++) {
-      let node = $inside.node(i)
-      types.push(node.type)
-      attrs.push(node.attrs)
-    }
-    tr.step("ancestor", $after.pos, end, {depth: $after.depth - base, types, attrs})
-    tr.join($after.pos - ($after.depth - base), $inside.depth - base)
-  })
+
+  let end = $after.end($after.depth), cutAt = end + 1, cutDepth = $after.depth - 1
+  while (cutDepth > base && $after.index(cutDepth) + 1 == $after.node(cutDepth).childCount) {
+    --cutDepth
+    ++cutAt
+  }
+  if (cutDepth > base) tr.split(cutAt, cutDepth - base)
+  let types = [], attrs = []
+  for (let i = base + 1; i <= $inside.depth; i++) {
+    let node = $inside.node(i)
+    types.push(node.type)
+    attrs.push(node.attrs)
+  }
+  tr.step("ancestor", $after.pos, end, {depth: $after.depth - base, types, attrs})
+  tr.join($after.pos - ($after.depth - base), $inside.depth - base)
 }
