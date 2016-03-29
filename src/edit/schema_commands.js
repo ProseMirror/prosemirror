@@ -268,6 +268,132 @@ ListItem.register("command", "split", {
   keys: ["Enter(50)"]
 })
 
+function isListItem(pm, pos) {
+  return pm.doc.path(pos.toPath()).type == pm.schema.nodes.list_item
+}
+
+function getListItemSelection(pm) {
+  let {from, to} = pm.selection
+  // When inside a list item, the selection points to a paragraph with an offset. Shortening the position
+  // twice leads to the list item that contains the active paragraph
+  let fromListItemPos = from.shorten().shorten()
+  let toListItemPos = to.shorten().shorten()
+
+  return {
+    from: isListItem(pm, fromListItemPos) ? fromListItemPos : null,
+    to: isListItem(pm, toListItemPos) ? toListItemPos : null
+  }
+}
+
+// ;; #path=list_item:indent #kind=command
+// If the selection starts and ends in a list item, indent the selected list items
+//
+// **Keybindings:** Tab
+ListItem.register("command", "indent", {
+  label: "Indent the selected list items",
+  run(pm) {
+    // Make sure that the start and end of the selection is inside list items
+    let {from: fromListItemPos, to: toListItemPos} = getListItemSelection(pm)
+    if (fromListItemPos == null || toListItemPos == null)
+      return false
+
+    // Do not indent item if it's the first in the list (already at maximum indention)
+    if (fromListItemPos.offset === 0)
+      return true // Return true as the command was handled and we don't want the cursor to jump away
+
+    let sameParent = Pos.samePath(fromListItemPos.path, toListItemPos.path)
+
+    let wrapFrom = fromListItemPos, wrapTo
+    if (!sameParent) {
+      // If the selection ends in a different parent than the start of the selection, only indent the start item
+      wrapTo = wrapFrom.move(1)
+    }
+    else {
+      // Selection ends in the same parent and builds a sibling range that should be unindented
+      wrapTo = toListItemPos.move(1)
+    }
+
+    let parentListPos = wrapFrom.shorten()
+    let parentList = pm.doc.path(parentListPos.toPath())
+    let listType = parentList.type
+    let itemType = pm.schema.nodes.list_item
+
+    let tr = pm.tr
+
+    // Indent items of the given range by wrapping them in a list
+    // We need to additionally wrap this list in a temporary list item as the schema only allows
+    // list items inside lists
+    tr.step('ancestor', wrapFrom, wrapTo, null, {depth: 0, types: [itemType, listType]})
+
+    // Remove the temporary wrapping list item by joining it
+    tr.join(wrapFrom)
+
+    // If the element above the new list is a list too, join the two lists
+    let oldSiblingAbovePath = wrapFrom.move(-1).toPath()
+    let newSiblingAbovePos = new Pos(oldSiblingAbovePath, pm.doc.path(oldSiblingAbovePath).size - 1)
+    if (pm.doc.path(newSiblingAbovePos.toPath()).type == listType) {
+      tr.join(newSiblingAbovePos.move(1))
+    }
+
+    tr.apply(pm.apply.scroll)
+  },
+  keys: ["Tab"]
+})
+
+// ;; #path=list_item:unindent #kind=command
+// If the selection starts and ends in a list item, unindent the selected list items
+//
+// **Keybindings:** Shift-Tab
+ListItem.register("command", "unindent", {
+  label: "Unindent the selected list items",
+  run(pm) {
+    // Make sure that the start and end of the selection is inside list items
+    let {from: fromListItemPos, to: toListItemPos} = getListItemSelection(pm)
+    if (fromListItemPos == null || toListItemPos == null)
+      return false
+
+    let parentPos = fromListItemPos.shorten()
+
+    // Check what kind of selection we have
+    let endsInHigherLevel = fromListItemPos.depth > toListItemPos.depth
+    let sameParent = Pos.samePath(fromListItemPos.path, toListItemPos.path)
+
+    let liftFrom = fromListItemPos, liftTo
+    if (endsInHigherLevel) {
+      // We want to unindent all of the subsequent siblings of the start of the selection.
+      // Items that are not part of the sibling range are currently ignored. This could be further improved
+      // by additionally applying unindent to all selected list items on a higher level in the hierarchy.
+      liftTo = new Pos(parentPos.toPath(), pm.doc.path(parentPos.toPath()).size)
+    }
+    else if (!sameParent) {
+      // If the selection ends in a lower level than the start of the selection (a child), only unindent
+      // the start item as this will unindent all of its children including the selected children
+      liftTo = liftFrom.move(1)
+    }
+    else {
+      // A single list item is selected, only unindent this list item
+      liftTo = toListItemPos.move(1)
+    }
+
+    let tr = pm.tr
+    tr.lift(liftFrom, liftTo)
+
+    // If the list item is not at the top level and it has siblings following it, we need to join
+    // the subsequent sibling.
+    // This is needed as the subsequent sibling is wrapped in a list after the lift step
+    if (fromListItemPos.depth > 1 && pm.doc.path(parentPos.toPath()).size > liftTo.offset) {
+
+      let newParentPos = parentPos.shorten().shorten()
+      let unindentedCount = liftTo.offset - liftFrom.offset
+      let subsequentSiblingPos = new Pos(newParentPos.toPath(), parentPos.shorten().offset + unindentedCount + 1)
+      tr.join(subsequentSiblingPos)
+    }
+
+    tr.apply(pm.apply.scroll)
+  },
+  keys: ["Shift-Tab"]
+})
+
 for (let i = 1; i <= 10; i++)
   // ;; #path=:heading::make_ #kind=command
   // The commands `make1` to `make6` set the textblocks in the
