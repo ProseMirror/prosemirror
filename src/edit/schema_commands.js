@@ -284,7 +284,7 @@ function selectedListItems(pm, type) {
 }
 
 ListItem.register("command", "lift", {
-  label: "Lift the selected list item to an outer list",
+  label: "Lift the selected list items to an outer list",
   run(pm) {
     let selected = selectedListItems(pm, this)
     if (!selected || selected.depth < 3) return false
@@ -295,6 +295,22 @@ ListItem.register("command", "lift", {
     return tr.apply(pm.apply.scroll)
   },
   keys: ["Mod-[(20)"]
+})
+
+ListItem.register("command", "sink", {
+  label: "Sink the selected list items into an inner list",
+  run(pm) {
+    let selected = selectedListItems(pm, this)
+    if (!selected) return false
+    let $from = pm.doc.resolve(pm.selection.from), startIndex = $from.index(selected.depth - 1)
+    if (startIndex == 0) return false
+    let parent = $from.node(selected.depth - 1), before = parent.child(startIndex - 1)
+    let tr = pm.tr.wrap(selected.from, selected.to, parent.type, parent.attrs)
+    if (before.lastChild && before.lastChild.type == parent.type)
+      tr.join(selected.from, 2)
+    return tr.apply(pm.apply.scroll)
+  },
+  keys: ["Mod-](20)"]
 })
 
 for (let i = 1; i <= 10; i++)
