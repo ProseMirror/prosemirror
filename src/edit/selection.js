@@ -96,9 +96,10 @@ export class SelectionState {
     let head = sel.isCollapsed ? anchor : posFromDOM(this.pm, sel.focusNode, sel.focusOffset)
 
     let newRange = findSelectionNear(doc, head, this.range.head != null && this.range.head < head ? 1 : -1)
-    if (newRange instanceof TextSelection && doc.resolve(anchor).parent.isTextblock) {
-      newRange = new TextSelection(anchor, newRange.head)
-    } else if (newRange instanceof NodeSelection && (anchor < newRange.from || anchor > newRange.to)) {
+    if (newRange instanceof TextSelection) {
+      let selNearAnchor = findSelectionNear(doc, anchor, anchor > newRange.to ? -1 : 1, true)
+      newRange = new TextSelection(selNearAnchor.anchor, newRange.head)
+    } else if (anchor < newRange.from || anchor > newRange.to) {
       // If head falls on a node, but anchor falls outside of it,
       // create a text selection between them
       let inv = anchor > newRange.to
