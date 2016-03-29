@@ -40,3 +40,17 @@ Transform.define("split", function(pos, depth = 1, typeAfter, attrsAfter) {
     this.step("split", pos + i, pos + i,
               i == 0 && typeAfter ? {type: typeAfter, attrs: attrsAfter} : null)
 })
+
+// :: (number, ?number) → Transform #path=Transform.prototype.splitIfNeeded
+// Split at the given position, up to the given depth, if that
+// position isn't already at the start or end of its parent node.
+Transform.define("splitIfNeeded", function(pos, depth = 1) {
+  let $pos = this.doc.resolve(pos), before = true
+  for (let i = 0; i < depth; i++) {
+    let d = $pos.depth - i, offset = i == 0 ? $pos.parentOffset : $pos.offset(d) + (before ? 0 : $pos.node(d + 1).nodeSize)
+    if (offset > 0 && offset < $pos.node(d).content.size)
+      return this.split(before ? $pos.before(d + 1) : $pos.after(d + 1), depth - i)
+    before = offset == 0
+  }
+  return this
+})
