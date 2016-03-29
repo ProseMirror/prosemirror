@@ -370,6 +370,16 @@ test("list_item:split",
      doc(ul(li(p("foo<a>ba<b>r")))),
      doc(ul(li(p("foo")), li(p("r")))))
 
+test("list_item:lift",
+     doc(ul(li(p("hello"), ul(li(p("o<a><b>ne")), li(p("two")))))),
+     doc(ul(li(p("hello")), li(p("one")), li(ul(li(p("two")))))))
+test("list_item:lift",
+     doc(ul(li(p("hello"), ul(li(p("o<a>ne")), li(p("two<b>")))))),
+     doc(ul(li(p("hello")), li(p("one")), li(p("two")))))
+test("list_item:lift",
+     doc(ul(li(p("hello"), ul(li(p("o<a>ne")), li(p("two<b>")), li(p("three")))))),
+     doc(ul(li(p("hello")), li(p("one")), li(p("two")), li(ul(li(p("three")))))))
+
 test("newlineInCode",
      doc(pre("foo<a>bar")),
      doc(pre("foo\nbar")))

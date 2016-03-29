@@ -268,6 +268,35 @@ ListItem.register("command", "split", {
   keys: ["Enter(50)"]
 })
 
+function selectedListItems(pm, type) {
+  let {node, from, to} = pm.selection, $from = pm.doc.resolve(from)
+  if (node && node.type == type) return {from, to, depth: $from.depth + 1}
+
+  let itemDepth = $from.parent.type == type ? $from.depth
+      : $from.depth > 0 && $from.node($from.depth - 1).type == type ? $from.depth - 1 : null
+  if (itemDepth == null) return
+
+  let $to = pm.doc.resolve(to)
+  if ($from.sameDepth($to) < itemDepth - 1) return null
+  return {from: $from.before(itemDepth),
+          to: $to.after(itemDepth),
+          depth: itemDepth}
+}
+
+ListItem.register("command", "lift", {
+  label: "Lift the selected list item to an outer list",
+  run(pm) {
+    let selected = selectedListItems(pm, this)
+    if (!selected || selected.depth < 3) return false
+    let $from = pm.doc.resolve(pm.selection.from)
+    if ($from.node(selected.depth - 2).type != this) return false
+    let tr = pm.tr.splitIfNeeded(selected.to, 2).splitIfNeeded(selected.from, 2)
+    tr.step("ancestor", tr.map(selected.from).pos, tr.map(selected.to, -1).pos, {depth: 2})
+    return tr.apply(pm.apply.scroll)
+  },
+  keys: ["Mod-[(20)"]
+})
+
 for (let i = 1; i <= 10; i++)
   // ;; #path=:heading::make_ #kind=command
   // The commands `make1` to `make6` set the textblocks in the
