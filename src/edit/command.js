@@ -254,9 +254,12 @@ function deriveKeymap(pm) {
   for (let name in pm.commands) {
     let cmd = pm.commands[name], keys = cmd.spec.keys
     if (!keys) continue
-    if (Array.isArray(keys)) add(cmd, keys)
-    if (keys.all) add(cmd, keys.all)
-    if (keys[platform]) add(cmd, keys[platform])
+    if (Array.isArray(keys)) {
+      add(cmd, keys)
+    } else {
+      if (keys.all) add(cmd, keys.all)
+      if (keys[platform]) add(cmd, keys[platform])
+    }
   }
 
   for (let key in bindings)
