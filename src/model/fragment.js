@@ -193,6 +193,15 @@ export class Fragment {
       p += child.nodeSize
     }
   }
+
+  leastSuperKind() {
+    let kind
+    for (let i = this.childCount - 1; i >= 0; i--) {
+      let cur = this.child(i).type.kind
+      kind = kind ? kind.sharedSuperKind(cur) : cur
+    }
+    return kind
+  }
 }
 
 // :: Fragment

@@ -219,15 +219,6 @@ function closeNode(node, content, $to, $from, depth) {
 // This is guaranteed to find a fit, since both stacks now start with
 // the same node type (doc).
 
-function fragmentSuperKind(fragment) {
-  let kind
-  for (let i = fragment.childCount - 1; i >= 0; i--) {
-    let cur = fragment.child(i).type.kind
-    kind = kind ? kind.sharedSuperKind(cur) : cur
-  }
-  return kind
-}
-
 function nodeLeft(slice, depth) {
   let content = slice.content
   for (let i = 1; i < depth; i++) content = content.firstChild.content
@@ -270,7 +261,7 @@ function placeSlice($from, slice) {
       dFrom = Math.max(0, found - 1)
     } else {
       if (dSlice == 0) {
-        parents = $from.node(0).type.findConnectionToKind(fragmentSuperKind(curFragment))
+        parents = $from.node(0).type.findConnectionToKind(curFragment.leastSuperKind())
         if (!parents) break
         parents.unshift($from.node(0).type)
         curType = parents[parents.length - 1]

@@ -6,7 +6,7 @@ import {captureKeys} from "./capturekeys"
 import {elt, browser, contains} from "../dom"
 
 import {readDOMChange, textContext, textInContext} from "./domchange"
-import {TextSelection, rangeFromDOMLoose, findSelectionAtStart, findSelectionAtEnd, hasFocus} from "./selection"
+import {TextSelection, rangeFromDOMLoose, findSelectionAtStart, findSelectionAtEnd, findSelectionNear, hasFocus} from "./selection"
 import {coordsAtPos, posBeforeFromDOM, handleNodeClick, selectableNodeAbove} from "./dompos"
 
 let stopSeq = null
@@ -444,8 +444,18 @@ class Dragging {
   }
 }
 
-function dropPos(pm, e, _slice) {
-  return pm.posAtCoords({left: e.clientX, top: e.clientY})
+function dropPos(pm, e, slice) {
+  let pos = pm.posAtCoords({left: e.clientX, top: e.clientY})
+  if (pos == null || !slice || !slice.content.size) return pos
+  let $pos = pm.doc.resolve(pos), kind = slice.content.leastSuperKind()
+  for (let d = $pos.depth; d >= 0; d--) {
+    if (kind.isSubKind($pos.node(d).type.contains)) {
+      if (d == $pos.depth) return pos
+      if (pos <= ($pos.start(d + 1) + $pos.end(d + 1)) / 2) return $pos.before(d + 1)
+      return $pos.after(d + 1)
+    }
+  }
+  return pos
 }
 
 function removeDropTarget(pm) {
@@ -518,7 +528,7 @@ handlers.drop = (pm, e) => {
   let slice = dragging && dragging.slice || fromClipboard(pm, e.dataTransfer)
   if (slice) {
     e.preventDefault()
-    let insertPos = dropPos(pm, e, slice)
+    let insertPos = dropPos(pm, e, slice), start = insertPos
     if (insertPos == null) return
     let tr = pm.tr
     if (dragging && !e.ctrlKey && dragging.from != null) {
@@ -529,10 +539,13 @@ handlers.drop = (pm, e) => {
     let found
     if (slice.content.childCount == 1 && slice.openLeft == 0 && slice.openRight == 0 &&
         slice.content.child(0).type.selectable &&
-        (found = pm.doc.nodeAt(insertPos)).node && found.sameMarkup(slice.content.child(0)))
+        (found = pm.doc.nodeAt(insertPos)) && found.sameMarkup(slice.content.child(0))) {
       pm.setNodeSelection(insertPos)
-    else
-      pm.setTextSelection(insertPos, tr.map(insertPos).pos)
+    } else {
+      let left = findSelectionNear(pm.doc, insertPos, 1, true).from
+      let right = findSelectionNear(pm.doc, tr.map(start).pos, -1, true).to
+      pm.setTextSelection(left, right)
+    }
     pm.focus()
   }
 }
