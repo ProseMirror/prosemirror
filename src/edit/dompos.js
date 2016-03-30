@@ -4,10 +4,10 @@ import {AssertionError} from "../util/error"
 // : (ProseMirror, DOMNode) → number
 // Get the path for a given a DOM node in a document.
 export function posBeforeFromDOM(pm, node) {
-  let pos = 0
+  let pos = 0, add = 0
   for (let cur = node; cur != pm.content; cur = cur.parentNode) {
     let attr = cur.getAttribute("pm-offset")
-    if (attr) pos += +attr + (cur == node ? 0 : 1)
+    if (attr) { pos += +attr + add; add = 1 }
   }
   return pos
 }
