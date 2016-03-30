@@ -29,6 +29,8 @@ export function posFromDOM(pm, dom, domOffset, loose) {
     let adjust = 0
     if (dom.nodeType == 3) {
       innerOffset += domOffset
+    } else if (tag = dom.getAttribute("pm-offset")) {
+      return posBeforeFromDOM(pm, dom) + Math.min(innerOffset, +dom.getAttribute("pm-size"))
     } else if (dom.hasAttribute("pm-container")) {
       break
     } else if (tag = dom.getAttribute("pm-inner-offset")) {
