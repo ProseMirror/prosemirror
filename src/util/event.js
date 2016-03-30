@@ -4,7 +4,7 @@
 
 const noHandlers = []
 
-function getHandlers(obj, type, copy) {
+function getHandlers(obj, type) {
   return obj._handlers && obj._handlers[type] || noHandlers
 }
 

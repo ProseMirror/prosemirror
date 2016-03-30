@@ -23,6 +23,23 @@ export class ReplacedRange {
   }
 }
 
+// Recovery values encode a range index and an offset. They are
+// represented as numbers, because tons of them will be created when
+// mapping, for example, a large number of marked ranges. The number's
+// lower 16 bits provide the index, the remaining bits the offset.
+//
+// Note: We intentionally don't use bit shift operators to en- and
+// decode these, since those clip to 32 bits, which we might in rare
+// cases want to overflow. A 64-bit float can represent 48-bit
+// integers precisely.
+
+const lower16 = 0xffff
+const factor16 = Math.pow(2, 16)
+
+function makeRecover(index, offset) { return index + offset * factor16 }
+function recoverIndex(value) { return value & lower16 }
+function recoverOffset(value) { return (value - (value & lower16)) / factor16 }
+
 function mapThrough(ranges, pos, bias = 1, back) {
   let diff = 0
   for (let i = 0; i < ranges.length; i++) {
@@ -30,7 +47,7 @@ function mapThrough(ranges, pos, bias = 1, back) {
     if (start > pos) break
     let oldSize = range.size(!back), newSize = range.size(back), end = start + oldSize
     if (pos <= end) {
-      let recover = {index: i, offset: pos - start}
+      let recover = makeRecover(i, pos - start)
       let side = !oldSize ? bias : pos == start ? -1 : pos == end ? 1 : bias
       return new MapResult(start + diff + (side < 0 ? 0 : newSize), pos != start && pos != end, recover)
     }
@@ -39,13 +56,13 @@ function mapThrough(ranges, pos, bias = 1, back) {
   return new MapResult(pos + diff)
 }
 
-function touches(ranges, pos, offset, back) {
-  let diff = 0
+function touches(ranges, pos, recover, back) {
+  let diff = 0, index = recoverIndex(recover)
   for (let i = 0; i < ranges.length; i++) {
     let range = ranges[i], start = range.pos - (back ? diff : 0)
     if (start > pos) break
     let oldSize = range.size(!back), newSize = range.size(back), end = start + oldSize
-    if (i == offset.index && pos <= end) return true
+    if (i == index && pos <= end) return true
     diff += newSize - oldSize
   }
   return false
@@ -69,11 +86,11 @@ export class MapResult {
 export class PosMap {
   constructor(ranges) { this.ranges = ranges }
 
-  recover(offset) {
-    let diff = 0
-    for (let i = 0; i < offset.index; i++)
+  recover(value) {
+    let diff = 0, index = recoverIndex(value), offset = recoverOffset(value)
+    for (let i = 0; i < index; i++)
       diff += this.ranges[i].oldSize - this.ranges[i].newSize
-    return this.ranges[offset.index].pos + diff + offset.offset
+    return this.ranges[index].pos + diff + offset
   }
 
   // :: (number, ?number) → MapResult
@@ -99,8 +116,8 @@ export class PosMap {
 class InvertedPosMap {
   constructor(ranges) { this.ranges = ranges }
 
-  recover(offset) {
-    return this.ranges[offset.index].pos + offset.offset
+  recover(value) {
+    return this.ranges[recoverIndex(value)].pos + recoverOffset(value)
   }
 
   map(pos, bias) { return mapThrough(this.ranges, pos, bias, true) }
@@ -170,13 +187,13 @@ export class Remapping {
     for (let i = -this.head.length; i < this.tail.length; i++) {
       let map = this.get(i), rec
 
-      if ((rec = recoverables && recoverables[i]) && map.touches(pos, rec)) {
+      if ((rec = recoverables && recoverables[i]) != null && map.touches(pos, rec)) {
         pos = map.recover(rec)
         continue
       }
 
       let result = map.map(pos, bias)
-      if (result.recover) {
+      if (result.recover != null) {
         let corr = this.mirror[i]
         if (corr != null) {
           if (result.deleted) {
