@@ -1,23 +1,108 @@
 import Keymap from "browserkeymap"
 
-import {findSelectionNear} from "./selection"
+import {findSelectionFrom, verticalMotionLeavesTextblock, NodeSelection} from "./selection"
 import {setDOMSelectionToPos} from "./dompos"
 import {browser} from "../dom"
 
 function nothing() {}
 
-function ensureSelection(pm) {
-  if (pm.selection.node) {
-    let found = findSelectionNear(pm.doc, pm.selection.from, 1, true)
-    if (found) setDOMSelectionToPos(pm, found.head)
+function moveSelectionBlock(pm, dir) {
+  let {from, to, node} = pm.selection
+  let side = pm.doc.resolve(dir > 0 ? to : from)
+  return findSelectionFrom(pm.doc, node && node.isBlock ? side.pos : dir > 0 ? side.after(side.depth) : side.before(side.depth), dir)
+}
+
+function selectNodeHorizontally(pm, dir) {
+  let {empty, node, from, to} = pm.selection
+  if (!empty && !node) return false
+
+  if (node && node.isInline) {
+    pm.setTextSelection(dir > 0 ? to : from)
+    return true
+  }
+
+  if (!node) {
+    let $from = pm.doc.resolve(from)
+    let {node: nextNode, offset} = dir > 0
+        ? $from.parent.nodeAfter($from.parentOffset)
+        : $from.parent.nodeBefore($from.parentOffset)
+    if (nextNode) {
+      if (nextNode.type.selectable && offset == $from.parentOffset - (dir > 0 ? 0 : nextNode.nodeSize)) {
+        pm.setNodeSelection(dir < 0 ? from - nextNode.nodeSize : from)
+        return true
+      }
+      return false
+    }
+  }
+
+  let next = moveSelectionBlock(pm, dir)
+  if (next && (next instanceof NodeSelection || node)) {
+    pm.setSelection(next)
+    return true
   }
   return false
+}
+
+function horiz(dir) {
+  return pm => {
+    let done = selectNodeHorizontally(pm, dir)
+    if (done) pm.scrollIntoView()
+    return done
+  }
+}
+
+// : (ProseMirror, number)
+// Check whether vertical selection motion would involve node
+// selections. If so, apply it (if not, the result is left to the
+// browser)
+function selectNodeVertically(pm, dir) {
+  let {empty, node, from, to} = pm.selection
+  if (!empty && !node) return false
+
+  let leavingTextblock = true
+  if (!node || node.isInline)
+    leavingTextblock = verticalMotionLeavesTextblock(pm, dir > 0 ? to : from, dir)
+
+  if (leavingTextblock) {
+    let next = moveSelectionBlock(pm, dir)
+    if (next && (next instanceof NodeSelection)) {
+      pm.setSelection(next)
+      if (!node) pm.sel.lastNonNodePos = from
+      return true
+    }
+  }
+
+  if (!node) return false
+
+  if (node.isInline) {
+    setDOMSelectionToPos(pm, from)
+    return false
+  }
+
+  let last = pm.sel.lastNonNodePos
+  let beyond = findSelectionFrom(pm.doc, dir < 0 ? from : to, dir)
+  if (last != null && beyond && pm.doc.resolve(beyond.from).sameParent(pm.doc.resolve(last))) {
+    setDOMSelectionToPos(pm, last)
+    return false
+  }
+  if (beyond) pm.setSelection(beyond)
+  return true
+}
+
+function vert(dir) {
+  return pm => {
+    let done = selectNodeVertically(pm, dir)
+    if (done !== false) pm.scrollIntoView()
+    return done
+  }
 }
 
 // A backdrop keymap used to make sure we always suppress keys that
 // have a dangerous default effect, even if the commands they are
 // bound to return false, and to make sure that cursor-motion keys
-// find a cursor (as opposed to a node selection) when pressed.
+// find a cursor (as opposed to a node selection) when pressed. For
+// cursor-motion keys, the code in the handlers also takes care of
+// block selections.
 
 let keys = {
   "Esc": nothing,
@@ -44,18 +129,17 @@ let keys = {
   "Alt-Delete": nothing,
   "Alt-Backspace": nothing,
 
-  "Mod-A": ensureSelection
+  "Left": horiz(-1),
+  "Mod-Left": horiz(-1),
+  "Right": horiz(1),
+  "Mod-Right": horiz(1),
+  "Up": vert(-1),
+  "Down": vert(1)
 }
 
-;["Left", "Right", "Up", "Down", "Home", "End", "PageUp", "PageDown"].forEach(key => {
-  keys[key] = keys["Shift-" + key] = keys["Mod-" + key] = keys["Shift-Mod-" + key] =
-    keys["Alt-" + key] = keys["Shift-Alt-" + key] = ensureSelection
-})
-;["Left", "Mod-Left", "Right", "Mod-Right", "Up", "Down"].forEach(key => delete keys[key])
-
-if (browser.mac)
-  keys["Ctrl-F"] = keys["Ctrl-B"] = keys["Ctrl-P"] = keys["Ctrl-N"] =
-    keys["Alt-F"] = keys["Alt-B"] = keys["Ctrl-A"] = keys["Ctrl-E"] =
-    keys["Ctrl-V"] = keys["goPageUp"] = ensureSelection
+if (browser.mac) {
+  keys["Alt-Left"] = horiz(-1)
+  keys["Alt-Right"] = horiz(1)
+}
 
 export const captureKeys = new Keymap(keys)
