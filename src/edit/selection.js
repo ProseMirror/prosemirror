@@ -15,8 +15,6 @@ export class SelectionState {
     // The current editor selection.
     this.range = range
 
-    this.lastNonNodePos = null
-
     // The timeout ID for the poller when active.
     this.polling = null
     // Track the state of the DOM selection.
@@ -43,7 +41,6 @@ export class SelectionState {
   set(range, clearLast) {
     this.pm.ensureOperation({readSelection: false})
     this.range = range
-    if (!range.node) this.lastNonNodePos = null
     if (clearLast !== false) this.lastAnchorNode = null
   }
 

@@ -1,7 +1,6 @@
 import Keymap from "browserkeymap"
 
 import {findSelectionFrom, verticalMotionLeavesTextblock, NodeSelection} from "./selection"
-import {setDOMSelectionToPos} from "./dompos"
 import {browser} from "../dom"
 
 function nothing() {}
@@ -67,24 +66,13 @@ function selectNodeVertically(pm, dir) {
     let next = moveSelectionBlock(pm, dir)
     if (next && (next instanceof NodeSelection)) {
       pm.setSelection(next)
-      if (!node) pm.sel.lastNonNodePos = from
       return true
     }
   }
 
-  if (!node) return false
+  if (!node || node.isInline) return false
 
-  if (node.isInline) {
-    setDOMSelectionToPos(pm, from)
-    return false
-  }
-
-  let last = pm.sel.lastNonNodePos
   let beyond = findSelectionFrom(pm.doc, dir < 0 ? from : to, dir)
-  if (last != null && beyond && pm.doc.resolve(beyond.from).sameParent(pm.doc.resolve(last))) {
-    setDOMSelectionToPos(pm, last)
-    return false
-  }
   if (beyond) pm.setSelection(beyond)
   return true
 }

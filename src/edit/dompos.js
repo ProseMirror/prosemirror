@@ -266,17 +266,6 @@ export function coordsAtPos(pm, pos) {
   return {top: rect.top, bottom: rect.bottom, left: x, right: x}
 }
 
-export function setDOMSelectionToPos(pm, pos) {
-  let {node, offset} = DOMFromPos(pm, pos)
-  let range = document.createRange()
-  range.setEnd(node, offset)
-  range.setStart(node, offset)
-  let sel = window.getSelection()
-  sel.removeAllRanges()
-  sel.addRange(range)
-}
-
-
 // ;; #path=NodeType #kind=class #noAnchor
 // You can add several properties to [node types](#NodeType) to
 // influence the way the editor interacts with them.
