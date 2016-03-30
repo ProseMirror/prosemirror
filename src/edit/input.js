@@ -26,17 +26,15 @@ export class Input {
     // this is set to a Composing instance.
     this.composing = null
     this.mouseDown = null
+    this.dragging = null
+    this.dropTarget = null
     this.shiftKey = this.updatingComposition = false
     this.skipInput = 0
-
-    this.draggingFrom = false
 
     this.keymaps = []
     this.defaultKeymap = null
 
     this.storedMarks = null
-
-    this.dropTarget = pm.wrapper.appendChild(elt("div", {class: "ProseMirror-drop-target"}))
 
     for (let event in handlers) {
       let handler = handlers[event]
@@ -360,6 +358,7 @@ function toClipboard(doc, from, to, dataTransfer) {
   dataTransfer.clearData()
   dataTransfer.setData("text/html", html)
   dataTransfer.setData("text/plain", toText(slice.content))
+  return slice
 }
 
 // :: (text: string) → string #path=ProseMirror#events#transformPastedText
@@ -437,6 +436,25 @@ handlers.paste = (pm, e) => {
   }
 }
 
+class Dragging {
+  constructor(slice, from, to) {
+    this.slice = slice
+    this.from = from
+    this.to = to
+  }
+}
+
+function dropPos(pm, e, _slice) {
+  return pm.posAtCoords({left: e.clientX, top: e.clientY})
+}
+
+function removeDropTarget(pm) {
+  if (pm.input.dropTarget) {
+    pm.wrapper.removeChild(pm.input.dropTarget)
+    pm.input.dropTarget = null
+  }
+}
+
 handlers.dragstart = (pm, e) => {
   let mouseDown = pm.input.mouseDown
   if (mouseDown) mouseDown.done()
@@ -445,7 +463,7 @@ handlers.dragstart = (pm, e) => {
 
   let {from, to, empty} = pm.selection, dragging
   let pos = !empty && pm.posAtCoords({left: e.clientX, top: e.clientY})
-  if (pos && pos >= from && pos <= to) {
+  if (pos != null && pos >= from && pos <= to) {
     dragging = {from, to}
   } else if (mouseDown && mouseDown.mightDrag != null) {
     let pos = mouseDown.mightDrag
@@ -453,36 +471,43 @@ handlers.dragstart = (pm, e) => {
   }
 
   if (dragging) {
+    let slice = toClipboard(pm.doc, dragging.from, dragging.to, e.dataTransfer)
     // FIXME the document could change during a drag, invalidating this range
     // use a marked range?
-    pm.input.draggingFrom = dragging
-    toClipboard(pm.doc, dragging.from, dragging.to, e.dataTransfer)
+    pm.input.dragging = new Dragging(slice, dragging.from, dragging.to)
   }
 }
 
-handlers.dragend = pm => window.setTimeout(() => pm.input.draggingFrom = false, 50)
+handlers.dragend = pm => window.setTimeout(() => pm.input.dragging = null, 50)
 
 handlers.dragover = handlers.dragenter = (pm, e) => {
   e.preventDefault()
-  let cursorPos = pm.posAtCoords({left: e.clientX, top: e.clientY})
-  if (!cursorPos) return
-  let coords = coordsAtPos(pm, cursorPos)
+
+  let target = pm.input.dropTarget
+  if (!target)
+    target = pm.input.dropTarget = pm.wrapper.appendChild(elt("div", {class: "ProseMirror-drop-target"}))
+
+  let pos = dropPos(pm, e, pm.input.dragging && pm.input.dragging.slice)
+  if (pos == null) return
+  let coords = coordsAtPos(pm, pos)
   let rect = pm.wrapper.getBoundingClientRect()
   coords.top -= rect.top
   coords.right -= rect.left
   coords.bottom -= rect.top
   coords.left -= rect.left
-  let target = pm.input.dropTarget
-  target.style.display = "block"
   target.style.left = (coords.left - 1) + "px"
   target.style.top = coords.top + "px"
   target.style.height = (coords.bottom - coords.top) + "px"
 }
 
-handlers.dragleave = pm => pm.input.dropTarget.style.display = ""
+handlers.dragleave = (pm, e) => {
+  if (e.target == pm.content) removeDropTarget(pm)
+}
 
 handlers.drop = (pm, e) => {
-  pm.input.dropTarget.style.display = ""
+  let dragging = pm.input.dragging
+  pm.input.dragging = null
+  removeDropTarget(pm)
 
   // :: (event: DOMEvent) #path=ProseMirror#events#drop
   // Fired when a drop event occurs on the editor content. A handler
@@ -490,14 +515,14 @@ handlers.drop = (pm, e) => {
   // or returning a truthy value.
   if (!e.dataTransfer || pm.signalDOM(e)) return
 
-  let slice = fromClipboard(pm, e.dataTransfer)
+  let slice = dragging && dragging.slice || fromClipboard(pm, e.dataTransfer)
   if (slice) {
     e.preventDefault()
-    let insertPos = pm.posAtCoords({left: e.clientX, top: e.clientY})
+    let insertPos = dropPos(pm, e, slice)
     if (insertPos == null) return
     let tr = pm.tr
-    if (pm.input.draggingFrom && !e.ctrlKey) {
-      tr.delete(pm.input.draggingFrom.from, pm.input.draggingFrom.to)
+    if (dragging && !e.ctrlKey && dragging.from != null) {
+      tr.delete(dragging.from, dragging.to)
       insertPos = tr.map(insertPos).pos
     }
     tr.replace(insertPos, insertPos, slice).apply()
