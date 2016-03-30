@@ -3,7 +3,7 @@ import {Slice} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
-import {PosMap, ReplacedRange} from "./map"
+import {PosMap} from "./map"
 
 // !! **`join`**
 //   : Join two block elements together. `from` and `to` must point at
@@ -18,7 +18,7 @@ Step.define("join", {
     return StepResult.fromReplace(doc, $from.pos, $to.pos, Slice.empty)
   },
   posMap(step) {
-    return new PosMap([new ReplacedRange(step.from, 2, 0)])
+    return new PosMap([step.from, 2, 0])
   },
   invert(step, doc) {
     let $before = doc.resolve(step.from), d1 = $before.depth - 1

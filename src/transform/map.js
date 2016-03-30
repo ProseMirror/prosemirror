@@ -9,20 +9,6 @@
 // determines in which direction to move when a chunk of content is
 // inserted at or around the mapped position.
 
-export class ReplacedRange {
-  constructor(pos, oldSize, newSize) {
-    this.pos = pos
-    this.oldSize = oldSize
-    this.newSize = newSize
-  }
-
-  size(old) { return old ? this.oldSize : this.newSize }
-
-  toString() {
-    return "[@" + this.pos + " " + this.oldSize + "->" + this.newSize + "]"
-  }
-}
-
 // Recovery values encode a range index and an offset. They are
 // represented as numbers, because tons of them will be created when
 // mapping, for example, a large number of marked ranges. The number's
@@ -40,34 +26,6 @@ function makeRecover(index, offset) { return index + offset * factor16 }
 function recoverIndex(value) { return value & lower16 }
 function recoverOffset(value) { return (value - (value & lower16)) / factor16 }
 
-function mapThrough(ranges, pos, bias = 1, back) {
-  let diff = 0
-  for (let i = 0; i < ranges.length; i++) {
-    let range = ranges[i], start = range.pos - (back ? diff : 0)
-    if (start > pos) break
-    let oldSize = range.size(!back), newSize = range.size(back), end = start + oldSize
-    if (pos <= end) {
-      let recover = makeRecover(i, pos - start)
-      let side = !oldSize ? bias : pos == start ? -1 : pos == end ? 1 : bias
-      return new MapResult(start + diff + (side < 0 ? 0 : newSize), pos != start && pos != end, recover)
-    }
-    diff += newSize - oldSize
-  }
-  return new MapResult(pos + diff)
-}
-
-function touches(ranges, pos, recover, back) {
-  let diff = 0, index = recoverIndex(recover)
-  for (let i = 0; i < ranges.length; i++) {
-    let range = ranges[i], start = range.pos - (back ? diff : 0)
-    if (start > pos) break
-    let oldSize = range.size(!back), newSize = range.size(back), end = start + oldSize
-    if (i == index && pos <= end) return true
-    diff += newSize - oldSize
-  }
-  return false
-}
-
 // ;; The return value of mapping a position.
 export class MapResult {
   constructor(pos, deleted = false, recover = null) {
@@ -84,13 +42,20 @@ export class MapResult {
 // the pre-step version of a document correspond to positions in the
 // post-step version. This class implements `Mappable`.
 export class PosMap {
-  constructor(ranges) { this.ranges = ranges }
+  // :: ([number])
+  // Create a position map. The modifications to the document are
+  // represented as an array of numbers, in which each group of three
+  // represents an [start, oldSize, newSize] chunk.
+  constructor(ranges, inverted) {
+    this.ranges = ranges
+    this.inverted = inverted
+  }
 
   recover(value) {
-    let diff = 0, index = recoverIndex(value), offset = recoverOffset(value)
-    for (let i = 0; i < index; i++)
-      diff += this.ranges[i].oldSize - this.ranges[i].newSize
-    return this.ranges[index].pos + diff + offset
+    let diff = 0, index = recoverIndex(value)
+    if (!this.inverted) for (let i = 0; i < index; i++)
+      diff += this.ranges[i * 3 + 1] - this.ranges[i * 3 + 2]
+    return this.ranges[index * 3] + diff + recoverOffset(value)
   }
 
   // :: (number, ?number) → MapResult
@@ -100,33 +65,40 @@ export class PosMap {
   // position before the inserted content will be returned, if it is
   // positive, a position after the insertion is returned.
   map(pos, bias) {
-    return mapThrough(this.ranges, pos, bias, false)
+    let diff = 0, oldIndex = this.inverted ? 2 : 1, newIndex = this.inverted ? 1 : 2
+    for (let i = 0; i < this.ranges.length; i += 3) {
+      let start = this.ranges[i] - (this.inverted ? diff : 0)
+      if (start > pos) break
+      let oldSize = this.ranges[i + oldIndex], newSize = this.ranges[i + newIndex], end = start + oldSize
+      if (pos <= end) {
+        let recover = makeRecover(i / 3, pos - start)
+        let side = !oldSize ? bias : pos == start ? -1 : pos == end ? 1 : bias
+        return new MapResult(start + diff + (side < 0 ? 0 : newSize), pos != start && pos != end, recover)
+      }
+      diff += newSize - oldSize
+    }
+    return new MapResult(pos + diff)
   }
 
-  touches(pos, offset) { return touches(this.ranges, pos, offset, false) }
+  touches(pos, recover) {
+    let diff = 0, index = recoverIndex(recover)
+    let oldIndex = this.inverted ? 2 : 1, newIndex = this.inverted ? 1 : 2
+    for (let i = 0; i < this.ranges.length; i += 3) {
+      let start = this.ranges[i] - (this.inverted ? diff : 0)
+      if (start > pos) break
+      let oldSize = this.ranges[i + oldIndex], end = start + oldSize
+      if (i == index && pos <= end) return true
+      diff += this.ranges[i + newIndex] - oldSize
+    }
+    return false
+  }
 
   // :: () → PosMap
   // Create an inverted version of this map. The result can be used to
   // map positions in the post-step document to the pre-step document.
-  invert() { return new InvertedPosMap(this.ranges) }
-
-  toString() { return this.ranges.join(" ") }
-}
-
-class InvertedPosMap {
-  constructor(ranges) { this.ranges = ranges }
-
-  recover(value) {
-    return this.ranges[recoverIndex(value)].pos + recoverOffset(value)
+  invert() {
+    return new PosMap(this.ranges, !this.inverted)
   }
-
-  map(pos, bias) { return mapThrough(this.ranges, pos, bias, true) }
-
-  touches(pos, offset) { return touches(this.ranges, pos, offset, true) }
-
-  invert() { return new PosMap(this.ranges) }
-
-  toString() { return "-" + this.ranges.join(" ") }
 }
 
 PosMap.empty = new PosMap([])

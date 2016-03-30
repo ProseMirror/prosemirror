@@ -2,7 +2,7 @@ import {Slice, Fragment} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
-import {PosMap, ReplacedRange} from "./map"
+import {PosMap} from "./map"
 
 // !! **`split`**
 //   : Split a block node at `pos`. The parameter, if given, may be
@@ -17,7 +17,7 @@ Step.define("split", {
     return StepResult.fromReplace(doc, $pos.pos, $pos.pos, new Slice(Fragment.fromArray(cut), 1, 1))
   },
   posMap(step) {
-    return new PosMap([new ReplacedRange(step.from, 0, 2)])
+    return new PosMap([step.from, 0, 2])
   },
   invert(step) {
     return new Step("join", step.from, step.from + 2)

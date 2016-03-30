@@ -3,7 +3,7 @@ import {Slice, Fragment} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
-import {PosMap, ReplacedRange} from "./map"
+import {PosMap} from "./map"
 
 // !! **`ancestor`**
 //    : Change the stack of nodes that wrap the part of the document
@@ -57,8 +57,8 @@ Step.define("ancestor", {
   posMap(step) {
     let depth = step.param.depth || 0, newDepth = step.param.types ? step.param.types.length : 0
     if (depth == newDepth && depth < 2) return PosMap.empty
-    return new PosMap([new ReplacedRange(step.from - depth, depth, newDepth),
-                       new ReplacedRange(step.to, depth, newDepth)])
+    return new PosMap([step.from - depth, depth, newDepth,
+                       step.to, depth, newDepth])
   },
   invert(step, oldDoc) {
     let types = [], attrs = []

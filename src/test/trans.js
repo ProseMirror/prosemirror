@@ -6,8 +6,9 @@ import {Failure} from "./failure"
 function tag(tr, name) {
   let calc = /^(.*)([+-]\d+)$/.exec(name), extra = 0
   if (calc) { name = calc[1]; extra = +calc[2] }
-  let pos = tr.map(tr.before.tag[name]).pos
-  return pos == null ? pos : pos + extra
+  let pos = tr.before.tag[name]
+  if (pos == null) return undefined
+  return tr.map(pos).pos + extra
 }
 
 function mrk(tr, mark) {

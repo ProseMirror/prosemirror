@@ -2,7 +2,7 @@ import {Fragment, Slice} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
-import {PosMap, ReplacedRange} from "./map"
+import {PosMap} from "./map"
 
 // !! **`replace`**
 //   : Delete the part of the document between `from` and `to` and
@@ -18,7 +18,7 @@ Step.define("replace", {
     return StepResult.fromReplace(doc, step.from, step.to, step.param)
   },
   posMap(step) {
-    return new PosMap([new ReplacedRange(step.from, step.to - step.from, step.param.size)])
+    return new PosMap([step.from, step.to - step.from, step.param.size])
   },
   invert(step, oldDoc) {
     return new Step("replace", step.from, step.from + step.param.size,
