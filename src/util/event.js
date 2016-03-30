@@ -5,26 +5,25 @@
 const noHandlers = []
 
 function getHandlers(obj, type, copy) {
-  let arr = obj._handlers && obj._handlers[type]
-  if (!arr) return noHandlers
-  return !copy || arr.length < 2 ? arr : arr.slice()
+  return obj._handlers && obj._handlers[type] || noHandlers
 }
 
 const methods = {
   // :: (type: string, handler: (...args: [any])) #path=EventMixin.on
   // Register an event handler for the given event type.
   on(type, handler) {
-    let map = this._handlers || (this._handlers = {})
-    let arr = map[type] || (map[type] = [])
-    arr.push(handler)
+    let map = this._handlers || (this._handlers = Object.create(null))
+    map[type] = (type in map) ? map[type].concat(handler) : [handler]
   },
 
   // :: (type: string, handler: (...args: [any])) #path=EventMixin.off
   // Unregister an event handler for the given event type.
   off(type, handler) {
-    let arr = getHandlers(this, type, false)
-    for (let i = 0; i < arr.length; ++i)
-      if (arr[i] == handler) { arr.splice(i, 1); break }
+    let map = this._handlers, arr = map && map[type]
+    if (arr) for (let i = 0; i < arr.length; ++i) if (arr[i] == handler) {
+      map[type] = arr.slice(0, i).concat(arr.slice(i + 1))
+      break
+    }
   },
 
   // :: (type: string, ...args: [any]) #path=EventMixin.signal
@@ -32,7 +31,7 @@ const methods = {
   // arguments. Will call the handlers for the event, passing them the
   // arguments.
   signal(type, ...args) {
-    let arr = getHandlers(this, type, true)
+    let arr = getHandlers(this, type)
     for (let i = 0; i < arr.length; ++i) arr[i](...args)
   },
 
@@ -44,7 +43,7 @@ const methods = {
   // return value of that handler is returned. If that does not
   // happen, `undefined` is returned.
   signalHandleable(type, ...args) {
-    let arr = getHandlers(this, type, true)
+    let arr = getHandlers(this, type)
     for (let i = 0; i < arr.length; ++i) {
       let result = arr[i](...args)
       if (result != null) return result
@@ -57,7 +56,7 @@ const methods = {
   // The method returns the value returned by the final handler (or
   // the original value, if there are no handlers).
   signalPipelined(type, value) {
-    let arr = getHandlers(this, type, true)
+    let arr = getHandlers(this, type)
     for (let i = 0; i < arr.length; ++i) value = arr[i](value)
     return value
   },
@@ -69,7 +68,7 @@ const methods = {
   // handled the event. Return `true` when one of the handlers handled
   // the event.
   signalDOM(event, type) {
-    let arr = getHandlers(this, type || event.type, true)
+    let arr = getHandlers(this, type || event.type)
     for (let i = 0; i < arr.length; ++i)
       if (arr[i](event) || event.defaultPrevented) return true
     return false
@@ -78,7 +77,7 @@ const methods = {
   // :: (type: string) → bool #path=EventMixin.hasHandler
   // Query whether there are any handlers for this event type.
   hasHandler(type) {
-    return getHandlers(this, type, false).length > 0
+    return getHandlers(this, type).length > 0
   }
 }
 
