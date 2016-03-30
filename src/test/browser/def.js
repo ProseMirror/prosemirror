@@ -1,5 +1,6 @@
 import {defTest} from "../tests"
 import {ProseMirror} from "../../edit/main"
+import {dispatchKey} from "../../edit/input"
 
 let tempPMs = null
 
@@ -34,3 +35,6 @@ export function namespace(space, defaults) {
     defTest(space + "_" + name, () => f(tempEditor(options)))
   }
 }
+
+const event = {preventDefault: () => null}
+export function dispatch(pm, key) { dispatchKey(pm, key, event) }

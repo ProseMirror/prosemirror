@@ -1,4 +1,4 @@
-import {namespace} from "./def"
+import {namespace, dispatch} from "./def"
 import {doc, blockquote, pre, p, li, ul, img, br, hr} from "../build"
 import {cmp, cmpStr, cmpNode, is} from "../cmp"
 
@@ -18,62 +18,62 @@ test("parent_block", pm => {
 
 test("through_inline_node", pm => {
   pm.setTextSelection(4)
-  pm.execCommand("selectNodeRight")
+  dispatch(pm, "Right")
   cmpStr(pm.selection.from, 4, "moved right onto image")
-  pm.execCommand("selectNodeRight")
+  dispatch(pm, "Right")
   cmpStr(pm.selection.head, 5, "moved right past")
   cmpStr(pm.selection.anchor, 5, "moved right past'")
-  pm.execCommand("selectNodeLeft")
+  dispatch(pm, "Left")
   cmpStr(pm.selection.from, 4, "moved left onto image")
-  pm.execCommand("selectNodeLeft")
+  dispatch(pm, "Left")
   cmpStr(pm.selection.head, 4, "moved left past")
   cmpStr(pm.selection.anchor, 4, "moved left past'")
 }, {doc: doc(p("foo", img, "bar"))})
 
 test("onto_block", pm => {
   pm.setTextSelection(6)
-  pm.execCommand("selectNodeDown")
+  dispatch(pm, "Down")
   cmpStr(pm.selection.from, 7, "moved down onto hr")
   pm.setTextSelection(11)
-  pm.execCommand("selectNodeUp")
+  dispatch(pm, "Up")
   cmpStr(pm.selection.from, 7, "moved up onto hr")
 }, {doc: doc(p("hello"), hr, ul(li(p("there"))))})
 
 test("through_double_block", pm => {
   pm.setTextSelection(7)
-  pm.execCommand("selectNodeDown")
+  dispatch(pm, "Down")
   cmpStr(pm.selection.from, 9, "moved down onto hr")
-  pm.execCommand("selectNodeDown")
+  dispatch(pm, "Down")
   cmpStr(pm.selection.from, 10, "moved down onto second hr")
   pm.setTextSelection(14)
-  pm.execCommand("selectNodeUp")
+  dispatch(pm, "Up")
   cmpStr(pm.selection.from, 10, "moved up onto second hr")
-  pm.execCommand("selectNodeUp")
+  dispatch(pm, "Up")
   cmpStr(pm.selection.from, 9, "moved up onto hr")
 }, {doc: doc(blockquote(p("hello")), hr, hr, p("there"))})
 
 test("horizontally_through_block", pm => {
   pm.setTextSelection(4)
-  pm.execCommand("selectNodeRight")
+  dispatch(pm, "Right")
   cmpStr(pm.selection.from, 5, "right into first hr")
-  pm.execCommand("selectNodeRight")
+  dispatch(pm, "Right")
   cmpStr(pm.selection.from, 6, "right into second hr")
-  pm.execCommand("selectNodeRight")
+  dispatch(pm, "Right")
   cmpStr(pm.selection.head, 8, "right out of hr")
-  pm.execCommand("selectNodeLeft")
+  dispatch(pm, "Left")
   cmpStr(pm.selection.from, 6, "left into second hr")
-  pm.execCommand("selectNodeLeft")
+  dispatch(pm, "Left")
   cmpStr(pm.selection.from, 5, "left into first hr")
-  pm.execCommand("selectNodeLeft")
+  dispatch(pm, "Left")
   cmpStr(pm.selection.head, 4, "left out of hr")
 }, {doc: doc(p("foo"), hr, hr, p("bar"))})
 
 test("block_out_of_image", pm => {
   pm.setNodeSelection(4)
-  pm.execCommand("selectNodeDown")
+  dispatch(pm, "Down")
   cmpStr(pm.selection.from, 6, "down into hr")
   pm.setNodeSelection(8)
-  pm.execCommand("selectNodeUp")
+  dispatch(pm, "Up")
   cmpStr(pm.selection.from, 6, "up into hr")
 }, {doc: doc(p("foo", img), hr, p(img, "bar"))})
 

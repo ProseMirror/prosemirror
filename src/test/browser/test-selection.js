@@ -136,14 +136,13 @@ test("coords_order", pm => {
 test("coords_cornercases", pm => {
   pm.markRange(2, 5, {className: "foo"})
   pm.markRange(7, 13, {className: "foo"})
-  let positions = allPositions(pm.doc)
-  for (let i = 0; i < positions.length; i++) {
-    let coords = pm.coordsAtPos(positions[i])
-    let pos = pm.posAtCoords(coords)
-    cmpStr(pos, positions[i])
+  allPositions(pm.doc).forEach(pos => {
+    let coords = pm.coordsAtPos(pos)
+    let found = pm.posAtCoords(coords)
+    cmpStr(found, pos)
     pm.setTextSelection(pos)
     pm.flush()
-  }
+  })
 }, {
   doc: doc(p("one", em("two", strong("three"), img), br, code("foo")), p())
 })
