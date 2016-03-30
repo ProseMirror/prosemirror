@@ -372,17 +372,17 @@ test("list_item:split",
 
 test("list_item:lift",
      doc(ul(li(p("hello"), ul(li(p("o<a><b>ne")), li(p("two")))))),
-     doc(ul(li(p("hello")), li(p("one")), li(ul(li(p("two")))))))
+     doc(ul(li(p("hello")), li(p("one"), ul(li(p("two")))))))
 test("list_item:lift",
      doc(ul(li(p("hello"), ul(li(p("o<a>ne")), li(p("two<b>")))))),
      doc(ul(li(p("hello")), li(p("one")), li(p("two")))))
 test("list_item:lift",
      doc(ul(li(p("hello"), ul(li(p("o<a>ne")), li(p("two<b>")), li(p("three")))))),
-     doc(ul(li(p("hello")), li(p("one")), li(p("two")), li(ul(li(p("three")))))))
+     doc(ul(li(p("hello")), li(p("one")), li(p("two"), ul(li(p("three")))))))
 
 test("list_item:sink",
      doc(ul(li(p("one")), li(p("t<a><b>wo")), li(p("three")))),
-     doc(ul(li(p("one")), li(ul(li(p("two")))), li(p("three")))))
+     doc(ul(li(p("one"), ul(li(p("two")))), li(p("three")))))
 test("list_item:sink",
      doc(ul(li(p("o<a><b>ne")), li(p("two")), li(p("three")))),
      doc(ul(li(p("one")), li(p("two")), li(p("three")))))

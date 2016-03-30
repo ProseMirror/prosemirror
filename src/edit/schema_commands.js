@@ -288,10 +288,13 @@ ListItem.register("command", "lift", {
   run(pm) {
     let selected = selectedListItems(pm, this)
     if (!selected || selected.depth < 3) return false
-    let $from = pm.doc.resolve(pm.selection.from)
-    if ($from.node(selected.depth - 2).type != this) return false
+    let $to = pm.doc.resolve(pm.selection.to)
+    if ($to.node(selected.depth - 2).type != this) return false
+    let itemsAfter = selected.to < $to.end(selected.depth - 1)
     let tr = pm.tr.splitIfNeeded(selected.to, 2).splitIfNeeded(selected.from, 2)
-    tr.step("ancestor", tr.map(selected.from).pos, tr.map(selected.to, -1).pos, {depth: 2})
+    let end = tr.map(selected.to, -1).pos
+    tr.step("ancestor", tr.map(selected.from).pos, end, {depth: 2})
+    if (itemsAfter) tr.join(end - 2)
     return tr.apply(pm.apply.scroll)
   },
   keys: ["Mod-[(20)"]
@@ -306,8 +309,8 @@ ListItem.register("command", "sink", {
     if (startIndex == 0) return false
     let parent = $from.node(selected.depth - 1), before = parent.child(startIndex - 1)
     let tr = pm.tr.wrap(selected.from, selected.to, parent.type, parent.attrs)
-    if (before.lastChild && before.lastChild.type == parent.type)
-      tr.join(selected.from, 2)
+    if (before.type == this)
+      tr.join(selected.from, before.lastChild && before.lastChild.type == parent.type ? 2 : 1)
     return tr.apply(pm.apply.scroll)
   },
   keys: ["Mod-](20)"]
