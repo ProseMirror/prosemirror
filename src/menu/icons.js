@@ -8,8 +8,6 @@ const XLINK = "http://www.w3.org/1999/xlink"
 
 const prefix = "ProseMirror-icon"
 
-const baseURL = /([^#]*)/.exec(document.location)[1]
-
 export function getIcon(name, data) {
   let node = document.createElement("div")
   node.className = prefix
@@ -18,7 +16,7 @@ export function getIcon(name, data) {
     let svg = node.appendChild(document.createElementNS(SVG, "svg"))
     svg.style.width = (data.width / data.height) + "em"
     let use = svg.appendChild(document.createElementNS(SVG, "use"))
-    use.setAttributeNS(XLINK, "href", baseURL + "#pm-icon-" + name)
+    use.setAttributeNS(XLINK, "href", /([^#]*)/.exec(document.location)[1] + "#pm-icon-" + name)
   } else if (data.dom) {
     node.appendChild(data.dom.cloneNode(true))
   } else {
