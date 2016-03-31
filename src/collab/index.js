@@ -68,13 +68,13 @@ class Collab {
     pm.on("beforeSetDoc", this.onSetDoc = () => {
       throw new AssertionError("setDoc is not supported on a collaborative editor")
     })
-    pm.history.allowCollapsing = false
+    pm.history.preserveMaps++
   }
 
   detach() {
     this.pm.off("transform", this.onTransform)
     this.pm.off("beforeSetDoc", this.onSetDoc)
-    this.pm.history.allowCollapsing = true
+    this.pm.history.preserveMaps--
   }
 
   // :: () → bool
