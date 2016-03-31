@@ -7,7 +7,7 @@ import {elt, browser, contains} from "../dom"
 
 import {readDOMChange, textContext, textInContext} from "./domchange"
 import {TextSelection, rangeFromDOMLoose, findSelectionAtStart, findSelectionAtEnd, findSelectionNear, hasFocus} from "./selection"
-import {coordsAtPos, posBeforeFromDOM, handleNodeClick, selectableNodeAbove} from "./dompos"
+import {posBeforeFromDOM, handleNodeClick, selectableNodeAbove} from "./dompos"
 
 let stopSeq = null
 
@@ -161,8 +161,15 @@ handlers.keypress = (pm, e) => {
   e.preventDefault()
 }
 
+function realTarget(pm, mouseEvent) {
+  if (pm.operation && pm.flush())
+    return document.elementFromPoint(mouseEvent.clientX, mouseEvent.clientY)
+  else
+    return mouseEvent.target
+}
+
 function selectClickedNode(pm, e) {
-  let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY}, true)
+  let pos = selectableNodeAbove(pm, realTarget(pm, e), {left: e.clientX, top: e.clientY}, true)
   if (pos == null) return pm.sel.fastPoll()
 
   let {node, from} = pm.selection
@@ -181,9 +188,9 @@ function selectClickedNode(pm, e) {
 
 let lastClick = 0, oneButLastClick = 0
 
-function handleTripleClick(pm, e) {
+function handleTripleClick(pm, e, target) {
   e.preventDefault()
-  let pos = selectableNodeAbove(pm, e.target, {left: e.clientX, top: e.clientY}, true)
+  let pos = selectableNodeAbove(pm, target, {left: e.clientX, top: e.clientY}, true)
   if (pos != null) {
     let $pos = pm.doc.resolve(pos), node = $pos.nodeAfter
     if (node.isBlock && !node.isTextblock) // Non-textblock block, select it
@@ -202,23 +209,25 @@ handlers.mousedown = (pm, e) => {
   oneButLastClick = lastClick
   lastClick = now
 
-  if (tripleClick) handleTripleClick(pm, e)
-  else if (doubleClick && handleNodeClick(pm, "handleDoubleClick", e, true)) {}
-  else pm.input.mouseDown = new MouseDown(pm, e, doubleClick)
+  let target = realTarget(pm, e)
+  if (tripleClick) handleTripleClick(pm, e, target)
+  else if (doubleClick && handleNodeClick(pm, "handleDoubleClick", e, target, true)) {}
+  else pm.input.mouseDown = new MouseDown(pm, e, target, doubleClick)
 }
 
 class MouseDown {
-  constructor(pm, event, doubleClick) {
+  constructor(pm, event, target, doubleClick) {
     this.pm = pm
     this.event = event
+    this.target = target
     this.leaveToBrowser = pm.input.shiftKey || doubleClick
 
-    let pos = posBeforeFromDOM(pm, event.target), node = pm.doc.nodeAt(pos)
+    let pos = posBeforeFromDOM(pm, this.target), node = pm.doc.nodeAt(pos)
     this.mightDrag = node.type.draggable || node == pm.sel.range.node ? pos : null
     if (this.mightDrag != null) {
-      event.target.draggable = true
-      if (browser.gecko && (this.setContentEditable = !event.target.hasAttribute("contentEditable")))
-        event.target.setAttribute("contentEditable", "false")
+      this.target.draggable = true
+      if (browser.gecko && (this.setContentEditable = !this.target.hasAttribute("contentEditable")))
+        this.target.setAttribute("contentEditable", "false")
     }
 
     this.x = event.clientX; this.y = event.clientY
@@ -232,21 +241,22 @@ class MouseDown {
     window.removeEventListener("mouseup", this.up)
     window.removeEventListener("mousemove", this.move)
     if (this.mightDrag != null) {
-      this.event.target.draggable = false
+      this.target.draggable = false
       if (browser.gecko && this.setContentEditable)
-        this.event.target.removeAttribute("contentEditable")
+        this.target.removeAttribute("contentEditable")
     }
   }
 
   up(event) {
     this.done()
 
+    let target
     if (this.leaveToBrowser || !contains(this.pm.content, event.target)) {
       this.pm.sel.fastPoll()
     } else if (this.event.ctrlKey) {
       selectClickedNode(this.pm, event)
-    } else if (!handleNodeClick(this.pm, "handleClick", event, true)) {
-      let pos = selectableNodeAbove(this.pm, event.target, {left: this.x, top: this.y})
+    } else if (!handleNodeClick(this.pm, "handleClick", event, (target = realTarget(this.pm, event)), true)) {
+      let pos = selectableNodeAbove(this.pm, target, {left: this.x, top: this.y})
       if (pos) {
         this.pm.setNodeSelection(pos)
         this.pm.focus()
@@ -269,7 +279,7 @@ handlers.touchdown = pm => {
 }
 
 handlers.contextmenu = (pm, e) => {
-  handleNodeClick(pm, "handleContextMenu", e, false)
+  handleNodeClick(pm, "handleContextMenu", e, realTarget(pm, e), false)
 }
 
 // A class to track state while creating a composed character.
@@ -499,7 +509,7 @@ handlers.dragover = handlers.dragenter = (pm, e) => {
 
   let pos = dropPos(pm, e, pm.input.dragging && pm.input.dragging.slice)
   if (pos == null) return
-  let coords = coordsAtPos(pm, pos)
+  let coords = pm.coordsAtPos(pos)
   let rect = pm.wrapper.getBoundingClientRect()
   coords.top -= rect.top
   coords.right -= rect.left

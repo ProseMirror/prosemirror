@@ -278,7 +278,7 @@ export class ProseMirror {
     return this.operation
   }
 
-  // :: ()
+  // :: () → bool
   // Flush any pending changes to the DOM. When the document,
   // selection, or marked ranges in an editor change, the DOM isn't
   // updated immediately, but rather scheduled to be updated the next
@@ -286,14 +286,16 @@ export class ProseMirror {
   // force this to happen immediately. It can be useful when you, for
   // example, want to measure where on the screen a part of the
   // document ends up, immediately after changing the document.
+  //
+  // Returns true when it updated the document DOM.
   flush() {
-    if (!document.body.contains(this.wrapper) || !this.operation) return
+    if (!document.body.contains(this.wrapper) || !this.operation) return false
     // :: () #path=ProseMirror#events#flushing
     // Fired when the editor is about to [flush](#ProseMirror.flush)
     // an update to the DOM.
     this.signal("flushing")
     let op = this.operation
-    if (!op) return
+    if (!op) return false
     this.operation = null
     this.accurateSelection = true
 
@@ -319,6 +321,7 @@ export class ProseMirror {
     // [flushing](#ProseMirror.flush) an update to the DOM.
     this.signal("flush")
     this.accurateSelection = false
+    return redrawn
   }
 
   // :: (Keymap, ?number)
@@ -437,6 +440,7 @@ export class ProseMirror {
   // content, this method will return the document position that
   // corresponds to those coordinates.
   posAtCoords(coords) {
+    this.flush()
     return posAtCoords(this, coords)
   }
 
@@ -445,6 +449,7 @@ export class ProseMirror {
   // window) of the given document position.
   coordsAtPos(pos) {
     this.checkPos(pos)
+    this.flush()
     return coordsAtPos(this, pos)
   }
 

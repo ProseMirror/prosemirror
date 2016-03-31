@@ -332,8 +332,8 @@ export function selectableNodeAbove(pm, dom, coords, liberal) {
 // were directly clicked, and may call `event.preventDefault()` to
 // prevent the native context menu.
 
-export function handleNodeClick(pm, type, event, direct) {
-  for (let dom = event.target; dom && dom != pm.content; dom = dom.parentNode) {
+export function handleNodeClick(pm, type, event, target, direct) {
+  for (let dom = target; dom && dom != pm.content; dom = dom.parentNode) {
     if (dom.hasAttribute("pm-offset")) {
       let pos = posBeforeFromDOM(pm, dom), node = pm.doc.nodeAt(pos)
       let handled = node.type[type] && node.type[type](pm, event, pos, node) !== false

@@ -59,8 +59,10 @@ function selectNodeVertically(pm, dir) {
   if (!empty && !node) return false
 
   let leavingTextblock = true
-  if (!node || node.isInline)
+  if (!node || node.isInline) {
+    pm.flush() // verticalMotionLeavesTextblock needs an up-to-date DOM
     leavingTextblock = verticalMotionLeavesTextblock(pm, dir > 0 ? to : from, dir)
+  }
 
   if (leavingTextblock) {
     let next = moveSelectionBlock(pm, dir)
