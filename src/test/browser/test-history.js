@@ -50,7 +50,7 @@ test("unsynced", pm => {
   cmpNode(pm.doc, doc(p("oops!")))
 })
 
-test("unsynced_complex", pm => {
+function unsyncedComplex(pm, compress) {
   type(pm, "hello")
   cutHistory(pm)
   type(pm, "!")
@@ -58,11 +58,16 @@ test("unsynced_complex", pm => {
   pm.tr.split(3).apply()
   cmpNode(pm.doc, doc(p(".."), p("..hello!")))
   pm.tr.split(2).apply({addToHistory: false})
+  if (compress) pm.history.done.compress(Infinity)
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p("."), p("...hello")))
   pm.execCommand("undo")
   cmpNode(pm.doc, doc(p("."), p("...")))
-})
+}
+
+test("unsynced_complex", pm => unsyncedComplex(pm, false))
+
+test("unsynced_complex_compress", pm => unsyncedComplex(pm, true))
 
 test("overlapping", pm => {
   type(pm, "hello")
@@ -136,30 +141,14 @@ test("ping_pong_unsynced", pm => {
   type(pm, "top")
   pm.tr.insertText(1, "yyy").apply({addToHistory: false})
   pm.tr.insertText(7, "zzz").apply({addToHistory: false})
-  for (let i = 0; i < 6; i++) {
-    let re = i % 2
-    for (let j = 0; j < 4; j++)
-      cmp(pm.history[re ? "redo" : "undo"](), j < 3)
-    cmpNode(pm.doc, re ? doc(p("yyytopzzz"), p("zero one twoxxx three")) : doc(p("yyyzzzxxx")), String(i))
+  for (let i = 0; i < 3; i++) {
+    if (i == 2) pm.history.done.compress(Infinity)
+    for (let j = 0; j < 4; j++) cmp(pm.history.undo(), j < 3)
+    cmpNode(pm.doc, doc(p("yyyzzzxxx")), i + " undo")
+    if (i == 2) pm.history.undone.compress(Infinity)
+    for (let j = 0; j < 4; j++) cmp(pm.history.redo(), j < 3)
+    cmpNode(pm.doc, doc(p("yyytopzzz"), p("zero one twoxxx three")), i + " redo")
   }
-})
-
-test("compressable", pm => {
-  type(pm, "XY")
-  pm.setTextSelection(2)
-  cutHistory(pm)
-  type(pm, "one")
-  type(pm, "two")
-  type(pm, "three")
-  pm.tr.insertText(14, "!").apply({addToHistory: false})
-  pm.history.done.startCompression(pm.doc)
-  cmpNode(pm.doc, doc(p("XonetwothreeY!")))
-  pm.execCommand("undo")
-  cmpNode(pm.doc, doc(p("XY!")))
-  cmpStr(pm.selection.anchor, 2)
-  pm.execCommand("redo")
-  cmpNode(pm.doc, doc(p("XonetwothreeY!")))
-  cmpStr(pm.selection.anchor, 13)
 })
 
 test("setDocResets", pm => {

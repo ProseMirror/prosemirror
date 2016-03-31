@@ -49,6 +49,7 @@ class Collab {
     // was enabled.
     this.version = options.version || 0
     this.versionDoc = pm.doc
+    pm.history.preserveItems++
 
     this.unconfirmedSteps = []
     this.unconfirmedMaps = []
@@ -67,13 +68,12 @@ class Collab {
     pm.on("beforeSetDoc", this.onSetDoc = () => {
       throw new RangeError("setDoc is not supported on a collaborative editor")
     })
-    pm.history.preserveMaps++
   }
 
   detach() {
     this.pm.off("transform", this.onTransform)
     this.pm.off("beforeSetDoc", this.onSetDoc)
-    this.pm.history.preserveMaps--
+    this.pm.history.preserveItems++
   }
 
   // :: () → bool

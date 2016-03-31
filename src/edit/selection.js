@@ -236,6 +236,20 @@ export class TextSelection extends Selection {
     let anchor = mapping.map(this.anchor).pos
     return new TextSelection(doc.resolve(anchor).parent.isTextblock ? anchor : head, head)
   }
+
+  get token() {
+    return new SelectionToken(TextSelection, this.anchor, this.head)
+  }
+
+  static mapToken(token, mapping) {
+    return new SelectionToken(TextSelection, mapping.map(token.a).pos, mapping.map(token.b).pos)
+  }
+
+  static fromToken(token, doc) {
+    if (!doc.resolve(token.b).parent.isTextblock)
+      return findSelectionNear(doc, token.b)
+    return new TextSelection(doc.resolve(token.a).parent.isTextblock ? token.a : token.b, token.b)
+  }
 }
 
 // ;; A node selection is a selection that points at a
@@ -268,6 +282,29 @@ export class NodeSelection extends Selection {
     if (node && to == from + node.nodeSize && node.type.selectable)
       return new NodeSelection(from, to, node)
     return findSelectionNear(doc, from)
+  }
+
+  get token() {
+    return new SelectionToken(NodeSelection, this.from, this.to)
+  }
+
+  static mapToken(token, mapping) {
+    return new SelectionToken(TextSelection, mapping.map(token.a, 1).pos, mapping.map(token.b, -1).pos)
+  }
+
+  static fromToken(token, doc) {
+    let node = doc.nodeAt(token.a)
+    if (node && token.b == token.a + node.nodeSize && node.type.selectable)
+      return new NodeSelection(token.a, token.b, node)
+    return findSelectionNear(doc, token.a)
+  }
+}
+
+class SelectionToken {
+  constructor(type, a, b) {
+    this.type = type
+    this.a = a
+    this.b = b
   }
 }
 

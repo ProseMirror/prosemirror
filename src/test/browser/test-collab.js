@@ -2,7 +2,7 @@ import "../../collab"
 
 import {doc, p} from "../build"
 import {defTest} from "../tests"
-import {cmpNode} from "../cmp"
+import {cmpNode, cmp} from "../cmp"
 import {tempEditors} from "./def"
 
 class DummyServer {
@@ -107,17 +107,18 @@ test("converge_three_rebased", (pm1, pm2, pm3) => {
   conv(pm1, pm2, pm3, "AXBCUV")
 }, null, 3)
 
-test("undo", (pm1, pm2) => {
+test("undo_basic", (pm1, pm2) => {
   type(pm1, "A")
   type(pm2, "B")
   type(pm1, "C")
   pm2.execCommand("undo")
+  conv(pm1, pm2, "AC")
   type(pm2, "D")
   type(pm1, "E")
   conv(pm1, pm2, "ACDE")
 })
 
-test("redo", (pm1, pm2) => {
+test("redo_basic", (pm1, pm2) => {
   type(pm1, "A")
   type(pm2, "B")
   type(pm1, "C")
@@ -158,7 +159,8 @@ test("undo_deep", (pm1, pm2) => {
 }, {doc: doc(p("hello"), p("bye"))})
 
 test("undo_deleted_event", (pm1, pm2) => {
-  type(pm1, "A", 6)
+  pm1.setTextSelection(6)
+  type(pm1, "A")
   delay(pm1, () => {
     type(pm1, "B", 4)
     type(pm1, "C", 5)
@@ -168,6 +170,7 @@ test("undo_deleted_event", (pm1, pm2) => {
   conv(pm1, pm2, "DhoA")
   pm1.execCommand("undo")
   conv(pm1, pm2, "ho")
+  cmp(pm1.selection.head, 3)
 }, {doc: doc(p("hello"))})
 
 /* This is related to the TP_2 condition often referenced in OT
