@@ -168,8 +168,8 @@ function realTarget(pm, mouseEvent) {
     return mouseEvent.target
 }
 
-function selectClickedNode(pm, e) {
-  let pos = selectableNodeAbove(pm, realTarget(pm, e), {left: e.clientX, top: e.clientY}, true)
+function selectClickedNode(pm, e, target) {
+  let pos = selectableNodeAbove(pm, target, {left: e.clientX, top: e.clientY}, true)
   if (pos == null) return pm.sel.fastPoll()
 
   let {node, from} = pm.selection
@@ -250,12 +250,12 @@ class MouseDown {
   up(event) {
     this.done()
 
-    let target
-    if (this.leaveToBrowser || !contains(this.pm.content, event.target)) {
+    let target = realTarget(this.pm, event)
+    if (this.leaveToBrowser || !contains(this.pm.content, target)) {
       this.pm.sel.fastPoll()
     } else if (this.event.ctrlKey) {
-      selectClickedNode(this.pm, event)
-    } else if (!handleNodeClick(this.pm, "handleClick", event, (target = realTarget(this.pm, event)), true)) {
+      selectClickedNode(this.pm, event, target)
+    } else if (!handleNodeClick(this.pm, "handleClick", event, target, true)) {
       let pos = selectableNodeAbove(this.pm, target, {left: this.x, top: this.y})
       if (pos) {
         this.pm.setNodeSelection(pos)
