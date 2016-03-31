@@ -174,7 +174,7 @@ class Branch {
   }
 
   clear(force) {
-    if (force || !this.empty()) {
+    if (force || !this.empty) {
       this.maps.length = this.events.length = this.stepsSinceCompress = 0
       this.mirror = Object.create(null)
       this.abortCompression()
@@ -196,7 +196,7 @@ class Branch {
   // changes recorded in the branch, or representing a non-history
   // change that the branch's changes must be mapped through.
   addMap(map) {
-    if (!this.empty()) {
+    if (!this.empty) {
       this.maps.push(map)
       this.version++
       this.stepsSinceCompress++
@@ -204,9 +204,9 @@ class Branch {
     }
   }
 
-  // : () → bool
+  // : bool
   // Whether the branch is empty (has no history events).
-  empty() {
+  get empty() {
     return this.events.length == 0
   }
 
@@ -221,7 +221,7 @@ class Branch {
   addTransform(transform, ids) {
     this.abortCompression()
     for (let i = 0; i < transform.steps.length; i++) {
-      let inverted = transform.steps[i].invert(transform.docs[i], transform.maps[i])
+      let inverted = transform.steps[i].invert(transform.docs[i])
       this.addStep(inverted, transform.maps[i], ids && ids[i])
     }
   }
@@ -229,19 +229,19 @@ class Branch {
   // : (Node, bool) → ?{transform: Transform, ids: [number], selection: Selection}
   // Pop the latest event off the branch's history and apply it
   // to a document transform, returning the transform and the step ID.
-  popEvent(doc, allowCollapsing) {
+  popEvent(doc, preserveMaps) {
     this.abortCompression()
     let event = this.events.pop()
     if (!event) return null
 
-    let remap = new BranchRemapping(this), collapsing = allowCollapsing
+    let remap = new BranchRemapping(this), preserve = preserveMaps
     let tr = new Transform(doc)
     let ids = []
 
     for (let i = event.steps.length - 1; i >= 0; i--) {
       let invertedStep = event.steps[i], step = invertedStep.step
-      if (!collapsing || invertedStep.version != remap.version) {
-        collapsing = false
+      if (preserve || invertedStep.version != remap.version) {
+        preserve = true
         // Remap the step through any position mappings unrelated to
         // history (e.g. collaborative edits).
         remap.moveToVersion(invertedStep.version)
@@ -267,7 +267,7 @@ class Branch {
     }
     let selection = event.selection && event.selection.map(tr.doc, remap.remap)
 
-    if (this.empty()) this.clear(true)
+    if (this.empty) this.clear(true)
     return {transform: tr, ids, selection}
   }
 
@@ -302,7 +302,7 @@ class Branch {
   }
 
   rebased(newMaps, rebasedTransform, positions) {
-    if (this.empty()) return
+    if (this.empty) return
     this.abortCompression()
 
     let startVersion = this.version - positions.length
@@ -317,8 +317,7 @@ class Branch {
         if (off == -1) {
           event.steps.splice(j--, 1)
         } else {
-          let inv = rebasedTransform.steps[off].invert(rebasedTransform.docs[off],
-                                                       rebasedTransform.maps[off])
+          let inv = rebasedTransform.steps[off].invert(rebasedTransform.docs[off])
           event.steps[j] = new InvertedStep(inv, startVersion + newMaps.length + off + 1, step.id)
         }
       }
@@ -372,7 +371,10 @@ export class History {
     this.lastAddedAt = 0
     this.ignoreTransform = false
 
-    this.allowCollapsing = true
+    // Maps in branches are preserved (no direct rollback) when this
+    // is > 0. Modules that require maps to be preserved can increment
+    // this (and decrement it when they detach).
+    this.preserveMaps = 0
 
     pm.on("transform", (transform, selection, options) => this.recordTransform(transform, selection, options))
   }
@@ -429,7 +431,7 @@ export class History {
   // shift the event onto the other branch. Returns true when an event could
   // be shifted.
   shift(from, to) {
-    let event = from.popEvent(this.pm.doc, this.allowCollapsing)
+    let event = from.popEvent(this.pm.doc, this.preserveMaps > 0)
     if (!event) return false
     let {transform, ids, selection} = event
     let selectionBeforeTransform = this.pm.selection
@@ -484,6 +486,7 @@ export class History {
     this.done.events.push(new HistoryEvent(combinedSteps, null))
 
     this.shift(this.done)
+    this.undone.clear()
     return true
   }
 
