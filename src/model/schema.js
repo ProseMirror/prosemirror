@@ -469,6 +469,16 @@ export class MarkType extends SchemaItem {
   // guarantee what it will be.)
   static get rank() { return 50 }
 
+  // :: bool
+  // Whether this mark should be active when the cursor is positioned
+  // at the start of the mark.
+  get inclusiveLeft() { return false }
+
+  // :: bool
+  // Whether this mark should be active when the cursor is positioned
+  // at the end of the mark.
+  get inclusiveRight() { return true }
+
   // :: (?Object) → Mark
   // Create a mark of this type. `attrs` may be `null` or an object
   // containing only some of the mark's attributes. The others, if
