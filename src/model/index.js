@@ -11,7 +11,7 @@
 // This module does not depend on the browser API being available
 // (i.e. you can load it into any JavaScript environment).
 
-export {Node, PosContext} from "./node"
+export {Node} from "./node"
 export {ResolvedPos} from "./resolvedpos"
 export {Fragment} from "./fragment"
 export {Slice, ReplaceError} from "./replace"
