@@ -74,7 +74,7 @@ class MenuBar {
     this.wrapper.textContent = ""
     this.wrapper.appendChild(renderGrouped(this.pm, this.content))
 
-    return this.float ? this.updateScrollCursor() : () => {
+    return this.floating ? this.updateScrollCursor() : () => {
       if (this.wrapper.offsetWidth != this.widthForMaxHeight) {
         this.widthForMaxHeight = this.wrapper.offsetWidth
         this.maxHeight = 0
