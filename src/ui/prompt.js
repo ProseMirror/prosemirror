@@ -1,4 +1,3 @@
-import {AssertionError} from "../util/error"
 import {elt, insertCSS} from "../dom"
 
 // !! The `ui/prompt` module implements functionality for prompting
@@ -28,7 +27,7 @@ export class ParamPrompt {
     // the command's parameters.
     this.fields = command.params.map(param => {
       if (!(param.type in this.paramTypes))
-        throw new AssertionError("Unsupported parameter type: " + param.type)
+        throw new RangeError("Unsupported parameter type: " + param.type)
       return this.paramTypes[param.type].render.call(this.pm, param, this.defaultValue(param))
     })
     let promptTitle = elt("h5", {}, (command.spec && command.spec.label) ? pm.translate(command.spec.label) : "")

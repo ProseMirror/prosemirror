@@ -1,5 +1,4 @@
 import {joinPoint, joinable, canLift} from "../transform"
-import {AssertionError} from "../util/error"
 
 import {charCategory, isExtendingChar} from "./char"
 import {findSelectionFrom} from "./selection"
@@ -99,7 +98,7 @@ baseCommands.joinBackward = {
 // Get an offset moving backward from a current offset inside a node.
 function moveBackward(doc, pos, by) {
   if (by != "char" && by != "word")
-    throw new AssertionError("Unknown motion unit: " + by)
+    throw new RangeError("Unknown motion unit: " + by)
 
   let $pos = doc.resolve(pos)
   let parent = $pos.parent, offset = $pos.parentOffset
@@ -211,7 +210,7 @@ baseCommands.joinForward = {
 
 function moveForward(doc, pos, by) {
   if (by != "char" && by != "word")
-    throw new AssertionError("Unknown motion unit: " + by)
+    throw new RangeError("Unknown motion unit: " + by)
 
   let $pos = doc.resolve(pos)
   let parent = $pos.parent, offset = $pos.parentOffset

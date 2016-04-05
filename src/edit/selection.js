@@ -1,10 +1,6 @@
-import {ProseMirrorError} from "../util/error"
 import {contains, browser} from "../dom"
 
 import {posFromDOM, DOMAfterPos, DOMFromPos, coordsAtPos} from "./dompos"
-
-// ;; Error type used to signal selection-related problems.
-export class SelectionError extends ProseMirrorError {}
 
 // Track the state of the current editor selection. Keeps the editor
 // selection in sync with the DOM selection by polling for changes,
@@ -328,7 +324,7 @@ export function findSelectionFrom(doc, pos, dir, text) {
 
 export function findSelectionNear(doc, pos, bias = 1, text) {
   let result = findSelectionFrom(doc, pos, bias, text) || findSelectionFrom(doc, pos, -bias, text)
-  if (!result) SelectionError("Searching for selection in invalid document " + doc)
+  if (!result) throw new RangeError("Searching for selection in invalid document " + doc)
   return result
 }
 

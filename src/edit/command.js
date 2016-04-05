@@ -4,7 +4,6 @@ import {NodeType, MarkType} from "../model"
 import {canWrap} from "../transform"
 import {browser} from "../dom"
 import sortedInsert from "../util/sortedinsert"
-import {NamespaceError, AssertionError} from "../util/error"
 import {copyObj} from "../util/obj"
 
 import {baseCommands} from "./base_commands"
@@ -22,7 +21,7 @@ export class Command {
   constructor(spec, self, name) {
     // :: string The name of the command.
     this.name = name
-    if (!this.name) throw new NamespaceError("Trying to define a command without a name")
+    if (!this.name) throw new RangeError("Trying to define a command without a name")
     // :: CommandSpec The command's specifying object.
     this.spec = spec
     this.self = self
@@ -44,7 +43,7 @@ export class Command {
       return new pm.options.commandParamPrompt(pm, this).open()
     } else {
       if (this.params.length != (params ? params.length : 0))
-        throw new AssertionError("Invalid amount of parameters for command " + this.name)
+        throw new RangeError("Invalid amount of parameters for command " + this.name)
       return run.call(this.self, pm, ...params)
     }
   }
@@ -87,7 +86,7 @@ function deriveCommandSpec(type, spec, name) {
   let conf = typeof spec.derive == "object" ? spec.derive : {}
   let dname = conf.name || name
   let derive = type.constructor.derivableCommands[dname]
-  if (!derive) throw new AssertionError("Don't know how to derive command " + dname)
+  if (!derive) throw new RangeError("Don't know how to derive command " + dname)
   let derived = derive.call(type, conf)
   for (let prop in spec) if (prop != "derive") derived[prop] = spec[prop]
   return derived
@@ -114,7 +113,7 @@ export class CommandSet {
     return new CommandSet(this, (commands, schema) => {
       function add(name, spec, self) {
         if (!filter || filter(name, spec)) {
-          if (commands[name]) throw new AssertionError("Duplicate definition of command " + name)
+          if (commands[name]) throw new RangeError("Duplicate definition of command " + name)
           commands[name] = new Command(spec, self, name)
         }
       }

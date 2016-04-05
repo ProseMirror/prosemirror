@@ -1,6 +1,5 @@
 import {defineOption} from "../edit"
 import {eventMixin} from "../util/event"
-import {AssertionError} from "../util/error"
 import {Transform} from "../transform"
 
 import {rebaseSteps} from "./rebase"
@@ -66,7 +65,7 @@ class Collab {
       this.signal("mustSend")
     })
     pm.on("beforeSetDoc", this.onSetDoc = () => {
-      throw new AssertionError("setDoc is not supported on a collaborative editor")
+      throw new RangeError("setDoc is not supported on a collaborative editor")
     })
     pm.history.preserveMaps++
   }

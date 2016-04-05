@@ -17,7 +17,7 @@ export {Fragment} from "./fragment"
 export {Slice, ReplaceError} from "./replace"
 export {Mark} from "./mark"
 
-export {SchemaSpec, Schema, SchemaError,
+export {SchemaSpec, Schema,
         NodeType, Block, Textblock, Inline, Text,
         MarkType, Attribute, NodeKind} from "./schema"
 export {defaultSchema, Doc, BlockQuote, OrderedList, BulletList, ListItem,
@@ -25,5 +25,3 @@ export {defaultSchema, Doc, BlockQuote, OrderedList, BulletList, ListItem,
         CodeMark, EmMark, StrongMark, LinkMark} from "./defaultschema"
 
 export {findDiffStart, findDiffEnd} from "./diff"
-
-export {ModelError} from "./error"

@@ -1,4 +1,3 @@
-import {AssertionError} from "../util/error"
 import {Slice} from "../model"
 
 import {Transform} from "./transform"
@@ -75,7 +74,7 @@ Transform.prototype.join = function(pos, depth = 1, silent = false) {
     let $pos = this.doc.resolve(pos)
     if ($pos.parentOffset == 0 || $pos.parentOffset == $pos.parent.content.size ||
         !$pos.nodeBefore.type.canContainContent($pos.nodeAfter.type)) {
-      if (!silent) throw new AssertionError("Nothing to join at " + pos)
+      if (!silent) throw new RangeError("Nothing to join at " + pos)
       break
     }
     this.step("join", pos - 1, pos + 1)

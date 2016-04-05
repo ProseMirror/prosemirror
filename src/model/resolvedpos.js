@@ -1,5 +1,3 @@
-import {ModelError} from "./error"
-
 // ;; The usual way to represent positions in a document is with a
 // plain integer. Since those tell you very little about the context
 // of that position, you'll often have to 'resolve' a position to get
@@ -122,7 +120,7 @@ export class ResolvedPos {
   }
 
   static resolve(doc, pos) {
-    if (!(pos >= 0 && pos <= doc.content.size)) throw new ModelError("Position " + pos + " out of range")
+    if (!(pos >= 0 && pos <= doc.content.size)) throw new RangeError("Position " + pos + " out of range")
     let nodes = [], indices = [], positions = []
     let start = 0, parentOffset = pos
     for (let node = doc;;) {

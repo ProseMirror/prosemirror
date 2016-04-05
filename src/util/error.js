@@ -19,13 +19,6 @@ Object.defineProperty(ProseMirrorError.prototype, "name", {
   }
 })
 
-// ;; Error type used to signal miscellaneous invariant violations.
-export class AssertionError extends ProseMirrorError {}
-
-// ;; Error type used to report name clashes or other violations in
-// namespacing.
-export class NamespaceError extends ProseMirrorError {}
-
 function functionName(f) {
   let match = /^function (\w+)/.exec(f.toString())
   return match && match[1]

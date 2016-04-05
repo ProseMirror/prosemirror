@@ -3,7 +3,6 @@ import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmMark, StrongMark, LinkMark, CodeMark, Mark, Fragment} from "../model"
 import {defineSource} from "../format"
-import {AssertionError} from "../util/error"
 import sortedInsert from "../util/sortedinsert"
 
 // :: (Schema, string, ?Object) → Node
@@ -193,7 +192,7 @@ function registerTokens(tokens, name, type, info) {
   } else if (info.parse) {
     tokens[name] = info.parse.bind(type)
   } else {
-    throw new AssertionError("Unrecognized markdown parsing spec: " + info)
+    throw new RangeError("Unrecognized markdown parsing spec: " + info)
   }
 }
 
@@ -216,7 +215,7 @@ function configFromSchema(schema) {
     let modifiers = []
     schema.registry("configureMarkdown", (name, f) => {
       if (name == "init") {
-        if (init) throw new AssertionError("Two markdown parser initializers defined in schema")
+        if (init) throw new RangeError("Two markdown parser initializers defined in schema")
         init = f
       } else {
         let rank = (/_(\d+)$/.exec(name) || [0, 50])[1]

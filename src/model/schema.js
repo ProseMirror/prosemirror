@@ -3,12 +3,6 @@ import {Fragment} from "./fragment"
 import {Mark} from "./mark"
 import {copyObj} from "../util/obj"
 
-import {ProseMirrorError} from "../util/error"
-
-// ;; The exception type used to signal schema-related
-// errors.
-export class SchemaError extends ProseMirrorError {}
-
 // ;; The [node](#NodeType) and [mark](#MarkType) types
 // that make up a schema have several things in common—they support
 // attributes, and you can [register](#SchemaItem.register) values
@@ -53,7 +47,7 @@ class SchemaItem {
         else if (attr.compute)
           value = attr.compute(this, arg)
         else
-          throw new SchemaError("No value supplied for attribute " + name)
+          throw new RangeError("No value supplied for attribute " + name)
       }
       built[name] = value
     }
@@ -297,8 +291,8 @@ export class NodeType extends SchemaItem {
     for (let name in types)
       result[name] = new types[name](name, schema)
 
-    if (!result.doc) throw new SchemaError("Every schema needs a 'doc' type")
-    if (!result.text) throw new SchemaError("Every schema needs a 'text' type")
+    if (!result.doc) throw new RangeError("Every schema needs a 'doc' type")
+    if (!result.text) throw new RangeError("Every schema needs a 'text' type")
 
     return result
   }
@@ -350,7 +344,7 @@ export class NodeKind {
 
   addSub(sub) {
     if (this.supers[sub.id])
-      throw new SchemaError("Circular subkind relation")
+      throw new RangeError("Circular subkind relation")
     sub.supers[this.id] = true
     sub.subs.forEach(next => this.addSub(next))
   }
@@ -385,7 +379,7 @@ export class Block extends NodeType {
   defaultContent() {
     let inner = this.schema.defaultTextblockType().create()
     let conn = this.findConnection(inner.type)
-    if (!conn) throw new SchemaError("Can't create default content for " + this.name)
+    if (!conn) throw new RangeError("Can't create default content for " + this.name)
     for (let i = conn.length - 1; i >= 0; i--) inner = conn[i].create(null, inner)
     return Fragment.from(inner)
   }
@@ -583,7 +577,7 @@ export class Schema {
     // A map from mark names to mark type objects.
     this.marks = MarkType.compile(spec.marks, this)
     for (let prop in this.nodes)
-      if (prop in this.marks) throw new SchemaError(prop + " can not be both a node and a mark")
+      if (prop in this.marks) throw new RangeError(prop + " can not be both a node and a mark")
 
     // :: Object
     // An object for storing whatever values modules may want to
@@ -614,9 +608,9 @@ export class Schema {
     if (typeof type == "string")
       type = this.nodeType(type)
     else if (!(type instanceof NodeType))
-      throw new SchemaError("Invalid node type: " + type)
+      throw new RangeError("Invalid node type: " + type)
     else if (type.schema != this)
-      throw new SchemaError("Node type from different schema used (" + type.name + ")")
+      throw new RangeError("Node type from different schema used (" + type.name + ")")
 
     return type.create(attrs, content, marks)
   }
@@ -646,7 +640,7 @@ export class Schema {
   // Create a mark with the named type
   mark(name, attrs) {
     let spec = this.marks[name]
-    if (!spec) throw new SchemaError("No mark named " + name)
+    if (!spec) throw new RangeError("No mark named " + name)
     return spec.create(attrs)
   }
 
@@ -675,7 +669,7 @@ export class Schema {
   // this schema, or raise an error if it does not exist.
   nodeType(name) {
     let found = this.nodes[name]
-    if (!found) throw new SchemaError("Unknown node type: " + name)
+    if (!found) throw new RangeError("Unknown node type: " + name)
     return found
   }
 

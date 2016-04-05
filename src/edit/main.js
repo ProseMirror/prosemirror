@@ -3,7 +3,6 @@ import "./css"
 import Keymap from "browserkeymap"
 
 import sortedInsert from "../util/sortedinsert"
-import {AssertionError} from "../util/error"
 import {Map} from "../util/map"
 import {eventMixin} from "../util/event"
 import {requestAnimationFrame, elt, browser, ensureCSSAdded} from "../dom"
@@ -12,7 +11,7 @@ import {parseFrom, serializeTo} from "../format"
 
 import {parseOptions, initOptions, setOption} from "./options"
 import {SelectionState, TextSelection, NodeSelection,
-        findSelectionAtStart, hasFocus, SelectionError} from "./selection"
+        findSelectionAtStart, hasFocus} from "./selection"
 import {scrollIntoView, posAtCoords, coordsAtPos} from "./dompos"
 import {draw, redraw} from "./draw"
 import {Input} from "./input"
@@ -115,9 +114,9 @@ export class ProseMirror {
     this.checkPos(pos, false)
     let node = this.doc.nodeAt(pos)
     if (!node)
-      throw new SelectionError("Trying to set a node selection that doesn't point at a node")
+      throw new RangeError("Trying to set a node selection that doesn't point at a node")
     if (!node.type.selectable)
-      throw new SelectionError("Trying to select a non-selectable node")
+      throw new RangeError("Trying to select a non-selectable node")
     this.setSelection(new NodeSelection(pos, pos + node.nodeSize, node))
   }
 
@@ -148,7 +147,7 @@ export class ProseMirror {
 
   setDocInner(doc) {
     if (doc.type != this.schema.nodes.doc)
-      throw new AssertionError("Trying to set a document with a different schema")
+      throw new RangeError("Trying to set a document with a different schema")
     // :: Node The current document.
     this.doc = doc
     this.ranges = new RangeStore(this)
@@ -214,7 +213,7 @@ export class ProseMirror {
   apply(transform, options = nullOptions) {
     if (!transform.steps.length) return false
     if (!transform.docs[0].eq(this.doc))
-      throw new AssertionError("Applying a transform that does not start with the current document")
+      throw new RangeError("Applying a transform that does not start with the current document")
 
     // :: (transform: Transform) #path=ProseMirror#events#filterTransform
     // Fired before a transform (applied without `filter: false`) is
@@ -251,7 +250,7 @@ export class ProseMirror {
     if (valid && textblock)
       valid = this.doc.resolve(pos).parent.isTextblock
     if (!valid)
-      throw new AssertionError("Position " + pos + " is not valid in current document")
+      throw new RangeError("Position " + pos + " is not valid in current document")
   }
 
   // : (?Object) → Operation

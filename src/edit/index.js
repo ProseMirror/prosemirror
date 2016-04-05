@@ -5,7 +5,7 @@
 
 export {ProseMirror} from "./main"
 export {defineOption} from "./options"
-export {SelectionError, Selection, TextSelection, NodeSelection} from "./selection"
+export {Selection, TextSelection, NodeSelection} from "./selection"
 export {MarkedRange} from "./range"
 export {CommandSet, Command} from "./command"
 export {baseCommands} from "./base_commands"

@@ -1,5 +1,3 @@
-import {ModelError} from "./error"
-
 // ;; Fragment is the type used to represent a node's collection of
 // child nodes.
 //
@@ -173,7 +171,7 @@ export class Fragment {
   // index is out of range.
   child(index) {
     let found = this.content[index]
-    if (!found) throw new ModelError("Index " + index + " out of range for " + this)
+    if (!found) throw new RangeError("Index " + index + " out of range for " + this)
     return found
   }
 
@@ -210,7 +208,7 @@ export class Fragment {
   findIndex(pos, round = -1) {
     if (pos == 0) return retIndex(0, pos)
     if (pos == this.size) return retIndex(this.content.length, pos)
-    if (pos > this.size || pos < 0) throw new ModelError(`Position ${pos} outside of fragment (${this})`)
+    if (pos > this.size || pos < 0) throw new RangeError(`Position ${pos} outside of fragment (${this})`)
     for (let i = 0, curPos = 0;; i++) {
       let cur = this.child(i), end = curPos + cur.nodeSize
       if (end >= pos) {

@@ -1,7 +1,6 @@
 import {elt, insertCSS} from "../dom"
 import sortedInsert from "../util/sortedinsert"
 import {copyObj} from "../util/obj"
-import {AssertionError} from "../util/error"
 
 import {getIcon} from "./icons"
 
@@ -66,7 +65,7 @@ export class MenuCommand {
     }
 
     let disp = this.options.display
-    if (!disp) throw new AssertionError("No display style defined for menu command " + cmd.name)
+    if (!disp) throw new RangeError("No display style defined for menu command " + cmd.name)
 
     let dom
     if (disp.render) {
@@ -78,7 +77,7 @@ export class MenuCommand {
       let label = pm.translate(disp.label || cmd.spec.label)
       dom = elt("div", null, label)
     } else {
-      throw new AssertionError("Unsupported command display style: " + disp.type)
+      throw new RangeError("Unsupported command display style: " + disp.type)
     }
     dom.setAttribute("title", title(pm, cmd))
     if (this.options.class) dom.classList.add(this.options.class)

@@ -1,4 +1,3 @@
-import {AssertionError} from "../util/error"
 import {Slice, Fragment} from "../model"
 
 import {Transform} from "./transform"
@@ -123,7 +122,7 @@ Transform.prototype.lift = function(from, to = from, silent = false) {
   let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
   let liftable = findLiftable($from, $to)
   if (!liftable) {
-    if (!silent) throw new AssertionError("No valid lift target")
+    if (!silent) throw new RangeError("No valid lift target")
     return this
   }
 
@@ -182,7 +181,7 @@ function checkWrap($from, $to, type) {
 Transform.prototype.wrap = function(from, to = from, type, wrapAttrs) {
   let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
   let check = checkWrap($from, $to, type)
-  if (!check) throw new AssertionError("Wrap not possible")
+  if (!check) throw new RangeError("Wrap not possible")
   let {shared, around, inside} = check
 
   let types = around.concat(type).concat(inside)
@@ -221,7 +220,7 @@ Transform.prototype.setBlockType = function(from, to = from, type, attrs) {
 // Change the type and attributes of the node after `pos`.
 Transform.prototype.setNodeType = function(pos, type, attrs) {
   let node = this.doc.nodeAt(pos)
-  if (!node) throw new AssertionError("No node at given position")
+  if (!node) throw new RangeError("No node at given position")
   if (!type) type = node.type
   if (node.type.contains)
     return this.step("ancestor", pos + 1, pos + 1 + node.content.size, {depth: 1, types: [type], attrs: [attrs]})

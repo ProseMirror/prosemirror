@@ -1,6 +1,5 @@
 import {Fragment} from "./fragment"
 import {Mark} from "./mark"
-import {ModelError} from "./error"
 import {Slice, replace} from "./replace"
 import {ResolvedPos} from "./resolvedpos"
 
@@ -284,7 +283,7 @@ export class TextNode extends Node {
   constructor(type, attrs, content, marks) {
     super(type, attrs, null, marks)
 
-    if (!content) throw new ModelError("Empty text nodes are not allowed")
+    if (!content) throw new RangeError("Empty text nodes are not allowed")
 
     // :: ?string
     // For text nodes, this contains the node's text content.
