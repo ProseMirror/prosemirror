@@ -63,7 +63,6 @@ function block(type, attrs) {
   }
 }
 
-// : (string, ?Object) → (...content: union<string, Node>) → Node
 // Create a builder function for marks.
 function mark(type, attrs) {
   let mark = schema.mark(type, attrs)
