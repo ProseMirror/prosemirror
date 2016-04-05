@@ -48,10 +48,10 @@ Transform.prototype.split = function(pos, depth = 1, typeAfter, attrsAfter) {
 Transform.prototype.splitIfNeeded = function(pos, depth = 1) {
   let $pos = this.doc.resolve(pos), before = true
   for (let i = 0; i < depth; i++) {
-    let d = $pos.depth - i, offset = i == 0 ? $pos.parentOffset : $pos.offset(d) + (before ? 0 : $pos.node(d + 1).nodeSize)
-    if (offset > 0 && offset < $pos.node(d).content.size)
-      return this.split(before ? $pos.before(d + 1) : $pos.after(d + 1), depth - i)
-    before = offset == 0
+    let d = $pos.depth - i, point = i == 0 ? $pos.pos : before ? $pos.before(d + 1) : $pos.after(d + 1)
+    if (point == $pos.start(d)) before = true
+    else if (point == $pos.end(d)) before = false
+    else return this.split(point, depth - i)
   }
   return this
 }

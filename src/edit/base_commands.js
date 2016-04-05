@@ -411,7 +411,7 @@ baseCommands.liftEmptyBlock = {
     let {head, empty} = pm.selection, $head
     if (!empty || ($head = pm.doc.resolve(head)).parentOffset > 0 || $head.parent.content.size) return false
     if ($head.depth > 1) {
-      if ($head.offset($head.depth - 1) > 0 &&
+      if ($head.index($head.depth - 1) > 0 &&
           $head.index($head.depth - 1) < $head.node($head.depth - 1).childCount - 1 &&
           pm.tr.split($head.before($head.depth)).apply() !== false)
         return

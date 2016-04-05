@@ -95,7 +95,7 @@ export function canLift(doc, from, to) {
 function rangeDepth(from, to) {
   let shared = from.sameDepth(to)
   if (from.node(shared).isTextblock) --shared
-  if (from.before(shared) >= to.after(shared)) return null
+  if (shared && from.before(shared) >= to.after(shared)) return null
   return shared
 }
 

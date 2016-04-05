@@ -208,7 +208,7 @@ export class Node {
   // after it.
   marksAt(pos) {
     let $pos = this.resolve(pos), top = $pos.parent, index = $pos.index($pos.depth)
-    let leaf = $pos.offset($pos.depth) == $pos.parentOffset && index ? top.child(index - 1) : top.maybeChild(index)
+    let leaf = $pos.atNodeBoundary && index ? top.child(index - 1) : top.maybeChild(index)
     return leaf ? leaf.marks : emptyArray
   }
 
@@ -340,19 +340,21 @@ function findIndex(fragment, pos, round = -1) {
 
 function resolvePos(doc, pos) {
   if (!(pos >= 0 && pos <= doc.content.size)) throw new ModelError("Position " + pos + " out of range")
-  let nodes = [], index = [], offset = [], parentOffset = pos
+  let nodes = [], indices = [], positions = []
+  let start = 0, parentOffset = pos
   for (let node = doc;;) {
     let i = findIndex(node.content, parentOffset)
     let rem = parentOffset - foundOffset
     nodes.push(node)
-    offset.push(foundOffset)
-    index.push(i)
+    indices.push(i)
+    positions.push(start + foundOffset)
     if (!rem) break
     node = node.child(i)
     if (node.isText) break
     parentOffset = rem - 1
+    start += foundOffset + 1
   }
-  return new ResolvedPos(pos, nodes, index, offset, parentOffset)
+  return new ResolvedPos(pos, nodes, indices, positions, parentOffset)
 }
 
 let resolveCache = [], resolveCachePos = 0, resolveCacheSize = 6

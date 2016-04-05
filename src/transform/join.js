@@ -48,7 +48,7 @@ function canJoin(a, b) {
 // point, if any.
 export function joinPoint(doc, pos, dir = -1) {
   let $pos = doc.resolve(pos)
-  for (let d = $pos.depth; d >= 0; d--) {
+  for (let d = $pos.depth;; d--) {
     let before, after
     if (d == $pos.depth) {
       before = $pos.nodeBefore
@@ -61,6 +61,7 @@ export function joinPoint(doc, pos, dir = -1) {
       after = $pos.node(d + 1)
     }
     if (before && !before.isTextblock && canJoin(before, after)) return pos
+    if (d == 0) break
     pos = dir < 0 ? $pos.before(d) : $pos.after(d)
   }
 }

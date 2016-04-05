@@ -94,13 +94,13 @@ function addRange($start, $end, depth, target) {
     startIndex = $start.index(depth)
     if ($start.depth > depth) {
       startIndex++
-    } else if ($start.parentOffset != $start.offset(depth)) {
+    } else if (!$start.atNodeBoundary) {
       addNode($start.nodeAfter, target)
       startIndex++
     }
   }
   for (let i = startIndex; i < endIndex; i++) addNode(node.child(i), target)
-  if ($end && $end.depth == depth && $end.parentOffset != $end.offset(depth))
+  if ($end && $end.depth == depth && !$end.atNodeBoundary)
     addNode($end.nodeBefore, target)
 }
 

@@ -1,4 +1,5 @@
 import "./test-node"
+import "./test-resolve"
 import "./test-diff"
 import "./test-parse"
 import "./test-dom"
