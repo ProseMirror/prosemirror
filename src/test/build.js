@@ -10,17 +10,17 @@ import {defaultSchema as schema, Node} from "../model"
 // node and its parent nodes will have a `tag` property added to them
 // that maps this tag name (`x`) to its position inside of that node.
 
-let tag = null
+const noTag = Node.prototype.tag = Object.create(null)
 
 function flatten(children, f) {
-  tag = null
-  let result = [], pos = 0
+  let result = [], pos = 0, tag = noTag
 
   for (let i = 0; i < children.length; i++) {
     let child = children[i]
     if (child.tag && child.tag != Node.prototype.tag) {
-      if (!tag) tag = Object.create(null)
-      for (let id in child.tag) tag[id] = child.tag[id] + (child.flat || child.isText ? 0 : 1) + pos
+      if (tag == noTag) tag = Object.create(null)
+      for (let id in child.tag)
+        tag[id] = child.tag[id] + (child.flat || child.isText ? 0 : 1) + pos
     }
 
     if (typeof child == "string") {
@@ -29,7 +29,7 @@ function flatten(children, f) {
         out += child.slice(at, m.index)
         pos += m.index - at
         at = m.index + m[0].length
-        if (!tag) tag = Object.create(null)
+        if (tag == noTag) tag = Object.create(null)
         tag[m[1]] = pos
       }
       out += child.slice(at)
@@ -47,10 +47,8 @@ function flatten(children, f) {
       result.push(node)
     }
   }
-  return result
+  return {nodes: result, tag}
 }
-
-Node.prototype.tag = Object.create(null)
 
 function id(x) { return x }
 
@@ -58,8 +56,9 @@ function id(x) { return x }
 // Create a builder function for nodes with content.
 function block(type, attrs) {
   return function() {
-    let node = schema.node(type, attrs, flatten(arguments, id))
-    if (tag) node.tag = tag
+    let {nodes, tag} = flatten(arguments, id)
+    let node = schema.node(type, attrs, nodes)
+    if (tag != noTag) node.tag = tag
     return node
   }
 }
@@ -69,8 +68,8 @@ function block(type, attrs) {
 function mark(type, attrs) {
   let mark = schema.mark(type, attrs)
   return function() {
-    let flat = flatten(arguments, n => mark.type.isInSet(n.marks) ? n : n.mark(mark.addToSet(n.marks)))
-    return {flat, tag}
+    let {nodes, tag} = flatten(arguments, n => mark.type.isInSet(n.marks) ? n : n.mark(mark.addToSet(n.marks)))
+    return {flat: nodes, tag}
   }
 }
 
