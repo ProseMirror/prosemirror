@@ -1,3 +1,5 @@
+import {ModelError} from "./error"
+
 // ;; The usual way to represent positions in a document is with a
 // plain integer. Since those tell you very little about the context
 // of that position, you'll often have to 'resolve' a position to get
@@ -118,4 +120,35 @@ export class ResolvedPos {
       str += (str ? "/" : "") + this.node(i).type.name + "_" + this.index(i - 1)
     return str + ":" + this.parentOffset
   }
+
+  static resolve(doc, pos) {
+    if (!(pos >= 0 && pos <= doc.content.size)) throw new ModelError("Position " + pos + " out of range")
+    let nodes = [], indices = [], positions = []
+    let start = 0, parentOffset = pos
+    for (let node = doc;;) {
+      let {index, offset} = node.content.findIndex(parentOffset)
+      let rem = parentOffset - offset
+      nodes.push(node)
+      indices.push(index)
+      positions.push(start + offset)
+      if (!rem) break
+      node = node.child(index)
+      if (node.isText) break
+      parentOffset = rem - 1
+      start += offset + 1
+    }
+    return new ResolvedPos(pos, nodes, indices, positions, parentOffset)
+  }
+
+  static resolveCached(doc, pos) {
+    for (let i = 0; i < resolveCache.length; i++) {
+      let cached = resolveCache[i]
+      if (cached.pos == pos && cached.node(0) == doc) return cached
+    }
+    let result = resolveCache[resolveCachePos] = ResolvedPos.resolve(doc, pos)
+    resolveCachePos = (resolveCachePos + 1) % resolveCacheSize
+    return result
+  }
 }
+
+let resolveCache = [], resolveCachePos = 0, resolveCacheSize = 6

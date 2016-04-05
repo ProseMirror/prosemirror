@@ -202,6 +202,31 @@ export class Fragment {
     }
     return kind
   }
+
+  // : (number, ?number) → {index: number, offset: number}
+  // Find the index and inner offset corresponding to a given relative
+  // position in this fragment. The result object will be reused
+  // (overwritten) the next time the function is called. (Not public.)
+  findIndex(pos, round = -1) {
+    if (pos == 0) return retIndex(0, pos)
+    if (pos == this.size) return retIndex(this.content.length, pos)
+    if (pos > this.size || pos < 0) throw new ModelError(`Position ${pos} outside of fragment (${this})`)
+    for (let i = 0, curPos = 0;; i++) {
+      let cur = this.child(i), end = curPos + cur.nodeSize
+      if (end >= pos) {
+        if (end == pos || round > 0) return retIndex(i + 1, end)
+        return retIndex(i, curPos)
+      }
+      curPos = end
+    }
+  }
+}
+
+const found = {index: 0, offset: 0}
+function retIndex(index, offset) {
+  found.index = index
+  found.offset = offset
+  return found
 }
 
 // :: Fragment

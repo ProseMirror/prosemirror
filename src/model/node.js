@@ -157,11 +157,11 @@ export class Node {
   // Find the node after the given position.
   nodeAt(pos) {
     for (let node = this;;) {
-      let index = findIndex(node.content, pos)
+      let {index, offset} = node.content.findIndex(pos)
       node = node.maybeChild(index)
       if (!node) return null
-      if (foundOffset == pos || node.isText) return node
-      pos -= foundOffset + 1
+      if (offset == pos || node.isText) return node
+      pos -= offset + 1
     }
   }
 
@@ -170,8 +170,8 @@ export class Node {
   // and return it along with its index and offset relative to this
   // node.
   nodeAfter(pos) {
-    let index = findIndex(this.content, pos)
-    return {node: this.content.maybeChild(index), index, offset: foundOffset}
+    let {index, offset} = this.content.findIndex(pos)
+    return {node: this.content.maybeChild(index), index, offset}
   }
 
   // :: (number) → {node: ?Node, index: number, offset: number}
@@ -180,10 +180,10 @@ export class Node {
   // node.
   nodeBefore(pos) {
     if (pos == 0) return {node: null, index: 0, offset: 0}
-    let index = findIndex(this.content, pos)
-    if (foundOffset < pos) return {node: this.content.child(index), index, offset: foundOffset}
+    let {index, offset} = this.content.findIndex(pos)
+    if (offset < pos) return {node: this.content.child(index), index, offset}
     let node = this.content.child(index - 1)
-    return {node, index: index - 1, offset: foundOffset - node.nodeSize}
+    return {node, index: index - 1, offset: offset - node.nodeSize}
   }
 
   // :: (?number, ?number, (node: Node, pos: number, parent: Node))
@@ -198,9 +198,9 @@ export class Node {
   // :: (number) → ResolvedPos
   // Resolve the given position in the document, returning an object
   // describing its path through the document.
-  resolve(pos) { return resolvePosCached(this, pos) }
+  resolve(pos) { return ResolvedPos.resolveCached(this, pos) }
 
-  resolveNoCache(pos) { return resolvePos(this, pos) }
+  resolveNoCache(pos) { return ResolvedPos.resolve(this, pos) }
 
   // :: (number) → [Mark]
   // Get the marks of the node before the given position or, if that
@@ -321,49 +321,4 @@ function wrapMarks(marks, str) {
   for (let i = marks.length - 1; i >= 0; i--)
     str = marks[i].type.name + "(" + str + ")"
   return str
-}
-
-let foundOffset = 0
-function findIndex(fragment, pos, round = -1) {
-  if (pos == 0) { foundOffset = pos; return 0 }
-  if (pos == fragment.size) { foundOffset = pos; return fragment.content.length }
-  if (pos > fragment.size || pos < 0) throw new ModelError(`Position ${pos} outside of fragment (${fragment})`)
-  for (let i = 0, curPos = 0;; i++) {
-    let cur = fragment.child(i), end = curPos + cur.nodeSize
-    if (end >= pos) {
-      if (end == pos || round > 0) { foundOffset = end; return i + 1 }
-      foundOffset = curPos; return i
-    }
-    curPos = end
-  }
-}
-
-function resolvePos(doc, pos) {
-  if (!(pos >= 0 && pos <= doc.content.size)) throw new ModelError("Position " + pos + " out of range")
-  let nodes = [], indices = [], positions = []
-  let start = 0, parentOffset = pos
-  for (let node = doc;;) {
-    let i = findIndex(node.content, parentOffset)
-    let rem = parentOffset - foundOffset
-    nodes.push(node)
-    indices.push(i)
-    positions.push(start + foundOffset)
-    if (!rem) break
-    node = node.child(i)
-    if (node.isText) break
-    parentOffset = rem - 1
-    start += foundOffset + 1
-  }
-  return new ResolvedPos(pos, nodes, indices, positions, parentOffset)
-}
-
-let resolveCache = [], resolveCachePos = 0, resolveCacheSize = 6
-function resolvePosCached(doc, pos) {
-  for (let i = 0; i < resolveCache.length; i++) {
-    let cached = resolveCache[i]
-    if (cached.pos == pos && cached.node(0) == doc) return cached
-  }
-  let result = resolveCache[resolveCachePos] = resolvePos(doc, pos)
-  resolveCachePos = (resolveCachePos + 1) % resolveCacheSize
-  return result
 }
