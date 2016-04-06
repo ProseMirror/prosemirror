@@ -7,7 +7,7 @@ export function rebaseSteps(doc, forward, steps, maps) {
 
   for (let i = 0; i < steps.length; i++) {
     let step = steps[i].map(remap)
-    let result = step && transform.step(step)
+    let result = step && transform.maybeStep(step)
     let id = remap.addToFront(maps[i].invert())
     if (result && result.doc) {
       remap.addToBack(step.posMap(), id)
