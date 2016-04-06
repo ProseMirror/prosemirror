@@ -14,7 +14,7 @@ class DOMSerializer {
     this.doc = this.options.document || window.document
   }
 
-  // :: (string, ?Object, ...union<string, DOMNode>) → DOMNode
+  // :: (string, ?Object, ...[union<string, DOMNode>]) → DOMNode
   // Create a DOM node of the given type, with (optionally) the given
   // attributes and content. Content elements may be strings (for text
   // nodes) or other DOM nodes.
