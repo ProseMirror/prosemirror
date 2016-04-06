@@ -408,7 +408,7 @@ NodeType.derivableCommands.wrap = function(conf) {
       if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this) &&
           ($from = pm.doc.resolve(from)).index($from.depth - 2) == 0)
         return false
-      return canWrap(pm.doc, from, to, this, conf.attrs)
+      return canWrap(pm.doc, from, to, this)
     },
     params: deriveParams(this, conf.params)
   }

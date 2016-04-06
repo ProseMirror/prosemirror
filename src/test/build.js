@@ -52,7 +52,7 @@ function flatten(children, f) {
 
 function id(x) { return x }
 
-// : (string, ?Object) → (...content: union<string, Node>) → Node
+// : (string, ?Object) → (...content: [union<string, Node>]) → Node
 // Create a builder function for nodes with content.
 function block(type, attrs) {
   return function() {

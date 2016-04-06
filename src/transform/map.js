@@ -51,9 +51,9 @@ export class PosMap {
   // Create a position map. The modifications to the document are
   // represented as an array of numbers, in which each group of three
   // represents an [start, oldSize, newSize] chunk.
-  constructor(ranges, inverted) {
+  constructor(ranges, inverted = false) {
     this.ranges = ranges
-    this.inverted = inverted || false
+    this.inverted = inverted
   }
 
   recover(value) {
