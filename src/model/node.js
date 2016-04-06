@@ -206,32 +206,17 @@ export class Node {
   // inclusiveLeft and inclusiveRight properties. If the position is at the
   // start of a non-empty node, the marks of the node after it are returned.
   marksAt(pos) {
-    let $pos = this.resolve(pos), top = $pos.parent, index = $pos.index($pos.depth)
+    let $pos = this.resolve(pos), parent = $pos.parent, index = $pos.index($pos.depth)
 
-    // pos is inside a fragment
-    if ($pos.offset($pos.depth) != $pos.parentOffset)
-      return top.child(index).marks
+    // In an empty parent, return the empty array
+    if (parent.content.size == 0) return emptyArray
+    // When inside a text node or at the start of the parent node, return the node's marks
+    if (index == 0 || !$pos.atNodeBoundary) return parent.child(index).marks
 
-    // pos is at the start of a potentially non-empty node
-    if (index == 0) {
-      let rightLeaf = top.maybeChild(index)
-      return rightLeaf ? rightLeaf.marks : emptyArray
-    }
-
-    // pos is inbetween two fragments or at the end of a non-empty node
-    let marks = []
-    let leftLeaf = top.child(index - 1)
-    for (let i = 0; i < leftLeaf.marks.length; i++) {
-      if (leftLeaf.marks[i].type.inclusiveRight) marks.push(leftLeaf.marks[i])
-    }
-
-    let rightLeaf = top.maybeChild(index)
-    if (rightLeaf) for (let i = 0; i < rightLeaf.marks.length; i++) {
-      if (rightLeaf.marks[i].type.inclusiveLeft && marks.indexOf(rightLeaf.marks[i]) == -1)
-        marks.push(rightLeaf.marks[i])
-    }
-
-    return marks.length ? marks : emptyArray
+    let marks = parent.child(index - 1).marks
+    for (var i = 0; i < marks.length; i++) if (!marks[i].type.inclusiveRight)
+      marks = marks[i--].removeFromSet(marks)
+    return marks
   }
 
   // :: (?number, ?number, MarkType) → bool
