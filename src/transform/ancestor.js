@@ -203,6 +203,7 @@ Transform.prototype.wrap = function(from, to = from, type, wrapAttrs) {
 // Set the type of all textblocks (partly) between `from` and `to` to
 // the given node type with the given attributes.
 Transform.prototype.setBlockType = function(from, to = from, type, attrs) {
+  if (!type.isTextblock) throw new RangeError("Type given to setBlockType should be a textblock")
   this.doc.nodesBetween(from, to, (node, pos) => {
     if (node.isTextblock && !node.hasMarkup(type, attrs)) {
       // Ensure all markup that isn't allowed in the new node type is cleared
