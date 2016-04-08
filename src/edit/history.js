@@ -1,18 +1,35 @@
 import {Transform, Remapping} from "../transform"
 
+// ProseMirror's history implements not a way to roll back to a
+// previous state, because ProseMirror supports applying changes
+// without adding them to the history (for example during
+// collaboration).
+//
+// To this end, each 'Branch' (one for the undo history and one for
+// the redo history) keeps an array of 'Items', which can optionally
+// hold a step (an actual undoable change), and always hold a position
+// map (which is needed to move changes below them to apply to the
+// current document).
+//
+// An item that has both a step and a selection token field is the
+// start of an 'event' -- a group of changes that will be undone or
+// redone at once. (It stores only a token, since that way we don't
+// have to provide a document until the selection is actually applied,
+// which is useful when compressing.)
+
+// Used to schedule history compression
 const max_empty_items = 500
 
 class Branch {
   constructor(maxEvents) {
     this.events = 0
     this.maxEvents = maxEvents
-    this.placeholderID = -1
-    this.items = [this.placeHolder()]
+    // Item 0 is always a dummy that's only used to have an id to
+    // refer to at the start of the history.
+    this.items = [new Item]
   }
 
-  placeHolder() { return new Item(null, this.placeholderID--) }
-
-  // : (Node, ?Item) → ?{transform: Transform, selection: SelectionToken, ids: [number]}
+  // : (Node, bool, ?Item) → ?{transform: Transform, selection: SelectionToken, ids: [number]}
   // Pop the latest event off the branch's history and apply it
   // to a document transform, returning the transform and the step IDs.
   popEvent(doc, preserveItems, upto) {
@@ -77,6 +94,7 @@ class Branch {
     if (this.events > this.maxEvents) this.clip()
   }
 
+  // Clip this branch to the max number of events.
   clip() {
     var seen = 0, toClip = this.events - this.maxEvents
     for (let i = 0;; i++) {
@@ -85,7 +103,7 @@ class Branch {
         if (seen < toClip) {
           ++seen
         } else {
-          this.items.splice(0, i, this.placeHolder())
+          this.items.splice(0, i, new Item(null, this.events[toClip - 1]))
           this.events = this.maxEvents
           return
         }
@@ -115,6 +133,11 @@ class Branch {
     }
   }
 
+  // : ([PosMap], Transform, [number])
+  // When the collab module receives remote changes, the history has
+  // to know about those, so that it can adjust the steps that were
+  // rebased on top of the remote changes, and include the position
+  // maps for the remote changes in its array of items.
   rebased(newMaps, rebasedTransform, positions) {
     if (this.events == 0) return
 
@@ -122,7 +145,7 @@ class Branch {
     if (start < 1) {
       startPos = 1 - start
       start = 1
-      this.items[0] = this.placeHolder()
+      this.items[0] = new Item
     }
 
     if (positions.length) {
@@ -161,6 +184,12 @@ class Branch {
     return count
   }
 
+  // Compressing a branch means rewriting it to push the air (map-only
+  // items) out. During collaboration, these naturally accumulate
+  // because each remote change adds one. The `upto` argument is used
+  // to ensure that only the items below a given level are compressed,
+  // because `rebased` relies on a clean, untouched set of items in
+  // order to associate old ids to rebased steps.
   compress(upto) {
     let remap = new BranchRemapping
     let items = [], events = 0
@@ -187,6 +216,17 @@ class Branch {
   }
 }
 
+// History items all have ids, but the meaning of these is somewhat
+// complicated.
+//
+// - For StepItems, the ids are kept ordered (inside a given branch),
+//   and are kept associated with a given change (if you undo and then
+//   redo it, the resulting item gets the old id)
+//
+// - For MapItems, the ids are just opaque identifiers, not
+//   necessarily ordered.
+//
+// - The placeholder item at the base of a branch's list
 let nextID = 1
 
 class Item {
@@ -349,7 +389,8 @@ export class History {
     return true
   }
 
-  // FIXME how does it make sense to pass same positions to done and undone?
+  // Used by the collab module to tell the history that some of its
+  // content has been rebased.
   rebased(newMaps, rebasedTransform, positions) {
     this.done.rebased(newMaps, rebasedTransform, positions)
     this.undone.rebased(newMaps, rebasedTransform, positions)
