@@ -78,6 +78,8 @@ const ignoreElements = {
   head: true, noscript: true, object: true, script: true, style: true, title: true
 }
 
+const listElements = {ol: true, ul: true}
+
 const noMarks = []
 
 // ;; A state object used to track context during a parse,
@@ -130,6 +132,7 @@ class DOMParseState {
 
   addElement(dom) {
     let name = dom.nodeName.toLowerCase()
+    if (listElements.hasOwnProperty(name)) this.normalizeList(dom)
     if (!this.parseNodeType(name, dom) && !ignoreElements.hasOwnProperty(name)) {
       this.addAll(dom.firstChild, null)
       if (blockElements.hasOwnProperty(name) && this.top.type == this.schema.defaultTextblockType())
@@ -277,6 +280,17 @@ class DOMParseState {
     if (inner.call) inner()
     else this.addAll(inner.firstChild, null)
     this.marks = old
+  }
+
+  normalizeList(dom) {
+    for (let child = dom.firstChild, prev; child; child = child.nextSibling) {
+      if (child.nodeType == 1 &&
+          listElements.hasOwnProperty(child.nodeName.toLowerCase()) &&
+          (prev = child.previousSibling)) {
+        prev.appendChild(child)
+        child = prev
+      }
+    }
   }
 }
 
