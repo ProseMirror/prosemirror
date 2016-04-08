@@ -543,7 +543,7 @@ handlers.drop = (pm, e) => {
     let tr = pm.tr
     if (dragging && !e.ctrlKey && dragging.from != null) {
       tr.delete(dragging.from, dragging.to)
-      insertPos = tr.map(insertPos).pos
+      insertPos = tr.map(insertPos)
     }
     tr.replace(insertPos, insertPos, slice).apply()
     let found
@@ -553,7 +553,7 @@ handlers.drop = (pm, e) => {
       pm.setNodeSelection(insertPos)
     } else {
       let left = findSelectionNear(pm.doc, insertPos, 1, true).from
-      let right = findSelectionNear(pm.doc, tr.map(start).pos, -1, true).to
+      let right = findSelectionNear(pm.doc, tr.map(start), -1, true).to
       pm.setTextSelection(left, right)
     }
     pm.focus()

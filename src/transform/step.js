@@ -56,8 +56,8 @@ export class Step {
   // version of that step with its positions adjusted, or `null` if
   // the step was entirely deleted by the mapping.
   map(remapping) {
-    let from = remapping.map(this.from, 1)
-    let to = this.to == this.from ? from : remapping.map(this.to, -1)
+    let from = remapping.mapResult(this.from, 1)
+    let to = this.to == this.from ? from : remapping.mapResult(this.to, -1)
     if (from.deleted && to.deleted) return null
     return new Step(this.type, from.pos, Math.max(from.pos, to.pos), this.param)
   }

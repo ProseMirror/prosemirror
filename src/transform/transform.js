@@ -46,13 +46,20 @@ export class Transform {
   // :: (number, ?number) → MapResult
   // Map a position through the whole transformation (all the position
   // maps in [`maps`](#Transform.maps)), and return the result.
-  map(pos, bias) {
+  mapResult(pos, bias) { return this._map(pos, bias, false) }
+
+  // :: (number, ?number) → number
+  // Map a position through the whole transformation, and return the
+  // mapped position.
+  map(pos, bias) { return this._map(pos, bias, true) }
+
+  _map(pos, bias, simple) {
     let deleted = false
     for (let i = 0; i < this.maps.length; i++) {
-      let result = this.maps[i].map(pos, bias)
+      let result = this.maps[i].mapResult(pos, bias)
       pos = result.pos
       if (result.deleted) deleted = true
     }
-    return new MapResult(pos, deleted)
+    return simple ? pos : new MapResult(pos, deleted)
   }
 }

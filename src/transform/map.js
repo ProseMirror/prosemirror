@@ -3,11 +3,16 @@
 // We'll denote those as 'mappable'. This is not an actual class in
 // the codebase, only an agreed-on interface.
 
-// :: (pos: number, bias: ?number) → MapResult
-// #path=Mappable.map
+// :: (pos: number, bias: ?number) → number #path=Mappable.map
 // Map a position through this object. When given, the `bias`
 // determines in which direction to move when a chunk of content is
 // inserted at or around the mapped position.
+
+// :: (pos: number, bias: ?number) → MapResult #path=Mappable.mapResult
+// Map a position, and return an object containing additional
+// information about the mapping. The result's `deleted` field tells
+// you whether the position was deleted (completely enclosed in a
+// replaced range) during the mapping.
 
 // Recovery values encode a range index and an offset. They are
 // represented as numbers, because tons of them will be created when
@@ -64,20 +69,29 @@ export class PosMap {
   // content at (or around) this position—if `bias` is negative, the a
   // position before the inserted content will be returned, if it is
   // positive, a position after the insertion is returned.
-  map(pos, bias) {
+  mapResult(pos, bias) { return this._map(pos, bias, false) }
+
+  // :: (number, ?number) → number
+  // Map the given position through this map, returning only the
+  // mapped position.
+  map(pos, bias) { return this._map(pos, bias, true) }
+
+  _map(pos, bias, simple) {
     let diff = 0, oldIndex = this.inverted ? 2 : 1, newIndex = this.inverted ? 1 : 2
     for (let i = 0; i < this.ranges.length; i += 3) {
       let start = this.ranges[i] - (this.inverted ? diff : 0)
       if (start > pos) break
       let oldSize = this.ranges[i + oldIndex], newSize = this.ranges[i + newIndex], end = start + oldSize
       if (pos <= end) {
-        let recover = makeRecover(i / 3, pos - start)
         let side = !oldSize ? bias : pos == start ? -1 : pos == end ? 1 : bias
-        return new MapResult(start + diff + (side < 0 ? 0 : newSize), pos != start && pos != end, recover)
+        let result = start + diff + (side < 0 ? 0 : newSize)
+        if (simple) return result
+        let recover = makeRecover(i / 3, pos - start)
+        return new MapResult(result, pos != start && pos != end, recover)
       }
       diff += newSize - oldSize
     }
-    return new MapResult(pos + diff)
+    return simple ? pos + diff : new MapResult(pos + diff)
   }
 
   touches(pos, recover) {
@@ -151,9 +165,15 @@ export class Remapping {
   }
 
   // :: (number, ?number) → MapResult
-  // Map a position through this remapping, optionally passing a bias
-  // direction.
-  map(pos, bias) {
+  // Map a position through this remapping, returning a mapping
+  // result.
+  mapResult(pos, bias) { return this._map(pos, bias, false) }
+
+  // :: (number, ?number) → number
+  // Map a position through this remapping.
+  map(pos, bias) { return this._map(pos, bias, true) }
+
+  _map(pos, bias, simple) {
     let deleted = false, recoverables = null
 
     for (let i = -this.head.length; i < this.tail.length; i++) {
@@ -164,7 +184,7 @@ export class Remapping {
         continue
       }
 
-      let result = map.map(pos, bias)
+      let result = map.mapResult(pos, bias)
       if (result.recover != null) {
         let corr = this.mirror[i]
         if (corr != null) {
@@ -182,6 +202,6 @@ export class Remapping {
       pos = result.pos
     }
 
-    return new MapResult(pos, deleted)
+    return simple ? pos : new MapResult(pos, deleted)
   }
 }

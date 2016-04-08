@@ -8,7 +8,7 @@ function tag(tr, name) {
   if (calc) { name = calc[1]; extra = +calc[2] }
   let pos = tr.before.tag[name]
   if (pos == null) return undefined
-  return tr.map(pos).pos + extra
+  return tr.map(pos) + extra
 }
 
 function mrk(tr, mark) {
@@ -95,7 +95,7 @@ function invert(transform) {
 
 function testMapping(maps, pos, newPos, label) {
   let mapped = pos
-  maps.forEach(m => mapped = m.map(mapped, 1).pos)
+  maps.forEach(m => mapped = m.map(mapped, 1))
   cmpStr(mapped, newPos, label)
 
   let remap = new Remapping()
@@ -103,7 +103,7 @@ function testMapping(maps, pos, newPos, label) {
     let id = remap.addToFront(maps[i])
     remap.addToBack(maps[i].invert(), id)
   }
-  cmpStr(remap.map(pos, 1).pos, pos, label + " round trip")
+  cmpStr(remap.map(pos, 1), pos, label + " round trip")
 }
 
 function testStepJSON(tr) {

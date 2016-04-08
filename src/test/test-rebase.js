@@ -18,7 +18,7 @@ function runRebase(transforms, expected) {
   for (let tag in start.tag) {
     let mapped = start.tag[tag], deleted = false
     for (let i = 0; i < maps.length; i++) {
-      let result = maps[i].map(mapped, 1)
+      let result = maps[i].mapResult(mapped, 1)
       if (result.deleted) deleted = true
       mapped = result.pos
     }

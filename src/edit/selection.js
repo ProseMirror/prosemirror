@@ -230,10 +230,10 @@ export class TextSelection extends Selection {
   }
 
   map(doc, mapping) {
-    let head = mapping.map(this.head).pos
+    let head = mapping.map(this.head)
     if (!doc.resolve(head).parent.isTextblock)
       return findSelectionNear(doc, head)
-    let anchor = mapping.map(this.anchor).pos
+    let anchor = mapping.map(this.anchor)
     return new TextSelection(doc.resolve(anchor).parent.isTextblock ? anchor : head, head)
   }
 
@@ -242,7 +242,7 @@ export class TextSelection extends Selection {
   }
 
   static mapToken(token, mapping) {
-    return new SelectionToken(TextSelection, mapping.map(token.a).pos, mapping.map(token.b).pos)
+    return new SelectionToken(TextSelection, mapping.map(token.a), mapping.map(token.b))
   }
 
   static fromToken(token, doc) {
@@ -276,8 +276,8 @@ export class NodeSelection extends Selection {
   }
 
   map(doc, mapping) {
-    let from = mapping.map(this.from, 1).pos
-    let to = mapping.map(this.to, -1).pos
+    let from = mapping.map(this.from, 1)
+    let to = mapping.map(this.to, -1)
     let node = doc.nodeAt(from)
     if (node && to == from + node.nodeSize && node.type.selectable)
       return new NodeSelection(from, to, node)
@@ -289,7 +289,7 @@ export class NodeSelection extends Selection {
   }
 
   static mapToken(token, mapping) {
-    return new SelectionToken(TextSelection, mapping.map(token.a, 1).pos, mapping.map(token.b, -1).pos)
+    return new SelectionToken(TextSelection, mapping.map(token.a, 1), mapping.map(token.b, -1))
   }
 
   static fromToken(token, doc) {
