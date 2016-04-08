@@ -42,6 +42,8 @@ Step.define("ancestor", {
     let inner = $from.parent, slice
     if (types.length) {
       let lastWrapper = types[types.length - 1]
+      if (!lastWrapper.contains)
+        throw new RangeError("Can not wrap content in node type " + lastWrapper.name)
       let content = inner.content.cut($from.parentOffset, $to.parentOffset)
       if (!lastWrapper.checkContent(content, attrs[types.length - 1]))
         return StepResult.fail("Content can not be wrapped in ancestor " + lastWrapper.name)
