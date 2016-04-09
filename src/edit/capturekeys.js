@@ -97,6 +97,7 @@ function vert(dir) {
 let keys = {
   "Esc": nothing,
   "Enter": nothing,
+  "Ctrl-Enter": nothing,
   "Mod-Enter": nothing,
   "Shift-Enter": nothing,
   "Backspace": nothing,

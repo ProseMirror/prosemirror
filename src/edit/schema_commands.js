@@ -246,7 +246,8 @@ HardBreak.register("command", "insert", {
     else
       return pm.tr.replaceSelection(this.create()).apply(pm.apply.scroll)
   },
-  keys: ["Mod-Enter", "Shift-Enter"]
+  keys: {all: ["Mod-Enter", "Shift-Enter"],
+         mac: ["Ctrl-Enter"]}
 })
 
 // ;; #path=list_item:split #kind=command
