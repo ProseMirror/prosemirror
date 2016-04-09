@@ -4,7 +4,7 @@ import {is, cmp, cmpStr, cmpNode} from "../cmp"
 
 const test = namespace("history")
 
-function type(pm, text) { pm.tr.insertText(pm.selection.head, text).apply() }
+function type(pm, text) { pm.tr.replaceSelection(pm.schema.text(text)).apply() }
 
 function cutHistory(pm) { pm.history.lastAddedAt = 0 }
 
@@ -206,7 +206,6 @@ test("setSelectionOnUndo", pm => {
   is(pm.selection.eq(selection2), "failed restoring selection after redo")
 })
 
-
 test("rebaseSelectionOnUndo", pm => {
   type(pm, "hi")
   cutHistory(pm)
@@ -215,4 +214,16 @@ test("rebaseSelectionOnUndo", pm => {
   pm.tr.insert(1, pm.schema.text("---")).apply({addToHistory: false})
   pm.execCommand("undo")
   cmpStr(pm.selection.head, 6)
+})
+
+test("strange_overwrite", pm => {
+  pm.history.preserveItems++
+  type(pm, "a")
+  type(pm, "b")
+  cutHistory(pm)
+  pm.setTextSelection(1, 3)
+  type(pm, "c")
+  pm.history.undo()
+  pm.history.undo()
+  cmpNode(pm.doc, doc(p()))
 })

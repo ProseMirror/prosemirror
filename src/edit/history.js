@@ -51,12 +51,12 @@ class Branch {
       if (preserve) {
         let step = cur.step.map(remap.remap), map
 
+        this.items[i] = new MapItem(cur.map)
         if (step && transform.maybeStep(step).doc) {
           map = transform.maps[transform.maps.length - 1]
-          this.items.push(new MapItem(map, cur.id))
+          this.items.push(new MapItem(map, this.items[i].id))
         }
         remap.movePastStep(cur, map)
-        this.items[i] = new MapItem(cur.map)
       } else {
         this.items.pop()
         transform.maybeStep(cur.step)
