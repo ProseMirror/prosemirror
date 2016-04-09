@@ -124,6 +124,8 @@ class Branch {
   }
 
   findChangeID(id) {
+    if (id == this.items[0].id) return this.items[0]
+
     for (let i = this.items.length - 1; i >= 0; i--) {
       let cur = this.items[i]
       if (cur.step) {

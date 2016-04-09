@@ -186,6 +186,13 @@ test("rollback", pm => {
   is(!pm.history.backToVersion(version), "failed rollback")
 })
 
+test("rollback_to_start", pm => {
+  let version = pm.history.getVersion()
+  type(pm, "def")
+  pm.history.backToVersion(version)
+  cmpNode(pm.doc, doc(p("abc")))
+}, {doc: doc(p("abc"))})
+
 test("setSelectionOnUndo", pm => {
   type(pm, "hi")
   cutHistory(pm)
