@@ -131,6 +131,7 @@ let keys = {
 if (browser.mac) {
   keys["Alt-Left"] = horiz(-1)
   keys["Alt-Right"] = horiz(1)
+  keys["Ctrl-Backspace"] = keys["Ctrl-Delete"] = nothing
 }
 
 export const captureKeys = new Keymap(keys)
