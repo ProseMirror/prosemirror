@@ -430,7 +430,8 @@ handlers.copy = handlers.cut = (pm, e) => {
   let {from, to, empty} = pm.selection
   if (empty || !e.clipboardData) return
   toClipboard(pm.doc, from, to, e.clipboardData)
-  e.preventDefault()
+  if (!browser.ios)
+    e.preventDefault()
   if (e.type == "cut" && !empty)
     pm.tr.delete(from, to).apply()
 }
