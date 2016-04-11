@@ -188,8 +188,7 @@ export class Node {
   // :: (?number, ?number, (node: Node, pos: number, parent: Node))
   // Iterate over all nodes between the given two positions, calling
   // the callback with the node, its position, and its parent
-  // node. `from` and `to` may be left off, to denote
-  // starting at the start of the node or ending at its end.
+  // node.
   nodesBetween(from, to, f, pos = 0) {
     this.content.nodesBetween(from, to, f, pos, this)
   }
