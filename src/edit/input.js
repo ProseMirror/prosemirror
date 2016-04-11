@@ -371,6 +371,14 @@ function toClipboard(doc, from, to, dataTransfer) {
   return slice
 }
 
+let cachedCanUpdateClipboard = null
+
+function canUpdateClipboard(dataTransfer) {
+  if (cachedCanUpdateClipboard != null) return cachedCanUpdateClipboard
+  dataTransfer.setData("text/html", "<hr>")
+  return cachedCanUpdateClipboard = dataTransfer.getData("text/html") == "<hr>"
+}
+
 // :: (text: string) → string #path=ProseMirror#events#transformPastedText
 // Fired when plain text is pasted. Handlers must return the given
 // string or a [transformed](#EventMixin.signalPipelined) version of
@@ -428,7 +436,7 @@ function clipOpen(fragment, max, start) {
 
 handlers.copy = handlers.cut = (pm, e) => {
   let {from, to, empty} = pm.selection
-  if (empty || !e.clipboardData) return
+  if (empty || !e.clipboardData || !canUpdateClipboard(e.clipboardData)) return
   toClipboard(pm.doc, from, to, e.clipboardData)
   e.preventDefault()
   if (e.type == "cut" && !empty)
