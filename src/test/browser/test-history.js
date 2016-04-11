@@ -1,5 +1,5 @@
-import {namespace} from "./def"
-import {doc, p} from "../build"
+import {namespace, dispatch} from "./def"
+import {doc, p, ul, li} from "../build"
 import {is, cmp, cmpStr, cmpNode} from "../cmp"
 
 const test = namespace("history")
@@ -216,7 +216,7 @@ test("rebaseSelectionOnUndo", pm => {
   cmpStr(pm.selection.head, 6)
 })
 
-test("strange_overwrite", pm => {
+test("unsynced_overwrite", pm => {
   pm.history.preserveItems++
   type(pm, "a")
   type(pm, "b")
@@ -227,3 +227,19 @@ test("strange_overwrite", pm => {
   pm.history.undo()
   cmpNode(pm.doc, doc(p()))
 })
+
+test("unsynced_list_manip", pm => {
+  pm.history.preserveItems++
+  dispatch(pm, "Enter")
+  pm.execCommand("list_item:sink")
+  type(pm, "abc")
+  cutHistory(pm)
+  dispatch(pm, "Enter")
+  cmpNode(pm.doc, doc(ul(li(p("hello"), ul(li(p("abc")), li(p()))))))
+  dispatch(pm, "Enter")
+  cmpNode(pm.doc, doc(ul(li(p("hello"), ul(li(p("abc"))), p()))))
+  pm.history.undo()
+  cmpNode(pm.doc, doc(ul(li(p("hello"), ul(li(p("abc")))))))
+  pm.history.undo()
+  cmpNode(pm.doc, doc(ul(li(p("hello")))))
+}, {doc: doc(ul(li(p("hello<a>"))))})

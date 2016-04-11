@@ -59,7 +59,7 @@ export class PosMap {
   recover(value) {
     let diff = 0, index = recoverIndex(value)
     if (!this.inverted) for (let i = 0; i < index; i++)
-      diff += this.ranges[i * 3 + 1] - this.ranges[i * 3 + 2]
+      diff += this.ranges[i * 3 + 2] - this.ranges[i * 3 + 1]
     return this.ranges[index * 3] + diff + recoverOffset(value)
   }
 
