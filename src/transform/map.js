@@ -113,6 +113,10 @@ export class PosMap {
   invert() {
     return new PosMap(this.ranges, !this.inverted)
   }
+
+  toString() {
+    return (this.inverted ? "-" : "") + JSON.stringify(this.ranges)
+  }
 }
 
 PosMap.empty = new PosMap([])
@@ -203,5 +207,12 @@ export class Remapping {
     }
 
     return simple ? pos : new MapResult(pos, deleted)
+  }
+
+  toString() {
+    let maps = []
+    for (let i = -this.head.length; i < this.tail.length; i++)
+      maps.push(i + ":" + this.get(i) + (this.mirror[i] != null ? "->" + this.mirror[i] : ""))
+    return maps.join("\n")
   }
 }

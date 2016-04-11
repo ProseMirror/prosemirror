@@ -100,6 +100,10 @@ export class Step {
   static define(type, implementation) {
     steps[type] = implementation
   }
+
+  toString() {
+    return this.type + "@" + this.from + "-" + this.to
+  }
 }
 
 const steps = Object.create(null)

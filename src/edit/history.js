@@ -216,6 +216,10 @@ class Branch {
     this.items = items.reverse()
     this.events = events
   }
+
+  toString() {
+    return this.items.join("\n")
+  }
 }
 
 // History items all have ids, but the meaning of these is somewhat
@@ -235,6 +239,11 @@ class Item {
   constructor(map, id) {
     this.map = map
     this.id = id || nextID++
+  }
+
+  toString() {
+    return this.id + ":" + (this.map || "") + (this.step ? ":" + this.step : "") +
+      (this.mirror != null ? "->" + this.mirror : "")
   }
 }
 
