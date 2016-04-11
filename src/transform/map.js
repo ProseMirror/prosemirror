@@ -53,7 +53,7 @@ export class PosMap {
   // represents an [start, oldSize, newSize] chunk.
   constructor(ranges, inverted) {
     this.ranges = ranges
-    this.inverted = inverted
+    this.inverted = inverted || false
   }
 
   recover(value) {
@@ -101,7 +101,7 @@ export class PosMap {
       let start = this.ranges[i] - (this.inverted ? diff : 0)
       if (start > pos) break
       let oldSize = this.ranges[i + oldIndex], end = start + oldSize
-      if (i == index && pos <= end) return true
+      if (pos <= end && i == index * 3) return true
       diff += this.ranges[i + newIndex] - oldSize
     }
     return false
