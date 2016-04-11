@@ -194,6 +194,12 @@ export class Node {
     this.content.nodesBetween(from, to, f, pos, this)
   }
 
+  // :: ((node: Node, pos: number, parent: Node))
+  // Call the given callback for every descendant node.
+  descendants(f) {
+    this.nodesBetween(0, this.content.size, f)
+  }
+
   // :: (number) → ResolvedPos
   // Resolve the given position in the document, returning an object
   // describing its path through the document.
