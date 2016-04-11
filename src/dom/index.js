@@ -36,6 +36,7 @@ const ie_11up = /Trident\/(?:[7-9]|\d{2,})\..*rv:(\d+)/.exec(navigator.userAgent
 
 export const browser = {
   mac: /Mac/.test(navigator.platform),
+  ios:/(iPod|iPhone|iPad)/.test(navigator.userAgent),
   ie_upto10,
   ie_11up,
   ie: ie_upto10 || ie_11up,
