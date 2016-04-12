@@ -14,7 +14,7 @@ import {SelectionState, TextSelection, NodeSelection,
         findSelectionAtStart, hasFocus} from "./selection"
 import {scrollIntoView, posAtCoords, coordsAtPos} from "./dompos"
 import {draw, redraw} from "./draw"
-import {Input} from "./input"
+import {Input, forceCompositionEnd} from "./input"
 import {History} from "./history"
 import {RangeStore, MarkedRange} from "./range"
 import {EditorTransform} from "./transform"
@@ -124,7 +124,6 @@ export class ProseMirror {
   // Set the selection to the given selection object.
   setSelection(selection) {
     this.ensureOperation()
-    this.input.maybeAbortComposition()
     if (!selection.eq(this.sel.range)) this.sel.setAndSignal(selection)
   }
 
@@ -174,7 +173,6 @@ export class ProseMirror {
 
   updateDoc(doc, mapping, selection) {
     this.ensureOperation()
-    this.input.maybeAbortComposition()
     this.ranges.transform(mapping)
     this.doc = doc
     this.sel.setAndSignal(selection || this.sel.range.map(doc, mapping))
@@ -267,7 +265,7 @@ export class ProseMirror {
     if (!(options && options.readSelection === false) && this.sel.readFromDOM())
       this.operation.sel = this.sel.range
 
-    if (!this.flushScheduled) {
+    if (!this.flushScheduled && !(options && options.noFlush)) {
       requestAnimationFrame(() => {
         this.flushScheduled = false
         this.flush()
@@ -293,19 +291,20 @@ export class ProseMirror {
     // Fired when the editor is about to [flush](#ProseMirror.flush)
     // an update to the DOM.
     this.signal("flushing")
-    let op = this.operation
+
+    let op = this.operation, redrawn = false
+    if (op.composing) forceCompositionEnd(this)
     if (!op) return false
     this.operation = null
     this.accurateSelection = true
 
-    let docChanged = op.doc != this.doc || this.dirtyNodes.size, redrawn = false
-    if (!this.input.composing && (docChanged || op.composingAtStart)) {
+    if (op.doc != this.doc || this.dirtyNodes.size) {
       redraw(this, this.dirtyNodes, this.doc, op.doc)
       this.dirtyNodes.clear()
       redrawn = true
     }
 
-    if ((redrawn || !op.sel.eq(this.sel.range)) && !this.input.composing || op.focus)
+    if ((redrawn || !op.sel.eq(this.sel.range)) || op.focus)
       this.sel.toDOM(op.focus)
 
     // FIXME somehow schedule this relative to ui/update so that it
@@ -314,7 +313,7 @@ export class ProseMirror {
       scrollIntoView(this, op.scrollIntoView)
     // :: () #path=ProseMirror#events#draw
     // Fired when the editor redrew its document in the DOM.
-    if (docChanged) this.signal("draw")
+    if (redrawn) this.signal("draw")
     // :: () #path=ProseMirror#events#flush
     // Fired when the editor has finished
     // [flushing](#ProseMirror.flush) an update to the DOM.
@@ -547,6 +546,6 @@ class Operation {
     this.sel = pm.sel.range
     this.scrollIntoView = false
     this.focus = false
-    this.composingAtStart = !!pm.input.composing
+    this.composing = null
   }
 }

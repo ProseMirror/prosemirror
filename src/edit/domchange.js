@@ -4,6 +4,35 @@ import {fromDOM} from "../format"
 import {findSelectionFrom} from "./selection"
 import {DOMFromPos} from "./dompos"
 
+export function readInputChange(pm) {
+  return readDOMChange(pm, rangeAroundSelection(pm), true)
+}
+
+export function readCompositionChange(pm, margin) {
+  return readDOMChange(pm, rangeAroundComposition(pm, margin))
+}
+
+function parseBetween(pm, from, to) {
+  let {node: parent, offset: startOff} = DOMFromPos(pm, from)
+  let endOff = DOMFromPos(pm, to).offset
+  while (startOff) {
+    let prev = parent.childNodes[startOff - 1]
+    if (prev.nodeType != 1 || !prev.hasAttribute("pm-offset")) --startOff
+    else break
+  }
+  while (endOff < parent.childNodes.length) {
+    let next = parent.childNodes[endOff]
+    if (next.nodeType != 1 || !next.hasAttribute("pm-offset")) ++endOff
+    else break
+  }
+  return fromDOM(pm.schema, parent, {
+    topNode: pm.doc.resolve(from).parent.copy(),
+    from: startOff,
+    to: endOff,
+    preserveWhitespace: true
+  })
+}
+
 function isAtEnd($pos, depth) {
   for (let i = depth || 0; i < $pos.depth; i++)
     if ($pos.index(i) + 1 < $pos.node(i).childCount) return false
@@ -15,65 +44,65 @@ function isAtStart($pos, depth) {
   return $pos.parentOffset == 0
 }
 
-function parseNearSelection(pm) {
+// FIXME special case for inside-single-textblock-not-at-sides situation
+// (To avoid re-parsing huge textblocks for tiny changes)
+function rangeAroundSelection(pm) {
   let {from, to} = pm.selection, $from = pm.doc.resolve(from), $to = pm.doc.resolve(to)
   for (let depth = 0;; depth++) {
     let fromStart = isAtStart($from, depth + 1), toEnd = isAtEnd($to, depth + 1)
     if (fromStart || toEnd || $from.index(depth) != $to.index(depth) || $to.node(depth).isTextblock) {
-      let start = $from.before(depth + 1), end = $to.after(depth + 1)
+      let from = $from.before(depth + 1), to = $to.after(depth + 1)
       if (fromStart && $from.index(depth) > 0)
-        start -= $from.node(depth).child($from.index(depth) - 1).nodeSize
+        from -= $from.node(depth).child($from.index(depth) - 1).nodeSize
       if (toEnd && $to.index(depth) + 1 < $to.node(depth).childCount)
-        end += $to.node(depth).child($to.index(depth) + 1).nodeSize
-      let startPos = DOMFromPos(pm, start), endPos = DOMFromPos(pm, end)
-      while (startPos.offset) {
-        let prev = startPos.node.childNodes[startPos.offset - 1]
-        if (prev.nodeType != 1 || !prev.hasAttribute("pm-offset")) --startPos.offset
-        else break
-      }
-      let parsed = fromDOM(pm.schema, startPos.node, {
-        topNode: $from.node(depth).copy(),
-        from: startPos.offset,
-        to: endPos.offset,
-        preserveWhitespace: true
-      })
-
-      let parentStart = $from.start(depth)
-      parsed = parsed.copy($from.parent.content.cut(0, start - parentStart)
-                           .append(parsed.content)
-                           .append($from.parent.content.cut(end - parentStart)))
-      for (let i = depth - 1; i >= 0; i--) {
-        let wrap = $from.node(i)
-        parsed = wrap.copy(wrap.content.replaceChild($from.index(i), parsed))
-      }
-      return parsed
+        to += $to.node(depth).child($to.index(depth) + 1).nodeSize
+      return {from, to}
     }
   }
 }
 
-export function readDOMChange(pm) {
-  let updated = parseNearSelection(pm)
-  let changeStart = findDiffStart(pm.doc.content, updated.content)
-  if (changeStart != null) {
-    let changeEnd = findDiffEndConstrained(pm.doc.content, updated.content, changeStart)
-    // Mark nodes touched by this change as 'to be redrawn'
-    markDirtyFor(pm, changeStart, changeEnd.a)
+function rangeAroundComposition(pm, margin) {
+  let $from = pm.doc.resolve(pm.selection.from), $to = pm.doc.resolve(pm.selection.to)
+  if (!$from.sameParent($to)) return rangeAroundSelection(pm)
+  let startOff = Math.max(0, Math.min($from.parentOffset, $to.parentOffset) - margin)
+  let size = $from.parent.content.size
+  let endOff = Math.min(size, Math.max($from.parentOffset, $to.parentOffset) + margin)
 
-    let $start = updated.resolveNoCache(changeStart)
-    let $end = updated.resolveNoCache(changeEnd.b), nextSel
-    if (!$start.sameParent($end) && $start.pos < updated.content.size &&
-        (nextSel = findSelectionFrom(updated, $start.pos + 1, 1, true)) &&
-        nextSel.head == changeEnd.b)
-      return {key: "Enter"}
-    else
-      return {transform: pm.tr.replace(changeStart, changeEnd.a, updated.slice(changeStart, changeEnd.b))}
-  } else {
-    return false
+  if (startOff > 0)
+    startOff = $from.parent.nodeBefore(startOff).offset
+  if (endOff < size) {
+    let after = $from.parent.nodeAfter(endOff)
+    endOff = after.offset + after.node.nodeSize
   }
+  let nodeStart = $from.start($from.depth)
+  return {from: nodeStart + startOff, to: nodeStart + endOff}
 }
 
-function findDiffEndConstrained(a, b, start) {
-  let end = findDiffEnd(a, b)
+function readDOMChange(pm, range, detectEnter) {
+  let parsed = parseBetween(pm, range.from, range.to)
+  let compare = pm.doc.slice(range.from, range.to)
+  let changeFrom = findDiffStart(compare.content, parsed.content, range.from)
+  if (changeFrom == null) return false
+
+  let changeTo = findDiffEndConstrained(compare.content, parsed.content, changeFrom,
+                                        range.to, range.from + parsed.content.size)
+  // Mark nodes touched by this change as 'to be redrawn'
+  markDirtyFor(pm, changeFrom, changeTo.a)
+
+  if (detectEnter) {
+    let $from = parsed.resolveNoCache(changeFrom - range.from)
+    let $to = parsed.resolveNoCache(changeTo.b - range.from), nextSel
+    if (!$from.sameParent($to) && $from.pos < parsed.content.size &&
+        (nextSel = findSelectionFrom(parsed, $from.pos + 1, 1, true)) &&
+        nextSel.head == $to.pos)
+      return {key: "Enter"}
+  }
+  let slice = parsed.slice(changeFrom - range.from, changeTo.b - range.from)
+  return {transform: pm.tr.replace(changeFrom, changeTo.a, slice)}
+}
+
+function findDiffEndConstrained(a, b, start, endA, endB) {
+  let end = findDiffEnd(a, b, endA, endB)
   if (!end) return end
   if (end.a < start) return {a: start, b: end.b + (start - end.a)}
   if (end.b < start) return {a: end.a + (start - end.b), b: start}
@@ -86,85 +115,4 @@ function markDirtyFor(pm, start, end) {
     pm.markAllDirty()
   else
     pm.markRangeDirty($start.before(same), $start.after(same))
-}
-
-// Text-only queries for composition events
-
-export function textContext(data) {
-  let range = window.getSelection().getRangeAt(0)
-  let start = range.startContainer, end = range.endContainer
-  if (start == end && start.nodeType == 3) {
-    let value = start.nodeValue, lead = range.startOffset, end = range.endOffset
-    if (data && end >= data.length && value.slice(end - data.length, end) == data)
-      lead = end - data.length
-    return {inside: start, lead, trail: value.length - end}
-  }
-
-  let sizeBefore = null, sizeAfter = null
-  let before = start.childNodes[range.startOffset - 1] || nodeBefore(start)
-  while (before.lastChild) before = before.lastChild
-  if (before && before.nodeType == 3) {
-    let value = before.nodeValue
-    sizeBefore = value.length
-    if (data && value.slice(value.length - data.length) == data)
-      sizeBefore -= data.length
-  }
-  let after = end.childNodes[range.endOffset] || nodeAfter(end)
-  while (after.firstChild) after = after.firstChild
-  if (after && after.nodeType == 3) sizeAfter = after.nodeValue.length
-
-  return {before: before, sizeBefore,
-          after: after, sizeAfter}
-}
-
-export function textInContext(context, deflt) {
-  if (context.inside) {
-    let val = context.inside.nodeValue
-    return val.slice(context.lead, val.length - context.trail)
-  } else {
-    var before = context.before, after = context.after, val = ""
-    if (!before) return deflt
-    if (before.nodeType == 3)
-      val = before.nodeValue.slice(context.sizeBefore)
-    var scan = scanText(before, after)
-    if (scan == null) return deflt
-    val += scan
-    if (after && after.nodeType == 3) {
-      let valAfter = after.nodeValue
-      val += valAfter.slice(0, valAfter.length - context.sizeAfter)
-    }
-    return val
-  }
-}
-
-function nodeAfter(node) {
-  for (;;) {
-    let next = node.nextSibling
-    if (next) {
-      while (next.firstChild) next = next.firstChild
-      return next
-    }
-    if (!(node = node.parentElement)) return null
-  }
-}
-
-function nodeBefore(node) {
-  for (;;) {
-    let prev = node.previousSibling
-    if (prev) {
-      while (prev.lastChild) prev = prev.lastChild
-      return prev
-    }
-    if (!(node = node.parentElement)) return null
-  }
-}
-
-function scanText(start, end) {
-  let text = "", cur = nodeAfter(start)
-  for (;;) {
-    if (cur == end) return text
-    if (!cur) return null
-    if (cur.nodeType == 3) text += cur.nodeValue
-    cur = cur.firstChild || nodeAfter(cur)
-  }
 }

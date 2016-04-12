@@ -82,7 +82,7 @@ export class SelectionState {
   // When the DOM selection changes in a notable manner, modify the
   // current selection state to match.
   readFromDOM() {
-    if (this.pm.input.composing || !hasFocus(this.pm) || !this.domChanged()) return false
+    if (!hasFocus(this.pm) || !this.domChanged()) return false
 
     let sel = window.getSelection(), doc = this.pm.doc
     let anchor = posFromDOM(this.pm, sel.anchorNode, sel.anchorOffset)
@@ -306,13 +306,6 @@ class SelectionToken {
     this.a = a
     this.b = b
   }
-}
-
-export function rangeFromDOMLoose(pm) {
-  if (!hasFocus(pm)) return null
-  let sel = window.getSelection()
-  return new TextSelection(posFromDOM(pm, sel.anchorNode, sel.anchorOffset, true),
-                           posFromDOM(pm, sel.focusNode, sel.focusOffset, true))
 }
 
 export function hasFocus(pm) {

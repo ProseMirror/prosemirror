@@ -5,8 +5,8 @@ import {parseFrom, fromDOM, toHTML, toText} from "../format"
 import {captureKeys} from "./capturekeys"
 import {elt, browser, contains} from "../dom"
 
-import {readDOMChange, textContext, textInContext} from "./domchange"
-import {TextSelection, rangeFromDOMLoose, findSelectionAtStart, findSelectionAtEnd, findSelectionNear, hasFocus} from "./selection"
+import {readInputChange, readCompositionChange} from "./domchange"
+import {TextSelection, findSelectionAtStart, findSelectionAtEnd, findSelectionNear, hasFocus} from "./selection"
 import {posBeforeFromDOM, handleNodeClick, selectableNodeAbove} from "./dompos"
 
 let stopSeq = null
@@ -22,14 +22,11 @@ export class Input {
 
     this.keySeq = null
 
-    // When the user is creating a composed character,
-    // this is set to a Composing instance.
-    this.composing = null
     this.mouseDown = null
     this.dragging = null
     this.dropTarget = null
-    this.shiftKey = this.updatingComposition = false
-    this.skipInput = 0
+    this.shiftKey = false
+    this.finishComposing = null
 
     this.keymaps = []
     this.defaultKeymap = null
@@ -42,24 +39,6 @@ export class Input {
     }
 
     pm.on("selectionChange", () => this.storedMarks = null)
-  }
-
-  maybeAbortComposition() {
-    if (this.composing && !this.updatingComposition) {
-      if (this.composing.finished) {
-        finishComposing(this.pm)
-      } else { // Toggle selection to force end of composition
-        this.composing = null
-        this.skipInput++
-        let sel = window.getSelection()
-        if (sel.rangeCount) {
-          let range = sel.getRangeAt(0)
-          sel.removeAllRanges()
-          sel.addRange(range)
-        }
-      }
-      return true
-    }
   }
 }
 
@@ -124,7 +103,7 @@ handlers.keydown = (pm, e) => {
   if (!hasFocus(pm)) return
   pm.signal("interaction")
   if (e.keyCode == 16) pm.input.shiftKey = true
-  if (pm.input.composing) return
+  if (isComposing(pm)) return
   let name = Keymap.keyName(e)
   if (name && dispatchKey(pm, name, e)) return
   pm.sel.fastPoll()
@@ -149,7 +128,7 @@ function inputText(pm, range, text) {
 }
 
 handlers.keypress = (pm, e) => {
-  if (!hasFocus(pm) || pm.input.composing || !e.charCode ||
+  if (!hasFocus(pm) || isComposing(pm) || !e.charCode ||
       e.ctrlKey && !e.altKey || browser.mac && e.metaKey) return
   if (dispatchKey(pm, Keymap.keyName(e), e)) return
   let sel = pm.selection
@@ -282,78 +261,80 @@ handlers.contextmenu = (pm, e) => {
   handleNodeClick(pm, "handleContextMenu", e, realTarget(pm, e), false)
 }
 
-// A class to track state while creating a composed character.
-class Composing {
-  constructor(pm, data) {
-    this.finished = false
-    this.context = textContext(data)
-    this.data = data
-    this.endData = null
-    let range = pm.selection
-    if (data) {
-      let $head = pm.doc.resolve(range.head)
-      let found = $head.parent.textContent.indexOf(data, $head.parentOffset - data.length)
-      if (found > -1 && found <= $head.parentOffset + data.length) {
-        let start = $head.pos - $head.parentOffset
-        range = new TextSelection(start, $head.parent.content.size)
-      }
-    }
-    this.range = range
+function isComposing(pm) {
+  return pm.operation && pm.operation.composing
+}
+
+function abortComposition() {
+  // Ensure a composition is abandoned by resetting the selection
+  let sel = window.getSelection()
+  if (sel.rangeCount) {
+    let range = sel.getRangeAt(0)
+    sel.removeAllRanges()
+    sel.addRange(range)
   }
+}
+
+export function forceCompositionEnd(pm) {
+  if (pm.operation.composing.ended) {
+    endComposition(pm, false)
+  } else {
+    pm.operation.composing = null
+    abortComposition()
+  }
+}
+
+function startComposition(pm, dataLen) {
+  if (isComposing(pm) || !hasFocus(pm)) return
+  if (pm.operation) {
+    abortComposition()
+    pm.flush()
+    return false
+  }
+
+  pm.startOperation({noFlush: true})
+  let $pos = pm.doc.resolve(pm.selection.from)
+  pm.markRangeDirty($pos.before($pos.depth), $pos.after($pos.depth))
+  pm.operation.composing = {ended: false, margin: dataLen}
+  return true
+}
+
+function endComposition(pm, andFlush) {
+  // FIXME store initial selection, map forward, base read range on that (?)
+  let change = readCompositionChange(pm, pm.operation.composing.margin)
+  if (change) change.transform.apply(pm.apply.scroll)
+  pm.operation.composing = null
+  if (andFlush) pm.flush()
 }
 
 handlers.compositionstart = (pm, e) => {
-  if (!hasFocus(pm) || pm.input.maybeAbortComposition()) return
-
-  pm.flush()
-  pm.input.composing = new Composing(pm, e.data)
-  let $head = pm.doc.resolve(pm.selection.head)
-  pm.markRangeDirty($head.before($head.depth), $head.after($head.depth))
+  startComposition(pm, e.data ? e.data.length : 0)
 }
 
-handlers.compositionupdate = (pm, e) => {
-  if (!hasFocus(pm)) return
-  let info = pm.input.composing
-  if (info && info.data != e.data) {
-    info.data = e.data
-    pm.input.updatingComposition = true
-    inputText(pm, info.range, info.data)
-    pm.input.updatingComposition = false
-    info.range = new TextSelection(info.range.from, info.range.from + info.data.length)
-  }
+handlers.compositionupdate = pm => {
+  startComposition(pm, 0)
 }
 
-handlers.compositionend = (pm, e) => {
-  if (!hasFocus(pm)) return
-  let info = pm.input.composing
-  if (info) {
-    pm.input.composing.finished = true
-    pm.input.composing.endData = e.data
-    setTimeout(() => {if (pm.input.composing == info) finishComposing(pm)}, 20)
-  }
-}
-
-function finishComposing(pm) {
-  let info = pm.input.composing
-  let text = textInContext(info.context, info.endData)
-  let range = rangeFromDOMLoose(pm)
-  pm.ensureOperation()
-  pm.input.composing = null
-  if (text != info.data) inputText(pm, info.range, text)
-  if (range && !range.eq(pm.sel.range)) pm.setSelection(range)
+handlers.compositionend = pm => {
+  if (!isComposing(pm) && !startComposition(pm, 0)) return
+  clearTimeout(pm.input.finishComposing)
+  pm.operation.composing.ended = true
+  pm.input.finishComposing = window.setTimeout(() => {
+    let composing = isComposing(pm)
+    if (composing && composing.ended) endComposition(pm, true)
+  })
 }
 
 handlers.input = (pm, e) => {
   if (!hasFocus(pm)) return
-  if (pm.input.skipInput) return --pm.input.skipInput
-
-  if (pm.input.composing) {
-    if (pm.input.composing.finished) finishComposing(pm)
+  let composing = isComposing(pm)
+  if (composing) {
+    if (composing.ended) endComposition(pm, true)
     return
   }
 
   pm.startOperation({readSelection: false})
-  let change = readDOMChange(pm)
+  let change = readInputChange(pm)
   if (change && change.key)
     dispatchKey(pm, change.key, e)
   else if (change && change.transform)
@@ -406,10 +387,10 @@ function fromClipboard(pm, dataTransfer, plainText) {
   } else {
     let dom = document.createElement("div")
     dom.innerHTML = pm.signalPipelined("transformPastedHTML", html)
-    let wrap = dom.querySelector("[pm-context]"), context, contextNode, found
+    let wrap = dom.querySelector("[pm-context]"), context, contextNodeType, found
     if (wrap && (context = /^(\w+) (\d+) (\d+)$/.exec(wrap.getAttribute("pm-context"))) &&
-        (contextNode = pm.schema.nodes[context[1]]) && contextNode.defaultAttrs &&
-        (found = parseFromContext(wrap, contextNode, +context[2], +context[3])))
+        (contextNodeType = pm.schema.nodes[context[1]]) && contextNodeType.defaultAttrs &&
+        (found = parseFromContext(wrap, contextNodeType, +context[2], +context[3])))
       slice = found
     else
       doc = fromDOM(pm.schema, dom)
@@ -419,10 +400,11 @@ function fromClipboard(pm, dataTransfer, plainText) {
   return pm.signalPipelined("transformPasted", slice)
 }
 
-function parseFromContext(dom, contextNode, openLeft, openRight) {
-  let schema = contextNode.schema
-  let parsed = fromDOM(schema, dom, {topNode: contextNode.create(), preserveWhitespace: true})
-  return new Slice(parsed.content, clipOpen(parsed.content, openLeft, true), clipOpen(parsed.content, openRight, false))
+function parseFromContext(dom, contextNodeType, openLeft, openRight) {
+  let schema = contextNodeType.schema, contextNode = contextNodeType.create()
+  let parsed = fromDOM(schema, dom, {topNode: contextNode, preserveWhitespace: true})
+  return new Slice(parsed.content, clipOpen(parsed.content, openLeft, true),
+                   clipOpen(parsed.content, openRight, false), contextNode)
 }
 
 function clipOpen(fragment, max, start) {

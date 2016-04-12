@@ -11,9 +11,9 @@ export function posBeforeFromDOM(pm, node) {
   return pos
 }
 
-// : (ProseMirror, DOMNode, number, ?bool) → number
-export function posFromDOM(pm, dom, domOffset, loose) {
-  if (!loose && pm.operation && pm.doc != pm.operation.doc)
+// : (ProseMirror, DOMNode, number) → number
+export function posFromDOM(pm, dom, domOffset) {
+  if (pm.operation && pm.doc != pm.operation.doc)
     throw new RangeError("Fetching a position from an outdated DOM structure")
 
   if (domOffset == null) {
@@ -48,13 +48,9 @@ export function posFromDOM(pm, dom, domOffset, loose) {
   let start = dom == pm.content ? 0 : posBeforeFromDOM(pm, dom) + 1, before = 0
 
   for (let child = dom.childNodes[domOffset - 1]; child; child = child.previousSibling) {
-    if (child.nodeType == 3) {
-      if (loose) before += child.nodeValue.length
-    } else if (tag = child.getAttribute("pm-offset")) {
+    if (child.nodeType == 1 && (tag = child.getAttribute("pm-offset"))) {
       before += +tag + +child.getAttribute("pm-size")
       break
-    } else if (loose && !child.hasAttribute("pm-ignore")) {
-      before += child.textContent.length
     }
   }
   return start + before + innerOffset

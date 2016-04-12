@@ -1,4 +1,4 @@
-import {readDOMChange} from "../../edit/domchange"
+import {readInputChange} from "../../edit/domchange"
 
 import {namespace} from "./def"
 import {doc, p, em} from "../build"
@@ -8,7 +8,7 @@ import {findTextNode} from "./test-selection"
 const test = namespace("domchange", {doc: doc(p("hello"))})
 
 function apply(pm) {
-  pm.apply(readDOMChange(pm).transform)
+  pm.apply(readInputChange(pm).transform)
 }
 
 test("add_text", pm => {
@@ -67,6 +67,6 @@ test("add_repeated_text", pm => {
 test("detect_enter", pm => {
   findTextNode(pm.content, "hello").nodeValue = "hel"
   pm.content.appendChild(document.createElement("p")).innerHTML = "lo"
-  let change = readDOMChange(pm)
+  let change = readInputChange(pm)
   cmp(change && change.key, "Enter")
 })

@@ -11,13 +11,14 @@ export class ReplaceError extends ProseMirrorError {}
 // both side are 'open' / cut through.
 export class Slice {
   // :: (Fragment, number, number)
-  constructor(content, openLeft, openRight) {
+  constructor(content, openLeft, openRight, possibleParent) {
     // :: Fragment The slice's content nodes.
     this.content = content
     // :: number The open depth at the start.
     this.openLeft = openLeft
     // :: number The open depth at the end.
     this.openRight = openRight
+    this.possibleParent = possibleParent
   }
 
   // :: number
