@@ -106,6 +106,9 @@ del("only_child",
 del("outside_path",
     doc(blockquote(p("a"), "<a>", p("b"), "<b>"), p("c<1>")),
     doc(blockquote(p("a")), p("c<1>")))
+del("across_code_block",
+    doc(pre("fo<a>o"), p("b<b>ar", img)),
+    doc(pre("fo"), p("ar", img)))
 
 function txt(name, doc, expect, text) {
   defTest("insertText_" + name, () => testTransform(tr.txt(text), doc, expect))

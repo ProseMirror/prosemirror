@@ -49,10 +49,13 @@ Transform.prototype.replace = function(from, to = from, slice = Slice.empty) {
   // slice to fit onto the inserted content. But only if there is text
   // before and after the cut, and if those endpoints aren't already
   // next to each other.
-  if (!fSize || !$to.node($to.depth).isTextblock) return this
+  if (!fSize || !$to.parent.isTextblock) return this
   let after = from + fSize
   let inner = !slice.size ? from : distAfter < 0 ? -1 : after - distAfter, $inner
-  if (inner == -1 || inner == after || !($inner = this.doc.resolve(inner)).node($inner.depth).isTextblock) return this
+  if (inner == -1 || inner == after ||
+      !($inner = this.doc.resolve(inner)).parent.isTextblock ||
+      !$inner.parent.type.canContainFragment($to.parent.content))
+    return this
   mergeTextblockAfter(this, $inner, this.doc.resolve(after))
   return this
 }
