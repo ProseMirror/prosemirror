@@ -24,12 +24,18 @@ function add(value, target) {
 
 const reqFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||
       window.webkitRequestAnimationFrame || window.msRequestAnimationFrame
+const cancelFrame = window.cancelAnimationFrame || window.mozCancelAnimationFrame ||
+      window.webkitCancelAnimationFrame || window.msCancelAnimationFrame
 
 export function requestAnimationFrame(f) {
-  if (reqFrame) reqFrame(f)
-  else setTimeout(f, 10)
+  if (reqFrame) return reqFrame(f)
+  else return setTimeout(f, 10)
 }
 
+export function cancelAnimationFreame(handle) {
+  if (reqFrame) return cancelFrame(handle)
+  else clearTimeout(handle)
+}
 
 const ie_upto10 = /MSIE \d/.test(navigator.userAgent)
 const ie_11up = /Trident\/(?:[7-9]|\d{2,})\..*rv:(\d+)/.exec(navigator.userAgent)

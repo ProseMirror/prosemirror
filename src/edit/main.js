@@ -5,7 +5,7 @@ import Keymap from "browserkeymap"
 import sortedInsert from "../util/sortedinsert"
 import {Map} from "../util/map"
 import {eventMixin} from "../util/event"
-import {requestAnimationFrame, elt, browser, ensureCSSAdded} from "../dom"
+import {requestAnimationFrame, cancelAnimationFrame, elt, browser, ensureCSSAdded} from "../dom"
 
 import {parseFrom, serializeTo} from "../format"
 
@@ -65,7 +65,7 @@ export class ProseMirror {
     this.cached = Object.create(null)
     this.operation = null
     this.dirtyNodes = new Map // Maps node object to 1 (re-scan content) or 2 (redraw entirely)
-    this.flushScheduled = false
+    this.flushScheduled = null
 
     this.sel = new SelectionState(this, findSelectionAtStart(this.doc))
     this.accurateSelection = false
@@ -261,17 +261,12 @@ export class ProseMirror {
   // Start an operation and schedule a flush so that any effect of
   // the operation shows up in the DOM.
   startOperation(options) {
-    this.operation = new Operation(this)
+    this.operation = new Operation(this, options)
     if (!(options && options.readSelection === false) && this.sel.readFromDOM())
       this.operation.sel = this.sel.range
 
-    if (!this.flushScheduled && !(options && options.noFlush)) {
-      requestAnimationFrame(() => {
-        this.flushScheduled = false
-        this.flush()
-      })
-      this.flushScheduled = true
-    }
+    if (this.flushScheduled == null && !(options && options.noFlush))
+      this.flushScheduled = requestAnimationFrame(() => this.flush())
     return this.operation
   }
 
@@ -286,6 +281,11 @@ export class ProseMirror {
   //
   // Returns true when it updated the document DOM.
   flush() {
+    if (this.flushScheduled != null) {
+      cancelAnimationFrame(this.flushScheduled)
+      this.flushScheduled = null
+    }
+
     if (!document.body.contains(this.wrapper) || !this.operation) return false
     // :: () #path=ProseMirror#events#flushing
     // Fired when the editor is about to [flush](#ProseMirror.flush)
@@ -541,11 +541,11 @@ eventMixin(ProseMirror)
 // whether a focus needs to happen on flush, and whether something
 // needs to be scrolled into view.
 class Operation {
-  constructor(pm) {
+  constructor(pm, options) {
     this.doc = pm.doc
     this.sel = pm.sel.range
     this.scrollIntoView = false
     this.focus = false
-    this.composing = null
+    this.composing = options && options.composing
   }
 }

@@ -292,10 +292,12 @@ function startComposition(pm, dataLen) {
     return false
   }
 
-  pm.startOperation({noFlush: true})
+  pm.startOperation({
+    noFlush: true,
+    composing: {ended: false, margin: dataLen}
+  })
   let $pos = pm.doc.resolve(pm.selection.from)
   pm.markRangeDirty($pos.before($pos.depth), $pos.after($pos.depth))
-  pm.operation.composing = {ended: false, margin: dataLen}
   return true
 }
 
