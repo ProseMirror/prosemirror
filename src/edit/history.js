@@ -350,7 +350,7 @@ export class History {
     if (!pop.transform.steps.length) return this.shift(from, to)
 
     let selection = pop.selection.type.fromToken(pop.selection, pop.transform.doc)
-    this.applyIgnoring(pop.transform, {selection})
+    this.applyIgnoring(pop.transform, selection)
 
     // Store the selection before transform on the event so that
     // it can be reapplied if the event is undone or redone (e.g.
@@ -363,9 +363,9 @@ export class History {
     return true
   }
 
-  applyIgnoring(transform, options) {
+  applyIgnoring(transform, selection) {
     this.ignoreTransform = true
-    this.pm.apply(transform, options)
+    this.pm.apply(transform, {selection, filter: false})
     this.ignoreTransform = false
   }
 
