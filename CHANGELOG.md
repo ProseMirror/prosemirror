@@ -1,6 +1,6 @@
 ## [0.6.0](http://prosemirror.net/version/0.6.0.html) (2016-04-13)
 
-## Breaking changes
+### Breaking changes
 
 Positions in the document are now represented by
 [integers](http://prosemirror.net/guide/doc.html#indexing), rather
@@ -105,7 +105,7 @@ applied.
 [`Slice`](http://prosemirror.net/version/0.6.0.html#Slice) object, rather than a full replacement document
 with start and end positions.
 
-## Bug fixes
+### Bug fixes
 
 An unsoundness in the collaborative editing algorithm's handling of
 replace steps has been fixed.
@@ -124,7 +124,7 @@ document.
 Handle the case where a `clipboardData` object is present but doesn't
 actually work (iOS).
 
-## New features
+### New features
 
 [`ProseMirror.flush`](http://prosemirror.net/version/0.6.0.html#ProseMirror.flush) now return a boolean
 indicating whether it redrew the display.
