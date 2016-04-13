@@ -284,7 +284,7 @@ function selectedListItems(pm, type) {
           depth: itemDepth}
 }
 
-// ;; #path="list_item:sink" #kind=command
+// ;; #path="list_item:lift" #kind=command
 // Lift a list item into a parent list.
 //
 // **Keybindings:** Mod-[
