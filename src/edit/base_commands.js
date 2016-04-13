@@ -106,7 +106,7 @@ function moveBackward(doc, pos, by) {
   let cat = null, counted = 0
   for (;;) {
     if (offset == 0) return pos
-    let {offset: start, node} = parent.nodeBefore(offset)
+    let {offset: start, node} = parent.childBefore(offset)
     if (!node) return pos
     if (!node.isText) return cat ? pos : pos - 1
 
@@ -218,7 +218,7 @@ function moveForward(doc, pos, by) {
   let cat = null, counted = 0
   for (;;) {
     if (offset == parent.content.size) return pos
-    let {offset: start, node} = parent.nodeAfter(offset)
+    let {offset: start, node} = parent.childAfter(offset)
     if (!node) return pos
     if (!node.isText) return cat ? pos : pos + 1
 

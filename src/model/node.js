@@ -168,7 +168,7 @@ export class Node {
   // Find the (direct) child node after the given offset, if any,
   // and return it along with its index and offset relative to this
   // node.
-  nodeAfter(pos) {
+  childAfter(pos) {
     let {index, offset} = this.content.findIndex(pos)
     return {node: this.content.maybeChild(index), index, offset}
   }
@@ -177,7 +177,7 @@ export class Node {
   // Find the (direct) child node before the given offset, if any,
   // and return it along with its index and offset relative to this
   // node.
-  nodeBefore(pos) {
+  childBefore(pos) {
     if (pos == 0) return {node: null, index: 0, offset: 0}
     let {index, offset} = this.content.findIndex(pos)
     if (offset < pos) return {node: this.content.child(index), index, offset}
