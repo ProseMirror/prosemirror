@@ -140,6 +140,12 @@ event can be used to transform pasted or dragged content, as a parsed
 The [`Node.eq`](http://prosemirror.net/version/0.6.0.html#Node.eq) predicate can now be used to determine whether two nodes
 are equal.
 
+[Mark types](http://prosemirror.net/version/0.6.0.html#MarkType) can
+now control whether they are applied to text typed after such a mark
+with their
+[`inclusiveRight`](http://prosemirror.net/version/0.6.0.html#MarkType.inclusiveRight)
+property.
+
 The [`join`](http://prosemirror.net/version/0.6.0.html#Transform.join) and [`lift`](http://prosemirror.net/version/0.6.0.html#Transform.lift)
 transform methods now have a `silent` parameter to suppress exceptions
 when they can not be applied.
