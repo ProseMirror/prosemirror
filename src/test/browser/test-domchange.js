@@ -25,18 +25,18 @@ test("remove_ambiguous_text", pm => {
   cmpNode(pm.doc, doc(p("helo")))
 })
 
+test("active_marks", pm => {
+  pm.execCommand("em:toggle")
+  findTextNode(pm.content, "hello").nodeValue = "helloo"
+  readInputChange(pm)
+  cmpNode(pm.doc, doc(p("hello", em("o"))))
+})
+
 test("add_node", pm => {
   let txt = findTextNode(pm.content, "hello")
   txt.parentNode.appendChild(document.createTextNode("!"))
   readInputChange(pm)
   cmpNode(pm.doc, doc(p("hello!")))
-})
-
-test("add_em_node", pm => {
-  let txt = findTextNode(pm.content, "hello")
-  txt.parentNode.appendChild(document.createElement("em")).appendChild(document.createTextNode("!"))
-  readInputChange(pm)
-  cmpNode(pm.doc, doc(p("hello", em("!"))))
 })
 
 test("kill_node", pm => {

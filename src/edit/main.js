@@ -14,7 +14,7 @@ import {SelectionState, TextSelection, NodeSelection,
         findSelectionAtStart, hasFocus} from "./selection"
 import {scrollIntoView, posAtCoords, coordsAtPos} from "./dompos"
 import {draw, redraw} from "./draw"
-import {Input, applyComposition} from "./input"
+import {Input} from "./input"
 import {History} from "./history"
 import {RangeStore, MarkedRange} from "./range"
 import {EditorTransform} from "./transform"
@@ -301,7 +301,7 @@ export class ProseMirror {
 
     let op = this.operation, redrawn = false
     if (!op) return false
-    if (op.composing) applyComposition(this)
+    if (op.composing) this.input.applyComposition()
 
     this.operation = null
     this.accurateSelection = true

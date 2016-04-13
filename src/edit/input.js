@@ -92,6 +92,43 @@ export class Input {
     }
     return !!result
   }
+
+  // : (ProseMirror, TextSelection, string)
+  // Insert text into a document.
+  insertText(from, to, text) {
+    if (from == to && !text) return
+    let pm = this.pm, marks = pm.input.storedMarks || pm.doc.marksAt(from)
+    pm.tr.replaceWith(from, to, text ? pm.schema.text(text, marks) : null).apply({
+      scrollIntoView: true,
+      selection: new TextSelection(from + text.length)
+    })
+    // :: () #path=ProseMirror#events#textInput
+    // Fired when the user types text into the editor.
+    if (text) pm.signal("textInput", text)
+  }
+
+  get composing() {
+    return this.pm.operation && this.pm.operation.composing
+  }
+
+  startComposition(dataLen, realStart) {
+    this.pm.ensureOperation({noFlush: true, readSelection: realStart}).composing = {
+      ended: false,
+      applied: false,
+      margin: dataLen
+    }
+    this.pm.unscheduleFlush()
+  }
+
+  applyComposition(andFlush) {
+    let composing = this.composing
+    if (composing.applied) return
+    readCompositionChange(this.pm, composing.margin)
+    composing.applied = true
+    // Operations that read DOM changes must be flushed, to make sure
+    // subsequent DOM changes find a clean DOM.
+    if (andFlush) this.pm.flush()
+  }
 }
 
 handlers.keydown = (pm, e) => {
@@ -103,7 +140,7 @@ handlers.keydown = (pm, e) => {
   if (!hasFocus(pm)) return
   pm.signal("interaction")
   if (e.keyCode == 16) pm.input.shiftKey = true
-  if (isComposing(pm)) return
+  if (pm.input.composing) return
   let name = Keymap.keyName(e)
   if (name && pm.input.dispatchKey(name, e)) return
   pm.sel.fastPoll()
@@ -113,22 +150,8 @@ handlers.keyup = (pm, e) => {
   if (e.keyCode == 16) pm.input.shiftKey = false
 }
 
-// : (ProseMirror, TextSelection, string)
-// Insert text into a document.
-function inputText(pm, range, text) {
-  if (range.empty && !text) return false
-  let marks = pm.input.storedMarks || pm.doc.marksAt(range.from)
-  pm.tr.replaceWith(range.from, range.to, pm.schema.text(text, marks)).apply({
-    scrollIntoView: true,
-    selection: new TextSelection(range.from + text.length)
-  })
-  // :: () #path=ProseMirror#events#textInput
-  // Fired when the user types text into the editor.
-  pm.signal("textInput", text)
-}
-
 handlers.keypress = (pm, e) => {
-  if (!hasFocus(pm) || isComposing(pm) || !e.charCode ||
+  if (!hasFocus(pm) || pm.input.composing || !e.charCode ||
       e.ctrlKey && !e.altKey || browser.mac && e.metaKey) return
   if (pm.input.dispatchKey(Keymap.keyName(e), e)) return
   let sel = pm.selection
@@ -136,7 +159,7 @@ handlers.keypress = (pm, e) => {
     pm.tr.delete(sel.from, sel.to).apply()
     sel = pm.selection
   }
-  inputText(pm, sel, String.fromCharCode(e.charCode))
+  pm.input.insertText(sel.from, sel.to, String.fromCharCode(e.charCode))
   e.preventDefault()
 }
 
@@ -275,48 +298,25 @@ handlers.contextmenu = (pm, e) => {
 // plain wrong. Instead, when a composition ends, we parse the dom
 // around the original selection, and derive an update from that.
 
-function isComposing(pm) {
-  return pm.operation && pm.operation.composing
-}
-
-function startComposition(pm, dataLen, realStart) {
-  pm.ensureOperation({noFlush: true, readSelection: realStart}).composing = {
-    ended: false,
-    applied: false,
-    margin: dataLen
-  }
-  pm.unscheduleFlush()
-}
-
-export function applyComposition(pm, andFlush) {
-  let composing = pm.operation.composing
-  if (composing.applied) return
-  readCompositionChange(pm, composing.margin)
-  composing.applied = true
-  // Operations that read DOM changes must be flushed, to make sure
-  // subsequent DOM changes find a clean DOM.
-  if (andFlush) pm.flush()
-}
-
 handlers.compositionstart = (pm, e) => {
-  if (!isComposing(pm) && hasFocus(pm))
-    startComposition(pm, e.data ? e.data.length : 0, true)
+  if (!pm.input.composing && hasFocus(pm))
+    pm.input.startComposition(e.data ? e.data.length : 0, true)
 }
 
 handlers.compositionupdate = pm => {
-  if (!isComposing(pm) && hasFocus(pm))
-    startComposition(pm, 0, false)
+  if (!pm.input.composing && hasFocus(pm))
+    pm.input.startComposition(0, false)
 }
 
 handlers.compositionend = (pm, e) => {
   if (!hasFocus(pm)) return
-  let composing = isComposing(pm)
+  let composing = pm.input.composing
   if (!composing) {
     // We received a compositionend without having seen any previous
     // events for the composition. If there's data in the event
     // object, we assume that it's a real change, and start a
     // composition. Otherwise, we just ignore it.
-    if (e.data) startComposition(pm, e.data.length, false)
+    if (e.data) pm.input.startComposition(e.data.length, false)
     else return
   } else if (composing.applied) {
     // This happens when a flush during composition causes a
@@ -331,18 +331,18 @@ handlers.compositionend = (pm, e) => {
   // the DOM afterwards. So we apply the composition either in the
   // next input event, or after a short interval.
   pm.input.finishComposing = window.setTimeout(() => {
-    let composing = isComposing(pm)
-    if (composing && composing.ended) applyComposition(pm, true)
+    let composing = pm.input.composing
+    if (composing && composing.ended) pm.input.applyComposition(true)
   }, 20)
 }
 
 handlers.input = pm => {
   if (!hasFocus(pm)) return
-  let composing = isComposing(pm)
+  let composing = pm.input.composing
   if (composing) {
     // Ignore input events during composition, except when the
     // composition has ended, in which case we can apply it.
-    if (composing.ended) applyComposition(pm, true)
+    if (composing.ended) pm.input.applyComposition(true)
     return
   }
 

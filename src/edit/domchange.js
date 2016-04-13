@@ -1,4 +1,4 @@
-import {findDiffStart, findDiffEnd} from "../model"
+import {findDiffStart, findDiffEnd, Mark} from "../model"
 import {fromDOM} from "../format"
 import {mapThroughResult} from "../transform/map"
 
@@ -110,15 +110,32 @@ function readDOMChange(pm, range) {
   markDirtyFor(pm, op.doc, change.start, change.endA)
 
   let $from = parsed.resolveNoCache(change.start - range.from)
-  let $to = parsed.resolveNoCache(change.endB - range.from), nextSel
+  let $to = parsed.resolveNoCache(change.endB - range.from), nextSel, text
+  // If this looks like the effect of pressing Enter, just dispatch an
+  // Enter key instead.
   if (!$from.sameParent($to) && $from.pos < parsed.content.size &&
       (nextSel = findSelectionFrom(parsed, $from.pos + 1, 1, true)) &&
       nextSel.head == $to.pos) {
     pm.input.dispatchKey("Enter")
+  } else if ($from.sameParent($to) && $from.parent.isTextblock &&
+             (text = uniformTextBetween(parsed, $from.pos, $to.pos)) != null) {
+    pm.input.insertText(fromMapped.pos, toMapped.pos, text)
   } else {
     let slice = parsed.slice(change.start - range.from, change.endB - range.from)
     pm.tr.replace(fromMapped.pos, toMapped.pos, slice).apply(pm.apply.scroll)
   }
+}
+
+function uniformTextBetween(node, from, to) {
+  let result = "", valid = true, marks = null
+  node.nodesBetween(from, to, (node, pos) => {
+    if (!node.isInline && pos < from) return
+    if (!node.isText) return valid = false
+    if (!marks) marks = node.marks
+    else if (!Mark.sameSet(marks, node.marks)) valid = false
+    result += node.text.slice(Math.max(0, from - pos), to - pos)
+  })
+  return valid ? result : null
 }
 
 function findDiff(a, b, pos, preferedStart) {
