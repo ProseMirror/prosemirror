@@ -1,3 +1,158 @@
+## [0.6.0](http://prosemirror.net/version/0.6.0.html) (2016-04-13)
+
+## Breaking changes
+
+Positions in the document are now represented by
+[integers](http://prosemirror.net/guide/doc.html#indexing), rather
+than `Pos` objects. This means that _every_ function parameter, return
+value, or property that used to be a `Pos` is now a number instead.
+
+Be _extra_ wary about functions that return an optional position—0 is
+a valid position now, so if your code is just checking `if (pos) ...`,
+it'll break when getting a 0.
+
+The [`countCoordsAsChild`](http://prosemirror.net/version/0.6.0.html#NodeType.countCoordsAsChild),
+[`handleClick`](http://prosemirror.net/version/0.6.0.html#NodeType.handleClick),
+[`handleDoubleClick`](http://prosemirror.net/version/0.6.0.html#NodeType.handleDoubleClick), and
+[`handleContextMenu`](http://prosemirror.net/version/0.6.0.html#NodeType.handleContextMenu) methods on
+[node types](http://prosemirror.net/version/0.6.0.html#NodeType), which used to take a path as an array of
+numbers, now get a single number pointing at the node's position in
+the document instead.
+
+The `"selectNodeLeft/Right/Up/Down"` commands, which were a hack to make node
+selection work, are now no longer exposed as commands.
+
+The key bindings for block types changed again, due to the old ones
+still clashing with default OS X bindings. They are now prefixed with
+Shift-Ctrl (rather than Shift-Cmd on OS X).
+
+[Nodes](http://prosemirror.net/version/0.6.0.html#Node) lost the `size` and `width` properties, and now expose
+a [`nodeSize`](http://prosemirror.net/version/0.6.0.html#Node.nodeSize) property instead, which is the total
+size of the node. The [`size`](http://prosemirror.net/version/0.6.0.html#Fragment.size) attribute on
+[fragments](http://prosemirror.net/version/0.6.0.html#Fragments) changed meaning to point at the total size of
+the fragment's children (rather than their count).
+
+Node iterators are gone, and replaced by index-based access using the
+[`childCount`](http://prosemirror.net/version/0.6.0.html#Node.childCount) property and the
+[`child`](http://prosemirror.net/version/0.6.0.html#Node.child) and [`maybeChild`](http://prosemirror.net/version/0.6.0.html#Node.maybeChild)
+accessors.
+
+The `chunkBefore` and `chunkAfter` methods on nodes are replaced by a
+[`childBefore`](http://prosemirror.net/version/0.6.0.html#Node.childBefore) and
+[`childAfter`](http://prosemirror.net/version/0.6.0.html#Node.childAfter) method with the same role but
+slightly different semantics.
+
+[`Node.slice`](http://prosemirror.net/version/0.6.0.html#Node.slice) now returns a [`Slice`](http://prosemirror.net/version/0.6.0.html#Slice).
+[`Node.sliceBetween`](http://prosemirror.net/version/0.6.0.html#Node.sliceBetween) is gone. The method that
+just returns a reduced [`Node`](http://prosemirror.net/version/0.6.0.html#Node) is now called [`cut`](http://prosemirror.net/version/0.6.0.html#Node.cut)
+(and also present on [fragments](http://prosemirror.net/version/0.6.0.html#Fragment.cut)).
+
+The [node](http://prosemirror.net/version/0.6.0.html#Node) and [fragment](http://prosemirror.net/version/0.6.0.html#Fragment) methods `splice`,
+`append`, `close`, `replaceDeep`, and the old `replace` are gone.
+Document manipulation is now best done in one shot using the new
+[`replace`](http://prosemirror.net/version/0.6.0.html#Node.replace) method, which replaces a range of the
+document with a [`Slice`](http://prosemirror.net/version/0.6.0.html#Slice).
+
+Since we are no longer using arrays of numbers to find nodes,
+`Node.path` is gone. To find out what an integer position points at,
+use [`Node.resolve`](http://prosemirror.net/version/0.6.0.html#Node.resolve), and then inspect the resulting
+[`ResolvedPos`](http://prosemirror.net/version/0.6.0.html#ResolvedPos) object.
+
+`Node.nodeAfter` is now called [`Node.nodeAt`](http://prosemirror.net/version/0.6.0.html#Node.nodeAt). It does mostly the same
+thing, except that it now takes a number position.
+
+[`Node.nodesBetween`](http://prosemirror.net/version/0.6.0.html#Node.nodesBetween) passes a start position for the current node,
+rather than mutable path, to its callback. `Node.inlineNodesBetween`
+is gone, since it is now very easy to do something like that with
+`nodesBetween`. [`Node.descendants`](http://prosemirror.net/version/0.6.0.html#Node.descendants) is a new shorthand that iterates
+over _all_ descendant nodes.
+
+[Fragments](http://prosemirror.net/version/0.6.0.html#Fragment) lost their `toArray`, `map`, and `some`
+methods, and otherwise mostly mirror the changes in the [`Node`](http://prosemirror.net/version/0.6.0.html#Node) type.
+
+The constant empty fragment now lives under [`Fragment.empty`](http://prosemirror.net/version/0.6.0.html#Fragment.empty) rather
+than `emptyFragment`.
+
+[Steps](http://prosemirror.net/version/0.6.0.html#Step) lost their `pos` property. They now only store a
+[`from`](http://prosemirror.net/version/0.6.0.html#Step.from) and [`to`](http://prosemirror.net/version/0.6.0.html#Step.to) (as numbers rather than `Pos` objects).
+
+The [result](http://prosemirror.net/version/0.6.0.html#StepResult) of applying a step no longer contains a
+[position map](http://prosemirror.net/version/0.6.0.html#PosMap). Those can be derived from a step without
+applying it now (using the [`posMap`](http://prosemirror.net/version/0.6.0.html#Step.posMap) method). A
+failing step no longer returns `null`. Rather, a step result contains
+_either_ an error message _or_ an updated document.
+
+You no longer need to provide a [position map](http://prosemirror.net/version/0.6.0.html#PosMap) when
+[inverting](http://prosemirror.net/version/0.6.0.html#Step.invert) a step.
+
+The [`Mappable`](http://prosemirror.net/version/0.6.0.html#Mappable) interface's [`map`](http://prosemirror.net/version/0.6.0.html#Mappable.map)
+method now returns a plain position, instead of a
+[`MapResult`](http://prosemirror.net/version/0.6.0.html#MapResult). Use the
+[`mapResult`](http://prosemirror.net/version/0.6.0.html#Mappable.mapResult) method if you need the additional
+information.
+
+[Position maps](http://prosemirror.net/version/0.6.0.html#PosMap) have gotten much simpler, and are created
+differently now.
+
+[Transforms](http://prosemirror.net/version/0.6.0.html#Transform) no longer silently ignore failing steps
+unless you explicitly tell them to by using the
+[`maybeStep`](http://prosemirror.net/version/0.6.0.html#Transform.maybeStep) method. The
+[`step`](http://prosemirror.net/version/0.6.0.html#Transform.step) method, along with most of the other
+transformation methods, will raise an error when they can't be
+applied.
+
+[`Transform.replace`](http://prosemirror.net/version/0.6.0.html#Transform.replace) now takes a
+[`Slice`](http://prosemirror.net/version/0.6.0.html#Slice) object, rather than a full replacement document
+with start and end positions.
+
+## Bug fixes
+
+An unsoundness in the collaborative editing algorithm's handling of
+replace steps has been fixed.
+
+The SVG icons now also work when you have a `<base>` tag on your page.
+
+Fix select-all on Firefox.
+
+Fix crash in history compression.
+
+Properly handle HTML sublists not wrapped in an `<li>` tag.
+
+Prevent Ctrl-Enter and Ctrl-Backspace on OS X from messing up our
+document.
+
+Handle the case where a `clipboardData` object is present but doesn't
+actually work (iOS).
+
+## New features
+
+[`ProseMirror.flush`](http://prosemirror.net/version/0.6.0.html#ProseMirror.flush) now return a boolean
+indicating whether it redrew the display.
+
+New data type, [`Slice`](http://prosemirror.net/version/0.6.0.html#Slice), which represents a piece of document along
+with information about the nodes on both sides that are ‘open’ (can be
+joined to adjacent nodes when inserting it into a document).
+
+The new [`"transformPasted"`](http://prosemirror.net/version/0.6.0.html#ProseMirror.event_transformPasted)
+event can be used to transform pasted or dragged content, as a parsed
+[`Slice`](http://prosemirror.net/version/0.6.0.html#Slice).
+
+The [`Node.eq`](http://prosemirror.net/version/0.6.0.html#Node.eq) predicate can now be used to determine whether two nodes
+are equal.
+
+The [`join`](http://prosemirror.net/version/0.6.0.html#Transform.join) and [`lift`](http://prosemirror.net/version/0.6.0.html#Transform.lift)
+transform methods now have a `silent` parameter to suppress exceptions
+when they can not be applied.
+
+The `type` parameter to [`setNodeType`](http://prosemirror.net/version/0.6.0.html#Transform.setNodeType) now
+defaults to the node's current type.
+
+[`toDOM`](http://prosemirror.net/version/0.6.0.html#toDOM), [`toHTML`](http://prosemirror.net/version/0.6.0.html#toHTML), and [`toText`](http://prosemirror.net/version/0.6.0.html#toText) now
+accept [`Fragment`](http://prosemirror.net/version/0.6.0.html#Fragment) objects as well as nodes.
+
+List items now have [`lift`](http://prosemirror.net/version/0.6.0.html#list_item:lift) and
+[`sink`](http://prosemirror.net/version/0.6.0.html#list_item:sink) commands.
+
 ## 0.5.1 (2016-03-23)
 
 ### Bug fixes
