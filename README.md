@@ -22,7 +22,7 @@ discussion and support requests, and the
 is the place to report issues.
 
 Documentation can be found on [the
-website](http://prosemirror.net/doc/manual.html).
+website](http://prosemirror.net/docs.html).
 
 ## Run the demo
 
