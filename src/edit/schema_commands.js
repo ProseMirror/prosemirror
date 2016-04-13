@@ -284,6 +284,10 @@ function selectedListItems(pm, type) {
           depth: itemDepth}
 }
 
+// ;; #path="list_item:sink" #kind=command
+// Lift a list item into a parent list.
+//
+// **Keybindings:** Mod-[
 ListItem.register("command", "lift", {
   label: "Lift the selected list items to an outer list",
   run(pm) {
@@ -301,6 +305,10 @@ ListItem.register("command", "lift", {
   keys: ["Mod-[(20)"]
 })
 
+// ;; #path="list_item:sink" #kind=command
+// Move a list item into a sublist.
+//
+// **Keybindings:** Mod-]
 ListItem.register("command", "sink", {
   label: "Sink the selected list items into an inner list",
   run(pm) {
@@ -318,7 +326,7 @@ ListItem.register("command", "sink", {
 })
 
 for (let i = 1; i <= 10; i++)
-  // ;; #path=:heading::make_ #kind=command
+  // ;; #path="heading:make_" #kind=command
   // The commands `make1` to `make6` set the textblocks in the
   // selection to become headers with the given level.
   //
