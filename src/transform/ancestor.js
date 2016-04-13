@@ -116,10 +116,11 @@ function findLiftable(from, to) {
   }
 }
 
-// :: (number, ?number) → Transform
+// :: (number, ?number, ?bool) → Transform
 // Lift the nearest liftable ancestor of the [sibling
-// range](#Node.siblingRange) of the given positions out of its
-// parent (or do nothing if no such node exists).
+// range](#Node.siblingRange) of the given positions out of its parent
+// (or do nothing if no such node exists). When `silent` is true, this
+// won't raise an error when the lift is impossible.
 Transform.prototype.lift = function(from, to = from, silent = false) {
   let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
   let liftable = findLiftable($from, $to)
