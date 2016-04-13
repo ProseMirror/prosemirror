@@ -84,11 +84,11 @@ export function dispatchKey(pm, name, e) {
   if (result == "multi")
     pm.input.keySeq = name
 
-  if (result == "handled" || result == "multi")
+  if ((result == "handled" || result == "multi") && e)
     e.preventDefault()
 
   if (seq && !result && /\'$/.test(name)) {
-    e.preventDefault()
+    if (e) e.preventDefault()
     return true
   }
   return !!result
@@ -261,86 +261,99 @@ handlers.contextmenu = (pm, e) => {
   handleNodeClick(pm, "handleContextMenu", e, realTarget(pm, e), false)
 }
 
+// Input compositions are hard. Mostly because the events fired by
+// browsers are A) very unpredictable and inconsistent, and B) not
+// cancelable.
+//
+// ProseMirror has the problem that it must not update the DOM during
+// a composition, or the browser will cancel it. What it does is keep
+// long-running operations (delayed DOM updates) when a composition is
+// active.
+//
+// We _do not_ trust the information in the composition events which,
+// apart from being very uninformative to begin with, is often just
+// plain wrong. Instead, when a composition ends, we parse the dom
+// around the original selection, and derive an update from that.
+
 function isComposing(pm) {
   return pm.operation && pm.operation.composing
 }
 
-function abortComposition() {
-  // Ensure a composition is abandoned by resetting the selection
-  let sel = window.getSelection()
-  if (sel.rangeCount) {
-    let range = sel.getRangeAt(0)
-    sel.removeAllRanges()
-    sel.addRange(range)
+function startComposition(pm, dataLen, realStart) {
+  pm.ensureOperation({noFlush: true, readSelection: realStart}).composing = {
+    ended: false,
+    applied: false,
+    margin: dataLen
   }
+  pm.unscheduleFlush()
 }
 
-export function forceCompositionEnd(pm) {
-  if (pm.operation.composing.ended) {
-    endComposition(pm, false)
-  } else {
-    pm.operation.composing = null
-    abortComposition()
-  }
-}
-
-function startComposition(pm, dataLen) {
-  if (isComposing(pm) || !hasFocus(pm)) return
-  if (pm.operation) {
-    abortComposition()
-    pm.flush()
-    return false
-  }
-
-  pm.startOperation({
-    noFlush: true,
-    composing: {ended: false, margin: dataLen}
-  })
-  let $pos = pm.doc.resolve(pm.selection.from)
-  pm.markRangeDirty($pos.before($pos.depth), $pos.after($pos.depth))
-  return true
-}
-
-function endComposition(pm, andFlush) {
-  // FIXME store initial selection, map forward, base read range on that (?)
-  let change = readCompositionChange(pm, pm.operation.composing.margin)
+export function applyComposition(pm, andFlush) {
+  let composing = pm.operation.composing
+  if (composing.applied) return
+  let change = readCompositionChange(pm, composing.margin)
   if (change) change.transform.apply(pm.apply.scroll)
-  pm.operation.composing = null
+  composing.applied = true
+  // Operations that read DOM changes must be flushed, to make sure
+  // subsequent DOM changes find a clean DOM.
   if (andFlush) pm.flush()
 }
 
 handlers.compositionstart = (pm, e) => {
-  startComposition(pm, e.data ? e.data.length : 0)
+  if (!isComposing(pm) && hasFocus(pm))
+    startComposition(pm, e.data ? e.data.length : 0, true)
 }
 
 handlers.compositionupdate = pm => {
-  startComposition(pm, 0)
+  if (!isComposing(pm) && hasFocus(pm))
+    startComposition(pm, 0, false)
 }
 
-handlers.compositionend = pm => {
-  if (!isComposing(pm) && !startComposition(pm, 0)) return
+handlers.compositionend = (pm, e) => {
+  if (!hasFocus(pm)) return
+  let composing = isComposing(pm)
+  if (!composing) {
+    // We received a compositionend without having seen any previous
+    // events for the composition. If there's data in the event
+    // object, we assume that it's a real change, and start a
+    // composition. Otherwise, we just ignore it.
+    if (e.data) startComposition(pm, e.data.length, false)
+    else return
+  } else if (composing.applied) {
+    // This happens when a flush during composition causes a
+    // syncronous compositionend.
+    return
+  }
+
   clearTimeout(pm.input.finishComposing)
   pm.operation.composing.ended = true
+  // Applying the composition right away from this event confuses
+  // Chrome (and probably other browsers), causing them to re-update
+  // the DOM afterwards. So we apply the composition either in the
+  // next input event, or after a short interval.
   pm.input.finishComposing = window.setTimeout(() => {
     let composing = isComposing(pm)
-    if (composing && composing.ended) endComposition(pm, true)
-  })
+    if (composing && composing.ended) applyComposition(pm, true)
+  }, 20)
 }
 
 handlers.input = (pm, e) => {
   if (!hasFocus(pm)) return
   let composing = isComposing(pm)
   if (composing) {
-    if (composing.ended) endComposition(pm, true)
+    // Ignore input events during composition, except when the
+    // composition has ended, in which case we can apply it.
+    if (composing.ended) applyComposition(pm, true)
     return
   }
 
-  pm.startOperation({readSelection: false})
+  // Read the changed DOM and derive an update from that.
   let change = readInputChange(pm)
   if (change && change.key)
-    dispatchKey(pm, change.key, e)
+    dispatchKey(pm, change.key)
   else if (change && change.transform)
     pm.apply(change.transform, pm.apply.scroll)
+  pm.flush()
 }
 
 function toClipboard(doc, from, to, dataTransfer) {

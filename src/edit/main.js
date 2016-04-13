@@ -14,7 +14,7 @@ import {SelectionState, TextSelection, NodeSelection,
         findSelectionAtStart, hasFocus} from "./selection"
 import {scrollIntoView, posAtCoords, coordsAtPos} from "./dompos"
 import {draw, redraw} from "./draw"
-import {Input, forceCompositionEnd} from "./input"
+import {Input, applyComposition} from "./input"
 import {History} from "./history"
 import {RangeStore, MarkedRange} from "./range"
 import {EditorTransform} from "./transform"
@@ -164,6 +164,7 @@ export class ProseMirror {
     this.signal("beforeSetDoc", doc, sel)
     this.ensureOperation()
     this.setDocInner(doc)
+    this.operation.docSet = true
     this.sel.set(sel, true)
     // :: (doc: Node, selection: Selection) #path=ProseMirror#events#setDoc
     // Fired when [`setDoc`](#ProseMirror.setDoc) is called, after
@@ -174,6 +175,7 @@ export class ProseMirror {
   updateDoc(doc, mapping, selection) {
     this.ensureOperation()
     this.ranges.transform(mapping)
+    this.operation.mappings.push(mapping)
     this.doc = doc
     this.sel.setAndSignal(selection || this.sel.range.map(doc, mapping))
     // :: () #path=ProseMirror#events#change
@@ -261,13 +263,21 @@ export class ProseMirror {
   // Start an operation and schedule a flush so that any effect of
   // the operation shows up in the DOM.
   startOperation(options) {
-    this.operation = new Operation(this, options)
+    this.operation = new Operation(this)
     if (!(options && options.readSelection === false) && this.sel.readFromDOM())
       this.operation.sel = this.sel.range
 
-    if (this.flushScheduled == null && !(options && options.noFlush))
+    if (this.flushScheduled == null)
       this.flushScheduled = requestAnimationFrame(() => this.flush())
     return this.operation
+  }
+
+  // Cancel any scheduled operation flush.
+  unscheduleFlush() {
+    if (this.flushScheduled != null) {
+      cancelAnimationFrame(this.flushScheduled)
+      this.flushScheduled = null
+    }
   }
 
   // :: () → bool
@@ -281,10 +291,7 @@ export class ProseMirror {
   //
   // Returns true when it updated the document DOM.
   flush() {
-    if (this.flushScheduled != null) {
-      cancelAnimationFrame(this.flushScheduled)
-      this.flushScheduled = null
-    }
+    this.unscheduleFlush()
 
     if (!document.body.contains(this.wrapper) || !this.operation) return false
     // :: () #path=ProseMirror#events#flushing
@@ -293,8 +300,9 @@ export class ProseMirror {
     this.signal("flushing")
 
     let op = this.operation, redrawn = false
-    if (op.composing) forceCompositionEnd(this)
     if (!op) return false
+    if (op.composing) applyComposition(this)
+
     this.operation = null
     this.accurateSelection = true
 
@@ -492,10 +500,10 @@ export class ProseMirror {
     return this.commandKeys[name] = null
   }
 
-  markRangeDirty(from, to) {
+  markRangeDirty(from, to, doc = this.doc) {
     this.ensureOperation()
     let dirty = this.dirtyNodes
-    let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
+    let $from = doc.resolve(from), $to = doc.resolve(to)
     let same = $from.sameDepth($to)
     for (let depth = 0; depth <= same; depth++) {
       let child = $from.node(depth)
@@ -541,11 +549,13 @@ eventMixin(ProseMirror)
 // whether a focus needs to happen on flush, and whether something
 // needs to be scrolled into view.
 class Operation {
-  constructor(pm, options) {
+  constructor(pm) {
     this.doc = pm.doc
+    this.docSet = false
     this.sel = pm.sel.range
     this.scrollIntoView = false
     this.focus = false
-    this.composing = options && options.composing
+    this.mappings = []
+    this.composing = null
   }
 }

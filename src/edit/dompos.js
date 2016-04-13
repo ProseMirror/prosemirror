@@ -64,15 +64,15 @@ export function childContainer(dom) {
 // : (DOMNode, number) → {node: DOMNode, offset: number}
 // Find the DOM node and offset into that node that the given document
 // position refers to.
-export function DOMFromPos(pm, pos) {
-  if (pm.operation && pm.doc != pm.operation.doc)
+export function DOMFromPos(pm, pos, liberal) {
+  if (!liberal && pm.operation && pm.doc != pm.operation.doc)
     throw new RangeError("Resolving a position in an outdated DOM structure")
 
   let container = pm.content, offset = pos
   outer: for (;;) {
     for (let child = container.firstChild, i = 0;; child = child.nextSibling, i++) {
       if (!child) {
-        if (offset) throw new RangeError("Failed to find node at " + pos)
+        if (offset && !liberal) throw new RangeError("Failed to find node at " + pos + " rem = " + offset)
         return {node: container, offset: i}
       }
 

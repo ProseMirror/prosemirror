@@ -1,7 +1,7 @@
 import {ProseMirrorError} from "../util/error"
 
 import {Step} from "./step"
-import {MapResult} from "./map"
+import {mapThrough, mapThroughResult} from "./map"
 
 export class TransformError extends ProseMirrorError {}
 
@@ -46,20 +46,10 @@ export class Transform {
   // :: (number, ?number) → MapResult
   // Map a position through the whole transformation (all the position
   // maps in [`maps`](#Transform.maps)), and return the result.
-  mapResult(pos, bias) { return this._map(pos, bias, false) }
+  mapResult(pos, bias) { return mapThroughResult(this.maps, pos, bias) }
 
   // :: (number, ?number) → number
   // Map a position through the whole transformation, and return the
   // mapped position.
-  map(pos, bias) { return this._map(pos, bias, true) }
-
-  _map(pos, bias, simple) {
-    let deleted = false
-    for (let i = 0; i < this.maps.length; i++) {
-      let result = this.maps[i].mapResult(pos, bias)
-      pos = result.pos
-      if (result.deleted) deleted = true
-    }
-    return simple ? pos : new MapResult(pos, deleted)
-  }
+  map(pos, bias) { return mapThrough(this.maps, pos, bias) }
 }

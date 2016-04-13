@@ -216,3 +216,19 @@ export class Remapping {
     return maps.join("\n")
   }
 }
+
+export function mapThrough(mappables, pos, bias) {
+  for (let i = 0; i < mappables.length; i++)
+    pos = mappables[i].map(pos, bias)
+  return pos
+}
+
+export function mapThroughResult(mappables, pos, bias) {
+  let deleted = false
+  for (let i = 0; i < mappables.length; i++) {
+    let result = mappables[i].mapResult(pos, bias)
+    pos = result.pos
+    if (result.deleted) deleted = true
+  }
+  return new MapResult(pos, deleted)
+}

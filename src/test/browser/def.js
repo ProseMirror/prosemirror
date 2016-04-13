@@ -36,5 +36,4 @@ export function namespace(space, defaults) {
   }
 }
 
-const event = {preventDefault: () => null}
-export function dispatch(pm, key) { dispatchKey(pm, key, event) }
+export function dispatch(pm, key) { dispatchKey(pm, key) }

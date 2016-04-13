@@ -32,7 +32,7 @@ export function requestAnimationFrame(f) {
   else return setTimeout(f, 10)
 }
 
-export function cancelAnimationFreame(handle) {
+export function cancelAnimationFrame(handle) {
   if (reqFrame) return cancelFrame(handle)
   else clearTimeout(handle)
 }
