@@ -40,58 +40,58 @@ export class Input {
 
     pm.on("selectionChange", () => this.storedMarks = null)
   }
-}
 
-// Dispatch a key press to the internal keymaps, which will override the default
-// DOM behavior.
-export function dispatchKey(pm, name, e) {
-  let seq = pm.input.keySeq
-  // If the previous key should be used in sequence with this one, modify the name accordingly.
-  if (seq) {
-    if (Keymap.isModifierKey(name)) return true
-    clearTimeout(stopSeq)
-    stopSeq = setTimeout(function() {
-      if (pm.input.keySeq == seq)
-        pm.input.keySeq = null
-    }, 50)
-    name = seq + " " + name
-  }
-
-  let handle = function(bound) {
-    if (bound === false) return "nothing"
-    if (bound == "...") return "multi"
-    if (bound == null) return false
-
-    let result = false
-    if (Array.isArray(bound)) {
-      for (let i = 0; result === false && i < bound.length; i++)
-        result = handle(bound[i])
-    } else if (typeof bound == "string") {
-      result = pm.execCommand(bound)
-    } else {
-      result = bound(pm)
+  // Dispatch a key press to the internal keymaps, which will override the default
+  // DOM behavior.
+  dispatchKey(name, e) {
+    let pm = this.pm, seq = pm.input.keySeq
+    // If the previous key should be used in sequence with this one, modify the name accordingly.
+    if (seq) {
+      if (Keymap.isModifierKey(name)) return true
+      clearTimeout(stopSeq)
+      stopSeq = setTimeout(function() {
+        if (pm.input.keySeq == seq)
+          pm.input.keySeq = null
+      }, 50)
+      name = seq + " " + name
     }
-    return result == false ? false : "handled"
+
+    let handle = function(bound) {
+      if (bound === false) return "nothing"
+      if (bound == "...") return "multi"
+      if (bound == null) return false
+
+      let result = false
+      if (Array.isArray(bound)) {
+        for (let i = 0; result === false && i < bound.length; i++)
+          result = handle(bound[i])
+      } else if (typeof bound == "string") {
+        result = pm.execCommand(bound)
+      } else {
+        result = bound(pm)
+      }
+      return result == false ? false : "handled"
+    }
+
+    let result
+    for (let i = 0; !result && i < pm.input.keymaps.length; i++)
+      result = handle(pm.input.keymaps[i].map.lookup(name, pm))
+    if (!result)
+      result = handle(pm.input.baseKeymap.lookup(name, pm)) || handle(captureKeys.lookup(name))
+
+    // If the key should be used in sequence with the next key, store the keyname internally.
+    if (result == "multi")
+      pm.input.keySeq = name
+
+    if ((result == "handled" || result == "multi") && e)
+      e.preventDefault()
+
+    if (seq && !result && /\'$/.test(name)) {
+      if (e) e.preventDefault()
+      return true
+    }
+    return !!result
   }
-
-  let result
-  for (let i = 0; !result && i < pm.input.keymaps.length; i++)
-    result = handle(pm.input.keymaps[i].map.lookup(name, pm))
-  if (!result)
-    result = handle(pm.input.baseKeymap.lookup(name, pm)) || handle(captureKeys.lookup(name))
-
-  // If the key should be used in sequence with the next key, store the keyname internally.
-  if (result == "multi")
-    pm.input.keySeq = name
-
-  if ((result == "handled" || result == "multi") && e)
-    e.preventDefault()
-
-  if (seq && !result && /\'$/.test(name)) {
-    if (e) e.preventDefault()
-    return true
-  }
-  return !!result
 }
 
 handlers.keydown = (pm, e) => {
@@ -105,7 +105,7 @@ handlers.keydown = (pm, e) => {
   if (e.keyCode == 16) pm.input.shiftKey = true
   if (isComposing(pm)) return
   let name = Keymap.keyName(e)
-  if (name && dispatchKey(pm, name, e)) return
+  if (name && pm.input.dispatchKey(name, e)) return
   pm.sel.fastPoll()
 }
 
@@ -130,7 +130,7 @@ function inputText(pm, range, text) {
 handlers.keypress = (pm, e) => {
   if (!hasFocus(pm) || isComposing(pm) || !e.charCode ||
       e.ctrlKey && !e.altKey || browser.mac && e.metaKey) return
-  if (dispatchKey(pm, Keymap.keyName(e), e)) return
+  if (pm.input.dispatchKey(Keymap.keyName(e), e)) return
   let sel = pm.selection
   if (sel.node && sel.node.contains == null) {
     pm.tr.delete(sel.from, sel.to).apply()
@@ -291,8 +291,7 @@ function startComposition(pm, dataLen, realStart) {
 export function applyComposition(pm, andFlush) {
   let composing = pm.operation.composing
   if (composing.applied) return
-  let change = readCompositionChange(pm, composing.margin)
-  if (change) change.transform.apply(pm.apply.scroll)
+  readCompositionChange(pm, composing.margin)
   composing.applied = true
   // Operations that read DOM changes must be flushed, to make sure
   // subsequent DOM changes find a clean DOM.
@@ -337,7 +336,7 @@ handlers.compositionend = (pm, e) => {
   }, 20)
 }
 
-handlers.input = (pm, e) => {
+handlers.input = pm => {
   if (!hasFocus(pm)) return
   let composing = isComposing(pm)
   if (composing) {
@@ -348,11 +347,7 @@ handlers.input = (pm, e) => {
   }
 
   // Read the changed DOM and derive an update from that.
-  let change = readInputChange(pm)
-  if (change && change.key)
-    dispatchKey(pm, change.key)
-  else if (change && change.transform)
-    pm.apply(change.transform, pm.apply.scroll)
+  readInputChange(pm)
   pm.flush()
 }
 

@@ -1,6 +1,5 @@
 import {defTest} from "../tests"
 import {ProseMirror} from "../../edit/main"
-import {dispatchKey} from "../../edit/input"
 
 let tempPMs = null
 
@@ -36,4 +35,4 @@ export function namespace(space, defaults) {
   }
 }
 
-export function dispatch(pm, key) { dispatchKey(pm, key) }
+export function dispatch(pm, key) { pm.input.dispatchKey(key) }

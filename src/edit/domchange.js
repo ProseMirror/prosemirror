@@ -7,7 +7,7 @@ import {DOMFromPos} from "./dompos"
 
 export function readInputChange(pm) {
   pm.ensureOperation({readSelection: false})
-  return readDOMChange(pm, rangeAroundSelection(pm), true)
+  return readDOMChange(pm, rangeAroundSelection(pm))
 }
 
 export function readCompositionChange(pm, margin) {
@@ -88,48 +88,55 @@ function rangeAroundComposition(pm, margin) {
   return {from: nodeStart + startOff, to: nodeStart + endOff}
 }
 
-function readDOMChange(pm, range, detectEnter) {
+function readDOMChange(pm, range) {
   let op = pm.operation
   // If the document was reset since the start of the current
   // operation, we can't do anything useful with the change to the
   // DOM, so we discard it.
   if (op.docSet) {
     pm.markAllDirty()
-    return false
+    return
   }
 
   let parsed = parseBetween(pm, range.from, range.to)
   let compare = op.doc.slice(range.from, range.to)
-  let changeFrom = findDiffStart(compare.content, parsed.content, range.from)
-  if (changeFrom == null) return false
-
-  let changeTo = findDiffEndConstrained(compare.content, parsed.content, changeFrom,
-                                        range.to, range.from + parsed.content.size)
-  let fromMapped = mapThroughResult(op.mappings, changeFrom)
-  let toMapped = mapThroughResult(op.mappings, changeTo.a)
-  if (fromMapped.deleted && toMapped.deleted) return false
+  let change = findDiff(compare.content, parsed.content, range.from, op.sel.from)
+  if (!change) return
+  let fromMapped = mapThroughResult(op.mappings, change.start)
+  let toMapped = mapThroughResult(op.mappings, change.endA)
+  if (fromMapped.deleted && toMapped.deleted) return
 
   // Mark nodes touched by this change as 'to be redrawn'
-  markDirtyFor(pm, op.doc, changeFrom, changeTo.a)
+  markDirtyFor(pm, op.doc, change.start, change.endA)
 
-  if (detectEnter) {
-    let $from = parsed.resolveNoCache(changeFrom - range.from)
-    let $to = parsed.resolveNoCache(changeTo.b - range.from), nextSel
-    if (!$from.sameParent($to) && $from.pos < parsed.content.size &&
-        (nextSel = findSelectionFrom(parsed, $from.pos + 1, 1, true)) &&
-        nextSel.head == $to.pos)
-      return {key: "Enter"}
+  let $from = parsed.resolveNoCache(change.start - range.from)
+  let $to = parsed.resolveNoCache(change.endB - range.from), nextSel
+  if (!$from.sameParent($to) && $from.pos < parsed.content.size &&
+      (nextSel = findSelectionFrom(parsed, $from.pos + 1, 1, true)) &&
+      nextSel.head == $to.pos) {
+    pm.input.dispatchKey("Enter")
+  } else {
+    let slice = parsed.slice(change.start - range.from, change.endB - range.from)
+    pm.tr.replace(fromMapped.pos, toMapped.pos, slice).apply(pm.apply.scroll)
   }
-  let slice = parsed.slice(changeFrom - range.from, changeTo.b - range.from)
-  return {transform: pm.tr.replace(fromMapped.pos, toMapped.pos, slice)}
 }
 
-function findDiffEndConstrained(a, b, start, endA, endB) {
-  let end = findDiffEnd(a, b, endA, endB)
-  if (!end) return end
-  if (end.a < start) return {a: start, b: end.b + (start - end.a)}
-  if (end.b < start) return {a: end.a + (start - end.b), b: start}
-  return end
+function findDiff(a, b, pos, preferedStart) {
+  let start = findDiffStart(a, b, pos)
+  if (!start) return null
+  let {a: endA, b: endB} = findDiffEnd(a, b, pos + a.size, pos + b.size)
+  if (endA < start) {
+    let move = preferedStart <= start && preferedStart >= endA ? start - preferedStart : 0
+    start -= move
+    endB = start + (endB - endA)
+    endA = start
+  } else if (endB < start) {
+    let move = preferedStart <= start && preferedStart >= endB ? start - preferedStart : 0
+    start -= move
+    endA = start + (endA - endB)
+    endB = start
+  }
+  return {start, endA, endB}
 }
 
 function markDirtyFor(pm, doc, start, end) {
