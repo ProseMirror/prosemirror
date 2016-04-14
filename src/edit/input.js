@@ -156,8 +156,13 @@ handlers.keypress = (pm, e) => {
       e.ctrlKey && !e.altKey || browser.mac && e.metaKey) return
   if (pm.input.dispatchKey(Keymap.keyName(e), e)) return
   let sel = pm.selection
-  pm.input.insertText(sel.from, sel.to, String.fromCharCode(e.charCode))
-  e.preventDefault()
+  // On iOS, let input through, because if we handle it the virtual
+  // keyboard's default case doesn't update (it only does so when the
+  // user types or taps, not on selection updates from JavaScript).
+  if (!browser.ios) {
+    pm.input.insertText(sel.from, sel.to, String.fromCharCode(e.charCode))
+    e.preventDefault()
+  }
 }
 
 function realTarget(pm, mouseEvent) {

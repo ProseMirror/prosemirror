@@ -45,7 +45,8 @@ export const browser = {
   ie_upto10,
   ie_11up,
   ie: ie_upto10 || ie_11up,
-  gecko: /gecko\/\d/i.test(navigator.userAgent)
+  gecko: /gecko\/\d/i.test(navigator.userAgent),
+  ios: /AppleWebKit/.test(navigator.userAgent) && /Mobile\/\w+/.test(navigator.userAgent)
 }
 
 
