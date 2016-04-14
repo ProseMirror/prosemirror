@@ -1,7 +1,7 @@
-import {readInputChange} from "../../edit/domchange"
+import {readInputChange, readCompositionChange} from "../../edit/domchange"
 
 import {namespace} from "./def"
-import {doc, p, em, blockquote} from "../build"
+import {doc, p, em, img, strong, blockquote} from "../build"
 import {cmpNode} from "../cmp"
 import {findTextNode} from "./test-selection"
 
@@ -73,3 +73,35 @@ test("detect_enter", pm => {
   readInputChange(pm)
   cmpNode(pm.doc, doc(blockquote(p("foo")), p()))
 }, {doc: doc(blockquote(p("foo"), p("<a>")))})
+
+test("composition_simple", pm => {
+  findTextNode(pm.content, "hello").nodeValue = "hellox"
+  pm.startOperation()
+  readCompositionChange(pm, 0)
+  cmpNode(pm.doc, doc(p("hellox")))
+})
+
+test("composition_del_inside_markup", pm => {
+  pm.flush()
+  findTextNode(pm.content, "cd").nodeValue = "c"
+  pm.startOperation()
+  readCompositionChange(pm, 0)
+  cmpNode(pm.doc, doc(p("a", em("b", img, strong("c")), "e")))
+}, {doc: doc(p("a", em("b", img, strong("cd<a>")), "e"))})
+
+test("composition_type_inside_markup", pm => {
+  pm.flush()
+  findTextNode(pm.content, "cd").nodeValue = "cdxy"
+  pm.startOperation()
+  readCompositionChange(pm, 0)
+  cmpNode(pm.doc, doc(p("a", em("b", img, strong("cdxy")), "e")))
+}, {doc: doc(p("a", em("b", img, strong("cd<a>")), "e"))})
+
+test("composition_type_ambiguous", pm => {
+  pm.flush()
+  pm.execCommand("strong:toggle")
+  findTextNode(pm.content, "foo").nodeValue = "fooo"
+  pm.startOperation()
+  readCompositionChange(pm, 0)
+  cmpNode(pm.doc, doc(p("fo", strong("o"), "o")))
+}, {doc: doc(p("fo<a>o"))})
