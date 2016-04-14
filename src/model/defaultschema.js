@@ -28,6 +28,7 @@ export class BulletList extends Block {
 // ;; The default list item node type.
 export class ListItem extends Block {
   get kind() { return NodeKind.list_item }
+  get group() { return "list_item" }
 }
 
 // ;; The default horizontal rule node type.

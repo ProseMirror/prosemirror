@@ -372,6 +372,7 @@ NodeKind.text = new NodeKind("text", [NodeKind.inline])
 export class Block extends NodeType {
   get contains() { return NodeKind.block }
   get kind() { return NodeKind.block }
+  get group() { return "block" }
   get isBlock() { return true }
 
   get canBeEmpty() { return this.contains == null }
@@ -396,6 +397,7 @@ export class Textblock extends Block {
 // ;; Base type for inline node types.
 export class Inline extends NodeType {
   get kind() { return NodeKind.inline }
+  get group() { return "inline" }
   get isInline() { return true }
 }
 
