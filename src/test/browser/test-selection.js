@@ -1,6 +1,6 @@
 import {namespace} from "./def"
 import {doc, blockquote, p, em, img, strong, code, br, hr} from "../build"
-import {cmp, cmpNode, gt, cmpStr} from "../cmp"
+import {cmp, cmpNode, gt} from "../cmp"
 
 function allPositions(doc) {
   let found = []
@@ -42,7 +42,7 @@ test("read", pm => {
     setSel(node, offset)
     pm.sel.readFromDOM()
     let sel = pm.selection
-    cmpStr(sel.head == null ? sel.from : sel.head, expected, comment)
+    cmp(sel.head == null ? sel.from : sel.head, expected, comment)
     pm.flush()
   }
   let one = findTextNode(pm.content, "one")
@@ -139,7 +139,7 @@ test("coords_cornercases", pm => {
   allPositions(pm.doc).forEach(pos => {
     let coords = pm.coordsAtPos(pos)
     let found = pm.posAtCoords(coords)
-    cmpStr(found, pos)
+    cmp(found, pos)
     pm.setTextSelection(pos)
     pm.flush()
   })
@@ -151,7 +151,7 @@ test("coords_round_trip", pm => {
   ;[1, 2, 4, 7, 14, 15].forEach(pos => {
     let coords = pm.coordsAtPos(pos)
     let found = pm.posAtCoords(coords)
-    cmpStr(found, pos)
+    cmp(found, pos)
   })
 }, {
   doc: doc(p("one"), blockquote(p("two"), p("three")))
@@ -159,14 +159,14 @@ test("coords_round_trip", pm => {
 
 test("follow_change", pm => {
   pm.tr.insertText(1, "xy").apply()
-  cmpStr(pm.selection.head, 3)
-  cmpStr(pm.selection.anchor, 3)
+  cmp(pm.selection.head, 3)
+  cmp(pm.selection.anchor, 3)
   pm.tr.insertText(1, "zq").apply()
-  cmpStr(pm.selection.head, 5)
-  cmpStr(pm.selection.anchor, 5)
+  cmp(pm.selection.head, 5)
+  cmp(pm.selection.anchor, 5)
   pm.tr.insertText(7, "uv").apply()
-  cmpStr(pm.selection.head, 5)
-  cmpStr(pm.selection.anchor, 5)
+  cmp(pm.selection.head, 5)
+  cmp(pm.selection.anchor, 5)
 }, {
   doc: doc(p("hi"))
 })
@@ -175,11 +175,18 @@ test("replace_with_block", pm => {
   pm.setTextSelection(4)
   pm.tr.replaceSelection(pm.schema.node("horizontal_rule")).apply()
   cmpNode(pm.doc, doc(p("foo"), hr, p("bar")), "split paragraph")
-  cmpStr(pm.selection.head, 7, "moved after rule")
+  cmp(pm.selection.head, 7, "moved after rule")
   pm.setTextSelection(10)
   pm.tr.replaceSelection(pm.schema.node("horizontal_rule")).apply()
   cmpNode(pm.doc, doc(p("foo"), hr, p("bar"), hr), "inserted after")
-  cmpStr(pm.selection.head, 10, "stayed in paragraph")
+  cmp(pm.selection.head, 10, "stayed in paragraph")
 }, {
   doc: doc(p("foobar"))
 })
+
+test("type_over_hr", pm => {
+  pm.input.insertText(pm.selection.from, pm.selection.to, "x")
+  cmpNode(pm.doc, doc(p("a"), p("x"), p("b")))
+  cmp(pm.selection.head, 5)
+  cmp(pm.selection.anchor, 5)
+}, {doc: doc(p("a"), "<a>", hr, p("b"))})

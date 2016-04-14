@@ -53,10 +53,13 @@ function isAtStart($pos, depth) {
   return $pos.parentOffset == 0
 }
 
-// FIXME special case for inside-single-textblock-not-at-sides situation
-// (To avoid re-parsing huge textblocks for tiny changes)
 function rangeAroundSelection(pm) {
   let {sel, doc} = pm.operation, $from = doc.resolve(sel.from), $to = doc.resolve(sel.to)
+  // When the selection is entirely inside a text block, use
+  // rangeAroundComposition to get a narrow range.
+  if ($from.sameParent($to) && $from.parent.isTextblock && $from.parentOffset && $to.parentOffset < $to.parent.content.size)
+    return rangeAroundComposition(pm, 0)
+
   for (let depth = 0;; depth++) {
     let fromStart = isAtStart($from, depth + 1), toEnd = isAtEnd($to, depth + 1)
     if (fromStart || toEnd || $from.index(depth) != $to.index(depth) || $to.node(depth).isTextblock) {
@@ -74,9 +77,9 @@ function rangeAroundComposition(pm, margin) {
   let {sel, doc} = pm.operation
   let $from = doc.resolve(sel.from), $to = doc.resolve(sel.to)
   if (!$from.sameParent($to)) return rangeAroundSelection(pm)
-  let startOff = Math.max(0, Math.min($from.parentOffset, $to.parentOffset) - margin)
+  let startOff = Math.max(0, $from.parentOffset - margin)
   let size = $from.parent.content.size
-  let endOff = Math.min(size, Math.max($from.parentOffset, $to.parentOffset) + margin)
+  let endOff = Math.min(size, $to.parentOffset + margin)
 
   if (startOff > 0)
     startOff = $from.parent.childBefore(startOff).offset

@@ -6,7 +6,7 @@ import {captureKeys} from "./capturekeys"
 import {elt, browser, contains} from "../dom"
 
 import {readInputChange, readCompositionChange} from "./domchange"
-import {TextSelection, findSelectionAtStart, findSelectionAtEnd, findSelectionNear, hasFocus} from "./selection"
+import {findSelectionAtStart, findSelectionAtEnd, findSelectionNear, hasFocus} from "./selection"
 import {posBeforeFromDOM, handleNodeClick, selectableNodeAbove} from "./dompos"
 
 let stopSeq = null
@@ -98,9 +98,10 @@ export class Input {
   insertText(from, to, text) {
     if (from == to && !text) return
     let pm = this.pm, marks = pm.input.storedMarks || pm.doc.marksAt(from)
-    pm.tr.replaceWith(from, to, text ? pm.schema.text(text, marks) : null).apply({
+    let tr = pm.tr.replaceWith(from, to, text ? pm.schema.text(text, marks) : null)
+    tr.apply({
       scrollIntoView: true,
-      selection: new TextSelection(from + text.length)
+      selection: findSelectionNear(tr.doc, tr.map(to), -1, true)
     })
     // :: () #path=ProseMirror#events#textInput
     // Fired when the user types text into the editor.
@@ -155,10 +156,6 @@ handlers.keypress = (pm, e) => {
       e.ctrlKey && !e.altKey || browser.mac && e.metaKey) return
   if (pm.input.dispatchKey(Keymap.keyName(e), e)) return
   let sel = pm.selection
-  if (sel.node && sel.node.contains == null) {
-    pm.tr.delete(sel.from, sel.to).apply()
-    sel = pm.selection
-  }
   pm.input.insertText(sel.from, sel.to, String.fromCharCode(e.charCode))
   e.preventDefault()
 }
