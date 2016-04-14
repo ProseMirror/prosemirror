@@ -1,4 +1,4 @@
-var ProseMirror = require("../dist/edit/main").ProseMirror
+var ProseMirror = require("../dist/edit").ProseMirror
 require("../dist/inputrules/autoinput")
 require("../dist/menu/tooltipmenu")
 require("../dist/menu/menubar")
