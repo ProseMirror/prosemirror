@@ -161,11 +161,11 @@ Transform.prototype.lift = function(from, to = from, silent = false) {
   return this.step("ancestor", start, end, {depth: shared - depth})
 }
 
-// :: (Node, number, ?number, NodeType) → bool
+// :: (Node, number, number, NodeType) → bool
 // Determines whether the [sibling range](#Node.siblingRange) of the
 // given positions can be wrapped in the given node type.
 export function canWrap(doc, from, to, type) {
-  return !!checkWrap(doc.resolve(from), doc.resolve(to == null ? from : to), type)
+  return !!checkWrap(doc.resolve(from), doc.resolve(to), type)
 }
 
 function checkWrap($from, $to, type) {

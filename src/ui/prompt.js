@@ -203,7 +203,7 @@ ParamPrompt.prototype.paramTypes.select = {
   }
 }
 
-// :: (ProseMirror, DOMNode, ?Object) → {close: ()}
+// :: (ProseMirror, DOMNode, ?{pos?: {left: number, top: number}, onClose?: ()}) → {close: ()}
 // Open a dialog box for the given editor, putting `content` inside of
 // it. The `close` method on the return value can be used to
 // explicitly close the dialog again. The following options are
