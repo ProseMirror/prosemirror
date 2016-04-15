@@ -221,12 +221,45 @@ export class NodeType extends SchemaItem {
     return type.kind && type.kind.isSubKind(this.contains)
   }
 
-  // :: (NodeType) → bool
-  // Test whether the nodes that can be contained in the given node
-  // type are a sub-type of the nodes that can be contained in this
-  // type.
-  canContainContent(type) {
-    return type.contains && type.contains.isSubKind(this.contains)
+  appendableTo(other) {
+    return this.contentExpr.appendableTo(other.contentExpr)
+  }
+
+  containsOnly(node) { // FIXME rename?
+    return this.contentExpr.containsOnly(node)
+  }
+
+  // FIXME cache
+  // FIXME make this the actual findConnection
+  findConnectionRestInner(target) {
+    let seen = Object.create(null), active = [{type: this, via: []}]
+    while (active.length) {
+      let current = active.shift()
+      let possible = current.type.contentExpr.possibleTypes(current.type.defaultAttrs)
+      for (let i = 0; i < possible.length; i++) {
+        let type = possible[i]
+        if (type == target) return current.via
+        if (!type.isLeaf && type.defaultAttrs && !(type.name in seen)) {
+          active.push({type, via: current.via.concat(type)})
+          seen[type.name] = true
+        }
+      }
+    }
+  }
+
+  findConnectionRest(target) {
+    let cache = this.schema.cached.connections, key = this.name + "-" + target.name
+    if (key in cache) return cache[key]
+    return cache[key] = this.findConnectionRestInner(target)
+  }
+
+  findConnectionNEW(target, attrs, builder) {
+    let possible = this.contentExpr.possibleTypes(attrs, builder && builder.pos)
+    if (possible.indexOf(target) > -1) return []
+    for (let i = 0; i < possible.length; i++) {
+      let rest = possible[i].findConnectionRest(target)
+      if (rest) return [possible[i]].concat(rest)
+    }
   }
 
   // :: (NodeType) → ?[NodeType]

@@ -1,6 +1,7 @@
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmMark, StrongMark, LinkMark, CodeMark, Node, Fragment} from "../model"
+        EmMark, StrongMark, LinkMark, CodeMark, Node, Fragment,
+        NodeBuilder} from "../model"
 import sortedInsert from "../util/sortedinsert"
 import {defineSource} from "./register"
 
@@ -189,49 +190,40 @@ class DOMParseState {
   }
 
   insertNode(node) {
-    if (this.top.type.canContain(node)) {
-      this.doClose()
-    } else {
-      let found
-      for (let i = this.stack.length - 1; i >= 0; i--) {
-        let route = this.stack[i].type.findConnection(node.type)
-        if (!route) continue
-        if (i == this.stack.length - 1) {
-          this.doClose()
-        } else {
-          while (this.stack.length > i + 1) this.leave()
-        }
-        found = route
-        break
+    if (this.top.add(node)) return node
+
+    let found
+    for (let i = this.stack.length - 1; i >= 0; i--) {
+      let builder = this.stack[i]
+      let route = builder.type.findConnectionNEW(node.type, builder.attrs, builder)
+      if (!route) continue
+      if (i == this.stack.length - 1) {
+        this.doClose()
+      } else {
+        while (this.stack.length > i + 1) this.leave()
       }
-      if (!found) return
-      for (let j = 0; j < found.length; j++)
-        this.enter(found[j])
-      if (this.marks.length) this.marks = noMarks
+      found = route
+      break
     }
-    this.top.content.push(node)
+    if (!found) return
+    for (let j = 0; j < found.length; j++)
+      this.enter(found[j])
+    if (this.marks.length) this.marks = noMarks
+    this.top.add(node)
     return node
   }
 
-  close(type, attrs, content) {
-    content = Fragment.from(content)
-    if (!type.checkContent(content, attrs)) {
-      content = type.fixContent(content, attrs)
-      if (!content) return null
-    }
-    return type.create(attrs, content, this.marks)
-  }
-
-  // :: (NodeType, ?Object, [Node]) → Node
+  // :: (NodeType, ?Object, [Node]) → ?Node
   // Insert a node of the given type, with the given content, based on
   // `dom`, at the current position in the document.
   insert(type, attrs, content) {
-    let closed = this.close(type, attrs, content)
-    if (closed) return this.insertNode(closed)
+    let frag = type.fixContent(Fragment.from(content), attrs)
+    if (!frag) return null
+    return this.insertNode(type.create(attrs, frag, this.marks))
   }
 
   enter(type, attrs) {
-    this.stack.push({type, attrs, content: []})
+    this.stack.push(new NodeBuilder(type, attrs))
   }
 
   leave() {
@@ -242,7 +234,7 @@ class DOMParseState {
       if (last.text.length == 1) top.content.pop()
       else top.content[top.content.length - 1] = last.copy(last.text.slice(0, last.text.length - 1))
     }
-    let node = this.close(top.type, top.attrs, top.content)
+    let node = top.finish()
     if (node && this.stack.length) this.insertNode(node)
     return node
   }

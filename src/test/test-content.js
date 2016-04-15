@@ -84,6 +84,7 @@ parseFail("bad_node", "foo+")
 parseFail("bad_mark", "image[bar]")
 parseFail("weird_mark", "image[_ em]")
 parseFail("trailing_noise", "image+ text* .")
+parseFail("zero_times", "image{0}")
 
 const attrs = {level: 3}
 

@@ -105,13 +105,13 @@ function findLiftable(from, to) {
   if (shared == null) return null
   let parent = from.node(shared)
   for (let depth = shared - 1; depth >= 0; --depth)
-    if (from.node(depth).type.canContainContent(parent.type))
+    if (parent.type.appendableTo(from.node(depth).type))
       return {depth, shared, unwrap: false}
 
   if (parent.isBlock) for (let depth = shared - 1; depth >= 0; --depth) {
     let target = from.node(depth)
     for (let i = from.index(shared), e = Math.min(to.index(shared) + 1, parent.childCount); i < e; i++)
-      if (!target.type.canContainContent(parent.child(i).type)) continue
+      if (!parent.child(i).type.appendableTo(target.type)) continue
     return {depth, shared, unwrap: true}
   }
 }

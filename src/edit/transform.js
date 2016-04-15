@@ -41,7 +41,7 @@ export class EditorTransform extends Transform {
       // This node can not simply be removed/replaced. Remove its parent as well
       let $from = this.doc.resolve(from), depth = $from.depth
       while (depth && $from.node(depth).childCount == 1 &&
-             !(node ? $from.node(depth).type.canContain(node) : $from.node(depth).type.canBeEmpty))
+             !(node ? $from.node(depth).type.containsOnly(node) : $from.node(depth).type.canBeEmpty))
         depth--
       if (depth < $from.depth) {
         from = $from.before(depth + 1)
@@ -50,7 +50,7 @@ export class EditorTransform extends Transform {
     } else if (node && node.isBlock) {
       let $from = this.doc.resolve(from)
       // Inserting a block node into a textblock. Try to insert it above by splitting the textblock
-      if ($from.depth && $from.node($from.depth - 1).type.canContain(node)) {
+      if ($from.depth) {
         this.delete(from, to)
         if ($from.parentOffset && $from.parentOffset < $from.parent.content.size)
           this.split(from)

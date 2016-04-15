@@ -386,7 +386,7 @@ function isAtTopOfListItem(doc, from, to, listType) {
   return $from.sameParent(doc.resolve(to)) &&
     $from.depth >= 2 &&
     $from.index($from.depth - 1) == 0 &&
-    listType.canContain($from.node($from.depth - 1))
+    listType.containsOnly($from.node($from.depth - 1))
 }
 
 NodeType.derivableCommands.wrap = function(conf) {

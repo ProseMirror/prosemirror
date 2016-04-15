@@ -118,7 +118,7 @@ function fillBetween($from, $to, depth, placed) {
   let toNext = $to.depth > depth && $to.node(depth + 1)
   let placedHere = placed[depth]
 
-  if (fromNext && toNext && fromNext.type.canContainContent(toNext.type) && !placedHere)
+  if (fromNext && toNext && toNext.type.appendableTo(fromNext.type) && !placedHere)
     return Fragment.from(closeNode(fromNext, fillBetween($from, $to, depth + 1, placed),
                                    $from, $to, depth + 1))
 
@@ -159,7 +159,7 @@ function fillFrom($from, depth, placed) {
 
 function closeTo(content, $to, depth, openDepth) {
   let after = $to.node(depth)
-  if (openDepth == 0 || !after.type.canContainContent(content.lastChild.type)) {
+  if (openDepth == 0 || !content.lastChild.type.appendableTo(after.type)) {
     let finish = closeNode(after, fillTo($to, depth), null, $to, depth)
     distAfter += finish.nodeSize
     return closeRight(content, openDepth).addToEnd(finish)
@@ -284,7 +284,7 @@ function placeSlice($from, slice) {
 function findPlacement(type, fragment, $from, start) {
   for (let d = start; d >= 0; d--) {
     let fromType = $from.node(d).type
-    if (type ? fromType.canContainContent(type) : fromType.canContainFragment(fragment))
+    if (type ? type.appendableTo(fromType) : fromType.canContainFragment(fragment))
       return d
   }
   return -1

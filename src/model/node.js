@@ -286,9 +286,6 @@ export class Node {
     let content = json.text != null ? json.text : Fragment.fromJSON(schema, json.content)
     return type.create(json.attrs, content, json.marks && json.marks.map(schema.markFromJSON))
   }
-
-  // This is a hack to be able to treat a node object as an iterator result
-  get value() { return this }
 }
 
 // ;; #forward=Node

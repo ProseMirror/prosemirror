@@ -3,6 +3,7 @@ import {SchemaSpec, Schema, Block, Textblock, Inline, Text, Attribute, MarkType,
 // ;; The default top-level document node type.
 export class Doc extends Block {
   get kind() { return null }
+  get group() { return null }
 }
 
 // ;; The default blockquote node type.
