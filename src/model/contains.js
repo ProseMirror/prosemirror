@@ -19,7 +19,7 @@ export class ContainsExpr {
       if (!elt.validCount(attrs, pos.count)) return null
       pos.count = 0
     }
-    return pos
+    return fragPos == fragment.childCount ? pos : null
   }
 
   matchBackward(attrs, fragment, pos) {
@@ -34,12 +34,13 @@ export class ContainsExpr {
       if (!elt.validCount(attrs, pos.count)) return null
       pos.count = 0
     }
-    return pos
+    return fragPos == 0 ? pos : null
   }
 
   matches(attrs, fragment) {
     let pos = this.matchForward(attrs, fragment, new MatchPos(0, 0))
-    return pos && pos.index == this.elements.length
+    return pos && (pos.index == this.elements.length ||
+                   pos.index == this.elements.length - 1 && this.elements[pos.index].validCount(attrs, pos.count))
   }
 
   fillTwoWay(attrs, before, after) {
