@@ -1,3 +1,20 @@
+## 0.6.1 (2016-04-15)
+
+### Bug fixes
+
+Composition (IME) input is now more robust. This mostly effects
+Android browsers, where typing is now less buggy.
+
+The iOS virtual keyboard's default case should now update as you type
+(rather than being stuck in whatever state it was in when you started
+typing).
+
+Text input read through composition or input events now fires input
+rules.
+
+A problem where transform filters could corrupt the undo history has
+been fixed.
+
 ## [0.6.0](http://prosemirror.net/version/0.6.0.html) (2016-04-13)
 
 ### Breaking changes
