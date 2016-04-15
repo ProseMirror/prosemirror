@@ -7,40 +7,52 @@ export class ContentExpr {
 
   matchForward(attrs, fragment, pos, maxPos) {
     let fragPos = 0, end = maxPos ? maxPos.index : this.elements.length
-    for (; pos.index < end; pos.index++) {
+    if (fragPos == fragment.childCount) return pos
+    for (;;) {
+      if (pos.index == end) return null
       let elt = this.elements[pos.index], max = resolveCount(elt.max, attrs)
       if (maxPos && pos.index == end - 1) max -= maxPos.count
-      for (; pos.count < max; pos.count++) {
-        if (fragPos == fragment.childCount) return pos
-        if (elt.matches(fragment.child(fragPos))) fragPos++
-        else break
+
+      while (pos.count < max) {
+        if (elt.matches(fragment.child(fragPos))) {
+          pos.count++
+          if (++fragPos == fragment.childCount) return pos
+        } else {
+          break
+        }
       }
-      if (maxPos && pos.index == end - 1 && pos.count == max) return pos
       if (!elt.validCount(attrs, pos.count)) return null
+      pos.index++
       pos.count = 0
     }
-    return fragPos == fragment.childCount ? pos : null
   }
 
   matchBackward(attrs, fragment, pos) {
     let fragPos = fragment.childCount
-    for (; pos.index > 0; pos.index--) {
+    if (fragPos == 0) return pos
+    for (;;) {
+      if (pos.index == 0) return null
       let elt = this.elements[pos.index - 1], max = resolveCount(elt.max, attrs)
-      for (; pos.count < max; pos.count++) {
-        if (fragPos == 0) return pos
-        if (elt.matches(fragment.child(fragPos - 1))) fragPos--
-        else break
+      while (pos.count < max) {
+        if (elt.matches(fragment.child(fragPos - 1))) {
+          pos.count++
+          if (--fragPos == 0) return pos
+        } else {
+          break
+        }
       }
       if (!elt.validCount(attrs, pos.count)) return null
+      pos.index--
       pos.count = 0
     }
-    return fragPos == 0 ? pos : null
   }
 
   matches(attrs, fragment) {
     let pos = this.matchForward(attrs, fragment, new MatchPos(0, 0))
-    return pos && (pos.index == this.elements.length ||
-                   pos.index == this.elements.length - 1 && this.elements[pos.index].validCount(attrs, pos.count))
+    if (!pos) return false
+    for (let i = pos.index; i < this.elements.length; i++)
+      if (!this.elements[i].validCount(attrs, i == pos.index ? pos.count : 0)) return false
+    return true
   }
 
   fillTwoWay(attrs, before, after) {
@@ -120,7 +132,10 @@ export class ContentExpr {
             max = min
         }
       }
-      elements.push(new ContentElement(nodeTypes, markSet, min, max, mod))
+      let newElt = new ContentElement(nodeTypes, markSet, min, max, mod)
+      if (elements.length && elements[elements.length - 1].overlaps(newElt))
+        throw new SyntaxError("Overlapping adjacent content expressions in '" + expr + "'")
+      elements.push(newElt)
     }
     return new ContentExpr(elements)
   }
@@ -152,6 +167,10 @@ class ContentElement {
   createFiller() {
     // FIXME
     return this.nodeTypes[0].create()
+  }
+
+  overlaps(other) {
+    return this.nodeTypes.some(t => other.nodeTypes.indexOf(t) > -1)
   }
 }
 

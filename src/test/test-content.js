@@ -2,8 +2,10 @@ import {ContentExpr} from "../model/content"
 import {defaultSchema as schema} from "../model"
 
 import {defTest} from "./tests"
-import {doc, p, img, br, h1, em} from "./build"
-import {cmp} from "./cmp"
+import {doc, p, pre, img, br, h1, em} from "./build"
+import {cmp, cmpNode, is} from "./cmp"
+
+function get(expr) { return ContentExpr.parse(schema.nodes.heading, expr) }
 
 function simplify(elt) {
   return {types: elt.nodeTypes.map(t => t.name).sort(),
@@ -20,9 +22,8 @@ function normalize(obj) {
 }
 
 function parse(name, expr, ...expected) {
-  defTest("content_" + name, () => {
-    let parsed = ContentExpr.parse(schema.nodes.heading, expr)
-    cmp(JSON.stringify(parsed.elements.map(simplify)), JSON.stringify(expected.map(normalize)))
+  defTest("content_parse_" + name, () => {
+    cmp(JSON.stringify(get(expr).elements.map(simplify)), JSON.stringify(expected.map(normalize)))
   })
 }
 
@@ -64,11 +65,30 @@ parse("modulo_attr", "paragraph%@level",
 parse("range_attr", "paragraph{@level}",
       {types: ["paragraph"], min: "level", max: "level"})
 
+function parseFail(name, expr) {
+  defTest("content_parse_fail_" + name, () => {
+    try {
+      ContentExpr.parse(schema.nodes.heading, expr)
+      is(false, "parsing succeeded")
+    } catch(e) {
+      if (!(e instanceof SyntaxError)) throw e
+    }
+  })
+}
+
+parseFail("invalid_char", "paragraph/image")
+parseFail("adjacent", "paragraph paragraph")
+parseFail("adjacent_set", "inline image")
+parseFail("bad_attr", "image{@foo}")
+parseFail("bad_node", "foo+")
+parseFail("bad_mark", "image[bar]")
+parseFail("weird_mark", "image[_ em]")
+parseFail("trailing_noise", "image+ text* .")
+
 const attrs = {level: 3}
 
 function testValid(expr, frag, isValid) {
-  let parsed = ContentExpr.parse(schema.nodes.heading, expr)
-  cmp(!!parsed.matches(attrs, frag.content), isValid)
+  cmp(get(expr).matches(attrs, frag.content), isValid)
 }
 
 function valid(name, expr, frag) {
@@ -77,6 +97,9 @@ function valid(name, expr, frag) {
 function invalid(name, expr, frag) {
   defTest("content_invalid_" + name, () => testValid(expr, frag, false))
 }
+
+valid("nothing_empty", "", p())
+invalid("nothing_non_empty", "", p(img))
 
 valid("star_empty", "image*", p())
 valid("star_one", "image*", p(img))
@@ -129,3 +152,88 @@ invalid("mark_some", "image[code strong]", p(em(img)))
 
 valid("count_attr", "image{@level}", p(img, img, img))
 invalid("count_attr", "image{@level}", p(img, img))
+
+function fill(name, expr, before, after, result) {
+  defTest("content_fill_" + name, () => {
+    let filled = get(expr).fillTwoWay(attrs, before.content, after.content)
+    if (result) is(filled), cmpNode(filled, result.content)
+    else is(!filled)
+  })
+}
+
+fill("simple_seq_nothing", "image hard_break image",
+     p(img), p(br, img), p())
+fill("simple_seq_one", "image hard_break image",
+     p(img), p(img), p(br))
+
+fill("star_both_sides", "hard_break*",
+     p(br), p(br), p())
+fill("star_only_left", "hard_break*",
+     p(br), p(), p())
+fill("star_only_right", "hard_break*",
+     p(), p(br), p())
+fill("star_neither", "hard_break*",
+     p(), p(), p())
+fill("plus_both_sides", "hard_break+",
+     p(br), p(br), p())
+fill("plus_neither", "hard_break+",
+     p(), p(), p(br))
+fill("plus_mismatch", "hard_break+",
+     p(img), p(), null)
+
+fill("seq_stars", "heading* paragraph*",
+     doc(h1()), doc(p()), doc())
+fill("seq_stars_empty_after", "heading* paragraph*",
+     doc(h1()), doc(), doc())
+fill("seq_plus", "heading+ paragraph+",
+     doc(h1()), doc(p()), doc())
+fill("seq_empty_after", "heading+ paragraph+",
+     doc(h1()), doc(), doc(p()))
+
+fill("mod_add_mid", "hard_break%3",
+     p(br), p(br), p(br))
+fill("mod_add_front", "hard_break%3",
+     p(), p(br), p(br, br))
+fill("mod_add_end", "hard_break%3",
+     p(br), p(), p(br, br))
+fill("mod_add_extra", "hard_break%3",
+     p(br, br), p(br, br), p(br, br))
+
+fill("count_too_few", "hard_break{3}",
+     p(br), p(br), p(br))
+fill("count_too_many", "hard_break{3}",
+     p(br, br), p(br, br), null)
+fill("count_left_right", "code_block{2} paragraph{2}",
+     doc(pre()), doc(p()), doc(pre(), p()))
+
+function fill3(name, expr, before, mid, after, left, right) {
+  defTest("content_fill3_" + name, () => {
+    let filled = get(expr).fillThreeWay(attrs, before.content, mid.content, after.content)
+    if (left) is(filled), cmpNode(filled.left, left.content), cmpNode(filled.right, right.content)
+    else is(!filled)
+  })
+}
+
+fill3("simple_seq", "image hard_break image hard_break image",
+      p(img), p(img), p(img), p(br), p(br))
+fill3("seq_plus_ok", "code_block+ paragraph+",
+      doc(pre()), doc(pre()), doc(p()), doc(), doc())
+fill3("seq_plus_from_empty", "code_block+ paragraph+",
+      doc(), doc(), doc(), doc(), doc(pre(), p()))
+fill3("seq_count", "code_block{3} paragraph{3}",
+      doc(pre()), doc(p()), doc(), doc(pre(), pre()), doc(p(), p()))
+fill3("invalid_before", "paragraph*",
+      doc(pre()), doc(p()), doc(p()), null)
+fill3("invalid_mid", "paragraph*",
+      doc(p()), doc(pre()), doc(p()), null)
+fill3("invalid_after", "paragraph*",
+      doc(p()), doc(p()), doc(pre()), null)
+
+fill3("count_across", "paragraph{4}",
+      doc(p()), doc(p()), doc(p()), doc(), doc(p()))
+fill3("count_across_invalid", "paragraph{2}",
+      doc(p()), doc(p()), doc(p()), null)
+fill3("mod_across", "paragraph%4",
+      doc(p()), doc(p()), doc(p()), doc(), doc(p()))
+fill3("mod_across_multiple", "paragraph%4",
+      doc(p()), doc(p(), p()), doc(p(), p()), doc(), doc(p(), p(), p()))
