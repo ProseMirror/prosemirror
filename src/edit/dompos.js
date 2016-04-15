@@ -291,7 +291,7 @@ export function selectableNodeAbove(pm, dom, coords, liberal) {
         if (result != null) return result
       }
       // Leaf nodes are implicitly clickable
-      if ((liberal || node.type.contains == null) && node.type.selectable)
+      if ((liberal || node.type.isLeaf) && node.type.selectable)
         return pos
       if (!liberal) return null
     }

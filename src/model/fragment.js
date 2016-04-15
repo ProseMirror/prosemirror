@@ -201,6 +201,10 @@ export class Fragment {
     return kind
   }
 
+  cutByIndex(from, to = this.childCount) {
+    return new Fragment(this.content.slice(from, to))
+  }
+
   // : (number, ?number) → {index: number, offset: number}
   // Find the index and inner offset corresponding to a given relative
   // position in this fragment. The result object will be reused

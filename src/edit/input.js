@@ -426,7 +426,7 @@ function parseFromContext(dom, contextNodeType, openLeft, openRight) {
 function clipOpen(fragment, max, start) {
   for (let i = 0; i < max; i++) {
     let node = start ? fragment.firstChild : fragment.lastChild
-    if (!node || node.type.contains == null) return i
+    if (!node || node.type.isLeaf) return i
     fragment = node.content
   }
   return max

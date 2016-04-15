@@ -104,7 +104,7 @@ function fitSliceInto($from, $to, slice) {
   // distAfter starts negative, and is set to a positive value when
   // the end of the inserted content is placed.
   distAfter = -1e10 // FIXME kludge
-  let fragment = closeFragment($from.node(base).type, fillBetween($from, $to, base, placed), $from, $to, base)
+  let fragment = closeFragment($from.node(base), fillBetween($from, $to, base, placed), $from, $to, base)
   return {fitted: new Slice(fragment, $from.depth - base, $to.depth - base),
           distAfter: distAfter - ($to.depth - base)}
 }
@@ -190,16 +190,20 @@ function closeLeft(content, openDepth) {
   return closed == first ? content : content.replaceChild(0, closed)
 }
 
-function closeFragment(type, content, $to, $from, depth) {
-  // FIXME replace this with a more general approach
-  if (type.canBeEmpty) return content
-  let hasContent = content.size || ($to && ($to.depth > depth || $to.index(depth))) ||
-      ($from && ($from.depth > depth || $from.index(depth) < $from.node(depth).childCount))
-  return hasContent ? content : type.defaultContent()
+function closeFragment(refNode, content, $to, $from, depth) {
+  let before = !$to ? Fragment.empty
+      : $to.depth == depth ? $to.parent.content.cut(0, $to.parentOffset)
+      : $to.node(depth).content.cutByIndex(0, $to.index(depth))
+  let after = !$from ? Fragment.empty
+      : $from.depth == depth ? $from.parent.content.cut($from.parentOffset)
+      : $from.node(depth).content.cutByIndex($from.index(depth) + 1)
+  let filled = refNode.type.contentExpr.fillThreeWay(refNode.attrs, before, content, after)
+  // FIXME what do we do when this fails?
+  return filled.left.append(content).append(filled.right)
 }
 
 function closeNode(node, content, $to, $from, depth) {
-  return node.copy(closeFragment(node.type, content, $to, $from, depth))
+  return node.copy(closeFragment(node, content, $to, $from, depth))
 }
 
 // Algorithm for 'placing' the elements of a slice into a gap:

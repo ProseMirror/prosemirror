@@ -5,6 +5,10 @@ export class ContentExpr {
     this.elements = elements
   }
 
+  get isLeaf() {
+    return this.elements.length == 0
+  }
+
   matchForward(attrs, fragment, pos, maxPos) {
     let fragPos = 0, end = maxPos ? maxPos.index : this.elements.length
     if (fragPos == fragment.childCount) return pos
@@ -91,9 +95,9 @@ export class ContentExpr {
 
   fillTo(attrs, pos, end) {
     let found = []
-    while (pos.index < end.index - 1)
-      if (!this.fillOne(attrs, pos, found)) return null
-    return this.fillOne(attrs, pos, found, end.count) ? found : null
+    while (pos.index < end.index)
+      if (!this.fillOne(attrs, pos, found, pos.index == end.index - 1 ? end.count : 0)) return null
+    return found
   }
 
   static parse(nodeType, expr) {
@@ -165,8 +169,12 @@ class ContentElement {
   }
 
   createFiller() {
-    // FIXME
-    return this.nodeTypes[0].create()
+    // FIXME verify that default content can be created
+    for (let i = 0; i < this.nodeTypes.length; i++) {
+      let type = this.nodeTypes[i]
+      if (type.defaultAttrs)
+        return type.create(null, type.fixContent(null, type.defaultAttrs))
+    }
   }
 
   overlaps(other) {
@@ -213,9 +221,17 @@ function expandTypes(schema, types) {
     if (schema.nodes[type]) {
       found.push(schema.nodes[type])
     } else {
-      let startLen = found.length
-      for (let name in schema.nodes)
-        if (schema.nodes[name].group == type) found.push(schema.nodes[name])
+      let startLen = found.length, sawDefault = false
+      for (let name in schema.nodes) if (schema.nodes[name].group == type) {
+        let type = schema.nodes[name]
+        if (type.groupDefault) {
+          if (sawDefault) throw new SyntaxError("Multiple default types in group " + type)
+          sawDefault = true
+          found.splice(startLen, 0, type)
+        } else {
+          found.push(type)
+        }
+      }
       if (found.length == startLen)
         throw new SyntaxError("Node type or group '" + type + "' does not exist")
     }

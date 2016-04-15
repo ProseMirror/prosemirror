@@ -80,14 +80,14 @@ baseCommands.joinBackward = {
 
     // If the node below has no content and the node above is
     // selectable, delete the node below and select the one above.
-    if (before.type.contains == null && before.type.selectable && $head.parent.content.size == 0) {
+    if (before.type.isLeaf && before.type.selectable && $head.parent.content.size == 0) {
       let tr = pm.tr.delete(cut, cut + $head.parent.nodeSize).apply(pm.apply.scroll)
       pm.setNodeSelection(cut - before.nodeSize)
       return tr
     }
 
     // If the node doesn't allow children, delete it
-    if (before.type.contains == null)
+    if (before.type.isLeaf)
       return pm.tr.delete(cut - before.nodeSize, cut).apply(pm.apply.scroll)
 
     // Apply the joining algorithm
@@ -201,7 +201,7 @@ baseCommands.joinForward = {
     if (!after) return false
 
     // If the node doesn't allow children, delete it
-    if (after.type.contains == null)
+    if (after.type.isLeaf)
       return pm.tr.delete(cut, cut + after.nodeSize).apply(pm.apply.scroll)
 
     // Apply the joining algorithm

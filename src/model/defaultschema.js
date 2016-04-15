@@ -17,12 +17,14 @@ NodeKind.list_item = new NodeKind("list_item")
 // counting, and defaults to 1.
 export class OrderedList extends Block {
   get contains() { return NodeKind.list_item }
+  get content() { return "list_item+" }
   get attrs() { return {order: new Attribute({default: "1"})} }
 }
 
 // ;; The default bullet list node type.
 export class BulletList extends Block {
   get contains() { return NodeKind.list_item }
+  get content() { return "list_item+" }
 }
 
 // ;; The default list item node type.
@@ -34,6 +36,7 @@ export class ListItem extends Block {
 // ;; The default horizontal rule node type.
 export class HorizontalRule extends Block {
   get contains() { return null }
+  get content() { return "" }
 }
 
 // ;; The default heading node type. Has a single attribute
@@ -50,6 +53,7 @@ export class Heading extends Textblock {
 // allows unmarked text nodes inside of it.
 export class CodeBlock extends Textblock {
   get contains() { return NodeKind.text }
+  get content() { return "text*" }
   get containsMarks() { return false }
   get isCode() { return true }
 }
@@ -57,6 +61,7 @@ export class CodeBlock extends Textblock {
 // ;; The default paragraph node type.
 export class Paragraph extends Textblock {
   get defaultTextblock() { return true }
+  get groupDefault() { return true }
 }
 
 // ;; The default inline image node type. Has these

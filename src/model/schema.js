@@ -1,6 +1,8 @@
 import {Node, TextNode} from "./node"
 import {Fragment} from "./fragment"
 import {Mark} from "./mark"
+import {ContentExpr} from "./content"
+
 import {copyObj} from "../util/obj"
 
 // ;; The [node](#NodeType) and [mark](#MarkType) types
@@ -125,6 +127,7 @@ export class NodeType extends SchemaItem {
     // getter all the time.
     this.freezeAttrs()
     this.defaultAttrs = this.getDefaultAttrs()
+    this.contentExpr = null
     // :: Schema
     // A link back to the `Schema` the node type belongs to.
     this.schema = schema
@@ -169,6 +172,12 @@ export class NodeType extends SchemaItem {
   // The kind of nodes this node may contain. `null` means it's a
   // leaf node.
   get contains() { return null }
+
+  get group() { return null }
+  get groupDefault() { return false }
+
+  get content() { return "" }
+  get isLeaf() { return this.contentExpr.isLeaf }
 
   // :: ?NodeKind Sets the _kind_ of the node, which is used to
   // determine valid parent/child [relations](#NodeType.contains).
@@ -271,20 +280,16 @@ export class NodeType extends SchemaItem {
   }
 
   // FIXME use declarative schema, maybe tie in with .contains
-  checkContent(content, _attrs) {
-    if (content.size == 0) return this.canBeEmpty
-    for (let i = 0; i < content.childCount; i++)
-      if (!this.canContain(content.child(i))) return false
-    return true
+  checkContent(content, attrs) {
+    return this.contentExpr.matches(attrs, content)
   }
 
-  fixContent(_content, _attrs) {
-    return this.defaultContent()
+  fixContent(content, attrs) { // FIXME replace?
+    if (!content) content = Fragment.empty
+    let filled = this.contentExpr.fillThreeWay(attrs, Fragment.empty, content || Fragment.empty, Fragment.empty)
+    if (!filled) throw new RangeError("No default content for " + this.name)
+    return filled.left.append(content).append(filled.right)
   }
-
-  // :: bool
-  // Controls whether this node is allowed to be empty.
-  get canBeEmpty() { return true }
 
   static compile(types, schema) {
     let result = Object.create(null)
@@ -371,27 +376,18 @@ NodeKind.text = new NodeKind("text", [NodeKind.inline])
 // ;; Base type for block nodetypes.
 export class Block extends NodeType {
   get contains() { return NodeKind.block }
+  get content() { return "block+" }
   get kind() { return NodeKind.block }
   get group() { return "block" }
   get isBlock() { return true }
-
-  get canBeEmpty() { return this.contains == null }
-
-  defaultContent() {
-    let inner = this.schema.defaultTextblockType().create()
-    let conn = this.findConnection(inner.type)
-    if (!conn) throw new RangeError("Can't create default content for " + this.name)
-    for (let i = conn.length - 1; i >= 0; i--) inner = conn[i].create(null, inner)
-    return Fragment.from(inner)
-  }
 }
 
 // ;; Base type for textblock node types.
 export class Textblock extends Block {
   get contains() { return NodeKind.inline }
+  get content() { return "inline[_]*" }
   get containsMarks() { return true }
   get isTextblock() { return true }
-  get canBeEmpty() { return true }
 }
 
 // ;; Base type for inline node types.
@@ -583,8 +579,11 @@ export class Schema {
     // :: Object<MarkType>
     // A map from mark names to mark type objects.
     this.marks = MarkType.compile(spec.marks, this)
-    for (let prop in this.nodes)
+    for (let prop in this.nodes) {
       if (prop in this.marks) throw new RangeError(prop + " can not be both a node and a mark")
+      let type = this.nodes[prop]
+      type.contentExpr = ContentExpr.parse(type, type.content)
+    }
 
     // :: Object
     // An object for storing whatever values modules may want to
