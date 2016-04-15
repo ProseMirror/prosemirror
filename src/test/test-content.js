@@ -1,4 +1,4 @@
-import {ContainsExpr} from "../model/contains"
+import {ContentExpr} from "../model/content"
 import {defaultSchema as schema} from "../model"
 
 import {defTest} from "./tests"
@@ -20,8 +20,8 @@ function normalize(obj) {
 }
 
 function parse(name, expr, ...expected) {
-  defTest("contains_" + name, () => {
-    let parsed = ContainsExpr.parse(schema.nodes.heading, expr)
+  defTest("content_" + name, () => {
+    let parsed = ContentExpr.parse(schema.nodes.heading, expr)
     cmp(JSON.stringify(parsed.elements.map(simplify)), JSON.stringify(expected.map(normalize)))
   })
 }
@@ -67,15 +67,15 @@ parse("range_attr", "paragraph{@level}",
 const attrs = {level: 3}
 
 function testValid(expr, frag, isValid) {
-  let parsed = ContainsExpr.parse(schema.nodes.heading, expr)
+  let parsed = ContentExpr.parse(schema.nodes.heading, expr)
   cmp(!!parsed.matches(attrs, frag.content), isValid)
 }
 
 function valid(name, expr, frag) {
-  defTest("contains_valid_" + name, () => testValid(expr, frag, true))
+  defTest("content_valid_" + name, () => testValid(expr, frag, true))
 }
 function invalid(name, expr, frag) {
-  defTest("contains_invalid_" + name, () => testValid(expr, frag, false))
+  defTest("content_invalid_" + name, () => testValid(expr, frag, false))
 }
 
 valid("star_empty", "image*", p())

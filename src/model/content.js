@@ -1,6 +1,6 @@
 import {Fragment} from "./fragment"
 
-export class ContainsExpr {
+export class ContentExpr {
   constructor(elements) {
     this.elements = elements
   }
@@ -91,7 +91,7 @@ export class ContainsExpr {
       if (pos == expr.length) break
 
       let types = /^(?:(\w+)|\(\s*(\w+(?:\s*\|\s*\w+)*)\s*\))/.exec(expr.slice(pos))
-      if (!types) throw new SyntaxError("Invalid contains expression '" + expr + "' at " + pos)
+      if (!types) throw new SyntaxError("Invalid content expression '" + expr + "' at " + pos)
       pos += types[0].length
       let marks = /^\[(?:(_)|\s*(\w+(?:\s+\w+)*)\s*)\]/.exec(expr.slice(pos))
       if (marks) pos += marks[0].length
@@ -120,13 +120,13 @@ export class ContainsExpr {
             max = min
         }
       }
-      elements.push(new ContainsElement(nodeTypes, markSet, min, max, mod))
+      elements.push(new ContentElement(nodeTypes, markSet, min, max, mod))
     }
-    return new ContainsExpr(elements)
+    return new ContentExpr(elements)
   }
 }
 
-class ContainsElement {
+class ContentElement {
   constructor(nodeTypes, marks, min, max, mod) {
     this.nodeTypes = nodeTypes
     this.marks = marks
