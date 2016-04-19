@@ -161,19 +161,19 @@ Transform.prototype.lift = function(from, to = from, silent = false) {
   return this.step("ancestor", start, end, {depth: shared - depth})
 }
 
-// :: (Node, number, ?number, NodeType) → bool
+// :: (Node, number, ?number, NodeType, ?Object) → bool
 // Determines whether the [sibling range](#Node.siblingRange) of the
 // given positions can be wrapped in the given node type.
-export function canWrap(doc, from, to, type) {
-  return !!checkWrap(doc.resolve(from), doc.resolve(to == null ? from : to), type)
+export function canWrap(doc, from, to, type, attrs) {
+  return !!checkWrap(doc.resolve(from), doc.resolve(to == null ? from : to), type, attrs)
 }
 
-function checkWrap($from, $to, type) {
+function checkWrap($from, $to, type, attrs) {
   let shared = rangeDepth($from, $to)
   if (shared == null) return null
   let parent = $from.node(shared)
-  let around = parent.type.findConnection(type)
-  let inside = type.findConnection(parent.child($from.index(shared)).type)
+  let around = parent.findWrappingAt($from.index(shared), type)
+  let inside = type.findWrapping(parent.child($from.index(shared)).type, type.contentExpr.start(attrs || type.defaultAttrs))
   if (around && inside) return {shared, around, inside}
 }
 
@@ -183,7 +183,7 @@ function checkWrap($from, $to, type) {
 // possible).
 Transform.prototype.wrap = function(from, to = from, type, wrapAttrs) {
   let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
-  let check = checkWrap($from, $to, type)
+  let check = checkWrap($from, $to, type, wrapAttrs)
   if (!check) throw new RangeError("Wrap not possible")
   let {shared, around, inside} = check
 

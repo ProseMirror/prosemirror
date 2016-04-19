@@ -222,6 +222,7 @@ export class NodeType extends SchemaItem {
   }
 
   appendableTo(other) {
+    // FIXME too arbitrary, should take current content into account
     return this.contentExpr.appendableTo(other.contentExpr)
   }
 
@@ -229,13 +230,11 @@ export class NodeType extends SchemaItem {
     return this.contentExpr.containsOnly(node)
   }
 
-  // FIXME cache
-  // FIXME make this the actual findConnection
-  findConnectionRestInner(target) {
+  findWrappingInner(target) {
     let seen = Object.create(null), active = [{type: this, via: []}]
     while (active.length) {
       let current = active.shift()
-      let possible = current.type.contentExpr.possibleTypes(current.type.defaultAttrs)
+      let possible = current.type.contentExpr.start(current.type.defaultAttrs).possibleTypes()
       for (let i = 0; i < possible.length; i++) {
         let type = possible[i]
         if (type == target) return current.via
@@ -247,52 +246,22 @@ export class NodeType extends SchemaItem {
     }
   }
 
-  findConnectionRest(target) {
-    let cache = this.schema.cached.connections, key = this.name + "-" + target.name
+  findWrappingCached(target) {
+    let cache = this.schema.cached.wrappings, key = this.name + "-" + target.name
     if (key in cache) return cache[key]
-    return cache[key] = this.findConnectionRestInner(target)
-  }
-
-  findConnectionNEW(target, attrs, builder) {
-    let possible = this.contentExpr.possibleTypes(attrs, builder && builder.pos)
-    if (possible.indexOf(target) > -1) return []
-    for (let i = 0; i < possible.length; i++) {
-      let rest = possible[i].findConnectionRest(target)
-      if (rest) return [possible[i]].concat(rest)
-    }
+    return cache[key] = this.findWrappingInner(target)
   }
 
   // :: (NodeType) → ?[NodeType]
   // Find a set of intermediate node types, possibly empty, that have
   // to be inserted between this type and `other` to put a node of
   // type `other` into this type.
-  findConnection(other) {
-    return other.kind && this.findConnectionToKind(other.kind)
-  }
-
-  findConnectionToKind(kind) {
-    let cache = this.schema.cached.connections, key = this.name + "-" + kind.id
-    if (key in cache) return cache[key]
-    return cache[key] = this.findConnectionToKindInner(kind)
-  }
-
-  findConnectionToKindInner(kind) {
-    if (kind.isSubKind(this.contains)) return []
-
-    let seen = Object.create(null)
-    let active = [{from: this, via: []}]
-    while (active.length) {
-      let current = active.shift()
-      for (let name in this.schema.nodes) {
-        let type = this.schema.nodes[name]
-        if (type.contains && type.defaultAttrs && !(type.contains.id in seen) &&
-            current.from.canContainType(type)) {
-          let via = current.via.concat(type)
-          if (kind.isSubKind(type.contains)) return via
-          active.push({from: type, via: via})
-          seen[type.contains.id] = true
-        }
-      }
+  findWrapping(target, pos) {
+    let possible = pos.possibleTypes()
+    if (possible.indexOf(target) > -1) return []
+    for (let i = 0; i < possible.length; i++) {
+      let rest = possible[i].findWrappingCached(target)
+      if (rest) return [possible[i]].concat(rest)
     }
   }
 
@@ -319,7 +288,7 @@ export class NodeType extends SchemaItem {
 
   fixContent(content, attrs) { // FIXME replace?
     if (!content) content = Fragment.empty
-    let filled = this.contentExpr.fillThreeWay(attrs, Fragment.empty, content || Fragment.empty, Fragment.empty)
+    let filled = this.contentExpr.fillContent(attrs, Fragment.empty, content || Fragment.empty, Fragment.empty)
     if (!filled) throw new RangeError("No default content for " + this.name)
     return filled.left.append(content).append(filled.right)
   }
@@ -359,18 +328,6 @@ export class NodeKind {
 
     if (supers) supers.forEach(sup => this.addSuper(sup))
     if (subs) subs.forEach(sub => this.addSub(sub))
-  }
-
-  sharedSuperKind(other) {
-    if (this.isSubKind(other)) return other
-    if (other.isSubKind(this)) return this
-    let found
-    for (let id in this.supers) {
-      let shared = other.supers[id]
-      if (shared && (!found || shared.isSupKind(found)))
-        found = shared
-    }
-    return found
   }
 
   addSuper(sup) {
@@ -623,7 +580,7 @@ export class Schema {
     // compute and cache per schema. (If you want to store something
     // in it, try to use property names unlikely to clash.)
     this.cached = Object.create(null)
-    this.cached.connections = Object.create(null)
+    this.cached.wrappings = Object.create(null)
 
     this.node = this.node.bind(this)
     this.text = this.text.bind(this)

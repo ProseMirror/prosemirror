@@ -286,7 +286,7 @@ function markActive(pm, type) {
     return pm.doc.rangeHasMark(sel.from, sel.to, type)
 }
 
-function canAddInline(pm, type) {
+function canAddMark(pm, type) {
   let {from, to, empty} = pm.selection
   if (empty)
     return !type.isInSet(pm.activeMarks()) && pm.doc.resolve(from).parent.type.canContainMark(type)
@@ -364,7 +364,7 @@ MarkType.derivableCommands.set = function(conf) {
     select(pm) {
       return conf.inverseSelect
         ? markApplies(pm, this) && !markActive(pm, this)
-        : canAddInline(pm, this)
+        : canAddMark(pm, this)
     },
     params: deriveParams(this, conf.params)
   }

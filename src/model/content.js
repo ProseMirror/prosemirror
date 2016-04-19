@@ -9,60 +9,21 @@ export class ContentExpr {
     return this.elements.length == 0
   }
 
-  matchOne(attrs, node, startPos) {
-    // FIXME `var` to work around Babel bug T7293
-    for (var {index, count} = startPos; index < this.elements.length; index++, count = 0) {
-      let elt = this.elements[index], max = resolveCount(elt.max, attrs)
-      if (count < max && elt.matches(node)) {
-        count++
-        return new MatchPos(index, count)
-      }
-      if (!elt.validCount(attrs, count)) return null
-    }
+  start(attrs) {
+    return new ContentMatch(this, attrs, 0, 0)
   }
 
-  matchForward(attrs, fragment, startPos, maxPos) {
-    if (!fragment.childCount) return startPos
-    let fragPos = 0, end = maxPos ? maxPos.index : this.elements.length
-    for (var {index, count} = startPos; index < end; index++, count = 0) {
-      let elt = this.elements[index], max = resolveCount(elt.max, attrs)
-      if (maxPos && index == end - 1) max -= maxPos.count
-
-      while (count < max) {
-        if (elt.matches(fragment.child(fragPos))) {
-          count++
-          if (++fragPos == fragment.childCount) return new MatchPos(index, count)
-        } else {
-          break
-        }
-      }
-      if (!elt.validCount(attrs, count)) return null
-    }
-  }
-
-  matchBackward(attrs, fragment, startPos) {
-    let fragPos = fragment.childCount
-    if (fragPos == 0) return startPos
-    for (var {index, count} = startPos; index > 0; index--, count = 0) {
-      let elt = this.elements[index - 1], max = resolveCount(elt.max, attrs)
-      while (count < max) {
-        if (elt.matches(fragment.child(fragPos - 1))) {
-          count++
-          if (--fragPos == 0) return new MatchPos(index, count)
-        } else {
-          break
-        }
-      }
-      if (!elt.validCount(attrs, count)) return null
-    }
+  end(attrs) {
+    return new ContentMatch(this, attrs, this.elements.length, 0)
   }
 
   matches(attrs, fragment) {
-    let pos = this.matchForward(attrs, fragment, new MatchPos(0, 0))
-    if (!pos) return false
-    for (let i = pos.index; i < this.elements.length; i++)
-      if (!this.elements[i].validCount(attrs, i == pos.index ? pos.count : 0)) return false
-    return true
+    let end = this.start(attrs).matchFragment(fragment)
+    return end ? end.validEnd() : false
+  }
+
+  getPosAt(attrs, fragment, index) {
+    return this.start(attrs).matchFragment(fragment, undefined, index)
   }
 
   appendableTo(other) {
@@ -74,58 +35,19 @@ export class ContentExpr {
     return this.elements.length == 1 && this.elements[0].matches(node)
   }
 
-  fillTwoWay(attrs, before, after) {
-    let back = this.matchBackward(attrs, after, new MatchPos(this.elements.length, 0))
-    let front = back && this.matchForward(attrs, before, new MatchPos(0, 0), back)
-    let result = front && this.fillTo(attrs, front, back)
-    return result ? Fragment.from(result) : null
-  }
-
-  fillThreeWay(attrs, before, mid, after) {
-    let back = this.matchBackward(attrs, after, new MatchPos(this.elements.length, 0))
-    let front = back && this.matchForward(attrs, before, new MatchPos(0, 0), back)
+  fillContent(attrs, before, mid, after) {
+    let back = this.end(attrs).matchFragmentBackward(after)
+    let front = back && this.start(attrs).matchFragment(before, back)
     if (!front) return null
     let left = [], right
     for (;;) {
-      let fits = this.matchForward(attrs, mid, front, back)
-      if (fits && (right = this.fillTo(attrs, fits, back)))
+      let fits = front.matchFragment(mid, back)
+      if (fits && (right = fits.fillTo(back)))
         return {left: Fragment.from(left), right: Fragment.from(right)}
       if (front.index == back.index - 1) return null
-      if (!this.fillOne(attrs, front, left)) return null
+      front = front.fillOne(left)
+      if (!front) return null
     }
-  }
-
-  fillOne(attrs, pos, target, extraCount = 0) {
-    let elt = this.elements[pos.index]
-    while (!elt.validCount(attrs, pos.count + extraCount)) {
-      let node = elt.createFiller()
-      if (!node) return false
-      target.push(node)
-      pos.count++
-    }
-    pos.index++
-    pos.count = 0
-    return true
-  }
-
-  fillTo(attrs, startPos, end) {
-    if (!end) end = new MatchPos(this.elements.length, 0)
-    let found = [], pos = new MatchPos(startPos.index, startPos.count)
-    while (pos.index < end.index)
-      if (!this.fillOne(attrs, pos, found, pos.index == end.index - 1 ? end.count : 0)) return null
-    return found
-  }
-
-  possibleTypes(attrs, pos = new MatchPos(0, 0)) {
-    let found = []
-    for (let i = pos.index, count = pos.count; i < this.elements.length; i++, count = 0) {
-      let elt = this.elements[i]
-      if (count < resolveCount(elt.max, attrs))
-        found = found.concat(elt.nodeTypes)
-      if (resolveCount(elt.min, attrs) <= count)
-        break
-    }
-    return found
   }
 
   static parse(nodeType, expr) {
@@ -182,13 +104,12 @@ export class ContentExpr {
 export class NodeBuilder {
   constructor(type, attrs) {
     this.type = type
-    this.attrs = attrs
-    this.pos = new MatchPos(0, 0)
+    this.pos = type.contentExpr.start(attrs)
     this.content = []
   }
 
   add(node) {
-    let matched = this.type.contentExpr.matchOne(this.attrs, node, this.pos)
+    let matched = this.pos.matchNode(node)
     if (!matched) return false
     this.content.push(node)
     this.pos = matched
@@ -196,9 +117,9 @@ export class NodeBuilder {
   }
 
   finish() {
-    let fill = this.type.contentExpr.fillTo(this.attrs, this.pos)
+    let fill = this.pos.fillTo(this.pos.expr.end(this.pos.attrs))
     if (!fill) return null
-    return this.type.create(this.attrs, this.content.concat(fill))
+    return this.type.create(this.pos.attrs, this.content.concat(fill))
   }
 }
 
@@ -230,11 +151,6 @@ class ContentElement {
     return true
   }
 
-  validCount(attrs, count) {
-    let min = resolveCount(this.min, attrs), mod = resolveCount(this.mod, attrs)
-    return count >= min && (mod == -1 || count % mod == 0)
-  }
-
   createFiller() {
     for (let i = 0; i < this.nodeTypes.length; i++) {
       let type = this.nodeTypes[i]
@@ -248,10 +164,112 @@ class ContentElement {
   }
 }
 
-class MatchPos {
-  constructor(index, count) {
+class ContentMatch {
+  constructor(expr, attrs, index, count) {
+    this.expr = expr
+    this.attrs = attrs
     this.index = index
     this.count = count
+  }
+
+  move(index, count) {
+    return new ContentMatch(this.expr, this.attrs, index, count)
+  }
+
+  resolveCount(count) {
+    if (typeof count == "number") return count
+    return +this.attrs[count]
+  }
+
+  validCount(elt, count) {
+    let min = this.resolveCount(elt.min), mod = this.resolveCount(elt.mod)
+    return count >= min && (mod == -1 || count % mod == 0)
+  }
+
+  matchNode(node) {
+    // FIXME `var` to work around Babel bug T7293
+    for (var {index, count} = this; index < this.expr.elements.length; index++, count = 0) {
+      let elt = this.expr.elements[index], max = this.resolveCount(elt.max)
+      if (count < max && elt.matches(node)) {
+        count++
+        return this.move(index, count)
+      }
+      if (!this.validCount(elt, count)) return null
+    }
+  }
+
+  matchFragment(fragment, maxPos, maxFragPos = fragment.childCount) {
+    if (!maxFragPos) return this
+    let fragPos = 0, end = maxPos ? maxPos.index : this.expr.elements.length
+    for (var {index, count} = this; index < end; index++, count = 0) {
+      let elt = this.expr.elements[index], max = this.resolveCount(elt.max)
+      if (maxPos && index == end - 1) max -= maxPos.count
+
+      while (count < max) {
+        if (elt.matches(fragment.child(fragPos))) {
+          count++
+          if (++fragPos == maxFragPos) return this.move(index, count)
+        } else {
+          break
+        }
+      }
+      if (!this.validCount(elt, count)) return null
+    }
+  }
+
+  matchFragmentBackward(fragment) {
+    let fragPos = fragment.childCount
+    if (fragPos == 0) return this
+    for (var {index, count} = this; index > 0; index--, count = 0) {
+      let elt = this.expr.elements[index - 1], max = this.resolveCount(elt.max)
+      while (count < max) {
+        if (elt.matches(fragment.child(fragPos - 1))) {
+          count++
+          if (--fragPos == 0) return this.move(index, count)
+        } else {
+          break
+        }
+      }
+      if (!this.validCount(elt, count)) return null
+    }
+  }
+
+  validEnd() {
+    for (let i = this.index; i < this.expr.elements.length; i++)
+      if (!this.validCount(this.expr.elements[i], i == this.index ? this.count : 0)) return false
+    return true
+  }
+
+  fillOne(target, extraCount = 0) {
+    let elt = this.expr.elements[this.index], count = this.count
+    while (!this.validCount(elt, count + extraCount)) {
+      let node = elt.createFiller()
+      if (!node) return null
+      target.push(node)
+      count++
+    }
+    return this.move(this.index + 1, 0)
+  }
+
+  fillTo(end) {
+    let found = [], pos = this
+    while (pos.index < end.index) {
+      pos = pos.fillOne(found, pos.index == end.index - 1 ? end.count : 0)
+      if (!pos) return null
+    }
+    return found
+  }
+
+  possibleTypes() {
+    let found = []
+    for (let i = this.index, count = this.count; i < this.expr.elements.length; i++, count = 0) {
+      let elt = this.expr.elements[i]
+      if (count < this.resolveCount(elt.max))
+        found = found.concat(elt.nodeTypes)
+      if (this.resolveCount(elt.min) <= count)
+        break
+    }
+    return found
   }
 }
 
@@ -263,11 +281,6 @@ function parseCount(nodeType, count) {
   } else {
     return Number(count)
   }
-}
-
-function resolveCount(count, attrs) {
-  if (typeof count == "number") return count
-  return +attrs[count]
 }
 
 function checkMarks(schema, marks) {

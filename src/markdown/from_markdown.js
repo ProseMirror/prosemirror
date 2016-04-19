@@ -140,7 +140,7 @@ class MarkdownParseState {
   // Add a node at the current position.
   addNode(type, attrs, content) {
     content = Fragment.from(content)
-    if (!type.checkContent(content, attrs)) {
+    if (!type.checkContent(content, attrs)) { // FIXME pass sanitized attrs
       content = type.fixContent(content, attrs)
       if (!content) return null
     }

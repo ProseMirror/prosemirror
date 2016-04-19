@@ -37,7 +37,7 @@ function deleteBarrier(pm, cut) {
   }
 
   let conn
-  if (after.isTextblock && (conn = before.type.findConnectionNEW(after.type, after.attrs))) {
+  if (after.isTextblock && (conn = before.findWrappingAt($cut.index($cut.depth), after.type))) {
     let tr = pm.tr, end = cut + after.nodeSize
     tr.step("ancestor", cut, end, {types: [before.type, ...conn],
                                    attrs: [before.attrs, ...conn.map(() => null)]})

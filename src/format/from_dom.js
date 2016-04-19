@@ -195,7 +195,7 @@ class DOMParseState {
     let found
     for (let i = this.stack.length - 1; i >= 0; i--) {
       let builder = this.stack[i]
-      let route = builder.type.findConnectionNEW(node.type, builder.attrs, builder)
+      let route = builder.type.findWrapping(node.type, builder.pos)
       if (!route) continue
       if (i == this.stack.length - 1) {
         this.doClose()

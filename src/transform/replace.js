@@ -197,7 +197,7 @@ function closeFragment(refNode, content, $to, $from, depth) {
   let after = !$from ? Fragment.empty
       : $from.depth == depth ? $from.parent.content.cut($from.parentOffset)
       : $from.node(depth).content.cutByIndex($from.index(depth) + 1)
-  let filled = refNode.type.contentExpr.fillThreeWay(refNode.attrs, before, content, after)
+  let filled = refNode.type.contentExpr.fillContent(refNode.attrs, before, content, after)
   // FIXME what do we do when this fails?
   return filled.left.append(content).append(filled.right)
 }
@@ -222,7 +222,7 @@ function closeNode(node, content, $to, $from, depth) {
 //
 // If the outer content can't be placed, a set of wrapper nodes is
 // made up for it (by rooting it in the document node type using
-// findConnection), and the algorithm continues to iterate over those.
+// findWrapping), and the algorithm continues to iterate over those.
 // This is guaranteed to find a fit, since both stacks now start with
 // the same node type (doc).
 
@@ -268,9 +268,11 @@ function placeSlice($from, slice) {
       dFrom = Math.max(0, found - 1)
     } else {
       if (dSlice == 0) {
-        parents = $from.node(0).type.findConnectionToKind(curFragment.leastSuperKind())
-        if (!parents) break
-        parents.unshift($from.node(0).type)
+        // FIXME this is dodgy -- might not find a fit, even if one
+        // exists, because it searches based only on the first child.
+        parents = $from.node(0).findWrappingAt($from.index(0), curFragment.child(0).type)
+        if (!parents || !parents[parents.length - 1].contentExpr.matches(parents[parents.length - 1].defaultAttrs, curFragment)) break
+        parents = [$from.node(0).type].concat(parents)
         curType = parents[parents.length - 1]
       }
       unplaced = curType.create(curAttrs, curFragment)

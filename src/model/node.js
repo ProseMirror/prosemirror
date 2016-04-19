@@ -264,6 +264,14 @@ export class Node {
     return wrapMarks(this.marks, name)
   }
 
+  findWrappingAt(index, target) {
+    return this.type.findWrapping(target, this.contentMatchAt(index))
+  }
+
+  contentMatchAt(index) {
+    return this.type.contentExpr.start(this.attrs).matchFragment(this.content, undefined, index)
+  }
+
   // :: () → Object
   // Return a JSON-serializeable representation of this node.
   toJSON() {

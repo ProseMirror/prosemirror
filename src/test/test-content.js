@@ -1,5 +1,5 @@
 import {ContentExpr} from "../model/content"
-import {defaultSchema as schema} from "../model"
+import {defaultSchema as schema, Fragment} from "../model"
 
 import {defTest} from "./tests"
 import {doc, p, pre, img, br, h1, em} from "./build"
@@ -86,7 +86,7 @@ parseFail("weird_mark", "image[_ em]")
 parseFail("trailing_noise", "image+ text* .")
 parseFail("zero_times", "image{0}")
 
-const attrs = {level: 3}
+const attrs = {level: "3"}
 
 function testValid(expr, frag, isValid) {
   cmp(get(expr).matches(attrs, frag.content), isValid)
@@ -156,8 +156,8 @@ invalid("count_attr", "image{@level}", p(img, img))
 
 function fill(name, expr, before, after, result) {
   defTest("content_fill_" + name, () => {
-    let filled = get(expr).fillTwoWay(attrs, before.content, after.content)
-    if (result) is(filled), cmpNode(filled, result.content)
+    let filled = get(expr).fillContent(attrs, before.content, Fragment.empty, after.content)
+    if (result) is(filled), cmpNode(filled.right, result.content)
     else is(!filled)
   })
 }
@@ -209,7 +209,7 @@ fill("count_left_right", "code_block{2} paragraph{2}",
 
 function fill3(name, expr, before, mid, after, left, right) {
   defTest("content_fill3_" + name, () => {
-    let filled = get(expr).fillThreeWay(attrs, before.content, mid.content, after.content)
+    let filled = get(expr).fillContent(attrs, before.content, mid.content, after.content)
     if (left) is(filled), cmpNode(filled.left, left.content), cmpNode(filled.right, right.content)
     else is(!filled)
   })
