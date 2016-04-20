@@ -19,7 +19,7 @@ function options(ranges) {
           adjustTrailingHacks(dom, node)
         if (dom.contentEditable == "false")
           dom = elt("div", null, dom)
-        if (!node.type.contains) this.pos++
+        if (node.type.isLeaf) this.pos++
       }
 
       return dom
@@ -136,7 +136,7 @@ export function redraw(pm, dirty, doc, prev) {
         reuseDOM = true
       } else if (pChild && !child.isText && child.sameMarkup(pChild) && dirty.get(pChild) != DIRTY_REDRAW) {
         reuseDOM = true
-        if (pChild.type.contains)
+        if (!pChild.type.isLeaf)
           scan(childContainer(domPos), child, pChild, pos + offset + 1)
       } else {
         opts.pos = pos + offset

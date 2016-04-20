@@ -42,7 +42,7 @@ Step.define("ancestor", {
     let inner = $from.parent, slice
     if (types.length) {
       let lastWrapper = types[types.length - 1]
-      if (!lastWrapper.contains)
+      if (lastWrapper.isLeaf)
         throw new RangeError("Can not wrap content in node type " + lastWrapper.name)
       let content = inner.content.cut($from.parentOffset, $to.parentOffset)
       if (!lastWrapper.checkContent(content, attrs[types.length - 1]))
@@ -227,8 +227,8 @@ Transform.prototype.setNodeType = function(pos, type, attrs) {
   let node = this.doc.nodeAt(pos)
   if (!node) throw new RangeError("No node at given position")
   if (!type) type = node.type
-  if (node.type.contains)
-    return this.step("ancestor", pos + 1, pos + 1 + node.content.size, {depth: 1, types: [type], attrs: [attrs]})
-  else
+  if (node.type.isLeaf)
     return this.replaceWith(pos, pos + node.nodeSize, type.create(attrs, null, node.marks))
+  else
+    return this.step("ancestor", pos + 1, pos + 1 + node.content.size, {depth: 1, types: [type], attrs: [attrs]})
 }

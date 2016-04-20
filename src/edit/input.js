@@ -464,13 +464,11 @@ class Dragging {
 function dropPos(pm, e, slice) {
   let pos = pm.posAtCoords({left: e.clientX, top: e.clientY})
   if (pos == null || !slice || !slice.content.size) return pos
-  let $pos = pm.doc.resolve(pos), kind = slice.content.leastSuperKind()
+  let $pos = pm.doc.resolve(pos)
   for (let d = $pos.depth; d >= 0; d--) {
-    if (kind.isSubKind($pos.node(d).type.contains)) {
-      if (d == $pos.depth) return pos
-      if (pos <= ($pos.start(d + 1) + $pos.end(d + 1)) / 2) return $pos.before(d + 1)
-      return $pos.after(d + 1)
-    }
+    let bias = d == $pos.depth ? 0 : pos <= ($pos.start(d + 1) + $pos.end(d + 1)) / 2 ? -1 : 1
+    if ($pos.node(d).canInsertFragment($pos.index(d) + (bias > 0 ? 1 : 0), slice.content))
+      return bias == 0 ? pos : bias < 0 ? $pos.before(d + 1) : $pos.after(d + 1)
   }
   return pos
 }

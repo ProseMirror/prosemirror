@@ -54,7 +54,7 @@ Transform.prototype.replace = function(from, to = from, slice = Slice.empty) {
   let inner = !slice.size ? from : distAfter < 0 ? -1 : after - distAfter, $inner
   if (inner == -1 || inner == after ||
       !($inner = this.doc.resolve(inner)).parent.isTextblock ||
-      !$inner.parent.type.canContainFragment($to.parent.content))
+      !$inner.parent.canAppend($to.parent.content))
     return this
   mergeTextblockAfter(this, $inner, this.doc.resolve(after))
   return this
@@ -254,7 +254,7 @@ function placeSlice($from, slice) {
 
     if (curFragment.size == 0 && dSlice <= 0) break
 
-    let found = findPlacement(curType, curFragment, $from, dFrom)
+    let found = findPlacement(curFragment, $from, dFrom)
     if (found > -1) {
       if (curFragment.size > 0)
         placed[found] = {content: curFragment,
@@ -283,12 +283,8 @@ function placeSlice($from, slice) {
   return placed
 }
 
-function findPlacement(type, fragment, $from, start) {
-  for (let d = start; d >= 0; d--) {
-    let fromType = $from.node(d).type
-    if (type ? type.appendableTo(fromType) : fromType.canContainFragment(fragment))
-      return d
-  }
+function findPlacement(fragment, $from, start) {
+  for (let d = start; d >= 0; d--) if ($from.node(d).canAppend(fragment)) return d
   return -1
 }
 

@@ -168,61 +168,15 @@ export class NodeType extends SchemaItem {
   // Controls whether this node type is locked.
   get locked() { return false }
 
-  // :: ?NodeKind
-  // The kind of nodes this node may contain. `null` means it's a
-  // leaf node.
-  get contains() { return null }
-
   get group() { return null }
   get groupDefault() { return false }
 
   get content() { return "" }
   get isLeaf() { return this.contentExpr.isLeaf }
 
-  // :: ?NodeKind Sets the _kind_ of the node, which is used to
-  // determine valid parent/child [relations](#NodeType.contains).
-  // Should only be `null` for nodes that can't be child nodes (i.e.
-  // the document top node).
-  get kind() { return null }
-
-  // :: (Fragment) → bool
-  // Test whether the content of the given fragment could be contained
-  // in this node type.
-  canContainFragment(fragment) {
-    for (let i = 0; i < fragment.childCount; i++)
-      if (!this.canContain(fragment.child(i))) return false
-    return true
-  }
-
-  // :: (Node) → bool
-  // Test whether the given node could be contained in this node type.
-  canContain(node) {
-    if (!this.canContainType(node.type)) return false
-    for (let i = 0; i < node.marks.length; i++)
-      if (!this.canContainMark(node.marks[i].type)) return false
-    return true
-  }
-
-  // :: (MarkType) → bool
-  // Test whether this node type can contain children with the given
-  // mark type.
-  canContainMark(mark) {
-    let contains = this.containsMarks
-    if (contains === true) return true
-    if (contains) for (let i = 0; i < contains.length; i++)
-      if (contains[i] == mark.name) return true
-    return false
-  }
-
-  // :: (NodeType) → bool
-  // Test whether this node type can contain nodes of the given node
-  // type.
-  canContainType(type) {
-    return type.kind && type.kind.isSubKind(this.contains)
-  }
-
   appendableTo(other) {
     // FIXME too arbitrary, should take current content into account
+    // grep, try to remove all uses?
     return this.contentExpr.appendableTo(other.contentExpr)
   }
 
@@ -281,7 +235,7 @@ export class NodeType extends SchemaItem {
     return new Node(this, this.computeAttrs(attrs, content), Fragment.from(content), Mark.setFrom(marks))
   }
 
-  // FIXME use declarative schema, maybe tie in with .contains
+  // FIXME rethink uses/name
   checkContent(content, attrs) {
     return this.contentExpr.matches(attrs, content)
   }
@@ -303,86 +257,23 @@ export class NodeType extends SchemaItem {
 
     return result
   }
-
-  // :: union<bool, [string]>
-  // The mark types that child nodes of this node may have. `false`
-  // means no marks, `true` means any mark, and an array of strings
-  // can be used to explicitly list the allowed mark types.
-  get containsMarks() { return false }
 }
-
-// ;; Class used to represent node [kind](#NodeType.kind).
-export class NodeKind {
-  // :: (string, ?[NodeKind], ?[NodeKind])
-  // Create a new node kind with the given set of superkinds (the new
-  // kind counts as a member of each of the superkinds) and subkinds
-  // (which will count as a member of this new kind). The `name` field
-  // is only for debugging purposes—kind equivalens is defined by
-  // identity.
-  constructor(name, supers, subs) {
-    this.name = name
-    this.id = ++NodeKind.nextID
-    this.supers = Object.create(null)
-    this.supers[this.id] = this
-    this.subs = subs || []
-
-    if (supers) supers.forEach(sup => this.addSuper(sup))
-    if (subs) subs.forEach(sub => this.addSub(sub))
-  }
-
-  addSuper(sup) {
-    for (let id in sup.supers) {
-      this.supers[id] = sup.supers[id]
-      sup.subs.push(this)
-    }
-  }
-
-  addSub(sub) {
-    if (this.supers[sub.id])
-      throw new RangeError("Circular subkind relation")
-    sub.supers[this.id] = true
-    sub.subs.forEach(next => this.addSub(next))
-  }
-
-  // :: (NodeKind) → bool
-  // Test whether `other` is a subkind of this kind (or the same
-  // kind).
-  isSubKind(other) {
-    return other && (other.id in this.supers) || false
-  }
-}
-NodeKind.nextID = 0
-
-// :: NodeKind The node kind used for generic block nodes.
-NodeKind.block = new NodeKind("block")
-
-// :: NodeKind The node kind used for generic inline nodes.
-NodeKind.inline = new NodeKind("inline")
-
-// :: NodeKind The node kind used for text nodes. Subkind of
-// `NodeKind.inline`.
-NodeKind.text = new NodeKind("text", [NodeKind.inline])
 
 // ;; Base type for block nodetypes.
 export class Block extends NodeType {
-  get contains() { return NodeKind.block }
   get content() { return "block+" }
-  get kind() { return NodeKind.block }
   get group() { return "block" }
   get isBlock() { return true }
 }
 
 // ;; Base type for textblock node types.
 export class Textblock extends Block {
-  get contains() { return NodeKind.inline }
   get content() { return "inline[_]*" }
-  get containsMarks() { return true }
   get isTextblock() { return true }
 }
 
 // ;; Base type for inline node types.
 export class Inline extends NodeType {
-  get kind() { return NodeKind.inline }
   get group() { return "inline" }
   get isInline() { return true }
 }
@@ -391,7 +282,6 @@ export class Inline extends NodeType {
 export class Text extends Inline {
   get selectable() { return false }
   get isText() { return true }
-  get kind() { return NodeKind.text }
 
   create(attrs, content, marks) {
     return new TextNode(this, this.computeAttrs(attrs, content), content, marks)

@@ -34,10 +34,11 @@ export class ContentExpr {
       return this.start(attrs).matchFragment(fragment, 0, index)
   }
 
-  canInsert(attrs, fragment, index, type, marks) {
-    let match = this.getMatchAt(attrs, fragment, index), elt = match.element
-    if (match.resolveCount(elt.max) == many && elt.matchesType(type, marks)) return true
-    if (!(match = match.matchType(type, marks))) return false
+  canInsert(attrs, fragment, index, insert) {
+    let match = this.getMatchAt(attrs, fragment, index)
+    // FIXME bring back optimization
+//    if (match.resolveCount(elt.max) == many && elt.matchesType(type, marks)) return true
+    if (!(match = insert(match))) return false
     return !!match.matchFragment(fragment, index)
   }
 

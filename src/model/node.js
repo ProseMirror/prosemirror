@@ -43,7 +43,7 @@ export class Node {
   // The size of this node. For text node, this is the amount of
   // characters. For leaf nodes, it is one. And for non-leaf nodes, it
   // is the size of the content plus two (the start and end token).
-  get nodeSize() { return this.type.contains ? 2 + this.content.size : 1 }
+  get nodeSize() { return this.type.isLeaf ? 1 : 2 + this.content.size }
 
   // :: number
   // The number of children that the node has.
@@ -273,7 +273,18 @@ export class Node {
   }
 
   canInsert(index, type, marks) {
-    return this.type.contentExpr.canInsert(this.attrs, this.content, index, type, marks || emptyArray)
+    return this.type.contentExpr.canInsert(this.attrs, this.content, index,
+                                           match => match.matchType(type, marks || emptyArray))
+  }
+
+  canInsertFragment(index, fragment) {
+    return this.type.contentExpr.canInsert(this.attrs, this.content, index,
+                                           match => match.matchFragment(fragment))
+  }
+
+  canAppend(fragment) {
+    let matched = this.contentMatchAt(this.content.childCount).matchFragment(fragment)
+    return matched && matched.validEnd()
   }
 
   // :: () → Object

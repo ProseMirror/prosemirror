@@ -38,7 +38,7 @@ export function joinable(doc, pos) {
 }
 
 function canJoin(a, b) {
-  return a && b && !a.isText && a.type.contains && b.type.appendableTo(a.type)
+  return a && b && !a.isText && (b.content.size ? a.canAppend(b.content) : b.type.appendableTo(a.type))
 }
 
 // :: (Node, number, ?number) → ?number
