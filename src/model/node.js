@@ -117,7 +117,7 @@ export class Node {
   // Create a copy of this node, with the given set of marks instead
   // of the node's own marks.
   mark(marks) {
-    return new this.constructor(this.type, this.attrs, this.content, marks)
+    return marks == this.marks ? this : new this.constructor(this.type, this.attrs, this.content, marks)
   }
 
   // :: (number, ?number) → Node
@@ -185,10 +185,10 @@ export class Node {
     return {node, index: index - 1, offset: offset - node.nodeSize}
   }
 
-  // :: (?number, ?number, (node: Node, pos: number, parent: Node))
+  // :: (?number, ?number, (node: Node, pos: number, parent: Node, index: number))
   // Iterate over all nodes between the given two positions, calling
-  // the callback with the node, its position, and its parent
-  // node.
+  // the callback with the node, its position, its parent
+  // node, and its index in that node.
   nodesBetween(from, to, f, pos = 0) {
     this.content.nodesBetween(from, to, f, pos, this)
   }
@@ -269,7 +269,11 @@ export class Node {
   }
 
   contentMatchAt(index) {
-    return this.type.contentExpr.start(this.attrs).matchFragment(this.content, undefined, index)
+    return this.type.contentExpr.getMatchAt(this.attrs, this.content, index)
+  }
+
+  canInsert(index, type, marks) {
+    return this.type.contentExpr.canInsert(this.attrs, this.content, index, type, marks || emptyArray)
   }
 
   // :: () → Object

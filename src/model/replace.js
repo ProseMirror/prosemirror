@@ -144,8 +144,6 @@ function replaceTwoWay($from, $to, depth) {
 
 function prepareSliceForReplace(slice, $along) {
   let extra = $along.depth - slice.openLeft, parent = $along.node(extra)
-  if (!parent.type.canContainFragment(slice.content))
-    throw new ReplaceError("Content " + slice.content + " cannot be placed in " + parent.type.name)
   let node = parent.copy(slice.content)
   for (let i = extra - 1; i >= 0; i--)
     node = $along.node(i).copy(Fragment.from(node))

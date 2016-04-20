@@ -1,5 +1,7 @@
 import {Fragment} from "./fragment"
 
+const many = 1e8
+
 export class ContentExpr {
   constructor(elements) {
     this.elements = elements
@@ -22,8 +24,21 @@ export class ContentExpr {
     return end ? end.validEnd() : false
   }
 
-  getPosAt(attrs, fragment, index) {
-    return this.start(attrs).matchFragment(fragment, undefined, index)
+  // Get a position in a known-valid fragment. If this is a simple
+  // (single-element) expression, we don't have to do any matching,
+  // and can simply skip to the position with count `index`.
+  getMatchAt(attrs, fragment, index) {
+    if (this.elements.length == 1)
+      return new ContentMatch(this, attrs, 0, index)
+    else
+      return this.start(attrs).matchFragment(fragment, 0, index)
+  }
+
+  canInsert(attrs, fragment, index, type, marks) {
+    let match = this.getMatchAt(attrs, fragment, index), elt = match.element
+    if (match.resolveCount(elt.max) == many && elt.matchesType(type, marks)) return true
+    if (!(match = match.matchType(type, marks))) return false
+    return !!match.matchFragment(fragment, index)
   }
 
   appendableTo(other) {
@@ -37,11 +52,11 @@ export class ContentExpr {
 
   fillContent(attrs, before, mid, after) {
     let back = this.end(attrs).matchFragmentBackward(after)
-    let front = back && this.start(attrs).matchFragment(before, back)
+    let front = back && this.start(attrs).matchFragment(before, undefined, undefined, back)
     if (!front) return null
     let left = [], right
     for (;;) {
-      let fits = front.matchFragment(mid, back)
+      let fits = front.matchFragment(mid, undefined, undefined, back)
       if (fits && (right = fits.fillTo(back)))
         return {left: Fragment.from(left), right: Fragment.from(right)}
       if (front.index == back.index - 1) return null
@@ -69,19 +84,19 @@ export class ContentExpr {
       let min = 1, max = 1, mod = -1
       if (count) {
         if (count[1] == "+") {
-          max = 1e8
+          max = many
         } else if (count[1] == "*") {
           min = 0
-          max = 1e8
+          max = many
         } else if (count[1] == "?") {
           min = 0
         } else if (count[2]) {
-          max = 1e8
+          max = many
           min = mod = parseCount(nodeType, count[2])
         } else if (count[3]) {
           min = parseCount(nodeType, count[3])
           if (count[4])
-            max = count[5] ? parseCount(nodeType, count[5]) : 1e8
+            max = count[5] ? parseCount(nodeType, count[5]) : many
           else
             max = min
         }
@@ -101,6 +116,7 @@ export class ContentExpr {
 }
 
 // FIXME automatically fill when a node doesn't fit?
+// FIXME remove, have from_dom directly use ContentMatch
 export class NodeBuilder {
   constructor(type, attrs) {
     this.type = type
@@ -132,13 +148,17 @@ class ContentElement {
     this.mod = mod
   }
 
-  matches(node) {
-    if (this.nodeTypes.indexOf(node.type) == -1) return false
+  matchesType(type, marks) {
+    if (this.nodeTypes.indexOf(type) == -1) return false
     if (this.marks === true) return true
-    if (this.marks === false) return node.marks.length == 0
-    for (let i = 0; i < node.marks.length; i++)
-      if (this.marks.indexOf(node.marks[i].type) == -1) return false
+    if (this.marks === false) return marks.length == 0
+    for (let i = 0; i < marks.length; i++)
+      if (this.marks.indexOf(marks[i].type) == -1) return false
     return true
+  }
+
+  matches(node) {
+    return this.matchesType(node.type, node.marks)
   }
 
   subElement(other) {
@@ -162,6 +182,10 @@ class ContentElement {
   overlaps(other) {
     return this.nodeTypes.some(t => other.nodeTypes.indexOf(t) > -1)
   }
+
+  allowsMark(markType) {
+    return this.marks === true || this.marks && this.marks.indexOf(markType) > -1
+  }
 }
 
 class ContentMatch {
@@ -171,6 +195,8 @@ class ContentMatch {
     this.index = index
     this.count = count
   }
+
+  get element() { return this.expr.elements[this.index] }
 
   move(index, count) {
     return new ContentMatch(this.expr, this.attrs, index, count)
@@ -187,10 +213,14 @@ class ContentMatch {
   }
 
   matchNode(node) {
+    return this.matchType(node.type, node.marks)
+  }
+
+  matchType(type, marks) {
     // FIXME `var` to work around Babel bug T7293
     for (var {index, count} = this; index < this.expr.elements.length; index++, count = 0) {
       let elt = this.expr.elements[index], max = this.resolveCount(elt.max)
-      if (count < max && elt.matches(node)) {
+      if (count < max && elt.matchesType(type, marks)) {
         count++
         return this.move(index, count)
       }
@@ -198,9 +228,9 @@ class ContentMatch {
     }
   }
 
-  matchFragment(fragment, maxPos, maxFragPos = fragment.childCount) {
-    if (!maxFragPos) return this
-    let fragPos = 0, end = maxPos ? maxPos.index : this.expr.elements.length
+  matchFragment(fragment, startFragPos = 0, endFragPos = fragment.childCount, maxPos) {
+    if (startFragPos == endFragPos) return this
+    let fragPos = startFragPos, end = maxPos ? maxPos.index : this.expr.elements.length
     for (var {index, count} = this; index < end; index++, count = 0) {
       let elt = this.expr.elements[index], max = this.resolveCount(elt.max)
       if (maxPos && index == end - 1) max -= maxPos.count
@@ -208,7 +238,7 @@ class ContentMatch {
       while (count < max) {
         if (elt.matches(fragment.child(fragPos))) {
           count++
-          if (++fragPos == maxFragPos) return this.move(index, count)
+          if (++fragPos == endFragPos) return this.move(index, count)
         } else {
           break
         }
@@ -241,7 +271,7 @@ class ContentMatch {
   }
 
   fillOne(target, extraCount = 0) {
-    let elt = this.expr.elements[this.index], count = this.count
+    let elt = this.element, count = this.count
     while (!this.validCount(elt, count + extraCount)) {
       let node = elt.createFiller()
       if (!node) return null
@@ -270,6 +300,10 @@ class ContentMatch {
         break
     }
     return found
+  }
+
+  allowsMark(markType) {
+    return this.element.allowsMark(markType)
   }
 }
 

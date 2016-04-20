@@ -30,7 +30,7 @@ export class Fragment {
   nodesBetween(from, to, f, nodeStart, parent) {
     for (let i = 0, pos = 0; pos < to; i++) {
       let child = this.content[i], end = pos + child.nodeSize
-      if (end > from && f(child, nodeStart + pos, parent) !== false && child.content.size) {
+      if (end > from && f(child, nodeStart + pos, parent, i) !== false && child.content.size) {
         let start = pos + 1
         child.nodesBetween(Math.max(0, from - start),
                            Math.min(child.content.size, to - start),

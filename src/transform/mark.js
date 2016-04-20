@@ -12,26 +12,24 @@ import {Step, StepResult} from "./step"
 //   : Remove the `Mark` given as the step's parameter from all inline
 //     content between `from` and `to`.
 
-function mapNode(node, f, parent) {
-  if (node.content.size) node = node.copy(mapFragment(node.content, f, node))
-  if (node.isInline) node = f(node, parent)
-  return node
-}
-
 function mapFragment(fragment, f, parent) {
   let mapped = []
-  for (let i = 0; i < fragment.childCount; i++)
-    mapped.push(mapNode(fragment.child(i), f, parent))
+  for (let i = 0; i < fragment.childCount; i++) {
+    let child = fragment.child(i)
+    if (child.content.size) child = child.copy(mapFragment(child.content, f, child))
+    if (child.isInline) child = f(child, parent, i)
+    mapped.push(child)
+  }
   return Fragment.fromArray(mapped)
 }
 
 Step.define("addMark", {
   apply(doc, step) {
-    let slice = doc.slice(step.from, step.to), $pos = doc.resolve(step.from)
-    slice.content = mapFragment(slice.content, (node, parent) => {
-      if (!parent.type.canContainMark(step.param.type)) return node
+    let slice = doc.slice(step.from, step.to)
+    slice.content = mapFragment(slice.content, (node, parent, index) => {
+      if (!parent.contentMatchAt(index + 1).allowsMark(step.param.type)) return node
       return node.mark(step.param.addToSet(node.marks))
-    }, $pos.node($pos.depth - slice.openLeft))
+    }, slice.possibleParent)
     return StepResult.fromReplace(doc, step.from, step.to, slice)
   },
   invert(step) {
@@ -49,10 +47,10 @@ Step.define("addMark", {
 // Add the given mark to the inline content between `from` and `to`.
 Transform.prototype.addMark = function(from, to, mark) {
   let removed = [], added = [], removing = null, adding = null
-  this.doc.nodesBetween(from, to, (node, pos, parent) => {
+  this.doc.nodesBetween(from, to, (node, pos, parent, index) => {
     if (!node.isInline) return
     let marks = node.marks
-    if (mark.isInSet(marks) || !parent.type.canContainMark(mark.type)) {
+    if (mark.isInSet(marks) || !parent.contentMatchAt(index + 1).allowsMark(mark.type)) {
       adding = removing = null
     } else {
       let start = Math.max(pos, from), end = Math.min(pos + node.nodeSize, to)
@@ -134,24 +132,38 @@ Transform.prototype.removeMark = function(from, to, mark = null) {
   return this
 }
 
-// :: (number, number, ?NodeType) → Transform
-// Remove all marks and non-text inline nodes, or if `newParent` is
-// given, all marks and inline nodes that may not appear as content of
-// `newParent`, from the given range.
-Transform.prototype.clearMarkup = function(from, to, newParent) {
+// :: (number, number) → Transform
+// Remove all marks and non-text inline nodes from the given range.
+Transform.prototype.clearMarkup = function(from, to) {
   let delSteps = [] // Must be accumulated and applied in inverse order
   this.doc.nodesBetween(from, to, (node, pos) => {
     if (!node.isInline) return
-    if (newParent ? !newParent.canContainType(node.type) : !node.type.isText) {
+    if (!node.type.isText) {
       delSteps.push(new Step("replace", pos, pos + node.nodeSize, Slice.empty))
       return
     }
-    for (let i = 0; i < node.marks.length; i++) {
-      let mark = node.marks[i]
-      if (!newParent || !newParent.canContainMark(mark.type))
-        this.step("removeMark", Math.max(pos, from), Math.min(pos + node.nodeSize, to), mark)
-    }
+    for (let i = 0; i < node.marks.length; i++)
+      this.step("removeMark", Math.max(pos, from), Math.min(pos + node.nodeSize, to), node.marks[i])
   })
+  for (let i = delSteps.length - 1; i >= 0; i--) this.step(delSteps[i])
+  return this
+}
+
+Transform.prototype.clearMarkupFor = function(pos, newType, newAttrs) {
+  let node = this.doc.nodeAt(pos), match = newType.contentExpr.start(newAttrs)
+  let delSteps = []
+  for (let i = 0, cur = pos + 1; i < node.childCount; i++) {
+    let child = node.child(i), end = cur + child.nodeSize
+    let allowed = match.matchType(child.type, [])
+    if (!allowed) {
+      delSteps.push(new Step("replace", cur, end))
+    } else {
+      match = allowed
+      for (let j = 0; j < child.marks.length; j++) if (!match.allowsMark(child.marks[j]))
+        this.step("removeMark", cur, end, child.marks[j])
+    }
+    cur = end
+  }
   for (let i = delSteps.length - 1; i >= 0; i--) this.step(delSteps[i])
   return this
 }

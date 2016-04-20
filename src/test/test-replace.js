@@ -119,7 +119,7 @@ err("inconsistent",
 err("bad_fit",
     doc("<a><b>"),
     doc(p("<a>foo<b>")),
-    "cannot be placed")
+    "invalid content")
 
 err("bad_join",
     doc(ul(li(p("a")), "<a>"), "<b>"),

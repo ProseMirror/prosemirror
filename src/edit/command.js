@@ -287,13 +287,15 @@ function markActive(pm, type) {
 }
 
 function canAddMark(pm, type) {
-  let {from, to, empty} = pm.selection
+  let {from, to, empty} = pm.selection, $from
   if (empty)
-    return !type.isInSet(pm.activeMarks()) && pm.doc.resolve(from).parent.type.canContainMark(type)
+    return !type.isInSet(pm.activeMarks()) && ($from = pm.doc.resolve(from)) &&
+      $from.parent.contentMatchAt($from.index($from.depth)).allowsMark(type)
   let can = false
-  pm.doc.nodesBetween(from, to, node => {
-    if (can || node.isTextblock && !node.type.canContainMark(type)) return false
-    if (node.isInline && !type.isInSet(node.marks)) can = true
+  pm.doc.nodesBetween(from, to, (node, _, parent, i) => {
+    if (can) return false
+    can = node.isInline && !type.isInSet(node.marks) &&
+      parent.contentMatchAt(i + 1).allowsMark(type)
   })
   return can
 }
@@ -301,11 +303,10 @@ function canAddMark(pm, type) {
 function markApplies(pm, type) {
   let {from, to} = pm.selection
   let relevant = false
-  pm.doc.nodesBetween(from, to, node => {
-    if (node.isTextblock) {
-      if (node.type.canContainMark(type)) relevant = true
-      return false
-    }
+  pm.doc.nodesBetween(from, to, (node, _, parent, i) => {
+    if (relevant) return false
+    relevant = (node.isTextblock && node.contentMatchAt(0).allowsMark(type)) ||
+      (node.isInline && parent.contentMatchAt(i + 1).allowsMark(type))
   })
   return relevant
 }
@@ -462,7 +463,8 @@ NodeType.derivableCommands.insert = function(conf) {
       return pm.tr.replaceSelection(this.create(fillAttrs(conf, params))).apply(pm.apply.scroll)
     },
     select: this.isInline ? function(pm) {
-      return pm.doc.resolve(pm.selection.from).parent.type.canContainType(this)
+      let $from = pm.doc.resolve(pm.selection.from)
+      return $from.parent.canInsert($from.index($from.depth), this)
     } : null,
     params: deriveParams(this, conf.params)
   }
