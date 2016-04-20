@@ -124,6 +124,10 @@ export class RangeStore {
   }
 }
 
+function significant(range) {
+  return range.options.className && range.from != range.to
+}
+
 class RangeTracker {
   constructor(sorted) {
     this.sorted = sorted
@@ -134,8 +138,8 @@ class RangeTracker {
   advanceTo(pos) {
     let next
     while (this.pos < this.sorted.length && (next = this.sorted[this.pos]).at <= pos) {
-      let className = next.range.options.className
-      if (className) {
+      if (significant(next.range)) {
+        let className = next.range.options.className
         if (next.type == "open")
           this.current.push(className)
         else
@@ -149,7 +153,7 @@ class RangeTracker {
     for (;;) {
       if (this.pos == this.sorted.length) return -1
       let next = this.sorted[this.pos]
-      if (!next.range.options.className)
+      if (!significant(next.range))
         this.pos++
       else if (next.at >= pos)
         return -1
