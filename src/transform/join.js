@@ -38,7 +38,7 @@ export function joinable(doc, pos) {
 }
 
 function canJoin(a, b) {
-  return a && b && !a.isText && (b.content.size ? a.canAppend(b.content) : b.type.appendableTo(a.type))
+  return a && b && !a.isText && a.canAppend(b)
 }
 
 // :: (Node, number, ?number) → ?number
@@ -73,7 +73,7 @@ Transform.prototype.join = function(pos, depth = 1, silent = false) {
   for (let i = 0; i < depth; i++) {
     let $pos = this.doc.resolve(pos)
     if ($pos.parentOffset == 0 || $pos.parentOffset == $pos.parent.content.size ||
-        !$pos.nodeAfter.type.appendableTo($pos.nodeBefore.type)) {
+        !$pos.nodeAfter.type.compatibleContent($pos.nodeBefore.type)) {
       if (!silent) throw new RangeError("Nothing to join at " + pos)
       break
     }

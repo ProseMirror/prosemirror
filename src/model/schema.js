@@ -174,10 +174,10 @@ export class NodeType extends SchemaItem {
   get content() { return "" }
   get isLeaf() { return this.contentExpr.isLeaf }
 
-  appendableTo(other) {
+  compatibleContent(other) {
     // FIXME too arbitrary, should take current content into account
     // grep, try to remove all uses?
-    return this.contentExpr.appendableTo(other.contentExpr)
+    return this.contentExpr.compatible(other.contentExpr)
   }
 
   containsOnly(node) { // FIXME rename?

@@ -264,27 +264,37 @@ export class Node {
     return wrapMarks(this.marks, name)
   }
 
-  findWrappingAt(index, target) {
-    return this.type.findWrapping(target, this.contentMatchAt(index))
-  }
-
   contentMatchAt(index) {
     return this.type.contentExpr.getMatchAt(this.attrs, this.content, index)
   }
 
-  canInsert(index, type, marks) {
-    return this.type.contentExpr.canInsert(this.attrs, this.content, index,
-                                           match => match.matchType(type, marks || emptyArray))
+  allowsMarkAt(index, mark) {
+    return this.contentMatchAt(index).allowsMark(mark)
+  }
+
+  findWrappingAt(index, target) {
+    return this.type.findWrapping(target, this.contentMatchAt(index))
+  }
+
+  canInsertType(index, type, marks) {
+    return this.type.contentExpr.canInsertType(this.attrs, this.content, index, type, marks || emptyArray)
   }
 
   canInsertFragment(index, fragment) {
-    return this.type.contentExpr.canInsert(this.attrs, this.content, index,
-                                           match => match.matchFragment(fragment))
+    return this.type.contentExpr.canInsertFragment(this.attrs, this.content, index, fragment)
   }
 
-  canAppend(fragment) {
-    let matched = this.contentMatchAt(this.content.childCount).matchFragment(fragment)
-    return matched && matched.validEnd()
+  canReplace(index, type, marks) {
+    return this.type.contentExpr.canReplace(this.attrs, this.content, index, type, marks || emptyArray)
+  }
+
+  canAppend(other) {
+    if (other.content.size) return this.canAppendFragment(other.content)
+    else return this.type.compatibleContent(other.type)
+  }
+
+  canAppendFragment(fragment) {
+    return this.canInsertFragment(this.childCount, fragment)
   }
 
   // :: () → Object

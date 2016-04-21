@@ -54,7 +54,7 @@ Transform.prototype.replace = function(from, to = from, slice = Slice.empty) {
   let inner = !slice.size ? from : distAfter < 0 ? -1 : after - distAfter, $inner
   if (inner == -1 || inner == after ||
       !($inner = this.doc.resolve(inner)).parent.isTextblock ||
-      !$inner.parent.canAppend($to.parent.content))
+      !$inner.parent.canAppendFragment($to.parent.content))
     return this
   mergeTextblockAfter(this, $inner, this.doc.resolve(after))
   return this
@@ -118,7 +118,7 @@ function fillBetween($from, $to, depth, placed) {
   let toNext = $to.depth > depth && $to.node(depth + 1)
   let placedHere = placed[depth]
 
-  if (fromNext && toNext && toNext.type.appendableTo(fromNext.type) && !placedHere)
+  if (fromNext && toNext && toNext.type.compatibleContent(fromNext.type) && !placedHere)
     return Fragment.from(closeNode(fromNext, fillBetween($from, $to, depth + 1, placed),
                                    $from, $to, depth + 1))
 
@@ -159,7 +159,7 @@ function fillFrom($from, depth, placed) {
 
 function closeTo(content, $to, depth, openDepth) {
   let after = $to.node(depth)
-  if (openDepth == 0 || !content.lastChild.type.appendableTo(after.type)) {
+  if (openDepth == 0 || !content.lastChild.type.compatibleContent(after.type)) {
     let finish = closeNode(after, fillTo($to, depth), null, $to, depth)
     distAfter += finish.nodeSize
     return closeRight(content, openDepth).addToEnd(finish)
@@ -284,7 +284,7 @@ function placeSlice($from, slice) {
 }
 
 function findPlacement(fragment, $from, start) {
-  for (let d = start; d >= 0; d--) if ($from.node(d).canAppend(fragment)) return d
+  for (let d = start; d >= 0; d--) if ($from.node(d).canAppendFragment(fragment)) return d
   return -1
 }
 

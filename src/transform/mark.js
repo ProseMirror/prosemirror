@@ -27,7 +27,7 @@ Step.define("addMark", {
   apply(doc, step) {
     let slice = doc.slice(step.from, step.to)
     slice.content = mapFragment(slice.content, (node, parent, index) => {
-      if (!parent.contentMatchAt(index + 1).allowsMark(step.param.type)) return node
+      if (!parent.allowsMarkAt(index + 1, step.param.type)) return node
       return node.mark(step.param.addToSet(node.marks))
     }, slice.possibleParent)
     return StepResult.fromReplace(doc, step.from, step.to, slice)
@@ -50,7 +50,7 @@ Transform.prototype.addMark = function(from, to, mark) {
   this.doc.nodesBetween(from, to, (node, pos, parent, index) => {
     if (!node.isInline) return
     let marks = node.marks
-    if (mark.isInSet(marks) || !parent.contentMatchAt(index + 1).allowsMark(mark.type)) {
+    if (mark.isInSet(marks) || !parent.allowsMarkAt(index + 1, mark.type)) {
       adding = removing = null
     } else {
       let start = Math.max(pos, from), end = Math.min(pos + node.nodeSize, to)

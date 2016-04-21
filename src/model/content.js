@@ -3,7 +3,8 @@ import {Fragment} from "./fragment"
 const many = 1e8
 
 export class ContentExpr {
-  constructor(elements) {
+  constructor(nodeType, elements) {
+    this.nodeType = nodeType
     this.elements = elements
   }
 
@@ -34,17 +35,44 @@ export class ContentExpr {
       return this.start(attrs).matchFragment(fragment, 0, index)
   }
 
-  canInsert(attrs, fragment, index, insert) {
-    let match = this.getMatchAt(attrs, fragment, index)
-    // FIXME bring back optimization
-//    if (match.resolveCount(elt.max) == many && elt.matchesType(type, marks)) return true
-    if (!(match = insert(match))) return false
-    return !!match.matchFragment(fragment, index)
+  isSimple() {
+    if (this.elements.length != 1) return null
+    let elt = this.elements[0]
+    return elt.max == many ? elt : null
   }
 
-  appendableTo(other) {
-    if (other.isLeaf || this.isLeaf) return false
-    return this.elements[this.elements.length - 1].subElement(other.elements[other.elements.length - 1])
+  canInsertType(attrs, content, index, type, marks) {
+    let simple = this.isSimple()
+    if (simple) return simple.matchesType(type, marks)
+    return matchToEnd(this.getMatchAt(attrs, content, index).matchType(type, marks),
+                      content, index)
+  }
+
+  canInsertFragment(attrs, content, index, fragment) {
+    let simple = this.isSimple(), allMatch = true
+    if (simple) {
+      for (let i = 0; i < fragment.childCount; i++)
+        if (!simple.matches(fragment.child(i))) allMatch = false
+      return allMatch
+    }
+    return matchToEnd(this.getMatchAt(attrs, content, index).matchFragment(fragment),
+                      content, index)
+  }
+
+  canReplace(attrs, content, index, type, marks) {
+    let simple = this.isSimple()
+    if (simple) return simple.matchesType(type, marks)
+    return matchToEnd(this.getMatchAt(attrs, content, index).matchType(type, marks),
+                      content, index + 1)
+  }
+
+  compatible(other) {
+    for (let i = 0; i < this.elements.length; i++) {
+      let elt = this.elements[i]
+      for (let j = 0; j < other.elements.length; j++)
+        if (other.elements[j].compatible(elt)) return true
+    }
+    return false
   }
 
   containsOnly(node) {
@@ -112,7 +140,7 @@ export class ContentExpr {
       }
       elements.push(newElt)
     }
-    return new ContentExpr(elements)
+    return new ContentExpr(nodeType, elements)
   }
 }
 
@@ -162,14 +190,10 @@ class ContentElement {
     return this.matchesType(node.type, node.marks)
   }
 
-  subElement(other) {
+  compatible(other) {
     for (let i = 0; i < this.nodeTypes.length; i++)
-      if (other.nodeTypes.indexOf(this.nodeTypes[i]) == -1) return false
-    if (other.marks == true || this.marks == false) return true
-    if (other.marks == false || this.marks == true) return false
-    for (let i = 0; i < this.marks.length; i++)
-      if (other.marks.indexOf(this.marks[i]) == -1) return false
-    return true
+      if (other.nodeTypes.indexOf(this.nodeTypes[i]) != -1) return true
+    return false
   }
 
   createFiller() {
@@ -205,7 +229,11 @@ class ContentMatch {
 
   resolveCount(count) {
     if (typeof count == "number") return count
-    return +this.attrs[count]
+    if (this.attrs) {
+      let value = this.attrs[count]
+      if (value !== undefined) return +value
+    }
+    return +this.expr.nodeType.attrs[count].default
   }
 
   validCount(elt, count) {
@@ -351,4 +379,9 @@ function expandTypes(schema, types) {
     }
   }
   return found
+}
+
+function matchToEnd(match, content, index) {
+  match = match && match.matchFragment(content, index)
+  return match && match.validEnd
 }

@@ -290,12 +290,12 @@ function canAddMark(pm, type) {
   let {from, to, empty} = pm.selection, $from
   if (empty)
     return !type.isInSet(pm.activeMarks()) && ($from = pm.doc.resolve(from)) &&
-      $from.parent.contentMatchAt($from.index($from.depth)).allowsMark(type)
+      $from.parent.allowsMarkAt($from.index($from.depth), type)
   let can = false
   pm.doc.nodesBetween(from, to, (node, _, parent, i) => {
     if (can) return false
     can = node.isInline && !type.isInSet(node.marks) &&
-      parent.contentMatchAt(i + 1).allowsMark(type)
+      parent.allowsMarkAt(i + 1, type)
   })
   return can
 }
@@ -305,8 +305,8 @@ function markApplies(pm, type) {
   let relevant = false
   pm.doc.nodesBetween(from, to, (node, _, parent, i) => {
     if (relevant) return false
-    relevant = (node.isTextblock && node.contentMatchAt(0).allowsMark(type)) ||
-      (node.isInline && parent.contentMatchAt(i + 1).allowsMark(type))
+    relevant = (node.isTextblock && node.allowsMarkAt(0, type)) ||
+      (node.isInline && parent.allowsMarkAt(i + 1, type))
   })
   return relevant
 }
@@ -444,13 +444,17 @@ NodeType.derivableCommands.make = conf => ({
     let {from, to} = pm.selection
     return pm.tr.setBlockType(from, to, this, conf.attrs).apply(pm.apply.scroll)
   },
-  // FIXME deal with situations where not all text blocks have the same kind
   select(pm) {
-    let {from, to, node} = pm.selection
-    if (node)
-      return node.isTextblock && !node.hasMarkup(this, conf.attrs)
-    else
-      return !alreadyHasBlockType(pm.doc, from, to, this, conf.attrs)
+    let {from, to, node} = pm.selection, depth
+    if (node) {
+      if (!node.isTextblock || node.hasMarkup(this, conf.attrs)) return false
+      depth = 0
+    } else {
+      if (alreadyHasBlockType(pm.doc, from, to, this, conf.attrs)) return false
+      depth = 1
+    }
+    let $from = pm.doc.resolve(from), parentDepth = $from.depth - depth
+    return $from.node(parentDepth).canReplace($from.index(parentDepth), this)
   },
   active(pm) {
     return activeTextblockIs(pm, this, conf.attrs)
@@ -464,7 +468,7 @@ NodeType.derivableCommands.insert = function(conf) {
     },
     select: this.isInline ? function(pm) {
       let $from = pm.doc.resolve(pm.selection.from)
-      return $from.parent.canInsert($from.index($from.depth), this)
+      return $from.parent.canInsertType($from.index($from.depth), this)
     } : null,
     params: deriveParams(this, conf.params)
   }

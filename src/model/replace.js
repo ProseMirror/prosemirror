@@ -70,7 +70,7 @@ function replaceOuter($from, $to, slice, depth) {
 }
 
 function checkJoin(main, sub) {
-  if (!sub.type.appendableTo(main.type))
+  if (!sub.type.compatibleContent(main.type))
     throw new ReplaceError("Cannot join " + sub.type.name + " onto " + main.type.name)
 }
 

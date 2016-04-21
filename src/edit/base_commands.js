@@ -28,7 +28,7 @@ baseCommands.deleteSelection = {
 
 function deleteBarrier(pm, cut) {
   let $cut = pm.doc.resolve(cut), before = $cut.nodeBefore, after = $cut.nodeAfter
-  if (after.type.appendableTo(before.type)) {
+  if (before.canAppend(after)) {
     let tr = pm.tr.join(cut)
     if (tr.steps.length && before.content.size == 0 && !before.sameMarkup(after))
       tr.setNodeType(cut - before.nodeSize, after.type, after.attrs)
