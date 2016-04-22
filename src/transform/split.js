@@ -13,7 +13,7 @@ import {PosMap} from "./map"
 Step.define("split", {
   apply(doc, step) {
     let $pos = doc.resolve(step.from), parent = $pos.parent
-    let cut = [parent.copy(), step.param ? step.param.type.create(step.attrs) : parent.copy()]
+    let cut = [parent.copy(), step.param ? step.param.type.create(step.param.attrs) : parent.copy()]
     return StepResult.fromReplace(doc, $pos.pos, $pos.pos, new Slice(Fragment.fromArray(cut), 1, 1))
   },
   posMap(step) {
