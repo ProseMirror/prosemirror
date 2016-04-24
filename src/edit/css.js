@@ -17,6 +17,7 @@ insertCSS(`
   position: absolute;
   width: 1px;
   background: #666;
+  z-index: -1;
 }
 
 .ProseMirror-content ul.tight p, .ProseMirror-content ol.tight p {
