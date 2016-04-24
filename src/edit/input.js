@@ -500,7 +500,10 @@ handlers.dragstart = (pm, e) => {
   }
 }
 
-handlers.dragend = pm => window.setTimeout(() => pm.input.dragging = null, 50)
+handlers.dragend = pm => {
+  removeDropTarget(pm)
+  window.setTimeout(() => pm.input.dragging = null, 50)
+}
 
 handlers.dragover = handlers.dragenter = (pm, e) => {
   e.preventDefault()
