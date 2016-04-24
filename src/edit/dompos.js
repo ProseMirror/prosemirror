@@ -61,7 +61,7 @@ export function childContainer(dom) {
   return dom.hasAttribute("pm-container") ? dom : dom.querySelector("[pm-container]")
 }
 
-// : (DOMNode, number) → {node: DOMNode, offset: number}
+// : (ProseMirror, number) → {node: DOMNode, offset: number}
 // Find the DOM node and offset into that node that the given document
 // position refers to.
 export function DOMFromPos(pm, pos, liberal) {
@@ -96,7 +96,7 @@ export function DOMFromPos(pm, pos, liberal) {
   }
 }
 
-// : (DOMNode, number) → DOMNode
+// : (ProseMirror, number) → DOMNode
 export function DOMAfterPos(pm, pos) {
   let {node, offset} = DOMFromPos(pm, pos)
   if (node.nodeType != 1 || offset == node.childNodes.length)
