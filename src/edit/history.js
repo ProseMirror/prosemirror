@@ -80,7 +80,7 @@ class Branch {
     this.events = 0
   }
 
-  // : (Transform, ?[number]) → Branch
+  // : (Transform, Selection, ?[number]) → Branch
   // Create a new branch with the given transform added.
   addTransform(transform, selection, ids) {
     for (let i = 0; i < transform.steps.length; i++) {

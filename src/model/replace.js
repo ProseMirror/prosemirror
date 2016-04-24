@@ -10,7 +10,7 @@ export class ReplaceError extends ProseMirrorError {}
 // stores not only a fragment, but also the depth up to which nodes on
 // both side are 'open' / cut through.
 export class Slice {
-  // :: (Fragment, number, number)
+  // :: (Fragment, number, number, ?Node)
   constructor(content, openLeft, openRight, possibleParent) {
     // :: Fragment The slice's content nodes.
     this.content = content
