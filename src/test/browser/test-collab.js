@@ -12,21 +12,20 @@ class DummyServer {
   }
 
   attach(pm) {
-    pm.mod.collab.on("mustSend", () => this.mustSend(pm))
+    pm.mod.collab.on("mustSend", () => this.mustSend(pm, pm.mod.collab.clientID))
     this.pms.push(pm)
   }
 
-  mustSend(pm) {
+  mustSend(pm, clientID) {
     if (pm.mod.collab.frozen) return
     let toSend = pm.mod.collab.sendableSteps()
-    this.send(pm, toSend.version, toSend.steps)
-    pm.mod.collab.confirmSteps(toSend)
+    this.send(pm, toSend.version, toSend.steps, clientID)
   }
 
-  send(pm, _version, steps) {
+  send(pm, _version, steps, clientID) {
     this.version += steps.length
     for (let i = 0; i < this.pms.length; i++)
-      if (this.pms[i] != pm) this.pms[i].mod.collab.receive(steps)
+      this.pms[i].mod.collab.receive(steps, steps.map(() => clientID))
   }
 }
 
