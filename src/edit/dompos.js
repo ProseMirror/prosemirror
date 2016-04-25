@@ -69,7 +69,7 @@ export function DOMFromPos(pm, pos, liberal) {
     throw new RangeError("Resolving a position in an outdated DOM structure")
 
   let container = pm.content, offset = pos
-  outer: for (;;) {
+  for (;;) {
     for (let child = container.firstChild, i = 0;; child = child.nextSibling, i++) {
       if (!child) {
         if (offset && !liberal) throw new RangeError("Failed to find node at " + pos + " rem = " + offset)
@@ -251,7 +251,7 @@ export function coordsAtPos(pm, pos) {
       rect = child.nodeType == 3 ? textRect(child, 0, child.nodeValue.length) : child.getBoundingClientRect()
       side = "left"
     }
-    if ((!rect || rect.left == rect.right) && offset) {
+    if ((!rect || rect.top == rect.bottom) && offset) {
       let child = node.childNodes[offset - 1]
       rect = child.nodeType == 3 ? textRect(child, 0, child.nodeValue.length) : child.getBoundingClientRect()
       side = "right"
