@@ -1,6 +1,6 @@
 export const tests = Object.create(null)
 
-// :(string, Function)
+// : (string, Function)
 // Define a test. A test should include a descriptive name and
 // a function which runs the test. If a test fails, it should
 // throw a Failure.
