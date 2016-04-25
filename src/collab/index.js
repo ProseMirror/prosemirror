@@ -29,6 +29,8 @@ defineOption("collab", false, (pm, value) => {
   }
 })
 
+function randomID() { return Math.floor(Math.random() * 0xFFFFFFFF) }
+
 // ;; This class accumulates changes that have to be sent to the
 // central authority in the collaborating group, signals an event when
 // it has something to send, and makes it possible to integrate
@@ -41,6 +43,7 @@ class Collab {
   constructor(pm, options) {
     this.pm = pm
     this.options = options
+    this.clientID = randomID()
 
     // :: number
     // The version number of the last update received from the central
@@ -82,7 +85,7 @@ class Collab {
     return this.unconfirmedSteps.length > 0
   }
 
-  // :: () → {version: number, doc: Node, steps: [Step]}
+  // :: () → {version: number, steps: [Step]}
   // Provides the data describing the editor's unconfirmed steps. The
   // version and array of steps are the things you'd send to the
   // central authority. The whole return value must be passed to
@@ -90,42 +93,48 @@ class Collab {
   sendableSteps() {
     return {
       version: this.version,
-      doc: this.pm.doc,
-      steps: this.unconfirmedSteps.slice()
+      steps: this.unconfirmedSteps.slice(),
+      clientID: this.clientID
     }
   }
 
-  // :: ({version: number, doc: Node, steps: [Step]})
-  // Tells the module that a set of unconfirmed steps have been
-  // accepted by the central authority, and can now be considered
-  // confirmed.
-  confirmSteps(sendable) {
-    this.unconfirmedSteps.splice(0, sendable.steps.length)
-    this.unconfirmedMaps.splice(0, sendable.steps.length)
-    this.version += sendable.steps.length
-    this.versionDoc = sendable.doc
-  }
-
-  // :: ([Step]) → [PosMap]
-  // Pushes a set of steps (made by peers and received from the
-  // central authority) into the editor. This will rebase any
-  // unconfirmed steps over these steps.
+  // :: ([Step], [number]) → [PosMap]
+  // Pushes a set of steps (received from the central authority) into
+  // the editor. Will recognize its own changes, and confirm
+  // unconfirmed steps as appropriate. Remaining unconfirmed steps
+  // will be rebased over remote steps.
   //
   // Returns the [position maps](#PosMap) produced by applying the
   // steps.
-  receive(steps) {
+  receive(steps, clientIDs) {
+    // Find out which prefix of the steps originated with us
+    let ours = 0
+    while (ours < clientIDs.length && clientIDs[ours] == this.clientID) ++ours
+
+    this.version += steps.length
+    if (ours == clientIDs.length && ours == this.unconfirmedSteps.length) {
+      // If all steps originated with us, and we didn't make any new
+      // steps in the meantime, we simply forward the confirmed state
+      // to the current state.
+      this.versionDoc = this.pm.doc
+      this.unconfirmedSteps.length = this.unconfirmedMaps.length = 0
+      return []
+    }
+
     let transform = new Transform(this.versionDoc)
     steps.forEach(step => transform.step(step))
-    this.version += steps.length
     this.versionDoc = transform.doc
 
-    let rebased = rebaseSteps(transform.doc, transform.maps, this.unconfirmedSteps, this.unconfirmedMaps)
+    // Move the remaining unconfirmed steps across the new steps
+    let newMaps = transform.maps.slice(ours)
+    let rebased = rebaseSteps(transform.doc, newMaps,
+                              this.unconfirmedSteps.slice(ours), this.unconfirmedMaps.slice(ours))
     this.unconfirmedSteps = rebased.transform.steps.slice()
     this.unconfirmedMaps = rebased.transform.maps.slice()
 
     let selectionBefore = this.pm.selection
     this.pm.updateDoc(rebased.doc, rebased.mapping)
-    this.pm.history.rebased(transform.maps, rebased.transform, rebased.positions)
+    this.pm.history.rebased(newMaps, rebased.transform, rebased.positions)
     // :: (transform: Transform, selectionBeforeTransform: Selection) #path=Collab#events#collabTransform
     // Signals that a transformation has been aplied to the editor. Passes the `Transform` and the selection
     // before the transform as arguments to the handler.
