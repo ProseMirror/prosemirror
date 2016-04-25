@@ -28,6 +28,10 @@ website](http://prosemirror.net/docs.html).
 
 Install [Node.js](http://nodejs.org).
 
+Clone the
+[git repository](https://github.com/ProseMirror/prosemirror/). (The
+NPM package does not come with the demo files.)
+
 Inside the project directory, install the project's node dependencies
 
 ```bash
