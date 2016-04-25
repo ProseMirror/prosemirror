@@ -509,7 +509,7 @@ export class ProseMirror {
       let child = $from.node(depth)
       if (!dirty.has(child)) dirty.set(child, DIRTY_RESCAN)
     }
-    let start = $from.index(same), end = Math.max(start + 1, $to.index(same) + (same == $to.depth && $to.atNodeBoundary ? 0 : 1))
+    let start = $from.index(same), end = $to.index(same) + (same == $to.depth && $to.atNodeBoundary ? 0 : 1)
     let parent = $from.node(same)
     for (let i = start; i < end; i++)
       dirty.set(parent.child(i), DIRTY_REDRAW)
