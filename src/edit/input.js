@@ -93,15 +93,15 @@ export class Input {
     return !!result
   }
 
-  // : (ProseMirror, TextSelection, string)
+  // : (ProseMirror, TextSelection, string, ?(Node) → Selection)
   // Insert text into a document.
-  insertText(from, to, text) {
+  insertText(from, to, text, findSelection) {
     if (from == to && !text) return
     let pm = this.pm, marks = pm.input.storedMarks || pm.doc.marksAt(from)
     let tr = pm.tr.replaceWith(from, to, text ? pm.schema.text(text, marks) : null)
     tr.apply({
       scrollIntoView: true,
-      selection: findSelectionNear(tr.doc, tr.map(to), -1, true)
+      selection: findSelection ? findSelection(tr.doc) : findSelectionNear(tr.doc, tr.map(to), -1, true)
     })
     // :: () #path=ProseMirror#events#textInput
     // Fired when the user types text into the editor.

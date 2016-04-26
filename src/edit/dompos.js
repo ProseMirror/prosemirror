@@ -12,8 +12,8 @@ export function posBeforeFromDOM(pm, node) {
 }
 
 // : (ProseMirror, DOMNode, number) → number
-export function posFromDOM(pm, dom, domOffset) {
-  if (pm.operation && pm.doc != pm.operation.doc)
+export function posFromDOM(pm, dom, domOffset, loose) {
+  if (!loose && pm.operation && pm.doc != pm.operation.doc)
     throw new RangeError("Fetching a position from an outdated DOM structure")
 
   if (domOffset == null) {
@@ -29,8 +29,12 @@ export function posFromDOM(pm, dom, domOffset) {
     if (dom.nodeType == 3) {
       innerOffset += domOffset
     } else if (tag = dom.getAttribute("pm-offset") && !childContainer(dom)) {
-      let size = +dom.getAttribute("pm-size")
-      return posBeforeFromDOM(pm, dom) + (domOffset == dom.childNodes.length ? size : Math.min(innerOffset, size))
+      if (!loose) {
+        let size = +dom.getAttribute("pm-size")
+        if (domOffset == dom.childNodes.length) innerOffset = size
+        else innerOffset = Math.min(innerOffset, size)
+      }
+      return posBeforeFromDOM(pm, dom) + innerOffset
     } else if (dom.hasAttribute("pm-container")) {
       break
     } else if (tag = dom.getAttribute("pm-inner-offset")) {
@@ -51,6 +55,8 @@ export function posFromDOM(pm, dom, domOffset) {
     if (child.nodeType == 1 && (tag = child.getAttribute("pm-offset"))) {
       before += +tag + +child.getAttribute("pm-size")
       break
+    } else if (loose && child.nodeType == 3) {
+      before += child.nodeValue.length
     }
   }
   return start + before + innerOffset
@@ -64,15 +70,15 @@ export function childContainer(dom) {
 // : (ProseMirror, number) → {node: DOMNode, offset: number}
 // Find the DOM node and offset into that node that the given document
 // position refers to.
-export function DOMFromPos(pm, pos, liberal) {
-  if (!liberal && pm.operation && pm.doc != pm.operation.doc)
+export function DOMFromPos(pm, pos, loose) {
+  if (!loose && pm.operation && pm.doc != pm.operation.doc)
     throw new RangeError("Resolving a position in an outdated DOM structure")
 
   let container = pm.content, offset = pos
   for (;;) {
     for (let child = container.firstChild, i = 0;; child = child.nextSibling, i++) {
       if (!child) {
-        if (offset && !liberal) throw new RangeError("Failed to find node at " + pos + " rem = " + offset)
+        if (offset && !loose) throw new RangeError("Failed to find node at " + pos + " rem = " + offset)
         return {node: container, offset: i}
       }
 

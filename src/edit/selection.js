@@ -84,24 +84,10 @@ export class SelectionState {
   readFromDOM() {
     if (!hasFocus(this.pm) || !this.domChanged()) return false
 
-    let sel = window.getSelection(), doc = this.pm.doc
-    let anchor = posFromDOM(this.pm, sel.anchorNode, sel.anchorOffset)
-    let head = sel.isCollapsed ? anchor : posFromDOM(this.pm, sel.focusNode, sel.focusOffset)
+    let {range, adjusted} = selectionFromDOM(this.pm, this.pm.doc, this.range.head)
+    this.setAndSignal(range)
 
-    let newRange = findSelectionNear(doc, head, this.range.head != null && this.range.head < head ? 1 : -1)
-    if (newRange instanceof TextSelection) {
-      let selNearAnchor = findSelectionNear(doc, anchor, anchor > newRange.to ? -1 : 1, true)
-      newRange = new TextSelection(selNearAnchor.anchor, newRange.head)
-    } else if (anchor < newRange.from || anchor > newRange.to) {
-      // If head falls on a node, but anchor falls outside of it,
-      // create a text selection between them
-      let inv = anchor > newRange.to
-      newRange = new TextSelection(findSelectionNear(doc, anchor, inv ? -1 : 1, true).anchor,
-                                   findSelectionNear(doc, inv ? newRange.from : newRange.to, inv ? 1 : -1, true).head)
-    }
-    this.setAndSignal(newRange)
-
-    if (newRange instanceof NodeSelection || newRange.head != head || newRange.anchor != anchor) {
+    if (range instanceof NodeSelection || adjusted) {
       this.toDOM()
     } else {
       this.clearNode()
@@ -306,6 +292,25 @@ class SelectionToken {
     this.a = a
     this.b = b
   }
+}
+
+export function selectionFromDOM(pm, doc, oldHead, loose) {
+  let sel = window.getSelection()
+  let anchor = posFromDOM(pm, sel.anchorNode, sel.anchorOffset, loose)
+  let head = sel.isCollapsed ? anchor : posFromDOM(pm, sel.focusNode, sel.focusOffset, loose)
+
+  let range = findSelectionNear(doc, head, oldHead != null && oldHead < head ? 1 : -1)
+  if (range instanceof TextSelection) {
+    let selNearAnchor = findSelectionNear(doc, anchor, anchor > range.to ? -1 : 1, true)
+    range = new TextSelection(selNearAnchor.anchor, range.head)
+  } else if (anchor < range.from || anchor > range.to) {
+    // If head falls on a node, but anchor falls outside of it,
+    // create a text selection between them
+    let inv = anchor > range.to
+    range = new TextSelection(findSelectionNear(doc, anchor, inv ? -1 : 1, true).anchor,
+                              findSelectionNear(doc, inv ? range.from : range.to, inv ? 1 : -1, true).head)
+  }
+  return {range, adjusted: head != range.head || anchor != range.anchor}
 }
 
 export function hasFocus(pm) {

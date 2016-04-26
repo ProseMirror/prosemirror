@@ -2,7 +2,7 @@ import {findDiffStart, findDiffEnd, Mark} from "../model"
 import {fromDOM} from "../format"
 import {mapThroughResult} from "../transform/map"
 
-import {findSelectionFrom} from "./selection"
+import {findSelectionFrom, selectionFromDOM} from "./selection"
 import {DOMFromPos} from "./dompos"
 
 export function readInputChange(pm) {
@@ -122,10 +122,14 @@ function readDOMChange(pm, range) {
     pm.input.dispatchKey("Enter")
   } else if ($from.sameParent($to) && $from.parent.isTextblock &&
              (text = uniformTextBetween(parsed, $from.pos, $to.pos)) != null) {
-    pm.input.insertText(fromMapped.pos, toMapped.pos, text)
+    pm.input.insertText(fromMapped.pos, toMapped.pos, text, doc => selectionFromDOM(pm, doc, null, true).range)
   } else {
     let slice = parsed.slice(change.start - range.from, change.endB - range.from)
-    pm.tr.replace(fromMapped.pos, toMapped.pos, slice).apply(pm.apply.scroll)
+    let tr = pm.tr.replace(fromMapped.pos, toMapped.pos, slice)
+    tr.apply({
+      scrollIntoView: true,
+      selection: selectionFromDOM(pm, tr.doc, null, true).range
+    })
   }
 }
 
