@@ -100,7 +100,7 @@ let keys = {
   "Ctrl-Enter": nothing,
   "Mod-Enter": nothing,
   "Shift-Enter": nothing,
-  "Backspace": nothing,
+  "Backspace": browser.ios ? undefined : nothing,
   "Delete": nothing,
   "Mod-B": nothing,
   "Mod-I": nothing,

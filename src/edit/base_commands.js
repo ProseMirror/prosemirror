@@ -1,3 +1,4 @@
+import {browser} from "../dom"
 import {joinPoint, joinable, canLift} from "../transform"
 
 import {charCategory, isExtendingChar} from "./char"
@@ -141,6 +142,7 @@ function moveBackward(doc, pos, by) {
 baseCommands.deleteCharBefore = {
   label: "Delete a character before the cursor",
   run(pm) {
+    if (browser.ios) return false
     let {head, empty} = pm.selection
     if (!empty || pm.doc.resolve(head).parentOffset == 0) return false
     let dest = moveBackward(pm.doc, head, "char")
