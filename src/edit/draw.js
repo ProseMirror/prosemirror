@@ -1,5 +1,5 @@
 import {toDOM, nodeToDOM} from "../format"
-import {elt} from "../dom"
+import {elt, browser} from "../dom"
 
 import {DIRTY_REDRAW} from "./main"
 import {childContainer} from "./dompos"
@@ -159,6 +159,16 @@ export function redraw(pm, dirty, doc, prev) {
       pChild = prev.maybeChild(++iPrev)
     }
     if (node.isTextblock) adjustTrailingHacks(dom, node)
+
+    if (browser.ios) iosHacks(dom)
   }
   scan(pm.content, doc, prev, 0)
+}
+
+function iosHacks(dom) {
+  if (dom.nodeName == "UL" || dom.nodeName == "OL") {
+    dom.style.listStyle = "square"
+    window.getComputedStyle(dom).listStyle
+    dom.style.listStyle = ""
+  }
 }
