@@ -42,6 +42,10 @@ const classPrefix = "ProseMirror-tooltipmenu"
 //   : The elements to show when a full block has been selected and
 //     `selectedBlockMenu` is enabled. Defaults to concatenating
 //     `inlineContent` and `blockContent`.
+//
+// **`position`**`: string`
+//  : Where, relative to the selection, the tooltip should appear.
+//    Defaults to `"above"`. Can also be set to `"below"`.
 
 defineOption("tooltipMenu", false, function(pm, value) {
   if (pm.mod.tooltipMenu) pm.mod.tooltipMenu.detach()
@@ -62,7 +66,8 @@ class TooltipMenu {
     this.onContextMenu = this.onContextMenu.bind(this)
     pm.content.addEventListener("contextmenu", this.onContextMenu)
 
-    this.tooltip = new Tooltip(pm.wrapper, "above")
+    this.position = this.config.position || "above"
+    this.tooltip = new Tooltip(pm.wrapper, this.position)
     this.inlineContent = this.config.inlineContent || defaultInline
     this.blockContent = this.config.blockContent || defaultBlock
     this.selectedBlockContent = this.config.selectedBlockContent || this.inlineContent.concat(this.blockContent)
@@ -84,12 +89,12 @@ class TooltipMenu {
       this.tooltip.close()
     } else if (node && node.isBlock) {
       return () => {
-        let coords = topOfNodeSelection(this.pm)
+        let coords = this.nodeSelectionCoords()
         return () => this.show(this.blockContent, coords)
       }
     } else if (!empty) {
       return () => {
-        let coords = node ? topOfNodeSelection(this.pm) : topCenterOfSelection(), $from
+        let coords = node ? this.nodeSelectionCoords() : this.selectionCoords(), $from
         let showBlock = this.selectedBlockMenu &&
             ($from = this.pm.doc.resolve(from)).parentOffset == 0 &&
             $from.end($from.depth) == to
@@ -97,17 +102,32 @@ class TooltipMenu {
       }
     } else if (this.selectedBlockMenu && this.pm.doc.resolve(from).parent.content.size == 0) {
       return () => {
-        let coords = this.pm.coordsAtPos(from)
+        let coords = this.selectionCoords()
         return () => this.show(this.blockContent, coords)
       }
     } else if (this.showLinks && (link = this.linkUnderCursor())) {
       return () => {
-        let coords = this.pm.coordsAtPos(from)
+        let coords = this.selectionCoords()
         return () => this.showLink(link, coords)
       }
     } else {
       this.tooltip.close()
     }
+  }
+
+  selectionCoords() {
+    let pos = this.position == "above" ? topCenterOfSelection() : bottomCenterOfSelection()
+    if (pos.top != 0) return pos
+    let realPos = this.pm.coordsAtPos(this.pm.selection.from)
+    return {left: realPos.left, top: this.position == "above" ? realPos.top : realPos.bottom}
+  }
+
+  nodeSelectionCoords() {
+    let selected = this.pm.content.querySelector(".ProseMirror-selectednode")
+    if (!selected) return {left: 0, top: 0}
+    let box = selected.getBoundingClientRect()
+    return {left: Math.min((box.left + box.right) / 2, box.left + 20),
+            top: this.position == "above" ? box.top : box.bottom}
   }
 
   linkUnderCursor() {
@@ -130,7 +150,7 @@ class TooltipMenu {
 
     this.pm.setTextSelection(pos, pos)
     this.pm.flush()
-    this.show(this.inlineContent, topCenterOfSelection())
+    this.show(this.inlineContent, this.selectionCoords())
   }
 }
 
@@ -138,27 +158,42 @@ class TooltipMenu {
 function topCenterOfSelection() {
   let range = window.getSelection().getRangeAt(0), rects = range.getClientRects()
   if (!rects.length) return range.getBoundingClientRect()
-  let {left, right, top} = rects[0], i = 1
-  while (left == right && rects.length > i) {
-    ;({left, right, top} = rects[i++])
-  }
-  for (; i < rects.length; i++) {
-    if (rects[i].top < rects[0].bottom - 1 &&
-        // Chrome bug where bogus rectangles are inserted at span boundaries
-        (i == rects.length - 1 || Math.abs(rects[i + 1].left - rects[i].left) > 1)) {
-      left = Math.min(left, rects[i].left)
-      right = Math.max(right, rects[i].right)
-      top = Math.min(top, rects[i].top)
+  let left, right, top, bottom
+  for (let i = 0; i < rects.length; i++) {
+    let rect = rects[i]
+    if (left == right) {
+      ;({left, right, top, bottom} = rect)
+    } else if (rect.top < bottom - 1 &&
+               // Chrome bug where bogus rectangles are inserted at span boundaries
+               (i == rects.length - 1 || Math.abs(rects[i + 1].left - rect.left) > 1)) {
+      left = Math.min(left, rect.left)
+      right = Math.max(right, rect.right)
+      top = Math.min(top, rect.top)
     }
   }
   return {top, left: (left + right) / 2}
 }
 
-function topOfNodeSelection(pm) {
-  let selected = pm.content.querySelector(".ProseMirror-selectednode")
-  if (!selected) return {left: 0, top: 0}
-  let box = selected.getBoundingClientRect()
-  return {left: Math.min((box.left + box.right) / 2, box.left + 20), top: box.top}
+function bottomCenterOfSelection() {
+  let range = window.getSelection().getRangeAt(0), rects = range.getClientRects()
+  if (!rects.length) {
+    let rect = range.getBoundingClientRect()
+    return {left: rect.left, top: rect.bottom}
+  }
+
+  let left, right, bottom, top
+  for (let i = rects.length - 1; i >= 0; i--) {
+    let rect = rects[i]
+    if (left == right) {
+      ;({left, right, bottom, top} = rect)
+    } else if (rect.bottom > top + 1 &&
+               (i == 0 || Math.abs(rects[i - 1].left - rect.left) > 1)) {
+      left = Math.min(left, rect.left)
+      right = Math.max(right, rect.right)
+      bottom = Math.min(bottom, rect.bottom)
+    }
+  }
+  return {top: bottom, left: (left + right) / 2}
 }
 
 insertCSS(`
