@@ -263,7 +263,7 @@ export class ProseMirror {
   // Start an operation and schedule a flush so that any effect of
   // the operation shows up in the DOM.
   startOperation(options) {
-    this.operation = new Operation(this)
+    this.operation = new Operation(this, options)
     if (!(options && options.readSelection === false) && this.sel.readFromDOM())
       this.operation.sel = this.sel.range
 
@@ -549,10 +549,10 @@ eventMixin(ProseMirror)
 // whether a focus needs to happen on flush, and whether something
 // needs to be scrolled into view.
 class Operation {
-  constructor(pm) {
+  constructor(pm, options) {
     this.doc = pm.doc
     this.docSet = false
-    this.sel = pm.sel.range
+    this.sel = (options && options.selection) || pm.sel.range
     this.scrollIntoView = false
     this.focus = false
     this.mappings = []

@@ -35,7 +35,7 @@ export class SelectionState {
   // : (Selection, boolean)
   // Set the current selection.
   set(range, clearLast) {
-    this.pm.ensureOperation({readSelection: false})
+    this.pm.ensureOperation({readSelection: false, selection: range})
     this.range = range
     if (clearLast !== false) this.lastAnchorNode = null
   }
