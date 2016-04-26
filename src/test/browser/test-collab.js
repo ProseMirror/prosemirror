@@ -22,7 +22,7 @@ class DummyServer {
     this.send(pm, toSend.version, toSend.steps, clientID)
   }
 
-  send(pm, _version, steps, clientID) {
+  send(_pm, _version, steps, clientID) {
     this.version += steps.length
     for (let i = 0; i < this.pms.length; i++)
       this.pms[i].mod.collab.receive(steps, steps.map(() => clientID))
