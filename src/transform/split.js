@@ -41,17 +41,3 @@ Transform.prototype.split = function(pos, depth = 1, typeAfter, attrsAfter) {
               i == 0 && typeAfter ? {type: typeAfter, attrs: attrsAfter} : null)
   return this
 }
-
-// :: (number, ?number) → Transform
-// Split at the given position, up to the given depth, if that
-// position isn't already at the start or end of its parent node.
-Transform.prototype.splitIfNeeded = function(pos, depth = 1) {
-  let $pos = this.doc.resolve(pos), before = true
-  for (let i = 0; i < depth; i++) {
-    let d = $pos.depth - i, point = i == 0 ? $pos.pos : before ? $pos.before(d + 1) : $pos.after(d + 1)
-    if (point == $pos.start(d)) before = true
-    else if (point == $pos.end(d)) before = false
-    else return this.split(point, depth - i)
-  }
-  return this
-}
