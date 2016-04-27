@@ -122,15 +122,19 @@ function readDOMChange(pm, range) {
     pm.input.dispatchKey("Enter")
   } else if ($from.sameParent($to) && $from.parent.isTextblock &&
              (text = uniformTextBetween(parsed, $from.pos, $to.pos)) != null) {
-    pm.input.insertText(fromMapped.pos, toMapped.pos, text, doc => selectionFromDOM(pm, doc, null, true).range)
+    pm.input.insertText(fromMapped.pos, toMapped.pos, text, doc => domSel(pm, doc))
   } else {
     let slice = parsed.slice(change.start - range.from, change.endB - range.from)
     let tr = pm.tr.replace(fromMapped.pos, toMapped.pos, slice)
     tr.apply({
       scrollIntoView: true,
-      selection: selectionFromDOM(pm, tr.doc, null, true).range
+      selection: domSel(pm, tr.doc)
     })
   }
+}
+
+function domSel(pm, doc) {
+  if (pm.hasFocus()) return selectionFromDOM(pm, doc, null, true).range
 }
 
 function uniformTextBetween(node, from, to) {

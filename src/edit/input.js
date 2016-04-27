@@ -101,7 +101,7 @@ export class Input {
     let tr = pm.tr.replaceWith(from, to, text ? pm.schema.text(text, marks) : null)
     tr.apply({
       scrollIntoView: true,
-      selection: findSelection ? findSelection(tr.doc) : findSelectionNear(tr.doc, tr.map(to), -1, true)
+      selection: findSelection && findSelection(tr.doc) || findSelectionNear(tr.doc, tr.map(to), -1, true)
     })
     // :: () #path=ProseMirror#events#textInput
     // Fired when the user types text into the editor.
