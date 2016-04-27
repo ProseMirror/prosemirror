@@ -295,6 +295,7 @@ function findPlacement(fragment, $from, start) {
 // as part of the replace step itself, but instead tacked on as a set
 // of split/ancestor/join steps.
 
+// FIXME express in a way that isn't so likely to blow up on content requirements (move step?)
 function mergeTextblockAfter(tr, $inside, $after) {
   let base = $inside.sameDepth($after)
 

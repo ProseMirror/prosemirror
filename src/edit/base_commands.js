@@ -410,12 +410,11 @@ baseCommands.liftEmptyBlock = {
   label: "Move current block up",
   run(pm) {
     let {head, empty} = pm.selection, $head
-    if (!empty || ($head = pm.doc.resolve(head)).parentOffset > 0 || $head.parent.content.size) return false
+    if (!empty || ($head = pm.doc.resolve(head)).parent.content.size) return false
     if ($head.depth > 1) {
-      if ($head.index($head.depth - 1) > 0 &&
-          $head.index($head.depth - 1) < $head.node($head.depth - 1).childCount - 1 &&
-          pm.tr.split($head.before($head.depth)).apply() !== false)
-        return
+      let indexAbove = $head.index($head.depth - 1)
+      if (indexAbove > 0 && $head.node($head.depth - 1).canSplitAt(indexAbove))
+        return pm.tr.split($head.before($head.depth)).apply(pm.apply.scroll)
     }
     return pm.tr.lift(head, head, true).apply(pm.apply.scroll)
   },
@@ -432,15 +431,17 @@ baseCommands.splitBlock = {
   run(pm) {
     let {from, to, node} = pm.selection, $from = pm.doc.resolve(from)
     if (node && node.isBlock) {
-      if (!$from.parentOffset) return false
+      if (!$from.parentOffset || !$from.parent.canSplitAt($from.index($from.depth))) return false
       return pm.tr.split(from).apply(pm.apply.scroll)
     } else {
       let $to = pm.doc.resolve(to), atEnd = $to.parentOffset == $to.parent.content.size
-      let deflt = pm.schema.defaultTextblockType()
-      let type = atEnd ? deflt : null
-      let tr = pm.tr.delete(from, to).split(from, 1, type)
-      if (!atEnd && !$from.parentOffset && $from.parent.type != deflt)
-        tr.setNodeType($from.before($from.depth), deflt)
+      let tr = pm.tr.delete(from, to), $cut = tr.doc.resolveNoCache(from)
+      if ($cut.parent.canSplitAt($cut.index($cut.depth))) {
+        let deflt = pm.schema.defaultTextblockType(), type = atEnd ? deflt : null
+        tr.split(from, 1, type)
+        if (!atEnd && !$from.parentOffset && $from.parent.type != deflt)
+          tr.setNodeType($from.before($from.depth), deflt)
+      }
       return tr.apply(pm.apply.scroll)
     }
   },

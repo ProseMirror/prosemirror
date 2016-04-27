@@ -297,6 +297,10 @@ export class Node {
     return this.canInsertFragment(this.childCount, fragment)
   }
 
+  canSplitAt(index) {
+    return this.type.contentExpr.canSplitAt(this.attrs, this.content, index)
+  }
+
   // :: () → Object
   // Return a JSON-serializeable representation of this node.
   toJSON() {

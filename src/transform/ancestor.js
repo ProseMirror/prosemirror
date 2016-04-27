@@ -132,7 +132,9 @@ Transform.prototype.lift = function(from, to = from, silent = false) {
   let {depth, shared, unwrap} = liftable
   let start = $from.before(shared + 1), end = $to.after(shared + 1)
 
-  for (let d = shared; d > depth; d--) if ($to.index(d) + 1 < $to.node(d).childCount) {
+  // FIXME these might not be possible, though the lift as a whole works
+  // (for example, lifting out of a section with compulsory heading will fail to split due to the absence of the heading)
+  for (let d = shared; d > depth; d--) if ($to.after(d + 1) < $to.end(d)) {
     this.split($to.after(d + 1), d - depth)
     break
   }

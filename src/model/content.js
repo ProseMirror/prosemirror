@@ -66,6 +66,11 @@ export class ContentExpr {
                       content, index + 1)
   }
 
+  canSplitAt(attrs, content, index) {
+    return this.getMatchAt(attrs, content, index).validEnd() &&
+      this.start(attrs).matchFragment(content, index).validEnd()
+  }
+
   compatible(other) {
     for (let i = 0; i < this.elements.length; i++) {
       let elt = this.elements[i]

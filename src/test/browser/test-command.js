@@ -399,7 +399,7 @@ test("liftEmptyBlock",
      doc(blockquote(p("foo")), blockquote(p(), p("bar"))))
 test("liftEmptyBlock",
      doc(blockquote(p("foo"), p("<a>"))),
-     doc(blockquote(p("foo")), p()))
+     doc(blockquote(p("foo")), blockquote(p())))
 test("liftEmptyBlock",
      doc(blockquote(p("foo")), blockquote(p("<a>"))),
      doc(blockquote(p("foo")), p("<a>")))
@@ -456,6 +456,9 @@ test("horizontal_rule:insert",
 test("horizontal_rule:insert",
      doc("<a>", p("bar")),
      doc(hr))
+test("horizontal_rule:insert",
+     doc(p("foo<a>")),
+     doc(p("foo"), hr))
 
 const test_ = namespace("command")
 

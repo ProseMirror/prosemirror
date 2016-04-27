@@ -71,7 +71,7 @@ test("detect_enter", pm => {
   let bq = pm.content.querySelector("blockquote")
   bq.appendChild(document.createElement("p"))
   readInputChange(pm)
-  cmpNode(pm.doc, doc(blockquote(p("foo")), p()))
+  cmpNode(pm.doc, doc(blockquote(p("foo")), blockquote(p())))
 }, {doc: doc(blockquote(p("foo"), p("<a>")))})
 
 test("composition_simple", pm => {

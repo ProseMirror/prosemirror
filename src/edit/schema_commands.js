@@ -296,10 +296,9 @@ ListItem.register("command", "lift", {
     let $to = pm.doc.resolve(pm.selection.to)
     if ($to.node(selected.depth - 2).type != this) return false
     let itemsAfter = selected.to < $to.end(selected.depth - 1)
-    let tr = pm.tr.splitIfNeeded(selected.to, 2).splitIfNeeded(selected.from, 2)
+    let tr = pm.tr.lift(selected.from, selected.to)
     let end = tr.map(selected.to, -1)
-    tr.step("ancestor", tr.map(selected.from), end, {depth: 2})
-    if (itemsAfter) tr.join(end - 2)
+    if (itemsAfter) tr.join(end)
     return tr.apply(pm.apply.scroll)
   },
   keys: ["Mod-[(20)"]
