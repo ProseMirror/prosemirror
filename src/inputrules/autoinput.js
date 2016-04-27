@@ -87,7 +87,7 @@ CodeBlock.register("autoInput", "startCodeBlock", new InputRule(
 Heading.registerComputed("autoInput", "startHeading", type => {
   let re = new RegExp("^(#{1," + type.maxLevel + "}) $")
   return new InputRule(re, " ", function(pm, match, pos) {
-    setAs(pm, pos, this, {level: match[1].length})
+    setAs(pm, pos, this, {level: String(match[1].length)})
   })
 })
 
