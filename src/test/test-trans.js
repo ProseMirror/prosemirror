@@ -319,10 +319,6 @@ nodeType("valid",
          doc("<a>", p("foo")),
          doc(h1("foo")),
          "heading", {level: "1"})
-nodeType("invalid",
-         doc("<a>", p("foo")),
-         "fail",
-         "blockquote")
 nodeType("inline",
          doc(p("foo<a>", img, "bar")),
          doc(p("foo", img2, "bar")),

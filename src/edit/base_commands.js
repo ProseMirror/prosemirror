@@ -38,12 +38,11 @@ function deleteBarrier(pm, cut) {
 
   let conn
   if (after.isTextblock && (conn = before.findWrappingAt($cut.index($cut.depth), after.type))) {
-    let tr = pm.tr, end = cut + after.nodeSize
-    tr.step("ancestor", cut, end, {types: [before.type, ...conn],
-                                   attrs: [before.attrs, ...conn.map(() => null)]})
-    tr.join(end + 2 * conn.length + 2, 1, true)
-    tr.join(cut)
-    if (tr.apply(pm.apply.scroll) !== false) return
+    let end = cut + after.nodeSize
+    return pm.tr.step("shift", cut, end, {
+      before: {overwrite: 1, close: 0, open: conn.map(t => ({type: t.name}))},
+      after: {overwrite: 0, close: conn.length + 1, open: 0}
+    }).join(end + 2 * conn.length, 1, true).apply(pm.apply.scroll)
   }
 
   let selAfter = findSelectionFrom(pm.doc, cut, 1)

@@ -5,7 +5,38 @@ import {Step, StepResult} from "./step"
 import {PosMap} from "./map"
 
 // !! **`shift`**
-//    : FIXME
+//    : Change the node boundaries around a piece of content.
+//
+//      Can be used to delete and insert closing and opening
+//      boundaries around a piece of content, in a single step. The
+//      resulting tree must be well-shaped—you can't remove an opening
+//      boundary on one side with removing one on the other side,
+//      inserting a closing one, or overwriting an existing opening
+//      boundary.
+//
+//      The parameter to this step is an object of the following shape:
+//
+//      ```
+//      {
+//        before: {overwrite: number, close: number, open: [{type: string, attrs: ?Object}]},
+//        after: {overwrite: number, close: number, open: number}
+//      }
+//      ```
+//
+//      Except for `before.open`, all these are constrained by their
+//      context, so you only have to provide a number. For
+//      `before.open`, you have to provide actual node types and
+//      attributes, so that the step knows what kind of boundaries to
+//      create.
+//
+//      As an example, wrapping a paragraph in a blockquote could be
+//      done with a `"shift"` step that whose `from` and `to` point
+//      before and after the paragraph, with a `before.open` of
+//      `{type: "blockquote"}` and an `after.close` of 1.
+//
+//      Lifting a paragraph _out_ of a blockquote would require a step
+//      with an `overwrite` of 1 on both sides (overwriting the
+//      opening and closing boundary of the blockquote.
 
 function isFlatRange($from, $to) {
   if ($from.depth != $to.depth) return false
@@ -13,8 +44,6 @@ function isFlatRange($from, $to) {
     if ($from.index(i) != $to.index(i)) return false
   return $from.parentOffset <= $to.parentOffset
 }
-
-// {before: {overwrite, open, close}, after: {overwrite, open, close}}
 
 Step.define("shift", {
   apply(doc, step) {
@@ -90,11 +119,11 @@ Step.define("shift", {
 
     return new Step("shift", from, to, {
       before: {overwrite: sBefore,
-               open: bOpen,
-               close: before.overwrite - dBefore},
+               close: before.overwrite - dBefore,
+               open: bOpen},
       after: {overwrite: sAfter,
-              open: after.overwrite - dAfter,
-              close: dAfter}
+              close: dAfter,
+              open: after.overwrite - dAfter}
     })
   }
 })
@@ -177,8 +206,8 @@ Transform.prototype.lift = function(from, to = from, silent = false) {
   let {depth, shared, unwrap} = liftable
   let start = $from.before(shared + 1), end = $to.after(shared + 1)
 
-  let before = {overwrite: 0, open: [], close: 0}
-  let after = {overwrite: 0, open: 0, close: 0}
+  let before = {overwrite: 0, close: 0, open: []}
+  let after = {overwrite: 0, close: 0, open: 0}
 
   for (let d = shared, splitting = false; d > depth; d--)
     if (splitting || $from.index(d) > 0) {
@@ -211,4 +240,87 @@ Transform.prototype.lift = function(from, to = from, silent = false) {
   }
 
   return this.step("shift", start, end, {before, after})
+}
+
+// :: (Node, number, ?number, NodeType, ?Object) → bool
+// Determines whether the [sibling range](#Node.siblingRange) of the
+// given positions can be wrapped in the given node type.
+export function canWrap(doc, from, to, type, attrs) {
+  return !!checkWrap(doc.resolve(from), doc.resolve(to == null ? from : to), type, attrs)
+}
+
+function checkWrap($from, $to, type, attrs) {
+  let shared = rangeDepth($from, $to)
+  if (shared == null) return null
+  let parent = $from.node(shared)
+  // FIXME make sure these allow each other as single child (or fill them)
+  let around = parent.findWrappingAt($from.index(shared), type)
+  let inside = type.findWrapping(parent.child($from.index(shared)).type, type.contentExpr.start(attrs || type.defaultAttrs))
+  if (around && inside) return {shared, around, inside}
+}
+
+// :: (number, ?number, NodeType, ?Object) → Transform
+// Wrap the [sibling range](#Node.siblingRange) of the given positions
+// in a node of the given type, with the given attributes (if
+// possible).
+Transform.prototype.wrap = function(from, to = from, type, wrapAttrs) {
+  let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
+  let check = checkWrap($from, $to, type, wrapAttrs)
+  if (!check) throw new RangeError("Wrap not possible")
+  let {shared, around, inside} = check
+
+  let types = around.map(t => ({type: t.name})).concat({type: type.name})
+      .concat(inside.map(t => ({type: t.name})))
+  let start = $from.before(shared + 1)
+  this.step("shift", start, $to.after(shared + 1), {
+    before: {overwrite: 0, close: 0, open: types},
+    after: {overwrite: 0, close: types.length, open: 0}
+  })
+  if (inside.length) {
+    let splitPos = start + types.length, parent = $from.node(shared)
+    for (let i = $from.index(shared), e = $to.index(shared) + 1, first = true; i < e; i++, first = false) {
+      if (!first)
+        this.split(splitPos, inside.length)
+      splitPos += parent.child(i).nodeSize + (first ? 0 : 2 * inside.length)
+    }
+  }
+  return this
+}
+
+// :: (number, ?number, NodeType, ?Object) → Transform
+// Set the type of all textblocks (partly) between `from` and `to` to
+// the given node type with the given attributes.
+Transform.prototype.setBlockType = function(from, to = from, type, attrs) {
+  if (!type.isTextblock) throw new RangeError("Type given to setBlockType should be a textblock")
+  this.doc.nodesBetween(from, to, (node, pos) => {
+    if (node.isTextblock && !node.hasMarkup(type, attrs)) {
+      // Ensure all markup that isn't allowed in the new node type is cleared
+      let start = pos + 1, end = start + node.content.size
+      this.clearMarkupFor(pos, type, attrs)
+      this.step("shift", start, end, {
+        before: {overwrite: 1, close: 0, open: [{type: type.name, attrs}]},
+        after: {overwrite: 1, close: 1, open: 0}
+      })
+      return false
+    }
+  })
+  return this
+}
+
+// :: (number, ?NodeType, ?Object) → Transform
+// Change the type and attributes of the node after `pos`.
+Transform.prototype.setNodeType = function(pos, type, attrs) {
+  let node = this.doc.nodeAt(pos)
+  if (!node) throw new RangeError("No node at given position")
+  if (!type) type = node.type
+  if (node.type.isLeaf)
+    return this.replaceWith(pos, pos + node.nodeSize, type.create(attrs, null, node.marks))
+
+  if (!type.checkContent(node.content, attrs))
+    throw new RangeError("Invalid content for node type " + type.name)
+
+  return this.step("shift", pos + 1, pos + 1 + node.content.size, {
+    before: {overwrite: 1, close: 0, open: [{type: type.name, attrs}]},
+    after: {overwrite: 1, close: 1, open: 0}
+  })
 }

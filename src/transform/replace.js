@@ -292,25 +292,17 @@ function findPlacement(fragment, $from, start) {
 // ends up before it also ends in an open textblock, the textblock
 // after is moved to and connected with the one before it. This
 // influences content outside of the replaced range, so it is not done
-// as part of the replace step itself, but instead tacked on as a set
-// of split/ancestor/join steps.
+// as part of the replace step itself, but instead tacked on as a
+// shift step.
 
-// FIXME express in a way that isn't so likely to blow up on content requirements (move step?)
 function mergeTextblockAfter(tr, $inside, $after) {
-  let base = $inside.sameDepth($after)
+  let base = $inside.sameDepth($after), dInside = $inside.depth - base, dAfter = $after.depth - base
+  let delDepth = $after.depth - 1
+  while (delDepth > base && $after.index(delDepth) + 1 == $after.node(delDepth).childCount)
+    --delDepth
 
-  let end = $after.end($after.depth), cutAt = end + 1, cutDepth = $after.depth - 1
-  while (cutDepth > base && $after.index(cutDepth) + 1 == $after.node(cutDepth).childCount) {
-    --cutDepth
-    ++cutAt
-  }
-  if (cutDepth > base) tr.split(cutAt, cutDepth - base)
-  let types = [], attrs = []
-  for (let i = base + 1; i <= $inside.depth; i++) {
-    let node = $inside.node(i)
-    types.push(node.type)
-    attrs.push(node.attrs)
-  }
-  tr.step("ancestor", $after.pos, end, {depth: $after.depth - base, types, attrs})
-  tr.join($after.pos - ($after.depth - base), $inside.depth - base)
+  tr.step("shift", $after.pos, $after.pos + $after.parent.content.size, {
+    before: {overwrite: dInside + dAfter, close: 0, open: []},
+    after: {overwrite: $after.depth - delDepth, close: dInside, open: delDepth - base}
+  })
 }

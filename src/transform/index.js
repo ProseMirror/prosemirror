@@ -1,7 +1,6 @@
 export {Transform, TransformError} from "./transform"
 export {Step, StepResult} from "./step"
-export {canWrap} from "./ancestor"
-export {canLift} from "./shift" // FIXME
+export {canWrap, canLift} from "./shift"
 export {joinPoint, joinable} from "./join"
 export {PosMap, MapResult, Remapping} from "./map"
 import "./mark"
