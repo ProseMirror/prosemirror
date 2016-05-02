@@ -85,12 +85,11 @@ Step.define("ancestor", {
   }
 })
 
-// :: (Node, number, ?number) → bool
-// Tells you whether the range in the given positions' shared
-// ancestor, or any of _its_ ancestor nodes, can be lifted out of a
-// parent.
-export function canLift(doc, from, to) {
-  return !!findLiftable(doc.resolve(from), doc.resolve(to == null ? from : to))
+// :: (Node, number, ?number, NodeType, ?Object) → bool
+// Determines whether the [sibling range](#Node.siblingRange) of the
+// given positions can be wrapped in the given node type.
+export function canWrap(doc, from, to, type, attrs) {
+  return !!checkWrap(doc.resolve(from), doc.resolve(to == null ? from : to), type, attrs)
 }
 
 function rangeDepth(from, to) {
@@ -98,76 +97,6 @@ function rangeDepth(from, to) {
   if (from.node(shared).isTextblock) --shared
   if (shared && from.before(shared) >= to.after(shared)) return null
   return shared
-}
-
-function findLiftable(from, to) {
-  let shared = rangeDepth(from, to)
-  if (shared == null) return null
-  let parent = from.node(shared)
-  for (let depth = shared - 1; depth >= 0; --depth)
-    if (parent.type.compatibleContent(from.node(depth).type))
-      return {depth, shared, unwrap: false}
-
-  if (parent.isBlock) for (let depth = shared - 1; depth >= 0; --depth) {
-    let target = from.node(depth)
-    for (let i = from.index(shared), e = Math.min(to.index(shared) + 1, parent.childCount); i < e; i++)
-      if (!parent.child(i).type.compatibleContent(target.type)) continue
-    return {depth, shared, unwrap: true}
-  }
-}
-
-// :: (number, ?number, ?bool) → Transform
-// Lift the nearest liftable ancestor of the [sibling
-// range](#Node.siblingRange) of the given positions out of its parent
-// (or do nothing if no such node exists). When `silent` is true, this
-// won't raise an error when the lift is impossible.
-Transform.prototype.lift = function(from, to = from, silent = false) {
-  let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
-  let liftable = findLiftable($from, $to)
-  if (!liftable) {
-    if (!silent) throw new RangeError("No valid lift target")
-    return this
-  }
-
-  let {depth, shared, unwrap} = liftable
-  let start = $from.before(shared + 1), end = $to.after(shared + 1)
-
-  // FIXME these might not be possible, though the lift as a whole works
-  // (for example, lifting out of a section with compulsory heading will fail to split due to the absence of the heading)
-  for (let d = shared; d > depth; d--) if ($to.after(d + 1) < $to.end(d)) {
-    this.split($to.after(d + 1), d - depth)
-    break
-  }
-
-  for (let d = shared; d > depth; d--) if ($from.index(d) > 0) {
-    let cut = d - depth
-    this.split($from.before(d + 1), cut)
-    start += 2 * cut
-    end += 2 * cut
-    break
-  }
-
-  if (unwrap) {
-    let joinPos = start, parent = $from.node(shared)
-    for (let i = $from.index(shared), e = $to.index(shared) + 1, first = true; i < e; i++, first = false) {
-      if (!first) {
-        this.join(joinPos)
-        end -= 2
-      }
-      joinPos += parent.child(i).nodeSize - (first ? 0 : 2)
-    }
-    shared++
-    start++
-    end--
-  }
-  return this.step("ancestor", start, end, {depth: shared - depth})
-}
-
-// :: (Node, number, ?number, NodeType, ?Object) → bool
-// Determines whether the [sibling range](#Node.siblingRange) of the
-// given positions can be wrapped in the given node type.
-export function canWrap(doc, from, to, type, attrs) {
-  return !!checkWrap(doc.resolve(from), doc.resolve(to == null ? from : to), type, attrs)
 }
 
 function checkWrap($from, $to, type, attrs) {

@@ -63,6 +63,11 @@ export class Fragment {
     return new Fragment(result, size)
   }
 
+  cutByIndex(from, to) {
+    if (from == 0 && to == this.content.length) return this
+    return new Fragment(this.content.slice(from, to))
+  }
+
   // :: (Fragment) → Fragment
   // Create a new fragment containing the content of this fragment and
   // `other`.
