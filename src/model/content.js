@@ -99,6 +99,10 @@ export class ContentExpr {
     }
   }
 
+  generateContent(attrs) {
+    return Fragment.from(this.start(attrs).fillTo(this.end(attrs)))
+  }
+
   static parse(nodeType, expr) {
     let elements = [], pos = 0
     for (;;) {
@@ -137,6 +141,9 @@ export class ContentExpr {
         if (max == 0 || mod == 0 || min > max)
           throw new SyntaxError("Invalid repeat count in '" + expr + "'")
       }
+      if (min != 0 && nodeTypes[0].hasRequiredAttrs)
+        throw new SyntaxError("Node type " + types[0] + " in type " + nodeType.name +
+                              " is required, but has non-optional attributes")
       let newElt = new ContentElement(nodeTypes, markSet, min, max, mod)
       for (let i = elements.length - 1; i >= 0; i--) {
         if (elements[i].overlaps(newElt))
@@ -202,11 +209,8 @@ class ContentElement {
   }
 
   createFiller() {
-    for (let i = 0; i < this.nodeTypes.length; i++) {
-      let type = this.nodeTypes[i]
-      if (type.defaultAttrs && !type.isText)
-        return type.create(null, type.fixContent(null, type.defaultAttrs)) // FIXME saner interface for creating default content
-    }
+    let type = this.nodeTypes[0], attrs = type.computeAttrs(null)
+    return type.create(attrs, type.contentExpr.generateContent(attrs))
   }
 
   overlaps(other) {

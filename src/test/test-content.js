@@ -2,7 +2,7 @@ import {ContentExpr} from "../model/content"
 import {defaultSchema as schema, Fragment} from "../model"
 
 import {defTest} from "./tests"
-import {doc, p, pre, img, br, h1, em} from "./build"
+import {doc, p, pre, img, br, h1, em, hr} from "./build"
 import {cmp, cmpNode, is} from "./cmp"
 
 function get(expr) { return ContentExpr.parse(schema.nodes.heading, expr) }
@@ -40,13 +40,13 @@ parse("zero_or_more", "paragraph*",
 parse("optional", "paragraph?",
       {types: ["paragraph"], min: 0, max: 1})
 
-parse("all_marks", "image[_]", {types: ["image"], marks: true})
-parse("some_marks", "image[strong em]", {types: ["image"], marks: ["strong", "em"]})
+parse("all_marks", "text[_]", {types: ["text"], marks: true})
+parse("some_marks", "text[strong em]", {types: ["text"], marks: ["strong", "em"]})
 
-parse("set", "(image | text | hard_break)",
-      {types: ["image", "text", "hard_break"]})
-parse("set_repeat", "(image | text | hard_break)+",
-      {types: ["image", "text", "hard_break"], max: Infinity})
+parse("set", "(text | image | hard_break)",
+      {types: ["text", "image", "hard_break"]})
+parse("set_repeat", "(text | image | hard_break)+",
+      {types: ["text", "image", "hard_break"], max: Infinity})
 parse("group", "inline*",
       {types: ["image", "text", "hard_break"], min: 0, max: Infinity})
 
@@ -79,11 +79,11 @@ function parseFail(name, expr) {
 parseFail("invalid_char", "paragraph/image")
 parseFail("adjacent", "paragraph paragraph")
 parseFail("adjacent_set", "inline image")
-parseFail("bad_attr", "image{@foo}")
+parseFail("bad_attr", "hard_break{@foo}")
 parseFail("bad_node", "foo+")
-parseFail("bad_mark", "image[bar]")
+parseFail("bad_mark", "hard_break[bar]")
 parseFail("weird_mark", "image[_ em]")
-parseFail("trailing_noise", "image+ text* .")
+parseFail("trailing_noise", "hard_break+ text* .")
 parseFail("zero_times", "image{0}")
 
 const attrs = {level: "3"}
@@ -113,10 +113,10 @@ valid("star_group", "inline*", p(img, "text"))
 valid("set", "(paragraph | heading)", doc(p()))
 invalid("set", "(paragraph | heading)", p(img))
 
-valid("seq_simple", "image hard_break image", p(img, br, img))
-invalid("seq_too_long", "image hard_break", p(img, br, img))
-invalid("seq_too_short", "image hard_break image", p(img, br))
-invalid("seq_wrong_start", "image hard_break", p(br, img, br))
+valid("seq_simple", "paragraph horizontal_rule paragraph", p(p(), hr, p()))
+invalid("seq_too_long", "paragraph horizontal_rule", p(p(), hr, p()))
+invalid("seq_too_short", "paragraph horizontal_rule paragraph", p(p(), hr))
+invalid("seq_wrong_start", "paragraph horizontal_rule", p(hr, p(), hr))
 
 valid("seq_star_single", "heading paragraph*", doc(h1()))
 valid("seq_star_multiple", "heading paragraph*", doc(h1(), p(), p()))
@@ -128,31 +128,31 @@ valid("opt_present", "image?", p(img))
 valid("opt_not_present", "image?", p())
 invalid("opt_two", "image?", p(img, img))
 
-valid("count_ok", "image{2}", p(img, img))
-invalid("count_too_few", "image{2}", p(img))
-invalid("count_too_many", "image{2}", p(img, img, img))
-valid("range_lower_bound", "image{2, 4}", p(img, img))
-valid("range_upper_bound", "image{2, 4}", p(img, img, img, img))
-invalid("range_too_few", "image{2, 4}", p(img))
-invalid("range_too_many", "image{2, 4}", p(img, img, img, img, img))
-invalid("range_bad_after", "image{2, 4}", p(img, img, br))
-valid("range_good_after", "image{2, 4} hard_break", p(img, img, br))
-valid("open_range_lower_bound", "image{2,}", p(img, img))
-valid("open_range_many", "image{2,}", p(img, img, img, img, img))
-invalid("open_range_too_few", "image{2,}", p(img))
+valid("count_ok", "hard_break{2}", p(br, br))
+invalid("count_too_few", "hard_break{2}", p(br))
+invalid("count_too_many", "hard_break{2}", p(br, br, br))
+valid("range_lower_bound", "hard_break{2, 4}", p(br, br))
+valid("range_upper_bound", "hard_break{2, 4}", p(br, br, br, br))
+invalid("range_too_few", "hard_break{2, 4}", p(br))
+invalid("range_too_many", "hard_break{2, 4}", p(br, br, br, br, br))
+invalid("range_bad_after", "hard_break{2, 4} text*", p(br, br, img))
+valid("range_good_after", "hard_break{2, 4} image?", p(br, br, img))
+valid("open_range_lower_bound", "hard_break{2,}", p(br, br))
+valid("open_range_many", "hard_break{2,}", p(br, br, br, br, br))
+invalid("open_range_too_few", "hard_break{2,}", p(br))
 
-valid("mod_once", "image%3", p(img, img, img))
-valid("mod_twice", "image%3", p(img, img, img, img, img, img))
-invalid("mod_none", "image%3", p())
-invalid("mod_no_fit", "image%3", p(img, img, img, img))
+valid("mod_once", "hard_break%3", p(br, br, br))
+valid("mod_twice", "hard_break%3", p(br, br, br, br, br, br))
+invalid("mod_none", "hard_break%3", p())
+invalid("mod_no_fit", "hard_break%3", p(br, br, br, br))
 
-valid("mark_all", "image[_]", p(em(img)))
-invalid("mark_none", "image", p(em(img)))
-valid("mark_some", "image[em strong]", p(em(img)))
-invalid("mark_some", "image[code strong]", p(em(img)))
+valid("mark_all", "hard_break[_]", p(em(br)))
+invalid("mark_none", "hard_break", p(em(br)))
+valid("mark_some", "hard_break[em strong]", p(em(br)))
+invalid("mark_some", "hard_break[code strong]", p(em(br)))
 
-valid("count_attr", "image{@level}", p(img, img, img))
-invalid("count_attr", "image{@level}", p(img, img))
+valid("count_attr", "hard_break{@level}", p(br, br, br))
+invalid("count_attr", "hard_break{@level}", p(br, br))
 
 function fill(name, expr, before, after, result) {
   defTest("content_fill_" + name, () => {
@@ -162,10 +162,10 @@ function fill(name, expr, before, after, result) {
   })
 }
 
-fill("simple_seq_nothing", "image hard_break image",
-     p(img), p(br, img), p())
-fill("simple_seq_one", "image hard_break image",
-     p(img), p(img), p(br))
+fill("simple_seq_nothing", "paragraph horizontal_rule paragraph",
+     doc(p(), hr), doc(p()), doc())
+fill("simple_seq_one", "paragraph horizontal_rule paragraph",
+     doc(p()), doc(p()), doc(hr))
 
 fill("star_both_sides", "hard_break*",
      p(br), p(br), p())
@@ -215,8 +215,8 @@ function fill3(name, expr, before, mid, after, left, right) {
   })
 }
 
-fill3("simple_seq", "image hard_break image hard_break image",
-      p(img), p(img), p(img), p(br), p(br))
+fill3("simple_seq", "paragraph horizontal_rule paragraph horizontal_rule paragraph",
+      doc(p()), doc(p()), doc(p()), doc(hr), doc(hr))
 fill3("seq_plus_ok", "code_block+ paragraph+",
       doc(pre()), doc(pre()), doc(p()), doc(), doc())
 fill3("seq_plus_from_empty", "code_block+ paragraph+",

@@ -38,7 +38,7 @@ class SchemaItem {
     return defaults
   }
 
-  computeAttrs(attrs, arg) {
+  computeAttrs(attrs) {
     let built = Object.create(null)
     for (let name in this.attrs) {
       let value = attrs && attrs[name]
@@ -47,7 +47,7 @@ class SchemaItem {
         if (attr.default != null)
           value = attr.default
         else if (attr.compute)
-          value = attr.compute(this, arg)
+          value = attr.compute(this)
         else
           throw new RangeError("No value supplied for attribute " + name)
       }
@@ -174,6 +174,11 @@ export class NodeType extends SchemaItem {
   get content() { return "" }
   get isLeaf() { return this.contentExpr.isLeaf }
 
+  get hasRequiredAttrs() {
+    for (let n in this.attrs) if (this.attrs[n].isRequired) return true
+    return false
+  }
+
   compatibleContent(other) {
     // FIXME too arbitrary, should take current content into account
     // grep, try to remove all uses?
@@ -192,7 +197,7 @@ export class NodeType extends SchemaItem {
       for (let i = 0; i < possible.length; i++) {
         let type = possible[i]
         if (type == target) return current.via
-        if (!type.isLeaf && type.defaultAttrs && !(type.name in seen)) {
+        if (!type.isLeaf && !type.hasRequiredAttrs && !(type.name in seen)) {
           active.push({type, via: current.via.concat(type)})
           seen[type.name] = true
         }
@@ -219,9 +224,9 @@ export class NodeType extends SchemaItem {
     }
   }
 
-  computeAttrs(attrs, content) {
+  computeAttrs(attrs) {
     if (!attrs && this.defaultAttrs) return this.defaultAttrs
-    else return super.computeAttrs(attrs, content)
+    else return super.computeAttrs(attrs)
   }
 
   // :: (?Object, ?union<Fragment, Node, [Node]>, ?[Mark]) → Node
@@ -232,7 +237,7 @@ export class NodeType extends SchemaItem {
   // `null`. Similarly `marks` may be `null` to default to the empty
   // set of marks.
   create(attrs, content, marks) {
-    return new Node(this, this.computeAttrs(attrs, content), Fragment.from(content), Mark.setFrom(marks))
+    return new Node(this, this.computeAttrs(attrs), Fragment.from(content), Mark.setFrom(marks))
   }
 
   // FIXME rethink uses/name
@@ -284,7 +289,7 @@ export class Text extends Inline {
   get isText() { return true }
 
   create(attrs, content, marks) {
-    return new TextNode(this, this.computeAttrs(attrs, content), content, marks)
+    return new TextNode(this, this.computeAttrs(attrs), content, marks)
   }
 }
 
@@ -317,6 +322,10 @@ export class Attribute {
     this.default = options.default
     this.compute = options.compute
     this.label = options.label
+  }
+
+  get isRequired() {
+    return !this.default && !this.compute
   }
 }
 
