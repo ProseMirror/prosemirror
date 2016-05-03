@@ -1,4 +1,4 @@
-import {MarkType, Fragment} from "../model"
+import {MarkType, Fragment, Slice} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
@@ -143,7 +143,7 @@ Transform.prototype.clearMarkup = function(from, to, newParent) {
   this.doc.nodesBetween(from, to, (node, pos) => {
     if (!node.isInline) return
     if (newParent ? !newParent.canContainType(node.type) : !node.type.isText) {
-      delSteps.push(new Step("replace", pos, pos + node.nodeSize))
+      delSteps.push(new Step("replace", pos, pos + node.nodeSize, Slice.empty))
       return
     }
     for (let i = 0; i < node.marks.length; i++) {
