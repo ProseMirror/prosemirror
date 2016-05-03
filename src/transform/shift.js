@@ -296,8 +296,8 @@ Transform.prototype.setBlockType = function(from, to = from, type, attrs) {
     if (node.isTextblock && !node.hasMarkup(type, attrs)) {
       // Ensure all markup that isn't allowed in the new node type is cleared
       let start = pos + 1, end = start + node.content.size
-      this.clearMarkupFor(pos, type, attrs)
-      this.step("shift", start, end, {
+      this.clearMarkupFor(this.map(pos), type, attrs)
+      this.step("shift", this.map(start), this.map(end), {
         before: {overwrite: 1, close: 0, open: [{type: type.name, attrs}]},
         after: {overwrite: 1, close: 1, open: 0}
       })
