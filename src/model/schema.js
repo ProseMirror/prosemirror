@@ -180,8 +180,9 @@ export class NodeType extends SchemaItem {
   }
 
   compatibleContent(other) {
-    // FIXME too arbitrary, should take current content into account
-    // grep, try to remove all uses?
+    // FIXME usually too arbitrary, should often take current content into account
+    // grep
+    // FIXME cache
     return this.contentExpr.compatible(other.contentExpr)
   }
 

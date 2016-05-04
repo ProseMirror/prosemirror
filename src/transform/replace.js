@@ -113,14 +113,22 @@ function outerPlaced(placed) {
   for (let i = 0; i < placed.length; i++) if (placed[i]) return placed[i]
 }
 
+// Given a replaced range and a set of placements, produce a fragment
+// that represents the fitted content. Recursive, called once for each
+// depth where both sides are open, until the first placement.
 function fillBetween($from, $to, depth, placed) {
   let fromNext = $from.depth > depth && $from.node(depth + 1)
   let toNext = $to.depth > depth && $to.node(depth + 1)
   let placedHere = placed[depth]
 
+  // If there's depth left on both sides, the two are compatible, and
+  // nothing is placed here, make a recursive call.
   if (fromNext && toNext && toNext.type.compatibleContent(fromNext.type) && !placedHere)
     return Fragment.from(closeNode(fromNext, fillBetween($from, $to, depth + 1, placed),
                                    $from, $to, depth + 1))
+
+  // Otherwise, build up the content by combining the open pieces to
+  // the left and right with the inserted content placed here.
 
   let content = Fragment.empty
   if (placedHere) {
