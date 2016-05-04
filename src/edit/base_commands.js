@@ -1,5 +1,5 @@
 import {browser} from "../dom"
-import {joinPoint, joinable, canLift} from "../transform"
+import {joinPoint, joinable, canLift, ShiftStep} from "../transform"
 
 import {charCategory, isExtendingChar} from "./char"
 import {findSelectionFrom} from "./selection"
@@ -39,10 +39,12 @@ function deleteBarrier(pm, cut) {
   let conn
   if (after.isTextblock && (conn = before.findWrappingAt($cut.index($cut.depth), after.type))) {
     let end = cut + after.nodeSize
-    return pm.tr.step("shift", cut, end, {
-      before: {overwrite: 1, close: 0, open: conn.map(t => ({type: t.name}))},
-      after: {overwrite: 0, close: conn.length + 1, open: 0}
-    }).join(end + 2 * conn.length, 1, true).apply(pm.apply.scroll)
+    return pm.tr
+      .step(new ShiftStep(cut, end,
+                          {overwrite: 1, close: 0, open: conn.map(t => ({type: t.name}))},
+                          {overwrite: 0, close: conn.length + 1, open: 0}))
+      .join(end + 2 * conn.length, 1, true)
+      .apply(pm.apply.scroll)
   }
 
   let selAfter = findSelectionFrom(pm.doc, cut, 1)

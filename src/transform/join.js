@@ -2,32 +2,46 @@ import {Slice} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
+import {SplitStep} from "./split"
 import {PosMap} from "./map"
 
-// !! **`join`**
-//   : Join two block elements together. `from` and `to` must point at
-//     the end of the first and start of the second element (so that
-//     the intention is preserved even when the positions are mapped).
-
-Step.define("join", {
-  apply(doc, step) {
-    let $from = doc.resolve(step.from), $to = doc.resolve(step.to)
-    if ($from.parentOffset < $from.parent.content.size || $to.parentOffset > 0 || $to.pos - $from.pos != 2)
-      return StepResult.fail("Join positions not around a split")
-    return StepResult.fromReplace(doc, $from.pos, $to.pos, Slice.empty)
-  },
-  posMap(step) {
-    return new PosMap([step.from, 2, 0])
-  },
-  invert(step, doc) {
-    let $before = doc.resolve(step.from), d1 = $before.depth - 1
-    let parentAfter = $before.node(d1).child($before.index(d1) + 1)
-    let param = null
-    if (!$before.parent.sameMarkup(parentAfter))
-      param = {type: parentAfter.type, attrs: parentAfter.attrs}
-    return new Step("split", step.from, step.from, param)
+// ;; Step to join two block elements together.
+export class JoinStep extends Step {
+  // :: (number)
+  // `pos` must point at the point between the two nodes to be joined.
+  constructor(pos) {
+    super()
+    this.pos = pos
   }
-})
+
+  apply(doc) {
+    if (!joinable(doc, this.pos))
+      return StepResult.fail("Join position not between nodes")
+    return StepResult.fromReplace(doc, this.pos - 1, this.pos + 1, Slice.empty)
+  }
+
+  posMap() {
+    return new PosMap([this.pos - 1, 2, 0])
+  }
+
+  invert(doc) {
+    let after = doc.nodeAt(this.pos)
+    return new SplitStep(this.pos - 1, after.type.name, after.attrs)
+  }
+
+  map(mapping) {
+    let from = mapping.mapResult(this.pos - 1, 1)
+    let to = mapping.mapResult(this.pos + 1, -1)
+    if (from.deleted && to.deleted || from.pos + 2 != to.pos) return null
+    return new JoinStep(from.pos + 1)
+  }
+
+  static fromJSON(_schema, json) {
+    return new JoinStep(json.pos)
+  }
+}
+
+Step.register("join", JoinStep)
 
 // :: (Node, number) → bool
 // Test whether the blocks before and after a given position can be
@@ -77,7 +91,7 @@ Transform.prototype.join = function(pos, depth = 1, silent = false) {
       if (!silent) throw new RangeError("Nothing to join at " + pos)
       break
     }
-    this.step("join", pos - 1, pos + 1)
+    this.step(new JoinStep(pos))
     pos--
   }
   return this

@@ -2,31 +2,46 @@ import {Fragment, Slice} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
+import {ShiftStep} from "./shift"
 import {PosMap} from "./map"
 
-// !! **`replace`**
-//   : Delete the part of the document between `from` and `to` and
-//     optionally replace it with another piece of content.
-//
-//     When new content is to be inserted, the step's parameter should
-//     be a `Slice` object that properly fits the 'gap' between `from`
-//     and `to`—the depths must line up, and the surrounding nodes
-//     must be able to be joined with the open sides of the slice.
+// ;; Replace a part of the document with a slice of new content.
+class ReplaceStep extends Step {
+  // :: (number, number, Slice)
+  // The given `slice` should fit the 'gap' between `from` and
+  // `to`—the depths must line up, and the surrounding nodes must be
+  // able to be joined with the open sides of the slice.
+  constructor(from, to, slice) {
+    super()
+    this.from = from
+    this.to = to
+    this.slice = slice
+  }
 
-Step.define("replace", {
-  apply(doc, step) {
-    return StepResult.fromReplace(doc, step.from, step.to, step.param)
-  },
-  posMap(step) {
-    return new PosMap([step.from, step.to - step.from, step.param.size])
-  },
-  invert(step, oldDoc) {
-    return new Step("replace", step.from, step.from + step.param.size,
-                    oldDoc.slice(step.from, step.to))
-  },
-  paramToJSON(param) { return param.toJSON() },
-  paramFromJSON(schema, json) { return Slice.fromJSON(schema, json) }
-})
+  apply(doc) {
+    return StepResult.fromReplace(doc, this.from, this.to, this.slice)
+  }
+
+  posMap() {
+    return new PosMap([this.from, this.to - this.from, this.slice.size])
+  }
+
+  invert(doc) {
+    return new ReplaceStep(this.from, this.from + this.slice.size, doc.slice(this.from, this.to))
+  }
+
+  map(mapping) {
+    let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1)
+    if (from.deleted && to.deleted) return null
+    return new ReplaceStep(from.pos, Math.max(from.pos, to.pos), this.slice)
+  }
+
+  static fromJSON(schema, json) {
+    return new ReplaceStep(json.from, json.to, Slice.fromJSON(schema, json.slice))
+  }
+}
+
+Step.register("replace", ReplaceStep)
 
 // :: (number, number) → Transform
 // Delete the content between the given positions.
@@ -42,7 +57,7 @@ Transform.prototype.replace = function(from, to = from, slice = Slice.empty) {
   let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
   let {fitted, distAfter} = fitSliceInto($from, $to, slice), fSize = fitted.size
   if (from == to && !fSize) return this
-  this.step("replace", from, to, fitted)
+  this.step(new ReplaceStep(from, to, fitted))
 
   // If the endpoints of the replacement don't end right next to each
   // other, we may need to move text that occurs directly after the
@@ -309,8 +324,7 @@ function mergeTextblockAfter(tr, $inside, $after) {
   while (delDepth > base && $after.index(delDepth) + 1 == $after.node(delDepth).childCount)
     --delDepth
 
-  tr.step("shift", $after.pos, $after.pos + $after.parent.content.size, {
-    before: {overwrite: dInside + dAfter, close: 0, open: []},
-    after: {overwrite: $after.depth - delDepth, close: dInside, open: delDepth - base}
-  })
+  tr.step(new ShiftStep($after.pos, $after.pos + $after.parent.content.size,
+                        {overwrite: dInside + dAfter, close: 0, open: []},
+                        {overwrite: $after.depth - delDepth, close: dInside, open: delDepth - base}))
 }

@@ -4,40 +4,6 @@ import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
 import {PosMap} from "./map"
 
-// !! **`shift`**
-//    : Change the node boundaries around a piece of content.
-//
-//      Can be used to delete and insert closing and opening
-//      boundaries around a piece of content, in a single step. The
-//      resulting tree must be well-shaped—you can't remove an opening
-//      boundary on one side with removing one on the other side,
-//      inserting a closing one, or overwriting an existing opening
-//      boundary.
-//
-//      The parameter to this step is an object of the following shape:
-//
-//      ```
-//      {
-//        before: {overwrite: number, close: number, open: [{type: string, attrs: ?Object}]},
-//        after: {overwrite: number, close: number, open: number}
-//      }
-//      ```
-//
-//      Except for `before.open`, all these are constrained by their
-//      context, so you only have to provide a number. For
-//      `before.open`, you have to provide actual node types and
-//      attributes, so that the step knows what kind of boundaries to
-//      create.
-//
-//      As an example, wrapping a paragraph in a blockquote could be
-//      done with a `"shift"` step that whose `from` and `to` point
-//      before and after the paragraph, with a `before.open` of
-//      `{type: "blockquote"}` and an `after.close` of 1.
-//
-//      Lifting a paragraph _out_ of a blockquote would require a step
-//      with an `overwrite` of 1 on both sides (overwriting the
-//      opening and closing boundary of the blockquote.
-
 function isFlatRange($from, $to) {
   if ($from.depth != $to.depth) return false
   for (let i = 0; i < $from.depth; i++)
@@ -45,17 +11,55 @@ function isFlatRange($from, $to) {
   return $from.parentOffset <= $to.parentOffset
 }
 
-Step.define("shift", {
-  apply(doc, step) {
-    let $from = doc.resolve(step.from), $to = doc.resolve(step.to), $before
+// ;; Change the node boundaries around a piece of content.
+//
+// Can be used to delete and insert closing and opening boundaries
+// around a piece of content, in a single step. The resulting tree
+// must be well-shaped—you can't remove an opening boundary on one
+// side with removing one on the other side, inserting a closing one,
+// or overwriting an existing opening boundary.
+//
+// Takes parameters `before` and `after` with the following shapes:
+//
+// ```
+// {overwrite: number, close: number, open: [{type: string, attrs: ?Object}]}
+// {overwrite: number, close: number, open: number}
+// ```
+//
+// Except for `before.open`, all these are constrained by their
+// context, so you only have to provide a number. For `before.open`,
+// you have to provide actual node types and attributes, so that the
+// step knows what kind of boundaries to create.
+//
+// As an example, wrapping a paragraph in a blockquote could be done
+// with a `"shift"` step that whose `from` and `to` point before and
+// after the paragraph, with a `before.open` of `{type: "blockquote"}`
+// and an `after.close` of 1.
+//
+// Lifting a paragraph _out_ of a blockquote would require a step with
+// an `overwrite` of 1 on both sides (overwriting the opening and
+// closing boundary of the blockquote.
+export class ShiftStep extends Step {
+  // :: (number, number, {overwrite: number, close: number, open: [{type: string, attrs: ?Object}]},
+  //     {overwrite: number, close: number, open: number})
+  constructor(from, to, before, after) {
+    super()
+    this.from = from
+    this.to = to
+    this.before = before
+    this.after = after
+  }
+
+  apply(doc) {
+    let $from = doc.resolve(this.from), $to = doc.resolve(this.to), $before
     if (!isFlatRange($from, $to)) return StepResult.fail("Not a flat range")
-    let {before, after} = step.param
+    let {before, after} = this
 
     if (traceBoundary($from, before.overwrite, -1) == null ||
         traceBoundary($to, after.overwrite, 1) == null)
       return StepResult.fail("Shift step trying to overwrite non-boundary content")
 
-    let {content, openLeft, openRight} = doc.slice(step.from, step.to)
+    let {content, openLeft, openRight} = doc.slice(this.from, this.to)
 
     for (let i = before.open.length - 1; i >= 0; i--) {
       if (openLeft) {
@@ -71,7 +75,7 @@ Step.define("shift", {
         --openRight
       } else {
         if (d == null) {
-          $before = doc.resolve(step.from - before.overwrite)
+          $before = doc.resolve(this.from - before.overwrite)
           d = $before.depth - before.close
         }
         content = Fragment.from($before.node(d--).copy(content))
@@ -80,7 +84,7 @@ Step.define("shift", {
     }
 
     if (before.close) {
-      if (!$before) $before = doc.resolve(step.from - before.overwrite)
+      if (!$before) $before = doc.resolve(this.from - before.overwrite)
       let inserted = null
       for (let i = 0; i < before.close; i++)
         inserted = $before.node($before.depth - i).copy(Fragment.from(inserted))
@@ -88,45 +92,60 @@ Step.define("shift", {
       openLeft += before.close
     }
     if (after.open) {
-      let $after = doc.resolve(step.to + after.overwrite), inserted = null
+      let $after = doc.resolve(this.to + after.overwrite), inserted = null
       for (let i = 0; i < after.open; i++)
         inserted = $after.node($after.depth - i).copy(Fragment.from(inserted))
       content = addToEndAtDepth(content, inserted, openRight)
       openRight += after.open
     }
 
-    return StepResult.fromReplace(doc, step.from - before.overwrite,
-                                  step.to + after.overwrite,
+    return StepResult.fromReplace(doc, this.from - before.overwrite,
+                                  this.to + after.overwrite,
                                   new Slice(content, openLeft, openRight))
-  },
-  posMap(step) {
-    let {before, after} = step.param
-    return new PosMap([step.from - before.overwrite, before.overwrite, before.close + before.open.length,
-                       step.to, after.overwrite, after.open + after.close])
-  },
-  invert(step, oldDoc) {
-    let {before, after} = step.param
+  }
+
+  posMap() {
+    let {before, after} = this
+    return new PosMap([this.from - before.overwrite, before.overwrite, before.close + before.open.length,
+                       this.to, after.overwrite, after.open + after.close])
+  }
+
+  invert(doc) {
+    let {before, after} = this
     let sBefore = before.close + before.open.length, sAfter = after.open + after.close
-    let $from = oldDoc.resolve(step.from), bOpen = []
+    let $from = doc.resolve(this.from), bOpen = []
     let dBefore = traceBoundary($from, before.overwrite, -1)
-    let dAfter = traceBoundary(oldDoc.resolve(step.to), after.overwrite, 1)
+    let dAfter = traceBoundary(doc.resolve(this.to), after.overwrite, 1)
     for (let i = $from.depth - dBefore + 1; i <= $from.depth; i++) {
       let node = $from.node(i)
       bOpen.push({type: node.type.name, attrs: node.attrs})
     }
-    let from = step.from - before.overwrite + sBefore
-    let to = step.to - before.overwrite + sBefore
+    let from = this.from - before.overwrite + sBefore
+    let to = this.to - before.overwrite + sBefore
 
-    return new Step("shift", from, to, {
-      before: {overwrite: sBefore,
-               close: before.overwrite - dBefore,
-               open: bOpen},
-      after: {overwrite: sAfter,
-              close: dAfter,
-              open: after.overwrite - dAfter}
+    return new ShiftStep(from, to, {
+      overwrite: sBefore,
+      close: before.overwrite - dBefore,
+      open: bOpen
+    }, {
+      overwrite: sAfter,
+      close: dAfter,
+      open: after.overwrite - dAfter
     })
   }
-})
+
+  map(mapping) {
+    let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1)
+    if (from.deleted && to.deleted) return null
+    return new ShiftStep(from.pos, Math.max(from.pos, to.pos), this.before, this.after)
+  }
+
+  static fromJSON(_schema, json) {
+    return new ShiftStep(json.from, json.to, json.before, json.after)
+  }
+}
+
+Step.register("shift", ShiftStep)
 
 function addToStartAtDepth(frag, node, depth) {
   if (!depth) return frag.addToStart(node)
@@ -239,7 +258,7 @@ Transform.prototype.lift = function(from, to = from, silent = false) {
     ++after.overwrite
   }
 
-  return this.step("shift", start, end, {before, after})
+  return this.step(new ShiftStep(start, end, before, after))
 }
 
 // :: (Node, number, ?number, NodeType, ?Object) → bool
@@ -272,10 +291,9 @@ Transform.prototype.wrap = function(from, to = from, type, wrapAttrs) {
   let types = around.map(t => ({type: t.name})).concat({type: type.name})
       .concat(inside.map(t => ({type: t.name})))
   let start = $from.before(shared + 1)
-  this.step("shift", start, $to.after(shared + 1), {
-    before: {overwrite: 0, close: 0, open: types},
-    after: {overwrite: 0, close: types.length, open: 0}
-  })
+  this.step(new ShiftStep(start, $to.after(shared + 1),
+                          {overwrite: 0, close: 0, open: types},
+                          {overwrite: 0, close: types.length, open: 0}))
   if (inside.length) {
     let splitPos = start + types.length, parent = $from.node(shared)
     for (let i = $from.index(shared), e = $to.index(shared) + 1, first = true; i < e; i++, first = false) {
@@ -297,10 +315,9 @@ Transform.prototype.setBlockType = function(from, to = from, type, attrs) {
       // Ensure all markup that isn't allowed in the new node type is cleared
       let start = pos + 1, end = start + node.content.size
       this.clearMarkupFor(this.map(pos), type, attrs)
-      this.step("shift", this.map(start), this.map(end), {
-        before: {overwrite: 1, close: 0, open: [{type: type.name, attrs}]},
-        after: {overwrite: 1, close: 1, open: 0}
-      })
+      this.step(new ShiftStep(this.map(start), this.map(end),
+                              {overwrite: 1, close: 0, open: [{type: type.name, attrs}]},
+                              {overwrite: 1, close: 1, open: 0}))
       return false
     }
   })
@@ -319,8 +336,7 @@ Transform.prototype.setNodeType = function(pos, type, attrs) {
   if (!type.checkContent(node.content, attrs))
     throw new RangeError("Invalid content for node type " + type.name)
 
-  return this.step("shift", pos + 1, pos + 1 + node.content.size, {
-    before: {overwrite: 1, close: 0, open: [{type: type.name, attrs}]},
-    after: {overwrite: 1, close: 1, open: 0}
-  })
+  return this.step(new ShiftStep(pos + 1, pos + 1 + node.content.size,
+                                 {overwrite: 1, close: 0, open: [{type: type.name, attrs}]},
+                                 {overwrite: 1, close: 1, open: 0}))
 }

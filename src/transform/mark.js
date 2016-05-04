@@ -2,15 +2,7 @@ import {MarkType, Fragment, Slice} from "../model"
 
 import {Transform} from "./transform"
 import {Step, StepResult} from "./step"
-
-// !!
-// **`addMark`**
-//   : Add the `Mark` given as the step's parameter to all
-//     inline content between `from` and `to` (when allowed).
-//
-// **`removeMark`**
-//   : Remove the `Mark` given as the step's parameter from all inline
-//     content between `from` and `to`.
+import {ReplaceStep} from "./replace"
 
 function mapFragment(fragment, f, parent) {
   let mapped = []
@@ -23,25 +15,41 @@ function mapFragment(fragment, f, parent) {
   return Fragment.fromArray(mapped)
 }
 
-Step.define("addMark", {
-  apply(doc, step) {
-    let slice = doc.slice(step.from, step.to)
-    slice.content = mapFragment(slice.content, (node, parent, index) => {
-      if (!parent.allowsMarkAt(index + 1, step.param.type)) return node
-      return node.mark(step.param.addToSet(node.marks))
-    }, slice.possibleParent)
-    return StepResult.fromReplace(doc, step.from, step.to, slice)
-  },
-  invert(step) {
-    return new Step("removeMark", step.from, step.to, step.param)
-  },
-  paramToJSON(param) {
-    return param.toJSON()
-  },
-  paramFromJSON(schema, json) {
-    return schema.markFromJSON(json)
+// ;; Add a mark to all inline content between two positions.
+export class AddMarkStep extends Step {
+  // :: (number, number, Mark)
+  constructor(from, to, mark) {
+    super()
+    this.from = from
+    this.to = to
+    this.mark = mark
   }
-})
+
+  apply(doc) {
+    let oldSlice = doc.slice(this.from, this.to)
+    let slice = new Slice(mapFragment(oldSlice.content, (node, parent, index) => {
+      if (!parent.allowsMarkAt(index + 1, this.mark.type)) return node
+      return node.mark(this.mark.addToSet(node.marks))
+    }, oldSlice.possibleParent), oldSlice.openLeft, oldSlice.openRight)
+    return StepResult.fromReplace(doc, this.from, this.to, slice)
+  }
+
+  invert() {
+    return new RemoveMarkStep(this.from, this.to, this.mark)
+  }
+
+  map(mapping) {
+    let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1)
+    if (from.deleted && to.deleted || from.pos >= to.pos) return null
+    return new AddMarkStep(from.pos, to.pos, this.mark)
+  }
+
+  static fromJSON(schema, json) {
+    return new AddMarkStep(json.from, json.to, schema.markFromJSON(json.mark))
+  }
+}
+
+Step.register("addMark", AddMarkStep)
 
 // :: (number, number, Mark) → Transform
 // Add the given mark to the inline content between `from` and `to`.
@@ -58,15 +66,15 @@ Transform.prototype.addMark = function(from, to, mark) {
 
       if (!rm)
         removing = null
-      else if (removing && removing.param.eq(rm))
+      else if (removing && removing.mark.eq(rm))
         removing.to = end
       else
-        removed.push(removing = new Step("removeMark", start, end, rm))
+        removed.push(removing = new RemoveMarkStep(start, end, rm))
 
       if (adding)
         adding.to = end
       else
-        added.push(adding = new Step("addMark", start, end, mark))
+        added.push(adding = new AddMarkStep(start, end, mark))
     }
   })
 
@@ -75,24 +83,40 @@ Transform.prototype.addMark = function(from, to, mark) {
   return this
 }
 
-Step.define("removeMark", {
-  apply(doc, step) {
-    let slice = doc.slice(step.from, step.to)
-    slice.content = mapFragment(slice.content, node => {
-      return node.mark(step.param.removeFromSet(node.marks))
-    })
-    return StepResult.fromReplace(doc, step.from, step.to, slice)
-  },
-  invert(step) {
-    return new Step("addMark", step.from, step.to, step.param)
-  },
-  paramToJSON(param) {
-    return param.toJSON()
-  },
-  paramFromJSON(schema, json) {
-    return schema.markFromJSON(json)
+// ;; Remove a mark from all inline content between two positions.
+export class RemoveMarkStep extends Step {
+  // :: (number, number, Mark)
+  constructor(from, to, mark) {
+    super()
+    this.from = from
+    this.to = to
+    this.mark = mark
   }
-})
+
+  apply(doc) {
+    let oldSlice = doc.slice(this.from, this.to)
+    let slice = new Slice(mapFragment(oldSlice.content, node => {
+      return node.mark(this.mark.removeFromSet(node.marks))
+    }), oldSlice.openLeft, oldSlice.openRight)
+    return StepResult.fromReplace(doc, this.from, this.to, slice)
+  }
+
+  invert() {
+    return new AddMarkStep(this.from, this.to, this.mark)
+  }
+
+  map(mapping) {
+    let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1)
+    if (from.deleted && to.deleted || from.pos >= to.pos) return null
+    return new RemoveMarkStep(from.pos, to.pos, this.mark)
+  }
+
+  static fromJSON(schema, json) {
+    return new RemoveMarkStep(json.from, json.to, schema.markFromJSON(json.mark))
+  }
+}
+
+Step.register("removeMark", RemoveMarkStep)
 
 // :: (number, number, ?union<Mark, MarkType>) → Transform
 // Remove the given mark, or all marks of the given type, from inline
@@ -128,7 +152,7 @@ Transform.prototype.removeMark = function(from, to, mark = null) {
       }
     }
   })
-  matched.forEach(m => this.step("removeMark", m.from, m.to, m.style))
+  matched.forEach(m => this.step(new RemoveMarkStep(m.from, m.to, m.style)))
   return this
 }
 
@@ -139,11 +163,11 @@ Transform.prototype.clearMarkup = function(from, to) {
   this.doc.nodesBetween(from, to, (node, pos) => {
     if (!node.isInline) return
     if (!node.type.isText) {
-      delSteps.push(new Step("replace", pos, pos + node.nodeSize, Slice.empty))
+      delSteps.push(new ReplaceStep(pos, pos + node.nodeSize, Slice.empty))
       return
     }
     for (let i = 0; i < node.marks.length; i++)
-      this.step("removeMark", Math.max(pos, from), Math.min(pos + node.nodeSize, to), node.marks[i])
+      this.step(new RemoveMarkStep(Math.max(pos, from), Math.min(pos + node.nodeSize, to), node.marks[i]))
   })
   for (let i = delSteps.length - 1; i >= 0; i--) this.step(delSteps[i])
   return this
@@ -156,11 +180,11 @@ Transform.prototype.clearMarkupFor = function(pos, newType, newAttrs) {
     let child = node.child(i), end = cur + child.nodeSize
     let allowed = match.matchType(child.type, [])
     if (!allowed) {
-      delSteps.push(new Step("replace", cur, end, Slice.empty))
+      delSteps.push(new ReplaceStep(cur, end, Slice.empty))
     } else {
       match = allowed
       for (let j = 0; j < child.marks.length; j++) if (!match.allowsMark(child.marks[j]))
-        this.step("removeMark", cur, end, child.marks[j])
+        this.step(new RemoveMarkStep(cur, end, child.marks[j]))
     }
     cur = end
   }
