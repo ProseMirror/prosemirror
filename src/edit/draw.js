@@ -167,7 +167,7 @@ export function redraw(pm, dirty, doc, prev) {
 
 function iosHacks(dom) {
   if (dom.nodeName == "UL" || dom.nodeName == "OL") {
-    dom.style.listStyle = "square"
+    dom.style.setProperty("list-style", "square", "important")
     window.getComputedStyle(dom).listStyle
     dom.style.listStyle = ""
   }
