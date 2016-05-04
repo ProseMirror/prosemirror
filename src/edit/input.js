@@ -444,7 +444,8 @@ handlers.paste = (pm, e) => {
   let slice = fromClipboard(pm, e.clipboardData, pm.input.shiftKey)
   if (slice) {
     e.preventDefault()
-    pm.tr.replace(sel.from, sel.to, slice).apply(pm.apply.scroll)
+    let tr = pm.tr.replace(sel.from, sel.to, slice)
+    tr.apply({scrollIntoView: true, selection: findSelectionNear(tr.doc, tr.map(sel.to))})
   }
 }
 
