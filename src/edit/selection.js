@@ -174,14 +174,14 @@ export class Selection {
   // :: number #path=Selection.prototype.to
   // The right-bound of the selection.
 
-  // :: bool #path=Selection.empty
+  // :: bool #path=Selection.prototype.empty
   // True if the selection is an empty text selection (head an anchor
   // are the same).
 
-  // :: (other: Selection) → bool #path=Selection.eq
+  // :: (other: Selection) → bool #path=Selection.prototype.eq
   // Test whether the selection is the same as another selection.
 
-  // :: (doc: Node, mapping: Mappable) → Selection #path=Selection.map
+  // :: (doc: Node, mapping: Mappable) → Selection #path=Selection.prototype.map
   // Map this selection through a [mappable](#Mappable) thing. `doc`
   // should be the new document, to which we are mapping.
 }

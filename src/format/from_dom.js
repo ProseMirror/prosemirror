@@ -222,7 +222,7 @@ class DOMParseState {
     return type.create(attrs, content, this.marks)
   }
 
-  // :: (DOMNode, NodeType, ?Object, [Node]) → ?Node
+  // :: (NodeType, ?Object, [Node]) → Node
   // Insert a node of the given type, with the given content, based on
   // `dom`, at the current position in the document.
   insert(type, attrs, content) {
