@@ -190,7 +190,7 @@ export class NodeType extends SchemaItem {
   canContain(node) {
     if (!this.canContainType(node.type)) return false
     for (let i = 0; i < node.marks.length; i++)
-      if (!this.canContainMark(node.marks[i])) return false
+      if (!this.canContainMark(node.marks[i].type)) return false
     return true
   }
 
