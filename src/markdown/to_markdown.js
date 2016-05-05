@@ -138,7 +138,7 @@ class MarkdownSerializer {
           if (!other.type.markdownMixable) break
           if (mark.eq(other)) {
             if (i > j)
-              marks = marks.slice(0, j).concat(mark).concat(marks.slice(j, i)).concat(marks.slice(i + 1), len)
+              marks = marks.slice(0, j).concat(mark).concat(marks.slice(j, i)).concat(marks.slice(i + 1, len))
             else if (j > i)
               marks = marks.slice(0, i).concat(marks.slice(i + 1, j)).concat(mark).concat(marks.slice(j, len))
             continue outer
