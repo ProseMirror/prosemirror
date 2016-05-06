@@ -43,6 +43,55 @@ class ReplaceStep extends Step {
 
 Step.register("replace", ReplaceStep)
 
+// ;; Replace a part of the document with a slice of content, but
+// preserve a range of the replaced content by moving it into the
+// slice.
+class ReplaceWrapStep extends Step {
+  // :: (number, number, number, number, Slice, number)
+  constructor(from, to, gapFrom, gapTo, slice, insert) {
+    super()
+    this.from = from
+    this.to = to
+    this.gapFrom = gapFrom
+    this.gapTo = gapTo
+    this.slice = slice
+    this.insert = insert
+  }
+
+  apply(doc) {
+    let gap = doc.slice(this.gapFrom, this.gapTo)
+    if (gap.openLeft || gap.openRight)
+      return StepResult.fail("Gap is not a flat range")
+    return StepResult.fromReplace(doc, this.from, this.to, this.slice.insertAt(this.insert, gap.content))
+  }
+
+  posMap() {
+    return new PosMap([this.from, this.gapFrom - this.from, this.insert,
+                       this.gapTo, this.to - this.gapTo, this.slice.size - this.insert])
+  }
+
+  invert(doc) {
+    return new ReplaceWrapStep(this.from, this.from + this.slice.size,
+                               this.from + this.insert, this.to - (this.slice.size - this.insert),
+                               doc.slice(this.from, this.to).removeBetween(this.gapFrom - this.from, this.gapTo - this.from),
+                               this.gapFrom - this.from)
+  }
+
+  map(mapping) {
+    let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1)
+    let gapFrom = mapping.map(this.gapFrom, -1), gapTo = mapping.map(this.gapTo, 1)
+    if ((from.deleted && to.deleted) || gapFrom < from.pos || gapTo > to.pos) return null
+    return new ReplaceWrapStep(from.pos, to.pos, gapFrom, gapTo, this.slice, this.insert)
+  }
+
+  static fromJSON(schema, json) {
+    return new ReplaceWrapStep(json.from, json.to, json.gapFrom, json.gapTo,
+                               Slice.fromJSON(schema, json.slice), json.insert)
+  }
+}
+
+Step.register("replaceWrap", ReplaceWrapStep)
+
 // :: (number, number) → Transform
 // Delete the content between the given positions.
 Transform.prototype.delete = function(from, to) {

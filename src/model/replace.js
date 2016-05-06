@@ -27,6 +27,30 @@ export class Slice {
     return this.content.size - this.openLeft - this.openRight
   }
 
+  insertAt(pos, fragment) {
+    function insertInto(content, dist, insert) {
+      let {index, offset} = content.findIndex(pos), child = content.maybeChild(index)
+      if (offset == dist || child.isText)
+        return content.cut(0, offset).append(insert).append(content.cut(offset))
+      return content.replaceChild(index, child.copy(insertInto(child.content, dist - offset - 1, insert)))
+    }
+    return new Slice(insertInto(this.content, pos + this.openLeft, fragment), this.openLeft, this.openRight)
+  }
+
+  removeBetween(from, to) {
+    function removeRange(content, from, to) {
+      let {index, offset} = content.findIndex(from), child = content.maybeChild(index)
+      let {index: indexTo, offset: offsetTo} = content.findIndex(to)
+      if (offset == from || child.isText) {
+        if (offsetTo != to && !content.child(indexTo).isText) throw new RangeError("Removing non-flat range")
+        return content.cut(0, offset).append(offsetTo)
+      }
+      if (index != indexTo) throw new RangeError("Removing non-flat range")
+      return content.replaceChild(index, child.copy(removeRange(child.content, from - offset - 1, to - offset - 1)))
+    }
+    return new Slice(removeRange(this.content, from + this.openLeft, to + this.openLeft), this.openLeft, this.openRight)
+  }
+
   // :: () → ?Object
   // Convert a slice to a JSON-serializable representation.
   toJSON() {

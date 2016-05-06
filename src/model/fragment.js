@@ -64,6 +64,7 @@ export class Fragment {
   }
 
   cutByIndex(from, to) {
+    if (from == to) return Fragment.empty
     if (from == 0 && to == this.content.length) return this
     return new Fragment(this.content.slice(from, to))
   }
