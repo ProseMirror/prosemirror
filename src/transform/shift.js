@@ -288,7 +288,7 @@ Transform.prototype.wrap = function(from, to = from, type, wrapAttrs) {
   if (!check) throw new RangeError("Wrap not possible")
   let {shared, around, inside} = check
 
-  let types = around.map(t => ({type: t.name})).concat({type: type.name})
+  let types = around.map(t => ({type: t.name})).concat({type: type.name, attrs: wrapAttrs})
       .concat(inside.map(t => ({type: t.name})))
   let start = $from.before(shared + 1)
   this.step(new ShiftStep(start, $to.after(shared + 1),

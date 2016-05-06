@@ -65,9 +65,8 @@ BlockQuote.register("autoInput", "startBlockQuote", new InputRule(
 OrderedList.register("autoInput", "startOrderedList", new InputRule(
   /^(\d+)\. $/, " ",
   function(pm, match, pos) {
-    let order = +match[1]
-    wrapAndJoin(pm, pos, this, {order: order || null},
-                node => node.childCount + +node.attrs.order == order)
+    wrapAndJoin(pm, pos, this, {order: match[1]},
+                node => node.childCount + +node.attrs.order == match[1])
   }
 ))
 
