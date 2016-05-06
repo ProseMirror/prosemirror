@@ -1,7 +1,6 @@
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmMark, StrongMark, LinkMark, CodeMark, Node, Fragment,
-        NodeBuilder} from "../model"
+        EmMark, StrongMark, LinkMark, CodeMark, Node, Fragment} from "../model"
 import sortedInsert from "../util/sortedinsert"
 import {defineSource} from "./register"
 
@@ -56,6 +55,29 @@ export function fromDOM(schema, dom, options) {
 // against the dom node prior to calling the parse function.
 
 defineSource("dom", fromDOM)
+
+// FIXME automatically fill when a node doesn't fit?
+class NodeBuilder {
+  constructor(type, attrs) {
+    this.type = type
+    this.pos = type.contentExpr.start(attrs)
+    this.content = []
+  }
+
+  add(node) {
+    let matched = this.pos.matchNode(node)
+    if (!matched) return false
+    this.content.push(node)
+    this.pos = matched
+    return true
+  }
+
+  finish() {
+    let fill = this.pos.fillBefore(Fragment.empty, true)
+    if (!fill) return null
+    return this.type.create(this.pos.attrs, Fragment.from(this.content).append(fill))
+  }
+}
 
 // :: (Schema, string, ?Object) → Node
 // Parses the HTML into a DOM, and then calls through to `fromDOM`.

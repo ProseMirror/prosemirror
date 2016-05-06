@@ -85,7 +85,7 @@ export class ContentExpr {
   }
 
   generateContent(attrs) {
-    return Fragment.from(this.start(attrs).fillTo(this.end(attrs)))
+    return this.start(attrs).fillBefore(Fragment.empty, true)
   }
 
   static parse(nodeType, expr) {
@@ -141,30 +141,6 @@ export class ContentExpr {
   }
 }
 
-// FIXME automatically fill when a node doesn't fit?
-// FIXME remove, have from_dom directly use ContentMatch
-export class NodeBuilder {
-  constructor(type, attrs) {
-    this.type = type
-    this.pos = type.contentExpr.start(attrs)
-    this.content = []
-  }
-
-  add(node) {
-    let matched = this.pos.matchNode(node)
-    if (!matched) return false
-    this.content.push(node)
-    this.pos = matched
-    return true
-  }
-
-  finish() {
-    let fill = this.pos.fillTo(this.pos.expr.end(this.pos.attrs))
-    if (!fill) return null
-    return this.type.create(this.pos.attrs, this.content.concat(fill))
-  }
-}
-
 class ContentElement {
   constructor(nodeTypes, marks, min, max, mod) {
     this.nodeTypes = nodeTypes
@@ -207,7 +183,7 @@ class ContentElement {
   }
 }
 
-class ContentMatch {
+export class ContentMatch {
   constructor(expr, attrs, index, count) {
     this.expr = expr
     this.attrs = attrs
@@ -291,26 +267,6 @@ class ContentMatch {
     if (this.validCount(elt, this.count + extraCount)) return this.move(this.index + 1, 0)
     target.push(elt.createFiller())
     return this.move(this.index, this.count + 1)
-  }
-
-  fillOne(target, extraCount = 0) {
-    let elt = this.element, count = this.count
-    while (!this.validCount(elt, count + extraCount)) {
-      let node = elt.createFiller()
-      if (!node) return null
-      target.push(node)
-      count++
-    }
-    return this.move(this.index + 1, 0)
-  }
-
-  fillTo(end) {
-    let found = [], pos = this
-    while (pos.index < end.index) {
-      pos = pos.fillOne(found, pos.index == end.index - 1 ? end.count : 0)
-      if (!pos) return null
-    }
-    return found
   }
 
   fillBefore(after, toEnd) {
