@@ -86,7 +86,7 @@ export function DOMFromPos(pm, pos, loose) {
       if (size) {
         if (!offset) return {node: container, offset: i}
         size = +size
-        if (offset < size) {
+        if (offset <= size) {
           container = childContainer(child)
           if (!container) {
             return leafAt(child, offset)
@@ -226,7 +226,9 @@ function textRect(node, from, to) {
   let range = document.createRange()
   range.setEnd(node, to)
   range.setStart(node, from)
-  return range.getBoundingClientRect()
+  let rects = range.getClientRects()
+  // Return the last rect
+  return rects[rects.length-1]
 }
 
 function textRects(node) {
