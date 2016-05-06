@@ -28,7 +28,7 @@ export class ContentExpr {
   // Get a position in a known-valid fragment. If this is a simple
   // (single-element) expression, we don't have to do any matching,
   // and can simply skip to the position with count `index`.
-  getMatchAt(attrs, fragment, index) {
+  getMatchAt(attrs, fragment, index = fragment.childCount) {
     if (this.elements.length == 1)
       return new ContentMatch(this, attrs, 0, index)
     else
@@ -82,21 +82,6 @@ export class ContentExpr {
 
   containsOnly(node) {
     return this.elements.length == 1 && this.elements[0].matches(node)
-  }
-
-  fillContent(attrs, before, mid, after) {
-    let back = this.end(attrs).matchFragmentBackward(after)
-    let front = back && this.start(attrs).matchFragment(before, undefined, undefined, back)
-    if (!front) return null
-    let left = [], right
-    for (;;) {
-      let fits = front.matchFragment(mid, undefined, undefined, back)
-      if (fits && (right = fits.fillTo(back)))
-        return {left: Fragment.from(left), right: Fragment.from(right)}
-      if (front.index == back.index - 1) return null
-      front = front.fillOne(left)
-      if (!front) return null
-    }
   }
 
   generateContent(attrs) {
@@ -266,12 +251,16 @@ class ContentMatch {
     }
   }
 
-  matchFragment(fragment, startFragPos = 0, endFragPos = fragment.childCount, maxPos) {
+  // : (Fragment, ?number, ?number) → ?union<MatchPos, bool>
+  // Try to match a fragment. Returns a new position when successful,
+  // false when it ran into a required element it couldn't fit, and
+  // undefined if it reached the end of the expression without
+  // matching all nodes.
+  matchFragment(fragment, startFragPos = 0, endFragPos = fragment.childCount) {
     if (startFragPos == endFragPos) return this
-    let fragPos = startFragPos, end = maxPos ? maxPos.index : this.expr.elements.length
+    let fragPos = startFragPos, end = this.expr.elements.length
     for (var {index, count} = this; index < end; index++, count = 0) {
       let elt = this.expr.elements[index], max = this.resolveCount(elt.max)
-      if (maxPos && index == end - 1) max -= maxPos.count
 
       while (count < max) {
         if (elt.matches(fragment.child(fragPos))) {
@@ -281,31 +270,27 @@ class ContentMatch {
           break
         }
       }
-      if (!this.validCount(elt, count)) return null
+      if (!this.validCount(elt, count)) return false
     }
   }
 
-  matchFragmentBackward(fragment) {
-    let fragPos = fragment.childCount
-    if (fragPos == 0) return this
-    for (var {index, count} = this; index > 0; index--, count = 0) {
-      let elt = this.expr.elements[index - 1], max = this.resolveCount(elt.max)
-      while (count < max) {
-        if (elt.matches(fragment.child(fragPos - 1))) {
-          count++
-          if (--fragPos == 0) return this.move(index, count)
-        } else {
-          break
-        }
-      }
-      if (!this.validCount(elt, count)) return null
-    }
+  matchOnCurrentElement(fragment) {
+    let matched = 0, elt = this.element
+    while (matched < fragment.childCount && elt.matches(fragment.child(matched))) ++matched
+    return matched
   }
 
   validEnd() {
     for (let i = this.index; i < this.expr.elements.length; i++)
       if (!this.validCount(this.expr.elements[i], i == this.index ? this.count : 0)) return false
     return true
+  }
+
+  moveForward(target, extraCount) {
+    let elt = this.element
+    if (this.validCount(elt, this.count + extraCount)) return this.move(this.index + 1, 0)
+    target.push(elt.createFiller())
+    return this.move(this.index, this.count + 1)
   }
 
   fillOne(target, extraCount = 0) {
@@ -326,6 +311,16 @@ class ContentMatch {
       if (!pos) return null
     }
     return found
+  }
+
+  fillBefore(after, toEnd) {
+    let added = [], front = this
+    for (;;) {
+      let fits = front.matchFragment(after)
+      if (fits && (!toEnd || fits.validEnd())) return Fragment.from(added)
+      if (fits === undefined) return null
+      front = front.moveForward(added, front.matchOnCurrentElement(after))
+    }
   }
 
   possibleTypes() {

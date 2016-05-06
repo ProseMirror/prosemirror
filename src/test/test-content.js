@@ -1,5 +1,5 @@
 import {ContentExpr} from "../model/content"
-import {defaultSchema as schema, Fragment} from "../model"
+import {defaultSchema as schema} from "../model"
 
 import {defTest} from "./tests"
 import {doc, p, pre, img, br, h1, em, hr} from "./build"
@@ -156,9 +156,9 @@ invalid("count_attr", "hard_break{@level}", p(br, br))
 
 function fill(name, expr, before, after, result) {
   defTest("content_fill_" + name, () => {
-    let filled = get(expr).fillContent(attrs, before.content, Fragment.empty, after.content)
-    if (result) is(filled), cmpNode(filled.right, result.content)
-    else is(!filled)
+    let filled = get(expr).getMatchAt(attrs, before.content).fillBefore(after.content, true)
+    if (result) is(filled, "Failed unexpectedly"), cmpNode(filled, result.content)
+    else is(!filled, "Succeeded unexpectedly")
   })
 }
 
@@ -180,7 +180,7 @@ fill("plus_both_sides", "hard_break+",
 fill("plus_neither", "hard_break+",
      p(), p(), p(br))
 fill("plus_mismatch", "hard_break+",
-     p(img), p(), null)
+     p(), p(img), null)
 
 fill("seq_stars", "heading* paragraph*",
      doc(h1()), doc(p()), doc())
@@ -209,9 +209,11 @@ fill("count_left_right", "code_block{2} paragraph{2}",
 
 function fill3(name, expr, before, mid, after, left, right) {
   defTest("content_fill3_" + name, () => {
-    let filled = get(expr).fillContent(attrs, before.content, mid.content, after.content)
-    if (left) is(filled), cmpNode(filled.left, left.content), cmpNode(filled.right, right.content)
-    else is(!filled)
+    let content = get(expr)
+    let a = content.getMatchAt(attrs, before.content).fillBefore(mid.content)
+    let b = a && content.getMatchAt(attrs, before.content.append(a).append(mid.content)).fillBefore(after.content, true)
+    if (left) is(b, "Failed unexpectedly"), cmpNode(a, left.content), cmpNode(b, right.content)
+    else is(!b, "Succeeded unexpectedly")
   })
 }
 
@@ -223,12 +225,8 @@ fill3("seq_plus_from_empty", "code_block+ paragraph+",
       doc(), doc(), doc(), doc(), doc(pre(), p()))
 fill3("seq_count", "code_block{3} paragraph{3}",
       doc(pre()), doc(p()), doc(), doc(pre(), pre()), doc(p(), p()))
-fill3("invalid_before", "paragraph*",
-      doc(pre()), doc(p()), doc(p()), null)
-fill3("invalid_mid", "paragraph*",
+fill3("invalid", "paragraph*",
       doc(p()), doc(pre()), doc(p()), null)
-fill3("invalid_after", "paragraph*",
-      doc(p()), doc(p()), doc(pre()), null)
 
 fill3("count_across", "paragraph{4}",
       doc(p()), doc(p()), doc(p()), doc(), doc(p()))

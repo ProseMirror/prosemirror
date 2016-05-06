@@ -246,11 +246,12 @@ export class NodeType extends SchemaItem {
     return this.contentExpr.matches(attrs, content)
   }
 
-  fixContent(content, attrs) { // FIXME replace?
-    if (!content) content = Fragment.empty
-    let filled = this.contentExpr.fillContent(attrs, Fragment.empty, content || Fragment.empty, Fragment.empty)
-    if (!filled) throw new RangeError("No default content for " + this.name)
-    return filled.left.append(content).append(filled.right)
+  fixContent(content, attrs) { // FIXME replace? optimize?
+    if (content)
+      content = this.contentExpr.start(attrs).fillBefore(content).append(content)
+    else
+      content = Fragment.empty
+    return content.append(this.contentExpr.getMatchAt(attrs, content).fillBefore(Fragment.empty, true))
   }
 
   static compile(types, schema) {

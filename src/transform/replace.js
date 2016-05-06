@@ -220,9 +220,10 @@ function closeFragment(refNode, content, $to, $from, depth) {
   let after = !$from ? Fragment.empty
       : $from.depth == depth ? $from.parent.content.cut($from.parentOffset)
       : $from.node(depth).content.cutByIndex($from.index(depth) + 1)
-  let filled = refNode.type.contentExpr.fillContent(refNode.attrs, before, content, after)
-  // FIXME what do we do when this fails?
-  return filled.left.append(content).append(filled.right)
+  let expr = refNode.type.contentExpr
+  content = expr.getMatchAt(refNode.attrs, before).fillBefore(content).append(content)
+  return content.append(expr.getMatchAt(refNode.attrs, before.append(content)).fillBefore(after, true))
+  // FIXME verify
 }
 
 function closeNode(node, content, $to, $from, depth) {
