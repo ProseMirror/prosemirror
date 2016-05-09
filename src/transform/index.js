@@ -1,11 +1,11 @@
 export {Transform, TransformError} from "./transform"
 export {Step, StepResult} from "./step"
-export {canWrap, canLift, ShiftStep} from "./shift"
+export {canWrap, canLift} from "./shift"
 export {joinPoint, joinable, JoinStep} from "./join"
 export {PosMap, MapResult, Remapping} from "./map"
 export {AddMarkStep, RemoveMarkStep} from "./mark"
 export {SplitStep} from "./split"
-export {ReplaceStep} from "./replace"
+export {ReplaceStep, ReplaceWrapStep} from "./replace"
 
 // !! This module defines a way to transform documents. Transforming
 // happens in `Step`s, which are atomic, well-defined modifications to

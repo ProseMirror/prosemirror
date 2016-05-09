@@ -1,182 +1,7 @@
 import {Slice, Fragment} from "../model"
 
 import {Transform} from "./transform"
-import {Step, StepResult} from "./step"
-import {PosMap} from "./map"
-
-function isFlatRange($from, $to) {
-  if ($from.depth != $to.depth) return false
-  for (let i = 0; i < $from.depth; i++)
-    if ($from.index(i) != $to.index(i)) return false
-  return $from.parentOffset <= $to.parentOffset
-}
-
-// ;; Change the node boundaries around a piece of content.
-//
-// Can be used to delete and insert closing and opening boundaries
-// around a piece of content, in a single step. The resulting tree
-// must be well-shaped—you can't remove an opening boundary on one
-// side with removing one on the other side, inserting a closing one,
-// or overwriting an existing opening boundary.
-//
-// Takes parameters `before` and `after` with the following shapes:
-//
-// ```
-// {overwrite: number, close: number, open: [{type: string, attrs: ?Object}]}
-// {overwrite: number, close: number, open: number}
-// ```
-//
-// Except for `before.open`, all these are constrained by their
-// context, so you only have to provide a number. For `before.open`,
-// you have to provide actual node types and attributes, so that the
-// step knows what kind of boundaries to create.
-//
-// As an example, wrapping a paragraph in a blockquote could be done
-// with a `"shift"` step that whose `from` and `to` point before and
-// after the paragraph, with a `before.open` of `{type: "blockquote"}`
-// and an `after.close` of 1.
-//
-// Lifting a paragraph _out_ of a blockquote would require a step with
-// an `overwrite` of 1 on both sides (overwriting the opening and
-// closing boundary of the blockquote.
-export class ShiftStep extends Step {
-  // :: (number, number, {overwrite: number, close: number, open: [{type: string, attrs: ?Object}]},
-  //     {overwrite: number, close: number, open: number})
-  constructor(from, to, before, after) {
-    super()
-    this.from = from
-    this.to = to
-    this.before = before
-    this.after = after
-  }
-
-  apply(doc) {
-    let $from = doc.resolve(this.from), $to = doc.resolve(this.to), $before
-    if (!isFlatRange($from, $to)) return StepResult.fail("Not a flat range")
-    let {before, after} = this
-
-    if (traceBoundary($from, before.overwrite, -1) == null ||
-        traceBoundary($to, after.overwrite, 1) == null)
-      return StepResult.fail("Shift step trying to overwrite non-boundary content")
-
-    let {content, openLeft, openRight} = doc.slice(this.from, this.to)
-
-    for (let i = before.open.length - 1; i >= 0; i--) {
-      if (openLeft) {
-        --openLeft
-      } else {
-        let open = before.open[i], type = doc.type.schema.nodes[open.type]
-        content = Fragment.from(type.create(open.attrs, content))
-        ++openRight
-      }
-    }
-    for (let i = after.close, d; i > 0; i--) {
-      if (openRight) {
-        --openRight
-      } else {
-        if (d == null) {
-          $before = doc.resolve(this.from - before.overwrite)
-          d = $before.depth - before.close
-        }
-        content = Fragment.from($before.node(d--).copy(content))
-        ++openLeft
-      }
-    }
-
-    if (before.close) {
-      if (!$before) $before = doc.resolve(this.from - before.overwrite)
-      let inserted = null
-      for (let i = 0; i < before.close; i++)
-        inserted = $before.node($before.depth - i).copy(Fragment.from(inserted))
-      content = addToStartAtDepth(content, inserted, openLeft)
-      openLeft += before.close
-    }
-    if (after.open) {
-      let $after = doc.resolve(this.to + after.overwrite), inserted = null
-      for (let i = 0; i < after.open; i++)
-        inserted = $after.node($after.depth - i).copy(Fragment.from(inserted))
-      content = addToEndAtDepth(content, inserted, openRight)
-      openRight += after.open
-    }
-
-    return StepResult.fromReplace(doc, this.from - before.overwrite,
-                                  this.to + after.overwrite,
-                                  new Slice(content, openLeft, openRight))
-  }
-
-  posMap() {
-    let {before, after} = this
-    return new PosMap([this.from - before.overwrite, before.overwrite, before.close + before.open.length,
-                       this.to, after.overwrite, after.open + after.close])
-  }
-
-  invert(doc) {
-    let {before, after} = this
-    let sBefore = before.close + before.open.length, sAfter = after.open + after.close
-    let $from = doc.resolve(this.from), bOpen = []
-    let dBefore = traceBoundary($from, before.overwrite, -1)
-    let dAfter = traceBoundary(doc.resolve(this.to), after.overwrite, 1)
-    for (let i = $from.depth - dBefore + 1; i <= $from.depth; i++) {
-      let node = $from.node(i)
-      bOpen.push({type: node.type.name, attrs: node.attrs})
-    }
-    let from = this.from - before.overwrite + sBefore
-    let to = this.to - before.overwrite + sBefore
-
-    return new ShiftStep(from, to, {
-      overwrite: sBefore,
-      close: before.overwrite - dBefore,
-      open: bOpen
-    }, {
-      overwrite: sAfter,
-      close: dAfter,
-      open: after.overwrite - dAfter
-    })
-  }
-
-  map(mapping) {
-    let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1)
-    if (from.deleted && to.deleted) return null
-    return new ShiftStep(from.pos, Math.max(from.pos, to.pos), this.before, this.after)
-  }
-
-  static fromJSON(_schema, json) {
-    return new ShiftStep(json.from, json.to, json.before, json.after)
-  }
-}
-
-Step.register("shift", ShiftStep)
-
-function addToStartAtDepth(frag, node, depth) {
-  if (!depth) return frag.addToStart(node)
-  let child = frag.firstChild
-  return frag.replaceChild(0, child.copy(addToStartAtDepth(child.content, node, depth - 1)))
-}
-
-function addToEndAtDepth(frag, node, depth) {
-  if (!depth) return frag.addToEnd(node)
-  let child = frag.lastChild
-  return frag.replaceChild(frag.childCount - 1, child.copy(addToEndAtDepth(child.content, node, depth - 1)))
-}
-
-function traceBoundary($pos, dist, dir) {
-  let down = 0, depth = $pos.depth
-  while (dist > 0 && depth > 0 &&
-         $pos.index(depth) == (dir < 0 ? 0 : $pos.node(depth).childCount - (down ? 1 : 0))) {
-    down++
-    depth--
-    dist--
-  }
-  if (dist > 0) {
-    let next = $pos.node(depth).maybeChild($pos.index(depth) + (dir < 0 ? -1 : down ? 1 : 0))
-    while (dist > 0) {
-      if (!next || next.type.isLeaf) return null
-      next = dir < 0 ? next.lastChild : next.firstChild
-      dist--
-    }
-  }
-  return down
-}
+import {ReplaceWrapStep} from "./replace"
 
 // :: (Node, number, ?number) → bool
 // Tells you whether the range in the given positions' shared
@@ -223,42 +48,46 @@ Transform.prototype.lift = function(from, to = from, silent = false) {
   }
 
   let {depth, shared, unwrap} = liftable
-  let start = $from.before(shared + 1), end = $to.after(shared + 1)
 
-  let before = {overwrite: 0, close: 0, open: []}
-  let after = {overwrite: 0, close: 0, open: 0}
+  let gapStart = $from.before(shared + 1), gapEnd = $to.after(shared + 1)
+  let start = gapStart, end = gapEnd
 
+  let before = Fragment.empty, beforeDepth = 0
   for (let d = shared, splitting = false; d > depth; d--)
     if (splitting || $from.index(d) > 0) {
       splitting = true
-      before.close++
+      before = Fragment.from($from.node(d).copy(before))
+      beforeDepth++
     } else {
-      before.overwrite++
+      start--
     }
+  let after = Fragment.empty, afterDepth = 0
   for (let d = shared, splitting = false; d > depth; d--)
     if (splitting || $to.after(d + 1) < $to.end(d)) {
       splitting = true
-      after.open++
+      after = Fragment.from($to.node(d).copy(after))
+      afterDepth++
     } else {
-      after.overwrite++
+      end++
     }
 
   if (unwrap) {
-    let joinPos = start, parent = $from.node(shared)
+    let joinPos = gapStart, parent = $from.node(shared)
     for (let i = $from.index(shared), e = $to.index(shared) + 1, first = true; i < e; i++, first = false) {
       if (!first) {
         this.join(joinPos)
         end -= 2
+        gapEnd -= 2
       }
       joinPos += parent.child(i).nodeSize - (first ? 0 : 2)
     }
-    ++start
-    --end
-    ++before.overwrite
-    ++after.overwrite
+    ++gapStart
+    --gapEnd
   }
 
-  return this.step(new ShiftStep(start, end, before, after))
+  return this.step(new ReplaceWrapStep(start, end, gapStart, gapEnd,
+                                       new Slice(before.append(after), beforeDepth, afterDepth),
+                                       before.size - beforeDepth, true))
 }
 
 // :: (Node, number, ?number, NodeType, ?Object) → bool
@@ -288,14 +117,16 @@ Transform.prototype.wrap = function(from, to = from, type, wrapAttrs) {
   if (!check) throw new RangeError("Wrap not possible")
   let {shared, around, inside} = check
 
-  let types = around.map(t => ({type: t.name})).concat({type: type.name, attrs: wrapAttrs})
-      .concat(inside.map(t => ({type: t.name})))
-  let start = $from.before(shared + 1)
-  this.step(new ShiftStep(start, $to.after(shared + 1),
-                          {overwrite: 0, close: 0, open: types},
-                          {overwrite: 0, close: types.length, open: 0}))
+  let content = Fragment.empty, open = inside.length + 1 + around.length
+  for (let i = inside.length - 1; i >= 0; i--) content = Fragment.from(inside[i].create(null, content))
+  content = Fragment.from(type.create(wrapAttrs, content))
+  for (let i = around.length - 1; i >= 0; i--) content = Fragment.from(around[i].create(null, content))
+
+  let start = $from.before(shared + 1), end = $to.after(shared + 1)
+  this.step(new ReplaceWrapStep(start, end, start, end, new Slice(content, 0, 0), open, true))
+
   if (inside.length) {
-    let splitPos = start + types.length, parent = $from.node(shared)
+    let splitPos = start + open, parent = $from.node(shared)
     for (let i = $from.index(shared), e = $to.index(shared) + 1, first = true; i < e; i++, first = false) {
       if (!first)
         this.split(splitPos, inside.length)
@@ -313,11 +144,10 @@ Transform.prototype.setBlockType = function(from, to = from, type, attrs) {
   this.doc.nodesBetween(from, to, (node, pos) => {
     if (node.isTextblock && !node.hasMarkup(type, attrs)) {
       // Ensure all markup that isn't allowed in the new node type is cleared
-      let start = pos + 1, end = start + node.content.size
       this.clearMarkupFor(this.map(pos), type, attrs)
-      this.step(new ShiftStep(this.map(start), this.map(end),
-                              {overwrite: 1, close: 0, open: [{type: type.name, attrs}]},
-                              {overwrite: 1, close: 1, open: 0}))
+      let startM = this.map(pos), endM = this.map(pos + node.nodeSize)
+      this.step(new ReplaceWrapStep(startM, endM, startM + 1, endM - 1,
+                                    new Slice(Fragment.from(type.create(attrs)), 0, 0), 1, true))
       return false
     }
   })
@@ -336,7 +166,6 @@ Transform.prototype.setNodeType = function(pos, type, attrs) {
   if (!type.checkContent(node.content, attrs))
     throw new RangeError("Invalid content for node type " + type.name)
 
-  return this.step(new ShiftStep(pos + 1, pos + 1 + node.content.size,
-                                 {overwrite: 1, close: 0, open: [{type: type.name, attrs}]},
-                                 {overwrite: 1, close: 1, open: 0}))
+  return this.step(new ReplaceWrapStep(pos, pos + node.nodeSize, pos + 1, pos + node.nodeSize - 1,
+                                       new Slice(Fragment.from(type.create(attrs)), 0, 0), 1, true))
 }

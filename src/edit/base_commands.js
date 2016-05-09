@@ -1,5 +1,6 @@
 import {browser} from "../dom"
-import {joinPoint, joinable, canLift, ShiftStep} from "../transform"
+import {joinPoint, joinable, canLift, ReplaceWrapStep} from "../transform"
+import {Slice, Fragment} from "../model"
 
 import {charCategory, isExtendingChar} from "./char"
 import {findSelectionFrom} from "./selection"
@@ -38,11 +39,11 @@ function deleteBarrier(pm, cut) {
 
   let conn
   if (after.isTextblock && (conn = before.findWrappingAt($cut.index($cut.depth), after.type))) {
-    let end = cut + after.nodeSize
+    let end = cut + after.nodeSize, wrap = Fragment.empty
+    for (let i = conn.length - 1; i >= 0; i--) wrap = Fragment.from(conn[i].create(wrap))
+    wrap = Fragment.from(before.copy(wrap))
     return pm.tr
-      .step(new ShiftStep(cut, end,
-                          {overwrite: 1, close: 0, open: conn.map(t => ({type: t.name}))},
-                          {overwrite: 0, close: conn.length + 1, open: 0}))
+      .step(new ReplaceWrapStep(cut - 1, end, cut, end, new Slice(wrap, 1, 0), conn.length, true))
       .join(end + 2 * conn.length, 1, true)
       .apply(pm.apply.scroll)
   }

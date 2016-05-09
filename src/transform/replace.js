@@ -45,9 +45,9 @@ Step.register("replace", ReplaceStep)
 // ;; Replace a part of the document with a slice of content, but
 // preserve a range of the replaced content by moving it into the
 // slice.
-class ReplaceWrapStep extends Step {
+export class ReplaceWrapStep extends Step {
   // :: (number, number, number, number, Slice, number)
-  constructor(from, to, gapFrom, gapTo, slice, insert) {
+  constructor(from, to, gapFrom, gapTo, slice, insert, shift) {
     super()
     this.from = from
     this.to = to
@@ -55,9 +55,15 @@ class ReplaceWrapStep extends Step {
     this.gapTo = gapTo
     this.slice = slice
     this.insert = insert
+    this.shift = !!shift
   }
 
   apply(doc) {
+    if (this.shift &&
+        (!isShift(doc.resolve(this.from), this.gapFrom - this.from) ||
+         !isShift(doc.resolve(this.to), this.gapTo - this.to)))
+      return StepResult.fail("Shift step would overwrite actual content")
+
     let gap = doc.slice(this.gapFrom, this.gapTo)
     if (gap.openLeft || gap.openRight)
       return StepResult.fail("Gap is not a flat range")
@@ -76,20 +82,39 @@ class ReplaceWrapStep extends Step {
     return new ReplaceWrapStep(this.from, this.from + this.slice.size + gap,
                                this.from + this.insert, this.from + this.insert + gap,
                                doc.slice(this.from, this.to).removeBetween(this.gapFrom - this.from, this.gapTo - this.from),
-                               this.gapFrom - this.from)
+                               this.gapFrom - this.from, this.shift)
   }
 
   map(mapping) {
     let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1)
     let gapFrom = mapping.map(this.gapFrom, -1), gapTo = mapping.map(this.gapTo, 1)
     if ((from.deleted && to.deleted) || gapFrom < from.pos || gapTo > to.pos) return null
-    return new ReplaceWrapStep(from.pos, to.pos, gapFrom, gapTo, this.slice, this.insert)
+    return new ReplaceWrapStep(from.pos, to.pos, gapFrom, gapTo, this.slice, this.insert, this.shift)
   }
 
   static fromJSON(schema, json) {
     return new ReplaceWrapStep(json.from, json.to, json.gapFrom, json.gapTo,
-                               Slice.fromJSON(schema, json.slice), json.insert)
+                               Slice.fromJSON(schema, json.slice), json.insert, json.shift)
   }
+}
+
+function isShift($pos, dist) {
+  let depth = $pos.depth, dir = 1
+  if (dist < 0) { dir = -1; dist = -dist }
+  while (dist > 0 && depth > 0 &&
+         $pos.index(depth) == (dir < 0 ? 0 : $pos.node(depth).childCount - (depth < $pos.depth ? 1 : 0))) {
+    depth--
+    dist--
+  }
+  if (dist > 0) {
+    let next = $pos.node(depth).maybeChild($pos.index(depth) + (dir < 0 ? -1 : depth < $pos.depth ? 1 : 0))
+    while (dist > 0) {
+      if (!next || next.type.isLeaf) return false
+      next = dir < 0 ? next.lastChild : next.firstChild
+      dist--
+    }
+  }
+  return true
 }
 
 Step.register("replaceWrap", ReplaceWrapStep)
