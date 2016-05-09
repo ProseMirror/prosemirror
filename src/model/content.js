@@ -269,6 +269,7 @@ export class ContentMatch {
     return this.move(this.index, this.count + 1)
   }
 
+  // FIXME make sure this algorithm is actually solid
   fillBefore(after, toEnd, startIndex) {
     let added = [], front = this, index = startIndex || 0
     for (;;) {

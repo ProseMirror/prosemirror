@@ -61,7 +61,9 @@ class ReplaceWrapStep extends Step {
     let gap = doc.slice(this.gapFrom, this.gapTo)
     if (gap.openLeft || gap.openRight)
       return StepResult.fail("Gap is not a flat range")
-    return StepResult.fromReplace(doc, this.from, this.to, this.slice.insertAt(this.insert, gap.content))
+    let inserted = this.slice.insertAt(this.insert, gap.content)
+    if (!inserted) return StepResult.fail("Content does not fit in gap")
+    return StepResult.fromReplace(doc, this.from, this.to, inserted)
   }
 
   posMap() {
@@ -70,8 +72,9 @@ class ReplaceWrapStep extends Step {
   }
 
   invert(doc) {
-    return new ReplaceWrapStep(this.from, this.from + this.slice.size,
-                               this.from + this.insert, this.to - (this.slice.size - this.insert),
+    let gap = this.gapTo - this.gapFrom
+    return new ReplaceWrapStep(this.from, this.from + this.slice.size + gap,
+                               this.from + this.insert, this.from + this.insert + gap,
                                doc.slice(this.from, this.to).removeBetween(this.gapFrom - this.from, this.gapTo - this.from),
                                this.gapFrom - this.from)
   }
@@ -107,8 +110,14 @@ Transform.prototype.replace = function(from, to = from, slice = Slice.empty) {
 
   let fittedLeft = fitLeft($from, base, placed)
   let fitted = fitRight($from, $to, base, fittedLeft)
+  if (fittedLeft.size == fitted.size || !canMoveText($from, $to, fittedLeft))
+    return this.step(new ReplaceStep(from, to, fitted))
 
-  return this.step(new ReplaceStep(from, to, fitted))
+  let d = $to.depth, after = $to.after(d)
+  while (d > 1 && after == $to.end(--d)) ++after
+  fitted = fitRight($from, this.doc.resolve(after), base, fittedLeft)
+  return this.step(new ReplaceWrapStep(from, after, to, $to.end($to.depth),
+                                       fitted, fittedLeft.size))
 }
 
 // :: (number, number, union<Fragment, Node, [Node]>) → Transform
@@ -145,6 +154,8 @@ function fitLeftInner($from, depth, placed) {
     let inner = fitLeftInner($from, depth + 1, placed)
     openRight = inner.openRight
     content = Fragment.from($from.node(depth + 1).copy(inner.content))
+  } else if (placed.length == 0) {
+    openRight = -1
   }
 
   let placedHere = placed[depth]
@@ -179,9 +190,9 @@ function probeRight(parent, content, $to, depth, openRight, startMatch) {
     match = startMatch.matchFragment(content, 0, endIndex)
 
   if (depth <= $to.depth) {
-    let after = $to.node(depth)
-    if (after.childCount || after.type.compatibleContent(parent.type))
-      join = match.fillBefore(after.content, true, $to.indexAfter(depth))
+    let after = $to.node(depth), afterIndex = $to.index(depth)
+    if (after.childCount > afterIndex || after.type.compatibleContent(parent.type))
+      join = match.fillBefore(after.content, true, afterIndex)
   }
 
   if (next && next.join)
@@ -235,6 +246,25 @@ function fitRight($from, $to, depth, slice) {
   if (!probe.join) throw new Error("Sorry I didn't deal with this yet")
   let fitted = fitRightJoined(probe, $to, depth, slice.content, slice.openRight)
   return new Slice(fitted, slice.openLeft, $to.depth - depth)
+}
+
+function canMoveText($from, $to, slice) {
+  if (!$to.parent.isTextblock) return false
+
+  let match
+  if (!slice.openRight) {
+    let parent = $from.node($from.depth - (slice.openLeft - slice.openRight))
+    if (!parent.isTextblock) return false
+    match = parent.contentMatchAt(parent.childCount)
+    if (slice.size)
+      match = match.matchFragment(slice.content, slice.openLeft ? 1 : 0)
+  } else {
+    let parent = nodeRight(slice.content, slice.openRight)
+    if (!parent.isTextblock) return false
+    match = parent.contentMatchAt(parent.childCount)
+  }
+  match = match.matchFragment($to.parent.content, $to.index($to.depth))
+  return match && match.validEnd()
 }
 
 // Algorithm for 'placing' the elements of a slice into a gap:

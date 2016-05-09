@@ -29,12 +29,15 @@ export class Slice {
 
   insertAt(pos, fragment) {
     function insertInto(content, dist, insert) {
-      let {index, offset} = content.findIndex(pos), child = content.maybeChild(index)
+      let {index, offset} = content.findIndex(dist), child = content.maybeChild(index)
       if (offset == dist || child.isText)
-        return content.cut(0, offset).append(insert).append(content.cut(offset))
-      return content.replaceChild(index, child.copy(insertInto(child.content, dist - offset - 1, insert)))
+        return content.cut(0, dist).append(insert).append(content.cut(dist))
+      let inner = insertInto(child.content, dist - offset - 1, insert)
+      if (!inner || (offset + child.nodeSize > dist && !child.type.contentExpr.matches(child.attrs, inner))) return null
+      return content.replaceChild(index, child.copy(inner))
     }
-    return new Slice(insertInto(this.content, pos + this.openLeft, fragment), this.openLeft, this.openRight)
+    let content = insertInto(this.content, pos + this.openLeft, fragment)
+    return content && new Slice(content, this.openLeft, this.openRight)
   }
 
   removeBetween(from, to) {
@@ -43,7 +46,7 @@ export class Slice {
       let {index: indexTo, offset: offsetTo} = content.findIndex(to)
       if (offset == from || child.isText) {
         if (offsetTo != to && !content.child(indexTo).isText) throw new RangeError("Removing non-flat range")
-        return content.cut(0, offset).append(offsetTo)
+        return content.cut(0, from).append(content.cut(to))
       }
       if (index != indexTo) throw new RangeError("Removing non-flat range")
       return content.replaceChild(index, child.copy(removeRange(child.content, from - offset - 1, to - offset - 1)))
