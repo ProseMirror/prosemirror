@@ -250,10 +250,10 @@ export class ContentMatch {
     }
   }
 
-  matchOnCurrentElement(fragment) {
-    let matched = 0, elt = this.element
+  matchOnCurrentElement(fragment, startIndex) {
+    let matched = startIndex, elt = this.element
     while (matched < fragment.childCount && elt.matches(fragment.child(matched))) ++matched
-    return matched
+    return matched - startIndex
   }
 
   validEnd() {
@@ -269,13 +269,13 @@ export class ContentMatch {
     return this.move(this.index, this.count + 1)
   }
 
-  fillBefore(after, toEnd) {
-    let added = [], front = this
+  fillBefore(after, toEnd, startIndex) {
+    let added = [], front = this, index = startIndex || 0
     for (;;) {
-      let fits = front.matchFragment(after)
+      let fits = front.matchFragment(after, index)
       if (fits && (!toEnd || fits.validEnd())) return Fragment.from(added)
       if (fits === undefined) return null
-      front = front.moveForward(added, front.matchOnCurrentElement(after))
+      front = front.moveForward(added, front.matchOnCurrentElement(after, index))
     }
   }
 

@@ -88,8 +88,10 @@ export class Fragment {
   // Create a new fragment in which the node at the given index is
   // replaced by the given node.
   replaceChild(index, node) {
+    let current = this.content[index]
+    if (current == node) return this
     let copy = this.content.slice()
-    let size = this.size + node.nodeSize - copy[index].nodeSize
+    let size = this.size + node.nodeSize - current.nodeSize
     copy[index] = node
     return new Fragment(copy, size)
   }

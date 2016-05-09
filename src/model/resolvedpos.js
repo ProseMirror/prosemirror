@@ -36,6 +36,11 @@ export class ResolvedPos {
   index(depth) { return this.path[depth * 3 + 1] }
 
   // :: (number) → number
+  // The index pointing after this position into the ancestor at the
+  // given level.
+  indexAfter(depth) { return this.index(depth) + (depth == this.depth ? 0 : 1) }
+
+  // :: (number) → number
   // The (absolute) position at the start of the node at the given
   // level.
   start(depth) {
