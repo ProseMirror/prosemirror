@@ -6,14 +6,15 @@ import {Transform} from "./transform"
 // :: (number, number) → Transform
 // Delete the content between the given positions.
 Transform.prototype.delete = function(from, to) {
-  if (from != to) this.replace(from, to, Slice.empty)
-  return this
+  return this.replace(from, to, Slice.empty)
 }
 
 // :: (number, ?number, ?Slice) → Transform
 // Replace the part of the document between `from` and `to` with the
 // part of the `source` between `start` and `end`.
 Transform.prototype.replace = function(from, to = from, slice = Slice.empty) {
+  if (from == to && !slice.size) return this
+
   let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
   let placed = placeSlice($from, slice)
 
@@ -257,11 +258,13 @@ function placeSlice($from, slice) {
       dFrom = Math.max(0, found.depth - 1)
     } else {
       if (dSlice == 0) {
-        // FIXME this is dodgy -- might not find a fit, even if one
-        // exists, because it searches based only on the first child.
-        parents = $from.node(0).findWrappingAt($from.index(0), curFragment.child(0).type)
-        if (!parents || !parents[parents.length - 1].contentExpr.matches(parents[parents.length - 1].defaultAttrs, curFragment)) break
-        parents = [$from.node(0).type].concat(parents)
+        let top = $from.node(0)
+        parents = top.findWrappingAt($from.index(0), curFragment.child(0).type)
+        if (!parents) break
+        let last = parents[parents.length - 1]
+        if (last ? !last.contentExpr.matches(last.defaultAttrs, curFragment)
+                 : !top.canUpdate($from.indexAfter(0), $from.depth ? $from.index(0) : $from.indexAfter(0), curFragment)) break
+        parents = [top.type].concat(parents)
         curType = parents[parents.length - 1]
       }
       curFragment = curType.contentExpr.start(curAttrs).fillBefore(curFragment, true).append(curFragment)

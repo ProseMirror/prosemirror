@@ -180,23 +180,21 @@ export class NodeType extends SchemaItem {
   }
 
   compatibleContent(other) {
-    // FIXME usually too arbitrary, should often take current content into account
-    // grep
-    // FIXME cache
     return this.contentExpr.compatible(other.contentExpr)
   }
 
-  containsOnly(node) { // FIXME rename?
+  containsOnly(node) {
     return this.contentExpr.containsOnly(node)
   }
 
   findWrappingInner(target) {
     let seen = Object.create(null), active = [{type: this, via: []}]
     while (active.length) {
-      let current = active.shift()
-      let possible = current.type.contentExpr.start(current.type.defaultAttrs).possibleTypes()
+      let current = active.shift(), match = current.type.contentExpr.start(current.type.defaultAttrs)
+      let possible = match.possibleTypes()
       for (let i = 0; i < possible.length; i++) {
         let type = possible[i]
+        if (!match.matchType(type, []).validEnd()) continue
         if (type == target) return current.via
         if (!type.isLeaf && !type.hasRequiredAttrs && !(type.name in seen)) {
           active.push({type, via: current.via.concat(type)})

@@ -1,5 +1,6 @@
 import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
         StrongMark, EmMark, CodeMark, LinkMark, Image} from "../model"
+import {canSplit} from "../transform"
 
 import {selectedNodeAttr} from "./command"
 import {toText} from "../format"
@@ -264,7 +265,10 @@ ListItem.register("command", "split", {
     let grandParent = $from.node($from.depth - 1)
     if (grandParent.type != this) return false
     let nextType = to == $from.end($from.depth) ? pm.schema.defaultTextblockType() : null
-    return pm.tr.delete(from, to).split(from, 2, nextType).apply(pm.apply.scroll)
+    let tr = pm.tr.delete(from, to)
+    if (canSplit(tr.doc, from, 2, nextType)) return tr.split(from, 2, nextType).apply(pm.apply.scroll)
+    console.log("no split in " + tr.doc, "@", from, nextType)
+    return false
   },
   keys: ["Enter(50)"]
 })

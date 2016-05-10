@@ -11,26 +11,31 @@ export function canLift(doc, from, to) {
   return !!findLiftable(doc.resolve(from), doc.resolve(to == null ? from : to))
 }
 
-function rangeDepth(from, to) {
-  let shared = from.sameDepth(to)
-  if (from.node(shared).isTextblock) --shared
-  if (shared && from.before(shared) >= to.after(shared)) return null
+function rangeDepth($from, $to) {
+  let shared = $from.sameDepth($to)
+  if ($from.node(shared).isTextblock) --shared
+  if (shared && $from.before(shared) >= $to.after(shared)) return null
   return shared
 }
 
-function findLiftable(from, to) {
-  let shared = rangeDepth(from, to)
+function findLiftable($from, $to) {
+  let shared = rangeDepth($from, $to)
   if (shared == null) return null
-  let parent = from.node(shared)
-  for (let depth = shared - 1; depth >= 0; --depth)
-    if (parent.type.compatibleContent(from.node(depth).type))
+  let parent = $from.node(shared), content = parent.content.cutByIndex($from.index(shared), $to.indexAfter(shared))
+  for (let depth = shared - 1; depth >= 0; --depth) {
+    let index = $from.index(depth)
+    if ($from.node(depth).canUpdate(index, index + 1, content))
       return {depth, shared, unwrap: false}
+  }
 
-  if (parent.isBlock) for (let depth = shared - 1; depth >= 0; --depth) {
-    let target = from.node(depth)
-    for (let i = from.index(shared), e = Math.min(to.index(shared) + 1, parent.childCount); i < e; i++)
-      if (!parent.child(i).type.compatibleContent(target.type)) continue
-    return {depth, shared, unwrap: true}
+  if (parent.isBlock) {
+    let joined = Fragment.empty
+    content.forEach(node => joined = joined.append(node.content))
+    for (let depth = shared - 1; depth >= 0; --depth) {
+      let index = $from.index(depth)
+      if ($from.node(depth).canUpdate(index, index + 1, joined))
+        return {depth, shared, unwrap: true}
+    }
   }
 }
 
@@ -101,8 +106,8 @@ function checkWrap($from, $to, type, attrs) {
   let shared = rangeDepth($from, $to)
   if (shared == null) return null
   let parent = $from.node(shared)
-  // FIXME make sure these allow each other as single child (or fill them)
   let around = parent.findWrappingAt($from.index(shared), type)
+  if (!parent.canUpdateWithType($from.index(shared), $to.indexAfter(shared), around[0] || type)) return null
   let inside = type.findWrapping(parent.child($from.index(shared)).type, type.contentExpr.start(attrs || type.defaultAttrs))
   if (around && inside) return {shared, around, inside}
 }
@@ -128,8 +133,7 @@ Transform.prototype.wrap = function(from, to = from, type, wrapAttrs) {
   if (inside.length) {
     let splitPos = start + open, parent = $from.node(shared)
     for (let i = $from.index(shared), e = $to.index(shared) + 1, first = true; i < e; i++, first = false) {
-      if (!first)
-        this.split(splitPos, inside.length)
+      if (!first) this.split(splitPos, inside.length)
       splitPos += parent.child(i).nodeSize + (first ? 0 : 2 * inside.length)
     }
   }
@@ -168,6 +172,25 @@ Transform.prototype.setNodeType = function(pos, type, attrs) {
 
   return this.step(new ReplaceWrapStep(pos, pos + node.nodeSize, pos + 1, pos + node.nodeSize - 1,
                                        new Slice(Fragment.from(type.create(attrs)), 0, 0), 1, true))
+}
+
+// :: (Node, number, ?NodeType) → bool
+// Check whether splitting at the given position is allowed.
+export function canSplit(doc, pos, depth = 1, typeAfter) {
+  let $pos = doc.resolve(pos), base = $pos.depth - depth
+  if (base < 0 ||
+      !$pos.parent.canUpdate($pos.index($pos.depth), $pos.parent.childCount) ||
+      !$pos.parent.canUpdate(0, $pos.indexAfter($pos.depth)))
+    return false
+  for (let d = $pos.depth - 1; d > base; d--) {
+    let node = $pos.node(d), index = $pos.index(d)
+    if (!node.canUpdate(0, index) ||
+        !node.canUpdateWithType(index + 1, node.childCount, typeAfter || $pos.node(d + 1).type))
+      return false
+    typeAfter = null
+  }
+  let index = $pos.indexAfter(base + 1)
+  return $pos.node(base).canUpdateWithType(index, index, typeAfter || $pos.node(base + 1).type)
 }
 
 // :: (number, ?number, ?NodeType, ?Object) → Transform

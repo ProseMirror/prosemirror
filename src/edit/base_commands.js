@@ -1,5 +1,5 @@
 import {browser} from "../dom"
-import {joinPoint, joinable, canLift, ReplaceWrapStep} from "../transform"
+import {joinPoint, joinable, canLift, canSplit, ReplaceWrapStep} from "../transform"
 import {Slice, Fragment} from "../model"
 
 import {charCategory, isExtendingChar} from "./char"
@@ -414,9 +414,8 @@ baseCommands.liftEmptyBlock = {
     let {head, empty} = pm.selection, $head
     if (!empty || ($head = pm.doc.resolve(head)).parent.content.size) return false
     if ($head.depth > 1) {
-      let indexAbove = $head.index($head.depth - 1)
-      if (indexAbove > 0 && $head.node($head.depth - 1).canSplitAt(indexAbove))
-        return pm.tr.split($head.before($head.depth)).apply(pm.apply.scroll)
+      let before = $head.before($head.depth)
+      if (canSplit(pm.doc, before)) return pm.tr.split(before).apply(pm.apply.scroll)
     }
     return pm.tr.lift(head, head, true).apply(pm.apply.scroll)
   },
@@ -433,13 +432,13 @@ baseCommands.splitBlock = {
   run(pm) {
     let {from, to, node} = pm.selection, $from = pm.doc.resolve(from)
     if (node && node.isBlock) {
-      if (!$from.parentOffset || !$from.parent.canSplitAt($from.index($from.depth))) return false
+      if (!$from.parentOffset || !canSplit(pm.doc, from)) return false
       return pm.tr.split(from).apply(pm.apply.scroll)
     } else {
       let $to = pm.doc.resolve(to), atEnd = $to.parentOffset == $to.parent.content.size
-      let tr = pm.tr.delete(from, to), $cut = tr.doc.resolveNoCache(from)
-      if ($cut.parent.canSplitAt($cut.index($cut.depth))) {
-        let deflt = pm.schema.defaultTextblockType(), type = atEnd ? deflt : null
+      let tr = pm.tr.delete(from, to)
+      let deflt = pm.schema.defaultTextblockType(), type = atEnd ? deflt : null
+      if (canSplit(tr.doc, from, 1, type)) {
         tr.split(from, 1, type)
         if (!atEnd && !$from.parentOffset && $from.parent.type != deflt)
           tr.setNodeType($from.before($from.depth), deflt)

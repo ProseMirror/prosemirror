@@ -289,12 +289,6 @@ export class Node {
     else return this.type.compatibleContent(other.type)
   }
 
-  canSplitAt(index) {
-    let expr = this.type.contentExpr
-    return expr.checkUpdate(this.attrs, this.content, 0, index) &&
-      expr.checkUpdate(this.attrs, this.content, index, this.content.childCount)
-  }
-
   // :: () → Object
   // Return a JSON-serializeable representation of this node.
   toJSON() {
