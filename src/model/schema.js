@@ -245,8 +245,7 @@ export class NodeType extends SchemaItem {
     return new Node(this, this.computeAttrs(attrs), Fragment.from(content), Mark.setFrom(marks))
   }
 
-  // FIXME rethink uses/name
-  checkContent(content, attrs) {
+  validContent(content, attrs) {
     return this.contentExpr.matches(attrs, content)
   }
 

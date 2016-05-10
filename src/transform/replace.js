@@ -169,7 +169,6 @@ function fitRight($from, $to, slice) {
   // FIXME we might want to be clever about selectively dropping nodes here?
   if (!probe.join) return fitRight($from, $to, fitLeft($from, []))
 
-  if (!probe.join) throw new Error("Sorry I didn't deal with this yet")
   let fitted = fitRightJoined(probe, $to, 0, slice.content, slice.openRight)
   return normalizeSlice(fitted, slice.openLeft, $to.depth)
 }

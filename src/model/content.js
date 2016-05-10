@@ -59,7 +59,7 @@ export class ContentExpr {
 
     let match = this.getMatchAt(attrs, content, from).matchType(type, marks)
     match = match && match.matchFragment(content, to)
-    return match && match.validEnd()
+    return match && match.validEnd() || false
   }
 
   compatible(other) {
@@ -276,8 +276,7 @@ export class ContentMatch {
       let elt = this.expr.elements[i]
       if (count < this.resolveCount(elt.max))
         found = found.concat(elt.nodeTypes)
-      if (this.resolveCount(elt.min) <= count)
-        break
+      if (this.resolveCount(elt.min) > count) break
     }
     return found
   }

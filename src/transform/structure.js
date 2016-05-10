@@ -13,28 +13,35 @@ export function canLift(doc, from, to) {
 
 function rangeDepth($from, $to) {
   let shared = $from.sameDepth($to)
-  if ($from.node(shared).isTextblock) --shared
-  if (shared && $from.before(shared) >= $to.after(shared)) return null
+  if ($from.node(shared).isTextblock || $from.pos == $to.pos) --shared
+  if (shared < 0 || $from.pos > $to.pos) return null
   return shared
+}
+
+function canCut(node, start, end) {
+  return (start == 0 || node.canUpdate(start, node.childCount)) &&
+    (end == node.childCount || node.canUpdate(0, start))
 }
 
 function findLiftable($from, $to) {
   let shared = rangeDepth($from, $to)
-  if (shared == null) return null
+  if (!shared) return null
   let parent = $from.node(shared), content = parent.content.cutByIndex($from.index(shared), $to.indexAfter(shared))
-  for (let depth = shared - 1; depth >= 0; --depth) {
-    let index = $from.index(depth)
-    if ($from.node(depth).canUpdate(index, index + 1, content))
+  for (let depth = shared;; --depth) {
+    let node = $from.node(depth), index = $from.index(depth)
+    if (depth < shared && node.canUpdate(index, index + 1, content))
       return {depth, shared, unwrap: false}
+    if (depth == 0 || !canCut(node, index, index + 1)) break
   }
 
   if (parent.isBlock) {
     let joined = Fragment.empty
     content.forEach(node => joined = joined.append(node.content))
-    for (let depth = shared - 1; depth >= 0; --depth) {
-      let index = $from.index(depth)
-      if ($from.node(depth).canUpdate(index, index + 1, joined))
+    for (let depth = shared;; --depth) {
+      let node = $from.node(depth), index = $from.index(depth)
+      if (depth < shared && node.canUpdate(index, index + 1, joined))
         return {depth, shared, unwrap: true}
+      if (depth == 0 || !canCut(node, index, index + 1)) break
     }
   }
 }
@@ -107,7 +114,7 @@ function checkWrap($from, $to, type, attrs) {
   if (shared == null) return null
   let parent = $from.node(shared)
   let around = parent.findWrappingAt($from.index(shared), type)
-  if (!parent.canUpdateWithType($from.index(shared), $to.indexAfter(shared), around[0] || type)) return null
+  if (!around || !parent.canUpdateWithType($from.index(shared), $to.indexAfter(shared), around[0] || type)) return null
   let inside = type.findWrapping(parent.child($from.index(shared)).type, type.contentExpr.start(attrs || type.defaultAttrs))
   if (around && inside) return {shared, around, inside}
 }
@@ -167,7 +174,7 @@ Transform.prototype.setNodeType = function(pos, type, attrs) {
   if (node.type.isLeaf)
     return this.replaceWith(pos, pos + node.nodeSize, type.create(attrs, null, node.marks))
 
-  if (!type.checkContent(node.content, attrs))
+  if (!type.validContent(node.content, attrs))
     throw new RangeError("Invalid content for node type " + type.name)
 
   return this.step(new ReplaceWrapStep(pos, pos + node.nodeSize, pos + 1, pos + node.nodeSize - 1,
@@ -185,11 +192,11 @@ export function canSplit(doc, pos, depth = 1, typeAfter) {
   for (let d = $pos.depth - 1; d > base; d--) {
     let node = $pos.node(d), index = $pos.index(d)
     if (!node.canUpdate(0, index) ||
-        !node.canUpdateWithType(index + 1, node.childCount, typeAfter || $pos.node(d + 1).type))
+        !node.canUpdateWithType(index, node.childCount, typeAfter || $pos.node(d + 1).type))
       return false
     typeAfter = null
   }
-  let index = $pos.indexAfter(base + 1)
+  let index = $pos.indexAfter(base)
   return $pos.node(base).canUpdateWithType(index, index, typeAfter || $pos.node(base + 1).type)
 }
 
