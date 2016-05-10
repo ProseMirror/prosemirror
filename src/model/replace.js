@@ -54,6 +54,10 @@ export class Slice {
     return new Slice(removeRange(this.content, from + this.openLeft, to + this.openLeft), this.openLeft, this.openRight)
   }
 
+  toString() {
+    return this.content + "(" + this.openLeft + "," + this.openRight + ")"
+  }
+
   // :: () → ?Object
   // Convert a slice to a JSON-serializable representation.
   toJSON() {

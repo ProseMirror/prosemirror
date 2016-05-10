@@ -131,16 +131,16 @@ Transform.prototype.delete = function(from, to) {
 // part of the `source` between `start` and `end`.
 Transform.prototype.replace = function(from, to = from, slice = Slice.empty) {
   let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
-  let placed = placeSlice($from, slice), base = baseDepth($from, $to, placed)
+  let placed = placeSlice($from, slice)
 
-  let fittedLeft = fitLeft($from, base, placed)
-  let fitted = fitRight($from, $to, base, fittedLeft)
+  let fittedLeft = fitLeft($from, placed)
+  let fitted = fitRight($from, $to, fittedLeft)
   if (fittedLeft.size == fitted.size || !canMoveText($from, $to, fittedLeft))
     return this.step(new ReplaceStep(from, to, fitted))
 
   let d = $to.depth, after = $to.after(d)
   while (d > 1 && after == $to.end(--d)) ++after
-  fitted = fitRight($from, this.doc.resolve(after), base, fittedLeft)
+  fitted = fitRight($from, this.doc.resolve(after), fittedLeft)
   return this.step(new ReplaceWrapStep(from, after, to, $to.end($to.depth),
                                        fitted, fittedLeft.size))
 }
@@ -196,28 +196,32 @@ function fitLeftInner($from, depth, placed) {
   return {content, openRight}
 }
 
-function fitLeft($from, depth, placed) {
-  let {content, openRight} = fitLeftInner($from, depth, placed)
-  return new Slice(content, $from.depth - depth, openRight || 0)
+function fitLeft($from, placed) {
+  let {content, openRight} = fitLeftInner($from, 0, placed)
+  return new Slice(content, $from.depth, openRight || 0)
 }
 
-function probeRight(parent, content, $to, depth, openRight, startMatch) {
+function probeRight(parent, content, $to, depth, openRight, $from, openLeft) {
   let match, join, endIndex = content.childCount, next = null
   if (openRight > 0) {
     let last = content.lastChild
-    next = probeRight(last, last.content, $to, depth + 1, openRight - 1)
+    next = probeRight(last, last.content, $to, depth + 1, openRight - 1,
+                      $from, content.childCount == 1 ? openLeft - 1 : -1)
     if (next.join) endIndex--
   }
 
-  if (!startMatch)
-    match = parent.contentMatchAt(endIndex)
+  if (openLeft >= 0)
+    match = $from.node(depth).contentMatchAt($from.index(depth)).matchFragment(content, 0, endIndex)
   else
-    match = startMatch.matchFragment(content, 0, endIndex)
+    match = parent.contentMatchAt(endIndex)
 
   if (depth <= $to.depth) {
     let after = $to.node(depth), afterIndex = $to.index(depth)
-    if (after.childCount > afterIndex || after.type.compatibleContent(parent.type))
+    if (after.childCount > afterIndex || after.type.compatibleContent(parent.type)) {
       join = match.fillBefore(after.content, true, afterIndex)
+      // We can't insert content when both sides are open
+      if (join && join.size && openLeft > 0 && next && next.join) join = null
+    }
   }
 
   if (next && next.join)
@@ -262,15 +266,27 @@ function fitRightJoined(probe, $to, depth, content) {
   return content
 }
 
+function normalizeSlice(content, openLeft, openRight) {
+  while (openLeft > 0 && openRight > 0 && content.childCount == 1) {
+    content = content.firstChild.content
+    openLeft--
+    openRight--
+  }
+  return new Slice(content, openLeft, openRight)
+}
+
 // : (ResolvedPos, ResolvedPos, number, Slice) → Slice
-function fitRight($from, $to, depth, slice) {
-  let probe = probeRight($from.node(depth), slice.content, $to, depth, slice.openRight,
-                         $from.node(depth).contentMatchAt($from.index(depth)))
-  // FIXME what if the top level can't be joined? Try to construct a
-  // test case that causes this
+function fitRight($from, $to, slice) {
+  let probe = probeRight($from.node(0), slice.content, $to, 0, slice.openRight, $from, slice.openLeft)
+  // If the top level can't be joined, the step is trying to insert
+  // content that can't appear in that place. Create a delete slice
+  // instead.
+  // FIXME we might want to be clever about selectively dropping nodes here?
+  if (!probe.join) return fitRight($from, $to, fitLeft($from, []))
+
   if (!probe.join) throw new Error("Sorry I didn't deal with this yet")
-  let fitted = fitRightJoined(probe, $to, depth, slice.content, slice.openRight)
-  return new Slice(fitted, slice.openLeft, $to.depth - depth)
+  let fitted = fitRightJoined(probe, $to, 0, slice.content, slice.openRight)
+  return normalizeSlice(fitted, slice.openLeft, $to.depth)
 }
 
 function canMoveText($from, $to, slice) {
@@ -377,11 +393,4 @@ function findPlacement(fragment, $from, start) {
     let match = $from.node(d).contentMatchAt($from.indexAfter(d)).fillBefore(fragment)
     if (match) return {depth: d, fill: match}
   }
-}
-
-function baseDepth($from, $to, placed) {
-  let base = $from.sameDepth($to)
-  for (let i = 0; i < placed.length; i++)
-    if (placed[i]) return Math.min(i, base)
-  return base
 }
