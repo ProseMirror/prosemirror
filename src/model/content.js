@@ -35,40 +35,31 @@ export class ContentExpr {
       return this.start(attrs).matchFragment(fragment, 0, index)
   }
 
-  isSimple() {
-    if (this.elements.length != 1) return null
-    let elt = this.elements[0]
-    return elt.max == many ? elt : null
-  }
-
-  canInsertType(attrs, content, index, type, marks) {
-    let simple = this.isSimple()
-    if (simple) return simple.matchesType(type, marks)
-    return matchToEnd(this.getMatchAt(attrs, content, index).matchType(type, marks),
-                      content, index)
-  }
-
-  canInsertFragment(attrs, content, index, fragment) {
-    let simple = this.isSimple(), allMatch = true
-    if (simple) {
-      for (let i = 0; i < fragment.childCount; i++)
-        if (!simple.matches(fragment.child(i))) allMatch = false
-      return allMatch
+  checkUpdate(attrs, content, from, to, replacement = Fragment.empty, start = 0, end = replacement.childCount) {
+    // Check for simple case, where the expression only has a single element
+    // (Optimization to avoid matching more than we need)
+    if (this.elements.length == 1) {
+      let elt = this.elements[0]
+      if (!checkCount(elt, content.childCount - (to - from) + (end - start), attrs, this)) return false
+      for (let i = start; i < end; i++) if (!elt.matches(replacement.child(i))) return false
+      return true
     }
-    return matchToEnd(this.getMatchAt(attrs, content, index).matchFragment(fragment),
-                      content, index)
+
+    let match = this.getMatchAt(attrs, content, from).matchFragment(replacement, start, end)
+    match = match && match.matchFragment(content, to)
+    return match && match.validEnd()
   }
 
-  canReplace(attrs, content, index, type, marks) {
-    let simple = this.isSimple()
-    if (simple) return simple.matchesType(type, marks)
-    return matchToEnd(this.getMatchAt(attrs, content, index).matchType(type, marks),
-                      content, index + 1)
-  }
+  checkUpdateWithType(attrs, content, from, to, type, marks) {
+    if (this.elements.length == 1) {
+      let elt = this.elements[0]
+      if (!checkCount(elt, content.childCount - (to - from) + 1, attrs, this)) return false
+      return elt.matchesType(type, marks)
+    }
 
-  canSplitAt(attrs, content, index) {
-    return this.getMatchAt(attrs, content, index).validEnd() &&
-      this.start(attrs).matchFragment(content, index).validEnd()
+    let match = this.getMatchAt(attrs, content, from).matchType(type, marks)
+    match = match && match.matchFragment(content, to)
+    return match && match.validEnd()
   }
 
   compatible(other) {
@@ -198,12 +189,7 @@ export class ContentMatch {
   }
 
   resolveCount(count) {
-    if (typeof count == "number") return count
-    if (this.attrs) {
-      let value = this.attrs[count]
-      if (value !== undefined) return +value
-    }
-    return +this.expr.nodeType.attrs[count].default
+    return typeof count == "number" ? count : resolveCount(count, this.attrs, this.expr)
   }
 
   validCount(elt, count) {
@@ -307,6 +293,15 @@ function parseCount(nodeType, count) {
   }
 }
 
+function resolveCount(count, attrs, expr) {
+  if (typeof count == "number") return count
+  if (attrs) {
+    let value = attrs[count]
+    if (value !== undefined) return +value
+  }
+  return +expr.nodeType.attrs[count].default
+}
+
 function checkMarks(schema, marks) {
   let found = []
   for (let i = 0; i < marks.length; i++) {
@@ -315,6 +310,13 @@ function checkMarks(schema, marks) {
     else throw new SyntaxError("Unknown mark type: '" + marks[i] + "'")
   }
   return found
+}
+
+function checkCount(elt, count, attrs, expr) {
+  if (count < resolveCount(elt.min, attrs, expr) ||
+      count > resolveCount(elt.max, attrs, expr)) return false
+  let mod = resolveCount(elt.mod, attrs, expr)
+  return mod == -1 || (count % mod == 0)
 }
 
 function expandTypes(schema, types) {
@@ -340,9 +342,4 @@ function expandTypes(schema, types) {
     }
   }
   return found
-}
-
-function matchToEnd(match, content, index) {
-  match = match && match.matchFragment(content, index)
-  return match && match.validEnd
 }

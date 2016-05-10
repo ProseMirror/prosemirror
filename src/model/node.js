@@ -276,29 +276,23 @@ export class Node {
     return this.type.findWrapping(target, this.contentMatchAt(index))
   }
 
-  canInsertType(index, type, marks) {
-    return this.type.contentExpr.canInsertType(this.attrs, this.content, index, type, marks || emptyArray)
+  canUpdate(from, to, replacement, start, end) {
+    return this.type.contentExpr.checkUpdate(this.attrs, this.content, from, to, replacement, start, end)
   }
 
-  canInsertFragment(index, fragment) {
-    return this.type.contentExpr.canInsertFragment(this.attrs, this.content, index, fragment)
-  }
-
-  canReplace(index, type, marks) {
-    return this.type.contentExpr.canReplace(this.attrs, this.content, index, type, marks || emptyArray)
+  canUpdateWithType(from, to, type, marks) {
+    return this.type.contentExpr.checkUpdateWithType(this.attrs, this.content, from, to, type, marks || emptyArray)
   }
 
   canAppend(other) {
-    if (other.content.size) return this.canAppendFragment(other.content)
+    if (other.content.size) return this.canUpdate(this.childCount, this.childCount, other.content)
     else return this.type.compatibleContent(other.type)
   }
 
-  canAppendFragment(fragment) {
-    return this.canInsertFragment(this.childCount, fragment)
-  }
-
   canSplitAt(index) {
-    return this.type.contentExpr.canSplitAt(this.attrs, this.content, index)
+    let expr = this.type.contentExpr
+    return expr.checkUpdate(this.attrs, this.content, 0, index) &&
+      expr.checkUpdate(this.attrs, this.content, index, this.content.childCount)
   }
 
   // :: () → Object
