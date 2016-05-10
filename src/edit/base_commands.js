@@ -396,8 +396,9 @@ baseCommands.createParagraphNear = {
   run(pm) {
     let {from, to, node} = pm.selection
     if (!node || !node.isBlock) return false
-    let side = pm.doc.resolve(from).parentOffset ? to : from
-    pm.tr.insert(side, pm.schema.defaultTextblockType().create()).apply(pm.apply.scroll)
+    let $from = pm.doc.resolve(from), side = $from.parentOffset ? to : from
+    let type = $from.parent.defaultContentType($from.indexAfter($from.depth))
+    pm.tr.insert(side, type.create()).apply(pm.apply.scroll)
     pm.setTextSelection(side + 1)
   },
   keys: ["Enter(20)"]
@@ -437,7 +438,7 @@ baseCommands.splitBlock = {
     } else {
       let $to = pm.doc.resolve(to), atEnd = $to.parentOffset == $to.parent.content.size
       let tr = pm.tr.delete(from, to)
-      let deflt = pm.schema.defaultTextblockType(), type = atEnd ? deflt : null
+      let deflt = $from.node($from.depth - 1).defaultContentType($from.indexAfter($from.depth - 1)), type = atEnd ? deflt : null
       if (canSplit(tr.doc, from, 1, type)) {
         tr.split(from, 1, type)
         if (!atEnd && !$from.parentOffset && $from.parent.type != deflt)

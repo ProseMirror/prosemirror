@@ -5,7 +5,7 @@ import {defTest} from "./tests"
 import {doc, p, pre, img, br, h1, em, hr} from "./build"
 import {cmp, cmpNode, is} from "./cmp"
 
-function get(expr) { return ContentExpr.parse(schema.nodes.heading, expr) }
+function get(expr) { return ContentExpr.parse(schema.nodes.heading, expr, schema.spec.groups) }
 
 function simplify(elt) {
   return {types: elt.nodeTypes.map(t => t.name).sort(),
@@ -68,7 +68,7 @@ parse("range_attr", "paragraph{@level}",
 function parseFail(name, expr) {
   defTest("content_parse_fail_" + name, () => {
     try {
-      ContentExpr.parse(schema.nodes.heading, expr)
+      ContentExpr.parse(schema.nodes.heading, expr, schema.spec.groups)
       is(false, "parsing succeeded")
     } catch(e) {
       if (!(e instanceof SyntaxError)) throw e

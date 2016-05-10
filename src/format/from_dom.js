@@ -158,7 +158,7 @@ class DOMParseState {
     if (this.options.editableContent && name == "br" && !dom.nextSibling) return
     if (!this.parseNodeType(name, dom) && !ignoreElements.hasOwnProperty(name)) {
       this.addAll(dom.firstChild, null)
-      if (blockElements.hasOwnProperty(name) && this.top.type == this.schema.defaultTextblockType())
+      if (blockElements.hasOwnProperty(name))
         this.closing = true
     }
   }

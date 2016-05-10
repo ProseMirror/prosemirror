@@ -111,6 +111,16 @@ class SchemaItem {
   }
 }
 
+function overlayObj(base, update) {
+  let copy = copyObj(base)
+  for (let name in update) {
+    let value = update[name]
+    if (value == null) delete copy[name]
+    else copy[name] = value
+  }
+  return copy
+}
+
 // ;; Node types are objects allocated once per `Schema`
 // and used to tag `Node` instances with a type. They are
 // instances of sub-types of this class, and contain information about
@@ -168,10 +178,6 @@ export class NodeType extends SchemaItem {
   // Controls whether this node type is locked.
   get locked() { return false }
 
-  get group() { return null }
-  get groupDefault() { return false }
-
-  get content() { return "" }
   get isLeaf() { return this.contentExpr.isLeaf }
 
   get hasRequiredAttrs() {
@@ -252,10 +258,10 @@ export class NodeType extends SchemaItem {
     return content.append(this.contentExpr.getMatchAt(attrs, content).fillBefore(Fragment.empty, true))
   }
 
-  static compile(types, schema) {
+  static compile(nodes, schema) {
     let result = Object.create(null)
-    for (let name in types)
-      result[name] = new types[name](name, schema)
+    for (let name in nodes)
+      result[name] = new nodes[name].type(name, schema)
 
     if (!result.doc) throw new RangeError("Every schema needs a 'doc' type")
     if (!result.text) throw new RangeError("Every schema needs a 'text' type")
@@ -266,20 +272,16 @@ export class NodeType extends SchemaItem {
 
 // ;; Base type for block nodetypes.
 export class Block extends NodeType {
-  get content() { return "block+" }
-  get group() { return "block" }
   get isBlock() { return true }
 }
 
 // ;; Base type for textblock node types.
 export class Textblock extends Block {
-  get content() { return "inline[_]*" }
   get isTextblock() { return true }
 }
 
 // ;; Base type for inline node types.
 export class Inline extends NodeType {
-  get group() { return "inline" }
   get isInline() { return true }
 }
 
@@ -405,51 +407,21 @@ export class MarkType extends SchemaItem {
   }
 }
 
-// Schema specifications are data structures that specify a schema --
-// a set of node types, their names, attributes, and nesting behavior.
+// ;; #path=SchemaSpec #kind=interface
+// An object describing a schema, as passed to the `Schema`
+// constructor.
 
-// ;; A schema specification is a blueprint for an actual
-// `Schema`. It maps names to node and mark types.
-//
-// A specification consists of an object that associates node names
-// with node type constructors and another similar object associating
-// mark names with mark type constructors.
-export class SchemaSpec {
-  // :: (?Object<constructor<NodeType>>, ?Object<constructor<MarkType>>)
-  // Create a schema specification from scratch. The arguments map
-  // node names to node type constructors and mark names to mark type
-  // constructors.
-  constructor(nodes, marks) {
-    this.nodes = nodes || {}
-    this.marks = marks || {}
-  }
+// :: Object<{type: constructor<NodeType>, content: ?string}> #path=SchemaSpec.nodes
+// The node types in this schema. Maps names to `NodeType` subclasses,
+// along with an optional content string, as parsed by
+// `ContentExpr.parse`.
 
-  // :: (?Object<?NodeType>, ?Object<?MarkType>) → SchemaSpec
-  // Base a new schema spec on this one by specifying nodes and marks
-  // to add or remove.
-  //
-  // When `nodes` is passed, it should be an object mapping type names
-  // to either `null`, to delete the type of that name, or to a
-  // `NodeType` subclass, to add or replace the node type of that
-  // name.
-  //
-  // Similarly, `marks` can be an object to add, change, or remove
-  // [mark types](#MarkType) in the schema.
-  update(nodes, marks) {
-    return new SchemaSpec(nodes ? overlayObj(this.nodes, nodes) : this.nodes,
-                          marks ? overlayObj(this.marks, marks) : this.marks)
-  }
-}
+// :: ?Object<[string]> #path=SchemaSpec.groups
+// Specifies the node groups that are used in the schema's content
+// expressions.
 
-function overlayObj(base, update) {
-  let copy = copyObj(base)
-  for (let name in update) {
-    let value = update[name]
-    if (value == null) delete copy[name]
-    else copy[name] = value
-  }
-  return copy
-}
+// :: ?Object<constructor<MarkType>> #path=SchemaSpec.marks
+// The mark types that exist in this schema.
 
 // ;; Each document is based on a single schema, which provides the
 // node and mark types that it is made up of (which, in turn,
@@ -458,20 +430,20 @@ export class Schema {
   // :: (SchemaSpec)
   // Construct a schema from a specification.
   constructor(spec) {
-    // :: SchemaSpec
-    // The specification on which the schema is based.
+    // :: SchemaSpec The spec that the schema is based on.
     this.spec = spec
-
     // :: Object<NodeType>
     // An object mapping the schema's node names to node type objects.
     this.nodes = NodeType.compile(spec.nodes, this)
     // :: Object<MarkType>
     // A map from mark names to mark type objects.
-    this.marks = MarkType.compile(spec.marks, this)
+    this.marks = MarkType.compile(spec.marks || {}, this)
     for (let prop in this.nodes) {
-      if (prop in this.marks) throw new RangeError(prop + " can not be both a node and a mark")
+      if (prop in this.marks)
+        throw new RangeError(prop + " can not be both a node and a mark")
       let type = this.nodes[prop]
-      type.contentExpr = ContentExpr.parse(type, type.content)
+      type.contentExpr = ContentExpr.parse(type, spec.nodes[prop].content || "",
+                                           spec.groups || Object.create(null))
     }
 
     // :: Object
@@ -515,20 +487,6 @@ export class Schema {
   // Schema. Empty text nodes are not allowed.
   text(text, marks) {
     return this.nodes.text.create(null, text, Mark.setFrom(marks))
-  }
-
-  // :: () → ?NodeType
-  // Return the default textblock type for this schema, or `null` if
-  // it does not contain a node type with a `defaultTextblock`
-  // property.
-  defaultTextblockType() {
-    let cached = this.cached.defaultTextblockType
-    if (cached !== undefined) return cached
-    for (let name in this.nodes) {
-      if (this.nodes[name].defaultTextblock)
-        return this.cached.defaultTextblockType = this.nodes[name]
-    }
-    return this.cached.defaultTextblockType = null
   }
 
   // :: (string, ?Object) → Mark

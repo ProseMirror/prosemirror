@@ -79,7 +79,7 @@ export class ContentExpr {
     return this.start(attrs).fillBefore(Fragment.empty, true)
   }
 
-  static parse(nodeType, expr) {
+  static parse(nodeType, expr, groups) {
     let elements = [], pos = 0
     for (;;) {
       pos += /^\s*/.exec(expr.slice(pos))[0].length
@@ -93,7 +93,7 @@ export class ContentExpr {
       let count = /^(?:([+*?])|%(\d+|@\w+)|\{\s*(\d+|@\w+)\s*(,\s*(\d+|@\w+)?)?\s*\})/.exec(expr.slice(pos))
       if (count) pos += count[0].length
 
-      let nodeTypes = expandTypes(nodeType.schema, types[1] ? [types[1]] : types[2].split(/\s*\|\s*/))
+      let nodeTypes = expandTypes(nodeType.schema, groups, types[1] ? [types[1]] : types[2].split(/\s*\|\s*/))
       let markSet = !marks ? false : marks[1] ? true : checkMarks(nodeType.schema, marks[2].split(/\s+/))
       let min = 1, max = 1, mod = -1
       if (count) {
@@ -163,6 +163,10 @@ class ContentElement {
   createFiller() {
     let type = this.nodeTypes[0], attrs = type.computeAttrs(null)
     return type.create(attrs, type.contentExpr.generateContent(attrs))
+  }
+
+  defaultType() {
+    return this.nodeTypes[0].defaultAttrs && this.nodeTypes[0]
   }
 
   overlaps(other) {
@@ -319,27 +323,17 @@ function checkCount(elt, count, attrs, expr) {
   return mod == -1 || (count % mod == 0)
 }
 
-function expandTypes(schema, types) {
-  let found = []
-  for (let i = 0; i < types.length; i++) {
-    let type = types[i]
-    if (schema.nodes[type]) {
-      found.push(schema.nodes[type])
-    } else {
-      let startLen = found.length, sawDefault = false
-      for (let name in schema.nodes) if (schema.nodes[name].group == type) {
-        let type = schema.nodes[name]
-        if (type.groupDefault) {
-          if (sawDefault) throw new SyntaxError("Multiple default types in group " + type)
-          sawDefault = true
-          found.splice(startLen, 0, type)
-        } else {
-          found.push(type)
-        }
-      }
-      if (found.length == startLen)
-        throw new SyntaxError("Node type or group '" + type + "' does not exist")
-    }
+function expandTypes(schema, groups, types) {
+  let result = []
+  function expand(type) {
+    let found
+    if (found = schema.nodes[type])
+      result.push(found)
+    else if ((found = groups[type]) && found.length)
+      found.forEach(expand)
+    else
+      throw new SyntaxError("Node type or group '" + type + "' does not exist")
   }
-  return found
+  types.forEach(expand)
+  return result
 }

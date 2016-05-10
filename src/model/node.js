@@ -289,6 +289,10 @@ export class Node {
     else return this.type.compatibleContent(other.type)
   }
 
+  defaultContentType(at) {
+    return this.contentMatchAt(at).element.defaultType()
+  }
+
   // :: () → Object
   // Return a JSON-serializeable representation of this node.
   toJSON() {

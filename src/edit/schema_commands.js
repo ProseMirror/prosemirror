@@ -264,10 +264,9 @@ ListItem.register("command", "split", {
         $from.depth < 2 || !$from.sameParent(pm.doc.resolve(to))) return false
     let grandParent = $from.node($from.depth - 1)
     if (grandParent.type != this) return false
-    let nextType = to == $from.end($from.depth) ? pm.schema.defaultTextblockType() : null
+    let nextType = to == $from.end($from.depth) ? grandParent.defaultContentType($from.indexAfter($from.depth - 1)) : null
     let tr = pm.tr.delete(from, to)
     if (canSplit(tr.doc, from, 2, nextType)) return tr.split(from, 2, nextType).apply(pm.apply.scroll)
-    console.log("no split in " + tr.doc, "@", from, nextType)
     return false
   },
   keys: ["Enter(50)"]
