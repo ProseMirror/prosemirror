@@ -1,47 +1,7 @@
 import {Slice} from "../model"
 
+import {ReplaceStep} from "./replace"
 import {Transform} from "./transform"
-import {Step, StepResult} from "./step"
-import {SplitStep} from "./split"
-import {PosMap} from "./map"
-
-// ;; Step to join two block elements together.
-export class JoinStep extends Step {
-  // :: (number)
-  // `pos` must point at the point between the two nodes to be joined.
-  constructor(pos) {
-    super()
-    this.pos = pos
-  }
-
-  apply(doc) {
-    if (!joinable(doc, this.pos))
-      return StepResult.fail("Join position not between nodes")
-    return StepResult.fromReplace(doc, this.pos - 1, this.pos + 1, Slice.empty)
-  }
-
-  posMap() {
-    return new PosMap([this.pos - 1, 2, 0])
-  }
-
-  invert(doc) {
-    let after = doc.nodeAt(this.pos)
-    return new SplitStep(this.pos - 1, after.type.name, after.attrs)
-  }
-
-  map(mapping) {
-    let from = mapping.mapResult(this.pos - 1, 1)
-    let to = mapping.mapResult(this.pos + 1, -1)
-    if (from.deleted && to.deleted || from.pos + 2 != to.pos) return null
-    return new JoinStep(from.pos + 1)
-  }
-
-  static fromJSON(_schema, json) {
-    return new JoinStep(json.pos)
-  }
-}
-
-Step.register("join", JoinStep)
 
 // :: (Node, number) → bool
 // Test whether the blocks before and after a given position can be
@@ -84,15 +44,9 @@ export function joinPoint(doc, pos, dir = -1) {
 // the method will return without raising an error if the position
 // isn't a valid place to join.
 Transform.prototype.join = function(pos, depth = 1, silent = false) {
-  for (let i = 0; i < depth; i++) {
-    let $pos = this.doc.resolve(pos)
-    if ($pos.parentOffset == 0 || $pos.parentOffset == $pos.parent.content.size ||
-        !$pos.nodeAfter.type.compatibleContent($pos.nodeBefore.type)) {
-      if (!silent) throw new RangeError("Nothing to join at " + pos)
-      break
-    }
-    this.step(new JoinStep(pos))
-    pos--
-  }
+  if (silent && (pos < depth || pos + depth > this.doc.content.size)) return this
+  let step = new ReplaceStep(pos - depth, pos + depth, Slice.empty, true)
+  if (silent) this.maybeStep(step)
+  else this.step(step)
   return this
 }

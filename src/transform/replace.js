@@ -5,19 +5,22 @@ import {Step, StepResult} from "./step"
 import {PosMap} from "./map"
 
 // ;; Replace a part of the document with a slice of new content.
-class ReplaceStep extends Step {
+export class ReplaceStep extends Step {
   // :: (number, number, Slice)
   // The given `slice` should fit the 'gap' between `from` and
   // `to`—the depths must line up, and the surrounding nodes must be
   // able to be joined with the open sides of the slice.
-  constructor(from, to, slice) {
+  constructor(from, to, slice, structure) {
     super()
     this.from = from
     this.to = to
     this.slice = slice
+    this.structure = !!structure
   }
 
   apply(doc) {
+    if (this.structure && contentBetween(doc, this.from, this.to))
+      return StepResult.fail("Structure replace would overwrite content")
     return StepResult.fromReplace(doc, this.from, this.to, this.slice)
   }
 
@@ -47,7 +50,7 @@ Step.register("replace", ReplaceStep)
 // slice.
 export class ReplaceWrapStep extends Step {
   // :: (number, number, number, number, Slice, number)
-  constructor(from, to, gapFrom, gapTo, slice, insert, shift) {
+  constructor(from, to, gapFrom, gapTo, slice, insert, structure) {
     super()
     this.from = from
     this.to = to
@@ -55,14 +58,13 @@ export class ReplaceWrapStep extends Step {
     this.gapTo = gapTo
     this.slice = slice
     this.insert = insert
-    this.shift = !!shift
+    this.structure = !!structure
   }
 
   apply(doc) {
-    if (this.shift &&
-        (!isShift(doc.resolve(this.from), this.gapFrom - this.from) ||
-         !isShift(doc.resolve(this.to), this.gapTo - this.to)))
-      return StepResult.fail("Shift step would overwrite actual content")
+    if (this.structure && (contentBetween(doc, this.from, this.gapFrom) ||
+                           contentBetween(doc, this.gapTo, this.to)))
+      return StepResult.fail("Structure gap-replace would overwrite content")
 
     let gap = doc.slice(this.gapFrom, this.gapTo)
     if (gap.openLeft || gap.openRight)
@@ -82,39 +84,37 @@ export class ReplaceWrapStep extends Step {
     return new ReplaceWrapStep(this.from, this.from + this.slice.size + gap,
                                this.from + this.insert, this.from + this.insert + gap,
                                doc.slice(this.from, this.to).removeBetween(this.gapFrom - this.from, this.gapTo - this.from),
-                               this.gapFrom - this.from, this.shift)
+                               this.gapFrom - this.from, this.structure)
   }
 
   map(mapping) {
     let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1)
     let gapFrom = mapping.map(this.gapFrom, -1), gapTo = mapping.map(this.gapTo, 1)
     if ((from.deleted && to.deleted) || gapFrom < from.pos || gapTo > to.pos) return null
-    return new ReplaceWrapStep(from.pos, to.pos, gapFrom, gapTo, this.slice, this.insert, this.shift)
+    return new ReplaceWrapStep(from.pos, to.pos, gapFrom, gapTo, this.slice, this.insert, this.structure)
   }
 
   static fromJSON(schema, json) {
     return new ReplaceWrapStep(json.from, json.to, json.gapFrom, json.gapTo,
-                               Slice.fromJSON(schema, json.slice), json.insert, json.shift)
+                               Slice.fromJSON(schema, json.slice), json.insert, json.structure)
   }
 }
 
-function isShift($pos, dist) {
-  let depth = $pos.depth, dir = 1
-  if (dist < 0) { dir = -1; dist = -dist }
-  while (dist > 0 && depth > 0 &&
-         $pos.index(depth) == (dir < 0 ? 0 : $pos.node(depth).childCount - (depth < $pos.depth ? 1 : 0))) {
+function contentBetween(doc, from, to) {
+  let $from = doc.resolve(from), dist = to - from, depth = $from.depth
+  while (dist > 0 && depth > 0 && $from.indexAfter(depth) == $from.node(depth).childCount) {
     depth--
     dist--
   }
   if (dist > 0) {
-    let next = $pos.node(depth).maybeChild($pos.index(depth) + (dir < 0 ? -1 : depth < $pos.depth ? 1 : 0))
+    let next = $from.node(depth).maybeChild($from.indexAfter(depth))
     while (dist > 0) {
-      if (!next || next.type.isLeaf) return false
-      next = dir < 0 ? next.lastChild : next.firstChild
+      if (!next || next.type.isLeaf) return true
+      next = next.firstChild
       dist--
     }
   }
-  return true
+  return false
 }
 
 Step.register("replaceWrap", ReplaceWrapStep)
