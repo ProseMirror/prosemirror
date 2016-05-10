@@ -1,7 +1,7 @@
 import {Slice, Fragment} from "../model"
 
 import {Transform} from "./transform"
-import {ReplaceWrapStep} from "./replace"
+import {ReplaceStep, ReplaceWrapStep} from "./replace_step"
 
 // :: (Node, number, ?number) → bool
 // Tells you whether the range in the given positions' shared
@@ -168,4 +168,67 @@ Transform.prototype.setNodeType = function(pos, type, attrs) {
 
   return this.step(new ReplaceWrapStep(pos, pos + node.nodeSize, pos + 1, pos + node.nodeSize - 1,
                                        new Slice(Fragment.from(type.create(attrs)), 0, 0), 1, true))
+}
+
+// :: (number, ?number, ?NodeType, ?Object) → Transform
+// Split the node at the given position, and optionally, if `depth` is
+// greater than one, any number of nodes above that. By default, the part
+// split off will inherit the node type of the original node. This can
+// be changed by passing `typeAfter` and `attrsAfter`.
+Transform.prototype.split = function(pos, depth = 1, typeAfter, attrsAfter) {
+  let $pos = this.doc.resolve(pos), before = Fragment.empty, after = Fragment.empty
+  for (let d = $pos.depth, e = $pos.depth - depth; d > e; d--) {
+    before = Fragment.from($pos.node(d).copy(before))
+    after = Fragment.from(typeAfter ? typeAfter.create(attrsAfter, after) : $pos.node(d).copy(after))
+    typeAfter = null
+  }
+  return this.step(new ReplaceStep(pos, pos, new Slice(before.append(after), depth, depth, true)))
+}
+
+// :: (Node, number) → bool
+// Test whether the blocks before and after a given position can be
+// joined.
+export function joinable(doc, pos) {
+  let $pos = doc.resolve(pos)
+  return canJoin($pos.nodeBefore, $pos.nodeAfter)
+}
+
+function canJoin(a, b) {
+  return a && b && !a.isText && a.canAppend(b)
+}
+
+// :: (Node, number, ?number) → ?number
+// Find an ancestor of the given position that can be joined to the
+// block before (or after if `dir` is positive). Returns the joinable
+// point, if any.
+export function joinPoint(doc, pos, dir = -1) {
+  let $pos = doc.resolve(pos)
+  for (let d = $pos.depth;; d--) {
+    let before, after
+    if (d == $pos.depth) {
+      before = $pos.nodeBefore
+      after = $pos.nodeAfter
+    } else if (dir > 0) {
+      before = $pos.node(d + 1)
+      after = $pos.node(d).maybeChild($pos.index(d) + 1)
+    } else {
+      before = $pos.node(d).maybeChild($pos.index(d) - 1)
+      after = $pos.node(d + 1)
+    }
+    if (before && !before.isTextblock && canJoin(before, after)) return pos
+    if (d == 0) break
+    pos = dir < 0 ? $pos.before(d) : $pos.after(d)
+  }
+}
+
+// :: (number, ?number, ?bool) → Transform
+// Join the blocks around the given position. When `silent` is true,
+// the method will return without raising an error if the position
+// isn't a valid place to join.
+Transform.prototype.join = function(pos, depth = 1, silent = false) {
+  if (silent && (pos < depth || pos + depth > this.doc.content.size)) return this
+  let step = new ReplaceStep(pos - depth, pos + depth, Slice.empty, true)
+  if (silent) this.maybeStep(step)
+  else this.step(step)
+  return this
 }
