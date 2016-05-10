@@ -135,22 +135,21 @@ function windowRect() {
           top: 0, bottom: window.innerHeight}
 }
 
-const scrollMargin = 5
-
 export function scrollIntoView(pm, pos) {
   if (!pos) pos = pm.sel.range.head || pm.sel.range.from
   let coords = coordsAtPos(pm, pos)
   for (let parent = pm.content;; parent = parent.parentNode) {
+    let {scrollThreshold, scrollMargin} = pm.options
     let atBody = parent == document.body
     let rect = atBody ? windowRect() : parent.getBoundingClientRect()
     let moveX = 0, moveY = 0
-    if (coords.top < rect.top)
+    if (coords.top < rect.top + scrollThreshold)
       moveY = -(rect.top - coords.top + scrollMargin)
-    else if (coords.bottom > rect.bottom)
+    else if (coords.bottom > rect.bottom - scrollThreshold)
       moveY = coords.bottom - rect.bottom + scrollMargin
-    if (coords.left < rect.left)
+    if (coords.left < rect.left + scrollThreshold)
       moveX = -(rect.left - coords.left + scrollMargin)
-    else if (coords.right > rect.right)
+    else if (coords.right > rect.right - scrollThreshold)
       moveX = coords.right - rect.right + scrollMargin
     if (moveX || moveY) {
       if (atBody) {
