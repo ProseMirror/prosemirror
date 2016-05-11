@@ -56,7 +56,6 @@ export function fromDOM(schema, dom, options) {
 
 defineSource("dom", fromDOM)
 
-// FIXME automatically fill when a node doesn't fit?
 class NodeBuilder {
   constructor(type, attrs) {
     this.type = type

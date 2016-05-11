@@ -249,12 +249,13 @@ export class NodeType extends SchemaItem {
     return this.contentExpr.matches(attrs, content)
   }
 
-  fixContent(content, attrs) { // FIXME replace? optimize?
-    if (content)
-      content = this.contentExpr.start(attrs).fillBefore(content).append(content)
-    else
-      content = Fragment.empty
-    return content.append(this.contentExpr.getMatchAt(attrs, content).fillBefore(Fragment.empty, true))
+  fixContent(content, attrs) {
+    let before = this.contentExpr.start(attrs).fillBefore(content)
+    if (!before) return null
+    content = before.append(content)
+    let after = this.contentExpr.getMatchAt(attrs, content).fillBefore(Fragment.empty, true)
+    if (!after) return
+    return content.append(after)
   }
 
   static compile(nodes, schema) {

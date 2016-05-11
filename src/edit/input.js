@@ -468,7 +468,7 @@ function dropPos(pm, e, slice) {
   for (let d = $pos.depth; d >= 0; d--) {
     let bias = d == $pos.depth ? 0 : pos <= ($pos.start(d + 1) + $pos.end(d + 1)) / 2 ? -1 : 1
     let insertPos = $pos.index(d) + (bias > 0 ? 1 : 0)
-    if ($pos.node(d).canUpdate(insertPos, insertPos, slice.content))
+    if ($pos.node(d).canReplace(insertPos, insertPos, slice.content))
       return bias == 0 ? pos : bias < 0 ? $pos.before(d + 1) : $pos.after(d + 1)
   }
   return pos

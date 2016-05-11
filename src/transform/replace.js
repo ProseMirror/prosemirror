@@ -262,7 +262,7 @@ function placeSlice($from, slice) {
         if (!parents) break
         let last = parents[parents.length - 1]
         if (last ? !last.contentExpr.matches(last.defaultAttrs, curFragment)
-                 : !top.canUpdate($from.indexAfter(0), $from.depth ? $from.index(0) : $from.indexAfter(0), curFragment)) break
+                 : !top.canReplace($from.indexAfter(0), $from.depth ? $from.index(0) : $from.indexAfter(0), curFragment)) break
         parents = [top.type].concat(parents)
         curType = parents[parents.length - 1]
       }

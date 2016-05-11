@@ -143,3 +143,8 @@ repl("fill_figure_right",
      n("doc"),
      0, 0, n("doc", n("figure", n("caption"))), 0, 1,
      n("doc", n("figure", n("caption"), n("figureimage"))))
+
+repl("join_figures",
+     n("doc", n("figure", n("caption"), n("figureimage")), n("figure", n("caption"), n("figureimage"))),
+     3, 8, n("doc"), 0, 0,
+     n("doc", n("figure", n("caption"), n("figureimage"))))

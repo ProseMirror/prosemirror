@@ -454,7 +454,7 @@ NodeType.derivableCommands.make = conf => ({
       depth = 1
     }
     let $from = pm.doc.resolve(from), parentDepth = $from.depth - depth, index = $from.index(parentDepth)
-    return $from.node(parentDepth).canUpdateWithType(index, index + 1, this)
+    return $from.node(parentDepth).canReplaceWithType(index, index + 1, this)
   },
   active(pm) {
     return activeTextblockIs(pm, this, conf.attrs)
@@ -468,7 +468,7 @@ NodeType.derivableCommands.insert = function(conf) {
     },
     select: this.isInline ? function(pm) {
       let $from = pm.doc.resolve(pm.selection.from), index = $from.index($from.depth)
-      return $from.parent.canUpdateWithType(index, index, this)
+      return $from.parent.canReplaceWithType(index, index, this)
     } : null,
     params: deriveParams(this, conf.params)
   }

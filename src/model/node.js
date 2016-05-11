@@ -276,16 +276,16 @@ export class Node {
     return this.type.findWrapping(target, this.contentMatchAt(index))
   }
 
-  canUpdate(from, to, replacement, start, end) {
+  canReplace(from, to, replacement, start, end) {
     return this.type.contentExpr.checkUpdate(this.attrs, this.content, from, to, replacement, start, end)
   }
 
-  canUpdateWithType(from, to, type, marks) {
+  canReplaceWithType(from, to, type, marks) {
     return this.type.contentExpr.checkUpdateWithType(this.attrs, this.content, from, to, type, marks || emptyArray)
   }
 
   canAppend(other) {
-    if (other.content.size) return this.canUpdate(this.childCount, this.childCount, other.content)
+    if (other.content.size) return this.canReplace(this.childCount, this.childCount, other.content)
     else return this.type.compatibleContent(other.type)
   }
 

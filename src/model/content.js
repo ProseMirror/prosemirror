@@ -20,9 +20,8 @@ export class ContentExpr {
     return new ContentMatch(this, attrs, this.elements.length, 0)
   }
 
-  matches(attrs, fragment) {
-    let end = this.start(attrs).matchFragment(fragment)
-    return end ? end.validEnd() : false
+  matches(attrs, fragment, from, to) {
+    return this.start(attrs).matchToEnd(fragment, from, to)
   }
 
   // Get a position in a known-valid fragment. If this is a simple
@@ -46,8 +45,7 @@ export class ContentExpr {
     }
 
     let match = this.getMatchAt(attrs, content, from).matchFragment(replacement, start, end)
-    match = match && match.matchFragment(content, to)
-    return match && match.validEnd()
+    return match ? match.matchToEnd(content, to) : false
   }
 
   checkUpdateWithType(attrs, content, from, to, type, marks) {
@@ -58,8 +56,7 @@ export class ContentExpr {
     }
 
     let match = this.getMatchAt(attrs, content, from).matchType(type, marks)
-    match = match && match.matchFragment(content, to)
-    return match && match.validEnd() || false
+    return match ? match.matchToEnd(content, to) : false
   }
 
   compatible(other) {
@@ -201,6 +198,12 @@ export class ContentMatch {
     return count >= min && (mod == -1 || count % mod == 0)
   }
 
+  nextValidCount(elt, count) {
+    let mod = this.resolveCount(elt.mod)
+    let valid = mod == -1 ? Math.max(this.resolveCount(elt.min), count) : count < mod ? mod : count + mod - (count % mod)
+    return valid > this.resolveCount(elt.max) ? -1 : valid
+  }
+
   matchNode(node) {
     return this.matchType(node.type, node.marks)
   }
@@ -222,16 +225,16 @@ export class ContentMatch {
   // false when it ran into a required element it couldn't fit, and
   // undefined if it reached the end of the expression without
   // matching all nodes.
-  matchFragment(fragment, startFragPos = 0, endFragPos = fragment.childCount) {
-    if (startFragPos == endFragPos) return this
-    let fragPos = startFragPos, end = this.expr.elements.length
+  matchFragment(fragment, from = 0, to = fragment.childCount) {
+    if (from == to) return this
+    let fragPos = from, end = this.expr.elements.length
     for (var {index, count} = this; index < end; index++, count = 0) {
       let elt = this.expr.elements[index], max = this.resolveCount(elt.max)
 
       while (count < max) {
         if (elt.matches(fragment.child(fragPos))) {
           count++
-          if (++fragPos == endFragPos) return this.move(index, count)
+          if (++fragPos == to) return this.move(index, count)
         } else {
           break
         }
@@ -240,10 +243,9 @@ export class ContentMatch {
     }
   }
 
-  matchOnCurrentElement(fragment, startIndex) {
-    let matched = startIndex, elt = this.element
-    while (matched < fragment.childCount && elt.matches(fragment.child(matched))) ++matched
-    return matched - startIndex
+  matchToEnd(fragment, start, end) {
+    let matched = this.matchFragment(fragment, start, end)
+    return matched && matched.validEnd() || false
   }
 
   validEnd() {
@@ -252,22 +254,34 @@ export class ContentMatch {
     return true
   }
 
-  moveForward(target, extraCount) {
-    let elt = this.element
-    if (this.validCount(elt, this.count + extraCount)) return this.move(this.index + 1, 0)
-    target.push(elt.createFiller())
-    return this.move(this.index, this.count + 1)
-  }
-
-  // FIXME make sure this algorithm is actually solid
   fillBefore(after, toEnd, startIndex) {
-    let added = [], front = this, index = startIndex || 0
+    let added = [], match = this, index = startIndex || 0, end = this.expr.elements.length
     for (;;) {
-      let fits = front.matchFragment(after, index)
-      if (fits && (!toEnd || fits.validEnd())) return Fragment.from(added)
-      if (fits === undefined) return null
-      front = front.moveForward(added, front.matchOnCurrentElement(after, index))
+      let fits = match.matchFragment(after, index)
+      if (fits && (!toEnd || fits.validEnd())) break
+      if (fits === undefined) return null // Matched to end with content remaining
+
+      // If that fails, move to the next content element, adding
+      // filler elements if necessary.
+      let elt = match.element, ahead = 0, fill
+      while (index + ahead < after.childCount && elt.matches(after.child(index + ahead))) ++ahead
+
+      if (ahead) {
+        let nextValid = this.nextValidCount(elt, match.count + ahead)
+        if (nextValid > -1) fill = nextValid - match.count - ahead
+      }
+      if (fill == null) fill = this.nextValidCount(elt, match.count) - match.count
+      if (fill > 0) {
+        for (let i = 0; i < fill; i++) added.push(elt.createFiller())
+        match = match.move(match.index, match.count + fill)
+      } else if (match.index == end) {
+        if (after.size) return null
+        else break
+      } else {
+        match = match.move(match.index + 1, 0)
+      }
     }
+    return Fragment.from(added)
   }
 
   possibleTypes() {

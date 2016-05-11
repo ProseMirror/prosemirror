@@ -42,7 +42,7 @@ export class EditorTransform extends Transform {
       // This node can not simply be removed/replaced. Remove its parent as well
       let $from = this.doc.resolve(from), depth = $from.depth
       while (depth && $from.node(depth).childCount == 1 &&
-             !$from.node(depth).canUpdate($from.index(depth - 1), $from.index(depth - 1) + 1, Fragment.from(node)))
+             !$from.node(depth).canReplace($from.index(depth - 1), $from.index(depth - 1) + 1, Fragment.from(node)))
         depth--
       if (depth < $from.depth) {
         from = $from.before(depth + 1)
@@ -53,13 +53,13 @@ export class EditorTransform extends Transform {
       if ($from.parentOffset == 0) {
         for (let d = $from.depth; d > 0; d--) {
           if ((d == $from.depth || $from.index(d) == 0) &&
-              !$from.node(d).canUpdate($from.index(d), $from.index(d), Fragment.from(node))) from = to = $from.before(d)
+              !$from.node(d).canReplace($from.index(d), $from.index(d), Fragment.from(node))) from = to = $from.before(d)
           else break
         }
       } else if ($from.parentOffset == $from.parent.content.size) {
         for (let d = $from.depth; d > 0; d--) {
           if ((d == $from.depth || $from.index(d) == $from.node(d).childCount - 1) &&
-              !$from.node(d).canUpdate($from.index(d) + 1, $from.index(d) + 1, Fragment.from(node))) from = to = $from.after(d)
+              !$from.node(d).canReplace($from.index(d) + 1, $from.index(d) + 1, Fragment.from(node))) from = to = $from.after(d)
           else break
         }
       }

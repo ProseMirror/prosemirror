@@ -19,8 +19,8 @@ function rangeDepth($from, $to) {
 }
 
 function canCut(node, start, end) {
-  return (start == 0 || node.canUpdate(start, node.childCount)) &&
-    (end == node.childCount || node.canUpdate(0, start))
+  return (start == 0 || node.canReplace(start, node.childCount)) &&
+    (end == node.childCount || node.canReplace(0, start))
 }
 
 function findLiftable($from, $to) {
@@ -29,7 +29,7 @@ function findLiftable($from, $to) {
   let parent = $from.node(shared), content = parent.content.cutByIndex($from.index(shared), $to.indexAfter(shared))
   for (let depth = shared;; --depth) {
     let node = $from.node(depth), index = $from.index(depth)
-    if (depth < shared && node.canUpdate(index, index + 1, content))
+    if (depth < shared && node.canReplace(index, index + 1, content))
       return {depth, shared, unwrap: false}
     if (depth == 0 || !canCut(node, index, index + 1)) break
   }
@@ -39,7 +39,7 @@ function findLiftable($from, $to) {
     content.forEach(node => joined = joined.append(node.content))
     for (let depth = shared;; --depth) {
       let node = $from.node(depth), index = $from.index(depth)
-      if (depth < shared && node.canUpdate(index, index + 1, joined))
+      if (depth < shared && node.canReplace(index, index + 1, joined))
         return {depth, shared, unwrap: true}
       if (depth == 0 || !canCut(node, index, index + 1)) break
     }
@@ -114,7 +114,7 @@ function checkWrap($from, $to, type, attrs) {
   if (shared == null) return null
   let parent = $from.node(shared)
   let around = parent.findWrappingAt($from.index(shared), type)
-  if (!around || !parent.canUpdateWithType($from.index(shared), $to.indexAfter(shared), around[0] || type)) return null
+  if (!around || !parent.canReplaceWithType($from.index(shared), $to.indexAfter(shared), around[0] || type)) return null
   let inside = type.findWrapping(parent.child($from.index(shared)).type, type.contentExpr.start(attrs || type.defaultAttrs))
   if (around && inside) return {shared, around, inside}
 }
@@ -186,18 +186,18 @@ Transform.prototype.setNodeType = function(pos, type, attrs) {
 export function canSplit(doc, pos, depth = 1, typeAfter) {
   let $pos = doc.resolve(pos), base = $pos.depth - depth
   if (base < 0 ||
-      !$pos.parent.canUpdate($pos.index($pos.depth), $pos.parent.childCount) ||
-      !$pos.parent.canUpdate(0, $pos.indexAfter($pos.depth)))
+      !$pos.parent.canReplace($pos.index($pos.depth), $pos.parent.childCount) ||
+      !$pos.parent.canReplace(0, $pos.indexAfter($pos.depth)))
     return false
   for (let d = $pos.depth - 1; d > base; d--) {
     let node = $pos.node(d), index = $pos.index(d)
-    if (!node.canUpdate(0, index) ||
-        !node.canUpdateWithType(index, node.childCount, typeAfter || $pos.node(d + 1).type))
+    if (!node.canReplace(0, index) ||
+        !node.canReplaceWithType(index, node.childCount, typeAfter || $pos.node(d + 1).type))
       return false
     typeAfter = null
   }
   let index = $pos.indexAfter(base)
-  return $pos.node(base).canUpdateWithType(index, index, typeAfter || $pos.node(base + 1).type)
+  return $pos.node(base).canReplaceWithType(index, index, typeAfter || $pos.node(base + 1).type)
 }
 
 // :: (number, ?number, ?NodeType, ?Object) → Transform

@@ -40,8 +40,6 @@ export function fromMarkdown(schema, text, options) {
 //       return parser.use(require("markdown-it-sub"))
 //     })
 
-// FIXME give registerable things their own top-level reference guide entries?
-
 // :: union<string, (state: MarkdownParseState, token: MarkdownToken) → Node> #path=MarkdownParseSpec.parse
 // The parsing function for this token. It is, when a matching token
 // is encountered, passed the parsing state and the token, and must
@@ -139,11 +137,8 @@ class MarkdownParseState {
   // :: (NodeType, ?Object, ?[Node]) → ?Node
   // Add a node at the current position.
   addNode(type, attrs, content) {
-    content = Fragment.from(content)
-    if (!type.validContent(content, attrs)) {
-      content = type.fixContent(content, attrs)
-      if (!content) return null
-    }
+    content = type.fixContent(Fragment.from(content), attrs)
+    if (!content) return null
     let node = type.create(attrs, content, this.marks)
     this.push(node)
     return node
