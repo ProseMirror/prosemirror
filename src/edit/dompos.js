@@ -70,7 +70,7 @@ export function childContainer(dom) {
 // : (ProseMirror, number) → {node: DOMNode, offset: number}
 // Find the DOM node and offset into that node that the given document
 // position refers to.
-export function DOMFromPos(pm, pos, loose) {
+export function DOMFromPos(pm, pos, loose, exactEndPos) {
   if (!loose && pm.operation && pm.doc != pm.operation.doc)
     throw new RangeError("Resolving a position in an outdated DOM structure")
 
@@ -86,7 +86,7 @@ export function DOMFromPos(pm, pos, loose) {
       if (size) {
         if (!offset) return {node: container, offset: i}
         size = +size
-        if (offset < size) {
+        if (offset < size || (exactEndPos && offset === size)) {
           container = childContainer(child)
           if (!container) {
             return leafAt(child, offset)
@@ -225,7 +225,9 @@ function textRect(node, from, to) {
   let range = document.createRange()
   range.setEnd(node, to)
   range.setStart(node, from)
-  return range.getBoundingClientRect()
+  let rects = range.getClientRects()
+  // Return the last rect
+  return rects[rects.length-1]
 }
 
 function textRects(node) {
@@ -239,7 +241,7 @@ function textRects(node) {
 // Given a position in the document model, get a bounding box of the character at
 // that position, relative to the window.
 export function coordsAtPos(pm, pos) {
-  let {node, offset} = DOMFromPos(pm, pos)
+  let {node, offset} = DOMFromPos(pm, pos, false, true)
   let side, rect
   if (node.nodeType == 3) {
     if (offset < node.nodeValue.length) {
