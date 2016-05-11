@@ -152,11 +152,12 @@ Transform.prototype.wrap = function(from, to = from, type, wrapAttrs) {
 // the given node type with the given attributes.
 Transform.prototype.setBlockType = function(from, to = from, type, attrs) {
   if (!type.isTextblock) throw new RangeError("Type given to setBlockType should be a textblock")
+  let mapFrom = this.steps.length
   this.doc.nodesBetween(from, to, (node, pos) => {
     if (node.isTextblock && !node.hasMarkup(type, attrs)) {
       // Ensure all markup that isn't allowed in the new node type is cleared
-      this.clearMarkupFor(this.map(pos), type, attrs)
-      let startM = this.map(pos), endM = this.map(pos + node.nodeSize)
+      this.clearMarkupFor(this.map(pos, 1, mapFrom), type, attrs)
+      let startM = this.map(pos, 1, mapFrom), endM = this.map(pos + node.nodeSize, 1, mapFrom)
       this.step(new ReplaceWrapStep(startM, endM, startM + 1, endM - 1,
                                     new Slice(Fragment.from(type.create(attrs)), 0, 0), 1, true))
       return false
