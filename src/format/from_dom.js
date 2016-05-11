@@ -65,6 +65,10 @@ class NodeBuilder {
 
   add(node) {
     let matched = this.pos.matchNode(node)
+    if (!matched && node.marks.length) {
+      node = node.mark(node.marks.filter(mark => this.pos.allowsMark(mark.type)))
+      matched = this.pos.matchNode(node)
+    }
     if (!matched) return false
     this.content.push(node)
     this.pos = matched
@@ -211,7 +215,8 @@ class DOMParseState {
   }
 
   insertNode(node) {
-    if (this.top.add(node)) return node
+    let added = this.top.add(node)
+    if (added) return added
 
     let found
     for (let i = this.stack.length - 1; i >= 0; i--) {
@@ -230,8 +235,7 @@ class DOMParseState {
     for (let j = 0; j < found.length; j++)
       this.enter(found[j])
     if (this.marks.length) this.marks = noMarks
-    this.top.add(node)
-    return node
+    return this.top.add(node)
   }
 
   // :: (NodeType, ?Object, [Node]) → ?Node
