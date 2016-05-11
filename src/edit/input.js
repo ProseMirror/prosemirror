@@ -407,8 +407,12 @@ function fromClipboard(pm, dataTransfer, plainText) {
     else
       doc = fromDOM(pm.schema, dom)
   }
-  if (!slice)
-    slice = doc.slice(findSelectionAtStart(doc).from, findSelectionAtEnd(doc).to)
+  if (!slice) {
+    if (doc.content.size && doc.firstChild.isTextblock)
+      slice = doc.slice(findSelectionAtStart(doc).from, findSelectionAtEnd(doc).to)
+    else
+      slice = new Slice(doc.content, 0, 0)
+  }
   return pm.signalPipelined("transformPasted", slice)
 }
 
