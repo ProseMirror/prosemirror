@@ -211,7 +211,7 @@ export class Node {
   // inclusiveLeft and inclusiveRight properties. If the position is at the
   // start of a non-empty node, the marks of the node after it are returned.
   marksAt(pos) {
-    let $pos = this.resolve(pos), parent = $pos.parent, index = $pos.index($pos.depth)
+    let $pos = this.resolve(pos), parent = $pos.parent, index = $pos.index()
 
     // In an empty parent, return the empty array
     if (parent.content.size == 0) return emptyArray

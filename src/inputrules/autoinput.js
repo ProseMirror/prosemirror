@@ -96,7 +96,7 @@ function wrapAndJoin(pm, pos, type, attrs = null, predicate = null) {
   let join = sibling && sibling.type == type && (!predicate || predicate(sibling))
   let start = pos - $pos.parentOffset
   let tr = pm.tr.delete(start, pos).wrap(start, start, type, attrs)
-  if (join) tr.join($pos.before($pos.depth))
+  if (join) tr.join($pos.before())
   tr.apply()
 }
 

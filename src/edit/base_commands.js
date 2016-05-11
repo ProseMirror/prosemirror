@@ -38,7 +38,7 @@ function deleteBarrier(pm, cut) {
   }
 
   let conn
-  if (after.isTextblock && (conn = before.findWrappingAt($cut.index($cut.depth), after.type))) {
+  if (after.isTextblock && (conn = before.findWrappingAt($cut.index(), after.type))) {
     let end = cut + after.nodeSize, wrap = Fragment.empty
     for (let i = conn.length - 1; i >= 0; i--) wrap = Fragment.from(conn[i].create(wrap))
     wrap = Fragment.from(before.copy(wrap))
@@ -380,7 +380,7 @@ baseCommands.newlineInCode = {
     let {from, to, node} = pm.selection
     if (node) return false
     let $from = pm.doc.resolve(from)
-    if (!$from.parent.type.isCode || to >= $from.end($from.depth)) return false
+    if (!$from.parent.type.isCode || to >= $from.end()) return false
     return pm.tr.typeText("\n").apply(pm.apply.scroll)
   },
   keys: ["Enter(10)"]
@@ -397,7 +397,7 @@ baseCommands.createParagraphNear = {
     let {from, to, node} = pm.selection
     if (!node || !node.isBlock) return false
     let $from = pm.doc.resolve(from), side = $from.parentOffset ? to : from
-    let type = $from.parent.defaultContentType($from.indexAfter($from.depth))
+    let type = $from.parent.defaultContentType($from.indexAfter())
     pm.tr.insert(side, type.create()).apply(pm.apply.scroll)
     pm.setTextSelection(side + 1)
   },
@@ -415,7 +415,7 @@ baseCommands.liftEmptyBlock = {
     let {head, empty} = pm.selection, $head
     if (!empty || ($head = pm.doc.resolve(head)).parent.content.size) return false
     if ($head.depth > 1) {
-      let before = $head.before($head.depth)
+      let before = $head.before()
       if (canSplit(pm.doc, before)) return pm.tr.split(before).apply(pm.apply.scroll)
     }
     return pm.tr.lift(head, head, true).apply(pm.apply.scroll)
@@ -438,11 +438,11 @@ baseCommands.splitBlock = {
     } else {
       let $to = pm.doc.resolve(to), atEnd = $to.parentOffset == $to.parent.content.size
       let tr = pm.tr.delete(from, to)
-      let deflt = $from.node($from.depth - 1).defaultContentType($from.indexAfter($from.depth - 1)), type = atEnd ? deflt : null
+      let deflt = $from.node(-1).defaultContentType($from.indexAfter(-1)), type = atEnd ? deflt : null
       if (canSplit(tr.doc, from, 1, type)) {
         tr.split(from, 1, type)
         if (!atEnd && !$from.parentOffset && $from.parent.type != deflt)
-          tr.setNodeType($from.before($from.depth), deflt)
+          tr.setNodeType($from.before(), deflt)
       }
       return tr.apply(pm.apply.scroll)
     }
@@ -454,7 +454,7 @@ function nodeAboveSelection(pm) {
   let sel = pm.selection
   if (sel.node) {
     let $from = pm.doc.resolve(sel.from)
-    return !!$from.depth && $from.before($from.depth)
+    return !!$from.depth && $from.before()
   }
   let $head = pm.doc.resolve(sel.head)
   let same = $head.sameDepth(pm.doc.resolve(sel.anchor))

@@ -179,9 +179,9 @@ function selectClickedNode(pm, e, target) {
   let {node, from} = pm.selection
   if (node) {
     let $pos = pm.doc.resolve(pos), $from = pm.doc.resolve(from)
-    if ($pos.depth >= $from.depth && $pos.before($from.depth) == from) {
+    if ($pos.depth >= $from.depth && $pos.before() == from) {
       if ($from.depth == 0) return pm.sel.fastPoll()
-      pos = $pos.before($pos.depth)
+      pos = $pos.before()
     }
   }
 
@@ -200,7 +200,7 @@ function handleTripleClick(pm, e, target) {
     if (node.isBlock && !node.isTextblock) // Non-textblock block, select it
       pm.setNodeSelection(pos)
     else if (node.isInline) // Inline node, select whole parent
-      pm.setTextSelection($pos.start($pos.depth), $pos.end($pos.depth))
+      pm.setTextSelection($pos.start(), $pos.end())
     else // Textblock, select content
       pm.setTextSelection(pos + 1, pos + 1 + node.content.size)
     pm.focus()

@@ -346,7 +346,7 @@ function findSelectionIn(node, pos, index, dir, text) {
 export function findSelectionFrom(doc, pos, dir, text) {
   let $pos = doc.resolve(pos)
   let inner = $pos.parent.isTextblock ? new TextSelection(pos)
-      : findSelectionIn($pos.parent, pos, $pos.index($pos.depth), dir, text)
+      : findSelectionIn($pos.parent, pos, $pos.index(), dir, text)
   if (inner) return inner
 
   for (let depth = $pos.depth - 1; depth >= 0; depth--) {
@@ -379,7 +379,7 @@ export function findSelectionAtEnd(node, text) {
 // from a position would leave a text block.
 export function verticalMotionLeavesTextblock(pm, pos, dir) {
   let $pos = pm.doc.resolve(pos)
-  let dom = DOMAfterPos(pm, $pos.before($pos.depth))
+  let dom = DOMAfterPos(pm, $pos.before())
   let coords = coordsAtPos(pm, pos)
   for (let child = dom.firstChild; child; child = child.nextSibling) {
     if (child.nodeType != 1) continue

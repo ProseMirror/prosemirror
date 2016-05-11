@@ -26,8 +26,7 @@ Transform.prototype.replace = function(from, to = from, slice = Slice.empty) {
   let d = $to.depth, after = $to.after(d)
   while (d > 1 && after == $to.end(--d)) ++after
   fitted = fitRight($from, this.doc.resolve(after), fittedLeft)
-  return this.step(new ReplaceWrapStep(from, after, to, $to.end($to.depth),
-                                       fitted, fittedLeft.size))
+  return this.step(new ReplaceWrapStep(from, after, to, $to.end(), fitted, fittedLeft.size))
 }
 
 // :: (number, number, union<Fragment, Node, [Node]>) → Transform
@@ -188,7 +187,7 @@ function canMoveText($from, $to, slice) {
     if (!parent.isTextblock) return false
     match = parent.contentMatchAt(parent.childCount)
   }
-  match = match.matchFragment($to.parent.content, $to.index($to.depth))
+  match = match.matchFragment($to.parent.content, $to.index())
   return match && match.validEnd()
 }
 

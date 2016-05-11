@@ -186,8 +186,8 @@ Transform.prototype.setNodeType = function(pos, type, attrs) {
 export function canSplit(doc, pos, depth = 1, typeAfter) {
   let $pos = doc.resolve(pos), base = $pos.depth - depth
   if (base < 0 ||
-      !$pos.parent.canReplace($pos.index($pos.depth), $pos.parent.childCount) ||
-      !$pos.parent.canReplace(0, $pos.indexAfter($pos.depth)))
+      !$pos.parent.canReplace($pos.index(), $pos.parent.childCount) ||
+      !$pos.parent.canReplace(0, $pos.indexAfter()))
     return false
   for (let d = $pos.depth - 1; d > base; d--) {
     let node = $pos.node(d), index = $pos.index(d)

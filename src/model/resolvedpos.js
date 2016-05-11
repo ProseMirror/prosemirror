@@ -4,6 +4,10 @@
 // the context you need. Objects of this class represent such a
 // resolved position, providing various pieces of context information
 // and helper methods.
+//
+// Throughout this interface, methods that take an optional `depth`
+// parameter will interpret undefined as `this.depth` and negative
+// numbers as `this.depth + value`.
 export class ResolvedPos {
   constructor(pos, path, parentOffset) {
     // :: number The position that was resolved.
@@ -18,56 +22,69 @@ export class ResolvedPos {
     this.parentOffset = parentOffset
   }
 
+  resolveDepth(val) {
+    if (val == null) return this.depth
+    if (val < 0) return this.depth + val
+    return val
+  }
+
   // :: Node
   // The parent node that the position points into. Note that even if
   // a position points into a text node, that node is not considered
   // the parent—text nodes are 'flat' in this model.
   get parent() { return this.node(this.depth) }
 
-  // :: (number) → Node
+  // :: (?number) → Node
   // The ancestor node at the given level. `p.node(p.depth)` is the
   // same as `p.parent`.
-  node(depth) { return this.path[depth * 3] }
+  node(depth) { return this.path[this.resolveDepth(depth) * 3] }
 
-  // :: (number) → number
+  // :: (?number) → number
   // The index into the ancestor at the given level. If this points at
   // the 3rd node in the 2nd paragraph on the top level, for example,
   // `p.index(0)` is 2 and `p.index(1)` is 3.
-  index(depth) { return this.path[depth * 3 + 1] }
+  index(depth) { return this.path[this.resolveDepth(depth) * 3 + 1] }
 
-  // :: (number) → number
+  // :: (?number) → number
   // The index pointing after this position into the ancestor at the
   // given level.
-  indexAfter(depth) { return this.index(depth) + (depth == this.depth && this.atNodeBoundary ? 0 : 1) }
+  indexAfter(depth) {
+    depth = this.resolveDepth(depth)
+    return this.index(depth) + (depth == this.depth && this.atNodeBoundary ? 0 : 1)
+  }
 
-  // :: (number) → number
+  // :: (?number) → number
   // The (absolute) position at the start of the node at the given
   // level.
   start(depth) {
+    depth = this.resolveDepth(depth)
     return depth == 0 ? 0 : this.path[depth * 3 - 1] + 1
   }
 
-  // :: (number) → number
+  // :: (?number) → number
   // The (absolute) position at the end of the node at the given
   // level.
   end(depth) {
+    depth = this.resolveDepth(depth)
     return this.start(depth) + this.node(depth).content.size
   }
 
-  // :: (number) → number
+  // :: (?number) → number
   // The (absolute) position directly before the node at the given
   // level, or, when `level` is `this.level + 1`, the original
   // position.
   before(depth) {
+    depth = this.resolveDepth(depth)
     if (!depth) throw new RangeError("There is no position before the top-level node")
     return depth == this.depth + 1 ? this.pos : this.path[depth * 3 - 1]
   }
 
-  // :: (number) → number
+  // :: (?number) → number
   // The (absolute) position directly after the node at the given
   // level, or, when `level` is `this.level + 1`, the original
   // position.
   after(depth) {
+    depth = this.resolveDepth(depth)
     if (!depth) throw new RangeError("There is no position after the top-level node")
     return depth == this.depth + 1 ? this.pos : this.path[depth * 3 - 1] + this.path[depth * 3].nodeSize
   }

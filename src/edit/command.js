@@ -290,7 +290,7 @@ function canAddMark(pm, type) {
   let {from, to, empty} = pm.selection, $from
   if (empty)
     return !type.isInSet(pm.activeMarks()) && ($from = pm.doc.resolve(from)) &&
-      $from.parent.contentMatchAt($from.index($from.depth)).allowsMark(type)
+      $from.parent.contentMatchAt($from.index()).allowsMark(type)
   let can = false
   pm.doc.nodesBetween(from, to, (node, _, parent, i) => {
     if (can) return false
@@ -386,8 +386,8 @@ function isAtTopOfListItem(doc, from, to, listType) {
   let $from = doc.resolve(from)
   return $from.sameParent(doc.resolve(to)) &&
     $from.depth >= 2 &&
-    $from.index($from.depth - 1) == 0 &&
-    listType.containsOnly($from.node($from.depth - 1))
+    $from.index(-1) == 0 &&
+    listType.containsOnly($from.node(-1))
 }
 
 NodeType.derivableCommands.wrap = function(conf) {
@@ -397,17 +397,16 @@ NodeType.derivableCommands.wrap = function(conf) {
       let $from = pm.doc.resolve(from)
       if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this)) {
         // Don't do anything if this is the top of the list
-        if ($from.index($from.depth - 2) == 0) return false
+        if ($from.index(-2) == 0) return false
         doJoin = true
       }
       let tr = pm.tr.wrap(from, to, this, fillAttrs(conf, params))
-      if (doJoin) tr.join($from.before($from.depth - 1))
+      if (doJoin) tr.join($from.before(-1))
       return tr.apply(pm.apply.scroll)
     },
     select(pm) {
-      let {from, to, head} = pm.selection, $from
-      if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this) &&
-          ($from = pm.doc.resolve(from)).index($from.depth - 2) == 0)
+      let {from, to, head} = pm.selection
+      if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this) && pm.doc.resolve(from).index(-2) == 0)
         return false
       return canWrap(pm.doc, from, to, this)
     },
@@ -467,7 +466,7 @@ NodeType.derivableCommands.insert = function(conf) {
       return pm.tr.replaceSelection(this.create(fillAttrs(conf, params))).apply(pm.apply.scroll)
     },
     select: this.isInline ? function(pm) {
-      let $from = pm.doc.resolve(pm.selection.from), index = $from.index($from.depth)
+      let $from = pm.doc.resolve(pm.selection.from), index = $from.index()
       return $from.parent.canReplaceWith(index, index, this)
     } : null,
     params: deriveParams(this, conf.params)

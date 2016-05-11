@@ -87,7 +87,7 @@ function rangeAroundComposition(pm, margin) {
     let after = $from.parent.childAfter(endOff)
     endOff = after.offset + after.node.nodeSize
   }
-  let nodeStart = $from.start($from.depth)
+  let nodeStart = $from.start()
   return {from: nodeStart + startOff, to: nodeStart + endOff}
 }
 

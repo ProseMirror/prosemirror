@@ -97,7 +97,7 @@ class TooltipMenu {
         let coords = node ? this.nodeSelectionCoords() : this.selectionCoords(), $from
         let showBlock = this.selectedBlockMenu &&
             ($from = this.pm.doc.resolve(from)).parentOffset == 0 &&
-            $from.end($from.depth) == to
+            $from.end() == to
         return () => this.show(showBlock ? this.selectedBlockContent : this.inlineContent, coords)
       }
     } else if (this.selectedBlockMenu && this.pm.doc.resolve(from).parent.content.size == 0) {
