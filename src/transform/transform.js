@@ -46,10 +46,10 @@ export class Transform {
   // :: (number, ?number) → MapResult
   // Map a position through the whole transformation (all the position
   // maps in [`maps`](#Transform.maps)), and return the result.
-  mapResult(pos, bias) { return mapThroughResult(this.maps, pos, bias) }
+  mapResult(pos, bias, start) { return mapThroughResult(this.maps, pos, bias, start) }
 
   // :: (number, ?number) → number
   // Map a position through the whole transformation, and return the
   // mapped position.
-  map(pos, bias) { return mapThrough(this.maps, pos, bias) }
+  map(pos, bias, start) { return mapThrough(this.maps, pos, bias, start) }
 }

@@ -217,8 +217,8 @@ export class Remapping {
   }
 }
 
-export function mapThrough(mappables, pos, bias) {
-  for (let i = 0; i < mappables.length; i++)
+export function mapThrough(mappables, pos, bias, start) {
+  for (let i = start || 0; i < mappables.length; i++)
     pos = mappables[i].map(pos, bias)
   return pos
 }
