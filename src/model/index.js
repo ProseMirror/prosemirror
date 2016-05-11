@@ -23,6 +23,6 @@ export {SchemaSpec, Schema,
 export {defaultSchema, Doc, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         CodeMark, EmMark, StrongMark, LinkMark} from "./defaultschema"
-export {ContentMatch, ContentExpr} from "./content"
+export {ContentMatch} from "./content"
 
 export {findDiffStart, findDiffEnd} from "./diff"

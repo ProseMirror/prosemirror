@@ -264,26 +264,43 @@ export class Node {
     return wrapMarks(this.marks, name)
   }
 
+  // :: (number) → ContentMatch
+  // Get the content match in this node at the given index.
   contentMatchAt(index) {
     return this.type.contentExpr.getMatchAt(this.attrs, this.content, index)
   }
 
-  allowsMarkAt(index, mark) {
-    return this.contentMatchAt(index).allowsMark(mark)
+  // :: (number, NodeType) → ?[NodeType]
+  // Find a set of wrapping node types that would allow a node of type
+  // `type` to appear at position `index` in this node. The result may
+  // be empty (when it fits directly) and will be null when no such
+  // wrapping exists.
+  findWrappingAt(index, type) {
+    return this.type.findWrapping(type, this.contentMatchAt(index))
   }
 
-  findWrappingAt(index, target) {
-    return this.type.findWrapping(target, this.contentMatchAt(index))
-  }
-
+  // :: (number, number, ?Fragment, ?number, ?number) → bool
+  // Test whether replacing the range `from` to `to` (by index) with
+  // the given replacement fragment (which defaults to the empty
+  // fragment) would leave the node's content valid. You can
+  // optionally pass `start` and `end` indices into the replacement
+  // fragment.
   canReplace(from, to, replacement, start, end) {
-    return this.type.contentExpr.checkUpdate(this.attrs, this.content, from, to, replacement, start, end)
+    return this.type.contentExpr.checkReplace(this.attrs, this.content, from, to, replacement, start, end)
   }
 
-  canReplaceWithType(from, to, type, marks) {
-    return this.type.contentExpr.checkUpdateWithType(this.attrs, this.content, from, to, type, marks || emptyArray)
+  // :: (number, number, NodeType, ?[Mark]) → bool
+  // Test whether replacing the range `from` to `to` (by index) with a
+  // node of the given type and marks would be valid.
+  canReplaceWith(from, to, type, marks) {
+    return this.type.contentExpr.checkReplaceWith(this.attrs, this.content, from, to, type, marks || emptyArray)
   }
 
+  // :: (Node) → bool
+  // Test whether the given node's content could be appended to this
+  // node. If that node is empty, this will only return true if there
+  // is at least one node type that can appear in both nodes (to avoid
+  // merging completely incompatible nodes).
   canAppend(other) {
     if (other.content.size) return this.canReplace(this.childCount, this.childCount, other.content)
     else return this.type.compatibleContent(other.type)

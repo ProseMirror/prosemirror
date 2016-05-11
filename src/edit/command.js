@@ -290,12 +290,12 @@ function canAddMark(pm, type) {
   let {from, to, empty} = pm.selection, $from
   if (empty)
     return !type.isInSet(pm.activeMarks()) && ($from = pm.doc.resolve(from)) &&
-      $from.parent.allowsMarkAt($from.index($from.depth), type)
+      $from.parent.contentMatchAt($from.index($from.depth)).allowsMark(type)
   let can = false
   pm.doc.nodesBetween(from, to, (node, _, parent, i) => {
     if (can) return false
     can = node.isInline && !type.isInSet(node.marks) &&
-      parent.allowsMarkAt(i + 1, type)
+      parent.contentMatchAt(i + 1).allowsMark(type)
   })
   return can
 }
@@ -305,8 +305,8 @@ function markApplies(pm, type) {
   let relevant = false
   pm.doc.nodesBetween(from, to, (node, _, parent, i) => {
     if (relevant) return false
-    relevant = (node.isTextblock && node.allowsMarkAt(0, type)) ||
-      (node.isInline && parent.allowsMarkAt(i + 1, type))
+    relevant = (node.isTextblock && node.contentMatchAt(0).allowsMark(type)) ||
+      (node.isInline && parent.contentMatchAt(i + 1).allowsMark(type))
   })
   return relevant
 }
@@ -454,7 +454,7 @@ NodeType.derivableCommands.make = conf => ({
       depth = 1
     }
     let $from = pm.doc.resolve(from), parentDepth = $from.depth - depth, index = $from.index(parentDepth)
-    return $from.node(parentDepth).canReplaceWithType(index, index + 1, this)
+    return $from.node(parentDepth).canReplaceWith(index, index + 1, this)
   },
   active(pm) {
     return activeTextblockIs(pm, this, conf.attrs)
@@ -468,7 +468,7 @@ NodeType.derivableCommands.insert = function(conf) {
     },
     select: this.isInline ? function(pm) {
       let $from = pm.doc.resolve(pm.selection.from), index = $from.index($from.depth)
-      return $from.parent.canReplaceWithType(index, index, this)
+      return $from.parent.canReplaceWith(index, index, this)
     } : null,
     params: deriveParams(this, conf.params)
   }

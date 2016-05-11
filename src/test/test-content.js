@@ -10,7 +10,7 @@ function get(expr) { return ContentExpr.parse(schema.nodes.heading, expr, schema
 function simplify(elt) {
   return {types: elt.nodeTypes.map(t => t.name).sort(),
           marks: Array.isArray(elt.marks) ? elt.marks.map(m => m.name) : elt.marks,
-          min: elt.min, max: elt.max == 1e8 ? Infinity : elt.max, mod: elt.mod}
+          min: elt.min, max: elt.max == 2e9 ? Infinity : elt.max, mod: elt.mod}
 }
 
 function normalize(obj) {

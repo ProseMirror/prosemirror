@@ -178,6 +178,8 @@ export class NodeType extends SchemaItem {
   // Controls whether this node type is locked.
   get locked() { return false }
 
+  // :: bool
+  // True for node types that allow no content.
   get isLeaf() { return this.contentExpr.isLeaf }
 
   get hasRequiredAttrs() {
@@ -216,10 +218,6 @@ export class NodeType extends SchemaItem {
     return cache[key] = this.findWrappingInner(target)
   }
 
-  // :: (NodeType) → ?[NodeType]
-  // Find a set of intermediate node types, possibly empty, that have
-  // to be inserted between this type and `other` to put a node of
-  // type `other` into this type.
   findWrapping(target, pos) {
     let possible = pos.possibleTypes()
     if (possible.indexOf(target) > -1) return []
@@ -245,10 +243,18 @@ export class NodeType extends SchemaItem {
     return new Node(this, this.computeAttrs(attrs), Fragment.from(content), Mark.setFrom(marks))
   }
 
+  // :: (Fragment, ?Object) → bool
+  // Returns true if the given fragment is valid content for this node
+  // type.
   validContent(content, attrs) {
     return this.contentExpr.matches(attrs, content)
   }
 
+  // :: (Fragment, ?Object) → ?Fragment
+  // Verify whether the given fragment would be valid content for this
+  // node type, and if not, try to insert content before and/or after
+  // it to make it valid. Returns null if no valid fragment could be
+  // created.
   fixContent(content, attrs) {
     let before = this.contentExpr.start(attrs).fillBefore(content)
     if (!before) return null

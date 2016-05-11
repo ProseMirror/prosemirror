@@ -5,10 +5,14 @@ import {PosMap} from "./map"
 
 // ;; Replace a part of the document with a slice of new content.
 export class ReplaceStep extends Step {
-  // :: (number, number, Slice)
+  // :: (number, number, Slice, bool)
   // The given `slice` should fit the 'gap' between `from` and
   // `to`—the depths must line up, and the surrounding nodes must be
-  // able to be joined with the open sides of the slice.
+  // able to be joined with the open sides of the slice. When
+  // `structure` is true, the step will fail if the content between
+  // from and to is not just a sequence of closing and then opening
+  // tokens (this is to guard against rebased replace steps
+  // overwriting something they weren't supposed to).
   constructor(from, to, slice, structure) {
     super()
     this.from = from
@@ -48,7 +52,11 @@ Step.register("replace", ReplaceStep)
 // preserve a range of the replaced content by moving it into the
 // slice.
 export class ReplaceWrapStep extends Step {
-  // :: (number, number, number, number, Slice, number)
+  // :: (number, number, number, number, Slice, number, bool)
+  // Create a replace-wrap step with the given range and gap. `inset`
+  // should be the point in the slice into which the gap should be
+  // moved. `structure` has the same meaning as it has in the
+  // `Replace` step.
   constructor(from, to, gapFrom, gapTo, slice, insert, structure) {
     super()
     this.from = from

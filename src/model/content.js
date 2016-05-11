@@ -1,6 +1,6 @@
 import {Fragment} from "./fragment"
 
-const many = 1e8
+const many = 2e9 // Big number representable as a 32-bit int
 
 export class ContentExpr {
   constructor(nodeType, elements) {
@@ -34,7 +34,7 @@ export class ContentExpr {
       return this.start(attrs).matchFragment(fragment, 0, index)
   }
 
-  checkUpdate(attrs, content, from, to, replacement = Fragment.empty, start = 0, end = replacement.childCount) {
+  checkReplace(attrs, content, from, to, replacement = Fragment.empty, start = 0, end = replacement.childCount) {
     // Check for simple case, where the expression only has a single element
     // (Optimization to avoid matching more than we need)
     if (this.elements.length == 1) {
@@ -48,7 +48,7 @@ export class ContentExpr {
     return match ? match.matchToEnd(content, to) : false
   }
 
-  checkUpdateWithType(attrs, content, from, to, type, marks) {
+  checkReplaceWith(attrs, content, from, to, type, marks) {
     if (this.elements.length == 1) {
       let elt = this.elements[0]
       if (!checkCount(elt, content.childCount - (to - from) + 1, attrs, this)) return false
@@ -175,6 +175,8 @@ class ContentElement {
   }
 }
 
+// ;; Represents a partial match of a node type's [content
+// expression](#SchemaSpec.nodes).
 export class ContentMatch {
   constructor(expr, attrs, index, count) {
     this.expr = expr
@@ -204,10 +206,15 @@ export class ContentMatch {
     return valid > this.resolveCount(elt.max) ? -1 : valid
   }
 
+  // :: (Node) → ?ContentMatch
+  // Match a node, returning an updated match if successful.
   matchNode(node) {
     return this.matchType(node.type, node.marks)
   }
 
+  // :: (NodeType, [Mark]) → ?ContentMatch
+  // Match a node type and marks, returning an updated match if
+  // successful.
   matchType(type, marks) {
     // FIXME `var` to work around Babel bug T7293
     for (var {index, count} = this; index < this.expr.elements.length; index++, count = 0) {
@@ -220,10 +227,10 @@ export class ContentMatch {
     }
   }
 
-  // : (Fragment, ?number, ?number) → ?union<MatchPos, bool>
-  // Try to match a fragment. Returns a new position when successful,
-  // false when it ran into a required element it couldn't fit, and
-  // undefined if it reached the end of the expression without
+  // :: (Fragment, ?number, ?number) → ?union<ContentMatch, bool>
+  // Try to match a fragment. Returns a new match when successful,
+  // `null` when it ran into a required element it couldn't fit, and
+  // `false` if it reached the end of the expression without
   // matching all nodes.
   matchFragment(fragment, from = 0, to = fragment.childCount) {
     if (from == to) return this
@@ -239,27 +246,40 @@ export class ContentMatch {
           break
         }
       }
-      if (!this.validCount(elt, count)) return false
+      if (!this.validCount(elt, count)) return null
     }
+    return false
   }
 
+  // :: (Fragment, ?number, ?number) → bool
+  // Returns true only if the fragment matches here, and reaches all
+  // the way to the end of the content expression.
   matchToEnd(fragment, start, end) {
     let matched = this.matchFragment(fragment, start, end)
     return matched && matched.validEnd() || false
   }
 
+  // :: () → bool
+  // Returns true if this position represents a valid end of the
+  // expression (no required content follows after it).
   validEnd() {
     for (let i = this.index; i < this.expr.elements.length; i++)
       if (!this.validCount(this.expr.elements[i], i == this.index ? this.count : 0)) return false
     return true
   }
 
+  // :: (Fragment, bool, ?number) → ?Fragment
+  // Try to match the given fragment, and if that fails, see if it can
+  // be made to match by inserting nodes in front of it. When
+  // successful, return a fragment (which may be empty if nothing had
+  // to be inserted). When `toEnd` is true, only return a fragment if
+  // the resulting match goes to the end of the content expression.
   fillBefore(after, toEnd, startIndex) {
     let added = [], match = this, index = startIndex || 0, end = this.expr.elements.length
     for (;;) {
       let fits = match.matchFragment(after, index)
       if (fits && (!toEnd || fits.validEnd())) break
-      if (fits === undefined) return null // Matched to end with content remaining
+      if (fits === false) return null // Matched to end with content remaining
 
       // If that fails, move to the next content element, adding
       // filler elements if necessary.
@@ -295,6 +315,9 @@ export class ContentMatch {
     return found
   }
 
+  // :: (MarkType) → bool
+  // Check whether a node with the given mark type is allowed after
+  // this position.
   allowsMark(markType) {
     return this.element.allowsMark(markType)
   }

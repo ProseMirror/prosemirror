@@ -60,9 +60,10 @@ export class Step {
     return stepsByID[json.stepType].fromJSON(schema, json)
   }
 
-  // :: To be able to serialize steps to JSON, each step needs a
-  // string ID to attach to its JSON representation. Use this method
-  // to register an ID for your step classes.
+  // :: (string, constructor<Step>)
+  // To be able to serialize steps to JSON, each step needs a string
+  // ID to attach to its JSON representation. Use this method to
+  // register an ID for your step classes.
   static register(id, stepClass) {
     if (id in stepsByID) throw new RangeError("Duplicate use of step JSON ID " + id)
     stepsByID[id] = stepClass

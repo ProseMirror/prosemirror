@@ -25,7 +25,7 @@ export class AddMarkStep extends Step {
   apply(doc) {
     let oldSlice = doc.slice(this.from, this.to)
     let slice = new Slice(mapFragment(oldSlice.content, (node, parent, index) => {
-      if (!parent.allowsMarkAt(index + 1, this.mark.type)) return node
+      if (!parent.contentMatchAt(index + 1).allowsMark(this.mark.type)) return node
       return node.mark(this.mark.addToSet(node.marks))
     }, oldSlice.possibleParent), oldSlice.openLeft, oldSlice.openRight)
     return StepResult.fromReplace(doc, this.from, this.to, slice)

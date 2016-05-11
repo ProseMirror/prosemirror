@@ -114,7 +114,7 @@ function checkWrap($from, $to, type, attrs) {
   if (shared == null) return null
   let parent = $from.node(shared)
   let around = parent.findWrappingAt($from.index(shared), type)
-  if (!around || !parent.canReplaceWithType($from.index(shared), $to.indexAfter(shared), around[0] || type)) return null
+  if (!around || !parent.canReplaceWith($from.index(shared), $to.indexAfter(shared), around[0] || type)) return null
   let inside = type.findWrapping(parent.child($from.index(shared)).type, type.contentExpr.start(attrs || type.defaultAttrs))
   if (around && inside) return {shared, around, inside}
 }
@@ -192,12 +192,12 @@ export function canSplit(doc, pos, depth = 1, typeAfter) {
   for (let d = $pos.depth - 1; d > base; d--) {
     let node = $pos.node(d), index = $pos.index(d)
     if (!node.canReplace(0, index) ||
-        !node.canReplaceWithType(index, node.childCount, typeAfter || $pos.node(d + 1).type))
+        !node.canReplaceWith(index, node.childCount, typeAfter || $pos.node(d + 1).type))
       return false
     typeAfter = null
   }
   let index = $pos.indexAfter(base)
-  return $pos.node(base).canReplaceWithType(index, index, typeAfter || $pos.node(base + 1).type)
+  return $pos.node(base).canReplaceWith(index, index, typeAfter || $pos.node(base + 1).type)
 }
 
 // :: (number, ?number, ?NodeType, ?Object) → Transform
