@@ -364,7 +364,7 @@ function expandTypes(schema, groups, types) {
   function expand(type) {
     let found
     if (found = schema.nodes[type])
-      result.push(found)
+      result.indexOf(found) == -1 && result.push(found)
     else if ((found = groups[type]) && found.length)
       found.forEach(expand)
     else
