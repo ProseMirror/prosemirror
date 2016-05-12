@@ -188,7 +188,7 @@ export class NodeType extends SchemaItem {
   }
 
   compatibleContent(other) {
-    return this.contentExpr.compatible(other.contentExpr)
+    return this == other || this.contentExpr.compatible(other.contentExpr)
   }
 
   containsOnly(node) {

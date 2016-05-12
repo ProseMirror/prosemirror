@@ -97,9 +97,10 @@ function fitRightJoin(content, parent, $from, $to, depth, openLeft, openRight) {
     match = $from.node(depth).contentMatchAt($from.indexAfter(depth))
       .matchFragment(content, count > 0  && openLeft ? 1 : 0, matchCount)
 
+  let toNode = $to.node(depth)
   if (openRight > 0 && depth < $to.depth) {
     // FIXME find a less allocaty approach
-    let after = $to.node(depth).content.cutByIndex($to.indexAfter(depth)).addToStart(content.lastChild)
+    let after = toNode.content.cutByIndex($to.indexAfter(depth)).addToStart(content.lastChild)
     let joinable = match.fillBefore(after, true)
     // Can't insert content if there's a single node stretched across this gap
     if (joinable && joinable.size && openLeft > 0 && count == 1) joinable = null
@@ -121,7 +122,9 @@ function fitRightJoin(content, parent, $from, $to, depth, openLeft, openRight) {
 
   // If we're here, the next level can't be joined, so we see what
   // happens if we leave it open.
-  let joinable = match.fillBefore($to.node(depth).content, true, $to.index(depth))
+  let toIndex = $to.index(depth)
+  if (toIndex == toNode.childCount && !toNode.type.compatibleContent(parent.type)) return null
+  let joinable = match.fillBefore(toNode.content, true, toIndex)
   if (!joinable) return null
 
   if (openRight > 0) {
