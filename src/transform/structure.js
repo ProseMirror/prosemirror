@@ -220,8 +220,9 @@ Transform.prototype.split = function(pos, depth = 1, typeAfter, attrsAfter) {
 // Test whether the blocks before and after a given position can be
 // joined.
 export function joinable(doc, pos) {
-  let $pos = doc.resolve(pos)
-  return canJoin($pos.nodeBefore, $pos.nodeAfter)
+  let $pos = doc.resolve(pos), index = $pos.index()
+  return canJoin($pos.nodeBefore, $pos.nodeAfter) &&
+    $pos.parent.canReplace(index, index + 1)
 }
 
 function canJoin(a, b) {
