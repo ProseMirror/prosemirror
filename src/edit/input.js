@@ -338,19 +338,29 @@ handlers.compositionend = (pm, e) => {
   }, 20)
 }
 
-handlers.input = pm => {
-  if (!hasFocus(pm)) return
+function readInput(pm) {
   let composing = pm.input.composing
   if (composing) {
     // Ignore input events during composition, except when the
     // composition has ended, in which case we can apply it.
     if (composing.ended) pm.input.applyComposition(true)
-    return
+    return true
   }
 
   // Read the changed DOM and derive an update from that.
-  readInputChange(pm)
+  let result = readInputChange(pm)
   pm.flush()
+  return result
+}
+
+function readInputSoon(pm) {
+  window.setTimeout(() => {
+    if (!readInput(pm)) window.setTimeout(() => readInput(pm), 80)
+  }, 20)
+}
+
+handlers.input = pm => {
+  if (hasFocus(pm)) readInput(pm)
 }
 
 function toClipboard(doc, from, to, dataTransfer) {
@@ -433,17 +443,23 @@ function clipOpen(fragment, max, start) {
 }
 
 handlers.copy = handlers.cut = (pm, e) => {
-  let {from, to, empty} = pm.selection
-  if (empty || !e.clipboardData || !canUpdateClipboard(e.clipboardData)) return
+  let {from, to, empty} = pm.selection, cut = e.type == "cut"
+  if (empty) return
+  if (!e.clipboardData || !canUpdateClipboard(e.clipboardData)) {
+    if (cut && browser.ie && browser.ie_version <= 11) readInputSoon(pm)
+    return
+  }
   toClipboard(pm.doc, from, to, e.clipboardData)
   e.preventDefault()
-  if (e.type == "cut" && !empty)
-    pm.tr.delete(from, to).apply()
+  if (cut) pm.tr.delete(from, to).apply()
 }
 
 handlers.paste = (pm, e) => {
   if (!hasFocus(pm)) return
-  if (!e.clipboardData) return
+  if (!e.clipboardData) {
+    if (browser.ie && browser.ie_version <= 11) readInputSoon(pm)
+    return
+  }
   let sel = pm.selection
   let slice = fromClipboard(pm, e.clipboardData, pm.input.shiftKey)
   if (slice) {

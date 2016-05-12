@@ -98,16 +98,16 @@ function readDOMChange(pm, range) {
   // DOM, so we discard it.
   if (op.docSet) {
     pm.markAllDirty()
-    return
+    return false
   }
 
   let parsed = parseBetween(pm, range.from, range.to)
   let compare = op.doc.slice(range.from, range.to)
   let change = findDiff(compare.content, parsed.content, range.from, op.sel.from)
-  if (!change) return
+  if (!change) return false
   let fromMapped = mapThroughResult(op.mappings, change.start)
   let toMapped = mapThroughResult(op.mappings, change.endA)
-  if (fromMapped.deleted && toMapped.deleted) return
+  if (fromMapped.deleted && toMapped.deleted) return false
 
   // Mark nodes touched by this change as 'to be redrawn'
   markDirtyFor(pm, op.doc, change.start, change.endA)
@@ -131,6 +131,7 @@ function readDOMChange(pm, range) {
       selection: domSel(pm, tr.doc)
     })
   }
+  return true
 }
 
 function domSel(pm, doc) {

@@ -28,11 +28,19 @@ export function posFromDOM(pm, dom, domOffset, loose) {
     let adjust = 0
     if (dom.nodeType == 3) {
       innerOffset += domOffset
+      // IE has a habit of splitting text nodes for no apparent reason
+      if (loose) for (let before = dom.previousSibling; before && before.nodeType == 3; before = before.previousSibling)
+        innerOffset += before.nodeValue.length
     } else if (tag = dom.getAttribute("pm-offset") && !childContainer(dom)) {
       if (!loose) {
         let size = +dom.getAttribute("pm-size")
         if (domOffset == dom.childNodes.length) innerOffset = size
         else innerOffset = Math.min(innerOffset, size)
+      } else {
+        for (let i = 0; i < domOffset; i++) {
+          let child = dom.childNodes[i]
+          if (child.nodeType == 3) innerOffset += child.nodeValue.length
+        }
       }
       return posBeforeFromDOM(pm, dom) + innerOffset
     } else if (dom.hasAttribute("pm-container")) {
