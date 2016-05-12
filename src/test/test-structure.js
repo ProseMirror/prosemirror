@@ -1,4 +1,4 @@
-import {Schema, Block, Text, Textblock, EmMark, Slice} from "../model"
+import {Schema, Block, Text, Textblock, Attribute, EmMark, Slice} from "../model"
 import {canSplit, canLift, canWrap, Transform} from "../transform"
 
 import {defTest} from "./tests"
@@ -15,10 +15,14 @@ const schema = new Schema({
     caption: {type: Textblock, content: "text*"},
     sect: {type: Block, content: "head block* sect*"},
     closing: {type: Textblock, content: "text[_]*"},
+    tcell: {type: Textblock, content: "text[_]*"},
+    table: {type: class extends Block {
+      get attrs() { return {columns: new Attribute({default: "1"})} }
+    }, content: "tcell%@columns"},
     text: {type: Text}
   },
   groups: {
-    block: ["para", "figure", "quote"]
+    block: ["para", "figure", "quote", "table"]
   },
   marks: {
     em: EmMark
@@ -26,6 +30,7 @@ const schema = new Schema({
 })
 
 function n(name, ...content) { return schema.nodes[name].create(null, content) }
+function n_(name, attrs, ...content) { return schema.nodes[name].create(attrs, content) }
 function t(str, em) { return schema.text(str, em ? [schema.mark("em")] : null) }
 
 const doc = n("doc", // 0
@@ -42,8 +47,11 @@ const doc = n("doc", // 0
                   n("quote", n("para", t("!"))))), // 81
               n("sect", // 82
                 n("head", t("S2")), // 86
-                n("para", t("Yes"))), // 92
-              n("closing", t("fin"))) // 97
+                n("para", t("Yes")), // 91
+                n_("table", {columns: 2}, // 92
+                   n("tcell", t("a")), n("tcell", t("b")), // 98
+                   n("tcell", t("c")), n("tcell", t("d")))), // 106
+              n("closing", t("fin"))) // 111
 
 function split(pos, depth, after) {
   defTest("struct_split_can_" + pos, () => {
@@ -72,8 +80,12 @@ noSplit(62, 2)
 noSplit(72)
 split(76)
 split(77, 2)
-noSplit(94)
-noSplit(97)
+noSplit(93)
+noSplit(95)
+split(98)
+noSplit(104)
+noSplit(108)
+noSplit(111)
 
 function lift(pos, end) {
   defTest("struct_lift_can_" + pos, () => {
@@ -92,6 +104,7 @@ noLift(52)
 noLift(70)
 lift(76)
 noLift(86)
+noLift(93)
 
 function wrap(pos, end, type) {
   defTest("struct_wrap_can_" + pos, () => {
@@ -104,17 +117,19 @@ function noWrap(pos, end, type) {
   })
 }
 
-wrap(0, 92, "sect")
+wrap(0, 106, "sect")
 noWrap(4, 4, "sect")
 wrap(8, 8, "quote")
 noWrap(18, 18, "quote")
 wrap(55, 74, "quote")
 noWrap(90, 90, "figure")
-noWrap(95, 95, "quote")
+wrap(91, 105, "quote")
+noWrap(109, 109, "quote")
 
 function repl(name, doc, from, to, content, openLeft, openRight, result) {
   defTest("struct_replace_" + name, () => {
-    let tr = new Transform(doc).replace(from, to, new Slice(content.content, openLeft, openRight))
+    let slice = content ? new Slice(content.content, openLeft, openRight) : Slice.empty
+    let tr = new Transform(doc).replace(from, to, slice)
     cmpNode(tr.doc, result)
   })
 }
@@ -146,5 +161,45 @@ repl("fill_figure_right",
 
 repl("join_figures",
      n("doc", n("figure", n("caption"), n("figureimage")), n("figure", n("caption"), n("figureimage"))),
-     3, 8, n("doc"), 0, 0,
+     3, 8, null, 0, 0,
      n("doc", n("figure", n("caption"), n("figureimage"))))
+
+repl("fill_above_left",
+     n("doc", n("sect", n("head"), n("figure", n("caption"), n("figureimage")))),
+     7, 9, n("doc", n("para", t("hi"))), 0, 0,
+     n("doc", n("sect", n("head"), n("figure", n("caption"), n("figureimage")), n("para", t("hi")))))
+
+repl("balance_table_delete",
+     n("doc", n_("table", {columns: 2}, n("tcell", t("a")), n("tcell", t("b")))),
+     1, 4, null, 0, 0,
+     n("doc", n_("table", {columns: 2}, n("tcell"), n("tcell", t("b")))))
+
+repl("balance_table_insert_start",
+     n("doc", n_("table", {columns: 2}, n("tcell", t("a")), n("tcell", t("b")))),
+     1, 1, n("table", n("tcell", t("c"))), 0, 0,
+     n("doc", n_("table", {columns: 2}, n("tcell", t("c")), n("tcell"),
+                 n("tcell", t("a")), n("tcell", t("b")))))
+
+repl("balance_table_insert_mid",
+     n("doc", n_("table", {columns: 2}, n("tcell", t("a")), n("tcell", t("b")))),
+     4, 4, n("table", n("tcell", t("c"))), 0, 0,
+     n("doc", n_("table", {columns: 2}, n("tcell", t("a")), n("tcell", t("c")),
+                 n("tcell"), n("tcell", t("b")))))
+
+repl("balance_table_cut_across",
+     n("doc", n_("table", {columns: 2}, n("tcell", t("a")), n("tcell", t("b")))),
+     3, 5, null, 0, 0,
+     n("doc", n_("table", {columns: 2}, n("tcell", t("ab")), n("tcell"))))
+
+repl("join_tables",
+     n("doc", n_("table", {columns: 2}, n("tcell", t("a")), n("tcell", t("b"))),
+       n_("table", {columns: 1}, n("tcell", t("c")))),
+     7, 10, null, 0, 0,
+     n("doc", n_("table", {columns: 2}, n("tcell", t("a")), n("tcell", t("b")),
+                 n("tcell"), n("tcell", t("c")))))
+
+repl("join_cells",
+     n("doc", n_("table", {columns: 2}, n("tcell", t("a")), n("tcell", t("b"))),
+       n_("table", {columns: 1}, n("tcell", t("c")))),
+     6, 10, null, 0, 0,
+     n("doc", n_("table", {columns: 2}, n("tcell", t("a")), n("tcell", t("bc")))))
