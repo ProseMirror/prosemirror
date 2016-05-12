@@ -86,7 +86,7 @@ parseFail("weird_mark", "image[_ em]")
 parseFail("trailing_noise", "hard_break+ text* .")
 parseFail("zero_times", "image{0}")
 
-const attrs = {level: "3"}
+const attrs = {level: 3}
 
 function testValid(expr, frag, isValid) {
   cmp(get(expr).matches(attrs, frag.content), isValid)

@@ -17,7 +17,7 @@ const schema = new Schema({
     closing: {type: Textblock, content: "text[_]*"},
     tcell: {type: Textblock, content: "text[_]*"},
     table: {type: class extends Block {
-      get attrs() { return {columns: new Attribute({default: "1"})} }
+      get attrs() { return {columns: new Attribute({default: 1})} }
     }, content: "tcell%@columns"},
     text: {type: Text}
   },

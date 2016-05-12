@@ -2,6 +2,7 @@ import {Fragment} from "./fragment"
 import {Mark} from "./mark"
 import {Slice, replace} from "./replace"
 import {ResolvedPos} from "./resolvedpos"
+import {compareDeep} from "../util/comparedeep"
 
 const emptyArray = [], emptyAttrs = Object.create(null)
 
@@ -95,14 +96,9 @@ export class Node {
   // Check whether this node's markup correspond to the given type,
   // attributes, and marks.
   hasMarkup(type, attrs, marks) {
-    return this.type == type && Node.sameAttrs(this.attrs, attrs || emptyAttrs) && Mark.sameSet(this.marks, marks || emptyArray)
-  }
-
-  static sameAttrs(a, b) {
-    if (a == b) return true
-    for (let prop in a)
-      if (a[prop] !== b[prop]) return false
-    return true
+    return this.type == type &&
+      compareDeep(this.attrs, attrs || type.defaultAttrs || emptyAttrs) &&
+      Mark.sameSet(this.marks, marks || emptyArray)
   }
 
   // :: (?Fragment) → Node

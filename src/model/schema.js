@@ -32,7 +32,7 @@ class SchemaItem {
     let defaults = Object.create(null)
     for (let attrName in this.attrs) {
       let attr = this.attrs[attrName]
-      if (attr.default == null) return null
+      if (attr.default === undefined) return null
       defaults[attrName] = attr.default
     }
     return defaults
@@ -44,7 +44,7 @@ class SchemaItem {
       let value = attrs && attrs[name]
       if (value == null) {
         let attr = this.attrs[name]
-        if (attr.default != null)
+        if (attr.default !== undefined)
           value = attr.default
         else if (attr.compute)
           value = attr.compute(this)
@@ -303,20 +303,21 @@ export class Text extends Inline {
 
 // Attribute descriptors
 
-// ;; Attributes are named strings associated with nodes and marks.
+// ;; Attributes are named values associated with nodes and marks.
 // Each node type or mark type has a fixed set of attributes, which
-// instances of this class are used to control.
+// instances of this class are used to control. Attribute values must
+// be JSON-serializable.
 export class Attribute {
   // :: (Object)
   // Create an attribute. `options` is an object containing the
   // settings for the attributes. The following settings are
   // supported:
   //
-  // **`default`**`: ?string`
+  // **`default`**`: ?any`
   //   : The default value for this attribute, to choose when no
   //     explicit value is provided.
   //
-  // **`compute`**`: ?(Fragment) → string`
+  // **`compute`**`: ?(Fragment) → any`
   //   : A function that computes a default value for the attribute from
   //     the node's content.
   //
@@ -333,7 +334,7 @@ export class Attribute {
   }
 
   get isRequired() {
-    return !this.default && !this.compute
+    return this.default === undefined && !this.compute
   }
 }
 

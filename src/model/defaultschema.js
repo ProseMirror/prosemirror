@@ -10,7 +10,7 @@ export class BlockQuote extends Block {}
 // `order`, which determines the number at which the list starts
 // counting, and defaults to 1.
 export class OrderedList extends Block {
-  get attrs() { return {order: new Attribute({default: "1"})} }
+  get attrs() { return {order: new Attribute({default: 1})} }
 }
 
 // ;; The default bullet list node type.
@@ -25,7 +25,7 @@ export class HorizontalRule extends Block {}
 // ;; The default heading node type. Has a single attribute
 // `level`, which indicates the heading level, and defaults to 1.
 export class Heading extends Textblock {
-  get attrs() { return {level: new Attribute({default: "1"})} }
+  get attrs() { return {level: new Attribute({default: 1})} }
   // :: number
   // Controls the maximum heading level. Has the value 6 in the
   // `Heading` class, but you can override it in a subclass.

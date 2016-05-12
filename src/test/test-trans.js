@@ -293,7 +293,7 @@ function type(name, doc, expect, nodeType, attrs) {
 type("simple",
      doc(p("am<a> i")),
      doc(h2("am i")),
-     "heading", {level: "2"})
+     "heading", {level: 2})
 type("multiple",
      doc(h1("<a>hello"), p("there"), p("<b>you"), p("end")),
      doc(pre("hello"), pre("there"), pre("you"), p("end")),
@@ -301,7 +301,7 @@ type("multiple",
 type("inside",
      doc(blockquote(p("one<a>"), p("two<b>"))),
      doc(blockquote(h1("one<a>"), h1("two<b>"))),
-     "heading", {level: "1"})
+     "heading", {level: 1})
 type("clear_markup",
      doc(p("hello<a> ", em("world"))),
      doc(pre("hello world")),
@@ -309,7 +309,7 @@ type("clear_markup",
 type("only_clear_for_code_block",
      doc(p("hello<a> ", em("world"))),
      doc(h1("hello<a> ", em("world"))),
-     "heading", {level: "1"})
+     "heading", {level: 1})
 
 function nodeType(name, doc, expect, type, attrs) {
   defTest("nodeType_" + name, () => testTransform(tr.nodeType(type, attrs), doc, expect))
@@ -318,7 +318,7 @@ function nodeType(name, doc, expect, type, attrs) {
 nodeType("valid",
          doc("<a>", p("foo")),
          doc(h1("foo")),
-         "heading", {level: "1"})
+         "heading", {level: 1})
 nodeType("inline",
          doc(p("foo<a>", img, "bar")),
          doc(p("foo", img2, "bar")),

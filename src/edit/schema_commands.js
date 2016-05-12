@@ -334,7 +334,7 @@ for (let i = 1; i <= 10; i++)
   //
   // **Keybindings:** Shift-Ctrl-1 through Shift-Ctrl-6
   Heading.registerComputed("command", "make" + i, type => {
-    let attrs = {level: String(i)}
+    let attrs = {level: i}
     if (i <= type.maxLevel) return {
       derive: {name: "make", attrs},
       label: "Change to heading " + i,

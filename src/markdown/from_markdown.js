@@ -237,12 +237,13 @@ ListItem.register("parseMarkdown", "list_item", {parse: "block"})
 
 BulletList.register("parseMarkdown", "bullet_list", {parse: "block"})
 
-OrderedList.register("parseMarkdown", "ordered_list", {parse: "block", attrs: (state, tok) => ({
-  order: state.getAttr(tok, "order") || "1"
-})})
+OrderedList.register("parseMarkdown", "ordered_list", {parse: "block", attrs: (state, tok) => {
+  let order = state.getAttr(tok, "order")
+  return {order: order ? +order : 1}
+}})
 
 Heading.register("parseMarkdown", "heading", {parse: "block", attrs: function(_, tok) {
-  return {level: "" + Math.min(this.maxLevel, +tok.tag.slice(1))}
+  return {level: Math.min(this.maxLevel, +tok.tag.slice(1))}
 }})
 
 function trimTrailingNewline(str) {

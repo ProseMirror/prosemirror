@@ -65,8 +65,8 @@ BlockQuote.register("autoInput", "startBlockQuote", new InputRule(
 OrderedList.register("autoInput", "startOrderedList", new InputRule(
   /^(\d+)\. $/, " ",
   function(pm, match, pos) {
-    wrapAndJoin(pm, pos, this, {order: match[1]},
-                node => node.childCount + +node.attrs.order == match[1])
+    wrapAndJoin(pm, pos, this, {order: +match[1]},
+                node => node.childCount + node.attrs.order == +match[1])
   }
 ))
 
@@ -86,7 +86,7 @@ CodeBlock.register("autoInput", "startCodeBlock", new InputRule(
 Heading.registerComputed("autoInput", "startHeading", type => {
   let re = new RegExp("^(#{1," + type.maxLevel + "}) $")
   return new InputRule(re, " ", function(pm, match, pos) {
-    setAs(pm, pos, this, {level: String(match[1].length)})
+    setAs(pm, pos, this, {level: match[1].length})
   })
 })
 

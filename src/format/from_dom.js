@@ -1,8 +1,9 @@
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmMark, StrongMark, LinkMark, CodeMark, Node, Fragment} from "../model"
+        EmMark, StrongMark, LinkMark, CodeMark, Fragment} from "../model"
 import sortedInsert from "../util/sortedinsert"
 import {defineSource} from "./register"
+import {compareDeep} from "../util/comparedeep"
 
 // :: (Schema, DOMNode, ?Object) → Node
 // Parse document from the content of a DOM node. To pass an explicit
@@ -268,7 +269,7 @@ class DOMParseState {
     while (this.stack.length > stack.length) this.leave()
     for (;;) {
       let n = this.stack.length - 1, one = this.stack[n], two = stack[n]
-      if (one.type == two.type && Node.sameAttrs(one.attrs, two.attrs)) break
+      if (one.type == two.type && compareDeep(one.attrs, two.attrs)) break
       this.leave()
     }
     while (stack.length > this.stack.length) {
@@ -356,7 +357,7 @@ BlockQuote.register("parseDOM", "blockquote", {parse: "block"})
 
 for (let i = 1; i <= 6; i++) Heading.registerComputed("parseDOM", "h" + i, type => {
   if (i <= type.maxLevel) return {
-    parse(dom, state) { state.wrapIn(dom, this, {level: String(i)}) }
+    parse(dom, state) { state.wrapIn(dom, this, {level: i}) }
   }
 })
 
@@ -378,7 +379,8 @@ CodeBlock.register("parseDOM", "pre", {parse(dom, state) {
 BulletList.register("parseDOM", "ul", {parse: "block"})
 
 OrderedList.register("parseDOM", "ol", {parse(dom, state) {
-  let attrs = {order: dom.getAttribute("start") || "1"}
+  let start = dom.getAttribute("start")
+  let attrs = {order: start ? +start : 1}
   state.wrapIn(dom, this, attrs)
 }})
 

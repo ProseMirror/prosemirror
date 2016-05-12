@@ -1,3 +1,5 @@
+import {compareDeep} from "../util/comparedeep"
+
 // ;; A mark is a piece of information that can be attached to a node,
 // such as it being emphasized, in code font, or a link. It has a type
 // and optionally a set of attributes that provide further information
@@ -65,8 +67,7 @@ export class Mark {
   eq(other) {
     if (this == other) return true
     if (this.type != other.type) return false
-    for (let attr in this.attrs)
-      if (other.attrs[attr] != this.attrs[attr]) return false
+    if (!compareDeep(other.attrs, this.attrs)) return false
     return true
   }
 

@@ -339,7 +339,7 @@ function resolveCount(count, attrs, expr) {
     let value = attrs[count]
     if (value !== undefined) return +value
   }
-  return +expr.nodeType.attrs[count].default
+  return +expr.nodeType.defaultAttrs[count].default
 }
 
 function checkMarks(schema, marks) {
