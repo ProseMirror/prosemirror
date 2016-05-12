@@ -20,13 +20,15 @@ Transform.prototype.replace = function(from, to = from, slice = Slice.empty) {
 
   let fittedLeft = fitLeft($from, placed)
   let fitted = fitRight($from, $to, fittedLeft)
-  if (fittedLeft.size == fitted.size || !canMoveText($from, $to, fittedLeft))
-    return this.step(new ReplaceStep(from, to, fitted))
-
-  let d = $to.depth, after = $to.after(d)
-  while (d > 1 && after == $to.end(--d)) ++after
-  fitted = fitRight($from, this.doc.resolve(after), fittedLeft)
-  return this.step(new ReplaceWrapStep(from, after, to, $to.end(), fitted, fittedLeft.size))
+  if (!fitted) return this
+  if (fittedLeft.size != fitted.size && canMoveText($from, $to, fittedLeft)) {
+    let d = $to.depth, after = $to.after(d)
+    while (d > 1 && after == $to.end(--d)) ++after
+    let fittedAfter = fitRight($from, this.doc.resolve(after), fittedLeft)
+    if (fittedAfter)
+      return this.step(new ReplaceWrapStep(from, after, to, $to.end(), fittedAfter, fittedLeft.size))
+  }
+  return this.step(new ReplaceStep(from, to, fitted))
 }
 
 // :: (number, number, union<Fragment, Node, [Node]>) → Transform
@@ -85,40 +87,69 @@ function fitLeft($from, placed) {
   return new Slice(content, $from.depth, openRight || 0)
 }
 
-function probeRight(parent, content, $to, depth, openRight, $from, openLeft) {
-  let match, join, endIndex = content.childCount, next = null
-  if (openRight > 0) {
-    let last = content.lastChild
-    next = probeRight(last, last.content, $to, depth + 1, openRight - 1,
-                      $from, content.childCount == 1 ? openLeft - 1 : -1)
-    if (next.join) endIndex--
-  }
-
-  if (openLeft >= 0)
-    match = $from.node(depth).contentMatchAt($from.index(depth)).matchFragment(content, 0, endIndex)
+function fitRightJoin(content, parent, $from, $to, depth, openLeft, openRight) {
+  let match, count = content.childCount, matchCount = count - (openRight > 0 ? 1 : 0)
+  if (openLeft < 0)
+    match = parent.contentMatchAt(matchCount)
+  else if (count == 1 && openRight > 0)
+    match = $from.node(depth).contentMatchAt(openLeft ? $from.index(depth) : $from.indexAfter(depth))
   else
-    match = parent.contentMatchAt(endIndex)
+    match = $from.node(depth).contentMatchAt($from.indexAfter(depth))
+      .matchFragment(content, count > 0  && openLeft ? 1 : 0, matchCount)
 
-  if (depth <= $to.depth) {
-    let after = $to.node(depth), afterIndex = $to.index(depth)
-    if (after.childCount > afterIndex || after.type.compatibleContent(parent.type)) {
-      join = match.fillBefore(after.content, true, afterIndex)
-      // We can't insert content when both sides are open
-      if (join && join.size && openLeft > 0 && next && next.join) join = null
+  if (openRight > 0 && depth < $to.depth) {
+    // FIXME find a less allocaty approach
+    let after = $to.node(depth).content.cutByIndex($to.indexAfter(depth)).addToStart(content.lastChild)
+    let joinable = match.fillBefore(after, true)
+    // Can't insert content if there's a single node stretched across this gap
+    if (joinable && joinable.size && openLeft > 0 && count == 1) joinable = null
+
+    if (joinable) {
+      let inner = fitRightJoin(content.lastChild.content, content.lastChild, $from, $to,
+                               depth + 1, count == 1 ? openLeft - 1 : -1, openRight - 1)
+      if (inner) {
+        let last = content.lastChild.copy(inner)
+        if (joinable.size)
+          return content.sliceByIndex(0, count - 1).append(joinable).addToEnd(last)
+        else
+          return content.replaceChild(count - 1, last)
+      }
     }
   }
-
-  if (next && next.join)
+  if (openRight > 0)
     match = match.matchNode(content.lastChild)
 
-  return {next, join, match}
+  // If we're here, the next level can't be joined, so we see what
+  // happens if we leave it open.
+  let joinable = match.fillBefore($to.node(depth).content, true, $to.index(depth))
+  if (!joinable) return null
+
+  if (openRight > 0) {
+    let closed = fitRightClosed(content.lastChild, openRight - 1, $from, depth + 1,
+                                count == 1 ? openLeft - 1 : -1)
+    content = content.replaceChild(count - 1, closed)
+  }
+  content = content.append(joinable)
+  if ($to.depth > depth)
+    content = content.addToEnd(fitRightSeparate($to, depth + 1))
+  return content
 }
 
-function fitRightClosed(probe, node) {
-  let content = node.content
-  if (probe.next)
-    content = content.replaceChild(content.childCount - 1, fitRightClosed(probe.next, content.lastChild))
-  return node.copy(content.append(probe.match.fillBefore(Fragment.empty, true)))
+function fitRightClosed(node, openRight, $from, depth, openLeft) {
+  let match, content = node.content, count = content.childCount
+  if (openLeft >= 0)
+    match = $from.node(depth).contentMatchAt($from.indexAfter(depth))
+      .matchFragment(content, openLeft > 0 ? 1 : 0, count)
+  else
+    match = node.contentMatchAt(count)
+
+  if (openRight > 0) {
+    let closed = fitRightClosed(content.lastChild, openRight - 1, $from, depth + 1,
+                                count == 1 ? openLeft - 1 : -1)
+    content = content.replaceChild(count - 1, closed)
+  }
+
+  return node.copy(content.append(match.fillBefore(Fragment.empty, true)))
 }
 
 function fitRightSeparate($to, depth) {
@@ -126,28 +157,6 @@ function fitRightSeparate($to, depth) {
   let fill = node.contentMatchAt(0).fillBefore(node.content, true, $to.index(depth))
   if ($to.depth > depth) fill = fill.addToEnd(fitRightSeparate($to, depth + 1))
   return node.copy(fill)
-}
-
-function fitRightJoined(probe, $to, depth, content) {
-  if (probe.next) {
-    let last = content.lastChild
-    if (probe.next.join)
-      last = last.copy(fitRightJoined(probe.next, $to, depth + 1, last.content))
-    else
-      last = fitRightClosed(probe.next, content.lastChild)
-    if (probe.join.size)
-      content = content.cutByIndex(0, content.childCount - 1).append(probe.join).addToEnd(last)
-    else
-      content = content.replaceChild(content.childCount - 1, last)
-  } else {
-    content = content.append(probe.join)
-  }
-
-  if ($to.depth > depth && (!probe.next || !probe.next.join))
-    // FIXME the closing node can make the content invalid
-    content = content.addToEnd(fitRightSeparate($to, depth + 1))
-
-  return content
 }
 
 function normalizeSlice(content, openLeft, openRight) {
@@ -161,14 +170,9 @@ function normalizeSlice(content, openLeft, openRight) {
 
 // : (ResolvedPos, ResolvedPos, number, Slice) → Slice
 function fitRight($from, $to, slice) {
-  let probe = probeRight($from.node(0), slice.content, $to, 0, slice.openRight, $from, slice.openLeft)
-  // If the top level can't be joined, the step is trying to insert
-  // content that can't appear in that place. Create a delete slice
-  // instead.
+  let fitted = fitRightJoin(slice.content, $from.node(0), $from, $to, 0, slice.openLeft, slice.openRight)
   // FIXME we might want to be clever about selectively dropping nodes here?
-  if (!probe.join) return fitRight($from, $to, fitLeft($from, []))
-
-  let fitted = fitRightJoined(probe, $to, 0, slice.content, slice.openRight)
+  if (!fitted) return null
   return normalizeSlice(fitted, slice.openLeft, $to.depth)
 }
 

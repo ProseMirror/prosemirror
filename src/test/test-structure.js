@@ -19,10 +19,12 @@ const schema = new Schema({
     table: {type: class extends Block {
       get attrs() { return {columns: new Attribute({default: 1})} }
     }, content: "tcell%.columns"},
-    text: {type: Text}
+    text: {type: Text},
+
+    fixed: {type: Block, content: "head para closing"}
   },
   groups: {
-    block: ["para", "figure", "quote", "table"]
+    block: ["para", "figure", "quote", "table", "fixed"]
   },
   marks: {
     em: EmMark
@@ -203,3 +205,8 @@ repl("join_cells",
        n_("table", {columns: 1}, n("tcell", t("c")))),
      6, 10, null, 0, 0,
      n("doc", n_("table", {columns: 2}, n("tcell", t("a")), n("tcell", t("bc")))))
+
+repl("join_required",
+     n("doc", n("fixed", n("head", t("foo")), n("para", t("bar")), n("closing", t("abc")))),
+     4, 8, null, 0, 0,
+     n("doc", n("fixed", n("head", t("foar")), n("para"), n("closing", t("abc")))))
