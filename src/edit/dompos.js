@@ -221,11 +221,12 @@ export function posAtCoords(pm, coords) {
   return posFromDOM(pm, node, offset)
 }
 
-function textRect(node, from, to) {
+function textRect(node, from, to, bias = 1) {
   let range = document.createRange()
   range.setEnd(node, to)
   range.setStart(node, from)
-  return range.getBoundingClientRect()
+  let rects = range.getClientRects()
+  return !rects.length ? range.getBoundingClientRect() : rects[bias < 0 ? 0 : rects.length - 1]
 }
 
 function textRects(node) {
@@ -236,29 +237,29 @@ function textRects(node) {
 }
 
 // : (ProseMirror, number) → ClientRect
-// Given a position in the document model, get a bounding box of the character at
-// that position, relative to the window.
+// Given a position in the document model, get a bounding box of the
+// character at that position, relative to the window.
 export function coordsAtPos(pm, pos) {
   let {node, offset} = DOMFromPos(pm, pos)
   let side, rect
   if (node.nodeType == 3) {
     if (offset < node.nodeValue.length) {
-      rect = textRect(node, offset, offset + 1)
+      rect = textRect(node, offset, offset + 1, -1)
       side = "left"
     }
     if ((!rect || rect.left == rect.right) && offset) {
-      rect = textRect(node, offset - 1, offset)
+      rect = textRect(node, offset - 1, offset, 1)
       side = "right"
     }
   } else if (node.firstChild) {
     if (offset < node.childNodes.length) {
       let child = node.childNodes[offset]
-      rect = child.nodeType == 3 ? textRect(child, 0, child.nodeValue.length) : child.getBoundingClientRect()
+      rect = child.nodeType == 3 ? textRect(child, 0, child.nodeValue.length, -1) : child.getBoundingClientRect()
       side = "left"
     }
     if ((!rect || rect.top == rect.bottom) && offset) {
       let child = node.childNodes[offset - 1]
-      rect = child.nodeType == 3 ? textRect(child, 0, child.nodeValue.length) : child.getBoundingClientRect()
+      rect = child.nodeType == 3 ? textRect(child, 0, child.nodeValue.length, 1) : child.getBoundingClientRect()
       side = "right"
     }
   } else {
