@@ -60,10 +60,10 @@ parse("range_between", "paragraph{2, 5}",
 parse("range_open", "paragraph{2,}",
       {types: ["paragraph"], min: 2, max: Infinity})
 
-parse("modulo_attr", "paragraph%@level",
-      {types: ["paragraph"], mod: "level", min: "level", max: Infinity})
-parse("range_attr", "paragraph{@level}",
-      {types: ["paragraph"], min: "level", max: "level"})
+parse("modulo_attr", "paragraph%.level",
+      {types: ["paragraph"], mod: ["level"], min: ["level"], max: Infinity})
+parse("range_attr", "paragraph{.level}",
+      {types: ["paragraph"], min: ["level"], max: ["level"]})
 
 function parseFail(name, expr) {
   defTest("content_parse_fail_" + name, () => {
@@ -79,7 +79,7 @@ function parseFail(name, expr) {
 parseFail("invalid_char", "paragraph/image")
 parseFail("adjacent", "paragraph paragraph")
 parseFail("adjacent_set", "inline image")
-parseFail("bad_attr", "hard_break{@foo}")
+parseFail("bad_attr", "hard_break{.foo}")
 parseFail("bad_node", "foo+")
 parseFail("bad_mark", "hard_break[bar]")
 parseFail("weird_mark", "image[_ em]")
@@ -151,8 +151,10 @@ invalid("mark_none", "hard_break", p(em(br)))
 valid("mark_some", "hard_break[em strong]", p(em(br)))
 invalid("mark_some", "hard_break[code strong]", p(em(br)))
 
-valid("count_attr", "hard_break{@level}", p(br, br, br))
-invalid("count_attr", "hard_break{@level}", p(br, br))
+valid("count_attr", "hard_break{.level}", p(br, br, br))
+invalid("count_attr", "hard_break{.level}", p(br, br))
+valid("count_attr_deep", "hard_break{.level.constructor.length}", p(br))
+invalid("count_attr_deep", "hard_break{.level.constructor.length}", p(br, br))
 
 function fill(name, expr, before, after, result) {
   defTest("content_fill_" + name, () => {

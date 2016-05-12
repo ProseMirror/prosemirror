@@ -87,7 +87,7 @@ export class ContentExpr {
       pos += types[0].length
       let marks = /^\[(?:(_)|\s*(\w+(?:\s+\w+)*)\s*)\]/.exec(expr.slice(pos))
       if (marks) pos += marks[0].length
-      let count = /^(?:([+*?])|%(\d+|@\w+)|\{\s*(\d+|@\w+)\s*(,\s*(\d+|@\w+)?)?\s*\})/.exec(expr.slice(pos))
+      let count = /^(?:([+*?])|%(\d+|(?:\.\w+)+)|\{\s*(\d+|(?:\.\w+)+)\s*(,\s*(\d+|(?:\.\w+)+)?)?\s*\})/.exec(expr.slice(pos))
       if (count) pos += count[0].length
 
       let nodeTypes = expandTypes(nodeType.schema, groups, types[1] ? [types[1]] : types[2].split(/\s*\|\s*/))
@@ -324,10 +324,10 @@ export class ContentMatch {
 }
 
 function parseCount(nodeType, count) {
-  if (count.charAt(0) == "@") {
-    let attr = count.slice(1)
-    if (!nodeType.attrs[attr]) throw new SyntaxError("Node type " + nodeType.name + " has no attribute " + attr)
-    return attr
+  if (count.charAt(0) == ".") {
+    let props = count.slice(1).split(".")
+    if (!nodeType.attrs[props[0]]) throw new SyntaxError("Node type " + nodeType.name + " has no attribute " + props[0])
+    return props
   } else {
     return Number(count)
   }
@@ -335,11 +335,10 @@ function parseCount(nodeType, count) {
 
 function resolveCount(count, attrs, expr) {
   if (typeof count == "number") return count
-  if (attrs) {
-    let value = attrs[count]
-    if (value !== undefined) return +value
-  }
-  return +expr.nodeType.defaultAttrs[count].default
+  let value = attrs && attrs[count[0]]
+  if (value === undefined) value = expr.nodeType.defaultAttrs[count[0]]
+  for (let i = 1; i < count.length; i++) value = value[count[i]]
+  return +value
 }
 
 function checkMarks(schema, marks) {
