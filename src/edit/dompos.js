@@ -168,7 +168,7 @@ function findOffsetInNode(node, coords) {
   for (let child = node.firstChild; child; child = child.nextSibling) {
     let rects
     if (child.nodeType == 1) rects = child.getClientRects()
-    else if (child.nodeType == 3) rects = textRects(child)
+    else if (child.nodeType == 3) rects = textRange(child).getClientRects()
     else continue
 
     for (let i = 0; i < rects.length; i++) {
@@ -221,19 +221,16 @@ export function posAtCoords(pm, coords) {
   return posFromDOM(pm, node, offset)
 }
 
-function textRect(node, from, to, bias = 1) {
+function textRange(node, from, to) {
   let range = document.createRange()
-  range.setEnd(node, to)
-  range.setStart(node, from)
-  let rects = range.getClientRects()
-  return !rects.length ? range.getBoundingClientRect() : rects[bias < 0 ? 0 : rects.length - 1]
+  range.setEnd(node, to == null ? node.nodeValue.length : to)
+  range.setStart(node, from || 0)
+  return range
 }
 
-function textRects(node) {
-  let range = document.createRange()
-  range.setEnd(node, node.nodeValue.length)
-  range.setStart(node, 0)
-  return range.getClientRects()
+function singleRect(object, bias) {
+  let rects = object.getClientRects()
+  return !rects.length ? object.getBoundingClientRect() : rects[bias < 0 ? 0 : rects.length - 1]
 }
 
 // : (ProseMirror, number) → ClientRect
@@ -244,22 +241,22 @@ export function coordsAtPos(pm, pos) {
   let side, rect
   if (node.nodeType == 3) {
     if (offset < node.nodeValue.length) {
-      rect = textRect(node, offset, offset + 1, -1)
+      rect = singleRect(textRange(node, offset, offset + 1), -1)
       side = "left"
     }
     if ((!rect || rect.left == rect.right) && offset) {
-      rect = textRect(node, offset - 1, offset, 1)
+      rect = singleRect(textRange(node, offset - 1, offset), 1)
       side = "right"
     }
   } else if (node.firstChild) {
     if (offset < node.childNodes.length) {
       let child = node.childNodes[offset]
-      rect = child.nodeType == 3 ? textRect(child, 0, child.nodeValue.length, -1) : child.getBoundingClientRect()
+      rect = singleRect(child.nodeType == 3 ? textRange(child) : child, -1)
       side = "left"
     }
     if ((!rect || rect.top == rect.bottom) && offset) {
       let child = node.childNodes[offset - 1]
-      rect = child.nodeType == 3 ? textRect(child, 0, child.nodeValue.length, 1) : child.getBoundingClientRect()
+      rect = singleRect(child.nodeType == 3 ? textRange(child) : child, 1)
       side = "right"
     }
   } else {
