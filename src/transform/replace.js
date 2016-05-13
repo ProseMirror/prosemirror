@@ -95,7 +95,7 @@ function fitRightJoin(content, parent, $from, $to, depth, openLeft, openRight) {
     match = $from.node(depth).contentMatchAt(openLeft ? $from.index(depth) : $from.indexAfter(depth))
   else
     match = $from.node(depth).contentMatchAt($from.indexAfter(depth))
-      .matchFragment(content, count > 0  && openLeft ? 1 : 0, matchCount)
+      .matchFragment(content, count > 0 && openLeft ? 1 : 0, matchCount)
 
   let toNode = $to.node(depth)
   if (openRight > 0 && depth < $to.depth) {
@@ -118,7 +118,7 @@ function fitRightJoin(content, parent, $from, $to, depth, openLeft, openRight) {
     }
   }
   if (openRight > 0)
-    match = match.matchNode(content.lastChild)
+    match = match.matchNode(count == 1 && openLeft > 0 ? $from.node(depth + 1) : content.lastChild)
 
   // If we're here, the next level can't be joined, so we see what
   // happens if we leave it open.
