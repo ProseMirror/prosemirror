@@ -40,6 +40,7 @@ export class MenuCommand {
   constructor(command, options) {
     this.command_ = command
     this.options = options
+    this.options.execEvent = this.options.execEvent || "mousedown"
   }
 
   // :: (ProseMirror) → Command
@@ -83,7 +84,7 @@ export class MenuCommand {
     if (this.options.class) dom.classList.add(this.options.class)
     if (disabled) dom.classList.add(prefix + "-disabled")
     if (this.options.css) dom.style.cssText += this.options.css
-    dom.addEventListener("mousedown", e => {
+    dom.addEventListener(this.options.execEvent, e => {
       e.preventDefault(); e.stopPropagation()
       pm.signal("interaction")
       cmd.exec(pm, null, dom)
@@ -371,6 +372,10 @@ function separator() {
 // :: string #path=MenuCommandSpec.css
 // Optionally adds a string of inline CSS to the command's DOM
 // representation.
+
+// :: string #path=MenuCommandSpec.execEvent
+// Defines which event on the command's DOM representation should
+// trigger the execution of the command. Defaults to mousedown.
 
 // :: MenuCommandGroup
 // The inline command group.
