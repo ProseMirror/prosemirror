@@ -40,7 +40,6 @@ export class MenuCommand {
   constructor(command, options) {
     this.command_ = command
     this.options = options
-    this.options.execEvent = this.options.execEvent || "mousedown"
   }
 
   // :: (ProseMirror) → Command
@@ -84,7 +83,7 @@ export class MenuCommand {
     if (this.options.class) dom.classList.add(this.options.class)
     if (disabled) dom.classList.add(prefix + "-disabled")
     if (this.options.css) dom.style.cssText += this.options.css
-    dom.addEventListener(this.options.execEvent, e => {
+    dom.addEventListener(this.options.execEvent || "mousedown", e => {
       e.preventDefault(); e.stopPropagation()
       pm.signal("interaction")
       cmd.exec(pm, null, dom)
