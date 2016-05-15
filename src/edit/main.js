@@ -136,7 +136,7 @@ export class ProseMirror {
     this.setDoc(value)
   }
 
-  // :: (?string, ?object) → any
+  // :: (?string, ?Object) → any
   // Get the editor's content in a given format. When `format` is not
   // given, a `Node` is returned. If it is given, it should be an
   // existing [serialization format](#format). Options to the serializer

@@ -37,7 +37,7 @@ class MarkdownSerializer {
     // **`hardBreak`**: ?string
     //   : Markdown to use for hard line breaks. Defaults to a backslash
     //     followed by a newline.
-    this.options = Object.assign({ hardBreak: "\\\n" }, options)
+    this.options = options || {}
   }
 
   flushClose(size) {
@@ -281,7 +281,9 @@ def(Image, (state, node) => {
               (node.attrs.title ? " " + state.quote(node.attrs.title) : "") + ")")
 })
 
-def(HardBreak, state => state.write(state.options.hardBreak))
+const defaultHardBreak = "\\\n"
+
+def(HardBreak, state => state.write(state.options.hardBreak || defaultHardBreak))
 
 def(Text, (state, node) => state.text(node.text))
 
