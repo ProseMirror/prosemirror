@@ -253,7 +253,7 @@ function trimTrailingNewline(str) {
 }
 
 function parseCodeBlock(state, tok) {
-  state.openNode(this)
+  state.openNode(this, { params: /\S/.test(tok.info) ? tok.info : null });
   state.addText(trimTrailingNewline(tok.content))
   state.closeNode()
 }
