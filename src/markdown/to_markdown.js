@@ -32,8 +32,12 @@ class MarkdownSerializer {
     this.closed = false
     this.inTightList = false
     // :: Object
-    // The options passed to the serializer.
-    this.options = options
+    // The options passed to the serializer. The following are supported:
+    //
+    // **`hardBreak`**: ?string
+    //   : Markdown to use for hard line breaks. Defaults to a backslash
+    //     followed by a newline.
+    this.options = Object.assign({ hardBreak: "\\\n" }, options)
   }
 
   flushClose(size) {
@@ -277,7 +281,7 @@ def(Image, (state, node) => {
               (node.attrs.title ? " " + state.quote(node.attrs.title) : "") + ")")
 })
 
-def(HardBreak, state => state.write("\\\n"))
+def(HardBreak, state => state.write(state.options.hardBreak))
 
 def(Text, (state, node) => state.text(node.text))
 
