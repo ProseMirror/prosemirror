@@ -200,12 +200,16 @@ class DOMParseState {
   }
 
   addAll(from, to, sync) {
-    let stack = sync && this.stack.slice()
+    let stack = sync && this.stack.slice(), needsSync = false
     for (let dom = from; dom != to; dom = dom.nextSibling) {
       this.addDOM(dom)
-      if (sync && blockElements.hasOwnProperty(dom.nodeName.toLowerCase()))
-        this.sync(stack)
+      if (sync) {
+        let isBlock = blockElements.hasOwnProperty(dom.nodeName.toLowerCase())
+        if (isBlock) this.sync(stack)
+        needsSync = !isBlock
+      }
     }
+    if (needsSync) this.sync(stack)
   }
 
   doClose() {
