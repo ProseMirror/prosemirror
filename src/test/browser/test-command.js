@@ -399,7 +399,7 @@ test("liftEmptyBlock",
      doc(blockquote(p("foo")), blockquote(p(), p("bar"))))
 test("liftEmptyBlock",
      doc(blockquote(p("foo"), p("<a>"))),
-     doc(blockquote(p("foo")), blockquote(p())))
+     doc(blockquote(p("foo")), p()))
 test("liftEmptyBlock",
      doc(blockquote(p("foo")), blockquote(p("<a>"))),
      doc(blockquote(p("foo")), p("<a>")))

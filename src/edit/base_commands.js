@@ -415,7 +415,7 @@ baseCommands.liftEmptyBlock = {
   run(pm) {
     let {head, empty} = pm.selection, $head
     if (!empty || ($head = pm.doc.resolve(head)).parent.content.size) return false
-    if ($head.depth > 1) {
+    if ($head.depth > 1 && $head.after() != $head.end(-1)) {
       let before = $head.before()
       if (canSplit(pm.doc, before)) return pm.tr.split(before).apply(pm.apply.scroll)
     }
