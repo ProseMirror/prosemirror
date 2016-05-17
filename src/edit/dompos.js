@@ -86,7 +86,7 @@ export function DOMFromPos(pm, pos, loose) {
   for (;;) {
     for (let child = container.firstChild, i = 0;; child = child.nextSibling, i++) {
       if (!child) {
-        if (offset && !loose) throw new RangeError("Failed to find node at " + pos + " rem = " + offset)
+        if (offset && !loose) throw new RangeError("Failed to find node at " + pos)
         return {node: container, offset: i}
       }
 
