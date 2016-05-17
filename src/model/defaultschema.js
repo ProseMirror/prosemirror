@@ -36,6 +36,7 @@ export class Heading extends Textblock {
 // allows unmarked text nodes inside of it.
 export class CodeBlock extends Textblock {
   get isCode() { return true }
+  get attrs() { return { params: new Attribute({default: null})} }
 }
 
 // ;; The default paragraph node type.
