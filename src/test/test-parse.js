@@ -75,3 +75,7 @@ t("horizontal_rule",
 t("ignore_html",
   "Foo < img> bar",
   doc(p("Foo < img> bar")))
+
+t("not_a_list",
+  "1\\. foo",
+  doc(p("1. foo")))
