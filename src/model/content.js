@@ -14,10 +14,6 @@ export class ContentExpr {
     return new ContentMatch(this, attrs, 0, 0)
   }
 
-  end(attrs) {
-    return new ContentMatch(this, attrs, this.elements.length, 0)
-  }
-
   matches(attrs, fragment, from, to) {
     return this.start(attrs).matchToEnd(fragment, from, to)
   }
@@ -83,7 +79,7 @@ export class ContentExpr {
       if (attrs) pos += attrs[0].length
       let marks = /^<(?:(_)|\s*(\w+(?:\s+\w+)*)\s*)>/.exec(expr.slice(pos))
       if (marks) pos += marks[0].length
-      let repeat = /^(?:([+*?])|\{\s*(\d+|(?:\.\w+)+)\s*(,\s*(\d+|(?:\.\w+)+)?)?\s*\})/.exec(expr.slice(pos))
+      let repeat = /^(?:([+*?])|\{\s*(\d+|\.\w+)\s*(,\s*(\d+|\.\w+)?)?\s*\})/.exec(expr.slice(pos))
       if (repeat) pos += repeat[0].length
 
       let nodeTypes = expandTypes(nodeType.schema, groups, types[1] ? [types[1]] : types[2].split(/\s*\|\s*/))
@@ -94,7 +90,7 @@ export class ContentExpr {
       let attrSet = !attrs ? null : parseAttrs(nodeType, attrs[1])
       let markSet = !marks ? false : marks[1] ? true : checkMarks(nodeType.schema, marks[2].split(/\s+/))
       let {min, max} = parseRepeat(nodeType, repeat)
-      if (min != 0 && nodeTypes[0].hasRequiredAttrs)
+      if (min != 0 && nodeTypes[0].hasRequiredAttrs(attrSet))
         throw new SyntaxError("Node type " + types[0] + " in type " + nodeType.name +
                               " is required, but has non-optional attributes")
       let newElt = new ContentElement(nodeTypes, attrSet, markSet, min, max)
@@ -143,8 +139,16 @@ class ContentElement {
     return false
   }
 
-  createFiller() {
-    let type = this.nodeTypes[0], attrs = type.computeAttrs(null)
+  constrainedAttrs(parentAttrs, expr) {
+    if (!this.attrs) return null
+    let attrs = Object.create(null)
+    for (let prop in this.attrs)
+      attrs[prop] = resolveValue(this.attrs[prop], parentAttrs, expr)
+    return attrs
+  }
+
+  createFiller(parentAttrs, expr) {
+    let type = this.nodeTypes[0], attrs = type.computeAttrs(this.constrainedAttrs(parentAttrs, expr))
     return type.create(attrs, type.contentExpr.generateContent(attrs))
   }
 
@@ -178,7 +182,7 @@ export class ContentMatch {
   }
 
   resolveValue(value) {
-    return value instanceof Function ? value(this.attrs, this.expr) : value
+    return value instanceof AttrValue ? resolveValue(value, this.attrs, this.expr) : value
   }
 
   // :: (Node) → ?ContentMatch
@@ -258,7 +262,7 @@ export class ContentMatch {
 
       let elt = match.element
       if (match.count < this.resolveValue(elt.min)) {
-        added.push(elt.createFiller())
+        added.push(elt.createFiller(this.attrs, this.expr))
         match = match.move(match.index, match.count + 1)
       } else if (match.index < end) {
         match = match.move(match.index + 1, 0)
@@ -270,12 +274,14 @@ export class ContentMatch {
     }
   }
 
-  possibleTypes() {
+  possibleContent() {
     let found = []
     for (let i = this.index, count = this.count; i < this.expr.elements.length; i++, count = 0) {
-      let elt = this.expr.elements[i]
-      if (count < this.resolveValue(elt.max))
-        found = found.concat(elt.nodeTypes)
+      let elt = this.expr.elements[i], attrs = elt.constrainedAttrs(this.attrs, this.expr)
+      if (count < this.resolveValue(elt.max)) for (let j = 0; j < elt.nodeTypes.length; j++) {
+        let type = elt.nodeTypes[j]
+        if (!type.hasRequiredAttrs(attrs)) found.push({type, attrs})
+      }
       if (this.resolveValue(elt.min) > count) break
     }
     return found
@@ -287,18 +293,47 @@ export class ContentMatch {
   allowsMark(markType) {
     return this.element.allowsMark(markType)
   }
+
+  // :: (NodeType, ?Object) → ?[{type: NodeType, attrs: Object}]
+  // Find a set of wrapping node types that would allow a node of type
+  // `type` to appear at this position. The result may be empty (when
+  // it fits directly) and will be null when no such wrapping exists.
+  findWrapping(target, targetAttrs) {
+    // FIXME find out how expensive this is. Try to reintroduce caching?
+    let seen = Object.create(null), first = {match: this, via: null}, active = [first]
+    while (active.length) {
+      let current = active.shift(), match = current.match
+      let possible = match.possibleContent()
+      for (let i = 0; i < possible.length; i++) {
+        let {type, attrs} = possible[i], fullAttrs = type.computeAttrs(attrs)
+        if (type == target) {
+          let fits = match.matchType(type, targetAttrs, [])
+          if (fits && fits.validEnd()) {
+            let result = []
+            for (let obj = current; obj.via; obj = obj.via)
+              result.push({type: obj.match.expr.nodeType, attrs: obj.match.attrs})
+            return result.reverse()
+          }
+        }
+        if (!type.isLeaf && !(type.name in seen) &&
+            (current == first || match.matchType(type, fullAttrs, []).validEnd())) {
+          active.push({match: type.contentExpr.start(fullAttrs), via: current})
+          seen[type.name] = true
+        }
+      }
+    }
+  }
+}
+
+class AttrValue {
+  constructor(attr) { this.attr = attr }
 }
 
 function parseValue(nodeType, value) {
   if (value.charAt(0) == ".") {
-    let props = value.slice(1).split(".")
-    if (!nodeType.attrs[props[0]]) throw new SyntaxError("Node type " + nodeType.name + " has no attribute " + props[0])
-    return (attrs, expr) => {
-      let value = attrs && attrs[props[0]]
-      if (value === undefined) value = expr.nodeType.defaultAttrs[props[0]]
-      for (let i = 1; i < props.length; i++) value = value[props[i]]
-      return value
-    }
+    let attr = value.slice(1)
+    if (!nodeType.attrs[attr]) throw new SyntaxError("Node type " + nodeType.name + " has no attribute " + attr)
+    return new AttrValue(attr)
   } else {
     return JSON.parse(value)
   }
@@ -315,7 +350,9 @@ function checkMarks(schema, marks) {
 }
 
 function resolveValue(value, attrs, expr) {
-  return value instanceof Function ? value(attrs, expr) : value
+  if (!(value instanceof AttrValue)) return value
+  let attrVal = attrs && attrs[value.attr]
+  return attrVal !== undefined ? attrVal : expr.nodeType.defaultAttrs[value.attr]
 }
 
 function checkCount(elt, count, attrs, expr) {
@@ -367,7 +404,7 @@ function parseAttrs(nodeType, expr) {
   let parts = expr.split(/\s*,\s*/)
   let attrs = Object.create(null)
   for (let i = 0; i < parts.length; i++) {
-    let match = /^(\w+)=(\w+|\"(?:\\.|[^\\])\"|(?:\.\w+)+)$/.exec(parts[i])
+    let match = /^(\w+)=(\w+|\"(?:\\.|[^\\])*\"|\.\w+)$/.exec(parts[i])
     if (!match) throw new SyntaxError("Invalid attribute syntax: " + parts[i])
     attrs[match[1]] = parseValue(nodeType, match[2])
   }

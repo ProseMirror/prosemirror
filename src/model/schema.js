@@ -182,45 +182,14 @@ export class NodeType extends SchemaItem {
   // True for node types that allow no content.
   get isLeaf() { return this.contentExpr.isLeaf }
 
-  get hasRequiredAttrs() {
-    for (let n in this.attrs) if (this.attrs[n].isRequired) return true
+  hasRequiredAttrs(ignore) {
+    for (let n in this.attrs)
+      if (this.attrs[n].isRequired && (!ignore || !(n in ignore))) return true
     return false
   }
 
   compatibleContent(other) {
     return this == other || this.contentExpr.compatible(other.contentExpr)
-  }
-
-  findWrappingInner(target) {
-    let seen = Object.create(null), active = [{type: this, via: []}]
-    while (active.length) {
-      let current = active.shift(), match = current.type.contentExpr.start(current.type.defaultAttrs)
-      let possible = match.possibleTypes()
-      for (let i = 0; i < possible.length; i++) {
-        let type = possible[i]
-        if (!match.matchType(type, null, []).validEnd()) continue
-        if (type == target) return current.via
-        if (!type.isLeaf && !type.hasRequiredAttrs && !(type.name in seen)) {
-          active.push({type, via: current.via.concat(type)})
-          seen[type.name] = true
-        }
-      }
-    }
-  }
-
-  findWrappingCached(target) {
-    let cache = this.schema.cached.wrappings, key = this.name + "-" + target.name
-    if (key in cache) return cache[key]
-    return cache[key] = this.findWrappingInner(target)
-  }
-
-  findWrapping(target, pos) {
-    let possible = pos.possibleTypes()
-    if (possible.indexOf(target) > -1) return []
-    for (let i = 0; i < possible.length; i++) {
-      let rest = possible[i].findWrappingCached(target)
-      if (rest) return [possible[i]].concat(rest)
-    }
   }
 
   computeAttrs(attrs) {

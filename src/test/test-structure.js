@@ -16,10 +16,12 @@ const schema = new Schema({
     sect: {type: Block, content: "head block* sect*"},
     closing: {type: Textblock, content: "text<_>*"},
     tcell: {type: Textblock, content: "text<_>*"},
-    trow: {type: Block, content: "tcell{2}"},
+    trow: {type: class extends Block {
+      get attrs() { return {columns: new Attribute({default: 1})} }
+    }, content: "tcell{.columns}"},
     table: {type: class extends Block {
       get attrs() { return {columns: new Attribute({default: 1})} }
-    }, content: "trow+"},
+    }, content: "trow[columns=.columns]+"},
     text: {type: Text},
 
     fixed: {type: Block, content: "head para closing"}
@@ -172,44 +174,52 @@ repl("fill_above_left",
      7, 9, n("doc", n("para", t("hi"))), 0, 0,
      n("doc", n("sect", n("head"), n("figure", n("caption"), n("figureimage")), n("para", t("hi")))))
 
+function table2(...args) { return n_("table", {columns: 2}, ...args) }
+function trow2(...args) { return n_("trow", {columns: 2}, ...args) }
+
 repl("balance_table_delete",
-     n("doc", n_("table", {columns: 2}, n("trow", n("tcell", t("a")), n("tcell", t("b"))))),
+     n("doc", table2(trow2(n("tcell", t("a")), n("tcell", t("b"))))),
      2, 5, null, 0, 0,
-     n("doc", n_("table", {columns: 2}, n("trow", n("tcell"), n("tcell", t("b"))))))
+     n("doc", table2(trow2(n("tcell"), n("tcell", t("b"))))))
 
 repl("balance_table_insert_start",
-     n("doc", n_("table", {columns: 2}, n("trow", n("tcell", t("a")), n("tcell", t("b"))))),
-     2, 2, n("trow", n("tcell", t("c"))), 0, 0,
+     n("doc", table2(trow2(n("tcell", t("a")), n("tcell", t("b"))))),
+     2, 2, trow2(n("tcell", t("c"))), 0, 0,
      n("doc", n_("table", {columns: 2},
-                 n("trow", n("tcell", t("c")), n("tcell")),
-                 n("trow", n("tcell", t("a")), n("tcell", t("b"))))))
+                 trow2(n("tcell", t("c")), n("tcell")),
+                 trow2(n("tcell", t("a")), n("tcell", t("b"))))))
 
 repl("balance_table_insert_mid",
-     n("doc", n_("table", {columns: 2}, n("trow", n("tcell", t("a")), n("tcell", t("b"))))),
-     5, 5, n("trow", n("tcell", t("c"))), 0, 0,
+     n("doc", table2(trow2(n("tcell", t("a")), n("tcell", t("b"))))),
+     5, 5, trow2(n("tcell", t("c"))), 0, 0,
      n("doc", n_("table", {columns: 2},
-                 n("trow", n("tcell", t("a")), n("tcell", t("c"))),
-                 n("trow", n("tcell"), n("tcell", t("b"))))))
+                 trow2(n("tcell", t("a")), n("tcell", t("c"))),
+                 trow2(n("tcell"), n("tcell", t("b"))))))
 
 repl("balance_table_cut_across",
-     n("doc", n_("table", {columns: 2}, n("trow", n("tcell", t("a")), n("tcell", t("b"))))),
+     n("doc", table2(trow2(n("tcell", t("a")), n("tcell", t("b"))))),
      4, 6, null, 0, 0,
-     n("doc", n_("table", {columns: 2}, n("trow", n("tcell", t("ab")), n("tcell")))))
+     n("doc", table2(trow2(n("tcell", t("ab")), n("tcell")))))
 
 repl("join_tables",
-     n("doc", n_("table", {columns: 2}, n("trow", n("tcell", t("a")), n("tcell", t("b")))),
-       n_("table", {columns: 2}, n("trow", n("tcell", t("c")), n("tcell", t("d"))))),
+     n("doc", table2(trow2(n("tcell", t("a")), n("tcell", t("b")))),
+       table2(trow2(n("tcell", t("c")), n("tcell", t("d"))))),
      9, 15, null, 0, 0,
      n("doc", n_("table", {columns: 2},
-                 n("trow", n("tcell", t("a")), n("tcell", t("b"))),
-                 n("trow", n("tcell"), n("tcell", t("d"))))))
+                 trow2(n("tcell", t("a")), n("tcell", t("b"))),
+                 trow2(n("tcell"), n("tcell", t("d"))))))
 
 repl("join_cells",
-     n("doc", n_("table", {columns: 2}, n("trow", n("tcell", t("a")), n("tcell", t("b")))),
-       n_("table", {columns: 2}, n("trow", n("tcell", t("c")), n("tcell", t("d"))))),
+     n("doc", table2(trow2(n("tcell", t("a")), n("tcell", t("b")))),
+       table2(trow2(n("tcell", t("c")), n("tcell", t("d"))))),
      7, 16, null, 0, 0,
      n("doc", n_("table", {columns: 2},
-                 n("trow", n("tcell", t("a")), n("tcell", t("bd"))))))
+                 trow2(n("tcell", t("a")), n("tcell", t("bd"))))))
+
+repl("insert_cell", n("doc", table2(trow2(n("tcell", t("a")), n("tcell", t("b"))))),
+     2, 2, trow2(n("tcell", t("c"))), 0, 0,
+     n("doc", table2(trow2(n("tcell", t("c")), n("tcell")),
+                     trow2(n("tcell", t("a")), n("tcell", t("b"))))))
 
 repl("join_required",
      n("doc", n("fixed", n("head", t("foo")), n("para", t("bar")), n("closing", t("abc")))),

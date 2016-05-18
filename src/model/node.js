@@ -266,15 +266,6 @@ export class Node {
     return this.type.contentExpr.getMatchAt(this.attrs, this.content, index)
   }
 
-  // :: (number, NodeType) → ?[NodeType]
-  // Find a set of wrapping node types that would allow a node of type
-  // `type` to appear at position `index` in this node. The result may
-  // be empty (when it fits directly) and will be null when no such
-  // wrapping exists.
-  findWrappingAt(index, type) {
-    return this.type.findWrapping(type, this.contentMatchAt(index))
-  }
-
   // :: (number, number, ?Fragment, ?number, ?number) → bool
   // Test whether replacing the range `from` to `to` (by index) with
   // the given replacement fragment (which defaults to the empty

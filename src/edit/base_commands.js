@@ -39,9 +39,10 @@ function deleteBarrier(pm, cut) {
   }
 
   let conn
-  if (after.isTextblock && (conn = before.findWrappingAt($cut.index(), after.type))) {
+  if (after.isTextblock && (conn = before.contentMatchAt($cut.index()).findWrapping(after.type, after.attrs))) {
     let end = cut + after.nodeSize, wrap = Fragment.empty
-    for (let i = conn.length - 1; i >= 0; i--) wrap = Fragment.from(conn[i].create(wrap))
+    for (let i = conn.length - 1; i >= 0; i--)
+      wrap = Fragment.from(conn[i].type.create(conn[i].attrs, wrap))
     wrap = Fragment.from(before.copy(wrap))
     return pm.tr
       .step(new ReplaceWrapStep(cut - 1, end, cut, end, new Slice(wrap, 1, 0), conn.length, true))

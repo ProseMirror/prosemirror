@@ -2,21 +2,28 @@ import {ContentExpr} from "../model/content"
 import {defaultSchema as schema} from "../model"
 
 import {defTest} from "./tests"
-import {doc, p, pre, img, br, h1, em, hr} from "./build"
+import {doc, p, pre, img, br, h1, h2, em, hr} from "./build"
 import {cmp, cmpNode, is} from "./cmp"
 
 function get(expr) { return ContentExpr.parse(schema.nodes.heading, expr, schema.spec.groups) }
 
-function val(value) { return value instanceof Function ? "<attr>" : value }
+function val(value) { return value.attr ? "." + value.attr : value }
 
 function simplify(elt) {
+  let attrs = null
+  if (elt.attrs) {
+    attrs = {}
+    for (let attr in elt.attrs) attrs[attr] = val(elt.attrs[attr])
+  }
   return {types: elt.nodeTypes.map(t => t.name).sort(),
+          attrs: attrs,
           marks: Array.isArray(elt.marks) ? elt.marks.map(m => m.name) : elt.marks,
           min: val(elt.min), max: elt.max == 2e9 ? Infinity : val(elt.max)}
 }
 
 function normalize(obj) {
   return {types: obj.types.sort(),
+          attrs: obj.attrs || null,
           marks: obj.marks || false,
           min: obj.min == null ? 1 : obj.min,
           max: obj.max == null ? 1 : obj.max}
@@ -41,6 +48,15 @@ parse("zero_or_more", "paragraph*",
 parse("optional", "paragraph?",
       {types: ["paragraph"], min: 0, max: 1})
 
+parse("string_attr", "image[title=\"foo\"]*",
+      {types: ["image"], attrs: {title: "foo"}, min: 0, max: Infinity})
+parse("num_attr", "heading[level=2]*",
+      {types: ["heading"], attrs: {level: 2}, min: 0, max: Infinity})
+parse("multi_attr", "image[title=\"foo\", href=\"bar\"]*",
+      {types: ["image"], attrs: {title: "foo", href: "bar"}, min: 0, max: Infinity})
+parse("attr_attr", "heading[level=.level]*",
+      {types: ["heading"], attrs: {level: ".level"}, min: 0, max: Infinity})
+
 parse("all_marks", "text<_>", {types: ["text"], marks: true})
 parse("some_marks", "text<strong em>", {types: ["text"], marks: ["strong", "em"]})
 
@@ -59,7 +75,7 @@ parse("range_open", "paragraph{2,}",
       {types: ["paragraph"], min: 2, max: Infinity})
 
 parse("range_attr", "paragraph{.level}",
-      {types: ["paragraph"], min: "<attr>", max: "<attr>"})
+      {types: ["paragraph"], min: ".level", max: ".level"})
 
 function parseFail(name, expr) {
   defTest("content_parse_fail_" + name, () => {
@@ -137,6 +153,9 @@ valid("open_range_lower_bound", "hard_break{2,}", p(br, br))
 valid("open_range_many", "hard_break{2,}", p(br, br, br, br, br))
 invalid("open_range_too_few", "hard_break{2,}", p(br))
 
+valid("mark_ok", "heading[level=2]", doc(h2()))
+invalid("mark_mismatch", "heading[level=2]", doc(h1()))
+
 valid("mark_all", "hard_break<_>", p(em(br)))
 invalid("mark_none", "hard_break", p(em(br)))
 valid("mark_some", "hard_break<em strong>", p(em(br)))
@@ -144,8 +163,6 @@ invalid("mark_some", "hard_break<code strong>", p(em(br)))
 
 valid("count_attr", "hard_break{.level}", p(br, br, br))
 invalid("count_attr", "hard_break{.level}", p(br, br))
-valid("count_attr_deep", "hard_break{.level.constructor.length}", p(br))
-invalid("count_attr_deep", "hard_break{.level.constructor.length}", p(br, br))
 
 function fill(name, expr, before, after, result) {
   defTest("content_fill_" + name, () => {

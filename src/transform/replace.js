@@ -243,7 +243,9 @@ function placeSlice($from, slice) {
       if (dSlice < slice.openLeft) curFragment = curFragment.cut(curFragment.firstChild.nodeSize)
     } else { // Outside slice
       curFragment = Fragment.empty
-      curType = parents[parents.length + dSlice - 1]
+      let parent = parents[parents.length + dSlice - 1]
+      curType = parent.type
+      curAttrs = parent.attrs
     }
     if (unplaced)
       curFragment = curFragment.addToStart(unplaced)
@@ -264,13 +266,14 @@ function placeSlice($from, slice) {
     } else {
       if (dSlice == 0) {
         let top = $from.node(0)
-        parents = top.findWrappingAt($from.index(0), curFragment.child(0).type)
+        parents = top.contentMatchAt($from.index(0)).findWrapping(curFragment.firstChild.type, curFragment.firstChild.attrs)
         if (!parents) break
         let last = parents[parents.length - 1]
-        if (last ? !last.contentExpr.matches(last.defaultAttrs, curFragment)
+        if (last ? !last.type.contentExpr.matches(last.attrs, curFragment)
                  : !top.canReplace($from.indexAfter(0), $from.depth ? $from.index(0) : $from.indexAfter(0), curFragment)) break
-        parents = [top.type].concat(parents)
-        curType = parents[parents.length - 1]
+        parents = [{type: top.type, attrs: top.attrs}].concat(parents)
+        curType = parents[parents.length - 1].type
+        curAttrs = parents[parents.length - 1].type
       }
       curFragment = curType.contentExpr.start(curAttrs).fillBefore(curFragment, true).append(curFragment)
       unplaced = curType.create(curAttrs, curFragment)

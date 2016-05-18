@@ -113,9 +113,12 @@ function checkWrap($from, $to, type, attrs) {
   let shared = rangeDepth($from, $to)
   if (shared == null) return null
   let parent = $from.node(shared)
-  let around = parent.findWrappingAt($from.index(shared), type)
-  if (!around || !parent.canReplaceWith($from.index(shared), $to.indexAfter(shared), around[0] || type, attrs)) return null
-  let inside = type.findWrapping(parent.child($from.index(shared)).type, type.contentExpr.start(attrs || type.defaultAttrs))
+  let around = parent.contentMatchAt($from.index(shared)).findWrapping(type, attrs)
+  if (!around) return null
+  if (!parent.canReplaceWith($from.index(shared), $to.indexAfter(shared), around.length ? around[0].type : type,
+                             around.length ? around[0].attrs : attrs)) return null
+  let inner = parent.child($from.index(shared))
+  let inside = type.contentExpr.start(attrs || type.defaultAttrs).findWrapping(inner.type, inner.attrs)
   if (around && inside) return {shared, around, inside}
 }
 
@@ -130,9 +133,9 @@ Transform.prototype.wrap = function(from, to = from, type, wrapAttrs) {
   let {shared, around, inside} = check
 
   let content = Fragment.empty, open = inside.length + 1 + around.length
-  for (let i = inside.length - 1; i >= 0; i--) content = Fragment.from(inside[i].create(null, content))
+  for (let i = inside.length - 1; i >= 0; i--) content = Fragment.from(inside[i].type.create(inside[i].attrs, content))
   content = Fragment.from(type.create(wrapAttrs, content))
-  for (let i = around.length - 1; i >= 0; i--) content = Fragment.from(around[i].create(null, content))
+  for (let i = around.length - 1; i >= 0; i--) content = Fragment.from(around[i].type.create(around[i].attrs, content))
 
   let start = $from.before(shared + 1), end = $to.after(shared + 1)
   this.step(new ReplaceWrapStep(start, end, start, end, new Slice(content, 0, 0), open, true))

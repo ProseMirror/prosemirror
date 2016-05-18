@@ -226,7 +226,7 @@ class DOMParseState {
     let found
     for (let i = this.stack.length - 1; i >= 0; i--) {
       let builder = this.stack[i]
-      let route = builder.type.findWrapping(node.type, builder.pos)
+      let route = builder.pos.findWrapping(node.type, node.attrs)
       if (!route) continue
       if (i == this.stack.length - 1) {
         this.doClose()
@@ -237,8 +237,8 @@ class DOMParseState {
       break
     }
     if (!found) return
-    for (let j = 0; j < found.length; j++)
-      this.enter(found[j])
+    for (let i = 0; i < found.length; i++)
+      this.enter(found[i].type, found[i].attrs)
     if (this.marks.length) this.marks = noMarks
     return this.top.add(node)
   }
