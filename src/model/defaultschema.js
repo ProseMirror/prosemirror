@@ -105,8 +105,8 @@ export const defaultSchema = new Schema({
     list_item: {type: ListItem, content: "block+"},
     horizontal_rule: {type: HorizontalRule},
 
-    paragraph: {type: Paragraph, content: "inline[_]*"},
-    heading: {type: Heading, content: "inline[_]*"},
+    paragraph: {type: Paragraph, content: "inline<_>*"},
+    heading: {type: Heading, content: "inline<_>*"},
     code_block: {type: CodeBlock, content: "text*"},
 
     text: {type: Text},

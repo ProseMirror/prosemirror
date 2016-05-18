@@ -8,14 +8,14 @@ const schema = new Schema({
   nodes: {
     doc: {type: Block, content: "head? block* sect* closing?"},
     head: {type: Textblock, content: "text*"},
-    para: {type: Textblock, content: "text[_]*"},
+    para: {type: Textblock, content: "text<_>*"},
     quote: {type: Block, content: "block+"},
     figure: {type: Block, content: "caption figureimage"},
     figureimage: {type: Block},
     caption: {type: Textblock, content: "text*"},
     sect: {type: Block, content: "head block* sect*"},
-    closing: {type: Textblock, content: "text[_]*"},
-    tcell: {type: Textblock, content: "text[_]*"},
+    closing: {type: Textblock, content: "text<_>*"},
+    tcell: {type: Textblock, content: "text<_>*"},
     table: {type: class extends Block {
       get attrs() { return {columns: new Attribute({default: 1})} }
     }, content: "tcell%.columns"},

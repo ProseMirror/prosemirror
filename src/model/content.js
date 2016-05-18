@@ -85,7 +85,7 @@ export class ContentExpr {
       let types = /^(?:(\w+)|\(\s*(\w+(?:\s*\|\s*\w+)*)\s*\))/.exec(expr.slice(pos))
       if (!types) throw new SyntaxError("Invalid content expression '" + expr + "' at " + pos)
       pos += types[0].length
-      let marks = /^\[(?:(_)|\s*(\w+(?:\s+\w+)*)\s*)\]/.exec(expr.slice(pos))
+      let marks = /^<(?:(_)|\s*(\w+(?:\s+\w+)*)\s*)>/.exec(expr.slice(pos))
       if (marks) pos += marks[0].length
       let count = /^(?:([+*?])|%(\d+|(?:\.\w+)+)|\{\s*(\d+|(?:\.\w+)+)\s*(,\s*(\d+|(?:\.\w+)+)?)?\s*\})/.exec(expr.slice(pos))
       if (count) pos += count[0].length

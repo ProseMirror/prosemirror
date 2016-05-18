@@ -40,8 +40,8 @@ parse("zero_or_more", "paragraph*",
 parse("optional", "paragraph?",
       {types: ["paragraph"], min: 0, max: 1})
 
-parse("all_marks", "text[_]", {types: ["text"], marks: true})
-parse("some_marks", "text[strong em]", {types: ["text"], marks: ["strong", "em"]})
+parse("all_marks", "text<_>", {types: ["text"], marks: true})
+parse("some_marks", "text<strong em>", {types: ["text"], marks: ["strong", "em"]})
 
 parse("set", "(text | image | hard_break)",
       {types: ["text", "image", "hard_break"]})
@@ -81,8 +81,8 @@ parseFail("adjacent", "paragraph paragraph")
 parseFail("adjacent_set", "inline image")
 parseFail("bad_attr", "hard_break{.foo}")
 parseFail("bad_node", "foo+")
-parseFail("bad_mark", "hard_break[bar]")
-parseFail("weird_mark", "image[_ em]")
+parseFail("bad_mark", "hard_break<bar>")
+parseFail("weird_mark", "image<_ em>")
 parseFail("trailing_noise", "hard_break+ text* .")
 parseFail("zero_times", "image{0}")
 
@@ -146,10 +146,10 @@ valid("mod_twice", "hard_break%3", p(br, br, br, br, br, br))
 invalid("mod_none", "hard_break%3", p())
 invalid("mod_no_fit", "hard_break%3", p(br, br, br, br))
 
-valid("mark_all", "hard_break[_]", p(em(br)))
+valid("mark_all", "hard_break<_>", p(em(br)))
 invalid("mark_none", "hard_break", p(em(br)))
-valid("mark_some", "hard_break[em strong]", p(em(br)))
-invalid("mark_some", "hard_break[code strong]", p(em(br)))
+valid("mark_some", "hard_break<em strong>", p(em(br)))
+invalid("mark_some", "hard_break<code strong>", p(em(br)))
 
 valid("count_attr", "hard_break{.level}", p(br, br, br))
 invalid("count_attr", "hard_break{.level}", p(br, br))
