@@ -77,7 +77,7 @@ export class ContentExpr {
   }
 
   static parse(nodeType, expr, groups) {
-    let elements = [], pos = 0
+    let elements = [], pos = 0, inline = null
     for (;;) {
       pos += /^\s*/.exec(expr.slice(pos))[0].length
       if (pos == expr.length) break
@@ -91,6 +91,10 @@ export class ContentExpr {
       if (count) pos += count[0].length
 
       let nodeTypes = expandTypes(nodeType.schema, groups, types[1] ? [types[1]] : types[2].split(/\s*\|\s*/))
+      for (let i = 0; i < nodeTypes.length; i++) {
+        if (inline == null) inline = nodeTypes[i].isInline
+        else if (inline != nodeTypes[i].isInline) throw new SyntaxError("Mixing inline and block content in a single node")
+      }
       let markSet = !marks ? false : marks[1] ? true : checkMarks(nodeType.schema, marks[2].split(/\s+/))
       let min = 1, max = 1, mod = -1
       if (count) {
@@ -125,6 +129,7 @@ export class ContentExpr {
       }
       elements.push(newElt)
     }
+
     return new ContentExpr(nodeType, elements)
   }
 }
