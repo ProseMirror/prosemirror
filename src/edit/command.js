@@ -453,7 +453,7 @@ NodeType.derivableCommands.make = conf => ({
       depth = 1
     }
     let $from = pm.doc.resolve(from), parentDepth = $from.depth - depth, index = $from.index(parentDepth)
-    return $from.node(parentDepth).canReplaceWith(index, index + 1, this)
+    return $from.node(parentDepth).canReplaceWith(index, index + 1, this, conf.attrs)
   },
   active(pm) {
     return activeTextblockIs(pm, this, conf.attrs)

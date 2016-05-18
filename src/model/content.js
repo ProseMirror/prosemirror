@@ -48,14 +48,14 @@ export class ContentExpr {
     return match ? match.matchToEnd(content, to) : false
   }
 
-  checkReplaceWith(attrs, content, from, to, type, marks) {
+  checkReplaceWith(attrs, content, from, to, type, typeAttrs, marks) {
     if (this.elements.length == 1) {
       let elt = this.elements[0]
       if (!checkCount(elt, content.childCount - (to - from) + 1, attrs, this)) return false
-      return elt.matchesType(type, marks)
+      return elt.matchesType(type, typeAttrs, marks)
     }
 
-    let match = this.getMatchAt(attrs, content, from).matchType(type, marks)
+    let match = this.getMatchAt(attrs, content, from).matchType(type, typeAttrs, marks)
     return match ? match.matchToEnd(content, to) : false
   }
 
@@ -143,7 +143,8 @@ class ContentElement {
     this.mod = mod
   }
 
-  matchesType(type, marks) {
+  matchesType(type, attrs, marks) {
+    // FIXME use attrs
     if (this.nodeTypes.indexOf(type) == -1) return false
     if (this.marks === true) return true
     if (this.marks === false) return marks.length == 0
@@ -153,7 +154,7 @@ class ContentElement {
   }
 
   matches(node) {
-    return this.matchesType(node.type, node.marks)
+    return this.matchesType(node.type, node.attrs, node.marks)
   }
 
   compatible(other) {
@@ -214,17 +215,17 @@ export class ContentMatch {
   // :: (Node) → ?ContentMatch
   // Match a node, returning an updated match if successful.
   matchNode(node) {
-    return this.matchType(node.type, node.marks)
+    return this.matchType(node.type, node.attrs, node.marks)
   }
 
-  // :: (NodeType, [Mark]) → ?ContentMatch
+  // :: (NodeType, ?Object, [Mark]) → ?ContentMatch
   // Match a node type and marks, returning an updated match if
   // successful.
-  matchType(type, marks) {
+  matchType(type, attrs, marks) {
     // FIXME `var` to work around Babel bug T7293
     for (var {index, count} = this; index < this.expr.elements.length; index++, count = 0) {
       let elt = this.expr.elements[index], max = this.resolveCount(elt.max)
-      if (count < max && elt.matchesType(type, marks)) {
+      if (count < max && elt.matchesType(type, attrs, marks)) {
         count++
         return this.move(index, count)
       }

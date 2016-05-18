@@ -288,8 +288,8 @@ export class Node {
   // :: (number, number, NodeType, ?[Mark]) → bool
   // Test whether replacing the range `from` to `to` (by index) with a
   // node of the given type and marks would be valid.
-  canReplaceWith(from, to, type, marks) {
-    return this.type.contentExpr.checkReplaceWith(this.attrs, this.content, from, to, type, marks || emptyArray)
+  canReplaceWith(from, to, type, attrs, marks) {
+    return this.type.contentExpr.checkReplaceWith(this.attrs, this.content, from, to, type, attrs, marks || emptyArray)
   }
 
   // :: (Node) → bool

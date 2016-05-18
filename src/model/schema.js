@@ -202,7 +202,7 @@ export class NodeType extends SchemaItem {
       let possible = match.possibleTypes()
       for (let i = 0; i < possible.length; i++) {
         let type = possible[i]
-        if (!match.matchType(type, []).validEnd()) continue
+        if (!match.matchType(type, null, []).validEnd()) continue
         if (type == target) return current.via
         if (!type.isLeaf && !type.hasRequiredAttrs && !(type.name in seen)) {
           active.push({type, via: current.via.concat(type)})

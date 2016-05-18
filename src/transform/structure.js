@@ -114,7 +114,7 @@ function checkWrap($from, $to, type, attrs) {
   if (shared == null) return null
   let parent = $from.node(shared)
   let around = parent.findWrappingAt($from.index(shared), type)
-  if (!around || !parent.canReplaceWith($from.index(shared), $to.indexAfter(shared), around[0] || type)) return null
+  if (!around || !parent.canReplaceWith($from.index(shared), $to.indexAfter(shared), around[0] || type, attrs)) return null
   let inside = type.findWrapping(parent.child($from.index(shared)).type, type.contentExpr.start(attrs || type.defaultAttrs))
   if (around && inside) return {shared, around, inside}
 }
@@ -182,9 +182,9 @@ Transform.prototype.setNodeType = function(pos, type, attrs) {
                                        new Slice(Fragment.from(type.create(attrs)), 0, 0), 1, true))
 }
 
-// :: (Node, number, ?NodeType) → bool
+// :: (Node, number, ?NodeType, ?Object) → bool
 // Check whether splitting at the given position is allowed.
-export function canSplit(doc, pos, depth = 1, typeAfter) {
+export function canSplit(doc, pos, depth = 1, typeAfter, attrsAfter) {
   let $pos = doc.resolve(pos), base = $pos.depth - depth
   if (base < 0 ||
       !$pos.parent.canReplace($pos.index(), $pos.parent.childCount) ||
@@ -193,12 +193,14 @@ export function canSplit(doc, pos, depth = 1, typeAfter) {
   for (let d = $pos.depth - 1; d > base; d--) {
     let node = $pos.node(d), index = $pos.index(d)
     if (!node.canReplace(0, index) ||
-        !node.canReplaceWith(index, node.childCount, typeAfter || $pos.node(d + 1).type))
+        !node.canReplaceWith(index, node.childCount, typeAfter || $pos.node(d + 1).type,
+                             typeAfter ? attrsAfter : $pos.node(d + 1).attrs))
       return false
     typeAfter = null
   }
   let index = $pos.indexAfter(base)
-  return $pos.node(base).canReplaceWith(index, index, typeAfter || $pos.node(base + 1).type)
+  return $pos.node(base).canReplaceWith(index, index, typeAfter || $pos.node(base + 1).type,
+                                        typeAfter ? attrsAfter : $pos.node(base + 1).attrs)
 }
 
 // :: (number, ?number, ?NodeType, ?Object) → Transform
