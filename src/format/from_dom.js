@@ -12,13 +12,13 @@ import {compareDeep} from "../util/comparedeep"
 // the `document` property of `options`.
 export function fromDOM(schema, dom, options) {
   if (!options) options = {}
-  let context = new DOMParseState(schema, options.topNode || schema.node("doc"), options)
+  let top = options.topNode
+  let context = new DOMParseState(schema, top === false ? null : top || schema.node("doc"), options)
   let start = options.from ? dom.childNodes[options.from] : dom.firstChild
   let end = options.to != null && dom.childNodes[options.to] || null
   context.addAll(start, end, true)
-  let doc
-  do { doc = context.leave() } while (context.stack.length)
-  return doc
+  while (context.stack.length > 1) context.leave()
+  return context.leave()
 }
 
 // ;; #path=DOMParseSpec #kind=interface
@@ -64,6 +64,8 @@ class NodeBuilder {
     this.content = []
   }
 
+  get isTextblock() { return this.type.isTextblock }
+
   add(node) {
     let matched = this.pos.matchNode(node)
     if (!matched && node.marks.length) {
@@ -81,6 +83,13 @@ class NodeBuilder {
     if (!fill) return null
     return this.type.create(this.pos.attrs, Fragment.from(this.content).append(fill))
   }
+}
+
+class FragmentBuilder {
+  constructor() { this.content = [] }
+  get isTextblock() { return false }
+  add(node) { this.content.push(node); return true }
+  finish() { return Fragment.fromArray(this.content) }
 }
 
 // :: (Schema, string, ?Object) → Node
@@ -120,7 +129,10 @@ class DOMParseState {
     this.stack = []
     this.marks = noMarks
     this.closing = false
-    this.enter(topNode.type, topNode.attrs)
+    if (topNode)
+      this.enter(topNode.type, topNode.attrs)
+    else
+      this.enterPseudo()
     let info = schemaInfo(schema)
     this.tagInfo = info.tags
     this.styleInfo = info.styles
@@ -134,7 +146,7 @@ class DOMParseState {
     if (dom.nodeType == 3) {
       let value = dom.nodeValue
       let top = this.top, last
-      if (/\S/.test(value) || top.type.isTextblock) {
+      if (/\S/.test(value) || top.isTextblock) {
         if (!this.options.preserveWhitespace) {
           value = value.replace(/\s+/g, " ")
           // If this starts with whitespace, and there is either no node
@@ -254,6 +266,10 @@ class DOMParseState {
 
   enter(type, attrs) {
     this.stack.push(new NodeBuilder(type, attrs))
+  }
+
+  enterPseudo() {
+    this.stack.push(new FragmentBuilder())
   }
 
   leave() {

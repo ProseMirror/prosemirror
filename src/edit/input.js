@@ -6,7 +6,7 @@ import {captureKeys} from "./capturekeys"
 import {elt, browser, contains} from "../dom"
 
 import {readInputChange, readCompositionChange} from "./domchange"
-import {findSelectionAtStart, findSelectionAtEnd, findSelectionNear, hasFocus} from "./selection"
+import {findSelectionNear, hasFocus} from "./selection"
 import {posBeforeFromDOM, handleNodeClick, selectableNodeAbove} from "./dompos"
 
 let stopSeq = null
@@ -403,9 +403,10 @@ function fromClipboard(pm, dataTransfer, plainText) {
   let txt = dataTransfer.getData("text/plain")
   let html = dataTransfer.getData("text/html")
   if (!html && !txt) return null
-  let doc, slice
+  let fragment, slice
   if ((plainText || !html) && txt) {
-    doc = parseFrom(pm.schema, pm.signalPipelined("transformPastedText", txt), "text")
+    // FIXME provide way not to wrap this in a whole doc / redo text parsing
+    fragment = parseFrom(pm.schema, pm.signalPipelined("transformPastedText", txt), "text").content
   } else {
     let dom = document.createElement("div")
     dom.innerHTML = pm.signalPipelined("transformPastedHTML", html)
@@ -415,13 +416,15 @@ function fromClipboard(pm, dataTransfer, plainText) {
         (found = parseFromContext(wrap, contextNodeType, +context[2], +context[3])))
       slice = found
     else
-      doc = fromDOM(pm.schema, dom)
+      fragment = fromDOM(pm.schema, dom, {topNode: false})
   }
   if (!slice) {
-    if (doc.content.size && doc.firstChild.isTextblock)
-      slice = doc.slice(findSelectionAtStart(doc).from, findSelectionAtEnd(doc).to)
-    else
-      slice = new Slice(doc.content, 0, 0)
+    let openLeft = 0, openRight = 0
+    if (fragment.size) {
+      if (fragment.firstChild.isTextblock) openLeft = 1
+      if (fragment.lastChild.isTextblock) openRight = 1
+    }
+    slice = new Slice(fragment, openLeft, openRight)
   }
   return pm.signalPipelined("transformPasted", slice)
 }

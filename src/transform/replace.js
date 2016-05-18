@@ -59,31 +59,28 @@ Transform.prototype.insertInline = function(pos, node) {
 }
 
 
-function fitLeftInner($from, depth, placed) {
-  let content = Fragment.empty, openRight
+function fitLeftInner($from, depth, placed, placedBelow) {
+  let content = Fragment.empty, openRight = 0, placedHere = placed[depth]
   if ($from.depth > depth) {
-    let inner = fitLeftInner($from, depth + 1, placed)
-    openRight = inner.openRight
+    let inner = fitLeftInner($from, depth + 1, placed, placedBelow || placedHere)
+    openRight = inner.openRight + 1
     content = Fragment.from($from.node(depth + 1).copy(inner.content))
-  } else if (placed.length == 0) {
-    openRight = -1
   }
 
-  let placedHere = placed[depth]
   if (placedHere) {
     content = content.append(placedHere.content)
-    if (placedHere.isEnd) openRight = placedHere.openRight
-  } else if (openRight == null) {
+    openRight = placedHere.openRight
+  }
+  if (placedBelow) {
     content = content.append($from.node(depth).contentMatchAt($from.indexAfter(depth)).fillBefore(Fragment.empty, true))
-  } else {
-    openRight++
+    openRight = 0
   }
 
   return {content, openRight}
 }
 
 function fitLeft($from, placed) {
-  let {content, openRight} = fitLeftInner($from, 0, placed)
+  let {content, openRight} = fitLeftInner($from, 0, placed, false)
   return new Slice(content, $from.depth, openRight || 0)
 }
 
@@ -252,12 +249,12 @@ function placeSlice($from, slice) {
 
     if (curFragment.size == 0 && dSlice <= 0) break
 
+    // FIXME cut/remove marks when it helps find a placement
     let found = findPlacement(curFragment, $from, dFrom)
     if (found) {
       if (curFragment.size > 0) placed[found.depth] = {
         content: found.fill.append(curFragment),
         openRight: dSlice > 0 ? 0 : slice.openRight - dSlice,
-        isEnd: dSlice <= 0,
         depth: found.depth
       }
       if (dSlice <= 0) break
