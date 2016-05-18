@@ -10,15 +10,14 @@ function get(expr) { return ContentExpr.parse(schema.nodes.heading, expr, schema
 function simplify(elt) {
   return {types: elt.nodeTypes.map(t => t.name).sort(),
           marks: Array.isArray(elt.marks) ? elt.marks.map(m => m.name) : elt.marks,
-          min: elt.min, max: elt.max == 2e9 ? Infinity : elt.max, mod: elt.mod}
+          min: elt.min, max: elt.max == 2e9 ? Infinity : elt.max}
 }
 
 function normalize(obj) {
   return {types: obj.types.sort(),
           marks: obj.marks || false,
           min: obj.min == null ? 1 : obj.min,
-          max: obj.max == null ? 1 : obj.max,
-          mod: obj.mod == null ? -1 : obj.mod}
+          max: obj.max == null ? 1 : obj.max}
 }
 
 function parse(name, expr, ...expected) {
@@ -50,9 +49,6 @@ parse("set_repeat", "(text | image | hard_break)+",
 parse("group", "inline*",
       {types: ["image", "text", "hard_break"], min: 0, max: Infinity})
 
-parse("modulo", "paragraph%10",
-      {types: ["paragraph"], mod: 10, min: 10, max: Infinity})
-
 parse("range_count", "paragraph{2}",
       {types: ["paragraph"], min: 2, max: 2})
 parse("range_between", "paragraph{2, 5}",
@@ -60,8 +56,6 @@ parse("range_between", "paragraph{2, 5}",
 parse("range_open", "paragraph{2,}",
       {types: ["paragraph"], min: 2, max: Infinity})
 
-parse("modulo_attr", "paragraph%.level",
-      {types: ["paragraph"], mod: ["level"], min: ["level"], max: Infinity})
 parse("range_attr", "paragraph{.level}",
       {types: ["paragraph"], min: ["level"], max: ["level"]})
 
@@ -141,11 +135,6 @@ valid("open_range_lower_bound", "hard_break{2,}", p(br, br))
 valid("open_range_many", "hard_break{2,}", p(br, br, br, br, br))
 invalid("open_range_too_few", "hard_break{2,}", p(br))
 
-valid("mod_once", "hard_break%3", p(br, br, br))
-valid("mod_twice", "hard_break%3", p(br, br, br, br, br, br))
-invalid("mod_none", "hard_break%3", p())
-invalid("mod_no_fit", "hard_break%3", p(br, br, br, br))
-
 valid("mark_all", "hard_break<_>", p(em(br)))
 invalid("mark_none", "hard_break", p(em(br)))
 valid("mark_some", "hard_break<em strong>", p(em(br)))
@@ -193,15 +182,6 @@ fill("seq_plus", "heading+ paragraph+",
 fill("seq_empty_after", "heading+ paragraph+",
      doc(h1()), doc(), doc(p()))
 
-fill("mod_add_mid", "hard_break%3",
-     p(br), p(br), p(br))
-fill("mod_add_front", "hard_break%3",
-     p(), p(br), p(br, br))
-fill("mod_add_end", "hard_break%3",
-     p(br), p(), p(br, br))
-fill("mod_add_extra", "hard_break%3",
-     p(br, br), p(br, br), p(br, br))
-
 fill("count_too_few", "hard_break{3}",
      p(br), p(br), p(br))
 fill("count_too_many", "hard_break{3}",
@@ -234,7 +214,3 @@ fill3("count_across", "paragraph{4}",
       doc(p()), doc(p()), doc(p()), doc(), doc(p()))
 fill3("count_across_invalid", "paragraph{2}",
       doc(p()), doc(p()), doc(p()), null)
-fill3("mod_across", "paragraph%4",
-      doc(p()), doc(p()), doc(p()), doc(), doc(p()))
-fill3("mod_across_multiple", "paragraph%4",
-      doc(p()), doc(p(), p()), doc(p(), p()), doc(), doc(p(), p(), p()))

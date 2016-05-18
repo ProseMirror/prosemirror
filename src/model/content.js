@@ -87,7 +87,7 @@ export class ContentExpr {
       pos += types[0].length
       let marks = /^<(?:(_)|\s*(\w+(?:\s+\w+)*)\s*)>/.exec(expr.slice(pos))
       if (marks) pos += marks[0].length
-      let count = /^(?:([+*?])|%(\d+|(?:\.\w+)+)|\{\s*(\d+|(?:\.\w+)+)\s*(,\s*(\d+|(?:\.\w+)+)?)?\s*\})/.exec(expr.slice(pos))
+      let count = /^(?:([+*?])|\{\s*(\d+|(?:\.\w+)+)\s*(,\s*(\d+|(?:\.\w+)+)?)?\s*\})/.exec(expr.slice(pos))
       if (count) pos += count[0].length
 
       let nodeTypes = expandTypes(nodeType.schema, groups, types[1] ? [types[1]] : types[2].split(/\s*\|\s*/))
@@ -96,7 +96,7 @@ export class ContentExpr {
         else if (inline != nodeTypes[i].isInline) throw new SyntaxError("Mixing inline and block content in a single node")
       }
       let markSet = !marks ? false : marks[1] ? true : checkMarks(nodeType.schema, marks[2].split(/\s+/))
-      let min = 1, max = 1, mod = -1
+      let min = 1, max = 1
       if (count) {
         if (count[1] == "+") {
           max = many
@@ -106,22 +106,19 @@ export class ContentExpr {
         } else if (count[1] == "?") {
           min = 0
         } else if (count[2]) {
-          max = many
-          min = mod = parseCount(nodeType, count[2])
-        } else if (count[3]) {
-          min = parseCount(nodeType, count[3])
-          if (count[4])
-            max = count[5] ? parseCount(nodeType, count[5]) : many
+          min = parseCount(nodeType, count[2])
+          if (count[3])
+            max = count[4] ? parseCount(nodeType, count[4]) : many
           else
             max = min
         }
-        if (max == 0 || mod == 0 || min > max)
+        if (max == 0 || min > max)
           throw new SyntaxError("Invalid repeat count in '" + expr + "'")
       }
       if (min != 0 && nodeTypes[0].hasRequiredAttrs)
         throw new SyntaxError("Node type " + types[0] + " in type " + nodeType.name +
                               " is required, but has non-optional attributes")
-      let newElt = new ContentElement(nodeTypes, markSet, min, max, mod)
+      let newElt = new ContentElement(nodeTypes, markSet, min, max)
       for (let i = elements.length - 1; i >= 0; i--) {
         if (elements[i].overlaps(newElt))
           throw new SyntaxError("Overlapping adjacent content expressions in '" + expr + "'")
@@ -135,12 +132,11 @@ export class ContentExpr {
 }
 
 class ContentElement {
-  constructor(nodeTypes, marks, min, max, mod) {
+  constructor(nodeTypes, marks, min, max) {
     this.nodeTypes = nodeTypes
     this.marks = marks
     this.min = min
     this.max = max
-    this.mod = mod
   }
 
   matchesType(type, attrs, marks) {
@@ -201,17 +197,6 @@ export class ContentMatch {
     return typeof count == "number" ? count : resolveCount(count, this.attrs, this.expr)
   }
 
-  validCount(elt, count) {
-    let min = this.resolveCount(elt.min), mod = this.resolveCount(elt.mod)
-    return count >= min && (mod == -1 || count % mod == 0)
-  }
-
-  nextValidCount(elt, count) {
-    let mod = this.resolveCount(elt.mod)
-    let valid = mod == -1 ? Math.max(this.resolveCount(elt.min), count) : count < mod ? mod : count + mod - (count % mod)
-    return valid > this.resolveCount(elt.max) ? -1 : valid
-  }
-
   // :: (Node) → ?ContentMatch
   // Match a node, returning an updated match if successful.
   matchNode(node) {
@@ -229,7 +214,7 @@ export class ContentMatch {
         count++
         return this.move(index, count)
       }
-      if (!this.validCount(elt, count)) return null
+      if (count < this.resolveCount(elt.min)) return null
     }
   }
 
@@ -252,7 +237,7 @@ export class ContentMatch {
           break
         }
       }
-      if (!this.validCount(elt, count)) return null
+      if (count < this.resolveCount(elt.min)) return null
     }
     return false
   }
@@ -269,8 +254,8 @@ export class ContentMatch {
   // Returns true if this position represents a valid end of the
   // expression (no required content follows after it).
   validEnd() {
-    for (let i = this.index; i < this.expr.elements.length; i++)
-      if (!this.validCount(this.expr.elements[i], i == this.index ? this.count : 0)) return false
+    for (let i = this.index, count = this.count; i < this.expr.elements.length; i++, count = 0)
+      if (count < this.resolveCount(this.expr.elements[i].min)) return false
     return true
   }
 
@@ -284,30 +269,21 @@ export class ContentMatch {
     let added = [], match = this, index = startIndex || 0, end = this.expr.elements.length
     for (;;) {
       let fits = match.matchFragment(after, index)
-      if (fits && (!toEnd || fits.validEnd())) break
+      if (fits && (!toEnd || fits.validEnd())) return Fragment.from(added)
       if (fits === false) return null // Matched to end with content remaining
 
-      // If that fails, move to the next content element, adding
-      // filler elements if necessary.
-      let elt = match.element, ahead = 0, fill
-      while (index + ahead < after.childCount && elt.matches(after.child(index + ahead))) ++ahead
-
-      if (ahead) {
-        let nextValid = this.nextValidCount(elt, match.count + ahead)
-        if (nextValid > -1) fill = nextValid - match.count - ahead
-      }
-      if (fill == null) fill = this.nextValidCount(elt, match.count) - match.count
-      if (fill > 0) {
-        for (let i = 0; i < fill; i++) added.push(elt.createFiller())
-        match = match.move(match.index, match.count + fill)
-      } else if (match.index == end) {
-        if (after.size) return null
-        else break
-      } else {
+      let elt = match.element
+      if (match.count < this.resolveCount(elt.min)) {
+        added.push(elt.createFiller())
+        match = match.move(match.index, match.count + 1)
+      } else if (match.index < end) {
         match = match.move(match.index + 1, 0)
+      } else if (after.childCount > index) {
+        return null
+      } else {
+        return Fragment.from(added)
       }
     }
-    return Fragment.from(added)
   }
 
   possibleTypes() {
@@ -358,10 +334,8 @@ function checkMarks(schema, marks) {
 }
 
 function checkCount(elt, count, attrs, expr) {
-  if (count < resolveCount(elt.min, attrs, expr) ||
-      count > resolveCount(elt.max, attrs, expr)) return false
-  let mod = resolveCount(elt.mod, attrs, expr)
-  return mod == -1 || (count % mod == 0)
+  return count >= resolveCount(elt.min, attrs, expr) &&
+    count <= resolveCount(elt.max, attrs, expr)
 }
 
 function expandTypes(schema, groups, types) {
