@@ -191,10 +191,6 @@ export class NodeType extends SchemaItem {
     return this == other || this.contentExpr.compatible(other.contentExpr)
   }
 
-  containsOnly(node) {
-    return this.contentExpr.containsOnly(node)
-  }
-
   findWrappingInner(target) {
     let seen = Object.create(null), active = [{type: this, via: []}]
     while (active.length) {

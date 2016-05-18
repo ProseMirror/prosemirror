@@ -7,10 +7,12 @@ import {cmp, cmpNode, is} from "./cmp"
 
 function get(expr) { return ContentExpr.parse(schema.nodes.heading, expr, schema.spec.groups) }
 
+function val(value) { return value instanceof Function ? "<attr>" : value }
+
 function simplify(elt) {
   return {types: elt.nodeTypes.map(t => t.name).sort(),
           marks: Array.isArray(elt.marks) ? elt.marks.map(m => m.name) : elt.marks,
-          min: elt.min, max: elt.max == 2e9 ? Infinity : elt.max}
+          min: val(elt.min), max: elt.max == 2e9 ? Infinity : val(elt.max)}
 }
 
 function normalize(obj) {
@@ -57,7 +59,7 @@ parse("range_open", "paragraph{2,}",
       {types: ["paragraph"], min: 2, max: Infinity})
 
 parse("range_attr", "paragraph{.level}",
-      {types: ["paragraph"], min: ["level"], max: ["level"]})
+      {types: ["paragraph"], min: "<attr>", max: "<attr>"})
 
 function parseFail(name, expr) {
   defTest("content_parse_fail_" + name, () => {

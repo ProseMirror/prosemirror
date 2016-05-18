@@ -1,7 +1,5 @@
 import {Fragment} from "./fragment"
 
-const many = 2e9 // Big number representable as a 32-bit int
-
 export class ContentExpr {
   constructor(nodeType, elements) {
     this.nodeType = nodeType
@@ -40,7 +38,7 @@ export class ContentExpr {
     if (this.elements.length == 1) {
       let elt = this.elements[0]
       if (!checkCount(elt, content.childCount - (to - from) + (end - start), attrs, this)) return false
-      for (let i = start; i < end; i++) if (!elt.matches(replacement.child(i))) return false
+      for (let i = start; i < end; i++) if (!elt.matches(replacement.child(i), attrs, this)) return false
       return true
     }
 
@@ -52,7 +50,7 @@ export class ContentExpr {
     if (this.elements.length == 1) {
       let elt = this.elements[0]
       if (!checkCount(elt, content.childCount - (to - from) + 1, attrs, this)) return false
-      return elt.matchesType(type, typeAttrs, marks)
+      return elt.matchesType(type, typeAttrs, marks, attrs, this)
     }
 
     let match = this.getMatchAt(attrs, content, from).matchType(type, typeAttrs, marks)
@@ -68,10 +66,6 @@ export class ContentExpr {
     return false
   }
 
-  containsOnly(node) {
-    return this.elements.length == 1 && this.elements[0].matches(node)
-  }
-
   generateContent(attrs) {
     return this.start(attrs).fillBefore(Fragment.empty, true)
   }
@@ -85,40 +79,25 @@ export class ContentExpr {
       let types = /^(?:(\w+)|\(\s*(\w+(?:\s*\|\s*\w+)*)\s*\))/.exec(expr.slice(pos))
       if (!types) throw new SyntaxError("Invalid content expression '" + expr + "' at " + pos)
       pos += types[0].length
+      let attrs = /^\[([^\]]+)\]/.exec(expr.slice(pos))
+      if (attrs) pos += attrs[0].length
       let marks = /^<(?:(_)|\s*(\w+(?:\s+\w+)*)\s*)>/.exec(expr.slice(pos))
       if (marks) pos += marks[0].length
-      let count = /^(?:([+*?])|\{\s*(\d+|(?:\.\w+)+)\s*(,\s*(\d+|(?:\.\w+)+)?)?\s*\})/.exec(expr.slice(pos))
-      if (count) pos += count[0].length
+      let repeat = /^(?:([+*?])|\{\s*(\d+|(?:\.\w+)+)\s*(,\s*(\d+|(?:\.\w+)+)?)?\s*\})/.exec(expr.slice(pos))
+      if (repeat) pos += repeat[0].length
 
       let nodeTypes = expandTypes(nodeType.schema, groups, types[1] ? [types[1]] : types[2].split(/\s*\|\s*/))
       for (let i = 0; i < nodeTypes.length; i++) {
         if (inline == null) inline = nodeTypes[i].isInline
         else if (inline != nodeTypes[i].isInline) throw new SyntaxError("Mixing inline and block content in a single node")
       }
+      let attrSet = !attrs ? null : parseAttrs(nodeType, attrs[1])
       let markSet = !marks ? false : marks[1] ? true : checkMarks(nodeType.schema, marks[2].split(/\s+/))
-      let min = 1, max = 1
-      if (count) {
-        if (count[1] == "+") {
-          max = many
-        } else if (count[1] == "*") {
-          min = 0
-          max = many
-        } else if (count[1] == "?") {
-          min = 0
-        } else if (count[2]) {
-          min = parseCount(nodeType, count[2])
-          if (count[3])
-            max = count[4] ? parseCount(nodeType, count[4]) : many
-          else
-            max = min
-        }
-        if (max == 0 || min > max)
-          throw new SyntaxError("Invalid repeat count in '" + expr + "'")
-      }
+      let {min, max} = parseRepeat(nodeType, repeat)
       if (min != 0 && nodeTypes[0].hasRequiredAttrs)
         throw new SyntaxError("Node type " + types[0] + " in type " + nodeType.name +
                               " is required, but has non-optional attributes")
-      let newElt = new ContentElement(nodeTypes, markSet, min, max)
+      let newElt = new ContentElement(nodeTypes, attrSet, markSet, min, max)
       for (let i = elements.length - 1; i >= 0; i--) {
         if (elements[i].overlaps(newElt))
           throw new SyntaxError("Overlapping adjacent content expressions in '" + expr + "'")
@@ -132,16 +111,21 @@ export class ContentExpr {
 }
 
 class ContentElement {
-  constructor(nodeTypes, marks, min, max) {
+  constructor(nodeTypes, attrs, marks, min, max) {
     this.nodeTypes = nodeTypes
+    this.attrs = attrs
     this.marks = marks
     this.min = min
     this.max = max
   }
 
-  matchesType(type, attrs, marks) {
-    // FIXME use attrs
+  matchesType(type, attrs, marks, parentAttrs, parentExpr) {
     if (this.nodeTypes.indexOf(type) == -1) return false
+    if (this.attrs) {
+      if (!attrs) return false
+      for (let prop in this.attrs)
+        if (attrs[prop] != resolveValue(this.attrs[prop], parentAttrs, parentExpr)) return false
+    }
     if (this.marks === true) return true
     if (this.marks === false) return marks.length == 0
     for (let i = 0; i < marks.length; i++)
@@ -149,8 +133,8 @@ class ContentElement {
     return true
   }
 
-  matches(node) {
-    return this.matchesType(node.type, node.attrs, node.marks)
+  matches(node, parentAttrs, parentExpr) {
+    return this.matchesType(node.type, node.attrs, node.marks, parentAttrs, parentExpr)
   }
 
   compatible(other) {
@@ -193,8 +177,8 @@ export class ContentMatch {
     return new ContentMatch(this.expr, this.attrs, index, count)
   }
 
-  resolveCount(count) {
-    return typeof count == "number" ? count : resolveCount(count, this.attrs, this.expr)
+  resolveValue(value) {
+    return value instanceof Function ? value(this.attrs, this.expr) : value
   }
 
   // :: (Node) → ?ContentMatch
@@ -209,12 +193,12 @@ export class ContentMatch {
   matchType(type, attrs, marks) {
     // FIXME `var` to work around Babel bug T7293
     for (var {index, count} = this; index < this.expr.elements.length; index++, count = 0) {
-      let elt = this.expr.elements[index], max = this.resolveCount(elt.max)
-      if (count < max && elt.matchesType(type, attrs, marks)) {
+      let elt = this.expr.elements[index], max = this.resolveValue(elt.max)
+      if (count < max && elt.matchesType(type, attrs, marks, this.attrs, this.expr)) {
         count++
         return this.move(index, count)
       }
-      if (count < this.resolveCount(elt.min)) return null
+      if (count < this.resolveValue(elt.min)) return null
     }
   }
 
@@ -227,17 +211,17 @@ export class ContentMatch {
     if (from == to) return this
     let fragPos = from, end = this.expr.elements.length
     for (var {index, count} = this; index < end; index++, count = 0) {
-      let elt = this.expr.elements[index], max = this.resolveCount(elt.max)
+      let elt = this.expr.elements[index], max = this.resolveValue(elt.max)
 
       while (count < max) {
-        if (elt.matches(fragment.child(fragPos))) {
+        if (elt.matches(fragment.child(fragPos), this.attrs, this.expr)) {
           count++
           if (++fragPos == to) return this.move(index, count)
         } else {
           break
         }
       }
-      if (count < this.resolveCount(elt.min)) return null
+      if (count < this.resolveValue(elt.min)) return null
     }
     return false
   }
@@ -255,7 +239,7 @@ export class ContentMatch {
   // expression (no required content follows after it).
   validEnd() {
     for (let i = this.index, count = this.count; i < this.expr.elements.length; i++, count = 0)
-      if (count < this.resolveCount(this.expr.elements[i].min)) return false
+      if (count < this.resolveValue(this.expr.elements[i].min)) return false
     return true
   }
 
@@ -273,7 +257,7 @@ export class ContentMatch {
       if (fits === false) return null // Matched to end with content remaining
 
       let elt = match.element
-      if (match.count < this.resolveCount(elt.min)) {
+      if (match.count < this.resolveValue(elt.min)) {
         added.push(elt.createFiller())
         match = match.move(match.index, match.count + 1)
       } else if (match.index < end) {
@@ -290,9 +274,9 @@ export class ContentMatch {
     let found = []
     for (let i = this.index, count = this.count; i < this.expr.elements.length; i++, count = 0) {
       let elt = this.expr.elements[i]
-      if (count < this.resolveCount(elt.max))
+      if (count < this.resolveValue(elt.max))
         found = found.concat(elt.nodeTypes)
-      if (this.resolveCount(elt.min) > count) break
+      if (this.resolveValue(elt.min) > count) break
     }
     return found
   }
@@ -305,22 +289,19 @@ export class ContentMatch {
   }
 }
 
-function parseCount(nodeType, count) {
-  if (count.charAt(0) == ".") {
-    let props = count.slice(1).split(".")
+function parseValue(nodeType, value) {
+  if (value.charAt(0) == ".") {
+    let props = value.slice(1).split(".")
     if (!nodeType.attrs[props[0]]) throw new SyntaxError("Node type " + nodeType.name + " has no attribute " + props[0])
-    return props
+    return (attrs, expr) => {
+      let value = attrs && attrs[props[0]]
+      if (value === undefined) value = expr.nodeType.defaultAttrs[props[0]]
+      for (let i = 1; i < props.length; i++) value = value[props[i]]
+      return value
+    }
   } else {
-    return Number(count)
+    return JSON.parse(value)
   }
-}
-
-function resolveCount(count, attrs, expr) {
-  if (typeof count == "number") return count
-  let value = attrs && attrs[count[0]]
-  if (value === undefined) value = expr.nodeType.defaultAttrs[count[0]]
-  for (let i = 1; i < count.length; i++) value = value[count[i]]
-  return +value
 }
 
 function checkMarks(schema, marks) {
@@ -333,9 +314,13 @@ function checkMarks(schema, marks) {
   return found
 }
 
+function resolveValue(value, attrs, expr) {
+  return value instanceof Function ? value(attrs, expr) : value
+}
+
 function checkCount(elt, count, attrs, expr) {
-  return count >= resolveCount(elt.min, attrs, expr) &&
-    count <= resolveCount(elt.max, attrs, expr)
+  return count >= resolveValue(elt.min, attrs, expr) &&
+    count <= resolveValue(elt.max, attrs, expr)
 }
 
 function expandTypes(schema, groups, types) {
@@ -351,4 +336,40 @@ function expandTypes(schema, groups, types) {
   }
   types.forEach(expand)
   return result
+}
+
+const many = 2e9 // Big number representable as a 32-bit int
+
+function parseRepeat(nodeType, match) {
+  let min = 1, max = 1
+  if (match) {
+    if (match[1] == "+") {
+      max = many
+    } else if (match[1] == "*") {
+      min = 0
+      max = many
+    } else if (match[1] == "?") {
+      min = 0
+    } else if (match[2]) {
+      min = parseValue(nodeType, match[2])
+      if (match[3])
+        max = match[4] ? parseValue(nodeType, match[4]) : many
+      else
+        max = min
+    }
+    if (max == 0 || min > max)
+      throw new SyntaxError("Invalid repeat count in '" + match[0] + "'")
+  }
+  return {min, max}
+}
+
+function parseAttrs(nodeType, expr) {
+  let parts = expr.split(/\s*,\s*/)
+  let attrs = Object.create(null)
+  for (let i = 0; i < parts.length; i++) {
+    let match = /^(\w+)=(\w+|\"(?:\\.|[^\\])\"|(?:\.\w+)+)$/.exec(parts[i])
+    if (!match) throw new SyntaxError("Invalid attribute syntax: " + parts[i])
+    attrs[match[1]] = parseValue(nodeType, match[2])
+  }
+  return attrs
 }
