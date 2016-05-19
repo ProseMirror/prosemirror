@@ -1,3 +1,89 @@
+## 0.7.0 (2016-05-19)
+
+### Breaking changes
+
+The following properties on node types have lost their meaning:
+`kind`, `contains`, `canBeEmpty` and `containsMarks`. The `NodeKind`
+type is also gone.
+
+The information they used to encode is now put in a
+[content expression](http://prosemirror.net/guide/schema.html#content_expressions),
+which is part of the [schema spec](http://prosemirror.net/version/0.7.0.html#SchemaSpec), not the node. Such
+expressions can refer directly to other nodes in the schema (by name).
+
+[`SchemaSpec`](http://prosemirror.net/version/0.7.0.html#SchemaSpec) is now an interface, not a class. Its
+[`nodes`](http://prosemirror.net/version/0.7.0.html#SchemaSpec.nodes) field refers to [`NodeSpec`](http://prosemirror.net/version/0.7.0.html#NodeSpec)
+objects, rather than directly to `NodeType` constructors. These hold
+not only a constructor but also a content expression and optionally a
+group identifier.
+
+The [`NodeType`](http://prosemirror.net/version/0.7.0.html#NodeType) methods `canContain`,
+`canContainFragment`, `canContainMark`, `canContainContent`, and
+`canContainType` are gone, since they can't accurately express the
+constraints of the new content expressions.
+
+Instead, [nodes](http://prosemirror.net/version/0.7.0.html#Node) now expose [`canReplace`](http://prosemirror.net/version/0.7.0.html#Node.canReplace),
+[`canReplaceWith`](http://prosemirror.net/version/0.7.0.html#Node.canReplaceWith), and
+[`canAppend`](http://prosemirror.net/version/0.7.0.html#Node.canAppend). The
+[`contentMatchAt`](http://prosemirror.net/version/0.7.0.html#Node.contentMatchAt) method gets you a
+[`ContentMatch`](http://prosemirror.net/version/0.7.0.html#ContentMatch) object which provides further ways to
+reason about content.
+
+[`NodeType.findConnection`](http://prosemirror.net/version/0.7.0.html#NodeType.findConnection) is now at
+[`ContentMatch.findWrapping`](http://prosemirror.net/version/0.7.0.html#ContentMatch.findWrapping), and takes
+and returns attributes as well as node types.
+
+[Mark types](http://prosemirror.net/version/0.7.0.html#MarkType) lost their `rank` property, as their ordering
+is now determined by the order in which they appear in the [schema
+spec](http://prosemirror.net/version/0.7.0.html#SchemaSpec.marks).
+
+Transform steps are now regular classes,
+[`AddMarkStep`](http://prosemirror.net/version/0.7.0.html#AddMarkStep), [`RemoveMarkStep`](http://prosemirror.net/version/0.7.0.html#RemoveMarkStep),
+[`ReplaceStep`](http://prosemirror.net/version/0.7.0.html#ReplaceStep), and
+[`ReplaceAroundStep`](http://prosemirror.net/version/0.7.0.html#ReplaceAroundStep).
+[`Transform.step`](http://prosemirror.net/version/0.7.0.html#Transform.step) now only takes a step object, not
+separate values. The `"join"`, `"split"`, and `"ancestor"` step types
+have been superseded by `ReplaceStep` and `ReplaceAroundStep`.
+
+The collaborative editing protocol was changed, to resolve a
+synchronization
+[problem](https://discuss.prosemirror.net/t/how-to-handle-edge-case-with-collab-module/288/1).
+See [the guide](http://prosemirror.net/guide/collab.html) for an
+overview of the new protocol.
+
+### New features
+
+Node nesting is now expressed through a more powerful mechanism,
+[content expressions](http://prosemirror.net/guide/schema.html#content_expressions).
+
+The [`ContentMatch`](http://prosemirror.net/version/0.7.0.html#ContentMatch) class provides a way to apply and
+reason about such content expressions.
+
+The new [`OrderedMap`](http://prosemirror.net/version/0.7.0.html#OrderedMap) class makes it possible to extend
+and modify the sets of [nodes](http://prosemirror.net/version/0.7.0.html#SchemaSpec.nodes) and
+[marks](http://prosemirror.net/version/0.7.0.html#SchemaSpec.marks) in a schema while keeping control over
+their order.
+
+Since splitting isn't always possible any more, a new function
+[`canSplit`](http://prosemirror.net/version/0.7.0.html#canSplit) is exported by the
+[`transform` module](http://prosemirror.net/version/0.7.0.html#transform).
+
+The new options [`scrollTreshold`](http://prosemirror.net/version/0.7.0.html#scrollTreshold) and
+[`scrollMargin`](http://prosemirror.net/version/0.7.0.html#scrollMargin) provide more control over scrolling
+behavior.
+
+[`nodesBetween`](http://prosemirror.net/version/0.7.0.html#Node.nodesBetween) now passes the node's index to
+its callback as fourth argument.
+
+[Node types](http://prosemirror.net/version/0.7.0.html#NodeType) gained a getter [`isLeaf`](http://prosemirror.net/version/0.7.0.html#NodeType.isLeaf)
+to conveniently test whether they allow content.
+
+[Resolved positions](http://prosemirror.net/version/0.7.0.html#ResolvedPos) got a new method
+[`indexAfter`](http://prosemirror.net/version/0.7.0.html#ResolvedPos.indexAfter), and their methods that
+expect a depth allow the argument to be omitted to specify the
+position's own depth, or a negative integer to be passed to specify a
+depth relative to the position's depth.
+
 ## 0.6.1 (2016-04-15)
 
 ### Bug fixes
