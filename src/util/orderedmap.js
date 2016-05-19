@@ -67,7 +67,7 @@ export class OrderedMap {
       f(this.content[i], this.content[i + 1])
   }
 
-  // :: (union<Object, OrderedMap) → OrderedMap
+  // :: (union<Object, OrderedMap>) → OrderedMap
   // Create a new map by prepending the keys in this map that don't
   // appear in `map` before the keys in `map`.
   prepend(map) {
@@ -76,7 +76,7 @@ export class OrderedMap {
     return new OrderedMap(map.content.concat(this.subtract(map).content))
   }
 
-  // :: (union<Object, OrderedMap) → OrderedMap
+  // :: (union<Object, OrderedMap>) → OrderedMap
   // Create a new map by appending the keys in this map that don't
   // appear in `map` after the keys in `map`.
   append(map) {
@@ -85,7 +85,7 @@ export class OrderedMap {
     return new OrderedMap(this.subtract(map).content.concat(map.content))
   }
 
-  // :: (union<Object, OrderedMap) → OrderedMap
+  // :: (union<Object, OrderedMap>) → OrderedMap
   // Create a map containing all the keys in this map that don't
   // appear in `map`.
   subtract(map) {
@@ -100,7 +100,7 @@ export class OrderedMap {
     return this.content.length >> 1
   }
 
-  // :: (?union<Object, OrderedMap) → OrderedMap
+  // :: (?union<Object, OrderedMap>) → OrderedMap
   // Return a map with the given content. If null, create an empty
   // map. If given an ordered map, return that map itself. If given an
   // object, create a map from the object's properties.
