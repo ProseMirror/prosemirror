@@ -7,10 +7,10 @@ import {cmpNode, is} from "./cmp"
 const schema = new Schema({
   nodes: {
     doc: {type: Block, content: "head? block* sect* closing?"},
+    para: {type: Textblock, content: "text<_>*", group: "block"},
     head: {type: Textblock, content: "text*"},
-    para: {type: Textblock, content: "text<_>*"},
-    quote: {type: Block, content: "block+"},
-    figure: {type: Block, content: "caption figureimage"},
+    figure: {type: Block, content: "caption figureimage", group: "block"},
+    quote: {type: Block, content: "block+", group: "block"},
     figureimage: {type: Block},
     caption: {type: Textblock, content: "text*"},
     sect: {type: Block, content: "head block* sect*"},
@@ -21,13 +21,10 @@ const schema = new Schema({
     }, content: "tcell{.columns}"},
     table: {type: class extends Block {
       get attrs() { return {columns: new Attribute({default: 1})} }
-    }, content: "trow[columns=.columns]+"},
+    }, content: "trow[columns=.columns]+", group: "block"},
     text: {type: Text},
 
-    fixed: {type: Block, content: "head para closing"}
-  },
-  groups: {
-    block: ["para", "figure", "quote", "table", "fixed"]
+    fixed: {type: Block, content: "head para closing", group: "block"}
   },
   marks: {
     em: EmMark

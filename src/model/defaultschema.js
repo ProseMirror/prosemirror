@@ -65,21 +65,16 @@ export class HardBreak extends Inline {
 }
 
 // ;; The default emphasis mark type.
-export class EmMark extends MarkType {
-  static get rank() { return 31 }
-}
+export class EmMark extends MarkType {}
 
 // ;; The default strong mark type.
-export class StrongMark extends MarkType {
-  static get rank() { return 32 }
-}
+export class StrongMark extends MarkType {}
 
 // ;; The default link mark type. Has these attributes:
 //
 // - **`href`** (required): The link target.
 // - **`title`**: The link's title.
 export class LinkMark extends MarkType {
-  static get rank() { return 60 }
   get attrs() {
     return {
       href: new Attribute,
@@ -90,7 +85,6 @@ export class LinkMark extends MarkType {
 
 // ;; The default code font mark type.
 export class CodeMark extends MarkType {
-  static get rank() { return 101 }
   get isCode() { return true }
 }
 
@@ -99,24 +93,20 @@ export class CodeMark extends MarkType {
 export const defaultSchema = new Schema({
   nodes: {
     doc: {type: Doc, content: "block+"},
-    blockquote: {type: BlockQuote, content: "block+"},
-    ordered_list: {type: OrderedList, content: "list_item+"},
-    bullet_list: {type: BulletList, content: "list_item+"},
+
+    paragraph: {type: Paragraph, content: "inline<_>*", group: "block"},
+    blockquote: {type: BlockQuote, content: "block+", group: "block"},
+    ordered_list: {type: OrderedList, content: "list_item+", group: "block"},
+    bullet_list: {type: BulletList, content: "list_item+", group: "block"},
+    horizontal_rule: {type: HorizontalRule, group: "block"},
+    heading: {type: Heading, content: "inline<_>*", group: "block"},
+    code_block: {type: CodeBlock, content: "text*", group: "block"},
+
     list_item: {type: ListItem, content: "block+"},
-    horizontal_rule: {type: HorizontalRule},
 
-    paragraph: {type: Paragraph, content: "inline<_>*"},
-    heading: {type: Heading, content: "inline<_>*"},
-    code_block: {type: CodeBlock, content: "text*"},
-
-    text: {type: Text},
-    image: {type: Image},
-    hard_break: {type: HardBreak}
-  },
-
-  groups: {
-    block: ["paragraph", "blockquote", "ordered_list", "bullet_list", "heading", "code_block", "horizontal_rule"],
-    inline: ["text", "image", "hard_break"]
+    text: {type: Text, group: "inline"},
+    image: {type: Image, group: "inline"},
+    hard_break: {type: HardBreak, group: "inline"}
   },
 
   marks: {

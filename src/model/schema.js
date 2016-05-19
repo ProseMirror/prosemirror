@@ -4,6 +4,7 @@ import {Mark} from "./mark"
 import {ContentExpr} from "./content"
 
 import {copyObj} from "../util/obj"
+import {OrderedMap} from "../util/orderedmap"
 
 // ;; The [node](#NodeType) and [mark](#MarkType) types
 // that make up a schema have several things in common—they support
@@ -231,8 +232,7 @@ export class NodeType extends SchemaItem {
 
   static compile(nodes, schema) {
     let result = Object.create(null)
-    for (let name in nodes)
-      result[name] = new nodes[name].type(name, schema)
+    nodes.forEach((name, spec) => result[name] = new spec.type(name, schema))
 
     if (!result.doc) throw new RangeError("Every schema needs a 'doc' type")
     if (!result.text) throw new RangeError("Every schema needs a 'text' type")
@@ -323,13 +323,6 @@ export class MarkType extends SchemaItem {
     this.instance = defaults && new Mark(this, defaults)
   }
 
-  // :: number
-  // Mark type ranks are used to determine the order in which mark
-  // arrays are sorted. (If multiple mark types end up with the same
-  // rank, they still get a fixed order in the schema, but there's no
-  // guarantee what it will be.)
-  static get rank() { return 50 }
-
   // :: bool
   // Whether this mark should be active when the cursor is positioned
   // at the end of the mark.
@@ -344,20 +337,9 @@ export class MarkType extends SchemaItem {
     return new Mark(this, this.computeAttrs(attrs))
   }
 
-  static getOrder(marks) {
-    let sorted = []
-    for (let name in marks) sorted.push({name, rank: marks[name].rank})
-    sorted.sort((a, b) => a.rank - b.rank)
-    let ranks = Object.create(null)
-    for (let i = 0; i < sorted.length; i++) ranks[sorted[i].name] = i
-    return ranks
-  }
-
   static compile(marks, schema) {
-    let order = this.getOrder(marks)
-    let result = Object.create(null)
-    for (let name in marks)
-      result[name] = new marks[name](name, order[name], schema)
+    let result = Object.create(null), rank = 0
+    marks.forEach((name, markType) => result[name] = new markType(name, rank++, schema))
     return result
   }
 
@@ -383,17 +365,26 @@ export class MarkType extends SchemaItem {
 // An object describing a schema, as passed to the `Schema`
 // constructor.
 
-// :: Object<{type: constructor<NodeType>, content: ?string}> #path=SchemaSpec.nodes
-// The node types in this schema. Maps names to `NodeType` subclasses,
-// along with an optional content string, as parsed by
-// `ContentExpr.parse`.
+// :: union<Object<NodeSpec>, OrderedMap<NodeSpec>> #path=SchemaSpec.nodes
+// The node types in this schema. Maps names to `NodeSpec` objects
+// describing the node to be associated with that name. Their order is significant
 
-// :: ?Object<[string]> #path=SchemaSpec.groups
-// Specifies the node groups that are used in the schema's content
-// expressions.
-
-// :: ?Object<constructor<MarkType>> #path=SchemaSpec.marks
+// :: ?union<Object<constructor<MarkType>>, OrderedMap<constructor<MarkType>>> #path=SchemaSpec.marks
 // The mark types that exist in this schema.
+
+// ;; #path=NodeSpec #kind=interface
+
+// :: constructor<NodeType> #path=NodeSpec.type
+// The `NodeType` class to be used for this node.
+
+// :: ?string #path=NodeSpec.content
+// The content expression for this node, as parsed by
+// `ContentExpr.parse`. When not given, the node does not allow any
+// content.
+
+// :: ?string #path=NodeSpec.group
+// The group or space-separated groups to which this node belongs, as
+// referred to in the content expressions for the schema.
 
 // ;; Each document is based on a single schema, which provides the
 // node and mark types that it is made up of (which, in turn,
@@ -402,20 +393,22 @@ export class Schema {
   // :: (SchemaSpec)
   // Construct a schema from a specification.
   constructor(spec) {
-    // :: SchemaSpec The spec that the schema is based on.
-    this.spec = spec
+    // :: OrderedMap<NodeSpec> The node specs that the schema is based on.
+    this.nodeSpec = OrderedMap.from(spec.nodes)
+    // :: OrderedMap<constructor<MarkType>> The mark spec that the schema is based on.
+    this.markSpec = OrderedMap.from(spec.marks)
+
     // :: Object<NodeType>
     // An object mapping the schema's node names to node type objects.
-    this.nodes = NodeType.compile(spec.nodes, this)
+    this.nodes = NodeType.compile(this.nodeSpec, this)
     // :: Object<MarkType>
     // A map from mark names to mark type objects.
-    this.marks = MarkType.compile(spec.marks || {}, this)
+    this.marks = MarkType.compile(this.markSpec, this)
     for (let prop in this.nodes) {
       if (prop in this.marks)
         throw new RangeError(prop + " can not be both a node and a mark")
       let type = this.nodes[prop]
-      type.contentExpr = ContentExpr.parse(type, spec.nodes[prop].content || "",
-                                           spec.groups || Object.create(null))
+      type.contentExpr = ContentExpr.parse(type, this.nodeSpec.get(prop).content || "", this.nodeSpec)
     }
 
     // :: Object

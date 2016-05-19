@@ -66,7 +66,7 @@ export class ContentExpr {
     return this.start(attrs).fillBefore(Fragment.empty, true)
   }
 
-  static parse(nodeType, expr, groups) {
+  static parse(nodeType, expr, specs) {
     let elements = [], pos = 0, inline = null
     for (;;) {
       pos += /^\s*/.exec(expr.slice(pos))[0].length
@@ -82,7 +82,7 @@ export class ContentExpr {
       let repeat = /^(?:([+*?])|\{\s*(\d+|\.\w+)\s*(,\s*(\d+|\.\w+)?)?\s*\})/.exec(expr.slice(pos))
       if (repeat) pos += repeat[0].length
 
-      let nodeTypes = expandTypes(nodeType.schema, groups, types[1] ? [types[1]] : types[2].split(/\s*\|\s*/))
+      let nodeTypes = expandTypes(nodeType.schema, specs, types[1] ? [types[1]] : types[2].split(/\s*\|\s*/))
       for (let i = 0; i < nodeTypes.length; i++) {
         if (inline == null) inline = nodeTypes[i].isInline
         else if (inline != nodeTypes[i].isInline) throw new SyntaxError("Mixing inline and block content in a single node")
@@ -360,18 +360,23 @@ function checkCount(elt, count, attrs, expr) {
     count <= resolveValue(elt.max, attrs, expr)
 }
 
-function expandTypes(schema, groups, types) {
+function expandTypes(schema, specs, types) {
   let result = []
-  function expand(type) {
-    let found
-    if (found = schema.nodes[type])
-      result.indexOf(found) == -1 && result.push(found)
-    else if ((found = groups[type]) && found.length)
-      found.forEach(expand)
-    else
+  types.forEach(type => {
+    let found = schema.nodes[type]
+    if (found) {
+      if (result.indexOf(found) == -1) result.push(found)
+    } else {
+      specs.forEach((name, spec) => {
+        if (spec.group && spec.group.split(" ").indexOf(type) > -1) {
+          found = schema.nodes[name]
+          if (result.indexOf(found) == -1) result.push(found)
+        }
+      })
+    }
+    if (!found)
       throw new SyntaxError("Node type or group '" + type + "' does not exist")
-  }
-  types.forEach(expand)
+  })
   return result
 }
 
