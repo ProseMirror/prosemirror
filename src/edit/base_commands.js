@@ -1,5 +1,5 @@
 import {browser} from "../dom"
-import {joinPoint, joinable, canLift, canSplit, ReplaceWrapStep} from "../transform"
+import {joinPoint, joinable, canLift, canSplit, ReplaceAroundStep} from "../transform"
 import {Slice, Fragment} from "../model"
 
 import {charCategory, isExtendingChar} from "./char"
@@ -45,7 +45,7 @@ function deleteBarrier(pm, cut) {
       wrap = Fragment.from(conn[i].type.create(conn[i].attrs, wrap))
     wrap = Fragment.from(before.copy(wrap))
     return pm.tr
-      .step(new ReplaceWrapStep(cut - 1, end, cut, end, new Slice(wrap, 1, 0), conn.length, true))
+      .step(new ReplaceAroundStep(cut - 1, end, cut, end, new Slice(wrap, 1, 0), conn.length, true))
       .join(end + 2 * conn.length, 1, true)
       .apply(pm.apply.scroll)
   }

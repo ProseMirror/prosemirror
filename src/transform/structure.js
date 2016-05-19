@@ -1,7 +1,7 @@
 import {Slice, Fragment} from "../model"
 
 import {Transform} from "./transform"
-import {ReplaceStep, ReplaceWrapStep} from "./replace_step"
+import {ReplaceStep, ReplaceAroundStep} from "./replace_step"
 
 // :: (Node, number, ?number) → bool
 // Tells you whether the range in the given positions' shared
@@ -97,9 +97,9 @@ Transform.prototype.lift = function(from, to = from, silent = false) {
     --gapEnd
   }
 
-  return this.step(new ReplaceWrapStep(start, end, gapStart, gapEnd,
-                                       new Slice(before.append(after), beforeDepth, afterDepth),
-                                       before.size - beforeDepth, true))
+  return this.step(new ReplaceAroundStep(start, end, gapStart, gapEnd,
+                                         new Slice(before.append(after), beforeDepth, afterDepth),
+                                         before.size - beforeDepth, true))
 }
 
 // :: (Node, number, ?number, NodeType, ?Object) → bool
@@ -138,7 +138,7 @@ Transform.prototype.wrap = function(from, to = from, type, wrapAttrs) {
   for (let i = around.length - 1; i >= 0; i--) content = Fragment.from(around[i].type.create(around[i].attrs, content))
 
   let start = $from.before(shared + 1), end = $to.after(shared + 1)
-  this.step(new ReplaceWrapStep(start, end, start, end, new Slice(content, 0, 0), open, true))
+  this.step(new ReplaceAroundStep(start, end, start, end, new Slice(content, 0, 0), open, true))
 
   if (inside.length) {
     let splitPos = start + open, parent = $from.node(shared)
@@ -161,8 +161,8 @@ Transform.prototype.setBlockType = function(from, to = from, type, attrs) {
       // Ensure all markup that isn't allowed in the new node type is cleared
       this.clearMarkupFor(this.map(pos, 1, mapFrom), type, attrs)
       let startM = this.map(pos, 1, mapFrom), endM = this.map(pos + node.nodeSize, 1, mapFrom)
-      this.step(new ReplaceWrapStep(startM, endM, startM + 1, endM - 1,
-                                    new Slice(Fragment.from(type.create(attrs)), 0, 0), 1, true))
+      this.step(new ReplaceAroundStep(startM, endM, startM + 1, endM - 1,
+                                      new Slice(Fragment.from(type.create(attrs)), 0, 0), 1, true))
       return false
     }
   })
@@ -181,8 +181,8 @@ Transform.prototype.setNodeType = function(pos, type, attrs) {
   if (!type.validContent(node.content, attrs))
     throw new RangeError("Invalid content for node type " + type.name)
 
-  return this.step(new ReplaceWrapStep(pos, pos + node.nodeSize, pos + 1, pos + node.nodeSize - 1,
-                                       new Slice(Fragment.from(type.create(attrs)), 0, 0), 1, true))
+  return this.step(new ReplaceAroundStep(pos, pos + node.nodeSize, pos + 1, pos + node.nodeSize - 1,
+                                         new Slice(Fragment.from(type.create(attrs)), 0, 0), 1, true))
 }
 
 // :: (Node, number, ?NodeType, ?Object) → bool

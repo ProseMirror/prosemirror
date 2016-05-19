@@ -3,7 +3,7 @@ export {Step, StepResult} from "./step"
 export {canWrap, canLift, joinPoint, joinable, canSplit} from "./structure"
 export {PosMap, MapResult, Remapping} from "./map"
 export {AddMarkStep, RemoveMarkStep} from "./mark_step"
-export {ReplaceStep, ReplaceWrapStep} from "./replace_step"
+export {ReplaceStep, ReplaceAroundStep} from "./replace_step"
 import "./replace"
 import "./mark"
 

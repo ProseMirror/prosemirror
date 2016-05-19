@@ -1,6 +1,6 @@
 import {Fragment, Slice} from "../model"
 
-import {ReplaceStep, ReplaceWrapStep} from "./replace_step"
+import {ReplaceStep, ReplaceAroundStep} from "./replace_step"
 import {Transform} from "./transform"
 
 // :: (number, number) → Transform
@@ -26,7 +26,7 @@ Transform.prototype.replace = function(from, to = from, slice = Slice.empty) {
     while (d > 1 && after == $to.end(--d)) ++after
     let fittedAfter = fitRight($from, this.doc.resolve(after), fittedLeft)
     if (fittedAfter)
-      return this.step(new ReplaceWrapStep(from, after, to, $to.end(), fittedAfter, fittedLeft.size))
+      return this.step(new ReplaceAroundStep(from, after, to, $to.end(), fittedAfter, fittedLeft.size))
   }
   return this.step(new ReplaceStep(from, to, fitted))
 }

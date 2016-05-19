@@ -51,7 +51,7 @@ Step.register("replace", ReplaceStep)
 // ;; Replace a part of the document with a slice of content, but
 // preserve a range of the replaced content by moving it into the
 // slice.
-export class ReplaceWrapStep extends Step {
+export class ReplaceAroundStep extends Step {
   // :: (number, number, number, number, Slice, number, bool)
   // Create a replace-wrap step with the given range and gap. `inset`
   // should be the point in the slice into which the gap should be
@@ -88,26 +88,26 @@ export class ReplaceWrapStep extends Step {
 
   invert(doc) {
     let gap = this.gapTo - this.gapFrom
-    return new ReplaceWrapStep(this.from, this.from + this.slice.size + gap,
-                               this.from + this.insert, this.from + this.insert + gap,
-                               doc.slice(this.from, this.to).removeBetween(this.gapFrom - this.from, this.gapTo - this.from),
-                               this.gapFrom - this.from, this.structure)
+    return new ReplaceAroundStep(this.from, this.from + this.slice.size + gap,
+                                 this.from + this.insert, this.from + this.insert + gap,
+                                 doc.slice(this.from, this.to).removeBetween(this.gapFrom - this.from, this.gapTo - this.from),
+                                 this.gapFrom - this.from, this.structure)
   }
 
   map(mapping) {
     let from = mapping.mapResult(this.from, 1), to = mapping.mapResult(this.to, -1)
     let gapFrom = mapping.map(this.gapFrom, -1), gapTo = mapping.map(this.gapTo, 1)
     if ((from.deleted && to.deleted) || gapFrom < from.pos || gapTo > to.pos) return null
-    return new ReplaceWrapStep(from.pos, to.pos, gapFrom, gapTo, this.slice, this.insert, this.structure)
+    return new ReplaceAroundStep(from.pos, to.pos, gapFrom, gapTo, this.slice, this.insert, this.structure)
   }
 
   static fromJSON(schema, json) {
-    return new ReplaceWrapStep(json.from, json.to, json.gapFrom, json.gapTo,
-                               Slice.fromJSON(schema, json.slice), json.insert, json.structure)
+    return new ReplaceAroundStep(json.from, json.to, json.gapFrom, json.gapTo,
+                                 Slice.fromJSON(schema, json.slice), json.insert, json.structure)
   }
 }
 
-Step.register("replaceWrap", ReplaceWrapStep)
+Step.register("replaceAround", ReplaceAroundStep)
 
 function contentBetween(doc, from, to) {
   let $from = doc.resolve(from), dist = to - from, depth = $from.depth
