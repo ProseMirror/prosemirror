@@ -19,9 +19,6 @@
 // **`"html"`**
 //   : Serialize to and parse from HTML text. See `toHTML` and `fromHTML`.
 //
-// **`"text"`**
-//   : Convert to and from plain text. See `toText` and `fromText`.
-//
 // The [`markdown`](#markdown) module in the distribution defines an additional format:
 //
 // **`"markdown"`**
@@ -32,5 +29,3 @@ export {serializeTo, knownTarget, defineTarget, parseFrom, knownSource, defineSo
 
 export {fromDOM, fromHTML} from "./from_dom"
 export {toDOM, toHTML, nodeToDOM} from "./to_dom"
-
-export {fromText} from "./from_text"

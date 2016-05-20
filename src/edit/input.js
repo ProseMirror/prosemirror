@@ -403,21 +403,22 @@ function fromClipboard(pm, dataTransfer, plainText) {
   let txt = dataTransfer.getData("text/plain")
   let html = dataTransfer.getData("text/html")
   if (!html && !txt) return null
-  let fragment, slice
+  let fragment, slice, dom = document.createElement("div")
   if ((plainText || !html) && txt) {
-    // FIXME provide way not to wrap this in a whole doc / redo text parsing
-    fragment = parseFrom(pm.schema, pm.signalPipelined("transformPastedText", txt), "text").content
+    pm.signalPipelined("transformPastedText", txt).split(/\n{2,}/).forEach(para => {
+      dom.appendChild(document.createElement("paragraph")).textContent = para
+    })
   } else {
-    let dom = document.createElement("div")
     dom.innerHTML = pm.signalPipelined("transformPastedHTML", html)
-    let wrap = dom.querySelector("[pm-context]"), context, contextNodeType, found
-    if (wrap && (context = /^(\w+) (\d+) (\d+)$/.exec(wrap.getAttribute("pm-context"))) &&
-        (contextNodeType = pm.schema.nodes[context[1]]) && contextNodeType.defaultAttrs &&
-        (found = parseFromContext(wrap, contextNodeType, +context[2], +context[3])))
-      slice = found
-    else
-      fragment = fromDOM(pm.schema, dom, {topNode: false})
   }
+  let wrap = dom.querySelector("[pm-context]"), context, contextNodeType, found
+  if (wrap && (context = /^(\w+) (\d+) (\d+)$/.exec(wrap.getAttribute("pm-context"))) &&
+      (contextNodeType = pm.schema.nodes[context[1]]) && contextNodeType.defaultAttrs &&
+      (found = parseFromContext(wrap, contextNodeType, +context[2], +context[3])))
+    slice = found
+  else
+    fragment = fromDOM(pm.schema, dom, {topNode: false})
+
   if (!slice) {
     let openLeft = 0, openRight = 0
     if (fragment.size) {
