@@ -70,7 +70,7 @@ test("add_class_simple", pm => {
 
 test("add_class_messy", pm => {
   let big = doc(hr, blockquote(p(), hr, ul(li(p("a"))), p("h<a>ello")), p("y<b>ou"))
-  pm.setContent(big)
+  pm.setDoc(big)
   pm.markRange(big.tag.a, big.tag.b, {className: "foo"})
   pm.flush()
   let foos = pm.content.querySelectorAll(".foo")

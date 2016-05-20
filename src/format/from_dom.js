@@ -2,7 +2,6 @@ import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmMark, StrongMark, LinkMark, CodeMark, Fragment} from "../model"
 import sortedInsert from "../util/sortedinsert"
-import {defineSource} from "./register"
 import {compareDeep} from "../util/comparedeep"
 
 // :: (Schema, DOMNode, ?Object) → Node
@@ -55,8 +54,6 @@ export function fromDOM(schema, dom, options) {
 // A css selector to match against. If present, it will try to match the selector
 // against the dom node prior to calling the parse function.
 
-defineSource("dom", fromDOM)
-
 class NodeBuilder {
   constructor(type, attrs) {
     this.type = type
@@ -99,8 +96,6 @@ export function fromHTML(schema, html, options) {
   wrap.innerHTML = html
   return fromDOM(schema, wrap, options)
 }
-
-defineSource("html", fromHTML)
 
 const blockElements = {
   address: true, article: true, aside: true, blockquote: true, canvas: true,

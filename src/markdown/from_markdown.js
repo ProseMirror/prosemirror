@@ -2,7 +2,6 @@ import markdownit from "markdown-it"
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmMark, StrongMark, LinkMark, CodeMark, Mark, Fragment} from "../model"
-import {defineSource} from "../format"
 import sortedInsert from "../util/sortedinsert"
 
 // :: (Schema, string, ?Object) → Node
@@ -65,8 +64,6 @@ export function fromMarkdown(schema, text, options) {
 // function that, when called with the [parser
 // state](#MarkdownParseState) and the token object, returns an
 // attribute object.
-
-defineSource("markdown", fromMarkdown)
 
 const noMarks = []
 

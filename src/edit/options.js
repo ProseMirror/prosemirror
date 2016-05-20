@@ -33,15 +33,9 @@ export function defineOption(name, defaultValue, update, updateOnInit) {
 // The [schema](#Schema) that the editor's document should use.
 defineOption("schema", defaultSchema)
 
-// :: any #path=doc #kind=option
-// The starting document. Usually a `Node`, but can be in another
-// format when the `docFormat` option is also specified.
+// :: Node #path=doc #kind=option
+// The starting document.
 defineOption("doc", null, (pm, value) => pm.setDoc(value), false)
-
-// :: ?string #path=docFormat #kind=option
-// The format in which the `doc` option is given. Defaults to `null`
-// (a raw `Node`).
-defineOption("docFormat", null)
 
 // :: ?union<DOMNode, (DOMNode)> #path=place #kind=option
 // Determines the placement of the editor in the page. When `null`,

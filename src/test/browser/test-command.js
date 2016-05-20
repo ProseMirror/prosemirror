@@ -4,6 +4,8 @@ import {cmpNode, is} from "../cmp"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, br, hr} from "../build"
 
 import {CommandSet} from "../../edit"
+import {defaultSchema as schema} from "../../model"
+import {fromHTML} from "../../format"
 
 const used = Object.create(null)
 
@@ -471,7 +473,7 @@ test_("override_specific", pm => {
   pm.execCommand("lift")
   cmpNode(pm.doc, doc(p("Lift?")))
   is(!pm.commands.lift.spec.label, "completely replaced")
-}, {commands: CommandSet.default.update({lift: {run: pm => pm.setContent("Lift?", "text")}})})
+}, {commands: CommandSet.default.update({lift: {run: pm => pm.setDoc(fromHTML(schema, "Lift?"))}})})
 
 test_("extend_specific", pm => {
   pm.execCommand("lift")
@@ -484,7 +486,7 @@ test_("extend_specific", pm => {
 const myCommands = {
   command1: {
     label: "DO IT",
-    run(pm) { pm.setContent("hi", "text") }
+    run(pm) { pm.setDoc(fromHTML(schema, "hi")) }
   },
   command2: {
     run() {}

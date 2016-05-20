@@ -1,6 +1,6 @@
 import {Slice} from "../model"
 import Keymap from "browserkeymap"
-import {parseFrom, fromDOM, toHTML} from "../format"
+import {fromDOM, toHTML} from "../format"
 
 import {captureKeys} from "./capturekeys"
 import {elt, browser, contains} from "../dom"

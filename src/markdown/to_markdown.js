@@ -1,7 +1,6 @@
 import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmMark, StrongMark, LinkMark, CodeMark} from "../model"
-import {defineTarget} from "../format"
 
 // :: (Node, ?Object) → string
 // Serialize the content of the given node to [CommonMark](http://commonmark.org/).
@@ -20,8 +19,6 @@ export function toMarkdown(doc, options) {
   state.renderContent(doc)
   return state.out
 }
-
-defineTarget("markdown", toMarkdown)
 
 // ;; This is an object used to track state and expose
 // methods related to markdown serialization. Instances are passed to

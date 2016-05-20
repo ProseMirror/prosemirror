@@ -2,8 +2,6 @@ import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmMark, StrongMark, LinkMark, CodeMark, Node} from "../model"
 
-import {defineTarget} from "./register"
-
 // ;; Object used to to expose relevant values and methods
 // to DOM serializer functions.
 class DOMSerializer {
@@ -133,8 +131,6 @@ export function toDOM(content, options) {
   return new DOMSerializer(options).renderFragment(content instanceof Node ? content.content : content)
 }
 
-defineTarget("dom", toDOM)
-
 // :: (Node, ?Object) → DOMNode
 // Serialize a given node to a DOM node. This is useful when you need
 // to serialize a part of a document, as opposed to the whole
@@ -160,8 +156,6 @@ export function toHTML(content, options) {
   wrap.appendChild(serializer.renderFragment(content instanceof Node ? content.content : content))
   return wrap.innerHTML
 }
-
-defineTarget("html", toHTML)
 
 // Block nodes
 

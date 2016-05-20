@@ -25,7 +25,5 @@
 //   : Convert to and from [CommonMark](http://commonmark.org/) marked-up
 //     text. See `toMarkdown` and `fromMarkdown`.
 
-export {serializeTo, knownTarget, defineTarget, parseFrom, knownSource, defineSource} from "./register"
-
 export {fromDOM, fromHTML} from "./from_dom"
 export {toDOM, toHTML, nodeToDOM} from "./to_dom"

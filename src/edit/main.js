@@ -7,8 +7,6 @@ import {Map} from "../util/map"
 import {eventMixin} from "../util/event"
 import {requestAnimationFrame, cancelAnimationFrame, elt, browser, ensureCSSAdded} from "../dom"
 
-import {parseFrom, serializeTo} from "../format"
-
 import {parseOptions, initOptions, setOption} from "./options"
 import {SelectionState, TextSelection, NodeSelection,
         findSelectionAtStart, hasFocus} from "./selection"
@@ -52,7 +50,7 @@ export class ProseMirror {
     else if (opts.place)
       opts.place(this.wrapper)
 
-    this.setDocInner(opts.docFormat ? parseFrom(this.schema, opts.doc, opts.docFormat) : opts.doc)
+    this.setDocInner(opts.doc)
     draw(this, this.doc)
     this.content.contentEditable = true
     if (opts.label)
@@ -125,24 +123,6 @@ export class ProseMirror {
   setSelection(selection) {
     this.ensureOperation()
     if (!selection.eq(this.sel.range)) this.sel.setAndSignal(selection)
-  }
-
-  // :: (any, ?string)
-  // Replace the editor's document. When `format` is given, it should
-  // be a [parsable format](#format), and `value` should something in
-  // that format. If not, `value` should be a `Node`.
-  setContent(value, format) {
-    if (format) value = parseFrom(this.schema, value, format)
-    this.setDoc(value)
-  }
-
-  // :: (?string, ?Object) → any
-  // Get the editor's content in a given format. When `format` is not
-  // given, a `Node` is returned. If it is given, it should be an
-  // existing [serialization format](#format). Options to the serializer
-  // may be given as a second argument.
-  getContent(format, options) {
-    return format ? serializeTo(this.doc, format, options || {}) : this.doc
   }
 
   setDocInner(doc) {
