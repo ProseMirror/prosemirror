@@ -1,5 +1,5 @@
 import {findDiffStart, findDiffEnd, Mark} from "../model"
-import {fromDOM} from "../format"
+import {fromDOM} from "../htmlformat"
 import {mapThroughResult} from "../transform/map"
 
 import {findSelectionFrom, selectionFromDOM} from "./selection"

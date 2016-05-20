@@ -4,7 +4,7 @@ import {cmpNode} from "./cmp"
 import {defTest} from "./tests"
 
 import {defaultSchema as schema} from "../model"
-import {toDOM, fromDOM} from "../format"
+import {toDOM, fromDOM} from "../htmlformat"
 
 let document = typeof window == "undefined" ? require("jsdom").jsdom() : window.document
 

@@ -1,4 +1,4 @@
-import {toDOM, nodeToDOM} from "../format"
+import {toDOM, nodeToDOM} from "../htmlformat"
 import {elt, browser} from "../dom"
 
 import {DIRTY_REDRAW} from "./main"
