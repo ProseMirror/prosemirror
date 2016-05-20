@@ -12,15 +12,6 @@ export class Fragment {
       this.size += content[i].nodeSize
   }
 
-  // :: string
-  // Concatenate all the text nodes found in this fragment and its
-  // children.
-  get textContent() {
-    let text = ""
-    this.content.forEach(n => text += n.textContent)
-    return text
-  }
-
   // :: () → string
   // Return a debugging string that describes this fragment.
   toString() { return "<" + this.toStringInner() + ">" }
@@ -38,6 +29,21 @@ export class Fragment {
       }
       pos = end
     }
+  }
+
+  // :: (number, number, string) → string
+  textBetween(from, to, separator) {
+    let text = "", separated = true
+    this.nodesBetween(from, to, (node, pos) => {
+      if (node.isText) {
+        text += node.text.slice(Math.max(from, pos) - pos, to - pos)
+        separated = !separator
+      } else if (!separated && node.isBlock) {
+        text += separator
+        separated = true
+      }
+    }, 0)
+    return text
   }
 
   // :: (number, ?number) → Fragment

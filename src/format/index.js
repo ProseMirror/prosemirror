@@ -34,4 +34,3 @@ export {fromDOM, fromHTML} from "./from_dom"
 export {toDOM, toHTML, nodeToDOM} from "./to_dom"
 
 export {fromText} from "./from_text"
-export {toText} from "./to_text"

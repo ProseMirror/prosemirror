@@ -1,6 +1,6 @@
 import {Slice} from "../model"
 import Keymap from "browserkeymap"
-import {parseFrom, fromDOM, toHTML, toText} from "../format"
+import {parseFrom, fromDOM, toHTML} from "../format"
 
 import {captureKeys} from "./capturekeys"
 import {elt, browser, contains} from "../dom"
@@ -370,7 +370,7 @@ function toClipboard(doc, from, to, dataTransfer) {
   let html = `<div pm-context="${attr}">${toHTML(slice.content)}</div>`
   dataTransfer.clearData()
   dataTransfer.setData("text/html", html)
-  dataTransfer.setData("text/plain", toText(slice.content))
+  dataTransfer.setData("text/plain", slice.content.textBetween(0, slice.content.size, "\n\n"))
   return slice
 }
 

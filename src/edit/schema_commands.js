@@ -3,7 +3,6 @@ import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Parag
 import {canSplit, ReplaceAroundStep} from "../transform"
 
 import {selectedNodeAttr} from "./command"
-import {toText} from "../format"
 
 // # Mark types
 
@@ -163,7 +162,7 @@ Image.register("command", "insert", {
       {label: "Image URL", attr: "src"},
       {label: "Description / alternative text", attr: "alt",
        prefill: function(pm) {
-         return selectedNodeAttr(pm, this, "alt") || toText(pm.doc.cut(pm.selection.from, pm.selection.to))
+         return selectedNodeAttr(pm, this, "alt") || pm.doc.textBetween(pm.selection.from, pm.selection.to, " ")
        }},
       {label: "Title", attr: "title"}
     ]

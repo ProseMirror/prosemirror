@@ -67,7 +67,13 @@ export class Node {
   // :: string
   // Concatenate all the text nodes found in this fragment and its
   // children.
-  get textContent() { return this.content.textContent }
+  get textContent() { this.textBetween(0, this.content.size, "") }
+
+  // :: (number, number, ?string) → string
+  // Get all text between positions `from` and `to`. When `separator`
+  // is given, it will be inserted whenever a new block node is
+  // started.
+  textBetween(from, to, separator) { return this.content.textBetween(from, to, separator) }
 
   // :: ?Node
   // Returns this node's first child, or `null` if there are no
@@ -336,6 +342,8 @@ export class TextNode extends Node {
   toString() { return wrapMarks(this.marks, JSON.stringify(this.text)) }
 
   get textContent() { return this.text }
+
+  textBetween(from, to) { return this.text.slice(from, to) }
 
   get nodeSize() { return this.text.length }
 

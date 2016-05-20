@@ -1,8 +1,5 @@
 import {defineSource} from "./register"
 
-// FIXME is it meaningful to try and attach text-parsing information
-// to node types?
-
 // :: (Schema, string) → Node
 // Convert a string into a simple ProseMirror document.
 export function fromText(schema, text) {
