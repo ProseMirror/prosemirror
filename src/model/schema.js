@@ -221,7 +221,7 @@ export class NodeType extends SchemaItem {
   // node type, and if not, try to insert content before and/or after
   // it to make it valid. Returns null if no valid fragment could be
   // created.
-  fixContent(content, attrs) {
+  fixContent(content = Fragment.empty, attrs) {
     let before = this.contentExpr.start(attrs).fillBefore(content)
     if (!before) return null
     content = before.append(content)
