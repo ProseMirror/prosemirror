@@ -83,7 +83,7 @@ export class ParamPrompt {
       }
     })
 
-    let input = this.form.querySelector("input, textarea")
+    let input = this.form.elements[0]
     if (input) input.focus()
   }
 
