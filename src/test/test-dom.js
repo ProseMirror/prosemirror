@@ -1,10 +1,10 @@
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, img, hr} from "./build"
 import {Failure} from "./failure"
-import {cmpNode} from "./cmp"
+import {cmpNode, cmp} from "./cmp"
 import {defTest} from "./tests"
 
 import {defaultSchema as schema} from "../model"
-import {toDOM, fromDOM} from "../htmlformat"
+import {toDOM, fromDOM, fromDOMInContext} from "../htmlformat"
 
 let document = typeof window == "undefined" ? require("jsdom").jsdom() : window.document
 
@@ -147,3 +147,35 @@ recover("double_strong",
 recover("font_weight",
         "<p style='font-weight: bold'>Hello</p>",
         doc(p(strong("Hello"))))
+
+function ctx(name, doc, html, openLeft, openRight, slice) {
+  defTest("dom_context_" + name, () => {
+    let dom = document.createElement("div")
+    dom.innerHTML = html
+    let result = fromDOMInContext(doc.resolve(doc.tag.a), dom, openLeft, openRight)
+    let expected = slice.slice(slice.tag.a, slice.tag.b)
+    cmpNode(result.content, expected.content)
+    cmp(result.openLeft, expected.openLeft, "openLeft")
+    cmp(result.openRight, expected.openRight, "openRight")
+  })
+}
+
+ctx("in_list",
+    doc(ul(li(p("foo")), "<a>")),
+    "<li>bar</li>", 0, 0,
+    ul("<a>", li(p("bar")), "<b>"))
+
+ctx("in_list_item",
+    doc(ul(li(p("foo<a>")))),
+    "<li>bar</li>", 0, 0,
+    ul(li(p("<a>")), li(p("bar")), "<b>"))
+
+ctx("text_in_text",
+    doc(p("foo<a>")),
+    "<h1>bar</h1>", 1, 1,
+    p("<a>bar<b>"))
+
+ctx("mess",
+    doc(p("foo<a>")),
+    "a<li>b</li>", 0, 0,
+    doc(p("<a>a"), ol(li(p("b")), "<b>")))
