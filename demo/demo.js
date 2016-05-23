@@ -1,5 +1,5 @@
 var ProseMirror = require("../dist/edit").ProseMirror
-var fromDOM = require("../dist/format").fromDOM
+var fromDOM = require("../dist/htmlformat").fromDOM
 var schema = require("../dist/model").defaultSchema
 require("../dist/inputrules/autoinput")
 require("../dist/menu/tooltipmenu")

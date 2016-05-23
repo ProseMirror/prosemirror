@@ -4,20 +4,53 @@ import {BlockQuote, OrderedList, BulletList, ListItem,
 import sortedInsert from "../util/sortedinsert"
 import {compareDeep} from "../util/comparedeep"
 
-// :: (Schema, DOMNode, ?Object) → Node
-// Parse document from the content of a DOM node. To pass an explicit
-// parent document (for example, when not in a browser window
-// environment, where we simply use the global document), pass it as
-// the `document` property of `options`.
-export function fromDOM(schema, dom, options) {
-  if (!options) options = {}
-  let top = options.topNode
-  let context = new DOMParseState(schema, top === false ? null : top || schema.node("doc"), options)
+export function fromDOM(schema, dom, options = {}) {
+  let context = new DOMParseState(schema, options)
+  if (options.topNode) context.enter(options.topNode.type, options.topNode.attrs)
+  else context.enter(schema.nodes.doc)
+
   let start = options.from ? dom.childNodes[options.from] : dom.firstChild
   let end = options.to != null && dom.childNodes[options.to] || null
-  context.addAll(start, end, true)
+  context.addAll(start, end)
   while (context.stack.length > 1) context.leave()
   return context.leave()
+}
+
+export function fromDOMInContext($context, dom, openLeft, openRight, options = {}) {
+  let context = new DOMParseState($context.node(0).type.schema, options)
+  for (let i = 0; i <= $context.depth; i++) {
+    let node = $context.node(i)
+    context.enter(node.type, node.attrs, node.contentMatchAt($context.index(i)))
+  }
+
+  // FIXME remove this, pass responsibility of skipping these opens to context
+  // Make context delay closes to implement openRight etc
+  for (let i = openLeft; i >= 0; i--) {
+    let cur = dom
+    for (let j = 0; j < i; j++) cur = cur.firstChild
+    context.addAll(cur.childNodes[i < openLeft ? 1 : 0], null)
+  }
+  let endOffset = 0, lastNode = context.top.content[context.top.content.length - 1]
+  for (let i = 0; i < openRight && lastNode && !lastNode.type.isLeaf; i++) {
+    endOffset++
+    lastNode = lastNode.lastSibling
+  }
+  while (context.stack.length > 1) { context.leave(true); endOffset++ }
+  let doc = context.leave(true)
+  return doc.slice($context.depth, doc.content.size - endOffset)
+}
+
+export function typeForDOM(schema, dom) {
+  let result = findMatchingHandler(schemaInfo(schema).tags, dom)
+  return result && result.node
+}
+
+// :: (Schema, string, ?Object) → Node
+// Parses the HTML into a DOM, and then calls through to `fromDOM`.
+export function fromHTML(schema, html, options) {
+  let wrap = (options && options.document || window.document).createElement("div")
+  wrap.innerHTML = html
+  return fromDOM(schema, wrap, options)
 }
 
 // ;; #path=DOMParseSpec #kind=interface
@@ -35,66 +68,41 @@ export function fromDOM(schema, dom, options) {
 // to others that apply to the node (low ranks go first). Defaults to
 // 50.
 
-// :: union<string, (dom: DOMNode, state: DOMParseState) → ?bool> #path=DOMParseSpec.parse
+// :: (dom: DOMNode) → ?Object> #path=DOMParseSpec.parse
 // The function that, given a DOM node, parses it, updating the parse
 // state. It should return (the exact value) `false` when it wants to
 // indicate that it was not able to parse this node. This function is
 // called in such a way that `this` is bound to the type that the
 // parse spec was associated with.
-//
-// When this is set to the string `"block"`, the content of the DOM
-// node is parsed as the content in a node of the type that this spec
-// was associated with.
-//
-// When set to the string `"mark"`, the content of the DOM node is
-// parsed with an instance of the mark that this spec was associated
-// with added to their marks.
 
 // :: ?string #path=DOMParseSpec.selector
 // A css selector to match against. If present, it will try to match the selector
 // against the dom node prior to calling the parse function.
 
 class NodeBuilder {
-  constructor(type, attrs) {
+  constructor(type, attrs, match) {
     this.type = type
-    this.pos = type.contentExpr.start(attrs)
+    this.match = match || type.contentExpr.start(attrs)
     this.content = []
   }
 
-  get isTextblock() { return this.type.isTextblock }
-
   add(node) {
-    let matched = this.pos.matchNode(node)
+    let matched = this.match.matchNode(node)
     if (!matched && node.marks.length) {
-      node = node.mark(node.marks.filter(mark => this.pos.allowsMark(mark.type)))
-      matched = this.pos.matchNode(node)
+      node = node.mark(node.marks.filter(mark => this.match.allowsMark(mark.type)))
+      matched = this.match.matchNode(node)
     }
     if (!matched) return false
     this.content.push(node)
-    this.pos = matched
+    this.match = matched
     return true
   }
 
-  finish() {
-    let fill = this.pos.fillBefore(Fragment.empty, true)
-    if (!fill) return null
-    return this.type.create(this.pos.attrs, Fragment.from(this.content).append(fill))
+  finish(open) {
+    let content = Fragment.from(this.content)
+    if (!open) content = content.append(this.match.fillBefore(Fragment.empty, true))
+    return this.type.create(this.match.attrs, content)
   }
-}
-
-class FragmentBuilder {
-  constructor() { this.content = [] }
-  get isTextblock() { return false }
-  add(node) { this.content.push(node); return true }
-  finish() { return Fragment.fromArray(this.content) }
-}
-
-// :: (Schema, string, ?Object) → Node
-// Parses the HTML into a DOM, and then calls through to `fromDOM`.
-export function fromHTML(schema, html, options) {
-  let wrap = (options && options.document || window.document).createElement("div")
-  wrap.innerHTML = html
-  return fromDOM(schema, wrap, options)
 }
 
 const blockElements = {
@@ -116,18 +124,13 @@ const noMarks = []
 // ;; A state object used to track context during a parse,
 // and to expose methods to custom parsing functions.
 class DOMParseState {
-  constructor(schema, topNode, options) {
+  constructor(schema, options) {
     // :: Object The options passed to this parse.
     this.options = options || {}
     // :: Schema The schema that we are parsing into.
     this.schema = schema
     this.stack = []
     this.marks = noMarks
-    this.closing = false
-    if (topNode)
-      this.enter(topNode.type, topNode.attrs)
-    else
-      this.enterPseudo()
     let info = schemaInfo(schema)
     this.tagInfo = info.tags
     this.styleInfo = info.styles
@@ -141,7 +144,7 @@ class DOMParseState {
     if (dom.nodeType == 3) {
       let value = dom.nodeValue
       let top = this.top, last
-      if (/\S/.test(value) || top.isTextblock) {
+      if (/\S/.test(value) || top.type.isTextblock) {
         if (!this.options.preserveWhitespace) {
           value = value.replace(/\s+/g, " ")
           // If this starts with whitespace, and there is either no node
@@ -149,7 +152,7 @@ class DOMParseState {
           // leading space.
           if (/^\s/.test(value) &&
               (!(last = top.content[top.content.length - 1]) ||
-               (last.type.name == "text" && /\s$/.test(last.text))))
+               (last.isText && /\s$/.test(last.text))))
             value = value.slice(1)
         }
         if (value)
@@ -167,63 +170,57 @@ class DOMParseState {
     if (listElements.hasOwnProperty(name)) this.normalizeList(dom)
     // Ignore trailing BR nodes, which browsers create during editing
     if (this.options.editableContent && name == "br" && !dom.nextSibling) return
-    if (!this.parseNodeType(name, dom) && !ignoreElements.hasOwnProperty(name)) {
+    if (!this.parseNodeType(dom, name) && !ignoreElements.hasOwnProperty(name)) {
+      let sync = blockElements.hasOwnProperty(name) && this.stack.slice()
       this.addAll(dom.firstChild, null)
-      if (blockElements.hasOwnProperty(name))
-        this.closing = true
+      if (sync) this.sync(sync)
     }
   }
 
   addElementWithStyles(styles, dom) {
-    let wrappers = []
+    let outerMarks = this.marks
     for (let i = 0; i < styles.length; i += 2) {
       let parsers = this.styleInfo[styles[i]], value = styles[i + 1]
-      if (parsers) for (let j = 0; j < parsers.length; j++)
-        wrappers.push(parsers[j], value)
-    }
-    let next = (i) => {
-      if (i == wrappers.length) {
-        this.addElement(dom)
-      } else {
-        let parser = wrappers[i]
-        parser.parse.call(parser.type, wrappers[i + 1], this, next.bind(null, i + 2))
+      if (parsers) for (let j = 0; j < parsers.length; j++) {
+        let parser = parsers[j]
+        let result = parser.parse.call(parser.type, value, dom)
+        if (!result) continue
+        if (!(dom = result.content)) break
+        if (result.mark) this.marks = result.mark.create(result.attrs).addToSet(this.marks)
       }
     }
-    next(0)
+    if (dom) this.addElement(dom)
+    this.marks = outerMarks
   }
 
-  tryParsers(parsers, dom) {
-    if (parsers) for (let i = 0; i < parsers.length; i++) {
-      let parser = parsers[i]
-      if ((!parser.selector || matches(dom, parser.selector)) &&
-          parser.parse.call(parser.type, dom, this) !== false)
-        return true
+  parseNodeType(dom, name) {
+    let result = findMatchingHandler(this.tagInfo, dom, name)
+    if (!result) return false
+
+    if (result.mark && result.content) {
+      let before = this.marks
+      this.marks = result.mark.create(result.attrs).addToSet(this.marks)
+      this.addAll(result.content.firstChild, null)
+      this.marks = before
+    } else if (result.node) {
+      if (result.content && result.content.nodeType) {
+        this.enter(result.node, result.attrs)
+        let sync = this.stack.slice()
+        this.addAll(result.content.firstChild, null, sync)
+        this.sync(sync, sync.length - 1)
+      } else {
+        this.insert(result.node, result.attrs, result.content || Fragment.empty)
+      }
     }
-  }
-
-  parseNodeType(name, dom) {
-    return this.tryParsers(this.tagInfo[name], dom) ||
-      this.tryParsers(this.tagInfo._, dom)
+    return true
   }
 
   addAll(from, to, sync) {
-    let stack = sync && this.stack.slice(), needsSync = false
     for (let dom = from; dom != to; dom = dom.nextSibling) {
       this.addDOM(dom)
-      if (sync) {
-        let isBlock = blockElements.hasOwnProperty(dom.nodeName.toLowerCase())
-        if (isBlock) this.sync(stack)
-        needsSync = !isBlock
-      }
+      if (sync && blockElements.hasOwnProperty(dom.nodeName.toLowerCase()))
+        this.sync(sync)
     }
-    if (needsSync) this.sync(stack)
-  }
-
-  doClose() {
-    if (!this.closing || this.stack.length < 2) return
-    let left = this.leave()
-    this.enter(left.type, left.attrs)
-    this.closing = false
   }
 
   insertNode(node) {
@@ -233,13 +230,9 @@ class DOMParseState {
     let found
     for (let i = this.stack.length - 1; i >= 0; i--) {
       let builder = this.stack[i]
-      let route = builder.pos.findWrapping(node.type, node.attrs)
+      let route = builder.match.findWrapping(node.type, node.attrs)
       if (!route) continue
-      if (i == this.stack.length - 1) {
-        this.doClose()
-      } else {
-        while (this.stack.length > i + 1) this.leave()
-      }
+      while (this.stack.length > i + 1) this.leave()
       found = route
       break
     }
@@ -250,7 +243,7 @@ class DOMParseState {
     return this.top.add(node)
   }
 
-  // :: (NodeType, ?Object, [Node]) → ?Node
+  // : (NodeType, ?Object, [Node]) → ?Node
   // Insert a node of the given type, with the given content, based on
   // `dom`, at the current position in the document.
   insert(type, attrs, content) {
@@ -259,60 +252,35 @@ class DOMParseState {
     return this.insertNode(type.create(attrs, frag, this.marks))
   }
 
-  enter(type, attrs) {
-    this.stack.push(new NodeBuilder(type, attrs))
+  enter(type, attrs, match) {
+    this.stack.push(new NodeBuilder(type, attrs, match))
   }
 
-  enterPseudo() {
-    this.stack.push(new FragmentBuilder())
-  }
-
-  leave() {
+  leave(open) {
     if (this.marks.length) this.marks = noMarks
     let top = this.stack.pop()
     let last = top.content[top.content.length - 1]
-    if (!this.options.preserveWhitespace && last && last.isText && /\s$/.test(last.text)) {
+    if (!open && !this.options.preserveWhitespace && last && last.isText && /\s$/.test(last.text)) {
       if (last.text.length == 1) top.content.pop()
       else top.content[top.content.length - 1] = last.copy(last.text.slice(0, last.text.length - 1))
     }
-    let node = top.finish()
+    let node = top.finish(open)
     if (node && this.stack.length) this.insertNode(node)
     return node
   }
 
-  sync(stack) {
-    while (this.stack.length > stack.length) this.leave()
+  sync(stack, end = stack.length) {
+    while (this.stack.length > end) this.leave()
     for (;;) {
       let n = this.stack.length - 1, one = this.stack[n], two = stack[n]
       if (one.type == two.type && compareDeep(one.attrs, two.attrs)) break
       this.leave()
     }
-    while (stack.length > this.stack.length) {
+    while (end > this.stack.length) {
       let add = stack[this.stack.length]
       this.enter(add.type, add.attrs)
     }
     if (this.marks.length) this.marks = noMarks
-    this.closing = false
-  }
-
-  // :: (DOMNode, NodeType, ?Object)
-  // Parse the contents of `dom` as children of a node of the given
-  // type.
-  wrapIn(dom, type, attrs) {
-    this.enter(type, attrs)
-    this.addAll(dom.firstChild, null, true)
-    this.leave()
-  }
-
-  // :: (DOMNode, Mark)
-  // Parse the contents of `dom`, with `mark` added to the set of
-  // current marks.
-  wrapMark(inner, mark) {
-    let old = this.marks
-    this.marks = (mark.instance || mark).addToSet(old)
-    if (inner.call) inner()
-    else this.addAll(inner.firstChild, null)
-    this.marks = old
   }
 
   normalizeList(dom) {
@@ -346,10 +314,6 @@ function summarizeSchemaInfo(schema) {
   tags._ = []
   schema.registry("parseDOM", (tag, info, type) => {
     let parse = info.parse
-    if (parse == "block")
-      parse = function(dom, state) { state.wrapIn(dom, this) }
-    else if (parse == "mark")
-      parse = function(dom, state) { state.wrapMark(dom, this) }
     sortedInsert(tags[tag] || (tags[tag] = []), {
       type, parse,
       selector: info.selector,
@@ -366,75 +330,81 @@ function summarizeSchemaInfo(schema) {
   return {tags, styles}
 }
 
-Paragraph.register("parseDOM", "p", {parse: "block"})
+function findMatchingHandler(tagInfo, dom, name) {
+  for (let i = 0; i < 2; i++) {
+    let handlers = tagInfo[i ? "_" : name || dom.nodeName.toLowerCase()]
+    if (handlers) for (let j = 0; j < handlers.length; j++) {
+      let handler = handlers[j], result
+      if ((!handler.selector || matches(dom, handler.selector)) &&
+          (result = handler.parse.call(handler.type, dom)))
+        return result
+    }
+  }
+}
 
-BlockQuote.register("parseDOM", "blockquote", {parse: "block"})
+function wrapNode(dom) { return {node: this, content: dom} }
+
+Paragraph.register("parseDOM", "p", {parse: wrapNode})
+
+BlockQuote.register("parseDOM", "blockquote", {parse: wrapNode})
 
 for (let i = 1; i <= 6; i++) Heading.registerComputed("parseDOM", "h" + i, type => {
   if (i <= type.maxLevel) return {
-    parse(dom, state) { state.wrapIn(dom, this, {level: i}) }
+    parse(dom) { return {node: this, attrs: {level: i}, content: dom} }
   }
 })
 
-HorizontalRule.register("parseDOM", "hr", {parse: "block"})
+HorizontalRule.register("parseDOM", "hr", {parse: wrapNode})
 
-CodeBlock.register("parseDOM", "pre", {parse(dom, state) {
-  let params = dom.firstChild && /^code$/i.test(dom.firstChild.nodeName) && dom.firstChild.getAttribute("class")
-  if (params && /fence/.test(params)) {
-    let found = [], re = /(?:^|\s)lang-(\S+)/g, m
-    while (m = re.exec(params)) found.push(m[1])
-    params = found.join(" ")
-  } else {
-    params = null
-  }
+CodeBlock.register("parseDOM", "pre", {parse(dom) {
   let text = dom.textContent
-  state.insert(this, {params}, text ? [state.schema.text(text)] : [])
+  return {node: this, content: Fragment.from(text ? this.schema.text(dom.textContent) : null)}
 }})
 
-BulletList.register("parseDOM", "ul", {parse: "block"})
+BulletList.register("parseDOM", "ul", {parse: wrapNode})
 
-OrderedList.register("parseDOM", "ol", {parse(dom, state) {
+OrderedList.register("parseDOM", "ol", {parse(dom) {
   let start = dom.getAttribute("start")
-  let attrs = {order: start ? +start : 1}
-  state.wrapIn(dom, this, attrs)
+  return {node: this, attrs: {order: start ? +start : 1}, content: dom}
 }})
 
-ListItem.register("parseDOM", "li", {parse: "block"})
+ListItem.register("parseDOM", "li", {parse: wrapNode})
 
-HardBreak.register("parseDOM", "br", {parse(_, state) {
-  state.insert(this)
-}})
+HardBreak.register("parseDOM", "br", {parse: wrapNode})
 
-Image.register("parseDOM", "img", {parse(dom, state) {
-  state.insert(this, {
+Image.register("parseDOM", "img", {parse(dom) {
+  return {node: this, attrs: {
     src: dom.getAttribute("src"),
     title: dom.getAttribute("title") || null,
     alt: dom.getAttribute("alt") || null
-  })
+  }}
 }})
 
 // Inline style tokens
 
 LinkMark.register("parseDOM", "a", {
-  parse(dom, state) {
-    state.wrapMark(dom, this.create({href: dom.getAttribute("href"),
-                                     title: dom.getAttribute("title")}))
+  parse(dom) {
+    let attrs = {href: dom.getAttribute("href"), title: dom.getAttribute("title")}
+    return {mark: this, attrs, content: dom}
   },
   selector: "[href]"
 })
 
-EmMark.register("parseDOM", "i", {parse: "mark"})
-EmMark.register("parseDOM", "em", {parse: "mark"})
-EmMark.register("parseDOMStyle", "font-style", {parse(value, state, inner) {
-  if (value == "italic") state.wrapMark(inner, this)
-  else inner()
+function wrapMark(dom) {
+  return {mark: this, content: dom}
+}
+
+EmMark.register("parseDOM", "i", {parse: wrapMark})
+EmMark.register("parseDOM", "em", {parse: wrapMark})
+EmMark.register("parseDOMStyle", "font-style", {parse(value, dom) {
+  return {mark: value == "italic" ? this : null, content: dom}
 }})
 
-StrongMark.register("parseDOM", "b", {parse: "mark"})
-StrongMark.register("parseDOM", "strong", {parse: "mark"})
-StrongMark.register("parseDOMStyle", "font-weight", {parse(value, state, inner) {
-  if (value == "bold" || value == "bolder" || !/\D/.test(value) && +value >= 500) state.wrapMark(inner, this)
-  else inner()
+StrongMark.register("parseDOM", "b", {parse: wrapMark})
+StrongMark.register("parseDOM", "strong", {parse: wrapMark})
+StrongMark.register("parseDOMStyle", "font-weight", {parse(value, dom) {
+  let isBold = value == "bold" || value == "bolder" || !/\D/.test(value) && +value >= 500
+  return {mark: isBold ? this : null, content: dom}
 }})
 
-CodeMark.register("parseDOM", "code", {parse: "mark"})
+CodeMark.register("parseDOM", "code", {parse: wrapMark})

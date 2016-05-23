@@ -1,6 +1,6 @@
 import {Slice} from "../model"
 import Keymap from "browserkeymap"
-import {fromDOM, toHTML} from "../htmlformat"
+import {fromDOM, fromDOMInContext, toHTML, typeForDOM} from "../htmlformat"
 
 import {captureKeys} from "./capturekeys"
 import {elt, browser, contains} from "../dom"
@@ -403,7 +403,7 @@ function fromClipboard(pm, dataTransfer, plainText) {
   let txt = dataTransfer.getData("text/plain")
   let html = dataTransfer.getData("text/html")
   if (!html && !txt) return null
-  let fragment, slice, dom = document.createElement("div")
+  let slice, dom = document.createElement("div")
   if ((plainText || !html) && txt) {
     pm.signalPipelined("transformPastedText", txt).split(/\n{2,}/).forEach(para => {
       dom.appendChild(document.createElement("paragraph")).textContent = para
@@ -414,20 +414,29 @@ function fromClipboard(pm, dataTransfer, plainText) {
   let wrap = dom.querySelector("[pm-context]"), context, contextNodeType, found
   if (wrap && (context = /^(\w+) (\d+) (\d+)$/.exec(wrap.getAttribute("pm-context"))) &&
       (contextNodeType = pm.schema.nodes[context[1]]) && contextNodeType.defaultAttrs &&
-      (found = parseFromContext(wrap, contextNodeType, +context[2], +context[3])))
+      (found = parseFromContext(wrap, contextNodeType, +context[2], +context[3]))) {
     slice = found
-  else
-    fragment = fromDOM(pm.schema, dom, {topNode: false})
-
-  if (!slice) {
-    let openLeft = 0, openRight = 0
-    if (fragment.size) {
-      if (fragment.firstChild.isTextblock) openLeft = 1
-      if (fragment.lastChild.isTextblock) openRight = 1
-    }
-    slice = new Slice(fragment, openLeft, openRight)
+  } else {
+    let openLeft = isTextblock(pm.schema, dom, 1) ? 1 : 0
+    let openRight = isTextblock(pm.schema, dom, -1) ? 1 : 0
+    slice = fromDOMInContext(pm.doc.resolve(pm.selection.from), dom, openLeft, openRight, {preserveWhiteSpace: true})
+    console.log("passed", openLeft, openRight, "slice=" + slice)
   }
   return pm.signalPipelined("transformPasted", slice)
+}
+
+function isTextblock(schema, dom, dir) {
+  for (let cur = dom, next;; cur = next) {
+    next = dir < 0 ? cur.lastChild || cur.previousSibling : cur.firstChild || cur.nextSibling
+    if (!next && cur != dom)
+      next = dir < 0 ? cur.parentNode.previousSiblng : cur.parentNode.nextSibling
+    if (!next) return false
+    if (next.nodeType == 1) {
+      let type = typeForDOM(schema, next)
+      if (type) return type.isTextblock
+    }
+    cur = next
+  }
 }
 
 function parseFromContext(dom, contextNodeType, openLeft, openRight) {
