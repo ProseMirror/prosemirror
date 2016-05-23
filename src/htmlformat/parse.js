@@ -5,15 +5,14 @@ import sortedInsert from "../util/sortedinsert"
 import {compareDeep} from "../util/comparedeep"
 
 export function fromDOM(schema, dom, options = {}) {
-  let context = new DOMParseState(schema, options)
-  if (options.topNode) context.enter(options.topNode.type, options.topNode.attrs)
-  else context.enter(schema.nodes.doc)
-
+  let topNode = options.topNode
+  let top = new NodeBuilder(topNode ? topNode.type : schema.nodes.doc,
+                            topNode ? topNode.attrs : null)
+  let context = new DOMParseState(schema, options, top)
   let start = options.from ? dom.childNodes[options.from] : dom.firstChild
   let end = options.to != null && dom.childNodes[options.to] || null
   context.addAll(start, end)
-  while (context.stack.length > 1) context.leave()
-  return context.leave()
+  return top.finish()
 }
 
 export function fromDOMInContext($context, dom, openLeft, openRight, options = {}) {
@@ -80,28 +79,63 @@ export function fromHTML(schema, html, options) {
 // against the dom node prior to calling the parse function.
 
 class NodeBuilder {
-  constructor(type, attrs, match) {
+  constructor(type, attrs, prev, match) {
     this.type = type
     this.match = match || type.contentExpr.start(attrs)
     this.content = []
+    this.prev = prev
+    this.openChild = null
   }
 
   add(node) {
+    this.closeChild()
     let matched = this.match.matchNode(node)
     if (!matched && node.marks.length) {
       node = node.mark(node.marks.filter(mark => this.match.allowsMark(mark.type)))
       matched = this.match.matchNode(node)
     }
-    if (!matched) return false
+    if (!matched) return null
     this.content.push(node)
     this.match = matched
-    return true
+    return node
+  }
+
+  start(type, attrs) {
+    this.closeChild()
+    let matched = this.match.matchType(type, attrs, noMarks)
+    if (matched) {
+      this.match = matched
+      return this.openChild = new NodeBuilder(type, attrs, this)
+    }
+  }
+
+  closeChild(open) {
+    if (this.openChild) {
+      this.content.push(this.openChild.finish(open))
+      this.openChild = null
+    }
+  }
+
+  stripTrailingSpace() {
+    if (this.openChild) return
+    let last = this.content[this.content.length - 1], m
+    if (last && last.isText && (m = /\s+$/.exec(last.text))) {
+      if (last.text.length == m[0].length) this.content.pop()
+      else this.content[this.content.length - 1] = last.copy(last.text.slice(0, last.text.length - m[0].length))
+    }
   }
 
   finish(open) {
+    this.closeChild(open)
     let content = Fragment.from(this.content)
     if (!open) content = content.append(this.match.fillBefore(Fragment.empty, true))
     return this.type.create(this.match.attrs, content)
+  }
+
+  sameStructure(other) {
+    if (other == this) return true
+    if (!other || other.type != this.type || !compareDeep(this.attrs, other.attrs)) return false
+    return this.prev ? this.prev.sameStructure(other.prev) : !other.prev
   }
 }
 
@@ -124,36 +158,35 @@ const noMarks = []
 // ;; A state object used to track context during a parse,
 // and to expose methods to custom parsing functions.
 class DOMParseState {
-  constructor(schema, options) {
+  constructor(schema, options, top) {
     // :: Object The options passed to this parse.
     this.options = options || {}
     // :: Schema The schema that we are parsing into.
     this.schema = schema
-    this.stack = []
+    this.top = top
     this.marks = noMarks
     let info = schemaInfo(schema)
     this.tagInfo = info.tags
     this.styleInfo = info.styles
   }
 
-  get top() {
-    return this.stack[this.stack.length - 1]
+  addMark(mark) {
+    let old = this.marks
+    this.marks = mark.addToSet(this.marks)
+    return old
   }
 
   addDOM(dom) {
     if (dom.nodeType == 3) {
       let value = dom.nodeValue
-      let top = this.top, last
+      let top = this.top
       if (/\S/.test(value) || top.type.isTextblock) {
         if (!this.options.preserveWhitespace) {
           value = value.replace(/\s+/g, " ")
           // If this starts with whitespace, and there is either no node
           // before it or a node that ends with whitespace, strip the
           // leading space.
-          if (/^\s/.test(value) &&
-              (!(last = top.content[top.content.length - 1]) ||
-               (last.isText && /\s$/.test(last.text))))
-            value = value.slice(1)
+          if (/^\s/.test(value)) top.stripTrailingSpace()
         }
         if (value)
           this.insertNode(this.schema.text(value, this.marks))
@@ -171,26 +204,26 @@ class DOMParseState {
     // Ignore trailing BR nodes, which browsers create during editing
     if (this.options.editableContent && name == "br" && !dom.nextSibling) return
     if (!this.parseNodeType(dom, name) && !ignoreElements.hasOwnProperty(name)) {
-      let sync = blockElements.hasOwnProperty(name) && this.stack.slice()
+      let sync = blockElements.hasOwnProperty(name) && this.top
       this.addAll(dom.firstChild, null)
       if (sync) this.sync(sync)
     }
   }
 
   addElementWithStyles(styles, dom) {
-    let outerMarks = this.marks
+    let resetMarks = this.marks
     for (let i = 0; i < styles.length; i += 2) {
       let parsers = this.styleInfo[styles[i]], value = styles[i + 1]
       if (parsers) for (let j = 0; j < parsers.length; j++) {
         let parser = parsers[j]
-        let result = parser.parse.call(parser.type, value, dom)
+        let result = parser.parse.call(parser.type, value, dom, this.options)
         if (!result) continue
         if (!(dom = result.content)) break
-        if (result.mark) this.marks = result.mark.create(result.attrs).addToSet(this.marks)
+        if (result.mark) this.addMark(result.mark.create(result.attrs))
       }
     }
     if (dom) this.addElement(dom)
-    this.marks = outerMarks
+    this.marks = resetMarks
   }
 
   parseNodeType(dom, name) {
@@ -198,16 +231,14 @@ class DOMParseState {
     if (!result) return false
 
     if (result.mark && result.content) {
-      let before = this.marks
-      this.marks = result.mark.create(result.attrs).addToSet(this.marks)
+      let before = this.addMark(result.mark.create(result.attrs))
       this.addAll(result.content.firstChild, null)
       this.marks = before
     } else if (result.node) {
       if (result.content && result.content.nodeType) {
-        this.enter(result.node, result.attrs)
-        let sync = this.stack.slice()
+        let sync = this.enter(result.node, result.attrs)
         this.addAll(result.content.firstChild, null, sync)
-        this.sync(sync, sync.length - 1)
+        if (sync) this.sync(sync.prev)
       } else {
         this.insert(result.node, result.attrs, result.content || Fragment.empty)
       }
@@ -223,24 +254,27 @@ class DOMParseState {
     }
   }
 
-  insertNode(node) {
-    let added = this.top.add(node)
-    if (added) return added
+  findPlace(type, attrs, node) {
+    let ok = node ? this.top.add(node) : this.top.start(type, attrs)
+    if (ok) return ok
 
     let found
-    for (let i = this.stack.length - 1; i >= 0; i--) {
-      let builder = this.stack[i]
-      let route = builder.match.findWrapping(node.type, node.attrs)
+    for (let top = this.top; top; top = top.prev) {
+      let route = top.match.findWrapping(type, attrs)
       if (!route) continue
-      while (this.stack.length > i + 1) this.leave()
+      while (this.top != top) this.leave()
       found = route
       break
     }
-    if (!found) return
+    if (!found) return false
     for (let i = 0; i < found.length; i++)
-      this.enter(found[i].type, found[i].attrs)
-    if (this.marks.length) this.marks = noMarks
-    return this.top.add(node)
+      this.top = this.top.start(found[i].type, found[i].attrs)
+
+    return node ? this.top.add(node) : this.top.start(type, attrs)
+  }
+
+  insertNode(node) {
+    this.findPlace(node.type, node.attrs, node)
   }
 
   // : (NodeType, ?Object, [Node]) → ?Node
@@ -249,38 +283,34 @@ class DOMParseState {
   insert(type, attrs, content) {
     let frag = type.fixContent(Fragment.from(content), attrs)
     if (!frag) return null
-    return this.insertNode(type.create(attrs, frag, this.marks))
+    this.insertNode(type.create(attrs, frag, type.isInline ? this.marks : null))
   }
 
-  enter(type, attrs, match) {
-    this.stack.push(new NodeBuilder(type, attrs, match))
+  enter(type, attrs) {
+    let newTop = this.findPlace(type, attrs)
+    if (newTop) return this.top = newTop
   }
 
-  leave(open) {
-    if (this.marks.length) this.marks = noMarks
-    let top = this.stack.pop()
-    let last = top.content[top.content.length - 1]
-    if (!open && !this.options.preserveWhitespace && last && last.isText && /\s$/.test(last.text)) {
-      if (last.text.length == 1) top.content.pop()
-      else top.content[top.content.length - 1] = last.copy(last.text.slice(0, last.text.length - 1))
-    }
-    let node = top.finish(open)
-    if (node && this.stack.length) this.insertNode(node)
-    return node
+  leave() {
+    if (!this.options.preserveWhitespace) this.top.stripTrailingSpace()
+    this.top = this.top.prev
   }
 
-  sync(stack, end = stack.length) {
-    while (this.stack.length > end) this.leave()
+  sync(to) {
+    if (to == this.top) return
+
     for (;;) {
-      let n = this.stack.length - 1, one = this.stack[n], two = stack[n]
-      if (one.type == two.type && compareDeep(one.attrs, two.attrs)) break
+      for (let goal = to, toAdd = []; goal; goal = goal.prev) {
+        if (this.top.sameStructure(goal)) {
+          for (let i = 0; i < toAdd.length; i++)
+            this.enter(toAdd[i].type, toAdd[i].attrs)
+          return
+        } else {
+          toAdd.push(goal)
+        }
+      }
       this.leave()
     }
-    while (end > this.stack.length) {
-      let add = stack[this.stack.length]
-      this.enter(add.type, add.attrs)
-    }
-    if (this.marks.length) this.marks = noMarks
   }
 
   normalizeList(dom) {
@@ -336,7 +366,7 @@ function findMatchingHandler(tagInfo, dom, name) {
     if (handlers) for (let j = 0; j < handlers.length; j++) {
       let handler = handlers[j], result
       if ((!handler.selector || matches(dom, handler.selector)) &&
-          (result = handler.parse.call(handler.type, dom)))
+          (result = handler.parse.call(handler.type, dom, this.options)))
         return result
     }
   }

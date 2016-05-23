@@ -20,7 +20,7 @@ function t(name, doc, dom) {
     if (derivedText != declaredText)
       throw new Failure("DOM text mismatch: " + derivedText + " vs " + declaredText)
 
-    cmpNode(doc, fromDOM(schema, derivedDOM))
+    cmpNode(fromDOM(schema, derivedDOM), doc)
   })
 }
 
@@ -102,7 +102,7 @@ recover("extra_div",
 
 recover("ignore_whitespace",
         " <blockquote> <p>woo  \n  <em> hooo</em></p> </blockquote> ",
-        doc(blockquote(p("woo ", em("hooo")))))
+        doc(blockquote(p("woo", em(" hooo")))))
 
 recover("find_place",
         "<ul class=\"tight\"><li>hi</li><p>whoah</p><li>again</li></ul>",

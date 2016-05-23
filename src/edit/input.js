@@ -420,7 +420,6 @@ function fromClipboard(pm, dataTransfer, plainText) {
     let openLeft = isTextblock(pm.schema, dom, 1) ? 1 : 0
     let openRight = isTextblock(pm.schema, dom, -1) ? 1 : 0
     slice = fromDOMInContext(pm.doc.resolve(pm.selection.from), dom, openLeft, openRight, {preserveWhiteSpace: true})
-    console.log("passed", openLeft, openRight, "slice=" + slice)
   }
   return pm.signalPipelined("transformPasted", slice)
 }
