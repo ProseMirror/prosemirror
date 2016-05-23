@@ -1,6 +1,5 @@
-import {Slice} from "../model"
 import Keymap from "browserkeymap"
-import {fromDOM, fromDOMInContext, toHTML, typeForDOM} from "../htmlformat"
+import {fromDOMInContext, toHTML, typeForDOM} from "../htmlformat"
 
 import {captureKeys} from "./capturekeys"
 import {elt, browser, contains} from "../dom"
@@ -364,9 +363,8 @@ handlers.input = pm => {
 }
 
 function toClipboard(doc, from, to, dataTransfer) {
-  let slice = doc.slice(from, to), $from = doc.resolve(from)
-  let parent = $from.node($from.depth - slice.openLeft)
-  let attr = `${parent.type.name} ${slice.openLeft} ${slice.openRight}`
+  let slice = doc.slice(from, to)
+  let attr = slice.openLeft + "/" + slice.openRight
   let html = `<div pm-context="${attr}">${toHTML(slice.content)}</div>`
   dataTransfer.clearData()
   dataTransfer.setData("text/html", html)
@@ -399,11 +397,11 @@ function canUpdateClipboard(dataTransfer) {
 // into the document.
 
 // : (ProseMirror, DataTransfer, ?bool) → ?Slice
-function fromClipboard(pm, dataTransfer, plainText) {
+function fromClipboard(pm, dataTransfer, plainText, target) {
   let txt = dataTransfer.getData("text/plain")
   let html = dataTransfer.getData("text/html")
   if (!html && !txt) return null
-  let slice, dom = document.createElement("div")
+  let dom = document.createElement("div")
   if ((plainText || !html) && txt) {
     pm.signalPipelined("transformPastedText", txt).split(/\n{2,}/).forEach(para => {
       dom.appendChild(document.createElement("paragraph")).textContent = para
@@ -411,16 +409,16 @@ function fromClipboard(pm, dataTransfer, plainText) {
   } else {
     dom.innerHTML = pm.signalPipelined("transformPastedHTML", html)
   }
-  let wrap = dom.querySelector("[pm-context]"), context, contextNodeType, found
-  if (wrap && (context = /^(\w+) (\d+) (\d+)$/.exec(wrap.getAttribute("pm-context"))) &&
-      (contextNodeType = pm.schema.nodes[context[1]]) && contextNodeType.defaultAttrs &&
-      (found = parseFromContext(wrap, contextNodeType, +context[2], +context[3]))) {
-    slice = found
+  let wrap = dom.querySelector("[pm-context]"), m, openLeft = 0, openRight = 0
+  if (wrap && (m = /^(\d+)\/(\d+)$/.exec(wrap.getAttribute("pm-context")))) {
+    dom = wrap
+    openLeft = +m[1]
+    openRight = +m[2]
   } else {
-    let openLeft = isTextblock(pm.schema, dom, 1) ? 1 : 0
-    let openRight = isTextblock(pm.schema, dom, -1) ? 1 : 0
-    slice = fromDOMInContext(pm.doc.resolve(pm.selection.from), dom, openLeft, openRight, {preserveWhiteSpace: true})
+    if (isTextblock(pm.schema, dom, 1)) openLeft = 1
+    if (isTextblock(pm.schema, dom, -1)) openRight = 1
   }
+  let slice = fromDOMInContext(pm.doc.resolve(target), dom, openLeft, openRight, {preserveWhiteSpace: true})
   return pm.signalPipelined("transformPasted", slice)
 }
 
@@ -436,22 +434,6 @@ function isTextblock(schema, dom, dir) {
     }
     cur = next
   }
-}
-
-function parseFromContext(dom, contextNodeType, openLeft, openRight) {
-  let schema = contextNodeType.schema, contextNode = contextNodeType.create()
-  let parsed = fromDOM(schema, dom, {topNode: contextNode, preserveWhitespace: true})
-  return new Slice(parsed.content, clipOpen(parsed.content, openLeft, true),
-                   clipOpen(parsed.content, openRight, false), contextNode)
-}
-
-function clipOpen(fragment, max, start) {
-  for (let i = 0; i < max; i++) {
-    let node = start ? fragment.firstChild : fragment.lastChild
-    if (!node || node.type.isLeaf) return i
-    fragment = node.content
-  }
-  return max
 }
 
 handlers.copy = handlers.cut = (pm, e) => {
@@ -473,7 +455,7 @@ handlers.paste = (pm, e) => {
     return
   }
   let sel = pm.selection
-  let slice = fromClipboard(pm, e.clipboardData, pm.input.shiftKey)
+  let slice = fromClipboard(pm, e.clipboardData, pm.input.shiftKey, sel.from)
   if (slice) {
     e.preventDefault()
     let tr = pm.tr.replace(sel.from, sel.to, slice)
@@ -489,9 +471,8 @@ class Dragging {
   }
 }
 
-function dropPos(pm, e, slice) {
-  let pos = pm.posAtCoords({left: e.clientX, top: e.clientY})
-  if (pos == null || !slice || !slice.content.size) return pos
+function dropPos(pm, slice, pos) {
+  if (!slice || !slice.content.size) return pos
   let $pos = pm.doc.resolve(pos)
   for (let d = $pos.depth; d >= 0; d--) {
     let bias = d == $pos.depth ? 0 : pos <= ($pos.start(d + 1) + $pos.end(d + 1)) / 2 ? -1 : 1
@@ -544,7 +525,7 @@ handlers.dragover = handlers.dragenter = (pm, e) => {
   if (!target)
     target = pm.input.dropTarget = pm.wrapper.appendChild(elt("div", {class: "ProseMirror-drop-target"}))
 
-  let pos = dropPos(pm, e, pm.input.dragging && pm.input.dragging.slice)
+  let pos = dropPos(pm, pm.input.dragging && pm.input.dragging.slice, pm.posAtCoords({left: e.clientX, top: e.clientY}))
   if (pos == null) return
   let coords = pm.coordsAtPos(pos)
   let rect = pm.wrapper.getBoundingClientRect()
@@ -572,29 +553,30 @@ handlers.drop = (pm, e) => {
   // or returning a truthy value.
   if (!e.dataTransfer || pm.signalDOM(e)) return
 
-  let slice = dragging && dragging.slice || fromClipboard(pm, e.dataTransfer)
-  if (slice) {
-    e.preventDefault()
-    let insertPos = dropPos(pm, e, slice), start = insertPos
-    if (insertPos == null) return
-    let tr = pm.tr
-    if (dragging && !e.ctrlKey && dragging.from != null) {
-      tr.delete(dragging.from, dragging.to)
-      insertPos = tr.map(insertPos)
-    }
-    tr.replace(insertPos, insertPos, slice).apply()
-    let found
-    if (slice.content.childCount == 1 && slice.openLeft == 0 && slice.openRight == 0 &&
-        slice.content.child(0).type.selectable &&
-        (found = pm.doc.nodeAt(insertPos)) && found.sameMarkup(slice.content.child(0))) {
-      pm.setNodeSelection(insertPos)
-    } else {
-      let left = findSelectionNear(pm.doc, insertPos, 1, true).from
-      let right = findSelectionNear(pm.doc, tr.map(start), -1, true).to
-      pm.setTextSelection(left, right)
-    }
-    pm.focus()
+  let mousePos = pm.posAtCoords({left: e.clientX, top: e.clientY})
+  if (mousePos == null) return
+  let slice = dragging && dragging.slice || fromClipboard(pm, e.dataTransfer, mousePos)
+  if (!slice) return
+
+  e.preventDefault()
+  let insertPos = dropPos(pm, slice, mousePos), start = insertPos
+  let tr = pm.tr
+  if (dragging && !e.ctrlKey && dragging.from != null) {
+    tr.delete(dragging.from, dragging.to)
+    insertPos = tr.map(insertPos)
   }
+  tr.replace(insertPos, insertPos, slice).apply()
+  let found
+  if (slice.content.childCount == 1 && slice.openLeft == 0 && slice.openRight == 0 &&
+      slice.content.child(0).type.selectable &&
+      (found = pm.doc.nodeAt(insertPos)) && found.sameMarkup(slice.content.child(0))) {
+    pm.setNodeSelection(insertPos)
+  } else {
+    let left = findSelectionNear(pm.doc, insertPos, 1, true).from
+    let right = findSelectionNear(pm.doc, tr.map(start), -1, true).to
+    pm.setTextSelection(left, right)
+  }
+  pm.focus()
 }
 
 handlers.focus = pm => {
