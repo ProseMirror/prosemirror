@@ -1,5 +1,6 @@
 import Keymap from "browserkeymap"
-import {fromDOMInContext, toHTML, typeForDOM} from "../htmlformat"
+import {fromDOMInContext, toHTML} from "../htmlformat"
+import {Slice, Fragment} from "../model"
 
 import {captureKeys} from "./capturekeys"
 import {elt, browser, contains} from "../dom"
@@ -364,6 +365,8 @@ handlers.input = pm => {
 
 function toClipboard(doc, from, to, dataTransfer) {
   let slice = doc.slice(from, to)
+  if (!slice.openLeft && !slice.openRight && slice.possibleParent)
+    slice = new Slice(Fragment.from(slice.possibleParent.copy(slice.content), 1, 1))
   let attr = slice.openLeft + "/" + slice.openRight
   let html = `<div pm-context="${attr}">${toHTML(slice.content)}</div>`
   dataTransfer.clearData()
@@ -409,31 +412,14 @@ function fromClipboard(pm, dataTransfer, plainText, target) {
   } else {
     dom.innerHTML = pm.signalPipelined("transformPastedHTML", html)
   }
-  let wrap = dom.querySelector("[pm-context]"), m, openLeft = 0, openRight = 0
+  let wrap = dom.querySelector("[pm-context]"), m, openLeft = null, openRight = null
   if (wrap && (m = /^(\d+)\/(\d+)$/.exec(wrap.getAttribute("pm-context")))) {
     dom = wrap
     openLeft = +m[1]
     openRight = +m[2]
-  } else {
-    if (isTextblock(pm.schema, dom, 1)) openLeft = 1
-    if (isTextblock(pm.schema, dom, -1)) openRight = 1
   }
-  let slice = fromDOMInContext(pm.doc.resolve(target), dom, openLeft, openRight, {preserveWhiteSpace: true})
+  let slice = fromDOMInContext(pm.doc.resolve(target), dom, {openLeft, openRight, preserveWhiteSpace: true})
   return pm.signalPipelined("transformPasted", slice)
-}
-
-function isTextblock(schema, dom, dir) {
-  for (let cur = dom, next;; cur = next) {
-    next = dir < 0 ? cur.lastChild || cur.previousSibling : cur.firstChild || cur.nextSibling
-    if (!next && cur != dom)
-      next = dir < 0 ? cur.parentNode.previousSiblng : cur.parentNode.nextSibling
-    if (!next) return false
-    if (next.nodeType == 1) {
-      let type = typeForDOM(schema, next)
-      if (type) return type.isTextblock
-    }
-    cur = next
-  }
 }
 
 handlers.copy = handlers.cut = (pm, e) => {
@@ -458,7 +444,20 @@ handlers.paste = (pm, e) => {
   let slice = fromClipboard(pm, e.clipboardData, pm.input.shiftKey, sel.from)
   if (slice) {
     e.preventDefault()
-    let tr = pm.tr.replace(sel.from, sel.to, slice)
+    let start = sel.from, $from, wrap = slice.possibleParent
+    if (!wrap && slice.openLeft) {
+      wrap = slice.content.firstChild
+      for (let i = 1; i < slice.openLeft; i++) wrap = wrap.firstChild
+    }
+    // When pasting textblock content in an empty textblock, preserve
+    // the original type.
+    if (wrap && wrap.isTextblock &&
+        ($from = pm.doc.resolve(sel.from)).parent.isTextblock && !$from.parent.content.size) {
+      start--
+      if (slice.openLeft) slice = new Slice(slice.content, slice.openLeft - 1, slice.openRight)
+      else slice = new Slice(Fragment.from(wrap.copy(slice.content)), 0, slice.openRight + 1)
+    }
+    let tr = pm.tr.replace(start, sel.to, slice)
     tr.apply({scrollIntoView: true, selection: findSelectionNear(tr.doc, tr.map(sel.to))})
   }
 }

@@ -148,15 +148,16 @@ recover("font_weight",
         "<p style='font-weight: bold'>Hello</p>",
         doc(p(strong("Hello"))))
 
-function ctx(name, doc, html, openLeft, openRight, slice) {
+function ctx(name, doc, html, openLeft, openRight, slice, parent) {
   defTest("dom_context_" + name, () => {
     let dom = document.createElement("div")
     dom.innerHTML = html
-    let result = fromDOMInContext(doc.resolve(doc.tag.a), dom, openLeft, openRight)
+    let result = fromDOMInContext(doc.resolve(doc.tag.a), dom, {openLeft, openRight})
     let expected = slice.slice(slice.tag.a, slice.tag.b)
     cmpNode(result.content, expected.content)
     cmp(result.openLeft, expected.openLeft, "openLeft")
     cmp(result.openRight, expected.openRight, "openRight")
+    if (parent) cmp(parent, result.possibleParent && result.possibleParent.type.name, "parent")
   })
 }
 
@@ -168,7 +169,7 @@ ctx("in_list",
 ctx("in_list_item",
     doc(ul(li(p("foo<a>")))),
     "<li>bar</li>", 0, 0,
-    ul(li(p("<a>")), li(p("bar")), "<b>"))
+    ul("<a>", li(p("bar")), "<b>"))
 
 ctx("text_in_text",
     doc(p("foo<a>")),
@@ -177,5 +178,15 @@ ctx("text_in_text",
 
 ctx("mess",
     doc(p("foo<a>")),
-    "a<li>b</li>", 0, 0,
-    doc(p("<a>a"), ol(li(p("b")), "<b>")))
+    "<p>a</p>b<li>c</li>", 0, 0,
+    doc("<a>", p("a"), p("b"), ol(li(p("c"))), "<b>"))
+
+ctx("preserve_type",
+    doc(p("<a>")),
+    "<h1>bar</h1>", 1, 1,
+    p("<a>bar<b>"), 0, 0, "heading")
+
+ctx("leave_marks",
+    doc(pre("<a>")),
+    "<p>foo<strong>bar</strong></p>", 1, 1,
+    p("<a>foo", strong("bar<b>")), 0, 0)
