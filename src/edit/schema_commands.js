@@ -1,6 +1,6 @@
 import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
-        StrongMark, EmMark, CodeMark, LinkMark, Image} from "../model"
-import {canSplit} from "../transform"
+        StrongMark, EmMark, CodeMark, LinkMark, Image, Fragment, Slice} from "../model"
+import {canSplit, ReplaceAroundStep} from "../transform"
 
 import {selectedNodeAttr} from "./command"
 import {toText} from "../format"
@@ -319,10 +319,13 @@ ListItem.register("command", "sink", {
     let $from = pm.doc.resolve(pm.selection.from), startIndex = $from.index(selected.depth - 1)
     if (startIndex == 0) return false
     let parent = $from.node(selected.depth - 1), before = parent.child(startIndex - 1)
-    let tr = pm.tr.wrap(selected.from, selected.to, parent.type, parent.attrs)
-    if (before.type == this)
-      tr.join(selected.from, before.lastChild && before.lastChild.type == parent.type ? 2 : 1)
-    return tr.apply(pm.apply.scroll)
+    if (before.type != this) return false
+    let nestedBefore = before.lastChild && before.lastChild.type == parent.type
+    let slice = new Slice(Fragment.from(this.create(null, parent.type.create(parent.attrs))), nestedBefore ? 2 : 1, 0)
+    return pm.tr
+      .step(new ReplaceAroundStep(selected.from - (nestedBefore ? 2 : 1), selected.to,
+                                  selected.from, selected.to, slice, nestedBefore ? 0 : 1, true))
+      .apply(pm.apply.scroll)
   },
   keys: ["Mod-](20)"]
 })
