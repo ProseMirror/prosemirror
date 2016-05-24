@@ -54,6 +54,8 @@ export const autoInput = new Plugin(AutoInput, {
 
 autoInputRules.emDash = new InputRule(/--$/, "-", "—")
 
+autoInputRules.ellipsis = new InputRule(/\.\.\.$/, ".", "…")
+
 autoInputRules.openDoubleQuote = new InputRule(/(?:^|[\s\{\[\(\<'"\u2018\u201C])(")$/, '"', "“")
 
 autoInputRules.closeDoubleQuote = new InputRule(/"$/, '"', "”")
