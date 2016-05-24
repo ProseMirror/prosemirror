@@ -1,4 +1,4 @@
-import "../../collab"
+import {collabEditing} from "../../collab"
 
 import {doc, p} from "../build"
 import {defTest} from "../tests"
@@ -12,30 +12,32 @@ class DummyServer {
   }
 
   attach(pm) {
-    pm.mod.collab.on("mustSend", () => this.mustSend(pm, pm.mod.collab.clientID))
+    let mod = collabEditing.get(pm)
+    mod.on("mustSend", () => this.mustSend(pm, mod.clientID))
     this.pms.push(pm)
   }
 
   mustSend(pm, clientID) {
-    if (pm.mod.collab.frozen) return
-    let toSend = pm.mod.collab.sendableSteps()
+    let mod = collabEditing.get(pm)
+    if (mod.frozen) return
+    let toSend = mod.sendableSteps()
     this.send(pm, toSend.version, toSend.steps, clientID)
   }
 
   send(_pm, _version, steps, clientID) {
     this.version += steps.length
     for (let i = 0; i < this.pms.length; i++)
-      this.pms[i].mod.collab.receive(steps, steps.map(() => clientID))
+      collabEditing.get(this.pms[i]).receive(steps, steps.map(() => clientID))
   }
 }
 
 // Kludge to prevent an editor from sending its changes for a moment
 function delay(pm, f) {
-  pm.mod.collab.frozen = true
+  let mod = collabEditing.get(pm)
+  mod.frozen = true
   f()
-  pm.mod.collab.frozen = false
-  if (pm.mod.collab.hasSendableSteps())
-    pm.mod.collab.signal("mustSend")
+  mod.frozen = false
+  if (mod.hasSendableSteps()) mod.signal("mustSend")
 }
 
 function test(name, f, options, n) {
@@ -43,8 +45,9 @@ function test(name, f, options, n) {
     let server = new DummyServer
     let optArray = []
     for (let i = 0; i < (n || 2); i++) {
-      let copy = {collab: {version: server.version}}
+      let copy = {}
       for (var prop in options) copy[prop] = options[prop]
+      copy.plugins = (copy.plugins || []).concat(collabEditing.config({version: server.version}))
       optArray.push(copy)
     }
     let pms = tempEditors(optArray)

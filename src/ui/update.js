@@ -46,7 +46,7 @@ class CentralScheduler {
   }
 
   static get(pm) {
-    return pm.mod.centralScheduler || (pm.mod.centralScheduler = new this(pm))
+    return pm.cached.centralScheduler || (pm.cached.centralScheduler = new this(pm))
   }
 }
 

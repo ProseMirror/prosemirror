@@ -1,31 +1,17 @@
 import {BlockQuote, OrderedList, BulletList, CodeBlock, Heading} from "../model"
-import {defineOption} from "../edit"
-import {InputRule, addInputRule, removeInputRule} from "./inputrules"
+import {Plugin} from "../edit"
+import {InputRule, inputRules} from "./inputrules"
 
 // :: Object<InputRule>
 // Base set of input rules, enabled by default when `autoInput` is set
 // to `true`.
 export const autoInputRules = Object.create(null)
 
-// :: union<bool, [union<string, Object<?InputRule>>]> #path=autoInput #kind=option
-// Controls the [input rules](#InputRule) initially active in the
-// editor. Pass an array of sources, which can be either the string
-// `"schema"`, to add rules [registered](#SchemaItem.register) on the
-// schema items (under the namespace `"autoInput"`), or an object
-// containing input rules. To remove previously included rules, you
-// can add an object that maps their name to `null`.
-//
-// The value `false` (the default) is a shorthand for no input rules,
-// and the value `true` for `["schema", autoInputRules]`.
-defineOption("autoInput", false, function(pm, val) {
-  if (pm.mod.autoInput) {
-    pm.mod.autoInput.forEach(rule => removeInputRule(pm, rule))
-    pm.mod.autoInput = null
-  }
-  if (val) {
-    if (val === true) val = ["schema", autoInputRules]
-    let rules = Object.create(null), list = pm.mod.autoInput = []
-    val.forEach(spec => {
+class AutoInput {
+  constructor(pm, options) {
+    this.rules = []
+    let rules = Object.create(null), mod = inputRules.ensure(pm)
+    options.specs.forEach(spec => {
       if (spec === "schema") {
         pm.schema.registry("autoInput", (name, rule, type, typeName) => {
           let rname = typeName + ":" + name, handler = rule.handler
@@ -41,10 +27,29 @@ defineOption("autoInput", false, function(pm, val) {
       }
     })
     for (let name in rules) {
-      addInputRule(pm, rules[name])
-      list.push(rules[name])
+      mod.addRule(rules[name])
+      this.rules.push(rules[name])
     }
   }
+
+  detach(pm) {
+    let mod = inputRules.ensure(pm)
+    this.rules.forEach(rule => mod.removeRule(rule))
+  }
+}
+
+// :: Plugin
+// Controls the [input rules](#InputRule) initially active in the
+// editor. Pass an array of sources, which can be either the string
+// `"schema"`, to add rules [registered](#SchemaItem.register) on the
+// schema items (under the namespace `"autoInput"`), or an object
+// containing input rules. To remove previously included rules, you
+// can add an object that maps their name to `null`.
+//
+// The value `false` (the default) is a shorthand for no input rules,
+// and the value `true` for `["schema", autoInputRules]`.
+export const autoInput = new Plugin(AutoInput, {
+  specs: ["schema", autoInputRules]
 })
 
 autoInputRules.emDash = new InputRule(/--$/, "-", "—")

@@ -5,7 +5,7 @@ import {defTest} from "../tests"
 
 import {Keymap} from "../../edit"
 
-function trace(prop) { return pm => pm.mod[prop] = (pm.mod[prop] || 0) + 1 }
+function trace(prop) { return pm => pm.cached[prop] = (pm.cached[prop] || 0) + 1 }
 
 const extraMap = new Keymap({
   "'B'": trace("b"),
@@ -21,7 +21,7 @@ test("basic", pm => {
   pm.addKeymap(extraMap)
   dispatch(pm, "'B'")
   dispatch(pm, "'B'")
-  cmp(pm.mod.b, 2)
+  cmp(pm.cached.b, 2)
 })
 
 test("multi", pm => {
@@ -30,7 +30,7 @@ test("multi", pm => {
   dispatch(pm, "C")
   dispatch(pm, "Ctrl-X")
   dispatch(pm, "C")
-  cmp(pm.mod.c, 2)
+  cmp(pm.cached.c, 2)
 })
 
 test("addKeymap", pm => {
@@ -38,12 +38,12 @@ test("addKeymap", pm => {
   let map = new Keymap({"Ctrl-A": trace("a2")})
   pm.addKeymap(map, 10)
   dispatch(pm, "Ctrl-A")
-  cmp(pm.mod.a, undefined)
-  cmp(pm.mod.a2, 1)
+  cmp(pm.cached.a, undefined)
+  cmp(pm.cached.a2, 1)
   pm.removeKeymap(map)
   dispatch(pm, "Ctrl-A")
-  cmp(pm.mod.a, 1)
-  cmp(pm.mod.a2, 1)
+  cmp(pm.cached.a, 1)
+  cmp(pm.cached.a2, 1)
 })
 
 test("addKeymap_bottom", pm => {
@@ -53,13 +53,13 @@ test("addKeymap_bottom", pm => {
   pm.addKeymap(mapTop, 10)
   pm.addKeymap(mapBot, 60)
   dispatch(pm, "Ctrl-A")
-  cmp(pm.mod.a2, 1)
-  cmp(pm.mod.a3, undefined)
+  cmp(pm.cached.a2, 1)
+  cmp(pm.cached.a3, undefined)
   dispatch(pm, "Ctrl-D")
-  cmp(pm.mod.d, 1)
+  cmp(pm.cached.d, 1)
   pm.removeKeymap(mapBot)
   dispatch(pm, "Ctrl-D")
-  cmp(pm.mod.d, 1)
+  cmp(pm.cached.d, 1)
 })
 
 test("multiBindings", pm => {

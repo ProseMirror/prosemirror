@@ -56,10 +56,8 @@ export class ProseMirror {
     if (opts.label)
       this.content.setAttribute("aria-label", opts.label)
 
-    // :: Object
-    // A namespace where modules can store references to themselves
-    // associated with this editor instance.
-    this.mod = Object.create(null)
+    // A namespace where plugins can store their state. See the `Plugin` class.
+    this.plugin = Object.create(null)
     this.cached = Object.create(null)
     this.operation = null
     this.dirtyNodes = new Map // Maps node object to 1 (re-scan content) or 2 (redraw entirely)
@@ -74,6 +72,7 @@ export class ProseMirror {
     this.commands = null
     this.commandKeys = null
     initOptions(this)
+    this.options.plugins.forEach(plugin => plugin.attach(this))
   }
 
   // :: (string, any)

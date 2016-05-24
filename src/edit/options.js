@@ -19,13 +19,13 @@ class Option {
 
 const options = Object.create(null)
 
-// :: (string, any, ?(pm: ProseMirror, newValue: any, oldValue: any, init: bool), bool)
+// : (string, any, ?(pm: ProseMirror, newValue: any, oldValue: any, init: bool), bool)
 // Define a new option. The `update` handler will be called with the
 // option's old and new value every time the option is
 // [changed](#ProseMirror.setOption). When `updateOnInit` is false, it
 // will not be called on editor init, otherwise it is called with null as the old value,
 // and a fourth argument of true.
-export function defineOption(name, defaultValue, update, updateOnInit) {
+function defineOption(name, defaultValue, update, updateOnInit) {
   options[name] = new Option(defaultValue, update, updateOnInit)
 }
 
@@ -88,6 +88,8 @@ defineOption("label", null)
 // When set, should be a function that takes a string as argument and returns
 // a string, i.e. :: (string) → string
 defineOption("translate", null) // FIXME create a way to explicitly force a menu redraw
+
+defineOption("plugins", [], false)
 
 export function parseOptions(obj) {
   let result = Object.create(null)

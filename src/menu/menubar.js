@@ -1,32 +1,10 @@
-import {defineOption} from "../edit"
+import {Plugin} from "../edit"
 import {elt, insertCSS} from "../dom"
 import {UpdateScheduler} from "../ui/update"
 
 import {renderGrouped, inlineGroup, insertMenu, textblockMenu, blockGroup, historyGroup} from "./menu"
 
 const prefix = "ProseMirror-menubar"
-
-// :: union<bool, Object> #path=menuBar #kind=option
-//
-// When given a truthy value, enables the menu bar module for this
-// editor. The menu bar takes up space above the editor, showing
-// currently available commands (that have been
-// [added](#CommandSpec.menuGroup) to the menu). To configure the
-// module, you can pass a configuration object, on which the following
-// properties are supported:
-//
-// **`float`**`: bool = false`
-//   : When enabled, causes the menu bar to stay visible when the
-//     editor is partially scrolled out of view, by making it float at
-//     the top of the viewport.
-//
-// **`content`**`: [`[`MenuGroup`](#MenuGroup)`]`
-//   : Determines the content of the menu.
-
-defineOption("menuBar", false, function(pm, value) {
-  if (pm.mod.menuBar) pm.mod.menuBar.detach()
-  pm.mod.menuBar = value ? new MenuBar(pm, value) : null
-})
 
 const defaultMenu = [
   inlineGroup,
@@ -38,7 +16,6 @@ const defaultMenu = [
 class MenuBar {
   constructor(pm, config) {
     this.pm = pm
-    this.config = config || {}
 
     this.wrapper = pm.wrapper.insertBefore(elt("div", {class: prefix}), pm.wrapper.firstChild)
     this.spacer = null
@@ -46,11 +23,11 @@ class MenuBar {
     this.widthForMaxHeight = 0
 
     this.updater = new UpdateScheduler(pm, "selectionChange change activeMarkChange commandsChanged", () => this.update())
-    this.content = config.content || defaultMenu
+    this.content = config.content
     this.updater.force()
 
     this.floating = false
-    if (this.config.float) {
+    if (config.float) {
       this.updateFloat()
       this.scrollFunc = () => {
         if (!document.body.contains(this.pm.wrapper))
@@ -133,6 +110,24 @@ function findWrappingScrollable(node) {
   for (let cur = node.parentNode; cur; cur = cur.parentNode)
     if (cur.scrollHeight > cur.clientHeight) return cur
 }
+
+// :: Plugin
+// Plugin that enables the menu bar for an editor. The menu bar takes
+// up space above the editor, showing currently available commands
+// (that have been [added](#CommandSpec.menuGroup) to the menu). The
+// following options are supported:
+//
+// **`float`**`: bool = false`
+//   : When enabled, causes the menu bar to stay visible when the
+//     editor is partially scrolled out of view, by making it float at
+//     the top of the viewport.
+//
+// **`content`**`: [`[`MenuGroup`](#MenuGroup)`]`
+//   : Determines the content of the menu.
+export const menuBar = new Plugin(MenuBar, {
+  content: defaultMenu,
+  float: false
+})
 
 insertCSS(`
 .${prefix} {

@@ -122,17 +122,17 @@ export class MenuCommandGroup {
   // :: (ProseMirror) → [MenuCommand]
   // Get the group of matching commands in the given editor.
   get(pm) {
-    let groups = pm.mod.menuGroups || this.startGroups(pm)
+    let groups = pm.cached.menuGroups || this.startGroups(pm)
     return groups[this.name] || (groups[this.name] = this.collect(pm))
   }
 
   startGroups(pm) {
     let clear = () => {
-      pm.mod.menuGroups = null
+      pm.cached.menuGroups = null
       pm.off("commandsChanging", clear)
     }
     pm.on("commandsChanging", clear)
-    return pm.mod.menuGroups = Object.create(null)
+    return pm.cached.menuGroups = Object.create(null)
   }
 }
 
