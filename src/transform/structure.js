@@ -61,6 +61,16 @@ Transform.prototype.lift = function(from, to = from, silent = false) {
 
   let {depth, shared, unwrap} = liftable
 
+  if (unwrap) {
+    let parent = $from.node(shared), pos = $to.after(shared + 1)
+    for (let i = $to.indexAfter(shared); pos > from; i--) {
+      let size = parent.child(i - 1).nodeSize
+      this.lift(pos - size + 1, pos - 1, silent)
+      pos -= size
+    }
+    return this
+  }
+
   let gapStart = $from.before(shared + 1), gapEnd = $to.after(shared + 1)
   let start = gapStart, end = gapEnd
 
@@ -82,20 +92,6 @@ Transform.prototype.lift = function(from, to = from, silent = false) {
     } else {
       end++
     }
-
-  if (unwrap) {
-    let joinPos = gapStart, parent = $from.node(shared)
-    for (let i = $from.index(shared), e = $to.index(shared) + 1, first = true; i < e; i++, first = false) {
-      if (!first) {
-        this.join(joinPos)
-        end -= 2
-        gapEnd -= 2
-      }
-      joinPos += parent.child(i).nodeSize - (first ? 0 : 2)
-    }
-    ++gapStart
-    --gapEnd
-  }
 
   return this.step(new ReplaceAroundStep(start, end, gapStart, gapEnd,
                                          new Slice(before.append(after), beforeDepth, afterDepth),
