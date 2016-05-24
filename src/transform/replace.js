@@ -252,8 +252,8 @@ function placeSlice($from, slice) {
     // FIXME cut/remove marks when it helps find a placement
     let found = findPlacement(curFragment, $from, dFrom)
     if (found) {
-      if (curFragment.size > 0) placed[found.depth] = {
-        content: found.fill.append(curFragment),
+      if (found.fragment.size > 0) placed[found.depth] = {
+        content: found.fill.append(found.fragment),
         openRight: dSlice > 0 ? 0 : slice.openRight - dSlice,
         depth: found.depth
       }
@@ -281,8 +281,27 @@ function placeSlice($from, slice) {
 }
 
 function findPlacement(fragment, $from, start) {
+  let hasMarks = false
+  for (let i = 0; i < fragment.childCount; i++)
+    if (fragment.child(i).marks.length) hasMarks = true
   for (let d = start; d >= 0; d--) {
-    let match = $from.node(d).contentMatchAt($from.indexAfter(d)).fillBefore(fragment)
-    if (match) return {depth: d, fill: match}
+    let startMatch = $from.node(d).contentMatchAt($from.indexAfter(d))
+    let match = startMatch.fillBefore(fragment)
+    if (match) return {depth: d, fill: match, fragment}
+    if (hasMarks) {
+      let stripped = matchStrippingMarks(startMatch, fragment)
+      if (stripped) return {depth: d, fill: Fragment.empty, fragment: stripped}
+    }
   }
+}
+
+function matchStrippingMarks(match, fragment) {
+  let newNodes = []
+  for (let i = 0; i < fragment.childCount; i++) {
+    let node = fragment.child(i), stripped = node.mark(node.marks.filter(m => match.allowsMark(m.type)))
+    match = match.matchNode(stripped)
+    if (!match) return null
+    newNodes.push(stripped)
+  }
+  return Fragment.from(newNodes)
 }
