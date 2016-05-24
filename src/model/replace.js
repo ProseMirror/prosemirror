@@ -28,15 +28,16 @@ export class Slice {
   }
 
   insertAt(pos, fragment) {
-    function insertInto(content, dist, insert) {
+    function insertInto(content, dist, insert, parent) {
       let {index, offset} = content.findIndex(dist), child = content.maybeChild(index)
-      if (offset == dist || child.isText)
+      if (offset == dist || child.isText) {
+        if (parent && !parent.canReplace(index, index, insert)) return null
         return content.cut(0, dist).append(insert).append(content.cut(dist))
+      }
       let inner = insertInto(child.content, dist - offset - 1, insert)
-      if (!inner || (offset + child.nodeSize > dist && !child.type.contentExpr.matches(child.attrs, inner))) return null
-      return content.replaceChild(index, child.copy(inner))
+      return inner && content.replaceChild(index, child.copy(inner))
     }
-    let content = insertInto(this.content, pos + this.openLeft, fragment)
+    let content = insertInto(this.content, pos + this.openLeft, fragment, null)
     return content && new Slice(content, this.openLeft, this.openRight)
   }
 
