@@ -406,7 +406,7 @@ NodeType.derivableCommands.wrap = function(conf) {
     },
     select(pm) {
       let {from, to, head} = pm.selection
-      if (conf.list && head && isAtTopOfListItem(pm.doc, from, to, this) && pm.doc.resolve(from).index(-2) == 0)
+      if (conf.list && head != null && isAtTopOfListItem(pm.doc, from, to, this) && pm.doc.resolve(from).index(-2) == 0)
         return false
       return canWrap(pm.doc, from, to, this)
     },

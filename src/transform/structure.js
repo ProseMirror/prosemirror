@@ -112,14 +112,19 @@ export function canWrap(doc, from, to, type, attrs) {
 function checkWrap($from, $to, type, attrs) {
   let shared = rangeDepth($from, $to)
   if (shared == null) return null
-  let parent = $from.node(shared)
-  let around = parent.contentMatchAt($from.index(shared)).findWrapping(type, attrs)
+  let parent = $from.node(shared), parentFrom = $from.index(shared), parentTo = $to.indexAfter(shared)
+  let around = parent.contentMatchAt(parentFrom).findWrapping(type, attrs)
   if (!around) return null
-  if (!parent.canReplaceWith($from.index(shared), $to.indexAfter(shared), around.length ? around[0].type : type,
+  if (!parent.canReplaceWith(parentFrom, parentTo, around.length ? around[0].type : type,
                              around.length ? around[0].attrs : attrs)) return null
-  let inner = parent.child($from.index(shared))
+  let inner = parent.child(parentFrom)
   let inside = type.contentExpr.start(attrs || type.defaultAttrs).findWrapping(inner.type, inner.attrs)
-  if (around && inside) return {shared, around, inside}
+  if (!inside) return null
+  let lastInside = inside[inside.length - 1]
+  let innerMatch = (lastInside ? lastInside.type : type).contentExpr.start(lastInside ? lastInside.attrs : attrs)
+  for (let i = parentFrom; i < parentTo; i++)
+    if (!(innerMatch = innerMatch.matchNode(parent.child(i)))) return null
+  return {shared, around, inside}
 }
 
 // :: (number, ?number, NodeType, ?Object) → Transform
