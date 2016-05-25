@@ -109,18 +109,18 @@ export function fromHTML(schema, html, options) {
 // can set `preserveWhiteSpace` to a boolean to enable or disable
 // preserving of whitespace when parsing the content.
 
-// :: Object<union<ParseSpec, (DOMNode) → union<bool, ParseSpec>>> #path=NodeType.prototype.matchTag
+// :: Object<union<ParseSpec, (DOMNode) → union<bool, ParseSpec>>> #path=NodeType.prototype.matchDOMTag
 // Defines the way nodes of this type are parsed. Should contain an
 // object mapping CSS selectors (such as `"p"` for `<p>` tags, or
 // `div[data-type="foo"]` for `<div>` tags with a specific attribute)
 // to [parse specs](#ParseSpec) or functions that, when given a DOM
 // node, return either `false` or a parse spec.
 
-// :: Object<union<ParseSpec, (DOMNode) → union<bool, ParseSpec>>> #path=MarkType.prototype.matchTag
+// :: Object<union<ParseSpec, (DOMNode) → union<bool, ParseSpec>>> #path=MarkType.prototype.matchDOMTag
 // Defines the way marks of this type are parsed. Works just like
 // `NodeType.matchTag`, but produces marks rather than nodes.
 
-// :: Object<union<?Object, (string) → union<bool, ?Object>>> #path=MarkType.prototype.matchStyle
+// :: Object<union<?Object, (string) → union<bool, ?Object>>> #path=MarkType.prototype.matchDOMStyle
 // Defines the way DOM styles are mapped to marks of this type. Should
 // contain an object mapping CSS property names, as found in inline
 // styles, to either attributes for this mark (null for default
@@ -469,12 +469,12 @@ function schemaInfo(schema) {
 function summarizeSchemaInfo(schema) {
   let selectors = [], styles = []
   for (let name in schema.nodes) {
-    let type = schema.nodes[name], match = type.matchTag
+    let type = schema.nodes[name], match = type.matchDOMTag
     if (match) for (let selector in match)
       selectors.push({selector, type, value: match[selector]})
   }
   for (let name in schema.marks) {
-    let type = schema.marks[name], match = type.matchTag, props = type.matchStyle
+    let type = schema.marks[name], match = type.matchDOMTag, props = type.matchDOMStyle
     if (match) for (let selector in match)
       selectors.push({selector, type, value: match[selector]})
     if (props) for (let prop in props)
