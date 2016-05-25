@@ -1,59 +1,69 @@
-import {Text, BlockQuote, OrderedList, BulletList, ListItem,
-        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmMark, StrongMark, LinkMark, CodeMark, Node} from "../model"
+import {Node} from "../model"
 
-// ;; Object used to to expose relevant values and methods
+// Object used to to expose relevant values and methods
 // to DOM serializer functions.
 class DOMSerializer {
   constructor(options) {
-    // :: Object The options passed to the serializer.
+    // : Object The options passed to the serializer.
     this.options = options || {}
-    // :: DOMDocument The DOM document in which we are working.
+    // : DOMDocument The DOM document in which we are working.
     this.doc = this.options.document || window.document
   }
 
-  // :: (string, ?Object, ...[union<string, DOMNode>]) → DOMNode
-  // Create a DOM node of the given type, with (optionally) the given
-  // attributes and content. Content elements may be strings (for text
-  // nodes) or other DOM nodes.
-  elt(type, attrs, ...content) {
-    let result = this.doc.createElement(type)
-    if (attrs) for (let name in attrs) {
-      if (name == "style")
-        result.style.cssText = attrs[name]
-      else if (attrs[name])
-        result.setAttribute(name, attrs[name])
-    }
-    for (let i = 0; i < content.length; i++)
-      result.appendChild(typeof content[i] == "string" ? this.doc.createTextNode(content[i]) : content[i])
-    return result
-  }
-
-  renderNode(node, offset) {
-    let dom = node.type.serializeDOM(node, this)
+  renderNode(node, pos, offset) {
+    let dom = this.renderStructure(node.type.toDOM(node), node.content, pos + 1)
     if (this.options.onRender)
-      dom = this.options.onRender(node, dom, offset) || dom
+      dom = this.options.onRender(node, dom, pos, offset) || dom
     return dom
   }
 
-  renderFragment(fragment, where) {
+  renderStructure(structure, content, startPos) {
+    if (typeof structure == "string")
+      return this.doc.createTextNode(structure)
+    if (structure.nodeType != null)
+      return structure
+    let dom = this.doc.createElement(structure[0]), attrs = structure[1], start = 1
+    if (attrs && typeof attrs == "object" && attrs.nodeType == null && !Array.isArray(attrs)) {
+      start = 2
+      for (let name in attrs) {
+        if (name == "style") dom.style.cssText = attrs[name]
+        else if (attrs[name]) dom.setAttribute(name, attrs[name])
+      }
+    }
+    for (let i = start; i < structure.length; i++) {
+      let child = structure[i]
+      if (child === 0) {
+        if (!content)
+          throw new RangeError("Content hole not allowed in a Mark spec (must produce a single node)")
+        if (i < structure.length - 1 || i > start)
+          throw new RangeError("Content hole must be the only child of its parent node")
+        if (this.options.onContainer) this.options.onContainer(dom)
+        this.renderFragment(content, dom, startPos)
+      } else {
+        dom.appendChild(this.renderStructure(child, content, startPos))
+      }
+    }
+    return dom
+  }
+
+  renderFragment(fragment, where, startPos) {
     if (!where) where = this.doc.createDocumentFragment()
     if (fragment.size == 0) return where
 
     if (!fragment.firstChild.isInline)
-      this.renderBlocksInto(fragment, where)
+      this.renderBlocksInto(fragment, where, startPos)
     else if (this.options.renderInlineFlat)
-      this.renderInlineFlatInto(fragment, where)
+      this.renderInlineFlatInto(fragment, where, startPos)
     else
-      this.renderInlineInto(fragment, where)
+      this.renderInlineInto(fragment, where, startPos)
     return where
   }
 
-  renderBlocksInto(fragment, where) {
-    fragment.forEach((node, offset) => where.appendChild(this.renderNode(node, offset)))
+  renderBlocksInto(fragment, where, startPos) {
+    fragment.forEach((node, offset) => where.appendChild(this.renderNode(node, startPos + offset, offset)))
   }
 
-  renderInlineInto(fragment, where) {
+  renderInlineInto(fragment, where, startPos) {
     let top = where
     let active = []
     fragment.forEach((node, offset) => {
@@ -69,21 +79,21 @@ class DOMSerializer {
         active.push(add)
         top = top.appendChild(this.renderMark(add))
       }
-      top.appendChild(this.renderNode(node, offset))
+      top.appendChild(this.renderNode(node, startPos + offset, offset))
     })
   }
 
-  renderInlineFlatInto(fragment, where) {
+  renderInlineFlatInto(fragment, where, startPos) {
     fragment.forEach((node, offset) => {
-      let dom = this.renderNode(node, offset)
+      let pos = startPos + offset, dom = this.renderNode(node, pos, offset)
       dom = this.wrapInlineFlat(dom, node.marks)
-      dom = this.options.renderInlineFlat(node, dom, offset) || dom
+      dom = this.options.renderInlineFlat(node, dom, pos, offset) || dom
       where.appendChild(dom)
     })
   }
 
   renderMark(mark) {
-    return mark.type.serializeDOM(mark, this)
+    return this.renderStructure(mark.type.toDOM(mark))
   }
 
   wrapInlineFlat(dom, marks) {
@@ -94,19 +104,6 @@ class DOMSerializer {
     }
     return dom
   }
-
-  // :: (Node, string, ?Object) → DOMNode
-  // Render the content of ProseMirror node into a DOM node with the
-  // given tag name and attributes.
-  renderAs(node, tagName, tagAttrs) {
-    if (this.options.preRenderContent) this.options.preRenderContent(node)
-
-    let dom = this.renderFragment(node.content, this.elt(tagName, tagAttrs))
-    if (this.options.onContainer) this.options.onContainer(dom)
-
-    if (this.options.postRenderContent) this.options.postRenderContent(node)
-    return dom
-  }
 }
 
 // :: (union<Node, Fragment>, ?Object) → DOMFragment
@@ -115,33 +112,48 @@ class DOMSerializer {
 // should be passed so that the serialize can create nodes.
 //
 // To define rendering behavior for your own [node](#NodeType) and
-// [mark](#MarkType) types, give them a `serializeDOM` method. This
-// method is passed a `Node` and a `DOMSerializer`, and should return
-// the [DOM
-// node](https://developer.mozilla.org/en-US/docs/Web/API/Node) that
-// represents this node and its content. For marks, that should be an
-// inline wrapping node like `<a>` or `<strong>`.
-//
-// Individual attributes can also define serialization behavior. If an
-// `Attribute` object has a `serializeDOM` method, that will be called
-// with the DOM node representing the node that the attribute applies
-// to and the atttribute's value, so that it can set additional DOM
-// attributes on the DOM node.
+// [mark](#MarkType) types, give them a [`toDOM`](#NodeType.toDOM)
+// method.
 export function toDOM(content, options) {
-  return new DOMSerializer(options).renderFragment(content instanceof Node ? content.content : content)
+  return new DOMSerializer(options)
+    .renderFragment(content instanceof Node ? content.content : content, null, options.pos || 0)
 }
+
+// :: (Node) → DOMOutputSpec #path=NodeType.prototype.toDOM
+// Defines the way the node should be serialized to DOM/HTML. Should
+// return an [array structure](#DOMOutputSpec) that describes the
+// resulting DOM structure, with an optional number zero (“hole”) in
+// it to indicate where the node's content should be inserted.
+
+// :: (Node) → DOMOutputSpec #path=MarkType.prototype.toDOM
+// Defines the way the mark should be serialized to DOM/HTML.
+
+// :: union<string, DOMNode, [any]> #path=DOMOutputSpec #kind=interface
+// A description of a DOM structure. Strings are interpreted as text
+// nodes. A DOM node simply means itself.
+//
+// An array describes a DOM element. The first element in the array
+// should be a string, and is the name of the DOM element. If the
+// second element is a non-Array, non-DOM node object, it is
+// interpreted as an object providing the DOM element's attributes.
+// Any elements after that (including the 2nd if it's not an attribute
+// object) are interpreted as children of the DOM elements, and must
+// either be valid `DOMOutputSpec` values, or the number zero.
+//
+// The number zero (pronounce “hole”) is used to indicate the place
+// where a ProseMirror node's content should be inserted.
 
 // :: (Node, ?Object) → DOMNode
 // Serialize a given node to a DOM node. This is useful when you need
 // to serialize a part of a document, as opposed to the whole
 // document.
 export function nodeToDOM(node, options, offset) {
-  let serializer = new DOMSerializer(options)
-  let dom = serializer.renderNode(node, offset)
+  let serializer = new DOMSerializer(options), pos = options.pos || 0
+  let dom = serializer.renderNode(node, pos, offset)
   if (node.isInline) {
     dom = serializer.wrapInlineFlat(dom, node.marks)
     if (serializer.options.renderInlineFlat)
-      dom = options.renderInlineFlat(node, dom, offset) || dom
+      dom = options.renderInlineFlat(node, dom, pos, offset) || dom
   }
   return dom
 }
@@ -152,55 +164,7 @@ export function nodeToDOM(node, options, offset) {
 // when not in the browser.
 export function toHTML(content, options) {
   let serializer = new DOMSerializer(options)
-  let wrap = serializer.elt("div")
-  wrap.appendChild(serializer.renderFragment(content instanceof Node ? content.content : content))
+  let wrap = serializer.doc.createElement("div")
+  wrap.appendChild(serializer.renderFragment(content instanceof Node ? content.content : content, null, options.pos || 0))
   return wrap.innerHTML
 }
-
-// Block nodes
-
-function def(cls, method) { cls.prototype.serializeDOM = method }
-
-def(BlockQuote, (node, s) => s.renderAs(node, "blockquote"))
-
-def(BulletList, (node, s) => s.renderAs(node, "ul"))
-
-def(OrderedList, (node, s) => s.renderAs(node, "ol", {start: node.attrs.order != 1 && node.attrs.order}))
-
-def(ListItem, (node, s) => s.renderAs(node, "li"))
-
-def(HorizontalRule, (_, s) => s.elt("div", null, s.elt("hr")))
-
-def(Paragraph, (node, s) => s.renderAs(node, "p"))
-
-def(Heading, (node, s) => s.renderAs(node, "h" + node.attrs.level))
-
-def(CodeBlock, (node, s) => {
-  let code = s.renderAs(node, "code")
-  if (node.attrs.params != null)
-    code.className = "fence " + node.attrs.params.replace(/(^|\s+)/g, "$&lang-")
-  return s.elt("pre", null, code)
-})
-
-// Inline content
-
-def(Text, (node, s) => s.doc.createTextNode(node.text))
-
-def(Image, (node, s) => s.elt("img", {
-  src: node.attrs.src,
-  alt: node.attrs.alt,
-  title: node.attrs.title
-}))
-
-def(HardBreak, (_, s) => s.elt("br"))
-
-// Inline styles
-
-def(EmMark, (_, s) => s.elt("em"))
-
-def(StrongMark, (_, s) => s.elt("strong"))
-
-def(CodeMark, (_, s) => s.elt("code"))
-
-def(LinkMark, (mark, s) => s.elt("a", {href: mark.attrs.href,
-                                       title: mark.attrs.title}))

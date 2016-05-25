@@ -7,10 +7,8 @@ import {childContainer} from "./dompos"
 function options(ranges) {
   return {
     pos: 0,
-    preRenderContent() { this.pos++ },
-    postRenderContent() { this.pos++ },
 
-    onRender(node, dom, offset) {
+    onRender(node, dom, _pos, offset) {
       if (node.isBlock) {
         if (offset != null)
           dom.setAttribute("pm-offset", offset)
@@ -19,18 +17,17 @@ function options(ranges) {
           adjustTrailingHacks(dom, node)
         if (dom.contentEditable == "false")
           dom = elt("div", null, dom)
-        if (node.type.isLeaf) this.pos++
       }
 
       return dom
     },
-    onContainer(node) {
-      node.setAttribute("pm-container", true)
+    onContainer(dom) {
+      dom.setAttribute("pm-container", true)
     },
-    // : (Node, DOMNode, number) → DOMNode
-    renderInlineFlat(node, dom, offset) {
-      ranges.advanceTo(this.pos)
-      let pos = this.pos, end = pos + node.nodeSize
+    // : (Node, DOMNode, number, number) → DOMNode
+    renderInlineFlat(node, dom, pos, offset) {
+      ranges.advanceTo(pos)
+      let end = pos + node.nodeSize
       let nextCut = ranges.nextChangeBefore(end)
 
       let inner = dom, wrapped
@@ -65,7 +62,6 @@ function options(ranges) {
 
       if (ranges.current.length)
         wrapped.className = ranges.current.join(" ")
-      this.pos += node.nodeSize
       return dom
     },
     document

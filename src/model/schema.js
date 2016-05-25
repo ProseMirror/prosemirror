@@ -264,6 +264,7 @@ export class Text extends Inline {
   create(attrs, content, marks) {
     return new TextNode(this, this.computeAttrs(attrs), content, marks)
   }
+  toDOM(node) { return node.text }
 }
 
 // Attribute descriptors
