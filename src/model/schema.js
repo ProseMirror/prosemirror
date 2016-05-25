@@ -244,11 +244,7 @@ export class NodeType extends SchemaItem {
 // ;; Base type for block nodetypes.
 export class Block extends NodeType {
   get isBlock() { return true }
-}
-
-// ;; Base type for textblock node types.
-export class Textblock extends Block {
-  get isTextblock() { return true }
+  get isTextblock() { return this.contentExpr.inlineContent }
 }
 
 // ;; Base type for inline node types.

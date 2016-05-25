@@ -1,9 +1,10 @@
 import {Fragment} from "./fragment"
 
 export class ContentExpr {
-  constructor(nodeType, elements) {
+  constructor(nodeType, elements, inlineContent) {
     this.nodeType = nodeType
     this.elements = elements
+    this.inlineContent = inlineContent
   }
 
   get isLeaf() {
@@ -102,7 +103,7 @@ export class ContentExpr {
       elements.push(newElt)
     }
 
-    return new ContentExpr(nodeType, elements)
+    return new ContentExpr(nodeType, elements, !!inline)
   }
 }
 

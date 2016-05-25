@@ -1,4 +1,4 @@
-import {Schema, Block, Textblock, Inline, Text, Attribute, MarkType} from "./schema"
+import {Schema, Block, Inline, Text, Attribute, MarkType} from "./schema"
 
 // ;; The default top-level document node type.
 export class Doc extends Block {}
@@ -44,7 +44,7 @@ export class HorizontalRule extends Block {
 
 // ;; The default heading node type. Has a single attribute
 // `level`, which indicates the heading level, and defaults to 1.
-export class Heading extends Textblock {
+export class Heading extends Block {
   get attrs() { return {level: new Attribute({default: 1})} }
   // :: number
   // Controls the maximum heading level. Has the value 6 in the
@@ -65,14 +65,14 @@ export class Heading extends Textblock {
 
 // ;; The default code block / listing node type. Only
 // allows unmarked text nodes inside of it.
-export class CodeBlock extends Textblock {
+export class CodeBlock extends Block {
   get isCode() { return true }
   get matchDOMTag() { return {"pre": [null, {preserveWhitespace: true}]} }
   toDOM() { return ["pre", ["code", 0]] }
 }
 
 // ;; The default paragraph node type.
-export class Paragraph extends Textblock {
+export class Paragraph extends Block {
   get matchDOMTag() { return {"p": null} }
   toDOM() { return ["p", 0] }
 }

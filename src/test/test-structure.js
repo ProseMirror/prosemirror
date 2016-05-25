@@ -1,4 +1,4 @@
-import {Schema, Block, Text, Textblock, Attribute, EmMark, Slice} from "../model"
+import {Schema, Block, Text, Attribute, EmMark, Slice} from "../model"
 import {canSplit, canLift, canWrap, Transform} from "../transform"
 
 import {defTest} from "./tests"
@@ -7,15 +7,15 @@ import {cmpNode, is} from "./cmp"
 const schema = new Schema({
   nodes: {
     doc: {type: Block, content: "head? block* sect* closing?"},
-    para: {type: Textblock, content: "text<_>*", group: "block"},
-    head: {type: Textblock, content: "text*"},
+    para: {type: Block, content: "text<_>*", group: "block"},
+    head: {type: Block, content: "text*"},
     figure: {type: Block, content: "caption figureimage", group: "block"},
     quote: {type: Block, content: "block+", group: "block"},
     figureimage: {type: Block},
-    caption: {type: Textblock, content: "text*"},
+    caption: {type: Block, content: "text*"},
     sect: {type: Block, content: "head block* sect*"},
-    closing: {type: Textblock, content: "text<_>*"},
-    tcell: {type: Textblock, content: "text<_>*"},
+    closing: {type: Block, content: "text<_>*"},
+    tcell: {type: Block, content: "text<_>*"},
     trow: {type: class extends Block {
       get attrs() { return {columns: new Attribute({default: 1})} }
     }, content: "tcell{.columns}"},

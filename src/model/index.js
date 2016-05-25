@@ -17,8 +17,7 @@ export {Fragment} from "./fragment"
 export {Slice, ReplaceError} from "./replace"
 export {Mark} from "./mark"
 
-export {SchemaSpec, Schema,
-        NodeType, Block, Textblock, Inline, Text,
+export {SchemaSpec, Schema, NodeType, Block, Inline, Text,
         MarkType, Attribute, NodeKind} from "./schema"
 export {defaultSchema, Doc, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
