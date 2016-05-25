@@ -1,8 +1,7 @@
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmMark, StrongMark, LinkMark, CodeMark,
-        Fragment, Node, NodeType, Mark} from "../model"
-import sortedInsert from "../util/sortedinsert"
+        Fragment, NodeType} from "../model"
 
 // :: (Schema, DOMNode, ?Object) → Node
 // Parse document from the content of a DOM node. To pass an explicit
@@ -71,18 +70,16 @@ function builderFromContext($context, dom) {
 }
 
 function parseInfoAtSide(schema, dom, side) {
-  let info = schemaInfo(schema).tags
+  let info = schemaInfo(schema).selectors
   for (let cur = dom, next;; cur = next) {
     next = cur && (side > 0 ? cur.lastChild || cur.previousSibling : cur.firstChild || cur.nextSibling)
     if (!next && cur != dom)
       next = side > 0 ? cur.parentNode.previousSibling : cur.parentNode.nextSibling
     if (!next) return null
     if (next.nodeType == 1) {
-      let result = findMatchingHandler(info, next)
-      if (result) {
-        if (result instanceof Node) return result
-        if (result[0] instanceof NodeType) return result[0].create(result[1])
-      }
+      let result = matchTag(info, next)
+      if (result && result.type instanceof NodeType)
+        return result.type.create(result.attrs)
     }
     cur = next
   }
@@ -96,34 +93,43 @@ export function fromHTML(schema, html, options) {
   return fromDOM(schema, wrap, options)
 }
 
-// ;; #path=DOMParseSpec #kind=interface
-// To define the way [node](#NodeType) and [mark](#MarkType) types are
-// parsed, you can associate one or more DOM parsing specifications to
-// them using the [`register`](#SchemaItem.register) method with the
-// `"parseDOM"` namespace, using the HTML node name (lowercase) as
-// value name. Each of them defines a parsing strategy for a certain
-// type of DOM node. When `"_"` is used as name, the parser is
-// activated for all nodes.
+// :: union<?Object, [?Object, {content: ?union<bool, DOMNode>, preserveWhiteSpace: ?bool}]>
+// #path=ParseSpec #kind=interface
+// A value that describes how to parse a given DOM node as a
+// ProseMirror node or mark type. Specifies the attributes of the new
+// node or mark, along with optional information about the way the
+// node's content should be treated.
+//
+// May either be a set of attributes, where `null` indicates the
+// node's default attributes, or an array containing first a set of
+// attributes and then an object describing the treatment of the
+// node's content. If the `content` property is `false`, the content
+// will be ignored. If it is not given, the DOM node's children will
+// be parsed as content of the ProseMirror node or mark. If it is a
+// DOM node, that DOM node's content is treated as the content of the
+// new node or mark (this is useful if, for example, your DOM
+// representation puts its child nodes in an inner wrapping node). You
+// can set `preserveWhiteSpace` to a boolean to enable or disable
+// preserving of whitespace when parsing the content.
 
-// :: ?number #path=DOMParseSpec.rank
-// The precedence of this parsing strategy. Should be a number between
-// 0 and 100, which determines when this parser gets a chance relative
-// to others that apply to the node (low ranks go first). Defaults to
-// 50.
+// :: Object<union<ParseSpec, (DOMNode) → union<bool, ParseSpec>>> #path=NodeType.prototype.matchTag
+// Defines the way nodes of this type are parsed. Should contain an
+// object mapping CSS selectors (such as `"p"` for `<p>` tags, or
+// `div[data-type="foo"]` for `<div>` tags with a specific attribute)
+// to [parse specs](#ParseSpec) or functions that, when given a DOM
+// node, return either `false` or a parse spec.
 
-// :: (dom: DOMNode) → ?Object> #path=DOMParseSpec.parse
-// The function that, given a DOM node, returns the way that it wraps
-// its content in a ProseMirror node or mark. It should return null
-// when it wants to indicate that it was not able to parse this node.
-// Otherwise, it must return an object like `{node: ?NodeType, mark:
-// ?MarkType, attrs: ?Object, content: ?union<DOMNode, Fragment>}`,
-// where either `node` or `mark` has a value, indicating the content
-// (given either as further DOM content to parse, or as a finished
-// `Fragment`) should be wrapped in such a node or mark.
+// :: Object<union<ParseSpec, (DOMNode) → union<bool, ParseSpec>>> #path=MarkType.prototype.matchTag
+// Defines the way marks of this type are parsed. Works just like
+// `NodeType.matchTag`, but produces marks rather than nodes.
 
-// :: ?string #path=DOMParseSpec.selector
-// A css selector to match against. If present, it will try to match the selector
-// against the dom node prior to calling the parse function.
+// :: Object<union<?Object, (string) → union<bool, ?Object>>> #path=MarkType.prototype.matchStyle
+// Defines the way DOM styles are mapped to marks of this type. Should
+// contain an object mapping CSS property names, as found in inline
+// styles, to either attributes for this mark (null for default
+// attributes), or a function mapping the style's value to either a
+// set of attributes or `false` to indicate that the style does not
+// match.
 
 class NodeBuilder {
   constructor(type, attrs, solid, prev, match) {
@@ -273,9 +279,9 @@ class DOMParseState {
     this.top = top
     // : [Mark] The current set of marks
     this.marks = noMarks
-    let info = schemaInfo(schema)
-    this.tagInfo = info.tags
-    this.styleInfo = info.styles
+    // : bool Whether to preserve whitespace
+    this.preserveWhitespace = this.options.preserveWhitespace
+    this.info = schemaInfo(schema)
   }
 
   // : (Mark) → [Mark]
@@ -295,7 +301,7 @@ class DOMParseState {
       let value = dom.nodeValue
       let top = this.top
       if (/\S/.test(value) || top.type.isTextblock) {
-        if (!this.options.preserveWhitespace) {
+        if (!this.preserveWhitespace) {
           value = value.replace(/\s+/g, " ")
           // If this starts with whitespace, and there is either no node
           // before it or a node that ends with whitespace, strip the
@@ -333,13 +339,10 @@ class DOMParseState {
   addElementWithStyles(styles, dom) {
     let oldMarks = this.marks, marks = this.marks
     for (let i = 0; i < styles.length; i += 2) {
-      let parsers = this.styleInfo[styles[i]], value = styles[i + 1]
-      if (parsers) for (let j = 0; j < parsers.length; j++) {
-        let parser = parsers[j]
-        let result = parser.parse.call(parser.type, value)
-        if (result === false) return
-        if (result) marks = result.addToSet(marks)
-      }
+      let result = matchStyle(this.info.styles, styles[i], styles[i + 1])
+      if (!result) continue
+      if (result.attrs === false) return
+      marks = result.type.create(result.attrs).addToSet(marks)
     }
     this.marks = marks
     this.addElement(dom)
@@ -350,20 +353,27 @@ class DOMParseState {
   // Look up a handler for the given node. If none are found, return
   // false. Otherwise, apply it, use its return value to drive the way
   // the node's content is wrapped, and return true.
-  parseNodeType(dom, name) {
-    let result = findMatchingHandler(this.tagInfo, dom, name)
+  parseNodeType(dom) {
+    let result = matchTag(this.info.selectors, dom)
     if (!result) return false
 
-    if (result instanceof Node) {
-      this.insertNode(result)
-    } else if (result instanceof Mark) {
-      let before = this.addMark(result)
-      this.addAll(dom.firstChild, null)
-      this.marks = before
-    } else {
-      let sync = this.enter(result[0], result[1])
-      this.addAll((result[2] || dom).firstChild, null, sync)
+    let isNode = result.type instanceof NodeType, sync, before
+    if (isNode) sync = this.enter(result.type, result.attrs)
+    else before = this.addMark(result.type.create(result.attrs))
+
+    let contentNode = dom, preserve = null, prevPreserve = this.preserveWhitespace
+    if (result.content) {
+      if (result.content.content === false) contentNode = null
+      else if (result.content.content) contentNode = result.content.content
+      preserve = result.content.preserveWhitespace
+    }
+
+    if (contentNode) {
+      if (preserve != null) this.preserveWhitespace = preserve
+      this.addAll(contentNode.firstChild, null, sync)
       if (sync) this.sync(sync.prev)
+      else if (before) this.marks = before
+      if (preserve != null) this.preserveWhitespace = prevPreserve
     }
     return true
   }
@@ -413,7 +423,7 @@ class DOMParseState {
   // : ()
   // Leave the node currently at the top.
   leave() {
-    if (!this.options.preserveWhitespace) this.top.stripTrailingSpace()
+    if (!this.preserveWhitespace) this.top.stripTrailingSpace()
     this.top = this.top.prev
   }
 
@@ -460,103 +470,96 @@ function schemaInfo(schema) {
 }
 
 function summarizeSchemaInfo(schema) {
-  let tags = Object.create(null), styles = Object.create(null)
-  tags._ = []
-  schema.registry("parseDOM", (tag, info, type) => {
-    let parse = info.parse
-    sortedInsert(tags[tag] || (tags[tag] = []), {
-      type, parse,
-      selector: info.selector,
-      rank: info.rank == null ? 50 : info.rank
-    }, (a, b) => a.rank - b.rank)
-  })
-  schema.registry("parseDOMStyle", (style, info, type) => {
-    sortedInsert(styles[style] || (styles[style] = []), {
-      type,
-      parse: info.parse,
-      rank: info.rank == null ? 50 : info.rank
-    }, (a, b) => a.rank - b.rank)
-  })
-  return {tags, styles}
+  let selectors = [], styles = []
+  for (let name in schema.nodes) {
+    let type = schema.nodes[name], match = type.matchTag
+    if (match) for (let selector in match)
+      selectors.push({selector, type, value: match[selector]})
+  }
+  for (let name in schema.marks) {
+    let type = schema.marks[name], match = type.matchTag, props = type.matchStyle
+    if (match) for (let selector in match)
+      selectors.push({selector, type, value: match[selector]})
+    if (props) for (let prop in props)
+      styles.push({prop, type, value: props[prop]})
+  }
+  return {selectors, styles}
 }
 
-function findMatchingHandler(tagInfo, dom, name) {
-  for (let i = 0; i < 2; i++) {
-    let handlers = tagInfo[i ? "_" : name || dom.nodeName.toLowerCase()]
-    if (handlers) for (let j = 0; j < handlers.length; j++) {
-      let handler = handlers[j], result
-      if ((!handler.selector || matches(dom, handler.selector)) &&
-          (result = handler.parse.call(handler.type, dom)))
-        return result
+function matchTag(selectors, dom) {
+  for (let i = 0; i < selectors.length; i++) {
+    let cur = selectors[i]
+    if (matches(dom, cur.selector)) {
+      let value = cur.value, content
+      if (value instanceof Function) {
+        value = value(dom)
+        if (value === false) continue
+      }
+      if (Array.isArray(value)) {
+        ;([value, content] = value)
+      }
+      return {type: cur.type, attrs: value, content}
     }
   }
 }
 
-function wrapNode(dom) { return [this] }
-
-Paragraph.register("parseDOM", "p", {parse: wrapNode})
-
-BlockQuote.register("parseDOM", "blockquote", {parse: wrapNode})
-
-for (let i = 1; i <= 6; i++) Heading.registerComputed("parseDOM", "h" + i, type => {
-  if (i <= type.maxLevel) return {
-    parse(dom) { return [this, {level: i}] }
+function matchStyle(styles, prop, value) {
+  for (let i = 0; i < styles.length; i++) {
+    let cur = styles[i]
+    if (cur.prop == prop) {
+      let attrs = cur.value
+      if (attrs instanceof Function) {
+        attrs = attrs(value)
+        if (attrs === false) continue
+      }
+      return {type: cur.type, attrs}
+    }
   }
-})
+}
 
-HorizontalRule.register("parseDOM", "hr", {parse: wrapNode})
+Paragraph.prototype.matchTag = {"p": null}
 
-CodeBlock.register("parseDOM", "pre", {parse(dom) {
-  let text = dom.textContent
-  return this.create(null, text ? this.schema.text(dom.textContent) : null)
-}})
+BlockQuote.prototype.matchTag = {"blockquote": null}
 
-BulletList.register("parseDOM", "ul", {parse: wrapNode})
+Heading.prototype.matchTag = {
+  "h1": {level: 1},
+  "h2": {level: 2},
+  "h3": {level: 3},
+  "h4": {level: 4},
+  "h5": {level: 5},
+  "h6": {level: 6}
+}
 
-OrderedList.register("parseDOM", "ol", {parse(dom) {
-  let start = dom.getAttribute("start")
-  return [this, {order: start ? +start : 1}]
-}})
+HorizontalRule.prototype.matchTag = {"hr": null}
 
-ListItem.register("parseDOM", "li", {parse: wrapNode})
+CodeBlock.prototype.matchTag = {"pre": [null, {preserveWhitespace: true}]}
 
-HardBreak.register("parseDOM", "br", {parse: wrapNode})
+BulletList.prototype.matchTag = {"ul": null}
 
-Image.register("parseDOM", "img", {parse(dom) {
-  return this.create({
-    src: dom.getAttribute("src"),
-    title: dom.getAttribute("title") || null,
-    alt: dom.getAttribute("alt") || null
-  })
-}})
+OrderedList.prototype.matchTag = {"ol": dom => ({
+  order: dom.hasAttribute("start") ? +dom.getAttribute("start") : 1
+})}
+
+ListItem.prototype.matchTag = {"li": null}
+
+HardBreak.prototype.matchTag = {"br": null}
+
+Image.prototype.matchTag = {"img[src]": dom => ({
+  src: dom.getAttribute("src"),
+  title: dom.getAttribute("title"),
+  alt: dom.getAttribute("alt")
+})}
 
 // Inline style tokens
 
-LinkMark.register("parseDOM", "a", {
-  parse(dom) {
-    return this.create({
-      href: dom.getAttribute("href"),
-      title: dom.getAttribute("title")
-    })
-  },
-  selector: "[href]"
-})
+LinkMark.prototype.matchTag = {"a[href]": dom => ({
+  href: dom.getAttribute("href"), title: dom.getAttribute("title")
+})}
 
-function wrapMark(dom) {
-  return this.create()
-}
+EmMark.prototype.matchTag = {"i": null, "em": null}
+EmMark.prototype.matchStyle = {"font-style": value => value == "italic" && null}
 
-EmMark.register("parseDOM", "i", {parse: wrapMark})
-EmMark.register("parseDOM", "em", {parse: wrapMark})
-EmMark.register("parseDOMStyle", "font-style", {parse(value) {
-  if (value == "italic") return this.create()
-}})
+StrongMark.prototype.matchTag = {"b": null, "strong": null}
+StrongMark.prototype.matchStyle = {"font-weight": value => /^(bold(er)?|[5-9]\d{2,})$/.test(value) && null}
 
-StrongMark.register("parseDOM", "b", {parse: wrapMark})
-StrongMark.register("parseDOM", "strong", {parse: wrapMark})
-StrongMark.register("parseDOMStyle", "font-weight", {parse(value) {
-  if (value == "bold" || value == "bolder" || !/\D/.test(value) && +value >= 500)
-    return this.create()
-}})
-
-CodeMark.register("parseDOM", "code", {parse: wrapMark})
+CodeMark.prototype.matchTag = {"code": null}
