@@ -1,7 +1,4 @@
-import {BlockQuote, OrderedList, BulletList, ListItem,
-        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmMark, StrongMark, LinkMark, CodeMark,
-        Fragment, NodeType} from "../model"
+import {Fragment, NodeType} from "../model"
 
 // :: (Schema, DOMNode, ?Object) → Node
 // Parse document from the content of a DOM node. To pass an explicit
@@ -516,50 +513,3 @@ function matchStyle(styles, prop, value) {
     }
   }
 }
-
-Paragraph.prototype.matchTag = {"p": null}
-
-BlockQuote.prototype.matchTag = {"blockquote": null}
-
-Heading.prototype.matchTag = {
-  "h1": {level: 1},
-  "h2": {level: 2},
-  "h3": {level: 3},
-  "h4": {level: 4},
-  "h5": {level: 5},
-  "h6": {level: 6}
-}
-
-HorizontalRule.prototype.matchTag = {"hr": null}
-
-CodeBlock.prototype.matchTag = {"pre": [null, {preserveWhitespace: true}]}
-
-BulletList.prototype.matchTag = {"ul": null}
-
-OrderedList.prototype.matchTag = {"ol": dom => ({
-  order: dom.hasAttribute("start") ? +dom.getAttribute("start") : 1
-})}
-
-ListItem.prototype.matchTag = {"li": null}
-
-HardBreak.prototype.matchTag = {"br": null}
-
-Image.prototype.matchTag = {"img[src]": dom => ({
-  src: dom.getAttribute("src"),
-  title: dom.getAttribute("title"),
-  alt: dom.getAttribute("alt")
-})}
-
-// Inline style tokens
-
-LinkMark.prototype.matchTag = {"a[href]": dom => ({
-  href: dom.getAttribute("href"), title: dom.getAttribute("title")
-})}
-
-EmMark.prototype.matchTag = {"i": null, "em": null}
-EmMark.prototype.matchStyle = {"font-style": value => value == "italic" && null}
-
-StrongMark.prototype.matchTag = {"b": null, "strong": null}
-StrongMark.prototype.matchStyle = {"font-weight": value => /^(bold(er)?|[5-9]\d{2,})$/.test(value) && null}
-
-CodeMark.prototype.matchTag = {"code": null}
