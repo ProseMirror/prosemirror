@@ -279,26 +279,25 @@ export function coordsAtPos(pm, pos) {
 // You can add several properties to [node types](#NodeType) to
 // influence the way the editor interacts with them.
 
-// :: (node: Node, pos: number, dom: DOMNode, coords: {left: number, top: number}) → ?number
-// #path=NodeType.prototype.countCoordsAsChild
-// Specifies that, if this node is clicked, a child node might
-// actually be meant. This is used to, for example, make clicking a
-// list marker (which, in the DOM, is part of the list node) select
-// the list item it belongs to. Should return null if the given
-// coordinates don't refer to a child node, or the position
-// before the child otherwise.
+function targetKludge(dom, coords) {
+  if (/^[uo]l$/i.test(dom.nodeName)) {
+    for (let child = dom.firstChild; child; child = child.nextSibling) {
+      if (child.nodeType != 1 || !child.hasAttribute("pm-offset") || !/^li$/i.test(child.nodeName)) continue
+      let childBox = child.getBoundingClientRect()
+      if (coords.left > childBox.left - 2) break
+      if (childBox.top <= coords.top && childBox.bottom >= coords.top) return child
+    }
+  }
+  return dom
+}
 
 export function selectableNodeAbove(pm, dom, coords, liberal) {
+  dom = targetKludge(dom, coords)
   for (; dom && dom != pm.content; dom = dom.parentNode) {
     if (dom.hasAttribute("pm-offset")) {
       let pos = posBeforeFromDOM(pm, dom), node = pm.doc.nodeAt(pos)
-      if (node.type.countCoordsAsChild) {
-        let result = node.type.countCoordsAsChild(node, pos, dom, coords)
-        if (result != null) return result
-      }
       // Leaf nodes are implicitly clickable
-      if ((liberal || node.type.isLeaf) && node.type.selectable)
-        return pos
+      if ((liberal || node.type.isLeaf) && node.type.selectable) return pos
       if (!liberal) return null
     }
   }

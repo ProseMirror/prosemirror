@@ -179,9 +179,9 @@ function selectClickedNode(pm, e, target) {
   let {node, from} = pm.selection
   if (node) {
     let $pos = pm.doc.resolve(pos), $from = pm.doc.resolve(from)
-    if ($pos.depth >= $from.depth && $pos.before() == from) {
+    if ($pos.depth >= $from.depth && $pos.before($from.depth + 1) == from) {
       if ($from.depth == 0) return pm.sel.fastPoll()
-      pos = $pos.before()
+      pos = $pos.before($from.depth)
     }
   }
 
