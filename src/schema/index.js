@@ -155,6 +155,27 @@ export class CodeMark extends MarkType {
   toDOM() { return ["code"] }
 }
 
+// ;; The default strikethrough mark type.
+export class StrikeMark extends MarkType {
+  get matchDOMTag() { return {"s": null} }
+  get matchDOMStyle() {
+    return {"text-decoration": value => value == "line-through" && null}
+  }
+  toDOM() { return ["s"] }
+}
+
+// ;; The default subscript mark type.
+export class SubMark extends MarkType {
+  get matchDOMTag() { return {"sub": null} }
+  toDOM() { return ["sub"] }
+}
+
+// ;; The default superscript mark type.
+export class SupMark extends MarkType {
+  get matchDOMTag() { return {"sup": null} }
+  toDOM() { return ["sup"] }
+}
+
 // :: Schema
 // ProseMirror's default document schema.
 export const defaultSchema = new Schema({
@@ -180,6 +201,9 @@ export const defaultSchema = new Schema({
     em: EmMark,
     strong: StrongMark,
     link: LinkMark,
-    code: CodeMark
+    code: CodeMark,
+    strike: StrikeMark,
+    sub: SubMark,
+    sup: SupMark
   }
 })
