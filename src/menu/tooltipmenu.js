@@ -3,7 +3,7 @@ import {elt, insertCSS} from "../dom"
 import {Tooltip} from "../ui/tooltip"
 import {UpdateScheduler} from "../ui/update"
 
-import {renderGrouped, inlineGroup, insertMenu, textblockMenu, blockGroup} from "./menu"
+import {renderGrouped} from "./menu"
 
 const classPrefix = "ProseMirror-tooltipmenu"
 
@@ -28,7 +28,11 @@ class TooltipMenu {
   }
 
   show(content, coords) {
-    this.tooltip.open(elt("div", null, renderGrouped(this.pm, content)), coords)
+    let rendered = renderGrouped(this.pm, content)
+    if (rendered.childNodes.length)
+      this.tooltip.open(elt("div", null, rendered), coords)
+    else
+      this.tooltip.close()
   }
 
   update() {
@@ -183,8 +187,8 @@ function bottomCenterOfSelection() {
 export const tooltipMenu = new Plugin(TooltipMenu, {
   showLinks: true,
   selectedBlockMenu: false,
-  inlineContent: [inlineGroup, insertMenu],
-  blockContent: [[textblockMenu, blockGroup]],
+  inlineContent: [],
+  blockContent: [],
   selectedBlockContent: null,
   position: "above"
 })

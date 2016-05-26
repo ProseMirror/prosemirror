@@ -2,16 +2,9 @@ import {Plugin} from "../edit"
 import {elt, insertCSS} from "../dom"
 import {UpdateScheduler} from "../ui/update"
 
-import {renderGrouped, inlineGroup, insertMenu, textblockMenu, blockGroup, historyGroup} from "./menu"
+import {renderGrouped} from "./menu"
 
 const prefix = "ProseMirror-menubar"
-
-const defaultMenu = [
-  inlineGroup,
-  insertMenu,
-  [textblockMenu, blockGroup],
-  historyGroup
-]
 
 class MenuBar {
   constructor(pm, config) {
@@ -125,7 +118,7 @@ function findWrappingScrollable(node) {
 // **`content`**`: [`[`MenuGroup`](#MenuGroup)`]`
 //   : Determines the content of the menu.
 export const menuBar = new Plugin(MenuBar, {
-  content: defaultMenu,
+  content: [],
   float: false
 })
 

@@ -1,9 +1,19 @@
 import {browser} from "../dom"
-import {joinPoint, joinable, canSplit, ReplaceAroundStep} from "../transform"
+import {joinPoint, joinable, canLift, canSplit, ReplaceAroundStep} from "../transform"
 import {Slice, Fragment} from "../model"
 
 import {charCategory, isExtendingChar} from "./char"
 import {findSelectionFrom, TextSelection, NodeSelection} from "./selection"
+
+// !! This module defines a number of ‘commands‘, functions that take
+// a ProseMirror instance and try to perform some action on it,
+// returning `false` if they don't apply. These are used to bind keys
+// to, and to define [menu items](#menu).
+//
+// Some of the command functions defined here take a second, optional,
+// boolean parameter. This can be set to `false` to do a ‘dry run’,
+// where the function won't take any actual action, but will return
+// information about whether it applies.
 
 // :: (...(ProseMirror) → bool) → (ProseMirror) → bool
 // Combine a number of command functions into a single function (which
@@ -144,17 +154,24 @@ export function deleteWordAfter(pm) {
   return true
 }
 
-// :: (ProseMirror) → bool
+// :: (ProseMirror, ?bool) → bool
 // Join the selected block or, if there is a text selection, the
 // closest ancestor block of the selection that can be joined, with
 // the sibling above it.
-export function joinUp(pm) {
-  let point = joinPointAbove(pm)
-  if (!point) return false
-  let tr = pm.tr.join(point)
-  tr.apply({
-    selection: pm.selection.node && NodeSelection.at(tr.doc, point - tr.doc.resolve(point).nodeBefore.nodeSize)
-  })
+export function joinUp(pm, apply) {
+  let {node, from} = pm.selection, point
+  if (node) {
+    if (node.isTextblock || !joinable(pm.doc, from)) return false
+    point = from
+  } else {
+    point = joinPoint(pm.doc, from, -1)
+    if (point == null) return false
+  }
+  if (apply !== false) {
+    let tr = pm.tr.join(point), selection
+    if (pm.selection.node) selection = NodeSelection.at(tr.doc, point - tr.doc.resolve(point).nodeBefore.nodeSize)
+    tr.apply({selection})
+  }
   return true
 }
 
@@ -170,13 +187,14 @@ export function joinDown(pm) {
   return true
 }
 
-// :: (ProseMirror) → bool
+// :: (ProseMirror, ?bool) → bool
 // Lift the selected block, or the closest ancestor block of the
 // selection that can be lifted, out of its parent node.
-export function lift(pm) {
+export function lift(pm, apply) {
   let {from, to} = pm.selection
-  let tr = pm.tr.lift(from, to, true).apply(pm.apply.scroll)
-  return tr.steps.length > 0
+  if (!canLift(pm.doc, from, to)) return false
+  if (apply !== false) pm.tr.lift(from, to).apply(pm.apply.scroll)
+  return true
 }
 
 // :: (ProseMirror) → bool
@@ -242,28 +260,45 @@ export function splitBlock(pm) {
   }
 }
 
-// :: (ProseMirror) → bool
+// :: (ProseMirror, ?bool) → bool
 // Move the selection to the node wrapping the current selection, if
 // any. (Will not select the document node.)
-export function selectParentNode(pm) {
-  let node = nodeAboveSelection(pm)
-  if (node === false) return false
-  pm.setNodeSelection(node)
+export function selectParentNode(pm, apply) {
+  let sel = pm.selection, pos
+  if (sel.node) {
+    let $from = pm.doc.resolve(sel.from)
+    if (!$from.depth) return false
+    pos = $from.before()
+  } else {
+    let $head = pm.doc.resolve(sel.head)
+    let same = $head.sameDepth(pm.doc.resolve(sel.anchor))
+    if (same == 0) return false
+    pos = $head.before(same)
+  }
+  if (apply !== false) pm.setNodeSelection(pos)
   return true
 }
 
-// :: (ProseMirror) → bool
+// :: (ProseMirror, ?bool) → bool
 // Undo the most recent change event, if any.
-export function undo(pm) {
-  pm.scrollIntoView()
-  return pm.history.undo()
+export function undo(pm, apply) {
+  if (pm.history.undoDepth == 0) return false
+  if (apply !== false) {
+    pm.scrollIntoView()
+    pm.history.undo()
+  }
+  return true
 }
 
-// :: (ProseMirror) → bool
+// :: (ProseMirror, ?bool) → bool
 // Redo the most recently undone change event, if any.
-export function redo(pm) {
-  pm.scrollIntoView()
-  return pm.history.redo()
+export function redo(pm, apply) {
+  if (pm.history.redoDepth == 0) return false
+  if (apply !== false) {
+    pm.scrollIntoView()
+    pm.history.redo()
+  }
+  return true
 }
 
 function deleteBarrier(pm, cut) {
@@ -363,25 +398,8 @@ function moveForward(doc, pos, by) {
   }
 }
 
-function joinPointAbove(pm) {
-  let {node, from} = pm.selection
-  if (node) return joinable(pm.doc, from) ? from : null
-  else return joinPoint(pm.doc, from, -1)
-}
-
 function joinPointBelow(pm) {
   let {node, to} = pm.selection
   if (node) return joinable(pm.doc, to) ? to : null
   else return joinPoint(pm.doc, to, 1)
-}
-
-function nodeAboveSelection(pm) {
-  let sel = pm.selection
-  if (sel.node) {
-    let $from = pm.doc.resolve(sel.from)
-    return !!$from.depth && $from.before()
-  }
-  let $head = pm.doc.resolve(sel.head)
-  let same = $head.sameDepth(pm.doc.resolve(sel.anchor))
-  return same == 0 ? false : $head.before(same)
 }
