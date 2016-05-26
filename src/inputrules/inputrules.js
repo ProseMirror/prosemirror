@@ -28,7 +28,7 @@ export class InputRule {
 // ;; Manages the set of active input rules for an editor. Created
 // with the `inputRules` plugin.
 class InputRules {
-  constructor(pm) {
+  constructor(pm, options) {
     this.pm = pm
     this.rules = []
     this.cancelVersion = null
@@ -36,6 +36,8 @@ class InputRules {
     pm.on("selectionChange", this.onSelChange = () => this.cancelVersion = null)
     pm.on("textInput", this.onTextInput = this.onTextInput.bind(this))
     pm.addKeymap(new Keymap({Backspace: pm => this.backspace(pm)}, {name: "inputRules"}), 20)
+
+    options.rules.forEach(rule => this.addRule(rule))
   }
 
   detach() {
@@ -121,4 +123,9 @@ function getContext($pos) {
 // A plugin for adding input rules to an editor. A common pattern of
 // use is to call `inputRules.ensure(editor).addRule(...)` to get an
 // instance of the plugin state and add a rule to it.
-export const inputRules = new Plugin(InputRules)
+//
+// Takes a single option, `rules`, which may be an array of
+// `InputRules` objects to add to initially add.
+export const inputRules = new Plugin(InputRules, {
+  rules: []
+})
