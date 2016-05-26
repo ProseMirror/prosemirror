@@ -1,4 +1,5 @@
-import {Schema, Block, Inline, Text, Attribute, MarkType} from "./schema"
+import {Schema, Block, Inline, Text, Attribute, MarkType} from "../model"
+export {Text}
 
 // ;; The default top-level document node type.
 export class Doc extends Block {}

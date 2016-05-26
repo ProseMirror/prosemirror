@@ -2,7 +2,7 @@ import {doc, blockquote, h1, h2, p, hr, li, ol, ul, em, strong, code, a, br, img
 import {cmpNode, cmpStr} from "./cmp"
 import {defTest} from "./tests"
 
-import {defaultSchema as schema} from "../model"
+import {defaultSchema as schema} from "../schema"
 import {fromMarkdown, toMarkdown} from "../markdown"
 
 function t(name, text, doc) {

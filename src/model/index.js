@@ -19,9 +19,6 @@ export {Mark} from "./mark"
 
 export {SchemaSpec, Schema, NodeType, Block, Inline, Text,
         MarkType, Attribute, NodeKind} from "./schema"
-export {defaultSchema, Doc, BlockQuote, OrderedList, BulletList, ListItem,
-        HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        CodeMark, EmMark, StrongMark, LinkMark} from "./defaultschema"
 export {ContentMatch} from "./content"
 
 export {findDiffStart, findDiffEnd} from "./diff"

@@ -1,5 +1,5 @@
 import {ContentExpr} from "../model/content"
-import {defaultSchema as schema} from "../model"
+import {defaultSchema as schema} from "../schema"
 
 import {defTest} from "./tests"
 import {doc, p, pre, img, br, h1, h2, em, hr} from "./build"

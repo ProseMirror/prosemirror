@@ -1,5 +1,6 @@
 import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule,
-        StrongMark, EmMark, CodeMark, LinkMark, Image, Fragment, Slice} from "../model"
+        StrongMark, EmMark, CodeMark, LinkMark, Image} from "../schema"
+import {Fragment, Slice} from "../model"
 import {canSplit, ReplaceAroundStep} from "../transform"
 
 import {selectedNodeAttr} from "./command"

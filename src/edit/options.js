@@ -1,4 +1,4 @@
-import {defaultSchema} from "../model"
+import {defaultSchema} from "../schema"
 import {ParamPrompt} from "../ui/prompt"
 
 import {CommandSet, updateCommands} from "./command"

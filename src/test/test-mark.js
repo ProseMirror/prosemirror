@@ -1,4 +1,5 @@
-import {Mark, defaultSchema as schema} from "../model"
+import {Mark} from "../model"
+import {defaultSchema as schema} from "../schema"
 import {Failure} from "./failure"
 import {defTest} from "./tests"
 import {doc, p, em, a} from "./build"

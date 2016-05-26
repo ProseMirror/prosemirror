@@ -1,4 +1,5 @@
-import {Schema, Block, Text, Attribute, EmMark, Slice} from "../model"
+import {Schema, Block, Text, Attribute, Slice} from "../model"
+import {EmMark} from "../schema"
 import {canSplit, canLift, canWrap, Transform} from "../transform"
 
 import {defTest} from "./tests"

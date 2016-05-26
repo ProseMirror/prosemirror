@@ -1,6 +1,6 @@
 import {Text, BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
-        EmMark, StrongMark, LinkMark, CodeMark} from "../model"
+        EmMark, StrongMark, LinkMark, CodeMark} from "../schema"
 
 // :: (Node, ?Object) → string
 // Serialize the content of the given node to [CommonMark](http://commonmark.org/).

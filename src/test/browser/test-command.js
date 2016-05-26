@@ -4,7 +4,7 @@ import {cmpNode, is} from "../cmp"
 import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, br, hr} from "../build"
 
 import {CommandSet} from "../../edit"
-import {defaultSchema as schema} from "../../model"
+import {defaultSchema as schema} from "../../schema"
 import {fromHTML} from "../../htmlformat"
 
 const used = Object.create(null)

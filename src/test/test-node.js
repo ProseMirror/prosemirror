@@ -1,4 +1,5 @@
-import {Fragment, defaultSchema as schema} from "../model"
+import {Fragment} from "../model"
+import {defaultSchema as schema} from "../schema"
 
 import {doc, blockquote, p, li, ul, em, strong, code, br, img} from "./build"
 

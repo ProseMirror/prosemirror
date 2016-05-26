@@ -3,7 +3,7 @@ import {Failure} from "./failure"
 import {cmpNode, cmp} from "./cmp"
 import {defTest} from "./tests"
 
-import {defaultSchema as schema} from "../model"
+import {defaultSchema as schema} from "../schema"
 import {toDOM, fromDOM, fromDOMInContext} from "../htmlformat"
 
 let document = typeof window == "undefined" ? require("jsdom").jsdom() : window.document
