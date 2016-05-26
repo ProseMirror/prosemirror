@@ -1,7 +1,6 @@
 import {browser} from "../dom"
 import {joinPoint, joinable, canSplit, ReplaceAroundStep} from "../transform"
 import {Slice, Fragment} from "../model"
-import Keymap from "browserkeymap"
 
 import {charCategory, isExtendingChar} from "./char"
 import {findSelectionFrom, TextSelection, NodeSelection} from "./selection"
@@ -179,15 +178,6 @@ export function lift(pm) {
   let tr = pm.tr.lift(from, to, true).apply(pm.apply.scroll)
   return tr.steps.length > 0
 }
-
-// :: (ProseMirror) → bool
-// The default binding for enter. Tries `newlineInCode`,
-// `createParagraphNear`, `liftEmptyBlock`, and `splitTextblock` in
-// order.
-export const defaultEnter = chain(newlineInCode,
-                                  createParagraphNear,
-                                  liftEmptyBlock,
-                                  splitBlock)
 
 // :: (ProseMirror) → bool
 // If the selection is in a node whose type has a truthy `isCode`
@@ -395,30 +385,3 @@ function nodeAboveSelection(pm) {
   let same = $head.sameDepth(pm.doc.resolve(sel.anchor))
   return same == 0 ? false : $head.before(same)
 }
-
-export const baseKeymap = new Keymap({
-  "Enter": defaultEnter,
-
-  "Backspace": chain(deleteSelection, joinBackward, deleteCharBefore),
-  "Mod-Backspace": chain(deleteSelection, joinBackward, deleteWordBefore),
-  "Delete": chain(deleteSelection, joinForward, deleteCharAfter),
-  "Mod-Delete": chain(deleteSelection, joinForward, deleteWordAfter),
-
-  "Alt-Up": joinUp,
-  "Alt-Down": joinDown,
-  "Mod-[": lift,
-  "Esc": selectParentNode,
-
-  "Mod-Z": undo,
-  "Mod-Y": redo,
-  "Shift-Mod-Z": redo
-})
-
-if (browser.mac) baseKeymap.addBindings({
-  "Ctrl-H": baseKeymap.lookup("Backspace"),
-  "Alt-Backspace": baseKeymap.lookup("Mod-Backspace"),
-  "Ctrl-D": baseKeymap.lookup("Delete"),
-  "Ctrl-Alt-Backspace": baseKeymap.lookup("Mod-Delete"),
-  "Alt-Delete": baseKeymap.lookup("Mod-Delete"),
-  "Alt-D": baseKeymap.lookup("Mod-Delete")
-})

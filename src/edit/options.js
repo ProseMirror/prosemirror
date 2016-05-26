@@ -1,4 +1,4 @@
-import {baseKeymap} from "./base_commands"
+import {baseKeymap} from "./keymap"
 
 // An option encapsulates functionality for an editor instance,
 // e.g. the amount of history events that the editor should hold
@@ -64,7 +64,7 @@ defineOption("scrollThreshold", 0)
 defineOption("scrollMargin", 5)
 
 // :: Keymap #path=keymap #kind=option
-// Sets the base keymap for the editor.
+// Sets the base keymap for the editor. Defaults to `baseKeymap`.
 defineOption("keymap", baseKeymap)
 
 // :: ?string #path=label #kind=option
