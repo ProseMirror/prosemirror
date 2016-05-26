@@ -1,11 +1,9 @@
 import "./css"
 
-import Keymap from "browserkeymap"
-
 import sortedInsert from "../util/sortedinsert"
 import {Map} from "../util/map"
 import {eventMixin} from "../util/event"
-import {requestAnimationFrame, cancelAnimationFrame, elt, browser, ensureCSSAdded} from "../dom"
+import {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} from "../dom"
 
 import {parseOptions, initOptions, setOption} from "./options"
 import {SelectionState, TextSelection, NodeSelection,
@@ -36,6 +34,7 @@ export class ProseMirror {
     // :: Schema
     // The schema for this editor's document.
     this.schema = opts.schema
+    if (!this.schema) throw new RangeError("You must specify a schema option")
     if (opts.doc == null) opts.doc = this.schema.nodes.doc.create(null, this.schema.nodes.doc.fixContent())
     // :: DOMNode
     // The editable DOM node containing the document.
@@ -67,10 +66,6 @@ export class ProseMirror {
     this.accurateSelection = false
     this.input = new Input(this)
 
-    // :: Object<Command>
-    // The commands available in the editor.
-    this.commands = null
-    this.commandKeys = null
     initOptions(this)
     this.options.plugins.forEach(plugin => plugin.attach(this))
   }
@@ -109,12 +104,7 @@ export class ProseMirror {
   // Set the selection to a node selection on the node after `pos`.
   setNodeSelection(pos) {
     this.checkPos(pos, false)
-    let node = this.doc.nodeAt(pos)
-    if (!node)
-      throw new RangeError("Trying to set a node selection that doesn't point at a node")
-    if (!node.type.selectable)
-      throw new RangeError("Trying to select a non-selectable node")
-    this.setSelection(new NodeSelection(pos, pos + node.nodeSize, node))
+    this.setSelection(NodeSelection.at(this.doc, pos))
   }
 
   // :: (Selection)
@@ -170,7 +160,7 @@ export class ProseMirror {
   // Create an editor- and selection-aware `Transform` for this editor.
   get tr() { return new EditorTransform(this) }
 
-  // :: (Transform, ?Object) → union<Transform,bool>
+  // :: (Transform, ?Object) → Transform
   // Apply a transformation (which you might want to create with the
   // [`tr` getter](#ProseMirror.tr)) to the document in the editor.
   // The following options are supported:
@@ -187,11 +177,11 @@ export class ProseMirror {
   //     [`"filterTransform"` event](#ProseMirror.event_beforeTransform)
   //     to cancel this transform.
   //
-  // Returns the transform, or `false` if there were no steps in it.
+  // Returns the transform itself.
   //
   // Has the following property:
   apply(transform, options = nullOptions) {
-    if (!transform.steps.length) return false
+    if (!transform.steps.length) return transform
     if (!transform.docs[0].eq(this.doc))
       throw new RangeError("Applying a transform that does not start with the current document")
 
@@ -200,7 +190,7 @@ export class ProseMirror {
     // applied. The handler can return a truthy value to cancel the
     // transform.
     if (options.filter !== false && this.signalHandleable("filterTransform", transform))
-      return false
+      return transform
 
     let selectionBeforeTransform = this.selection
 
@@ -447,38 +437,6 @@ export class ProseMirror {
     if (pos) this.checkPos(pos)
     this.ensureOperation()
     this.operation.scrollIntoView = pos
-  }
-
-  // :: (string, ?[any]) → bool
-  // Execute the named [command](#Command). If the command takes
-  // parameters, they can be passed as an array.
-  execCommand(name, params) {
-    let cmd = this.commands[name]
-    return !!(cmd && cmd.exec(this, params) !== false)
-  }
-
-  // :: (string) → ?string
-  // Return the name of the key that is bound to the given command, if
-  // any.
-  keyForCommand(name) {
-    let cached = this.commandKeys[name]
-    if (cached !== undefined) return cached
-
-    let cmd = this.commands[name], keymap = this.input.baseKeymap
-    if (!cmd) return this.commandKeys[name] = null
-    let key = cmd.spec.key || (browser.mac ? cmd.spec.macKey : cmd.spec.pcKey)
-    if (key) {
-      key = Keymap.normalizeKeyName(Array.isArray(key) ? key[0] : key)
-      let deflt = keymap.bindings[key]
-      if (Array.isArray(deflt) ? deflt.indexOf(name) > -1 : deflt == name)
-        return this.commandKeys[name] = key
-    }
-    for (let key in keymap.bindings) {
-      let bound = keymap.bindings[key]
-      if (Array.isArray(bound) ? bound.indexOf(name) > -1 : bound == name)
-        return this.commandKeys[name] = key
-    }
-    return this.commandKeys[name] = null
   }
 
   markRangeDirty(from, to, doc = this.doc) {

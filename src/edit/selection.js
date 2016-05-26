@@ -274,6 +274,18 @@ export class NodeSelection extends Selection {
     return new SelectionToken(NodeSelection, this.from, this.to)
   }
 
+  // :: (Node, number) → NodeSelection
+  // Create a node selection at the given position. Raise an error
+  // when the position doesn't point at a selectable node.
+  static at(doc, pos) {
+    let node = doc.nodeAt(pos)
+    if (!node)
+      throw new RangeError("Trying to create a node selection that doesn't point at a node")
+    if (!node.type.selectable)
+      throw new RangeError("Trying to select a non-selectable node")
+    return new NodeSelection(pos, pos + node.nodeSize, node)
+  }
+
   static mapToken(token, mapping) {
     return new SelectionToken(TextSelection, mapping.map(token.a, 1), mapping.map(token.b, -1))
   }

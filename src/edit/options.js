@@ -1,7 +1,4 @@
-import {defaultSchema} from "../schema"
-import {ParamPrompt} from "../ui/prompt"
-
-import {CommandSet, updateCommands} from "./command"
+import {baseKeymap} from "./base_commands"
 
 // An option encapsulates functionality for an editor instance,
 // e.g. the amount of history events that the editor should hold
@@ -31,7 +28,7 @@ function defineOption(name, defaultValue, update, updateOnInit) {
 
 // :: Schema #path=schema #kind=option
 // The [schema](#Schema) that the editor's document should use.
-defineOption("schema", defaultSchema)
+defineOption("schema", null, false)
 
 // :: Node #path=doc #kind=option
 // The starting document.
@@ -66,17 +63,9 @@ defineOption("scrollThreshold", 0)
 // surpassed. Defaults to 5.
 defineOption("scrollMargin", 5)
 
-// :: CommandSet #path=commands #kind=option
-// Specifies the set of [commands](#Command) available in the editor
-// (which in turn determines the base key bindings and items available
-// in the menus). Defaults to `CommandSet.default`.
-defineOption("commands", CommandSet.default, updateCommands)
-
-// :: ParamPrompt #path=commandParamPrompt #kind=option
-// A default [parameter prompting](#ui/prompt) class to use when a
-// command is [executed](#ProseMirror.execCommand) without providing
-// parameters.
-defineOption("commandParamPrompt", ParamPrompt)
+// :: Keymap #path=keymap #kind=option
+// Sets the base keymap for the editor.
+defineOption("keymap", baseKeymap)
 
 // :: ?string #path=label #kind=option
 // The label of the editor. When set, the editable DOM node gets an

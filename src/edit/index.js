@@ -6,10 +6,10 @@
 export {ProseMirror} from "./main"
 export {Selection, TextSelection, NodeSelection} from "./selection"
 export {MarkedRange} from "./range"
-export {CommandSet, Command} from "./command"
-export {baseCommands} from "./base_commands"
+export {chain, deleteSelection, joinBackward, joinForward, deleteCharBefore,
+        deleteWordBefore, deleteCharAfter, deleteWordAfter, joinUp, joinDown,
+        lift, newlineInCode, createParagraphNear, liftEmptyBlock, splitBlock,
+        selectParentNode, undo, redo, defaultEnter, baseKeymap} from "./base_commands"
 export {Plugin} from "./plugin"
-import "./schema_commands"
 
-import Keymap from "browserkeymap"
-export {Keymap}
+export {default as Keymap} from "browserkeymap"

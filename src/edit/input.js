@@ -18,7 +18,6 @@ const handlers = {}
 export class Input {
   constructor(pm) {
     this.pm = pm
-    this.baseKeymap = null
 
     this.keySeq = null
 
@@ -29,7 +28,6 @@ export class Input {
     this.finishComposing = null
 
     this.keymaps = []
-    this.defaultKeymap = null
 
     this.storedMarks = null
 
@@ -60,24 +58,14 @@ export class Input {
       if (bound === false) return "nothing"
       if (bound == "...") return "multi"
       if (bound == null) return false
-
-      let result = false
-      if (Array.isArray(bound)) {
-        for (let i = 0; result === false && i < bound.length; i++)
-          result = handle(bound[i])
-      } else if (typeof bound == "string") {
-        result = pm.execCommand(bound)
-      } else {
-        result = bound(pm)
-      }
-      return result == false ? false : "handled"
+      return bound(pm) == false ? false : "handled"
     }
 
     let result
     for (let i = 0; !result && i < pm.input.keymaps.length; i++)
       result = handle(pm.input.keymaps[i].map.lookup(name, pm))
     if (!result)
-      result = handle(pm.input.baseKeymap.lookup(name, pm)) || handle(captureKeys.lookup(name))
+      result = handle(pm.options.keymap.lookup(name, pm)) || handle(captureKeys.lookup(name))
 
     // If the key should be used in sequence with the next key, store the keyname internally.
     if (result == "multi")
