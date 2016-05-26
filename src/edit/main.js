@@ -465,6 +465,14 @@ export class ProseMirror {
     let trans = this.options.translate
     return trans ? trans(string) : string
   }
+
+  findBinding(f) {
+    for (let i = this.input.keymaps.length - 1; i >= 0; i--) {
+      let found = this.input.keymaps[i].reverseLookup(f)
+      if (found) return found
+    }
+    return this.options.keymap.reverseLookup(f)
+  }
 }
 
 // :: Object

@@ -19,12 +19,6 @@ import {getIcon} from "./icons"
 
 const prefix = "ProseMirror-menu"
 
-function title(pm, title, _run) {
-  let label = pm.translate(title)
-  let key = null // FIXME pm.keyForCommand(_run)
-  return key ? label + " (" + key + ")" : label
-}
-
 // ;; An icon or label that, when clicked, executes a command.
 export class MenuItem {
   // :: (MenuItemSpec)
@@ -32,6 +26,7 @@ export class MenuItem {
     // :: MenuItemSpec
     // The spec used to create the menu item.
     this.spec = spec
+    this.key = false
   }
 
   // :: (ProseMirror) → DOMNode
@@ -58,7 +53,10 @@ export class MenuItem {
       throw new RangeError("MenuItem without render, icon, or label property")
     }
 
-    if (spec.title) dom.setAttribute("title", title(pm, spec.title, spec.run))
+    if (spec.title) {
+      if (this.key === false) this.key = pm.findBinding(spec.run)
+      dom.setAttribute("title", pm.translate(spec.title) + (this.key ? " (" + this.key + ")" : ""))
+    }
     if (spec.class) dom.classList.add(spec.class)
     if (disabled) dom.classList.add(prefix + "-disabled")
     if (spec.css) dom.style.cssText += spec.css
