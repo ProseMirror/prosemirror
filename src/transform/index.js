@@ -4,8 +4,8 @@ export {canWrap, canLift, joinPoint, joinable, canSplit, insertPoint} from "./st
 export {PosMap, MapResult, Remapping} from "./map"
 export {AddMarkStep, RemoveMarkStep} from "./mark_step"
 export {ReplaceStep, ReplaceAroundStep} from "./replace_step"
+export {markActive, canSetMark} from "./mark"
 import "./replace"
-import "./mark"
 
 // !! This module defines a way to transform documents. Transforming
 // happens in `Step`s, which are atomic, well-defined modifications to

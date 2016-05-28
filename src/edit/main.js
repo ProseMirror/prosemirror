@@ -468,7 +468,7 @@ export class ProseMirror {
 
   findBinding(f) {
     for (let i = this.input.keymaps.length - 1; i >= 0; i--) {
-      let found = this.input.keymaps[i].reverseLookup(f)
+      let found = this.input.keymaps[i].map.reverseLookup(f)
       if (found) return found
     }
     return this.options.keymap.reverseLookup(f)

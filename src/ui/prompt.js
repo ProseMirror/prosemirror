@@ -1,36 +1,52 @@
 import {elt, insertCSS} from "../dom"
 
 // !! The `ui/prompt` module implements functionality for prompting
-// the user for [command parameters](#CommandSpec.params).
+// the user for input.
 //
 // The default implementation gets the job done, roughly, but you'll
 // probably want to customize it in your own system (or submit patches
 // to improve this implementation).
 
-// ;; This class represents a dialog that prompts for [command
-// parameters](#CommandSpec.params). It is the default value of the
-// `commandParamPrompt` option. You can set this option to a subclass
-// (or a complete reimplementation) to customize the way in which
-// parameters are read.
+// ;; This class represents a dialog that prompts for a set of
+// parameters. Parameters should be objects with the following
+// properties:
+//
+// **`type`**`: string`
+// : The type of field, as in `ParamPrompt.paramTypes`.
+//
+// **`label`**`: string`
+// : The label for this field.
+//
+// **`value`**`: ?any`
+// : The starting value that the field should get.
+//
+// **`required`**`: ?bool`
+// : Whether this field is required.
+//
+// **`validate`**`: ?(any) → ?string
+// : If given, this is used as a function that validates the field
+// value. Should return a string with an error message when the value
+// is _not_ valid.
 export class ParamPrompt {
-  // :: (ProseMirror, Command)
+  // :: (ProseMirror, string, [Object])
   // Construct a prompt. Note that this does not
   // [open](#ParamPrompt.open) it yet.
-  constructor(pm, command) {
+  constructor(pm, title, params) {
     // :: ProseMirror
     this.pm = pm
     // :: Command
-    this.command = command
+    this.title = title
+    this.params = params
     this.doClose = null
-    // :: [DOMNode]
-    // An array of fields, as created by `ParamTypeSpec.render`, for
-    // the command's parameters.
-    this.fields = command.params.map(param => {
+    this.fields = []
+    for (let name in params) {
+      let param = params[name]
       if (!(param.type in this.paramTypes))
         throw new RangeError("Unsupported parameter type: " + param.type)
-      return this.paramTypes[param.type].render.call(this.pm, param, this.defaultValue(param))
-    })
-    let promptTitle = elt("h5", {}, (command.spec && command.spec.label) ? pm.translate(command.spec.label) : "")
+      this.fields.push(this.paramTypes[param.type].render.call(pm, param))
+    }
+
+    let promptTitle = elt("h5", {}, pm.translate(title))
     let submitButton = elt("button", {type: "submit", class: "ProseMirror-prompt-submit"}, "Ok")
     let cancelButton = elt("button", {type: "button", class: "ProseMirror-prompt-cancel"}, "Cancel")
     cancelButton.addEventListener("click", () => this.close())
@@ -51,7 +67,7 @@ export class ParamPrompt {
 
   // :: ()
   // Open the prompt's dialog.
-  open() {
+  open(callback) {
     this.close()
     let prompt = this.prompt()
     let hadFocus = this.pm.hasFocus()
@@ -64,7 +80,7 @@ export class ParamPrompt {
       let params = this.values()
       if (params) {
         this.close()
-        this.command.exec(this.pm, params)
+        callback(params)
       }
     }
 
@@ -93,40 +109,31 @@ export class ParamPrompt {
   // error message, or has no validate function, no value, and no
   // default value), show the problem to the user and return `null`.
   values() {
-    let result = []
-    for (let i = 0; i < this.command.params.length; i++) {
-      let param = this.command.params[i], dom = this.fields[i]
+    let result = Object.create(null), i = 0
+    for (let name in this.params) {
+      let param = this.params[name], dom = this.fields[i++]
       let type = this.paramTypes[param.type], value, bad
       if (type.validate)
         bad = type.validate(dom)
       if (!bad) {
         value = type.read.call(this.pm, dom)
-        if (param.validate)
+        if (param.required && !value)
+          bad = "Required field"
+        else if (param.validate)
           bad = param.validate(value)
-        else if (!value && param.default == null)
-          bad = "No default value available"
       }
 
       if (bad) {
+        bad = this.pm.translate(bad)
         if (type.reportInvalid)
           type.reportInvalid.call(this.pm, dom, bad)
         else
           this.reportInvalid(dom, bad)
         return null
       }
-      result.push(value)
+      result[name] = value
     }
     return result
-  }
-
-  // :: (CommandParam) → ?any
-  // Get a parameter's default value, if any.
-  defaultValue(param) {
-    if (param.prefill) {
-      let prefill = param.prefill.call(this.command.self, this.pm)
-      if (prefill != null) return prefill
-    }
-    return param.default
   }
 
   // :: () → {close: ()}
@@ -181,10 +188,10 @@ export class ParamPrompt {
 ParamPrompt.prototype.paramTypes = Object.create(null)
 
 ParamPrompt.prototype.paramTypes.text = {
-  render(param, value) {
+  render(param) {
     return elt("input", {type: "text",
-                         placeholder: this.translate(param.label),
-                         value,
+                         placeholder: this.translate(param.label || name),
+                         value: param.value || "",
                          autocomplete: "off"})
   },
   read(dom) {
@@ -193,9 +200,9 @@ ParamPrompt.prototype.paramTypes.text = {
 }
 
 ParamPrompt.prototype.paramTypes.select = {
-  render(param, value) {
+  render(param) {
     let options = param.options.call ? param.options(this) : param.options
-    return elt("select", null, options.map(o => elt("option", {value: o.value, selected: o.value == value ? "true" : null},
+    return elt("select", null, options.map(o => elt("option", {value: o.value, selected: o.value == param.value ? "true" : null},
                                                     this.translate(o.label))))
   },
   read(dom) {

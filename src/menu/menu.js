@@ -1,5 +1,8 @@
 import {elt, insertCSS} from "../dom"
 import {undo, redo, lift, joinUp, selectParentNode} from "../edit/base_commands"
+import {markActive, canSetMark, canWrap} from "../transform"
+import {Fragment} from "../model"
+import {copyObj} from "../util/obj"
 
 import {getIcon} from "./icons"
 
@@ -310,6 +313,98 @@ export const redoItem = new MenuItem({
     path: "M576 248v-248l384 384-384 384v-253c-446-10-427 303-313 509-280-303-221-789 313-775z"
   }
 })
+
+export function toggleMarkItem(markType, options) {
+  let base = {
+    run(pm) { pm.setMark(markType, null, options.attrs) },
+    active(pm) { return markActive(pm, markType) },
+    select(pm) { return canSetMark(pm, markType, null) }
+  }
+  if (options.attrs instanceof Function) base.run = pm => {
+    if (markActive(pm, markType))
+      pm.setMark(markType, false)
+    else
+      options.attrs(pm, attrs => pm.setMark(markType, true, attrs))
+  }
+
+  return new MenuItem(copyObj(options, base))
+}
+
+export function insertItem(nodeType, options) {
+  return new MenuItem(copyObj(options, {
+    select(pm) {
+      let $from = pm.doc.resolve(pm.selection.from)
+      for (let d = $from.depth; d >= 0; d--) {
+        let index = $from.index(d)
+        if ($from.node(d).canReplaceWith(index, index, nodeType,
+                                         options.attrs instanceof Function ? null : options.attrs))
+          return true
+      }
+    },
+    run(pm) {
+      function done(attrs) {
+        let node = nodeType.create(attrs, nodeType.fixContent(Fragment.empty))
+        pm.tr.replaceSelection(node).apply()
+      }
+      if (options.attrs instanceof Function) options.attrs(pm, done)
+      else done(options.attrs)
+    }
+  }))
+}
+
+export function wrapItem(nodeType, options) {
+  return new MenuItem(copyObj(options, {
+    run(pm) {
+      function done(attrs) {
+        let {from, to} = pm.selection
+        pm.tr.wrap(from, to, nodeType, attrs).apply(pm.apply.scroll)
+      }
+      if (options.attrs instanceof Function) options.attrs(pm, done)
+      else done(options.attrs)
+    },
+    select(pm) {
+      let {from, to} = pm.selection
+      return canWrap(pm.doc, from, to, nodeType,
+                     options.attrs instanceof Function ? null : options.attrs)
+    }
+  }))
+}
+
+function canSetBlockType(pm, nodeType, attrs) {
+  let {from, to, node} = pm.selection, $from = pm.doc.resolve(from), depth
+  if (node) {
+    depth = $from.depth
+  } else {
+    if (to > $from.end()) return null
+    depth = $from.depth - 1
+  }
+
+  if ((node || $from.parent).hasMarkup(nodeType, attrs)) return null
+  let index = $from.index(depth)
+  if ($from.node(depth).canReplaceWith(index, index + 1, nodeType)) return $from.before(depth + 1)
+}
+
+export function blockTypeItem(nodeType, options) {
+  return new MenuItem(copyObj(options, {
+    run(pm) {
+      let where = canSetBlockType(pm, nodeType, options.attrs)
+      if (where != null)
+        pm.tr
+          .clearMarkupFor(where, nodeType, options.attrs)
+          .setNodeType(where, nodeType, options.attrs)
+          .apply(pm.apply.scroll)
+    },
+    select(pm) {
+      return canSetBlockType(pm, nodeType, options.attrs) != null
+    },
+    active(pm) {
+      let {from, to, node} = pm.selection
+      if (node) return node.hasMarkup(nodeType, options.attrs)
+      let $from = pm.doc.resolve(from)
+      return to <= $from.end() && $from.parent.hasMarkup(nodeType, options.attrs)
+    }
+  }))
+}
 
 insertCSS(`
 
