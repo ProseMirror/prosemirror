@@ -1,9 +1,9 @@
 import {StrongMark, EmMark, CodeMark, LinkMark, Image,
         BulletList, OrderedList, BlockQuote, Heading,
         Paragraph, CodeBlock, HorizontalRule} from "./index"
-import {canWrap} from "../transform"
 import {MenuItem, toggleMarkItem, insertItem, wrapItem, blockTypeItem, Dropdown, joinUpItem,
         liftItem, selectParentNodeItem, undoItem, redoItem} from "../menu/menu"
+import {wrapList} from "./commands"
 
 import {copyObj} from "../util/obj"
 import {ParamPrompt} from "../ui/prompt"
@@ -58,39 +58,10 @@ export function promptImageAttrs(pm, callback, nodeType, Prompt = ParamPrompt) {
   }).open(callback)
 }
 
-function isAtTopOfListItem(doc, from, to, listType) {
-  let $from = doc.resolve(from)
-  return $from.sameParent(doc.resolve(to)) &&
-    $from.depth >= 2 &&
-    $from.index(-1) == 0 &&
-    $from.node(-2).type.compatibleContent(listType)
-}
-
-export function wrapListItem(nodeType, options) {
+function wrapListItem(nodeType, options) {
   return new MenuItem(copyObj(options, {
-    run(pm) {
-      function done(attrs) {
-        let {from, to, head} = pm.selection, doJoin = false
-        let $from = pm.doc.resolve(from)
-        if (head && isAtTopOfListItem(pm.doc, from, to, nodeType)) {
-          // Don't do anything if this is the top of the list
-          if ($from.index(-2) == 0) return false
-          doJoin = true
-        }
-        let tr = pm.tr.wrap(from, to, nodeType, attrs)
-        if (doJoin) tr.join($from.before(-1))
-        tr.apply(pm.apply.scroll)
-      }
-      if (options.attrs instanceof Function) options.attrs(pm, done)
-      else done(options.attrs)
-    },
-    select(pm) {
-      let {from, to, head} = pm.selection
-      if (head != null && isAtTopOfListItem(pm.doc, from, to, nodeType) && pm.doc.resolve(from).index(-2) == 0)
-        return false
-      return canWrap(pm.doc, from, to, nodeType,
-                     options.attrs instanceof Function ? null : options.attrs)
-    }
+    run(pm) { wrapList(pm, nodeType, options.attrs) },
+    select(pm) { return wrapList(pm, nodeType, options.attrs, false) }
   }))
 }
 

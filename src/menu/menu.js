@@ -1,6 +1,6 @@
 import {elt, insertCSS} from "../dom"
-import {undo, redo, lift, joinUp, selectParentNode} from "../edit/base_commands"
-import {markActive, canSetMark, canWrap} from "../transform"
+import {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType} from "../edit/base_commands"
+import {markActive, canSetMark} from "../transform"
 import {Fragment} from "../model"
 import {copyObj} from "../util/obj"
 
@@ -29,7 +29,6 @@ export class MenuItem {
     // :: MenuItemSpec
     // The spec used to create the menu item.
     this.spec = spec
-    this.key = false
   }
 
   // :: (ProseMirror) → DOMNode
@@ -56,10 +55,7 @@ export class MenuItem {
       throw new RangeError("MenuItem without render, icon, or label property")
     }
 
-    if (spec.title) {
-      if (this.key === false) this.key = pm.findBinding(spec.run)
-      dom.setAttribute("title", pm.translate(spec.title) + (this.key ? " (" + this.key + ")" : ""))
-    }
+    if (spec.title) dom.setAttribute("title", pm.translate(spec.title))
     if (spec.class) dom.classList.add(spec.class)
     if (disabled) dom.classList.add(prefix + "-disabled")
     if (spec.css) dom.style.cssText += spec.css
@@ -355,47 +351,22 @@ export function insertItem(nodeType, options) {
 export function wrapItem(nodeType, options) {
   return new MenuItem(copyObj(options, {
     run(pm) {
-      function done(attrs) {
-        let {from, to} = pm.selection
-        pm.tr.wrap(from, to, nodeType, attrs).apply(pm.apply.scroll)
-      }
-      if (options.attrs instanceof Function) options.attrs(pm, done)
-      else done(options.attrs)
+      if (options.attrs instanceof Function) options.attrs(pm, attrs => wrapIn(pm, nodeType, attrs))
+      else wrapIn(pm, nodeType, options.attrs)
     },
     select(pm) {
-      let {from, to} = pm.selection
-      return canWrap(pm.doc, from, to, nodeType,
-                     options.attrs instanceof Function ? null : options.attrs)
+      return wrapIn(pm, nodeType, options.attrs instanceof Function ? null : options.attrs, false)
     }
   }))
-}
-
-function canSetBlockType(pm, nodeType, attrs) {
-  let {from, to, node} = pm.selection, $from = pm.doc.resolve(from), depth
-  if (node) {
-    depth = $from.depth
-  } else {
-    if (to > $from.end()) return null
-    depth = $from.depth - 1
-  }
-
-  if ((node || $from.parent).hasMarkup(nodeType, attrs)) return null
-  let index = $from.index(depth)
-  if ($from.node(depth).canReplaceWith(index, index + 1, nodeType)) return $from.before(depth + 1)
 }
 
 export function blockTypeItem(nodeType, options) {
   return new MenuItem(copyObj(options, {
     run(pm) {
-      let where = canSetBlockType(pm, nodeType, options.attrs)
-      if (where != null)
-        pm.tr
-          .clearMarkupFor(where, nodeType, options.attrs)
-          .setNodeType(where, nodeType, options.attrs)
-          .apply(pm.apply.scroll)
+      setBlockType(pm, nodeType, options.attrs)
     },
     select(pm) {
-      return canSetBlockType(pm, nodeType, options.attrs) != null
+      return setBlockType(pm, nodeType, options.attrs, false)
     },
     active(pm) {
       let {from, to, node} = pm.selection

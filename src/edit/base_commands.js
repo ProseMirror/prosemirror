@@ -1,5 +1,5 @@
 import {browser} from "../dom"
-import {joinPoint, joinable, canLift, canSplit, ReplaceAroundStep} from "../transform"
+import {joinPoint, joinable, canLift, canSplit, canWrap, ReplaceAroundStep} from "../transform"
 import {Slice, Fragment} from "../model"
 
 import {charCategory, isExtendingChar} from "./char"
@@ -402,4 +402,32 @@ function joinPointBelow(pm) {
   let {node, to} = pm.selection
   if (node) return joinable(pm.doc, to) ? to : null
   else return joinPoint(pm.doc, to, 1)
+}
+
+export function wrapIn(pm, nodeType, attrs, apply) {
+  let {from, to} = pm.selection
+  // FIXME duplicate work
+  if (!canWrap(pm.doc, from, to, nodeType, attrs)) return false
+  if (apply !== false) pm.tr.wrap(from, to, nodeType, attrs).apply(pm.apply.scroll)
+  return true
+}
+
+export function setBlockType(pm, nodeType, attrs, apply) {
+  let {from, to, node} = pm.selection, $from = pm.doc.resolve(from), depth
+  if (node) {
+    depth = $from.depth
+  } else {
+    if (to > $from.end()) return false
+    depth = $from.depth - 1
+  }
+  if ((node || $from.parent).hasMarkup(nodeType, attrs)) return false
+  let index = $from.index(depth)
+  if (!$from.node(depth).canReplaceWith(index, index + 1, nodeType)) return false
+  if (apply !== false) {
+    let where = $from.before(depth + 1)
+    pm.tr.clearMarkupFor(where, nodeType, attrs)
+      .setNodeType(where, nodeType, attrs)
+      .apply(pm.apply.scroll)
+  }
+  return true
 }
