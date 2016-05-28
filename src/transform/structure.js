@@ -270,3 +270,26 @@ Transform.prototype.join = function(pos, depth = 1, silent = false) {
   else this.step(step)
   return this
 }
+
+// :: (Node, number, NodeType, ?Object) → ?number
+// Try to find a point where a node of the given type can be inserted
+// near `pos`, by searching up the node hierarchy when `pos` itself
+// isn't a valid place but is at the start or end of a node. Return
+// null if no position was found.
+export function insertPoint(doc, pos, nodeType, attrs) {
+  let $pos = doc.resolve(pos)
+  if ($pos.parent.canReplaceWith($pos.index(), $pos.index(), nodeType, attrs)) return pos
+
+  if ($pos.parentOffset == 0)
+    for (let d = $pos.depth - 1; d > 0; d--) {
+      let index = $pos.index(d)
+      if ($pos.node(d).canReplace(index, index, nodeType, attrs)) return $pos.before(d + 1)
+      if (index > 0) return null
+    }
+  if ($pos.parentOffset == $pos.parent.content.size)
+    for (let d = $pos.depth - 1; d > 0; d--) {
+      let index = $pos.indexAfter(d)
+      if ($pos.node(d).canReplace(index, index, nodeType, attrs)) return $pos.after(d + 1)
+      if (index < $pos.node(d).childCount) return null
+    }
+}
