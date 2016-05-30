@@ -401,9 +401,8 @@ class DOMParseState {
   // Insert a node of the given type, with the given content, based on
   // `dom`, at the current position in the document.
   insert(type, attrs, content) {
-    let frag = type.fixContent(Fragment.from(content), attrs)
-    if (!frag) return null
-    this.insertNode(type.create(attrs, frag, type.isInline ? this.marks : null))
+    let node = type.createAndFill(attrs, content, type.isInline ? this.marks : null)
+    if (node) this.insertNode(node)
   }
 
   // : (NodeType, ?Object) → ?NodeBuilder

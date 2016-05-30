@@ -1,6 +1,5 @@
 import {elt, insertCSS} from "../dom"
 import {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType, wrapInList} from "../edit/commands"
-import {Fragment} from "../model"
 import {copyObj} from "../util/obj"
 
 import {getIcon} from "./icons"
@@ -380,8 +379,7 @@ export function insertItem(nodeType, options) {
     },
     run(pm) {
       function done(attrs) {
-        let node = nodeType.create(attrs, nodeType.fixContent(Fragment.empty))
-        pm.tr.replaceSelection(node).apply()
+        pm.tr.replaceSelection(nodeType.createAndFill(attrs)).apply()
       }
       if (options.attrs instanceof Function) options.attrs(pm, done)
       else done(options.attrs)

@@ -58,7 +58,7 @@ function id(x) { return x }
 function block(type, attrs) {
   return function() {
     let {nodes, tag} = flatten(arguments, id)
-    let node = schema.node(type, attrs, nodes)
+    let node = schema.nodes[type].create(attrs, nodes)
     if (tag != noTag) node.tag = tag
     return node
   }

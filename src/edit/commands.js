@@ -218,8 +218,8 @@ export function createParagraphNear(pm) {
   let $from = pm.doc.resolve(from), side = $from.parentOffset ? to : from
   let type = $from.parent.defaultContentType($from.indexAfter())
   if (!type.isTextblock) return false
-  pm.tr.insert(side, type.create()).apply({scrollIntoView: true,
-                                           selection: new TextSelection(side + 1)})
+  pm.tr.insert(side, type.createAndFill()).apply({scrollIntoView: true,
+                                                  selection: new TextSelection(side + 1)})
   return true
 }
 

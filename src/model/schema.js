@@ -209,25 +209,43 @@ export class NodeType extends SchemaItem {
     return new Node(this, this.computeAttrs(attrs), Fragment.from(content), Mark.setFrom(marks))
   }
 
+  // :: (?Object, ?union<Fragment, Node, [Node]>, ?[Mark]) → Node
+  // Like [`create`](NodeType.create), but check the given content
+  // against the node type's content restrictions, and throw an error
+  // if it doesn't match.
+  createChecked(attrs, content, marks) {
+    attrs = this.computeAttrs(attrs)
+    content = Fragment.from(content)
+    if (!this.validContent(content, attrs))
+      throw new RangeError("Invalid content for node " + this.name)
+    return new Node(this, attrs, content, Mark.setFrom(marks))
+  }
+
+  // :: (?Object, ?union<Fragment, Node, [Node]>, ?[Mark]) → ?Node
+  // Like [`create`](NodeType.create), but see if it is necessary to
+  // add nodes to the start or end of the given fragment to make it
+  // fit the node. If no fitting wrapping can be found, return null.
+  // Note that, due to the fact that required nodes can always be
+  // created, this will always succeed if you pass null or
+  // `Fragment.empty` as content.
+  createAndFill(attrs, content, marks) {
+    attrs = this.computeAttrs(attrs)
+    content = Fragment.from(content)
+    if (content.size) {
+      let before = this.contentExpr.start(attrs).fillBefore(content)
+      if (!before) return null
+      content = before.append(content)
+    }
+    let after = this.contentExpr.getMatchAt(attrs, content).fillBefore(Fragment.empty, true)
+    if (!after) return null
+    return new Node(this, attrs, content.append(after), Mark.setFrom(marks))
+  }
+
   // :: (Fragment, ?Object) → bool
   // Returns true if the given fragment is valid content for this node
   // type.
   validContent(content, attrs) {
     return this.contentExpr.matches(attrs, content)
-  }
-
-  // :: (Fragment, ?Object) → ?Fragment
-  // Verify whether the given fragment would be valid content for this
-  // node type, and if not, try to insert content before and/or after
-  // it to make it valid. Returns null if no valid fragment could be
-  // created.
-  fixContent(content = Fragment.empty, attrs) {
-    let before = this.contentExpr.start(attrs).fillBefore(content)
-    if (!before) return null
-    content = before.append(content)
-    let after = this.contentExpr.getMatchAt(attrs, content).fillBefore(Fragment.empty, true)
-    if (!after) return
-    return content.append(after)
   }
 
   static compile(nodes, schema) {
@@ -441,7 +459,7 @@ export class Schema {
     else if (type.schema != this)
       throw new RangeError("Node type from different schema used (" + type.name + ")")
 
-    return type.create(attrs, content, marks)
+    return type.createChecked(attrs, content, marks)
   }
 
   // :: (string, ?[Mark]) → Node

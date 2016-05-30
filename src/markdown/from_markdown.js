@@ -2,7 +2,7 @@ import markdownit from "markdown-it"
 import {BlockQuote, OrderedList, BulletList, ListItem,
         HorizontalRule, Paragraph, Heading, CodeBlock, Image, HardBreak,
         EmMark, StrongMark, LinkMark, CodeMark} from "../schema"
-import {Mark, Fragment} from "../model"
+import {Mark} from "../model"
 import sortedInsert from "../util/sortedinsert"
 
 // :: (Schema, string, ?Object) → Node
@@ -135,9 +135,8 @@ class MarkdownParseState {
   // :: (NodeType, ?Object, ?[Node]) → ?Node
   // Add a node at the current position.
   addNode(type, attrs, content) {
-    content = type.fixContent(Fragment.from(content), attrs)
-    if (!content) return null
-    let node = type.create(attrs, content, this.marks)
+    let node = type.createAndFill(attrs, content, this.marks)
+    if (!node) return null
     this.push(node)
     return node
   }

@@ -135,7 +135,7 @@ Transform.prototype.wrap = function(from, to = from, type, wrapAttrs) {
 
   let content = Fragment.empty, open = inside.length + 1 + around.length
   for (let i = inside.length - 1; i >= 0; i--) content = Fragment.from(inside[i].type.create(inside[i].attrs, content))
-  content = Fragment.from(type.create(wrapAttrs, content))
+  content = Fragment.from(content.size ? type.createChecked(wrapAttrs, content) : type.create(wrapAttrs))
   for (let i = around.length - 1; i >= 0; i--) content = Fragment.from(around[i].type.create(around[i].attrs, content))
 
   let start = $from.before(shared + 1), end = $to.after(shared + 1)
