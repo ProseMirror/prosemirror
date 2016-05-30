@@ -8,43 +8,21 @@ import {elt, insertCSS} from "../dom"
 // to improve this implementation).
 
 // ;; This class represents a dialog that prompts for a set of
-// parameters. Parameters should be objects with the following
-// properties:
-//
-// **`type`**`: string`
-// : The type of field, as in `ParamPrompt.paramTypes`.
-//
-// **`label`**`: string`
-// : The label for this field.
-//
-// **`value`**`: ?any`
-// : The starting value that the field should get.
-//
-// **`required`**`: ?bool`
-// : Whether this field is required.
-//
-// **`validate`**`: ?(any) → ?string
-// : If given, this is used as a function that validates the field
-// value. Should return a string with an error message when the value
-// is _not_ valid.
-export class ParamPrompt {
-  // :: (ProseMirror, string, [Object])
+// fields.
+export class FieldPrompt {
+  // :: (ProseMirror, string, [Field])
   // Construct a prompt. Note that this does not
-  // [open](#ParamPrompt.open) it yet.
-  constructor(pm, title, params) {
+  // [open](#FieldPrompt.open) it yet.
+  constructor(pm, title, fields) {
     // :: ProseMirror
     this.pm = pm
     // :: Command
     this.title = title
-    this.params = params
+    this.fields = fields
     this.doClose = null
-    this.fields = []
-    for (let name in params) {
-      let param = params[name]
-      if (!(param.type in this.paramTypes))
-        throw new RangeError("Unsupported parameter type: " + param.type)
-      this.fields.push(this.paramTypes[param.type].render.call(pm, param))
-    }
+    this.domFields = []
+    for (let name in fields)
+      this.domFields.push(fields[name].render(pm))
 
     let promptTitle = elt("h5", {}, pm.translate(title))
     let submitButton = elt("button", {type: "submit", class: "ProseMirror-prompt-submit"}, "Ok")
@@ -52,7 +30,7 @@ export class ParamPrompt {
     cancelButton.addEventListener("click", () => this.close())
     // :: DOMNode
     // An HTML form wrapping the fields.
-    this.form = elt("form", null, promptTitle, this.fields.map(f => elt("div", null, f)),
+    this.form = elt("form", null, promptTitle, this.domFields.map(f => elt("div", null, f)),
                     elt("div", {class: "ProseMirror-prompt-buttons"}, submitButton, " ", cancelButton))
   }
 
@@ -110,25 +88,11 @@ export class ParamPrompt {
   // default value), show the problem to the user and return `null`.
   values() {
     let result = Object.create(null), i = 0
-    for (let name in this.params) {
-      let param = this.params[name], dom = this.fields[i++]
-      let type = this.paramTypes[param.type], value, bad
-      if (type.validate)
-        bad = type.validate(dom)
-      if (!bad) {
-        value = type.read.call(this.pm, dom)
-        if (param.required && !value)
-          bad = "Required field"
-        else if (param.validate)
-          bad = param.validate(value)
-      }
-
+    for (let name in this.fields) {
+      let field = this.fields[name], dom = this.domFields[i++]
+      let value = field.read(dom), bad = field.validate(value)
       if (bad) {
-        bad = this.pm.translate(bad)
-        if (type.reportInvalid)
-          type.reportInvalid.call(this.pm, dom, bad)
-        else
-          this.reportInvalid(dom, bad)
+        this.reportInvalid(dom, this.pm.translate(bad))
         return null
       }
       result[name] = value
@@ -154,59 +118,65 @@ export class ParamPrompt {
   }
 }
 
-// ;; #path=ParamTypeSpec #kind=interface
-// By default, the prompting interface only knows how to prompt for
-// parameters of type `text` and `select`. You can change the way
-// those are prompted for, and define new types, by writing to
-// `ParamPrompt.paramTypes`. All methods on these specs will be called
-// with `this` bound to the relevant `ProseMirror` instance.
+// ;; The type of field that `FieldPrompt` expects to be passed to it.
+export class Field {
+  // :: (Object)
+  // Create a field with the given options. Options support by all
+  // field types are:
+  //
+  // **`value`**`: ?any`
+  //   : The starting value for the field.
+  //
+  // **`label`**`: string`
+  //   : The label for the field.
+  //
+  // **`required`**`: ?bool`
+  //   : Whether the field is required.
+  //
+  // **`validate`**`: ?(any) → ?string`
+  //   : A function to validate the given value. Should return an
+  //     error message if it is not valid.
+  constructor(options) { this.options = options }
 
-// :: (param: CommandParam, value: ?any) → DOMNode #path=ParamTypeSpec.render
-// Create the DOM structure for a parameter field of this type, and
-// pre-fill it with `value`, if given.
+  // :: (pm: ProseMirror) → DOMNode #path=Field.prototype.render
+  // Render the field to the DOM. Should be implemented by all subclasses.
 
-// :: (field: DOMNode) → any #path=ParamTypeSpec.read
-// Read the value from the DOM field created by
-// [`render`](#ParamTypeSpec.render).
+  // :: (DOMNode) → any
+  // Read the field's value from its DOM node.
+  read(dom) { return dom.value }
 
-// :: (field: DOMNode) → ?string #path=ParamTypeSpec.validate
-// Optional. Validate the value in the given field, and return a
-// string message if it is not a valid input for this type.
+  // :: (any) → ?string
+  // A field-type-specific validation function.
+  validateType(_value) {}
 
-// :: (field: DOMNode, message: string) #path=ParamTypeSpec.reportInvalid
-// Report the value in the given field as invalid, showing the given
-// error message. This property is optional, and the prompt
-// implementation will fall back to its own method of showing the
-// message when it is not provided.
-
-// :: Object<ParamTypeSpec>
-// A collection of default renderers and readers for [parameter
-// types](#CommandParam.type), which [parameter
-// handlers](#commandParamHandler) can optionally use to prompt for
-// parameters. `render` should create a form field for the parameter,
-// and `read` should, given that field, return its value.
-ParamPrompt.prototype.paramTypes = Object.create(null)
-
-ParamPrompt.prototype.paramTypes.text = {
-  render(param) {
-    return elt("input", {type: "text",
-                         placeholder: this.translate(param.label || name),
-                         value: param.value || "",
-                         autocomplete: "off"})
-  },
-  read(dom) {
-    return dom.value
+  validate(value) {
+    if (!value && this.options.required)
+      return "Required field"
+    return this.validateType(value) || (this.options.validate && this.options.validate(value))
   }
 }
 
-ParamPrompt.prototype.paramTypes.select = {
-  render(param) {
-    let options = param.options.call ? param.options(this) : param.options
-    return elt("select", null, options.map(o => elt("option", {value: o.value, selected: o.value == param.value ? "true" : null},
-                                                    this.translate(o.label))))
-  },
-  read(dom) {
-    return dom.value
+// ;; A field class for single-line text fields.
+export class TextField extends Field {
+  render(pm) {
+    return elt("input", {type: "text",
+                         placeholder: pm.translate(this.options.label),
+                         value: this.options.value || "",
+                         autocomplete: "off"})
+  }
+}
+
+
+// ;; A field class for dropdown fields based on a plain `<select>`
+// tag. Expects an option `options`, which should be an array of
+// `{value: string, label: string}` objects, or a function taking a
+// `ProseMirror` instance and returning such an array.
+export class SelectField extends Field {
+  render(pm) {
+    let opts = this.options
+    let options = opts.options.call ? opts.options(pm) : opts.options
+    return elt("select", null, options.map(o => elt("option", {value: o.value, selected: o.value == opts.value ? "true" : null},
+                                                    pm.translate(o.label))))
   }
 }
 

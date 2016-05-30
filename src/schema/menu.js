@@ -4,8 +4,12 @@ import {StrongMark, EmMark, CodeMark, LinkMark, Image,
 import {toggleMarkItem, insertItem, wrapItem, blockTypeItem, Dropdown, joinUpItem,
         liftItem, selectParentNodeItem, undoItem, redoItem, wrapListItem} from "../menu/menu"
 
-import {ParamPrompt} from "../ui/prompt"
+import {FieldPrompt, TextField} from "../ui/prompt"
 
+// :: Object A set of icons used in the default menu. Contains the
+// properties `strong`, `em`, `code`, `link`, `bulletList`,
+// `orderedList`, and `blockquote`, each holding an object that can be
+// used as the `icon` option to `MenuItem`.
 export const icons = {
   strong: {
     width: 805, height: 1024,
@@ -39,23 +43,97 @@ export const icons = {
 
 // Helpers to create specific types of items
 
-export function promptLinkAttrs(pm, callback, Prompt = ParamPrompt) {
-  new Prompt(pm, "Create a link", {
-    href: {type: "text", label: "Link target", required: true},
-    title: {type: "text", label: "Title"}
+// :: (ProseMirror, (attrs: ?Object))
+// A function that will prompt for the attributes of a [link
+// mark](#LinkMark) (using `FieldPrompt`), and call a callback with
+// the result.
+export function promptLinkAttrs(pm, callback) {
+  new FieldPrompt(pm, "Create a link", {
+    href: new TextField({label: "Link target", required: true}),
+    title: new TextField({label: "Title"})
   }).open(callback)
 }
 
-export function promptImageAttrs(pm, callback, nodeType, Prompt = ParamPrompt) {
+// :: (ProseMirror, (attrs: ?Object))
+// A function that will prompt for the attributes of an [image
+// node](#Image) (using `FieldPrompt`), and call a callback with the
+// result.
+export function promptImageAttrs(pm, callback, nodeType) {
   let {node, from, to} = pm.selection, attrs = nodeType && node && node.type == nodeType && node.attrs
-  new Prompt(pm, "Insert image", {
-    src: {type: "text", label: "Location", required: true, value: attrs && attrs.src},
-    title: {type: "text", label: "Title", value: attrs && attrs.title},
-    alt: {type: "text", label: "Description",
-          value: attrs ? attrs.title : pm.doc.textBetween(from, to, " ")}
+  new FieldPrompt(pm, "Insert image", {
+    src: new TextField({label: "Location", required: true, value: attrs && attrs.src}),
+    title: new TextField({label: "Title", value: attrs && attrs.title}),
+    alt: new TextField({label: "Description",
+                        value: attrs ? attrs.title : pm.doc.textBetween(from, to, " ")})
   }).open(callback)
 }
 
+// :: (Schema) → Object
+// Given a schema, look for default mark and node types in it and
+// return an object with relevant menu items relating to those marks:
+//
+// **`toggleStrong`**`: MenuItem`
+//   : A menu item to toggle the [strong mark](#StrongMark).
+//
+// **`toggleEm`**`: MenuItem`
+//   : A menu item to toggle the [emphasis mark](#EmMark).
+//
+// **`toggleCode`**`: MenuItem`
+//   : A menu item to toggle the [code font mark](#CodeMark).
+//
+// **`toggleLink`**`: MenuItem`
+//   : A menu item to toggle the [link mark](#LinkMark).
+//
+// **`insertImage`**`: MenuItem`
+//   : A menu item to insert an [image](#Image).
+//
+// **`wrapBulletList`**`: MenuItem`
+//   : A menu item to wrap the selection in a [bullet list](#BulletList).
+//
+// **`wrapOrderedList`**`: MenuItem`
+//   : A menu item to wrap the selection in an [ordered list](#OrderedList).
+//
+// **`wrapBlockQuote`**`: MenuItem`
+//   : A menu item to wrap the selection in a [block quote](#BlockQuote).
+//
+// **`makeParagraph`**`: MenuItem`
+//   : A menu item to set the current textblock to be a normal
+//     [paragraph](#Paragraph).
+//
+// **`makeCodeBlock`**`: MenuItem`
+//   : A menu item to set the current textblock to be a
+//     [code block](#CodeBlock).
+//
+// **`makeHead[N]`**`: MenuItem`
+//   : Where _N_ is 1 to 6. Menu items to set the current textblock to
+//     be a [heading](#Heading) of level _N_.
+//
+// **`insertHorizontalRule`**`: MenuItem`
+//   : A menu item to insert a horizontal rule.
+//
+// The return value also contains some prefabricated menu elements and
+// menus, that you can use instead of composing your own menu from
+// scratch:
+//
+// **`insertMenu`**`: Dropdown`
+//   : A dropdown containing the `insertImage` and
+//     `insertHorizontalRule` items.
+//
+// **`typeMenu`**`: Dropdown`
+//   : A dropdown containing the items for making the current
+//     textblock a paragraph, code block, or heading.
+//
+// **`inlineMenu`**`: [[MenuElement]]`
+//   : An array of arrays of menu elements for use as the inline menu
+//     to, for example, a [tooltip menu](#menu/tooltipmenu).
+//
+// **`blockMenu`**`: [[MenuElement]]`
+//   : An array of arrays of menu elements for use as the block menu
+//     to, for example, a [tooltip menu](#menu/tooltipmenu).
+//
+// **`fullMenu`**`: [[MenuElement]]`
+//   : An array of arrays of menu elements for use as the full menu
+//     for, for example the [menu bar](#menu/menubar).
 export function defaultMenuItems(schema) {
   let r = {}
   for (let name in schema.marks) {
