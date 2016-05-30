@@ -8,8 +8,7 @@ import {OrderedMap} from "../util/orderedmap"
 
 // ;; The [node](#NodeType) and [mark](#MarkType) types
 // that make up a schema have several things in common—they support
-// attributes, and you can [register](#SchemaItem.register) values
-// with them. This class implements this functionality, and acts as a
+// attributes. This class implements this functionality, and acts as a
 // superclass to those `NodeType` and `MarkType`.
 class SchemaItem {
   // :: Object<Attribute>
@@ -61,54 +60,6 @@ class SchemaItem {
     let frozen = Object.create(null)
     for (let name in this.attrs) frozen[name] = this.attrs[name]
     Object.defineProperty(this, "attrs", {value: frozen})
-  }
-
-  static getRegistry() {
-    if (this == SchemaItem) return null
-    if (!this.prototype.hasOwnProperty("registry"))
-      this.prototype.registry = Object.create(Object.getPrototypeOf(this).getRegistry())
-    return this.prototype.registry
-  }
-
-  static getNamespace(name) {
-    if (this == SchemaItem) return null
-    let reg = this.getRegistry()
-    if (!Object.prototype.hasOwnProperty.call(reg, name))
-      reg[name] = Object.create(Object.getPrototypeOf(this).getNamespace(name))
-    return reg[name]
-  }
-
-  // :: (string, string, *)
-  // Register a value in this type's registry. Various components use
-  // `Schema.registry` to query values from the marks and nodes that
-  // make up the schema. The `namespace`, for example
-  // [`"command"`](#commands), determines which component will see
-  // this value. `name` is a name specific to this value. Its meaning
-  // differs per namespace.
-  //
-  // Subtypes inherit the registered values from their supertypes.
-  // They can override individual values by calling this method to
-  // overwrite them with a new value, or with `null` to disable them.
-  static register(namespace, name, value) {
-    this.getNamespace(namespace)[name] = () => value
-  }
-
-  // :: (string, string, (SchemaItem) → *)
-  // Register a value in this types's registry, like
-  // [`register`](#SchemaItem.register), but providing a function that
-  // will be called with the actual node or mark type, whose return
-  // value will be treated as the effective value (or will be ignored,
-  // if `null`).
-  static registerComputed(namespace, name, f) {
-    this.getNamespace(namespace)[name] = f
-  }
-
-  // :: (string)
-  // By default, schema items inherit the
-  // [registered](#SchemaItem.register) items from their superclasses.
-  // Call this to disable that behavior for the given namespace.
-  static cleanNamespace(namespace) {
-    this.getNamespace(namespace).__proto__ = null
   }
 }
 
@@ -504,23 +455,5 @@ export class Schema {
     let found = this.nodes[name]
     if (!found) throw new RangeError("Unknown node type: " + name)
     return found
-  }
-
-  // :: (string, (name: string, value: *, source: union<NodeType, MarkType>, name: string))
-  // Retrieve all registered items under the given name from this
-  // schema. The given function will be called with the name, each item, the
-  // element—node type or mark type—that it was associated with, and
-  // that element's name in the schema.
-  registry(namespace, f) {
-    for (let i = 0; i < 2; i++) {
-      let obj = i ? this.marks : this.nodes
-      for (let tname in obj) {
-        let type = obj[tname], registry = type.registry, ns = registry && registry[namespace]
-        if (ns) for (let prop in ns) {
-          let value = ns[prop](type)
-          if (value != null) f(prop, value, type, tname)
-        }
-      }
-    }
   }
 }
