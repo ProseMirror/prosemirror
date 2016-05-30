@@ -1,5 +1,5 @@
 import {wrappingInputRule, textblockTypeInputRule} from "../inputrules"
-import {defaultSchema} from "./index"
+import {Heading, OrderedList, BulletList, BlockQuote, CodeBlock} from "./index"
 
 // :: (NodeType) → InputRule
 // Given a blockquote node type, returns an input rule that turns `"> "`
@@ -41,13 +41,18 @@ export function headingRule(nodeType, maxLevel) {
                                 nodeType, match => ({level: match[1].length}))
 }
 
-// :: [InputRule]
+// :: (Schema) → [InputRule]
 // A set of input rules for the default schema, using all of the
 // builder functions from this module.
-export const defaultRules = [
-  blockQuoteRule(defaultSchema.nodes.blockquote),
-  orderedListRule(defaultSchema.nodes.ordered_list),
-  bulletListRule(defaultSchema.nodes.bullet_list),
-  codeBlockRule(defaultSchema.nodes.code_block),
-  headingRule(defaultSchema.nodes.heading, 6)
-]
+export function defaultRules(schema) {
+  let result = []
+  for (let name in schema.nodes) {
+    let node = schema.nodes[name]
+    if (node instanceof BlockQuote) result.push(blockQuoteRule(node))
+    if (node instanceof OrderedList) result.push(orderedListRule(node))
+    if (node instanceof BulletList) result.push(bulletListRule(node))
+    if (node instanceof CodeBlock) result.push(codeBlockRule(node))
+    if (node instanceof Heading) result.push(headingRule(node, 6))
+  }
+  return result
+}

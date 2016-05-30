@@ -1,6 +1,5 @@
 import {elt, insertCSS} from "../dom"
-import {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType} from "../edit/base_commands"
-import {markActive, canSetMark} from "../transform"
+import {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType, wrapList} from "../edit/commands"
 import {Fragment} from "../model"
 import {copyObj} from "../util/obj"
 
@@ -310,11 +309,36 @@ export const redoItem = new MenuItem({
   }
 })
 
+function markActive(pm, type) {
+  let {from, to, empty} = pm.selection
+  if (empty) return type.isInSet(pm.activeMarks())
+  else return pm.doc.rangeHasMark(from, to, type)
+}
+
+function canToggleMark(pm, type) {
+  let {from, to} = pm.selection
+  let can = false
+  pm.doc.nodesBetween(from, to, (node, _, parent, i) => {
+    if (can) return false
+    can = (node.isTextblock && node.contentMatchAt(0).allowsMark(type)) ||
+      (node.isInline && parent.contentMatchAt(i + 1).allowsMark(type))
+  })
+  return can
+}
+
+// :: (MarkType, Object) → MenuItem
+// Create a menu item for toggling a mark on the selection. Will create
+// `run`, `active`, and `select` properties. Other properties have to
+// be supplied in the `options` object. When `options.attrs` is a
+// function, it will be called with `(pm: ProseMirror, callback:
+// (attrs: ?Object))` arguments, and should produce the attributes for
+// the mark and then call the callback. Otherwise, it may be an object
+// providing the attributes directly.
 export function toggleMarkItem(markType, options) {
   let base = {
     run(pm) { pm.setMark(markType, null, options.attrs) },
     active(pm) { return markActive(pm, markType) },
-    select(pm) { return canSetMark(pm, markType, null) }
+    select(pm) { return canToggleMark(pm, markType) }
   }
   if (options.attrs instanceof Function) base.run = pm => {
     if (markActive(pm, markType))
@@ -326,6 +350,11 @@ export function toggleMarkItem(markType, options) {
   return new MenuItem(copyObj(options, base))
 }
 
+// :: (NodeType, Object) → MenuItem
+// Create a menu item for inserting a node of the given type. Adds
+// `run` and `select` properties to the ones provided in `options`.
+// `options.attrs` can be an object or a function, like in
+// `toggleMarkItem`.
 export function insertItem(nodeType, options) {
   return new MenuItem(copyObj(options, {
     select(pm) {
@@ -348,6 +377,11 @@ export function insertItem(nodeType, options) {
   }))
 }
 
+// :: (NodeType, Object) → MenuItem
+// Build a menu item for wrapping the selection in a given node type.
+// Adds `run` and `select` properties to the ones present in
+// `options`. `options.attrs` may be an object or a function, as in
+// `toggleMarkItem`.
 export function wrapItem(nodeType, options) {
   return new MenuItem(copyObj(options, {
     run(pm) {
@@ -360,6 +394,11 @@ export function wrapItem(nodeType, options) {
   }))
 }
 
+// :: (NodeType, Object) → MenuItem
+// Build a menu item for changing the type of the textblock around the
+// selection to the given type. Provides `run`, `active`, and `select`
+// properties. Others must be given in `options`. `options.attrs` may
+// be an object to provide the attributes for the textblock node.
 export function blockTypeItem(nodeType, options) {
   return new MenuItem(copyObj(options, {
     run(pm) {
@@ -374,6 +413,17 @@ export function blockTypeItem(nodeType, options) {
       let $from = pm.doc.resolve(from)
       return to <= $from.end() && $from.parent.hasMarkup(nodeType, options.attrs)
     }
+  }))
+}
+
+// :: (NodeType, Object) → MenuItem
+// Build a menu item for wrapping the selection in a list.
+// `options.attrs` may be an object to provide the attributes for the
+// list node.
+export function wrapListItem(nodeType, options) {
+  return new MenuItem(copyObj(options, {
+    run(pm) { wrapList(pm, nodeType, options.attrs) },
+    select(pm) { return wrapList(pm, nodeType, options.attrs, false) }
   }))
 }
 

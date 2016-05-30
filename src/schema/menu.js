@@ -1,11 +1,9 @@
 import {StrongMark, EmMark, CodeMark, LinkMark, Image,
         BulletList, OrderedList, BlockQuote, Heading,
         Paragraph, CodeBlock, HorizontalRule} from "./index"
-import {MenuItem, toggleMarkItem, insertItem, wrapItem, blockTypeItem, Dropdown, joinUpItem,
-        liftItem, selectParentNodeItem, undoItem, redoItem} from "../menu/menu"
-import {wrapList} from "./commands"
+import {toggleMarkItem, insertItem, wrapItem, blockTypeItem, Dropdown, joinUpItem,
+        liftItem, selectParentNodeItem, undoItem, redoItem, wrapListItem} from "../menu/menu"
 
-import {copyObj} from "../util/obj"
 import {ParamPrompt} from "../ui/prompt"
 
 export const icons = {
@@ -56,13 +54,6 @@ export function promptImageAttrs(pm, callback, nodeType, Prompt = ParamPrompt) {
     alt: {type: "text", label: "Description",
           value: attrs ? attrs.title : pm.doc.textBetween(from, to, " ")}
   }).open(callback)
-}
-
-function wrapListItem(nodeType, options) {
-  return new MenuItem(copyObj(options, {
-    run(pm) { wrapList(pm, nodeType, options.attrs) },
-    select(pm) { return wrapList(pm, nodeType, options.attrs, false) }
-  }))
 }
 
 export function defaultMenuItems(schema) {

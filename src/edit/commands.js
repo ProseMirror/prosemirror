@@ -404,6 +404,10 @@ function joinPointBelow(pm) {
   else return joinPoint(pm.doc, to, 1)
 }
 
+// :: (ProseMirror, NodeType, ?Object, ?bool) → bool
+// Wrap the selection in a node of the given type with the given
+// attributes. When `apply` is `false`, just tell whether this is
+// possible, without performing any action.
 export function wrapIn(pm, nodeType, attrs, apply) {
   let {from, to} = pm.selection
   // FIXME duplicate work
@@ -412,6 +416,11 @@ export function wrapIn(pm, nodeType, attrs, apply) {
   return true
 }
 
+// :: (ProseMirror, NodeType, ?Object, ?bool) → bool
+// Try to the textblock around the selection to the given node type
+// with the given attributes. Return `true` when this is possible. If
+// `apply` is `false`, just report whether the change is possible,
+// don't perform any action.
 export function setBlockType(pm, nodeType, attrs, apply) {
   let {from, to, node} = pm.selection, $from = pm.doc.resolve(from), depth
   if (node) {
@@ -429,5 +438,99 @@ export function setBlockType(pm, nodeType, attrs, apply) {
       .setNodeType(where, nodeType, attrs)
       .apply(pm.apply.scroll)
   }
+  return true
+}
+
+// List-related commands
+// FIXME clean up
+
+function isAtTopOfListItem(doc, from, to, listType) {
+  let $from = doc.resolve(from)
+  return $from.sameParent(doc.resolve(to)) &&
+    $from.depth >= 2 &&
+    $from.index(-1) == 0 &&
+    $from.node(-2).type.compatibleContent(listType)
+}
+
+// :: (ProseMirror, NodeType, ?Object, ?bool) → bool
+// Wrap the selection in a list with the given type an attributes. If
+// `apply` is `false`, only return a value to indicate whether this is
+// possible, but don't actually perform the change.
+export function wrapList(pm, nodeType, attrs, apply) {
+  let {from, to, head} = pm.selection, doJoin = false
+  let $from = pm.doc.resolve(from)
+  if (head && isAtTopOfListItem(pm.doc, from, to, nodeType)) {
+    // Don't do anything if this is the top of the list
+    if ($from.index(-2) == 0) return false
+    doJoin = true
+  }
+  if (apply !== false) {
+    let tr = pm.tr.wrap(from, to, nodeType, attrs)
+    if (doJoin) tr.join($from.before(-1))
+    tr.apply(pm.apply.scroll)
+  }
+  return true
+}
+
+// :: (ProseMirror, NodeType) → bool
+// Split a non-empty textblock at the top level of a list item by also
+// splitting that list item.
+export function splitListItem(pm, nodeType) {
+  let {from, to, node} = pm.selection, $from = pm.doc.resolve(from)
+  if ((node && node.isBlock) || !$from.parent.content.size ||
+      $from.depth < 2 || !$from.sameParent(pm.doc.resolve(to))) return false
+  let grandParent = $from.node(-1)
+  if (grandParent.type != nodeType) return false
+  let nextType = to == $from.end() ? grandParent.defaultContentType($from.indexAfter(-1)) : null
+  let tr = pm.tr.delete(from, to)
+  if (!canSplit(tr.doc, from, 2, nextType)) return false
+  tr.split(from, 2, nextType).apply(pm.apply.scroll)
+  return true
+}
+
+function selectedListItems(pm, type) {
+  let {node, from, to} = pm.selection, $from = pm.doc.resolve(from)
+  if (node && node.type == type) return {from, to, depth: $from.depth + 1}
+
+  let itemDepth = $from.parent.type == type ? $from.depth
+      : $from.depth > 0 && $from.node(-1).type == type ? $from.depth - 1 : null
+  if (itemDepth == null) return
+
+  let $to = pm.doc.resolve(to)
+  if ($from.sameDepth($to) < itemDepth - 1) return null
+  return {from: $from.before(itemDepth),
+          to: $to.after(itemDepth),
+          depth: itemDepth}
+}
+
+// :: (ProseMirror, NodeType) → bool
+// Lift the list item around the selection up into a wrapping list.
+export function liftListItem(pm, nodeType) {
+  let selected = selectedListItems(pm, nodeType)
+  if (!selected || selected.depth < 3) return false
+  let $to = pm.doc.resolve(pm.selection.to)
+  if ($to.node(selected.depth - 2).type != nodeType) return false
+  let itemsAfter = selected.to < $to.end(selected.depth - 1)
+  let tr = pm.tr.lift(selected.from, selected.to)
+  let end = tr.map(selected.to, -1)
+  if (itemsAfter) tr.join(end)
+  tr.apply(pm.apply.scroll)
+  return true
+}
+
+// :: (ProseMirror, NodeType) → bool
+// Sink the list item around the selection down into an inner list.
+export function sinkListItem(pm, nodeType) {
+  let selected = selectedListItems(pm, nodeType)
+  if (!selected) return false
+  let $from = pm.doc.resolve(pm.selection.from), startIndex = $from.index(selected.depth - 1)
+  if (startIndex == 0) return false
+  let parent = $from.node(selected.depth - 1), before = parent.child(startIndex - 1)
+  if (before.type != nodeType) return false
+  let nestedBefore = before.lastChild && before.lastChild.type == parent.type
+  let slice = new Slice(Fragment.from(nodeType.create(null, parent.type.create(parent.attrs))), nestedBefore ? 2 : 1, 0)
+  pm.tr.step(new ReplaceAroundStep(selected.from - (nestedBefore ? 2 : 1), selected.to,
+                                   selected.from, selected.to, slice, nestedBefore ? 0 : 1, true))
+    .apply(pm.apply.scroll)
   return true
 }

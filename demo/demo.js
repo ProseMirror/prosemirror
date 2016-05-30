@@ -6,7 +6,7 @@ var defaultRules = require("../dist/schema/inputrules").defaultRules
 var menuBar = require("../dist/menu/menubar").menuBar
 var tooltipMenu = require("../dist/menu/tooltipmenu").tooltipMenu
 var schemaMenu = require("../dist/schema/menu")
-var schemaKeys = require("../dist/schema/commands")
+var schemaKeys = require("../dist/schema/keymap")
 
 var menu = schemaMenu.defaultMenuItems(schema)
 
@@ -18,8 +18,8 @@ var pm = window.pm = new ProseMirror({
             tooltipMenu.config({selectedBlockMenu: true,
                                 inlineContent: menu.inlineMenu,
                                 blockContent: menu.blockMenu}),
-            inputRules.inputRules.config({rules: inputRules.all.concat(defaultRules)}),
-            schemaKeys.addSchemaKeys]
+            inputRules.inputRules.config({rules: inputRules.all.concat(defaultRules(schema))}),
+            schemaKeys.defaultSchemaKeymapPlugin]
 })
 
 document.querySelector("#mark").addEventListener("mousedown", function(e) {

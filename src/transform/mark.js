@@ -4,43 +4,6 @@ import {Transform} from "./transform"
 import {AddMarkStep, RemoveMarkStep} from "./mark_step"
 import {ReplaceStep} from "./replace_step"
 
-export function markActive(pm, type) {
-  let {from, to, empty} = pm.selection
-  if (empty) return type.isInSet(pm.activeMarks())
-  else return pm.doc.rangeHasMark(from, to, type)
-}
-
-function canAddMark(pm, type) {
-  let {from, to, empty} = pm.selection, $from
-  if (empty)
-    return !type.isInSet(pm.activeMarks()) &&
-    ($from = pm.doc.resolve(from)).parent.contentMatchAt($from.index()).allowsMark(type)
-  let can = false
-  pm.doc.nodesBetween(from, to, (node, _, parent, i) => {
-    if (can) return false
-    can = node.isInline && !type.isInSet(node.marks) &&
-      parent.contentMatchAt(i + 1).allowsMark(type)
-  })
-  return can
-}
-
-function canToggleMark(pm, type) {
-  let {from, to} = pm.selection
-  let can = false
-  pm.doc.nodesBetween(from, to, (node, _, parent, i) => {
-    if (can) return false
-    can = (node.isTextblock && node.contentMatchAt(0).allowsMark(type)) ||
-      (node.isInline && parent.contentMatchAt(i + 1).allowsMark(type))
-  })
-  return can
-}
-
-export function canSetMark(pm, type, to) {
-  if (to === false) return markActive(pm, type)
-  if (to === true) return canAddMark(pm, type)
-  return canToggleMark(pm, type)
-}
-
 // :: (number, number, Mark) → Transform
 // Add the given mark to the inline content between `from` and `to`.
 Transform.prototype.addMark = function(from, to, mark) {

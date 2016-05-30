@@ -281,15 +281,15 @@ export function insertPoint(doc, pos, nodeType, attrs) {
   if ($pos.parent.canReplaceWith($pos.index(), $pos.index(), nodeType, attrs)) return pos
 
   if ($pos.parentOffset == 0)
-    for (let d = $pos.depth - 1; d > 0; d--) {
+    for (let d = $pos.depth - 1; d >= 0; d--) {
       let index = $pos.index(d)
-      if ($pos.node(d).canReplace(index, index, nodeType, attrs)) return $pos.before(d + 1)
+      if ($pos.node(d).canReplaceWith(index, index, nodeType, attrs)) return $pos.before(d + 1)
       if (index > 0) return null
     }
   if ($pos.parentOffset == $pos.parent.content.size)
-    for (let d = $pos.depth - 1; d > 0; d--) {
+    for (let d = $pos.depth - 1; d >= 0; d--) {
       let index = $pos.indexAfter(d)
-      if ($pos.node(d).canReplace(index, index, nodeType, attrs)) return $pos.after(d + 1)
+      if ($pos.node(d).canReplaceWith(index, index, nodeType, attrs)) return $pos.after(d + 1)
       if (index < $pos.node(d).childCount) return null
     }
 }

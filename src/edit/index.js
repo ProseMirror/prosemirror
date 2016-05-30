@@ -8,7 +8,7 @@ export {Selection, TextSelection, NodeSelection} from "./selection"
 export {MarkedRange} from "./range"
 export {baseKeymap, defaultEnter} from "./keymap"
 export {Plugin} from "./plugin"
-import * as command from "./base_commands"
+import * as command from "./commands"
 export {command}
 
 export {default as Keymap} from "browserkeymap"

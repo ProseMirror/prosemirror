@@ -1,7 +1,7 @@
 import Keymap from "browserkeymap"
 import {browser} from "../dom"
 
-import * as c from "./base_commands"
+import * as c from "./commands"
 
 // :: (ProseMirror) → bool
 // The default binding for enter. Tries `newlineInCode`,
