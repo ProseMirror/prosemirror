@@ -2,7 +2,8 @@ import Keymap from "browserkeymap"
 import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, HorizontalRule,
         Paragraph, CodeBlock, Heading, StrongMark, EmMark, CodeMark} from "../schema"
 import {browser} from "../dom"
-import {wrapIn, setBlockType, wrapList, splitListItem, liftListItem, sinkListItem} from "../edit/commands"
+import {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem,
+        chain, newlineInCode} from "../edit/commands"
 import {Plugin} from "../edit"
 
 // :: (Schema) → Keymap
@@ -38,13 +39,14 @@ export function defaultSchemaKeymap(schema) {
   for (let name in schema.nodes) {
     let node = schema.nodes[name]
     if (node instanceof BulletList)
-      keys["Shift-Ctrl-8"] = pm => wrapList(pm, node)
+      keys["Shift-Ctrl-8"] = pm => wrapInList(pm, node)
     if (node instanceof OrderedList)
-      keys["Shift-Ctrl-9"] = pm => wrapList(pm, node)
+      keys["Shift-Ctrl-9"] = pm => wrapInList(pm, node)
     if (node instanceof BlockQuote)
       keys["Shift-Ctrl-."] = pm => wrapIn(pm, node)
     if (node instanceof HardBreak) {
-      let cmd = pm => pm.tr.replaceSelection(node.create()).apply(pm.apply.scroll)
+      let cmd = chain(newlineInCode,
+                      pm => pm.tr.replaceSelection(node.create()).apply(pm.apply.scroll))
       keys["Mod-Enter"] = keys["Shift-Enter"] = cmd
       if (browser.mac) keys["Ctrl-Enter"] = cmd
     }

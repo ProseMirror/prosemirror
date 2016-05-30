@@ -169,7 +169,7 @@ export function joinUp(pm, apply) {
   }
   if (apply !== false) {
     let tr = pm.tr.join(point), selection
-    if (pm.selection.node) selection = NodeSelection.at(tr.doc, point - tr.doc.resolve(point).nodeBefore.nodeSize)
+    if (pm.selection.node) selection = NodeSelection.at(tr.doc, point - pm.doc.resolve(point).nodeBefore.nodeSize)
     tr.apply({selection})
   }
   return true
@@ -456,7 +456,7 @@ function isAtTopOfListItem(doc, from, to, listType) {
 // Wrap the selection in a list with the given type an attributes. If
 // `apply` is `false`, only return a value to indicate whether this is
 // possible, but don't actually perform the change.
-export function wrapList(pm, nodeType, attrs, apply) {
+export function wrapInList(pm, nodeType, attrs, apply) {
   let {from, to, head} = pm.selection, doJoin = false
   let $from = pm.doc.resolve(from)
   if (head && isAtTopOfListItem(pm.doc, from, to, nodeType)) {

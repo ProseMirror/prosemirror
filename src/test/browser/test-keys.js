@@ -1,6 +1,6 @@
 import {namespace, dispatch} from "./def"
-import {doc, p, ul, li, pre} from "../build"
-import {cmp, cmpNode, is} from "../cmp"
+import {doc, p} from "../build"
+import {cmp, is} from "../cmp"
 import {defTest} from "../tests"
 
 import {Keymap} from "../../edit"
@@ -60,21 +60,6 @@ test("addKeymap_bottom", pm => {
   pm.removeKeymap(mapBot)
   dispatch(pm, "Ctrl-D")
   cmp(pm.cached.d, 1)
-})
-
-test("multiBindings", pm => {
-  dispatch(pm, "Enter")
-  cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def"))), p("foo")))
-  pm.setTextSelection(12)
-  dispatch(pm, "Enter")
-  cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def")), li(p())), p("foo")))
-  dispatch(pm, "Enter")
-  cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def"))), p(), p("foo")))
-  pm.setTextSelection(19)
-  dispatch(pm, "Enter")
-  cmpNode(pm.doc, doc(pre("\nabc"), ul(li(p("def"))), p(), p("f"), p("oo")))
-}, {
-  doc: doc(pre("abc"), ul(li(p("def"))), p("foo"))
 })
 
 defTest("keys_add_inconsistent", () => {

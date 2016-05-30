@@ -1,5 +1,5 @@
 import {elt, insertCSS} from "../dom"
-import {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType, wrapList} from "../edit/commands"
+import {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType, wrapInList} from "../edit/commands"
 import {Fragment} from "../model"
 import {copyObj} from "../util/obj"
 
@@ -422,8 +422,8 @@ export function blockTypeItem(nodeType, options) {
 // list node.
 export function wrapListItem(nodeType, options) {
   return new MenuItem(copyObj(options, {
-    run(pm) { wrapList(pm, nodeType, options.attrs) },
-    select(pm) { return wrapList(pm, nodeType, options.attrs, false) }
+    run(pm) { wrapInList(pm, nodeType, options.attrs) },
+    select(pm) { return wrapInList(pm, nodeType, options.attrs, false) }
   }))
 }
 

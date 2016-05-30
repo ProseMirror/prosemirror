@@ -51,7 +51,7 @@ export class EditorTransform extends Transform {
       }
     } else if (node && from == to) {
       let point = insertPoint(this.doc, from, node.type, node.attrs)
-      if (point) from = to = point
+      if (point != null) from = to = point
     }
 
     return this.replaceWith(from, to, fragment)

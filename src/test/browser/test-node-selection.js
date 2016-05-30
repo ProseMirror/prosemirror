@@ -2,17 +2,19 @@ import {namespace, dispatch} from "./def"
 import {doc, blockquote, pre, p, li, ul, img, br, hr} from "../build"
 import {cmp, cmpStr, cmpNode, is} from "../cmp"
 
+import {selectParentNode, lift, joinDown, joinUp, deleteSelection} from "../../edit/commands"
+
 const test = namespace("nodeselection")
 
 test("parent_block", pm => {
   pm.setTextSelection(9)
-  pm.execCommand("selectParentNode")
+  selectParentNode(pm)
   cmpStr(pm.selection.from, 7, "to paragraph")
-  pm.execCommand("selectParentNode")
+  selectParentNode(pm)
   cmpStr(pm.selection.from, 1, "to list item")
-  pm.execCommand("selectParentNode")
+  selectParentNode(pm)
   cmpStr(pm.selection.from, 0, "to list")
-  pm.execCommand("selectParentNode")
+  selectParentNode(pm)
   cmpStr(pm.selection.from, 0, "stop at toplevel")
 }, {doc: doc(ul(li(p("foo"), p("bar")), li(p("baz"))))})
 
@@ -79,63 +81,63 @@ test("block_out_of_image", pm => {
 
 test("lift_preserves", pm => {
   pm.setNodeSelection(3)
-  pm.execCommand("lift")
+  lift(pm)
   cmpNode(pm.doc, doc(ul(li(p("hi")))), "lifted")
   cmpStr(pm.selection.from, 2, "preserved selection")
-  pm.execCommand("lift")
+  lift(pm)
   cmpNode(pm.doc, doc(p("hi")), "lifted again")
   cmpStr(pm.selection.from, 0, "preserved selection again")
 }, {doc: doc(ul(li(blockquote(p("hi")))))})
 
 test("lift_at_selection_level", pm => {
   pm.setNodeSelection(1)
-  pm.execCommand("lift")
+  lift(pm)
   cmpNode(pm.doc, doc(ul(li(p("a")), li(p("b")))), "lifted list")
   cmpStr(pm.selection.from, 0, "preserved selection")
 }, {doc: doc(blockquote(ul(li(p("a")), li(p("b")))))})
 
 test("join_precisely_down", pm => {
   pm.setNodeSelection(1)
-  cmp(pm.execCommand("joinDown"), false, "don't join parent")
+  cmp(joinDown(pm), false, "don't join parent")
   pm.setNodeSelection(0)
-  pm.execCommand("joinDown")
+  joinDown(pm)
   cmpNode(pm.doc, doc(blockquote(p("foo"), p("bar"))), "joined")
   cmpStr(pm.selection.from, 0, "selected joined node")
 }, {doc: doc(blockquote(p("foo")), blockquote(p("bar")))})
 
 test("join_precisely_up", pm => {
   pm.setNodeSelection(8)
-  cmp(pm.execCommand("joinUp"), false, "don't join parent")
+  cmp(joinUp(pm), false, "don't join parent")
   pm.setNodeSelection(7)
-  pm.execCommand("joinUp")
+  joinUp(pm)
   cmpNode(pm.doc, doc(blockquote(p("foo"), p("bar"))), "joined")
   cmpStr(pm.selection.from, 0, "selected joined node")
 }, {doc: doc(blockquote(p("foo")), blockquote(p("bar")))})
 
 test("delete_block", pm => {
   pm.setNodeSelection(0)
-  pm.execCommand("deleteSelection")
+  deleteSelection(pm)
   cmpNode(pm.doc, doc(ul(li(p("bar")), li(p("baz")), li(p("quux")))), "paragraph vanished")
   cmpStr(pm.selection.head, 3, "moved to list")
   pm.setNodeSelection(2)
-  pm.execCommand("deleteSelection")
+  deleteSelection(pm)
   cmpNode(pm.doc, doc(ul(li(p("baz")), li(p("quux")))), "delete whole item")
   cmpStr(pm.selection.head, 3, "to next item")
   pm.setNodeSelection(9)
-  pm.execCommand("deleteSelection")
+  deleteSelection(pm)
   cmpNode(pm.doc, doc(ul(li(p("baz")))), "delete last item")
   cmpStr(pm.selection.head, 6, "back to paragraph above")
   pm.setNodeSelection(0)
-  pm.execCommand("deleteSelection")
+  deleteSelection(pm)
   cmpNode(pm.doc, doc(p()), "delete list")
 }, {doc: doc(p("foo"), ul(li(p("bar")), li(p("baz")), li(p("quux"))))})
 
 test("delete_hr", pm => {
   pm.setNodeSelection(3)
-  pm.execCommand("deleteSelection")
+  deleteSelection(pm)
   cmpNode(pm.doc, doc(p("a"), hr, p("b")), "deleted first hr")
   cmpStr(pm.selection.from, 3, "moved to second hr")
-  pm.execCommand("deleteSelection")
+  deleteSelection(pm)
   cmpNode(pm.doc, doc(p("a"), p("b")), "deleted second hr")
   cmpStr(pm.selection.head, 4, "moved to paragraph")
 }, {doc: doc(p("a"), hr, hr, p("b"))})

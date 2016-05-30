@@ -1,89 +1,23 @@
 import {defTest} from "../tests"
-import {tempEditor, namespace} from "./def"
-import {cmpNode, is} from "../cmp"
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, br, hr} from "../build"
+import {tempEditor} from "./def"
+import {cmpNode} from "../cmp"
+import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, hr} from "../build"
 
-import {CommandSet} from "../../edit"
+import {commands} from "../../edit"
 import {defaultSchema as schema} from "../../schema"
-import {fromHTML} from "../../htmlformat"
 
 const used = Object.create(null)
+const n = schema.nodes
 
-function test(cmd, before, after) {
+function test(cmd, ...args) {
   let known = used[cmd] || 0
-  defTest("command_" + cmd + (known ? "_" + (known + 1) : ""), () => {
-    let pm = tempEditor({doc: before})
-    pm.execCommand(cmd)
-    cmpNode(pm.doc, after)
+  defTest("command_" + cmd + "_" + known, () => {
+    let pm = tempEditor({doc: args[args.length - 2]})
+    commands[cmd](pm, ...args.slice(0, args.length - 2))
+    cmpNode(pm.doc, args[args.length - 1])
   })
   used[cmd] = known + 1
 }
-
-test("hard_break:insert",
-     doc(p("fo<a>o")),
-     doc(p("fo", br, "o")))
-test("hard_break:insert",
-     doc(pre("fo<a>o")),
-     doc(pre("fo\no")))
-
-test("strong:set",
-     doc(p("f<a>o<b>o")),
-     doc(p("f", strong("o"), "o")))
-test("strong:set",
-     doc(p("f<a>oo")),
-     doc(p("foo")))
-test("strong:set",
-     doc(p("f<a>oo"), p("ba<b>r")),
-     doc(p("f", strong("oo")), p(strong("ba"), "r")))
-test("strong:set",
-     doc(p(strong("f<a>o<b>o"))),
-     doc(p(strong("f<a>o<b>o"))))
-
-test("strong:unset",
-     doc(p(strong("f<a>o<b>o"))),
-     doc(p(strong("f"), "o", strong("o"))))
-test("strong:unset",
-     doc(p("f<a>o<b>o")),
-     doc(p("foo")))
-test("strong:unset",
-     doc(p("f<a>oo"), p(strong("ba<b>r"))),
-     doc(p("foo"), p("ba", strong("r"))))
-
-test("strong:toggle",
-     doc(p("f<a>o<b>o")),
-     doc(p("f", strong("o"), "o")))
-test("strong:toggle",
-     doc(p(strong("f<a>o<b>o"))),
-     doc(p(strong("f"), "o", strong("o"))))
-test("strong:toggle",
-     doc(p("f<a>oo ", strong("ba<b>r"))),
-     doc(p("foo ba", strong("r"))))
-
-test("em:set",
-     doc(p("f<a>o<b>o")),
-     doc(p("f", em("o"), "o")))
-test("em:unset",
-     doc(p(em("f<a>o<b>o"))),
-     doc(p(em("f"), "o", em("o"))))
-test("em:toggle",
-     doc(p("f<a>o<b>o")),
-     doc(p("f", em("o"), "o")))
-test("em:toggle",
-     doc(p(em("f<a>o<b>o"))),
-     doc(p(em("f"), "o", em("o"))))
-
-test("code:set",
-     doc(p("f<a>o<b>o")),
-     doc(p("f", code("o"), "o")))
-test("code:unset",
-     doc(p(code("f<a>o<b>o"))),
-     doc(p(code("f"), "o", code("o"))))
-test("code:toggle",
-     doc(p("f<a>o<b>o")),
-     doc(p("f", code("o"), "o")))
-test("code:toggle",
-     doc(p(code("f<a>o<b>o"))),
-     doc(p(code("f"), "o", code("o"))))
 
 test("joinBackward",
      doc(p("hi"), p("<a>there")),
@@ -290,47 +224,48 @@ test("lift",
      doc(ul(li(p("one"), ul(li(p("<a>sub1")), li(p("sub2")))), li(p("two")))),
      doc(ul(li(p("one"), p("<a>sub1"), ul(li(p("sub2")))), li(p("two")))))
 
-test("bullet_list:wrap",
+test("wrapInList", n.bullet_list,
      doc(p("<a>foo")),
      doc(ul(li(p("foo")))))
-test("bullet_list:wrap",
+test("wrapInList", n.bullet_list,
      doc(blockquote(p("<a>foo"))),
      doc(blockquote(ul(li(p("foo"))))))
-test("bullet_list:wrap",
+test("wrapInList", n.bullet_list,
      doc(p("foo"), p("ba<a>r"), p("ba<b>z")),
      doc(p("foo"), ul(li(p("bar")), li(p("baz")))))
-test("bullet_list:wrap",
+test("wrapInList", n.bullet_list,
      doc(ul(li(p("<a>foo")))),
      doc(ul(li(p("foo")))))
-test("bullet_list:wrap",
+test("wrapInList", n.bullet_list,
      doc(ol(li(p("<a>foo")))),
      doc(ol(li(p("foo")))))
-test("bullet_list:wrap",
+test("wrapInList", n.bullet_list,
      doc(ul(li(p("foo"), p("<a>bar")))),
      doc(ul(li(p("foo"), ul(li(p("bar")))))))
-test("bullet_list:wrap",
+test("wrapInList", n.bullet_list,
      doc(ul(li(p("foo")), li(p("<a>bar")), li(p("baz")))),
      doc(ul(li(p("foo"), ul(li(p("bar")))), li(p("baz")))))
 
-test("ordered_list:wrap",
+test("wrapInList", n.ordered_list,
      doc(p("<a>foo")),
      doc(ol(li(p("foo")))))
-test("ordered_list:wrap",
+test("wrapInList", n.ordered_list,
      doc(blockquote(p("<a>foo"))),
      doc(blockquote(ol(li(p("foo"))))))
-test("ordered_list:wrap",
+test("wrapInList", n.ordered_list,
      doc(p("foo"), p("ba<a>r"), p("ba<b>z")),
      doc(p("foo"), ol(li(p("bar")), li(p("baz")))))
-test("blockquote:wrap",
+
+test("wrapIn", n.blockquote,
      doc(p("fo<a>o")),
      doc(blockquote(p("foo"))))
-test("blockquote:wrap",
+test("wrapIn", n.blockquote,
      doc(p("fo<a>o"), p("bar"), p("ba<b>z"), p("quux")),
      doc(blockquote(p("foo"), p("bar"), p("baz")), p("quux")))
-test("blockquote:wrap",
+test("wrapIn", n.blockquote,
      doc(blockquote(p("fo<a>o"))),
      doc(blockquote(blockquote(p("foo")))))
-test("blockquote:wrap",
+test("wrapIn", n.blockquote,
      doc("<a>", ul(li(p("foo")))),
      doc(blockquote(ul(li(p("foo"))))))
 
@@ -359,42 +294,38 @@ test("splitBlock",
      doc(h1("<a>foo")),
      doc(p(), h1("foo")))
 
-test("list_item:split",
+test("splitListItem", n.list_item,
      doc(p("foo<a>bar")),
      doc(p("foobar")))
-test("list_item:split",
+test("splitListItem", n.list_item,
      doc("<a>", p("foobar")),
      doc(p("foobar")))
-test("list_item:split",
+test("splitListItem", n.list_item,
      doc(ul(li(p("foo<a>bar")))),
      doc(ul(li(p("foo")), li(p("bar")))))
-test("list_item:split",
+test("splitListItem", n.list_item,
      doc(ul(li(p("foo<a>ba<b>r")))),
      doc(ul(li(p("foo")), li(p("r")))))
 
-test("list_item:lift",
+test("liftListItem", n.list_item,
      doc(ul(li(p("hello"), ul(li(p("o<a><b>ne")), li(p("two")))))),
      doc(ul(li(p("hello")), li(p("one"), ul(li(p("two")))))))
-test("list_item:lift",
+test("liftListItem", n.list_item,
      doc(ul(li(p("hello"), ul(li(p("o<a>ne")), li(p("two<b>")))))),
      doc(ul(li(p("hello")), li(p("one")), li(p("two")))))
-test("list_item:lift",
+test("liftListItem", n.list_item,
      doc(ul(li(p("hello"), ul(li(p("o<a>ne")), li(p("two<b>")), li(p("three")))))),
      doc(ul(li(p("hello")), li(p("one")), li(p("two"), ul(li(p("three")))))))
 
-test("list_item:sink",
+test("sinkListItem", n.list_item,
      doc(ul(li(p("one")), li(p("t<a><b>wo")), li(p("three")))),
      doc(ul(li(p("one"), ul(li(p("two")))), li(p("three")))))
-test("list_item:sink",
+test("sinkListItem", n.list_item,
      doc(ul(li(p("o<a><b>ne")), li(p("two")), li(p("three")))),
      doc(ul(li(p("one")), li(p("two")), li(p("three")))))
-test("list_item:sink",
+test("sinkListItem", n.list_item,
      doc(ul(li(p("one")), li(ul(li(p("two")))), li(p("t<a><b>hree")))),
      doc(ul(li(p("one")), li(ul(li(p("two")), li(p("three")))))))
-
-test("newlineInCode",
-     doc(pre("foo<a>bar")),
-     doc(pre("foo\nbar")))
 
 test("liftEmptyBlock",
      doc(blockquote(p("foo"), p("<a>"), p("bar"))),
@@ -416,88 +347,26 @@ test("createParagraphNear",
      doc(p(), "<a>", hr),
      doc(p(), hr, p()))
 
-test("heading:make1",
+test("setBlockType", n.heading, {level: 1},
      doc(p("fo<a>o")),
      doc(h1("foo")))
-test("heading:make2",
+test("setBlockType", n.heading, {level: 2},
      doc(pre("fo<a>o")),
      doc(h2("foo")))
 
-test("paragraph:make",
+test("setBlockType", n.paragraph,
      doc(h1("fo<a>o")),
      doc(p("foo")))
-test("paragraph:make",
+test("setBlockType", n.paragraph,
      doc(h1("fo<a>o", em("bar"))),
      doc(p("foo", em("bar"))))
-test("paragraph:make",
+test("setBlockType", n.paragraph,
      doc("<a>", h1("foo")),
      doc(p("foo")))
 
-test("code_block:make",
+test("setBlockType", n.code_block,
      doc(h1("fo<a>o")),
      doc(pre("foo")))
-test("code_block:make",
+test("setBlockType", n.code_block,
      doc(p("fo<a>o", em("bar"))),
      doc(pre("foobar")))
-
-test("horizontal_rule:insert",
-     doc(p("<a>foo")),
-     doc(hr, p("foo")))
-test("horizontal_rule:insert",
-     doc(p("foo"), p("<a>bar")),
-     doc(p("foo"), hr, p("bar")))
-test("horizontal_rule:insert",
-     doc(p("foo"), p("b<a>ar")),
-     doc(p("foo"), p("b"), hr, p("ar")))
-test("horizontal_rule:insert",
-     doc(p("fo<a>o"), p("b<b>ar")),
-     doc(p("fo"), hr, p("ar")))
-test("horizontal_rule:insert",
-     doc("<a>", p("foo"), p("bar")),
-     doc(hr, p("bar")))
-test("horizontal_rule:insert",
-     doc("<a>", p("bar")),
-     doc(hr))
-test("horizontal_rule:insert",
-     doc(p("foo<a>")),
-     doc(p("foo"), hr))
-
-const test_ = namespace("command")
-
-test_("delete_specific", pm => {
-  is(!pm.commands["lift"], "command disabled")
-  is(!pm.input.baseKeymap.bindings["Alt-Left"], "no key bound")
-}, {commands: CommandSet.default.update({lift: null})})
-
-test_("override_specific", pm => {
-  pm.execCommand("lift")
-  cmpNode(pm.doc, doc(p("Lift?")))
-  is(!pm.commands.lift.spec.label, "completely replaced")
-}, {commands: CommandSet.default.update({lift: {run: pm => pm.setDoc(fromHTML(schema, "Lift?"))}})})
-
-test_("extend_specific", pm => {
-  pm.execCommand("lift")
-  cmpNode(pm.doc, doc(p("hi")))
-  is(!pm.input.baseKeymap.bindings["Alt-Left"], "disabled old key")
-  is(pm.input.baseKeymap.bindings["Alt-L"], "enabled new key")
-}, {commands: CommandSet.default.update({lift: {keys: ["Alt-L"]}}),
-    doc: doc(blockquote(p("hi")))})
-
-const myCommands = {
-  command1: {
-    label: "DO IT",
-    run(pm) { pm.setDoc(fromHTML(schema, "hi")) }
-  },
-  command2: {
-    run() {}
-  }
-}
-
-test_("add_custom", pm => {
-  is(pm.commands["command1"], "command1 present")
-}, {commands: CommandSet.default.add(myCommands)})
-
-test_("add_filtered", pm => {
-  is(pm.commands["command1"], "command1 present")
-  is(!pm.commands["command2"], "command2 not present")
-}, {commands: CommandSet.default.add(myCommands, name => name != "command2")})

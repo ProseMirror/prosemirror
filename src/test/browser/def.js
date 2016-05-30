@@ -1,5 +1,6 @@
 import {defTest} from "../tests"
-import {ProseMirror} from "../../edit/main"
+import {ProseMirror} from "../../edit"
+import {defaultSchema} from "../../schema"
 
 let tempPMs = null
 
@@ -12,6 +13,7 @@ export function tempEditors(options) {
   return tempPMs = options.map(options => {
     if (!options) options = {}
     options.place = space
+    options.schema = defaultSchema
     let pm = new ProseMirror(options)
     let a = options.doc && options.doc.tag && options.doc.tag.a
     if (a != null) {
