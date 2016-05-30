@@ -252,16 +252,37 @@ function separator() {
   return elt("span", {class: prefix + "separator"})
 }
 
+// :: Object A set of icons used in the built-in menu items. Contains
+// the properties `join`, `lift`, `selectParentNode`, `undo`, and
+// `redo`, each holding an object that can be used as the `icon`
+// option to `MenuItem`.
+export const icons = {
+  join: {
+    width: 800, height: 900,
+    path: "M0 75h800v125h-800z M0 825h800v-125h-800z M250 400h100v-100h100v100h100v100h-100v100h-100v-100h-100z"
+  },
+  lift: {
+    width: 1024, height: 1024,
+    path: "M219 310v329q0 7-5 12t-12 5q-8 0-13-5l-164-164q-5-5-5-13t5-13l164-164q5-5 13-5 7 0 12 5t5 12zM1024 749v109q0 7-5 12t-12 5h-987q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h987q7 0 12 5t5 12zM1024 530v109q0 7-5 12t-12 5h-621q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h621q7 0 12 5t5 12zM1024 310v109q0 7-5 12t-12 5h-621q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h621q7 0 12 5t5 12zM1024 91v109q0 7-5 12t-12 5h-987q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h987q7 0 12 5t5 12z"
+  },
+  selectParentNode: {text: "\u2b1a", css: "font-weight: bold"},
+  undo: {
+    width: 1024, height: 1024,
+    path: "M761 1024c113-206 132-520-313-509v253l-384-384 384-384v248c534-13 594 472 313 775z"
+  },
+  redo: {
+    width: 1024, height: 1024,
+    path: "M576 248v-248l384 384-384 384v-253c-446-10-427 303-313 509-280-303-221-789 313-775z"
+  }
+}
+
 // :: MenuItem
 // Menu item for the `joinUp` command.
 export const joinUpItem = new MenuItem({
   title: "Join with above block",
   run: joinUp,
   select: pm => joinUp(pm, false),
-  icon: {
-    width: 800, height: 900,
-    path: "M0 75h800v125h-800z M0 825h800v-125h-800z M250 400h100v-100h100v100h100v100h-100v100h-100v-100h-100z"
-  }
+  icon: icons.join
 })
 
 // :: MenuItem
@@ -270,10 +291,7 @@ export const liftItem = new MenuItem({
   title: "Lift out of enclosing block",
   run: lift,
   select: pm => lift(pm, false),
-  icon: {
-    width: 1024, height: 1024,
-    path: "M219 310v329q0 7-5 12t-12 5q-8 0-13-5l-164-164q-5-5-5-13t5-13l164-164q5-5 13-5 7 0 12 5t5 12zM1024 749v109q0 7-5 12t-12 5h-987q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h987q7 0 12 5t5 12zM1024 530v109q0 7-5 12t-12 5h-621q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h621q7 0 12 5t5 12zM1024 310v109q0 7-5 12t-12 5h-621q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h621q7 0 12 5t5 12zM1024 91v109q0 7-5 12t-12 5h-987q-7 0-12-5t-5-12v-109q0-7 5-12t12-5h987q7 0 12 5t5 12z"
-  }
+  icon: icons.lift
 })
 
 // :: MenuItem
@@ -282,7 +300,7 @@ export const selectParentNodeItem = new MenuItem({
   title: "Select parent node",
   run: selectParentNode,
   select: pm => selectParentNode(pm, false),
-  icon: {text: "\u2b1a", css: "font-weight: bold"}
+  icon: icons.selectParentNode
 })
 
 // :: MenuItem
@@ -291,10 +309,7 @@ export const undoItem = new MenuItem({
   title: "Undo last change",
   run: undo,
   select: pm => undo(pm, false),
-  icon: {
-    width: 1024, height: 1024,
-    path: "M761 1024c113-206 132-520-313-509v253l-384-384 384-384v248c534-13 594 472 313 775z"
-  }
+  icon: icons.undo
 })
 
 // :: MenuItem
@@ -303,10 +318,7 @@ export const redoItem = new MenuItem({
   title: "Redo last undone change",
   run: redo,
   select: pm => redo(pm, false),
-  icon: {
-    width: 1024, height: 1024,
-    path: "M576 248v-248l384 384-384 384v-253c-446-10-427 303-313 509-280-303-221-789 313-775z"
-  }
+  icon: icons.redo
 })
 
 function markActive(pm, type) {
