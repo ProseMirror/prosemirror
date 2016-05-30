@@ -13,7 +13,7 @@ const stepsByID = Object.create(null)
 // New steps are defined by creating classes that extend `Step`,
 // overriding the `apply`, `invert`, `map`, `posMap` and `fromJSON`
 // methods, and registering your class with a unique
-// JSON-serialization identifier using `Step.register`.
+// JSON-serialization identifier using `Step.jsonID`.
 export class Step {
   // :: (doc: Node) → ?StepResult
   // Applies this step to the given document, returning a result
@@ -41,7 +41,7 @@ export class Step {
   // :: () → Object
   // Create a JSON-serializeable representation of this step. By
   // default, it'll create an object with the step's [JSON
-  // id](#Step.register), and each of the steps's own properties,
+  // id](#Step.jsonID), and each of the steps's own properties,
   // automatically calling `toJSON` on the property values that have
   // such a method.
   toJSON() {
@@ -64,7 +64,7 @@ export class Step {
   // To be able to serialize steps to JSON, each step needs a string
   // ID to attach to its JSON representation. Use this method to
   // register an ID for your step classes.
-  static register(id, stepClass) {
+  static jsonID(id, stepClass) {
     if (id in stepsByID) throw new RangeError("Duplicate use of step JSON ID " + id)
     stepsByID[id] = stepClass
     stepClass.prototype.jsonID = id

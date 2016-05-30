@@ -46,7 +46,7 @@ export class ReplaceStep extends Step {
   }
 }
 
-Step.register("replace", ReplaceStep)
+Step.jsonID("replace", ReplaceStep)
 
 // ;; Replace a part of the document with a slice of content, but
 // preserve a range of the replaced content by moving it into the
@@ -107,7 +107,7 @@ export class ReplaceAroundStep extends Step {
   }
 }
 
-Step.register("replaceAround", ReplaceAroundStep)
+Step.jsonID("replaceAround", ReplaceAroundStep)
 
 function contentBetween(doc, from, to) {
   let $from = doc.resolve(from), dist = to - from, depth = $from.depth

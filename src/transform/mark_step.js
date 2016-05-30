@@ -46,7 +46,7 @@ export class AddMarkStep extends Step {
   }
 }
 
-Step.register("addMark", AddMarkStep)
+Step.jsonID("addMark", AddMarkStep)
 
 // ;; Remove a mark from all inline content between two positions.
 export class RemoveMarkStep extends Step {
@@ -81,4 +81,4 @@ export class RemoveMarkStep extends Step {
   }
 }
 
-Step.register("removeMark", RemoveMarkStep)
+Step.jsonID("removeMark", RemoveMarkStep)
