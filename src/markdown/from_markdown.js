@@ -159,6 +159,10 @@ class MarkdownParser {
   //     token](https://markdown-it.github.io/markdown-it/#Token) and
   //     returns an attribute object.
   constructor(schema, tokenizer, tokens) {
+    // :: Object The value of the `tokens` object used to construct
+    // this parser. Can be useful to copy and modify to base other
+    // parsers on.
+    this.tokens = tokens
     this.schema = schema
     this.tokenizer = tokenizer
     this.tokenHandlers = tokenHandlers(schema, tokens)
@@ -176,11 +180,11 @@ class MarkdownParser {
   }
 }
 
-// :: Object
-// A set of token descriptions for the default schema, used in the
-// [default parser](#defaultParser). Can be useful to partially or
-// fully copy when building another parser.
-export const baseTokens = {
+// :: MarkdownParser
+// A parser parsing unextended [CommonMark](http://commonmark.org/),
+// without inline HTML, and producing a document in ProseMirror's
+// default schema.
+export const defaultMarkdownParser = new MarkdownParser(defaultSchema, markdownit("commonmark", {html: false}), {
   blockquote: {block: "blockquote"},
   paragraph: {block: "paragraph"},
   list_item: {block: "list_item"},
@@ -204,14 +208,4 @@ export const baseTokens = {
     title: tok.attrGet("title") || null
   })},
   code_inline: {mark: "code"}
-}
-
-// :: MarkdownParser
-// A parser parsing unextended [CommonMark](http://commonmark.org/),
-// without inline HTML, and producing a document in ProseMirror's
-// default schema.
-export const defaultParser = new MarkdownParser(
-  defaultSchema,
-  markdownit("commonmark", {html: false}),
-  baseTokens
-)
+})

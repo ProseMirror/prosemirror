@@ -2,5 +2,5 @@
 // [CommonMark](http://commonmark.org/) text (registered in the
 // [`format`](#format) module under `"markdown"`).
 
-export {defaultParser, MarkdownParser, baseTokens} from "./from_markdown"
-export {toMarkdown} from "./to_markdown"
+export {defaultMarkdownParser, MarkdownParser} from "./from_markdown"
+export {MakdownSerializer, defaultMarkdownSerializer, MarkdownSerializerState} from "./to_markdown"
