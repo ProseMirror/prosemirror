@@ -2,12 +2,11 @@ import {doc, blockquote, h1, h2, p, hr, li, ol, ul, em, strong, code, a, br, img
 import {cmpNode, cmpStr} from "./cmp"
 import {defTest} from "./tests"
 
-import {defaultSchema as schema} from "../schema"
-import {fromMarkdown, toMarkdown} from "../markdown"
+import {defaultParser, toMarkdown} from "../markdown"
 
 function t(name, text, doc) {
   defTest("parse_" + name, () => {
-    cmpNode(fromMarkdown(schema, text), doc)
+    cmpNode(defaultParser.parse(text), doc)
     cmpStr(toMarkdown(doc), text)
   })
 }

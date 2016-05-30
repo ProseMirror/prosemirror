@@ -17,7 +17,7 @@
   },
   "dependencies": {
     "browserkeymap": "^1.0.0",
-    "markdown-it": "^4.4.0"
+    "markdown-it": "^6.0.4"
   },
   "devDependencies": {
     "babel-cli": "^6.4.0",
