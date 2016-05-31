@@ -1,6 +1,5 @@
 import "./css"
 
-import sortedInsert from "../util/sortedinsert"
 import {Map} from "../util/map"
 import {eventMixin} from "../util/event"
 import {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} from "../dom"
@@ -308,7 +307,9 @@ export class ProseMirror {
   // control when they are queried relative to other maps added like
   // this. Maps with a lower rank get queried first.
   addKeymap(map, rank = 50) {
-    sortedInsert(this.input.keymaps, {map, rank}, (a, b) => a.rank - b.rank)
+    let i = 0, maps = this.input.keymaps
+    for (; i < maps.length; i++) if (maps[i].rank > rank) break
+    maps.splice(i, 0, {map, rank})
   }
 
   // :: (union<string, Keymap>)
