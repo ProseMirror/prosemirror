@@ -89,7 +89,7 @@ function parseFail(name, expr) {
 }
 
 parseFail("invalid_char", "paragraph/image")
-parseFail("adjacent", "paragraph paragraph")
+parseFail("adjacent", "paragraph? paragraph")
 parseFail("adjacent_set", "inline image")
 parseFail("bad_attr", "hard_break{.foo}")
 parseFail("bad_node", "foo+")

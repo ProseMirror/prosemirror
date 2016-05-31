@@ -96,9 +96,10 @@ export class ContentExpr {
                               " is required, but has non-optional attributes")
       let newElt = new ContentElement(nodeTypes, attrSet, markSet, min, max)
       for (let i = elements.length - 1; i >= 0; i--) {
-        if (elements[i].overlaps(newElt))
-          throw new SyntaxError("Overlapping adjacent content expressions in '" + expr + "'")
-        if (elements[i].min != 0) break
+        let prev = elements[i]
+        if (prev.min != prev.max && prev.overlaps(newElt))
+          throw new SyntaxError("Possibly ambiguous overlapping adjacent content expressions in '" + expr + "'")
+        if (prev.min != 0) break
       }
       elements.push(newElt)
     }
