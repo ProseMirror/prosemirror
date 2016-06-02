@@ -91,7 +91,12 @@ class TooltipMenu {
 
   showLink(link, pos) {
     let node = elt("div", {class: classPrefix + "-linktext"},
-                   elt("a", {href: link.attrs.href, title: link.attrs.title}, link.attrs.href))
+                   elt("a",
+                       {href: link.attrs.href,
+                        title: link.attrs.title,
+                        rel: "noreferrer noopener",
+                        target: "_blank"},
+                      link.attrs.href))
     this.tooltip.open(node, pos)
   }
 
