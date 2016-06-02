@@ -442,32 +442,28 @@ export function setBlockType(pm, nodeType, attrs, apply) {
 }
 
 // List-related commands
-// FIXME clean up
-
-function isAtTopOfListItem(doc, from, to, listType) {
-  let $from = doc.resolve(from)
-  return $from.sameParent(doc.resolve(to)) &&
-    $from.depth >= 2 &&
-    $from.index(-1) == 0 &&
-    $from.node(-2).type.compatibleContent(listType)
-}
 
 // :: (ProseMirror, NodeType, ?Object, ?bool) → bool
 // Wrap the selection in a list with the given type an attributes. If
 // `apply` is `false`, only return a value to indicate whether this is
 // possible, but don't actually perform the change.
 export function wrapInList(pm, nodeType, attrs, apply) {
-  let {from, to, head} = pm.selection, doJoin = false
-  let $from = pm.doc.resolve(from)
-  if (head && isAtTopOfListItem(pm.doc, from, to, nodeType)) {
+  let {from, to} = pm.selection
+  let $from = pm.doc.resolve(from), depth = $from.blockRangeDepth(to), doJoin = false
+  // This is at the top of an existing list item
+  if (depth >= 2 && $from.node(depth - 1).type.compatibleContent(nodeType) && $from.index(depth) == 0) {
     // Don't do anything if this is the top of the list
-    if ($from.index(-2) == 0) return false
+    if ($from.index(depth - 1) == 0) return false
     doJoin = true
   }
   if (apply !== false) {
-    let tr = pm.tr.wrap(from, to, nodeType, attrs)
-    if (doJoin) tr.join($from.before(-1))
-    tr.apply(pm.apply.scroll)
+    let tr = pm.tr, start = from, end = to
+    if (doJoin) {
+      tr.join($from.before(depth))
+      start -= 2
+      end -= 2
+    }
+    tr.wrap(start, end, nodeType, attrs).apply(pm.apply.scroll)
   }
   return true
 }
@@ -488,49 +484,42 @@ export function splitListItem(pm, nodeType) {
   return true
 }
 
-function selectedListItems(pm, type) {
-  let {node, from, to} = pm.selection, $from = pm.doc.resolve(from)
-  if (node && node.type == type) return {from, to, depth: $from.depth + 1}
-
-  let itemDepth = $from.parent.type == type ? $from.depth
-      : $from.depth > 0 && $from.node(-1).type == type ? $from.depth - 1 : null
-  if (itemDepth == null) return
-
-  let $to = pm.doc.resolve(to)
-  if ($from.sameDepth($to) < itemDepth - 1) return null
-  return {from: $from.before(itemDepth),
-          to: $to.after(itemDepth),
-          depth: itemDepth}
-}
-
 // :: (ProseMirror, NodeType) → bool
 // Lift the list item around the selection up into a wrapping list.
 export function liftListItem(pm, nodeType) {
-  let selected = selectedListItems(pm, nodeType)
-  if (!selected || selected.depth < 3) return false
-  let $to = pm.doc.resolve(pm.selection.to)
-  if ($to.node(selected.depth - 2).type != nodeType) return false
-  let itemsAfter = selected.to < $to.end(selected.depth - 1)
-  let tr = pm.tr.lift(selected.from, selected.to)
-  let end = tr.map(selected.to, -1)
-  if (itemsAfter) tr.join(end)
-  tr.apply(pm.apply.scroll)
+  let {from, to} = pm.selection, $from = pm.doc.resolve(from)
+  let depth = $from.blockRangeDepth(to, node => node.childCount && node.firstChild.type == nodeType)
+  if (depth == null || depth < 2 || $from.node(depth - 1).type != nodeType) return false
+  let $to = pm.doc.resolve(to)
+  let tr = pm.tr, end = $to.after(depth + 1), endOfList = $to.end(depth)
+  if (end < endOfList) {
+    // There are siblings after the lifted items, which must become
+    // children of the last item
+    tr.step(new ReplaceAroundStep(end - 1, endOfList, end, endOfList,
+                                  new Slice(Fragment.from(nodeType.create(null, $to.node(depth).copy())), 1, 0), 1, true))
+    end = endOfList
+  }
+  tr.lift($from.before(depth + 1), end).apply(pm.apply.scroll)
   return true
 }
 
 // :: (ProseMirror, NodeType) → bool
 // Sink the list item around the selection down into an inner list.
 export function sinkListItem(pm, nodeType) {
-  let selected = selectedListItems(pm, nodeType)
-  if (!selected) return false
-  let $from = pm.doc.resolve(pm.selection.from), startIndex = $from.index(selected.depth - 1)
+  let {from, to} = pm.selection, $from = pm.doc.resolve(from)
+  let depth = $from.blockRangeDepth(to, node => node.childCount && node.firstChild.type == nodeType)
+  if (depth == null) return false
+  let startIndex = $from.index(depth)
   if (startIndex == 0) return false
-  let parent = $from.node(selected.depth - 1), before = parent.child(startIndex - 1)
-  if (before.type != nodeType) return false
-  let nestedBefore = before.lastChild && before.lastChild.type == parent.type
-  let slice = new Slice(Fragment.from(nodeType.create(null, parent.type.create(parent.attrs))), nestedBefore ? 2 : 1, 0)
-  pm.tr.step(new ReplaceAroundStep(selected.from - (nestedBefore ? 2 : 1), selected.to,
-                                   selected.from, selected.to, slice, nestedBefore ? 0 : 1, true))
+  let parent = $from.node(depth), nodeBefore = parent.child(startIndex - 1)
+  if (nodeBefore.type != nodeType) return false
+  let nestedBefore = nodeBefore.lastChild && nodeBefore.lastChild.type == parent.type
+  let inner = Fragment.from(nestedBefore ? nodeType.create() : null)
+  let slice = new Slice(Fragment.from(nodeType.create(null, Fragment.from(parent.copy(inner)))),
+                        nestedBefore ? 3 : 1, 0)
+  let before = $from.before(depth + 1), after = pm.doc.resolve(to).after(depth + 1)
+  pm.tr.step(new ReplaceAroundStep(before - (nestedBefore ? 3 : 1), after,
+                                   before, after, slice, 1, true))
     .apply(pm.apply.scroll)
   return true
 }

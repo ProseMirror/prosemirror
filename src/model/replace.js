@@ -139,7 +139,7 @@ function addRange($start, $end, depth, target) {
 
 function close(node, content) {
   if (!node.type.validContent(content, node.attrs))
-    throw new ReplaceError("Invalid content for node " + node.type.name)
+    throw new ReplaceError("Invalid content for node " + node.type.name + ": " + content)
   return node.copy(content)
 }
 

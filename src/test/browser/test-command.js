@@ -324,8 +324,8 @@ test("sinkListItem", n.list_item,
      doc(ul(li(p("o<a><b>ne")), li(p("two")), li(p("three")))),
      doc(ul(li(p("one")), li(p("two")), li(p("three")))))
 test("sinkListItem", n.list_item,
-     doc(ul(li(p("one")), li(ul(li(p("two")))), li(p("t<a><b>hree")))),
-     doc(ul(li(p("one")), li(ul(li(p("two")), li(p("three")))))))
+     doc(ul(li(p("one")), li(p("..."), ul(li(p("two")))), li(p("t<a><b>hree")))),
+     doc(ul(li(p("one")), li(p("..."), ul(li(p("two")), li(p("three")))))))
 
 test("liftEmptyBlock",
      doc(blockquote(p("foo"), p("<a>"), p("bar"))),

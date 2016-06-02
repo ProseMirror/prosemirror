@@ -169,7 +169,7 @@ export const defaultSchema = new Schema({
     heading: {type: Heading, content: "inline<_>*", group: "block"},
     code_block: {type: CodeBlock, content: "text*", group: "block"},
 
-    list_item: {type: ListItem, content: "block+"},
+    list_item: {type: ListItem, content: "paragraph block*"},
 
     text: {type: Text, group: "inline"},
     image: {type: Image, group: "inline"},

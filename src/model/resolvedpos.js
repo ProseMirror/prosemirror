@@ -125,6 +125,17 @@ export class ResolvedPos {
     return depth
   }
 
+  // :: (number, ?(Node) → bool) → ?number
+  // Returns the depth, if any, at which this position and the given
+  // position diverge around block content. You can pass in an
+  // optional predicate that will be called with the node at each
+  // level to see if that level is acceptable.
+  blockRangeDepth(pos, pred) {
+    for (let d = this.depth - (this.parent.isTextblock || this.pos == pos ? 1 : 0); d >= 0; d--)
+      if ((pos > this.pos ? pos <= this.end(d) : pos >= this.start(d)) && (!pred || pred(this.node(d))))
+        return d
+  }
+
   // :: (ResolvedPos) → bool
   // Query whether the given position shares the same parent node.
   sameParent(other) {
