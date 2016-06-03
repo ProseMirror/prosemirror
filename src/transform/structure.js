@@ -61,7 +61,7 @@ Transform.prototype.lift = function(range, target) {
 // :: (NodeRange, NodeType, ?Object) → ?[{type: NodeType, attrs: ?Object}]
 // Try to find a valid way to wrap the content in the given range in a
 // node of the given type. May introduce extra nodes around and inside
-// the wrapper node if necessary.
+// the wrapper node, if necessary.
 export function findWrapping(range, nodeType, attrs) {
   let parent = range.parent, parentFrom = range.startIndex, parentTo = range.endIndex
   let around = parent.contentMatchAt(parentFrom).findWrapping(nodeType, attrs)

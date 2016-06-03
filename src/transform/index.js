@@ -1,6 +1,6 @@
 export {Transform, TransformError} from "./transform"
 export {Step, StepResult} from "./step"
-export {canLift, joinPoint, joinable, canSplit, insertPoint, liftTarget, findWrapping} from "./structure"
+export {joinPoint, joinable, canSplit, insertPoint, liftTarget, findWrapping} from "./structure"
 export {PosMap, MapResult, Remapping} from "./map"
 export {AddMarkStep, RemoveMarkStep} from "./mark_step"
 export {ReplaceStep, ReplaceAroundStep} from "./replace_step"

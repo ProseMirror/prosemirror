@@ -556,19 +556,19 @@ export function liftListItem(nodeType) {
 // into an inner list.
 export function sinkListItem(nodeType) {
   return function(pm, apply) {
-    let {from, to} = pm.selection, $from = pm.doc.resolve(from)
-    let depth = $from.blockRangeDepth(to, node => node.childCount && node.firstChild.type == nodeType)
-    if (depth == null) return false
-    let startIndex = $from.index(depth)
+    let {from, to} = pm.selection, $from = pm.doc.resolve(from), $to = pm.doc.resolve(to)
+    let range = $from.blockRange($to, node => node.childCount && node.firstChild.type == nodeType)
+    if (!range) return false
+    let startIndex = range.startIndex
     if (startIndex == 0) return false
-    let parent = $from.node(depth), nodeBefore = parent.child(startIndex - 1)
+    let parent = range.parent, nodeBefore = parent.child(startIndex - 1)
     if (nodeBefore.type != nodeType) return false
     if (apply !== false) {
       let nestedBefore = nodeBefore.lastChild && nodeBefore.lastChild.type == parent.type
       let inner = Fragment.from(nestedBefore ? nodeType.create() : null)
       let slice = new Slice(Fragment.from(nodeType.create(null, Fragment.from(parent.copy(inner)))),
                             nestedBefore ? 3 : 1, 0)
-      let before = $from.before(depth + 1), after = pm.doc.resolve(to).after(depth + 1)
+      let before = range.start, after = range.end
       pm.tr.step(new ReplaceAroundStep(before - (nestedBefore ? 3 : 1), after,
                                        before, after, slice, 1, true))
         .apply(pm.apply.scroll)
