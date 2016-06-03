@@ -1,7 +1,6 @@
 const {Plugin} = require("../edit")
 const {elt, insertCSS} = require("../util/dom")
 const {Tooltip} = require("../ui/tooltip")
-const {UpdateScheduler} = require("../ui/update")
 
 const {renderGrouped} = require("./menu")
 
@@ -13,7 +12,7 @@ class TooltipMenu {
     this.config = config
 
     this.selectedBlockMenu = this.config.selectedBlockMenu
-    this.updater = new UpdateScheduler(pm, "change selectionChange blur focus commandsChanged", () => this.update())
+    this.updater = pm.updateScheduler("change selectionChange blur focus commandsChanged", () => this.update())
     this.onContextMenu = this.onContextMenu.bind(this)
     pm.content.addEventListener("contextmenu", this.onContextMenu)
 

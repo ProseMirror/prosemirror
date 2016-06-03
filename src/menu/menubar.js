@@ -1,6 +1,5 @@
 const {Plugin} = require("../edit")
 const {elt, insertCSS} = require("../util/dom")
-const {UpdateScheduler} = require("../ui/update")
 
 const {renderGrouped} = require("./menu")
 
@@ -15,7 +14,7 @@ class MenuBar {
     this.maxHeight = 0
     this.widthForMaxHeight = 0
 
-    this.updater = new UpdateScheduler(pm, "selectionChange change activeMarkChange commandsChanged", () => this.update())
+    this.updater = pm.updateScheduler("selectionChange change activeMarkChange commandsChanged", () => this.update())
     this.content = config.content
     this.updater.force()
 

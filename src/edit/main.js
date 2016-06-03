@@ -12,6 +12,7 @@ const {Input} = require("./input")
 const {History} = require("./history")
 const {RangeStore, MarkedRange} = require("./range")
 const {EditorTransform} = require("./transform")
+const {EditorScheduler, UpdateScheduler} = require("./update")
 
 // ;; This is the class used to represent instances of the editor. A
 // ProseMirror editor holds a [document](#Node) and a
@@ -59,6 +60,7 @@ class ProseMirror {
     this.operation = null
     this.dirtyNodes = new Map // Maps node object to 1 (re-scan content) or 2 (redraw entirely)
     this.flushScheduled = null
+    this.centralScheduler = new EditorScheduler(this)
 
     this.sel = new SelectionState(this, findSelectionAtStart(this.doc))
     this.accurateSelection = false
@@ -464,6 +466,37 @@ class ProseMirror {
   translate(string) {
     let trans = this.options.translate
     return trans ? trans(string) : string
+  }
+
+  // :: (() -> ?() -> ?())
+  // Schedule a DOM update function to be called either the next time
+  // the editor is [flushed](#ProseMirror.flush), or if no flush happens
+  // immediately, after 200 milliseconds. This is used to synchronize
+  // DOM updates and read to prevent [DOM layout
+  // thrashing](http://eloquentjavascript.net/13_dom.html#p_nnTb9RktUT).
+  //
+  // Often, your updates will need to both read and write from the DOM.
+  // To schedule such access in lockstep with other modules, the
+  // function you give can return another function, which may return
+  // another function, and so on. The first call should _write_ to the
+  // DOM, and _not read_. If a _read_ needs to happen, that should be
+  // done in the function returned from the first call. If that has to
+  // be followed by another _write_, that should be done in a function
+  // returned from the second function, and so on.
+  scheduleDOMUpdate(f) { this.centralScheduler.set(f) }
+
+  // :: (() -> ?() -> ?())
+  // Cancel an update scheduled with `scheduleDOMUpdate`. Calling this
+  // with a function that is not actually scheduled is harmless.
+  unscheduleDOMUpdate(f) { this.centralScheduler.unset(f) }
+
+  // :: (string, () -> ?()) → UpdateScheduler
+  // Creates an update scheduler for this given editor. `events` should
+  // be a space-separated list of event names (for example
+  // `"selectionChange change"`). `start` should be a function as
+  // expected by [`scheduleDOMUpdate`](ProseMirror.scheduleDOMUpdate).
+  updateScheduler(events, start) {
+    return new UpdateScheduler(this, events, start)
   }
 }
 exports.ProseMirror = ProseMirror
