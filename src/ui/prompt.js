@@ -155,8 +155,6 @@ export class Field {
     return this.validateType(value) || (this.options.validate && this.options.validate(value))
   }
 
-  // :: (any) → ?string
-  // Function to clean user input
   clean(value) {
     return this.options.clean ? this.options.clean(value) : value
   }
