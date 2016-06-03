@@ -69,8 +69,8 @@ export function joinBackward(pm, apply) {
   if (before.type.isLeaf && before.type.selectable && $head.parent.content.size == 0) {
     if (apply !== false) {
       let tr = pm.tr.delete(cut, cut + $head.parent.nodeSize)
-      tr.apply({scrollIntoView: true,
-                selection: new NodeSelection(tr.doc.resolve(cut - before.nodeSize))})
+      tr.setSelection(new NodeSelection(tr.doc.resolve(cut - before.nodeSize)))
+      tr.apply(pm.apply.scroll)
     }
     return true
   }
@@ -185,9 +185,9 @@ export function joinUp(pm, apply) {
     if (point == null) return false
   }
   if (apply !== false) {
-    let tr = pm.tr.join(point), selection
-    if (pm.selection.node) selection = new NodeSelection(tr.doc.resolve(point - pm.doc.resolve(point).nodeBefore.nodeSize))
-    tr.apply({selection})
+    let tr = pm.tr.join(point)
+    if (pm.selection.node) tr.setSelection(new NodeSelection(tr.doc.resolve(point - pm.doc.resolve(point).nodeBefore.nodeSize)))
+    tr.apply(pm.apply.scroll)
   }
   return true
 }
@@ -201,7 +201,8 @@ export function joinDown(pm, apply) {
   if (!point) return false
   if (apply !== false) {
     let tr = pm.tr.join(point)
-    tr.apply({selection: node && new NodeSelection(tr.doc.resolve(nodeAt))})
+    if (node) tr.setSelection(new NodeSelection(tr.doc.resolve(nodeAt)))
+    tr.apply(pm.apply.scroll)
   }
   return true
 }
@@ -239,7 +240,8 @@ export function createParagraphNear(pm, apply) {
   if (apply !== false) {
     let side = $from.parentOffset ? to : from
     let tr = pm.tr.insert(side, type.createAndFill())
-    tr.apply({scrollIntoView: true, selection: new TextSelection(tr.doc.resolve(side + 1))})
+    tr.setSelection(new TextSelection(tr.doc.resolve(side + 1)))
+    tr.apply(pm.apply.scroll)
   }
   return true
 }

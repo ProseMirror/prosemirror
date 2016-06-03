@@ -87,10 +87,8 @@ export class Input {
     if (from == to && !text) return
     let pm = this.pm, marks = pm.input.storedMarks || pm.doc.marksAt(from)
     let tr = pm.tr.replaceWith(from, to, text ? pm.schema.text(text, marks) : null)
-    tr.apply({
-      scrollIntoView: true,
-      selection: findSelection && findSelection(tr.doc) || findSelectionNear(tr.doc.resolve(tr.map(to)), -1, true)
-    })
+    tr.setSelection(findSelection && findSelection(tr.doc) || findSelectionNear(tr.doc.resolve(tr.map(to)), -1, true))
+    tr.apply(pm.apply.scroll)
     // :: () #path=ProseMirror#events#textInput
     // Fired when the user types text into the editor.
     if (text) pm.signal("textInput", text)
@@ -446,7 +444,8 @@ handlers.paste = (pm, e) => {
       else slice = new Slice(Fragment.from(wrap.copy(slice.content)), 0, slice.openRight + 1)
     }
     let tr = pm.tr.replace(start, sel.to, slice)
-    tr.apply({scrollIntoView: true, selection: findSelectionNear(tr.doc.resolve(tr.map(sel.to)))})
+    tr.setSelection(findSelectionNear(tr.doc.resolve(tr.map(sel.to))))
+    tr.apply(pm.apply.scroll)
   }
 }
 

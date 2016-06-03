@@ -7,6 +7,8 @@ export class EditorTransform extends Transform {
   constructor(pm) {
     super(pm.doc)
     this.pm = pm
+    this.curSelection = pm.selection
+    this.curSelectionAt = 0
   }
 
   // :: (?Object) → ?EditorTransform
@@ -17,10 +19,30 @@ export class EditorTransform extends Transform {
   }
 
   // :: Selection
-  // Get the editor's current selection, [mapped](#Selection.map)
-  // through the steps in this transform.
+  // Get the transform's current selection. This defaults to the
+  // editor selection [mapped](#Selection.map) through the steps in
+  // this transform, but can be overwritten with
+  // [`setSelection`](EditorTransform.setSelection).
   get selection() {
-    return this.steps.length ? this.pm.selection.map(this) : this.pm.selection
+    if (this.curSelectionAt < this.steps.length) {
+      if (this.curSelectionAt) {
+        for (let i = this.curSelectionAt; i < this.steps.length; i++)
+          this.curSelection = this.curSelection.map(i == this.steps.length ? this.doc : this.docs[i + 1], this.maps[i])
+      } else {
+        this.curSelection = this.curSelection.map(this.doc, this)
+      }
+      this.curSelectionAt = this.steps.length
+    }
+    return this.curSelection
+  }
+
+  // :: (Selection) → EditorTransform
+  // Update the transform's current selection. This will determine the
+  // selection that the editor gets when the transform is applied.
+  setSelection(selection) {
+    this.curSelection = selection
+    this.curSelectionAt = this.steps.length
+    return this
   }
 
   // :: (?Node, ?bool) → EditorTransform

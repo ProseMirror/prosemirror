@@ -166,12 +166,12 @@ export class ProseMirror {
   // [`tr` getter](#ProseMirror.tr)) to the document in the editor.
   // The following options are supported:
   //
-  // **`selection`**`: ?Selection`
-  //   : A new selection to set after the transformation is applied.
-  //
   // **`scrollIntoView`**: ?bool
   //   : When true, scroll the selection into view on the next
   //     [redraw](#ProseMirror.flush).
+  //
+  // **`selection`**`: ?Selection`
+  //   : A new selection to set after the transformation is applied.
   //
   // **`filter`**: ?bool
   //   : When set to false, suppresses the ability of the
@@ -201,7 +201,7 @@ export class ProseMirror {
     // [steps](#Step) to the transform, but it it not allowed to
     // interfere with the editor's state.
     this.signal("beforeTransform", transform, options)
-    this.updateDoc(transform.doc, transform, options.selection)
+    this.updateDoc(transform.doc, transform, options.selection || transform.selection)
     // :: (transform: Transform, selectionBeforeTransform: Selection, options: Object) #path=ProseMirror#events#transform
     // Signals that a (non-empty) transformation has been aplied to
     // the editor. Passes the `Transform`, the selection before the
