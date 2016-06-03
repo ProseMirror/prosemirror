@@ -179,8 +179,6 @@ export class ProseMirror {
   //     to cancel this transform.
   //
   // Returns the transform itself.
-  //
-  // Has the following property:
   apply(transform, options = nullOptions) {
     if (!transform.steps.length) return transform
     if (!transform.docs[0].eq(this.doc))
@@ -469,11 +467,6 @@ export class ProseMirror {
     return trans ? trans(string) : string
   }
 }
-
-// :: Object
-// The object `{scrollIntoView: true}`, which is a common argument to
-// pass to `ProseMirror.apply` or `EditorTransform.apply`.
-ProseMirror.prototype.apply.scroll = {scrollIntoView: true}
 
 export const DIRTY_RESCAN = 1, DIRTY_REDRAW = 2
 

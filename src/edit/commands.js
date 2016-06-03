@@ -33,7 +33,7 @@ export function chain(...functions) {
 // Delete the selection, if there is one.
 export function deleteSelection(pm, apply) {
   if (pm.selection.empty) return false
-  if (apply !== false) pm.tr.replaceSelection().apply(pm.apply.scroll)
+  if (apply !== false) pm.tr.replaceSelection().applyAndScroll()
   return true
 }
 
@@ -60,7 +60,7 @@ export function joinBackward(pm, apply) {
   if (!before) {
     let range = $head.blockRange(), target = range && liftTarget(range)
     if (target == null) return false
-    if (apply !== false) pm.tr.lift(range, target).apply(pm.apply.scroll)
+    if (apply !== false) pm.tr.lift(range, target).applyAndScroll()
     return true
   }
 
@@ -70,14 +70,14 @@ export function joinBackward(pm, apply) {
     if (apply !== false) {
       let tr = pm.tr.delete(cut, cut + $head.parent.nodeSize)
       tr.setSelection(new NodeSelection(tr.doc.resolve(cut - before.nodeSize)))
-      tr.apply(pm.apply.scroll)
+      tr.applyAndScroll()
     }
     return true
   }
 
   // If the node doesn't allow children, delete it
   if (before.type.isLeaf) {
-    if (apply !== false) pm.tr.delete(cut - before.nodeSize, cut).apply(pm.apply.scroll)
+    if (apply !== false) pm.tr.delete(cut - before.nodeSize, cut).applyAndScroll()
     return true
   }
 
@@ -110,7 +110,7 @@ export function joinForward(pm, apply) {
 
   // If the node doesn't allow children, delete it
   if (after.type.isLeaf) {
-    if (apply !== false) pm.tr.delete(cut, cut + after.nodeSize).apply(pm.apply.scroll)
+    if (apply !== false) pm.tr.delete(cut, cut + after.nodeSize).applyAndScroll()
     return true
   } else {
     // Apply the joining algorithm
@@ -127,7 +127,7 @@ export function deleteCharBefore(pm, apply) {
   if (!empty || $head.parentOffset == 0) return false
   if (apply !== false) {
     let dest = moveBackward($head, "char")
-    pm.tr.delete(dest, $head.pos).apply(pm.apply.scroll)
+    pm.tr.delete(dest, $head.pos).applyAndScroll()
   }
   return true
 }
@@ -140,7 +140,7 @@ export function deleteWordBefore(pm, apply) {
   if (!empty || $head.parentOffset == 0) return false
   if (apply !== false) {
     let dest = moveBackward($head, "word")
-    pm.tr.delete(dest, $head.pos).apply(pm.apply.scroll)
+    pm.tr.delete(dest, $head.pos).applyAndScroll()
   }
   return true
 }
@@ -153,7 +153,7 @@ export function deleteCharAfter(pm, apply) {
   if (!empty || $head.parentOffset == $head.parent.content.size) return false
   if (apply !== false) {
     let dest = moveForward($head, "char")
-    pm.tr.delete($head.pos, dest).apply(pm.apply.scroll)
+    pm.tr.delete($head.pos, dest).applyAndScroll()
   }
   return true
 }
@@ -166,7 +166,7 @@ export function deleteWordAfter(pm, apply) {
   if (!empty || $head.parentOffset == $head.parent.content.size) return false
   if (apply !== false) {
     let dest = moveForward($head, "word")
-    pm.tr.delete($head.pos, dest).apply(pm.apply.scroll)
+    pm.tr.delete($head.pos, dest).applyAndScroll()
   }
   return true
 }
@@ -187,7 +187,7 @@ export function joinUp(pm, apply) {
   if (apply !== false) {
     let tr = pm.tr.join(point)
     if (pm.selection.node) tr.setSelection(new NodeSelection(tr.doc.resolve(point - pm.doc.resolve(point).nodeBefore.nodeSize)))
-    tr.apply(pm.apply.scroll)
+    tr.applyAndScroll()
   }
   return true
 }
@@ -202,7 +202,7 @@ export function joinDown(pm, apply) {
   if (apply !== false) {
     let tr = pm.tr.join(point)
     if (node) tr.setSelection(new NodeSelection(tr.doc.resolve(nodeAt)))
-    tr.apply(pm.apply.scroll)
+    tr.applyAndScroll()
   }
   return true
 }
@@ -214,7 +214,7 @@ export function lift(pm, apply) {
   let {$from, $to} = pm.selection
   let range = $from.blockRange($to), target = range && liftTarget(range)
   if (target == null) return false
-  if (apply !== false) pm.tr.lift(range, target).apply(pm.apply.scroll)
+  if (apply !== false) pm.tr.lift(range, target).applyAndScroll()
   return true
 }
 
@@ -225,7 +225,7 @@ export function newlineInCode(pm, apply) {
   let {$from, $to, node} = pm.selection
   if (node) return false
   if (!$from.parent.type.isCode || $to.pos >= $from.end()) return false
-  if (apply !== false) pm.tr.typeText("\n").apply(pm.apply.scroll)
+  if (apply !== false) pm.tr.typeText("\n").applyAndScroll()
   return true
 }
 
@@ -241,7 +241,7 @@ export function createParagraphNear(pm, apply) {
     let side = $from.parentOffset ? to : from
     let tr = pm.tr.insert(side, type.createAndFill())
     tr.setSelection(new TextSelection(tr.doc.resolve(side + 1)))
-    tr.apply(pm.apply.scroll)
+    tr.applyAndScroll()
   }
   return true
 }
@@ -255,13 +255,13 @@ export function liftEmptyBlock(pm, apply) {
   if ($head.depth > 1 && $head.after() != $head.end(-1)) {
     let before = $head.before()
     if (canSplit(pm.doc, before)) {
-      if (apply !== false) pm.tr.split(before).apply(pm.apply.scroll)
+      if (apply !== false) pm.tr.split(before).applyAndScroll()
       return true
     }
   }
   let range = $head.blockRange(), target = range && liftTarget(range)
   if (target == null) return false
-  if (apply !== false) pm.tr.lift(range, target).apply(pm.apply.scroll)
+  if (apply !== false) pm.tr.lift(range, target).applyAndScroll()
   return true
 }
 
@@ -272,7 +272,7 @@ export function splitBlock(pm, apply) {
   let {$from, $to, node} = pm.selection
   if (node && node.isBlock) {
     if (!$from.parentOffset || !canSplit(pm.doc, $from.pos)) return false
-    if (apply !== false) pm.tr.split($from.pos).apply(pm.apply.scroll)
+    if (apply !== false) pm.tr.split($from.pos).applyAndScroll()
     return true
   } else {
     if (apply === false) return true
@@ -284,7 +284,7 @@ export function splitBlock(pm, apply) {
       if (!atEnd && !$from.parentOffset && $from.parent.type != deflt)
         tr.setNodeType($from.before(), deflt)
     }
-    tr.apply(pm.apply.scroll)
+    tr.applyAndScroll()
     return true
   }
 }
@@ -336,7 +336,7 @@ function deleteBarrier(pm, cut, apply) {
     if (tr.steps.length && before.content.size == 0 && !before.sameMarkup(after) &&
         $cut.parent.canReplace($cut.index() - 1, $cut.index()))
       tr.setNodeType(cut - before.nodeSize, after.type, after.attrs)
-    tr.apply(pm.apply.scroll)
+    tr.applyAndScroll()
     return true
   } else if (after.isTextblock && (conn = before.contentMatchAt($cut.index()).findWrapping(after.type, after.attrs))) {
     if (apply === false) return true
@@ -346,13 +346,13 @@ function deleteBarrier(pm, cut, apply) {
     wrap = Fragment.from(before.copy(wrap))
     pm.tr.step(new ReplaceAroundStep(cut - 1, end, cut, end, new Slice(wrap, 1, 0), conn.length, true))
       .join(end + 2 * conn.length, 1, true)
-      .apply(pm.apply.scroll)
+      .applyAndScroll()
     return true
   } else {
     let selAfter = findSelectionFrom($cut, 1)
     let range = selAfter.$from.blockRange(selAfter.$to), target = range && liftTarget(range)
     if (target == null) return false
-    if (apply !== false) pm.tr.lift(range, target).apply(pm.apply.scroll)
+    if (apply !== false) pm.tr.lift(range, target).applyAndScroll()
     return true
   }
 }
@@ -444,7 +444,7 @@ export function wrapIn(nodeType, attrs) {
     let {$from, $to} = pm.selection
     let range = $from.blockRange($to), wrapping = range && findWrapping(range, nodeType, attrs)
     if (!wrapping) return false
-    if (apply !== false) pm.tr.wrap(range, wrapping).apply(pm.apply.scroll)
+    if (apply !== false) pm.tr.wrap(range, wrapping).applyAndScroll()
     return true
   }
 }
@@ -470,7 +470,7 @@ export function setBlockType(nodeType, attrs) {
       let where = $from.before(depth + 1)
       pm.tr.clearMarkupFor(where, nodeType, attrs)
         .setNodeType(where, nodeType, attrs)
-        .apply(pm.apply.scroll)
+        .applyAndScroll()
     }
     return true
   }
@@ -499,7 +499,7 @@ export function wrapInList(nodeType, attrs) {
         tr.join($from.before(range.depth))
         range = tr.doc.resolveNoCache($from.pos - 2).blockRange(tr.doc.resolveNoCache($to.pos - 2))
       }
-      tr.wrap(range, findWrapping(range, nodeType, attrs)).apply(pm.apply.scroll)
+      tr.wrap(range, findWrapping(range, nodeType, attrs)).applyAndScroll()
     }
     return true
   }
@@ -518,7 +518,7 @@ export function splitListItem(nodeType) {
     let nextType = $to.pos == $from.end() ? grandParent.defaultContentType($from.indexAfter(-1)) : null
     let tr = pm.tr.delete($from.pos, $to.pos)
     if (!canSplit(tr.doc, $from.pos, 2, nextType)) return false
-    tr.split($from.pos, 2, nextType).apply(pm.apply.scroll)
+    tr.split($from.pos, 2, nextType).applyAndScroll()
     return true
   }
 }
@@ -541,7 +541,7 @@ export function liftListItem(nodeType) {
         range = new NodeRange(tr.doc.resolveNoCache($from.pos), tr.doc.resolveNoCache(endOfList), range.depth)
       }
 
-      tr.lift(range, liftTarget(range)).apply(pm.apply.scroll)
+      tr.lift(range, liftTarget(range)).applyAndScroll()
     }
     return true
   }
@@ -567,7 +567,7 @@ export function sinkListItem(nodeType) {
       let before = range.start, after = range.end
       pm.tr.step(new ReplaceAroundStep(before - (nestedBefore ? 3 : 1), after,
                                        before, after, slice, 1, true))
-        .apply(pm.apply.scroll)
+        .applyAndScroll()
     }
     return true
   }

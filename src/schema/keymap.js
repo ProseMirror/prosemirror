@@ -46,7 +46,7 @@ export function defaultSchemaKeymap(schema) {
       keys["Shift-Ctrl-."] = wrapIn(node)
     if (node instanceof HardBreak) {
       let cmd = chain(newlineInCode,
-                      pm => pm.tr.replaceSelection(node.create()).apply(pm.apply.scroll))
+                      pm => pm.tr.replaceSelection(node.create()).applyAndScroll())
       keys["Mod-Enter"] = keys["Shift-Enter"] = cmd
       if (browser.mac) keys["Ctrl-Enter"] = cmd
     }
@@ -62,7 +62,7 @@ export function defaultSchemaKeymap(schema) {
     if (node instanceof Heading) for (let i = 1; i <= 6; i++)
       keys["Shift-Ctrl-" + i] = setBlockType(node, {level: i})
     if (node instanceof HorizontalRule)
-      keys["Mod-Shift--"] = pm => pm.tr.replaceSelection(node.create()).apply(pm.apply.scroll)
+      keys["Mod-Shift--"] = pm => pm.tr.replaceSelection(node.create()).applyAndScroll()
   }
   return new Keymap(keys)
 }

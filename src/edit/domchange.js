@@ -126,7 +126,7 @@ function readDOMChange(pm, range) {
     let slice = parsed.slice(change.start - range.from, change.endB - range.from)
     let tr = pm.tr.replace(fromMapped.pos, toMapped.pos, slice)
     tr.setSelection(domSel(pm, tr.doc))
-    tr.apply(pm.apply.scroll)
+    tr.applyAndScroll()
   }
   return true
 }

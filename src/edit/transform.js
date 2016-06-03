@@ -1,6 +1,8 @@
 import {Fragment} from "../model"
 import {Transform, insertPoint} from "../transform"
 
+const applyAndScroll = {scrollIntoView: true}
+
 // ;; A selection-aware extension of `Transform`. Use
 // `ProseMirror.tr` to create an instance.
 export class EditorTransform extends Transform {
@@ -11,11 +13,17 @@ export class EditorTransform extends Transform {
     this.curSelectionAt = 0
   }
 
-  // :: (?Object) → ?EditorTransform
+  // :: (?Object) → EditorTransform
   // Apply the transformation. Returns the transform, or `false` it is
   // was empty.
   apply(options) {
     return this.pm.apply(this, options)
+  }
+
+  // :: () → EditorTransform
+  // Apply this transform with a `{scrollIntoView: true}` option.
+  applyAndScroll() {
+    return this.pm.apply(this, applyAndScroll)
   }
 
   // :: Selection
