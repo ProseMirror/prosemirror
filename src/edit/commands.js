@@ -1,5 +1,5 @@
 import {browser} from "../dom"
-import {joinPoint, joinable, liftTarget, canSplit, canWrap, ReplaceAroundStep} from "../transform"
+import {joinPoint, joinable, findWrapping, liftTarget, canSplit, ReplaceAroundStep} from "../transform"
 import {Slice, Fragment, NodeRange} from "../model"
 
 import {charCategory, isExtendingChar} from "./char"
@@ -444,10 +444,10 @@ function joinPointBelow(pm) {
 // possible, without performing any action.
 export function wrapIn(nodeType, attrs) {
   return function(pm, apply) {
-    let {from, to} = pm.selection
-    // FIXME duplicate work
-    if (!canWrap(pm.doc, from, to, nodeType, attrs)) return false
-    if (apply !== false) pm.tr.wrap(from, to, nodeType, attrs).apply(pm.apply.scroll)
+    let {from, to} = pm.selection, $from = pm.doc.resolve(from), $to = pm.doc.resolve(to)
+    let range = $from.blockRange($to), wrapping = range && findWrapping(range, nodeType, attrs)
+    if (!wrapping) return false
+    if (apply !== false) pm.tr.wrap(range, wrapping).apply(pm.apply.scroll)
     return true
   }
 }
@@ -488,22 +488,21 @@ export function setBlockType(nodeType, attrs) {
 // perform the change.
 export function wrapInList(nodeType, attrs) {
   return function(pm, apply) {
-    let {from, to} = pm.selection
-    let $from = pm.doc.resolve(from), depth = $from.blockRangeDepth(to), doJoin = false
+    let {from, to} = pm.selection, $from = pm.doc.resolve(from), $to = pm.doc.resolve(to)
+    let range = $from.blockRange($to), doJoin = false
     // This is at the top of an existing list item
-    if (depth >= 2 && $from.node(depth - 1).type.compatibleContent(nodeType) && $from.index(depth) == 0) {
+    if (range.depth >= 2 && $from.node(range.depth - 1).type.compatibleContent(nodeType) && range.startIndex == 0) {
       // Don't do anything if this is the top of the list
-      if ($from.index(depth - 1) == 0) return false
+      if ($from.index(range.depth - 1) == 0) return false
       doJoin = true
     }
     if (apply !== false) {
-      let tr = pm.tr, start = from, end = to
+      let tr = pm.tr
       if (doJoin) {
-        tr.join($from.before(depth))
-        start -= 2
-        end -= 2
+        tr.join($from.before(range.depth))
+        range = tr.doc.resolveNoCache(from - 2).blockRange(tr.doc.resolveNoCache(to - 2))
       }
-      tr.wrap(start, end, nodeType, attrs).apply(pm.apply.scroll)
+      tr.wrap(range, findWrapping(range, nodeType, attrs)).apply(pm.apply.scroll)
     }
     return true
   }

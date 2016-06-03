@@ -12,9 +12,8 @@ function canCut(node, start, end) {
 // Try to find a target depth to which the content in the given range
 // can be lifted.
 export function liftTarget(range) {
-  if (!range) return null
-  let parent = range.from.node(range.depth)
-  let content = parent.content.cutByIndex(range.from.index(range.depth), range.to.indexAfter(range.depth))
+  let parent = range.parent
+  let content = parent.content.cutByIndex(range.startIndex, range.endIndex)
   for (let depth = range.depth;; --depth) {
     let node = range.from.node(depth), index = range.from.index(depth), endIndex = range.to.indexAfter(depth)
     if (depth < range.depth && node.canReplace(index, endIndex, content))
@@ -59,54 +58,48 @@ Transform.prototype.lift = function(range, target) {
                                          before.size - openLeft, true))
 }
 
-// :: (Node, number, ?number, NodeType, ?Object) → bool
-// Determines whether the [sibling range](#Node.siblingRange) of the
-// given positions can be wrapped in the given node type.
-export function canWrap(doc, from, to, type, attrs) {
-  return !!checkWrap(doc.resolve(from), doc.resolve(to == null ? from : to), type, attrs)
-}
-
-function checkWrap($from, $to, type, attrs) {
-  let shared = $from.blockRangeDepth($to.pos)
-  if (shared == null) return null
-  let parent = $from.node(shared), parentFrom = $from.index(shared), parentTo = $to.indexAfter(shared)
-  let around = parent.contentMatchAt(parentFrom).findWrapping(type, attrs)
+// :: (NodeRange, NodeType, ?Object) → ?[{type: NodeType, attrs: ?Object}]
+// Try to find a valid way to wrap the content in the given range in a
+// node of the given type. May introduce extra nodes around and inside
+// the wrapper node if necessary.
+export function findWrapping(range, nodeType, attrs) {
+  let parent = range.parent, parentFrom = range.startIndex, parentTo = range.endIndex
+  let around = parent.contentMatchAt(parentFrom).findWrapping(nodeType, attrs)
   if (!around) return null
-  if (!parent.canReplaceWith(parentFrom, parentTo, around.length ? around[0].type : type,
-                             around.length ? around[0].attrs : attrs)) return null
+  let wrappers = around.concat({type: nodeType, attrs}), wrapLen = wrappers.length
+  if (!parent.canReplaceWith(parentFrom, parentTo, wrappers[0].type, wrappers[0].attrs))
+    return null
   let inner = parent.child(parentFrom)
-  let inside = type.contentExpr.start(attrs || type.defaultAttrs).findWrapping(inner.type, inner.attrs)
+  let inside = nodeType.contentExpr.start(attrs).findWrapping(inner.type, inner.attrs)
   if (!inside) return null
-  let lastInside = inside[inside.length - 1]
-  let innerMatch = (lastInside ? lastInside.type : type).contentExpr.start(lastInside ? lastInside.attrs : attrs)
+  wrappers = wrappers.concat(inside)
+  let last = wrappers[wrappers.length - 1]
+  let innerMatch = last.type.contentExpr.start(last.attrs)
   for (let i = parentFrom; i < parentTo; i++)
-    if (!(innerMatch = innerMatch.matchNode(parent.child(i)))) return null
-  return {shared, around, inside}
+    innerMatch = innerMatch && innerMatch.matchNode(parent.child(i))
+  if (!innerMatch || !innerMatch.validEnd()) return null
+  wrappers.splitFrom = wrapLen
+  return wrappers
 }
 
-// :: (number, ?number, NodeType, ?Object) → Transform
-// Wrap the [sibling range](#Node.siblingRange) of the given positions
-// in a node of the given type, with the given attributes (if
-// possible).
-Transform.prototype.wrap = function(from, to = from, type, wrapAttrs) {
-  let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
-  let check = checkWrap($from, $to, type, wrapAttrs)
-  if (!check) throw new RangeError("Wrap not possible")
-  let {shared, around, inside} = check
+// :: (NodeRange, [{type: NodeType, attrs: ?Object}]) → Transform
+// Wrap the given [range](#NodeRange) in the given set of wrappers.
+// The wrappers are assumed to be valid in this position, and should
+// probably be computed with `findWrapping`.
+Transform.prototype.wrap = function(range, wrappers) {
+  let content = Fragment.empty
+  for (let i = wrappers.length - 1; i >= 0; i--)
+    content = Fragment.from(wrappers[i].type.create(wrappers[i].attrs, content))
 
-  let content = Fragment.empty, open = inside.length + 1 + around.length
-  for (let i = inside.length - 1; i >= 0; i--) content = Fragment.from(inside[i].type.create(inside[i].attrs, content))
-  content = Fragment.from(content.size ? type.createChecked(wrapAttrs, content) : type.create(wrapAttrs))
-  for (let i = around.length - 1; i >= 0; i--) content = Fragment.from(around[i].type.create(around[i].attrs, content))
+  let start = range.start, end = range.end
+  this.step(new ReplaceAroundStep(start, end, start, end, new Slice(content, 0, 0), wrappers.length, true))
 
-  let start = $from.before(shared + 1), end = $to.after(shared + 1)
-  this.step(new ReplaceAroundStep(start, end, start, end, new Slice(content, 0, 0), open, true))
-
-  if (inside.length) {
-    let splitPos = start + open, parent = $from.node(shared)
-    for (let i = $from.index(shared), e = $to.index(shared) + 1, first = true; i < e; i++, first = false) {
-      if (!first) this.split(splitPos, inside.length)
-      splitPos += parent.child(i).nodeSize + (first ? 0 : 2 * inside.length)
+  let splitDepth = wrappers.length - wrappers.splitFrom
+  if (splitDepth) {
+    let splitPos = start + wrappers.length, parent = range.parent
+    for (let i = range.startIndex, e = range.endIndex, first = true; i < e; i++, first = false) {
+      if (!first) this.split(splitPos, splitDepth)
+      splitPos += parent.child(i).nodeSize + (first ? 0 : 2 * splitDepth)
     }
   }
   return this

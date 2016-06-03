@@ -1,5 +1,5 @@
 import {InputRule} from "./inputrules"
-import {canWrap, joinable} from "../transform"
+import {findWrapping, joinable} from "../transform"
 
 // :: (RegExp, string, NodeType, ?union<Object, ([string]) → ?Object>, ?([string], Node) → bool) → InputRule
 
@@ -22,8 +22,9 @@ export function wrappingInputRule(regexp, filter, nodeType, getAttrs, joinPredic
   return new InputRule(regexp, filter, (pm, match, pos) => {
     let start = pos - match[0].length
     let attrs = getAttrs instanceof Function ? getAttrs(match) : getAttrs
-    if (!canWrap(pm.doc, pos, pos, nodeType, attrs)) return
-    let tr = pm.tr.delete(start, pos).wrap(start, start, nodeType, attrs)
+    let $pos = pm.doc.resolve(pos), range = $pos.blockRange(), wrapping = range && findWrapping(range, nodeType, attrs)
+    if (!wrapping) return
+    let tr = pm.tr.delete(start, pos).wrap(range, wrapping)
     let before = tr.doc.resolve(start - 1).nodeBefore
     if (before && before.type == nodeType && joinable(tr.doc, start - 1) &&
         (!joinPredicate || joinPredicate(match, before)))

@@ -1,4 +1,4 @@
-import {Transform, Step, Remapping, TransformError, liftTarget} from "../transform"
+import {Transform, Step, Remapping, TransformError, liftTarget, findWrapping} from "../transform"
 import {Node} from "../model"
 import {cmpNode, cmpStr} from "./cmp"
 import {Failure} from "./failure"
@@ -13,6 +13,11 @@ function tag(tr, name) {
 
 function mrk(tr, mark) {
   return mark && (typeof mark == "string" ? tr.doc.type.schema.mark(mark) : mark)
+}
+
+function range(tr, from, to) {
+  let $from = tr.doc.resolve(tag(tr, from || "a")), toTag = tag(tr, to || "b")
+  return $from.blockRange(toTag == null ? undefined : tr.doc.resolve(toTag))
 }
 
 class DelayedTransform {
@@ -55,14 +60,16 @@ class DelayedTransform {
 
   lift(from, to) {
     return this.plus(tr => {
-      let $from = tr.doc.resolve(tag(tr, from || "a")), toTag = tag(tr, to || "b")
-      let range = $from.blockRange(toTag == null ? undefined : tr.doc.resolve(toTag))
-      return tr.lift(range, liftTarget(range))
+      let r = range(tr, from, to)
+      return tr.lift(r, liftTarget(r))
     })
   }
 
   wrap(type, attrs, from, to) {
-    return this.plus(tr => tr.wrap(tag(tr, from || "a"), tag(tr, to || "b"), tr.doc.type.schema.nodeType(type), attrs))
+    return this.plus(tr => {
+      let r = range(tr, from, to)
+      return tr.wrap(r, findWrapping(r, tr.doc.type.schema.nodeType(type), attrs))
+    })
   }
 
   blockType(type, attrs, from, to) {
