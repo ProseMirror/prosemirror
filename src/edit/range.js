@@ -1,8 +1,8 @@
-import {eventMixin} from "../util/event"
+const {eventMixin} = require("../util/event")
 
 // ;; A [marked range](#ProseMirror.markRange). Includes the methods
 // from the [event mixin](#EventMixin).
-export class MarkedRange {
+class MarkedRange {
   constructor(from, to, options) {
     this.options = options || {}
     // :: ?number
@@ -24,6 +24,7 @@ export class MarkedRange {
     this.from = this.to = null
   }
 }
+exports.MarkedRange = MarkedRange
 
 eventMixin(MarkedRange)
 
@@ -77,7 +78,7 @@ class RangeSorter {
   }
 }
 
-export class RangeStore {
+class RangeStore {
   constructor(pm) {
     this.pm = pm
     this.ranges = []
@@ -123,6 +124,7 @@ export class RangeStore {
     return new RangeTracker(this.sorted.sorted)
   }
 }
+exports.RangeStore = RangeStore
 
 function significant(range) {
   return range.options.className && range.from != range.to

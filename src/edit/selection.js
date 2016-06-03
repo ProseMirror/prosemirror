@@ -1,11 +1,11 @@
-import {contains, browser} from "../dom"
+const {contains, browser} = require("../dom")
 
-import {posFromDOM, DOMAfterPos, DOMFromPos, coordsAtPos} from "./dompos"
+const {posFromDOM, DOMAfterPos, DOMFromPos, coordsAtPos} = require("./dompos")
 
 // Track the state of the current editor selection. Keeps the editor
 // selection in sync with the DOM selection by polling for changes,
 // as there is no DOM event for DOM selection changes.
-export class SelectionState {
+class SelectionState {
   constructor(pm, range) {
     this.pm = pm
     // The current editor selection.
@@ -161,13 +161,14 @@ export class SelectionState {
     if (this.polling == null) this.startPolling()
   }
 }
+exports.SelectionState = SelectionState
 
 // ;; An editor selection. Can be one of two selection types:
 // `TextSelection` and `NodeSelection`. Both have the properties
 // listed here, but also contain more information (such as the
 // selected [node](#NodeSelection.node) or the
 // [head](#TextSelection.head) and [anchor](#TextSelection.anchor)).
-export class Selection {
+class Selection {
   // :: number
   // The left bound of the selection.
   get from() { return this.$from.pos }
@@ -199,12 +200,13 @@ export class Selection {
   // Map this selection through a [mappable](#Mappable) thing. `doc`
   // should be the new document, to which we are mapping.
 }
+exports.Selection = Selection
 
 // ;; A text selection represents a classical editor
 // selection, with a head (the moving side) and anchor (immobile
 // side), both of which point into textblock nodes. It can be empty (a
 // regular cursor position).
-export class TextSelection extends Selection {
+class TextSelection extends Selection {
   // :: number
   // The selection's immobile side (does not move when pressing
   // shift-arrow).
@@ -254,12 +256,13 @@ export class TextSelection extends Selection {
     return new TextSelection($anchor.parent.isTextblock ? $anchor : $head, $head)
   }
 }
+exports.TextSelection = TextSelection
 
 // ;; A node selection is a selection that points at a
 // single node. All nodes marked [selectable](#NodeType.selectable)
 // can be the target of a node selection. In such an object, `from`
 // and `to` point directly before and after the selected node.
-export class NodeSelection extends Selection {
+class NodeSelection extends Selection {
   // :: (ResolvedPos)
   // Create a node selection. Does not verify the validity of its
   // argument. Use `ProseMirror.setNodeSelection` for an easier,
@@ -299,6 +302,7 @@ export class NodeSelection extends Selection {
     return findSelectionNear($from)
   }
 }
+exports.NodeSelection = NodeSelection
 
 class SelectionToken {
   constructor(type, a, b) {
@@ -308,7 +312,7 @@ class SelectionToken {
   }
 }
 
-export function selectionFromDOM(pm, doc, oldHead, loose) {
+function selectionFromDOM(pm, doc, oldHead, loose) {
   let sel = window.getSelection()
   let anchor = posFromDOM(pm, sel.anchorNode, sel.anchorOffset, loose)
   let head = sel.isCollapsed ? anchor : posFromDOM(pm, sel.focusNode, sel.focusOffset, loose)
@@ -326,12 +330,14 @@ export function selectionFromDOM(pm, doc, oldHead, loose) {
   }
   return {range, adjusted: head != range.head || anchor != range.anchor}
 }
+exports.selectionFromDOM = selectionFromDOM
 
-export function hasFocus(pm) {
+function hasFocus(pm) {
   if (document.activeElement != pm.content) return false
   let sel = window.getSelection()
   return sel.rangeCount && contains(pm.content, sel.anchorNode)
 }
+exports.hasFocus = hasFocus
 
 // Try to find a selection inside the given node. `pos` points at the
 // position where the search starts. When `text` is true, only return
@@ -356,7 +362,7 @@ function findSelectionIn(doc, node, pos, index, dir, text) {
 // given direction. When a selection isn't found at the given position,
 // walks up the document tree one level and one step in the
 // desired direction.
-export function findSelectionFrom($pos, dir, text) {
+function findSelectionFrom($pos, dir, text) {
   let inner = $pos.parent.isTextblock ? new TextSelection($pos)
       : findSelectionIn($pos.node(0), $pos.parent, $pos.pos, $pos.index(), dir, text)
   if (inner) return inner
@@ -368,29 +374,33 @@ export function findSelectionFrom($pos, dir, text) {
     if (found) return found
   }
 }
+exports.findSelectionFrom = findSelectionFrom
 
-export function findSelectionNear($pos, bias = 1, text) {
+function findSelectionNear($pos, bias = 1, text) {
   let result = findSelectionFrom($pos, bias, text) ||
       findSelectionFrom($pos, -bias, text)
   if (!result) throw new RangeError("Searching for selection in invalid document " + $pos.node(0))
   return result
 }
+exports.findSelectionNear = findSelectionNear
 
 // Find the selection closest to the start of the given node. `pos`,
 // if given, should point at the start of the node's content.
-export function findSelectionAtStart(doc, text) {
+function findSelectionAtStart(doc, text) {
   return findSelectionIn(doc, doc, 0, 0, 1, text)
 }
+exports.findSelectionAtStart = findSelectionAtStart
 
 // Find the selection closest to the end of the given node.
-export function findSelectionAtEnd(doc, text) {
+function findSelectionAtEnd(doc, text) {
   return findSelectionIn(doc, doc, doc.content.size, doc.childCount, -1, text)
 }
+exports.findSelectionAtEnd = findSelectionAtEnd
 
 // : (ProseMirror, number, number)
 // Whether vertical position motion in a given direction
 // from a position would leave a text block.
-export function verticalMotionLeavesTextblock(pm, $pos, dir) {
+function verticalMotionLeavesTextblock(pm, $pos, dir) {
   let dom = DOMAfterPos(pm, $pos.before())
   let coords = coordsAtPos(pm, $pos.pos)
   for (let child = dom.firstChild; child; child = child.nextSibling) {
@@ -404,3 +414,4 @@ export function verticalMotionLeavesTextblock(pm, $pos, dir) {
   }
   return true
 }
+exports.verticalMotionLeavesTextblock = verticalMotionLeavesTextblock

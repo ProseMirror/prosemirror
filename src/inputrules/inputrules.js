@@ -1,10 +1,10 @@
-import {Keymap, Plugin} from "../edit"
+const {Keymap, Plugin} = require("../edit")
 
 // ;; Input rules are regular expressions describing a piece of text
 // that, when typed, causes something to happen. This might be
 // changing two dashes into an emdash, wrapping a paragraph starting
 // with `"> "` into a blockquote, or something entirely different.
-export class InputRule {
+class InputRule {
   // :: (RegExp, ?string, union<string, (pm: ProseMirror, match: [string], pos: number)>)
   // Create an input rule. The rule applies when the user typed
   // something and the text directly in front of the cursor matches
@@ -24,6 +24,7 @@ export class InputRule {
     this.handler = handler
   }
 }
+exports.InputRule = InputRule
 
 // ;; Manages the set of active input rules for an editor. Created
 // with the `inputRules` plugin.
@@ -125,6 +126,7 @@ function getContext($pos) {
 //
 // Takes a single option, `rules`, which may be an array of
 // `InputRules` objects to add to initially add.
-export const inputRules = new Plugin(InputRules, {
+const inputRules = new Plugin(InputRules, {
   rules: []
 })
+exports.inputRules = inputRules

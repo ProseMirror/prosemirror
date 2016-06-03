@@ -1,9 +1,9 @@
-import {collabEditing} from "../../collab"
+const {collabEditing} = require("../../collab")
 
-import {doc, p} from "../build"
-import {defTest} from "../tests"
-import {cmpNode, cmp} from "../cmp"
-import {tempEditors} from "./def"
+const {doc, p} = require("../build")
+const {defTest} = require("../tests")
+const {cmpNode, cmp} = require("../cmp")
+const {tempEditors} = require("./def")
 
 class DummyServer {
   constructor() {

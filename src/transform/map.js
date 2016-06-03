@@ -32,7 +32,7 @@ function recoverIndex(value) { return value & lower16 }
 function recoverOffset(value) { return (value - (value & lower16)) / factor16 }
 
 // ;; The return value of mapping a position.
-export class MapResult {
+class MapResult {
   constructor(pos, deleted = false, recover = null) {
     // :: number The mapped version of the position.
     this.pos = pos
@@ -42,11 +42,12 @@ export class MapResult {
     this.recover = recover
   }
 }
+exports.MapResult = MapResult
 
 // ;; A position map, holding information about the way positions in
 // the pre-step version of a document correspond to positions in the
 // post-step version. This class implements `Mappable`.
-export class PosMap {
+class PosMap {
   // :: ([number])
   // Create a position map. The modifications to the document are
   // represented as an array of numbers, in which each group of three
@@ -118,6 +119,7 @@ export class PosMap {
     return (this.inverted ? "-" : "") + JSON.stringify(this.ranges)
   }
 }
+exports.PosMap = PosMap
 
 PosMap.empty = new PosMap([])
 
@@ -127,7 +129,7 @@ PosMap.empty = new PosMap([])
 // versions of the same step. (This comes up when ‘rebasing’ steps for
 // collaboration or history management.) This class implements
 // `Mappable`.
-export class Remapping {
+class Remapping {
   // :: (?[PosMap], ?[PosMap])
   constructor(head = [], tail = []) {
     // :: [PosMap]
@@ -216,14 +218,16 @@ export class Remapping {
     return maps.join("\n")
   }
 }
+exports.Remapping = Remapping
 
-export function mapThrough(mappables, pos, bias, start) {
+function mapThrough(mappables, pos, bias, start) {
   for (let i = start || 0; i < mappables.length; i++)
     pos = mappables[i].map(pos, bias)
   return pos
 }
+exports.mapThrough = mapThrough
 
-export function mapThroughResult(mappables, pos, bias) {
+function mapThroughResult(mappables, pos, bias) {
   let deleted = false
   for (let i = 0; i < mappables.length; i++) {
     let result = mappables[i].mapResult(pos, bias)
@@ -232,3 +236,4 @@ export function mapThroughResult(mappables, pos, bias) {
   }
   return new MapResult(pos, deleted)
 }
+exports.mapThroughResult = mapThroughResult

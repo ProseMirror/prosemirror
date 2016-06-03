@@ -1,7 +1,7 @@
-var tests = require("../dist/test/tests")
-var Failure = require("../dist/test/failure").Failure
-require("../dist/test/all")
-require("../dist/test/browser/all")
+var tests = require("../src/test/tests")
+var Failure = require("../src/test/failure").Failure
+require("../src/test/all")
+require("../src/test/browser/all")
 
 var gen = 0
 

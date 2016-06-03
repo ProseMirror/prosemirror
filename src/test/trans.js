@@ -1,7 +1,7 @@
-import {Transform, Step, Remapping, TransformError, liftTarget, findWrapping} from "../transform"
-import {Node} from "../model"
-import {cmpNode, cmpStr} from "./cmp"
-import {Failure} from "./failure"
+const {Transform, Step, Remapping, TransformError, liftTarget, findWrapping} = require("../transform")
+const {Node} = require("../model")
+const {cmpNode, cmpStr} = require("./cmp")
+const {Failure} = require("./failure")
 
 function tag(tr, name) {
   let calc = /^(.*)([+-]\d+)$/.exec(name), extra = 0
@@ -95,7 +95,8 @@ class DelayedTransform {
   }
 }
 
-export const tr = new DelayedTransform([])
+const tr = new DelayedTransform([])
+exports.tr = tr
 
 function invert(transform) {
   let out = new Transform(transform.doc)
@@ -123,7 +124,7 @@ function testStepJSON(tr) {
   cmpNode(tr.doc, newTR.doc)
 }
 
-export function testTransform(delayedTr, doc, expect) {
+function testTransform(delayedTr, doc, expect) {
   let tr
   try {
     tr = delayedTr.get(doc)
@@ -144,3 +145,4 @@ export function testTransform(delayedTr, doc, expect) {
   for (var tag in expect.tag) // FIXME Babel 6.5.1 screws this up when I use let
     testMapping(maps, tr.before.tag[tag], expect.tag[tag], tag)
 }
+exports.testTransform = testTransform

@@ -1,8 +1,8 @@
-import {Mark} from "../model"
-import {defaultSchema as schema} from "../schema"
-import {Failure} from "./failure"
-import {defTest} from "./tests"
-import {doc, p, em, a} from "./build"
+const {Mark} = require("../model")
+const {defaultSchema: schema} = require("../schema")
+const {Failure} = require("./failure")
+const {defTest} = require("./tests")
+const {doc, p, em, a} = require("./build")
 
 function assert(name, value) {
   if (!value) throw new Failure("Assertion failed: " + name)

@@ -1,4 +1,4 @@
-import {baseKeymap} from "./keymap"
+const {baseKeymap} = require("./keymap")
 
 // An option encapsulates functionality for an editor instance,
 // e.g. the amount of history events that the editor should hold
@@ -80,7 +80,7 @@ defineOption("translate", null) // FIXME create a way to explicitly force a menu
 
 defineOption("plugins", [], false)
 
-export function parseOptions(obj) {
+function parseOptions(obj) {
   let result = Object.create(null)
   let given = obj ? [obj].concat(obj.use || []) : []
   outer: for (let opt in options) {
@@ -94,16 +94,18 @@ export function parseOptions(obj) {
   }
   return result
 }
+exports.parseOptions = parseOptions
 
-export function initOptions(pm) {
+function initOptions(pm) {
   for (var opt in options) {
     let desc = options[opt]
     if (desc.update && desc.updateOnInit)
       desc.update(pm, pm.options[opt], null, true)
   }
 }
+exports.initOptions = initOptions
 
-export function setOption(pm, name, value) {
+function setOption(pm, name, value) {
   let desc = options[name]
   if (desc === undefined) throw new RangeError("Option '" + name + "' is not defined")
   if (desc.update === false) throw new RangeError("Option '" + name + "' can not be changed")
@@ -111,3 +113,4 @@ export function setOption(pm, name, value) {
   pm.options[name] = value
   if (desc.update) desc.update(pm, value, old, false)
 }
+exports.setOption = setOption

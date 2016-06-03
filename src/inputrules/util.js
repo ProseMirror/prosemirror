@@ -1,5 +1,5 @@
-import {InputRule} from "./inputrules"
-import {findWrapping, joinable} from "../transform"
+const {InputRule} = require("./inputrules")
+const {findWrapping, joinable} = require("../transform")
 
 // :: (RegExp, string, NodeType, ?union<Object, ([string]) → ?Object>, ?([string], Node) → bool) → InputRule
 
@@ -18,7 +18,7 @@ import {findWrapping, joinable} from "../transform"
 // two nodes. You can pass a join predicate, which takes a regular
 // expression match and the node before the wrapped node, and can
 // return a boolean to indicate whether a join should happen.
-export function wrappingInputRule(regexp, filter, nodeType, getAttrs, joinPredicate) {
+function wrappingInputRule(regexp, filter, nodeType, getAttrs, joinPredicate) {
   return new InputRule(regexp, filter, (pm, match, pos) => {
     let start = pos - match[0].length
     let attrs = getAttrs instanceof Function ? getAttrs(match) : getAttrs
@@ -32,6 +32,7 @@ export function wrappingInputRule(regexp, filter, nodeType, getAttrs, joinPredic
     tr.apply()
   })
 }
+exports.wrappingInputRule = wrappingInputRule
 
 // :: (RegExp, string, NodeType, ?union<Object, ([string]) → ?Object>) → InputRule
 // Build an input rule that changes the type of a textblock when the
@@ -40,7 +41,7 @@ export function wrappingInputRule(regexp, filter, nodeType, getAttrs, joinPredic
 // textblock. The optional `getAttrs` parameter can be used to compute
 // the new node's attributes, and works the same as in the
 // `wrappingInputRule` function.
-export function textblockTypeInputRule(regexp, filter, nodeType, getAttrs) {
+function textblockTypeInputRule(regexp, filter, nodeType, getAttrs) {
   return new InputRule(regexp, filter, (pm, match, pos) => {
     let $pos = pm.doc.resolve(pos), start = pos - match[0].length
     let attrs = getAttrs instanceof Function ? getAttrs(match) : getAttrs
@@ -51,3 +52,4 @@ export function textblockTypeInputRule(regexp, filter, nodeType, getAttrs) {
       .apply()
   })
 }
+exports.textblockTypeInputRule = textblockTypeInputRule

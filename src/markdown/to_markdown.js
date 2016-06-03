@@ -38,7 +38,7 @@ class MarkdownSerializer {
 
 // :: MarkdownSerializer
 // A serializer for the [default schema](#defaultSchema).
-export const defaultMarkdownSerializer = new MarkdownSerializer({
+const defaultMarkdownSerializer = new MarkdownSerializer({
   blockquote(state, node) {
     state.wrapBlock("> ", null, node, () => state.renderContent(node))
   },
@@ -103,6 +103,7 @@ export const defaultMarkdownSerializer = new MarkdownSerializer({
   },
   code: {open: "`", close: "`"}
 })
+exports.defaultMarkdownSerializer = defaultMarkdownSerializer
 
 // ;; This is an object used to track state and expose
 // methods related to markdown serialization. Instances are passed to

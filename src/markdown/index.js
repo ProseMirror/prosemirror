@@ -2,5 +2,5 @@
 // [CommonMark](http://commonmark.org/) text (registered in the
 // [`format`](#format) module under `"markdown"`).
 
-export {defaultMarkdownParser, MarkdownParser} from "./from_markdown"
-export {MakdownSerializer, defaultMarkdownSerializer, MarkdownSerializerState} from "./to_markdown"
+;({defaultMarkdownParser: exports.defaultMarkdownParser, MarkdownParser: exports.MarkdownParser} = require("./from_markdown"))
+;({MakdownSerializer: exports.MakdownSerializer, defaultMarkdownSerializer: exports.defaultMarkdownSerializer, MarkdownSerializerState: exports.MarkdownSerializerState} = require("./to_markdown"))

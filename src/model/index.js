@@ -11,14 +11,15 @@
 // This module does not depend on the browser API being available
 // (i.e. you can load it into any JavaScript environment).
 
-export {Node} from "./node"
-export {ResolvedPos, NodeRange} from "./resolvedpos"
-export {Fragment} from "./fragment"
-export {Slice, ReplaceError} from "./replace"
-export {Mark} from "./mark"
+exports.Node = require("./node").Node
+;({ResolvedPos: exports.ResolvedPos, NodeRange: exports.NodeRange} = require("./resolvedpos"))
+exports.Fragment = require("./fragment").Fragment
+;({Slice: exports.Slice, ReplaceError: exports.ReplaceError} = require("./replace"))
+exports.Mark = require("./mark").Mark
 
-export {SchemaSpec, Schema, NodeType, Block, Inline, Text,
-        MarkType, Attribute, NodeKind} from "./schema"
-export {ContentMatch} from "./content"
+;({SchemaSpec: exports.SchemaSpec, Schema: exports.Schema, NodeType: exports.NodeType,
+   Block: exports.Block, Inline: exports.Inline, Text: exports.Text,
+   MarkType: exports.MarkType, Attribute: exports.Attribute, NodeKind: exports.NodeKind} = require("./schema"))
+;({ContentMatch: exports.ContentMatch} = require("./content"))
 
-export {findDiffStart, findDiffEnd} from "./diff"
+;({findDiffStart: exports.findDiffStart, findDiffEnd: exports.findDiffEnd} = require("./diff"))

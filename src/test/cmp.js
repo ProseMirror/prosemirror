@@ -1,32 +1,38 @@
-import {Failure} from "./failure"
+const {Failure} = require("./failure")
 
-export function cmpNode(a, b, comment) {
+function cmpNode(a, b, comment) {
   if (!a.eq(b)) throw new Failure("Different nodes:\n  " + a + "\nvs\n  " +
                                   b + (comment ? "\n(" + comment + ")" : ""))
 }
+exports.cmpNode = cmpNode
 
-export function cmpStr(a, b, comment) {
+function cmpStr(a, b, comment) {
   let as = String(a), bs = String(b)
   if (as != bs)
     throw new Failure("expected " + bs + ", got " + as + (comment ? " (" + comment + ")" : ""))
 }
+exports.cmpStr = cmpStr
 
-export function cmp(a, b, comment) {
+function cmp(a, b, comment) {
   if (a !== b)
     throw new Failure("expected " + b + ", got " + a + (comment ? " (" + comment + ")" : ""))
 }
+exports.cmp = cmp
 
-export function gt(a, b, comment) {
+function gt(a, b, comment) {
   if (a <= b)
     throw new Failure("expected " + a + " > " + b + (comment ? " (" + comment + ")" : ""))
 }
+exports.gt = gt
 
-export function lt(a, b, comment) {
+function lt(a, b, comment) {
   if (a >= b)
     throw new Failure("expected " + a + " < " + b + (comment ? " (" + comment + ")" : ""))
 }
+exports.lt = lt
 
-export function is(condition, comment) {
+function is(condition, comment) {
   if (!condition)
     throw new Failure("assertion failed" + (comment ? " (" + comment + ")" : ""))
 }
+exports.is = is

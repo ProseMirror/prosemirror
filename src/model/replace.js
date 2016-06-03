@@ -1,15 +1,16 @@
-import {ProseMirrorError} from "../util/error"
+const {ProseMirrorError} = require("../util/error")
 
-import {Fragment} from "./fragment"
+const {Fragment} = require("./fragment")
 
 // ;; Error type raised by `Node.replace` when given an invalid
 // replacement.
-export class ReplaceError extends ProseMirrorError {}
+class ReplaceError extends ProseMirrorError {}
+exports.ReplaceError = ReplaceError
 
 // ;; A slice represents a piece cut out of a larger document. It
 // stores not only a fragment, but also the depth up to which nodes on
 // both side are 'open' / cut through.
-export class Slice {
+class Slice {
   // :: (Fragment, number, number, ?Node)
   constructor(content, openLeft, openRight, possibleParent) {
     // :: Fragment The slice's content nodes.
@@ -75,18 +76,20 @@ export class Slice {
     return new Slice(Fragment.fromJSON(schema, json.content), json.openLeft, json.openRight)
   }
 }
+exports.Slice = Slice
 
 // :: Slice
 // The empty slice.
 Slice.empty = new Slice(Fragment.empty, 0, 0)
 
-export function replace($from, $to, slice) {
+function replace($from, $to, slice) {
   if (slice.openLeft > $from.depth)
     throw new ReplaceError("Inserted content deeper than insertion position")
   if ($from.depth - slice.openLeft != $to.depth - slice.openRight)
     throw new ReplaceError("Inconsistent open depths")
   return replaceOuter($from, $to, slice, 0)
 }
+exports.replace = replace
 
 function replaceOuter($from, $to, slice, depth) {
   let index = $from.index(depth), node = $from.node(depth)

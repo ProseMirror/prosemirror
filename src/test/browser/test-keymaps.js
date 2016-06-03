@@ -1,10 +1,10 @@
-import {defTest} from "../tests"
-import {tempEditor, dispatch} from "./def"
-import {cmpNode} from "../cmp"
-import {doc, blockquote, pre, h1, h2, p, li, ul, em, strong, code, br, hr} from "../build"
+const {defTest} = require("../tests")
+const {tempEditor, dispatch} = require("./def")
+const {cmpNode} = require("../cmp")
+const {doc, blockquote, pre, h1, h2, p, li, ul, em, strong, code, br, hr} = require("../build")
 
-import {defaultSchemaKeymapPlugin} from "../../schema/keymap"
-import Keymap from "browserkeymap"
+const {defaultSchemaKeymapPlugin} = require("../../schema/keymap")
+const Keymap = require("browserkeymap")
 
 function test(key, before, after) {
   defTest("keymap_" + key, () => {

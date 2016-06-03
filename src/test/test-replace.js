@@ -1,9 +1,9 @@
-import {Slice, ReplaceError} from "../model"
+const {Slice, ReplaceError} = require("../model")
 
-import {doc, blockquote, h1, p, ul, li} from "./build"
-import {defTest} from "./tests"
-import {cmpNode} from "./cmp"
-import {Failure} from "./failure"
+const {doc, blockquote, h1, p, ul, li} = require("./build")
+const {defTest} = require("./tests")
+const {cmpNode} = require("./cmp")
+const {Failure} = require("./failure")
 
 function test(name, doc, insert, expected) {
   defTest("node_replace_" + name, () => {

@@ -1,10 +1,10 @@
-import {defTest} from "../tests"
-import {tempEditor} from "./def"
-import {cmpNode} from "../cmp"
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, hr} from "../build"
+const {defTest} = require("../tests")
+const {tempEditor} = require("./def")
+const {cmpNode} = require("../cmp")
+const {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, hr} = require("../build")
 
-import {commands} from "../../edit"
-import {defaultSchema as schema} from "../../schema"
+const {commands} = require("../../edit")
+const {defaultSchema: schema} = require("../../schema")
 
 const used = Object.create(null)
 const n = schema.nodes

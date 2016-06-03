@@ -1,7 +1,7 @@
-import {Fragment, Slice} from "../model"
+const {Fragment, Slice} = require("../model")
 
-import {ReplaceStep, ReplaceAroundStep} from "./replace_step"
-import {Transform} from "./transform"
+const {ReplaceStep, ReplaceAroundStep} = require("./replace_step")
+const {Transform} = require("./transform")
 
 // :: (number, number) → Transform
 // Delete the content between the given positions.

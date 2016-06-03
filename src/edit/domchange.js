@@ -1,18 +1,20 @@
-import {findDiffStart, findDiffEnd, Mark} from "../model"
-import {fromDOM} from "../htmlformat"
-import {mapThroughResult} from "../transform/map"
+const {findDiffStart, findDiffEnd, Mark} = require("../model")
+const {fromDOM} = require("../htmlformat")
+const {mapThroughResult} = require("../transform/map")
 
-import {findSelectionFrom, selectionFromDOM} from "./selection"
-import {DOMFromPos} from "./dompos"
+const {findSelectionFrom, selectionFromDOM} = require("./selection")
+const {DOMFromPos} = require("./dompos")
 
-export function readInputChange(pm) {
+function readInputChange(pm) {
   pm.ensureOperation({readSelection: false})
   return readDOMChange(pm, rangeAroundSelection(pm))
 }
+exports.readInputChange = readInputChange
 
-export function readCompositionChange(pm, margin) {
+function readCompositionChange(pm, margin) {
   return readDOMChange(pm, rangeAroundComposition(pm, margin))
 }
+exports.readCompositionChange = readCompositionChange
 
 // Note that all referencing and parsing is done with the
 // start-of-operation selection and document, since that's the one

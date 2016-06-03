@@ -1,9 +1,9 @@
-import {defaultSchema as schema} from "../schema"
+const {defaultSchema: schema} = require("../schema")
 
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, img, img2, dataImage, br, hr} from "./build"
+const {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, img, img2, dataImage, br, hr} = require("./build")
 
-import {defTest} from "./tests"
-import {tr, testTransform} from "./trans"
+const {defTest} = require("./tests")
+const {tr, testTransform} = require("./trans")
 
 function add(name, doc, expect, mark) {
   defTest("addMark_" + name, () => testTransform(tr.addMark(mark), doc, expect))

@@ -1,5 +1,5 @@
-import {Fragment, Slice} from "../model"
-import {Step, StepResult} from "./step"
+const {Fragment, Slice} = require("../model")
+const {Step, StepResult} = require("./step")
 
 function mapFragment(fragment, f, parent) {
   let mapped = []
@@ -13,7 +13,7 @@ function mapFragment(fragment, f, parent) {
 }
 
 // ;; Add a mark to all inline content between two positions.
-export class AddMarkStep extends Step {
+class AddMarkStep extends Step {
   // :: (number, number, Mark)
   constructor(from, to, mark) {
     super()
@@ -45,11 +45,12 @@ export class AddMarkStep extends Step {
     return new AddMarkStep(json.from, json.to, schema.markFromJSON(json.mark))
   }
 }
+exports.AddMarkStep = AddMarkStep
 
 Step.jsonID("addMark", AddMarkStep)
 
 // ;; Remove a mark from all inline content between two positions.
-export class RemoveMarkStep extends Step {
+class RemoveMarkStep extends Step {
   // :: (number, number, Mark)
   constructor(from, to, mark) {
     super()
@@ -80,5 +81,6 @@ export class RemoveMarkStep extends Step {
     return new RemoveMarkStep(json.from, json.to, schema.markFromJSON(json.mark))
   }
 }
+exports.RemoveMarkStep = RemoveMarkStep
 
 Step.jsonID("removeMark", RemoveMarkStep)

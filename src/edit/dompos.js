@@ -1,8 +1,8 @@
-import {contains} from "../dom"
+const {contains} = require("../dom")
 
 // : (ProseMirror, DOMNode) → number
 // Get the path for a given a DOM node in a document.
-export function posBeforeFromDOM(pm, node) {
+function posBeforeFromDOM(pm, node) {
   let pos = 0, add = 0
   for (let cur = node; cur != pm.content; cur = cur.parentNode) {
     let attr = cur.getAttribute("pm-offset")
@@ -10,9 +10,10 @@ export function posBeforeFromDOM(pm, node) {
   }
   return pos
 }
+exports.posBeforeFromDOM = posBeforeFromDOM
 
 // : (ProseMirror, DOMNode, number) → number
-export function posFromDOM(pm, dom, domOffset, loose) {
+function posFromDOM(pm, dom, domOffset, loose) {
   if (!loose && pm.operation && pm.doc != pm.operation.doc)
     throw new RangeError("Fetching a position from an outdated DOM structure")
 
@@ -69,16 +70,18 @@ export function posFromDOM(pm, dom, domOffset, loose) {
   }
   return start + before + innerOffset
 }
+exports.posFromDOM = posFromDOM
 
 // : (DOMNode) → ?DOMNode
-export function childContainer(dom) {
+function childContainer(dom) {
   return dom.hasAttribute("pm-container") ? dom : dom.querySelector("[pm-container]")
 }
+exports.childContainer = childContainer
 
 // : (ProseMirror, number) → {node: DOMNode, offset: number}
 // Find the DOM node and offset into that node that the given document
 // position refers to.
-export function DOMFromPos(pm, pos, loose) {
+function DOMFromPos(pm, pos, loose) {
   if (!loose && pm.operation && pm.doc != pm.operation.doc)
     throw new RangeError("Resolving a position in an outdated DOM structure")
 
@@ -109,14 +112,16 @@ export function DOMFromPos(pm, pos, loose) {
     }
   }
 }
+exports.DOMFromPos = DOMFromPos
 
 // : (ProseMirror, number) → DOMNode
-export function DOMAfterPos(pm, pos) {
+function DOMAfterPos(pm, pos) {
   let {node, offset} = DOMFromPos(pm, pos)
   if (node.nodeType != 1 || offset == node.childNodes.length)
     throw new RangeError("No node after pos " + pos)
   return node.childNodes[offset]
 }
+exports.DOMAfterPos = DOMAfterPos
 
 // : (DOMNode, number) → {node: DOMNode, offset: number}
 function leafAt(node, offset) {
@@ -143,7 +148,7 @@ function windowRect() {
           top: 0, bottom: window.innerHeight}
 }
 
-export function scrollIntoView(pm, pos) {
+function scrollIntoView(pm, pos) {
   if (!pos) pos = pm.sel.range.head || pm.sel.range.from
   let coords = coordsAtPos(pm, pos)
   for (let parent = pm.content;; parent = parent.parentNode) {
@@ -170,6 +175,7 @@ export function scrollIntoView(pm, pos) {
     if (atBody) break
   }
 }
+exports.scrollIntoView = scrollIntoView
 
 function findOffsetInNode(node, coords) {
   let closest, dyClosest = 2e8, coordsClosest, offset = 0
@@ -220,7 +226,7 @@ function findOffsetInText(node, coords) {
 }
 
 // Given an x,y position on the editor, get the position in the document.
-export function posAtCoords(pm, coords) {
+function posAtCoords(pm, coords) {
   let elt = document.elementFromPoint(coords.left, coords.top + 1)
   if (!contains(pm.content, elt)) return null
 
@@ -228,6 +234,7 @@ export function posAtCoords(pm, coords) {
   let {node, offset} = findOffsetInNode(elt, coords)
   return posFromDOM(pm, node, offset)
 }
+exports.posAtCoords = posAtCoords
 
 function textRange(node, from, to) {
   let range = document.createRange()
@@ -244,7 +251,7 @@ function singleRect(object, bias) {
 // : (ProseMirror, number) → ClientRect
 // Given a position in the document model, get a bounding box of the
 // character at that position, relative to the window.
-export function coordsAtPos(pm, pos) {
+function coordsAtPos(pm, pos) {
   let {node, offset} = DOMFromPos(pm, pos)
   let side, rect
   if (node.nodeType == 3) {
@@ -274,6 +281,7 @@ export function coordsAtPos(pm, pos) {
   let x = rect[side]
   return {top: rect.top, bottom: rect.bottom, left: x, right: x}
 }
+exports.coordsAtPos = coordsAtPos
 
 // ;; #path=NodeType #kind=class #noAnchor
 // You can add several properties to [node types](#NodeType) to
@@ -291,7 +299,7 @@ function targetKludge(dom, coords) {
   return dom
 }
 
-export function selectableNodeAbove(pm, dom, coords, liberal) {
+function selectableNodeAbove(pm, dom, coords, liberal) {
   dom = targetKludge(dom, coords)
   for (; dom && dom != pm.content; dom = dom.parentNode) {
     if (dom.hasAttribute("pm-offset")) {
@@ -302,6 +310,7 @@ export function selectableNodeAbove(pm, dom, coords, liberal) {
     }
   }
 }
+exports.selectableNodeAbove = selectableNodeAbove
 
 // :: (pm: ProseMirror, event: MouseEvent, pos: number, node: Node) → bool
 // #path=NodeType.prototype.handleClick
@@ -337,7 +346,7 @@ export function selectableNodeAbove(pm, dom, coords, liberal) {
 // were directly clicked, and may call `event.preventDefault()` to
 // prevent the native context menu.
 
-export function handleNodeClick(pm, type, event, target, direct) {
+function handleNodeClick(pm, type, event, target, direct) {
   for (let dom = target; dom && dom != pm.content; dom = dom.parentNode) {
     if (dom.hasAttribute("pm-offset")) {
       let pos = posBeforeFromDOM(pm, dom), node = pm.doc.nodeAt(pos)
@@ -346,3 +355,4 @@ export function handleNodeClick(pm, type, event, target, direct) {
     }
   }
 }
+exports.handleNodeClick = handleNodeClick

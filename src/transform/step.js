@@ -1,6 +1,6 @@
-import {ReplaceError} from "../model"
+const {ReplaceError} = require("../model")
 
-import {PosMap} from "./map"
+const {PosMap} = require("./map")
 
 function mustOverride() { throw new Error("Override me") }
 
@@ -14,7 +14,7 @@ const stepsByID = Object.create(null)
 // overriding the `apply`, `invert`, `map`, `posMap` and `fromJSON`
 // methods, and registering your class with a unique
 // JSON-serialization identifier using `Step.jsonID`.
-export class Step {
+class Step {
   // :: (doc: Node) → ?StepResult
   // Applies this step to the given document, returning a result
   // containing the transformed document (the input document is not
@@ -71,10 +71,11 @@ export class Step {
     return stepClass
   }
 }
+exports.Step = Step
 
 // ;; The result of [applying](#Step.apply) a step. Contains either a
 // new document or a failure value.
-export class StepResult {
+class StepResult {
   // :: (?Node, ?string)
   constructor(doc, failed) {
     // :: ?Node The transformed document.
@@ -103,3 +104,4 @@ export class StepResult {
     }
   }
 }
+exports.StepResult = StepResult

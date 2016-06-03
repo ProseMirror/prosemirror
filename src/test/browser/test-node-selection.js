@@ -1,8 +1,8 @@
-import {namespace, dispatch} from "./def"
-import {doc, blockquote, pre, p, li, ul, img, br, hr} from "../build"
-import {cmp, cmpStr, cmpNode, is} from "../cmp"
+const {namespace, dispatch} = require("./def")
+const {doc, blockquote, pre, p, li, ul, img, br, hr} = require("../build")
+const {cmp, cmpStr, cmpNode, is} = require("../cmp")
 
-import {selectParentNode, lift, joinDown, joinUp, deleteSelection} from "../../edit/commands"
+const {selectParentNode, lift, joinDown, joinUp, deleteSelection} = require("../../edit/commands")
 
 const test = namespace("nodeselection")
 

@@ -1,9 +1,9 @@
-import {Plugin} from "../edit"
-import {elt, insertCSS} from "../dom"
-import {Tooltip} from "../ui/tooltip"
-import {UpdateScheduler} from "../ui/update"
+const {Plugin} = require("../edit")
+const {elt, insertCSS} = require("../dom")
+const {Tooltip} = require("../ui/tooltip")
+const {UpdateScheduler} = require("../ui/update")
 
-import {renderGrouped} from "./menu"
+const {renderGrouped} = require("./menu")
 
 const classPrefix = "ProseMirror-tooltipmenu"
 
@@ -187,7 +187,7 @@ function bottomCenterOfSelection() {
 // **`position`**`: string`
 //  : Where, relative to the selection, the tooltip should appear.
 //    Defaults to `"above"`. Can also be set to `"below"`.
-export const tooltipMenu = new Plugin(TooltipMenu, {
+const tooltipMenu = new Plugin(TooltipMenu, {
   showLinks: true,
   selectedBlockMenu: false,
   inlineContent: [],
@@ -195,6 +195,7 @@ export const tooltipMenu = new Plugin(TooltipMenu, {
   selectedBlockContent: null,
   position: "above"
 })
+exports.tooltipMenu = tooltipMenu
 
 insertCSS(`
 

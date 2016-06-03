@@ -1,10 +1,8 @@
-import Keymap from "browserkeymap"
-import {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, HorizontalRule,
-        Paragraph, CodeBlock, Heading, StrongMark, EmMark, CodeMark} from "../schema"
-import {browser} from "../dom"
-import {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem,
-        chain, newlineInCode} from "../edit/commands"
-import {Plugin} from "../edit"
+const Keymap = require("browserkeymap")
+const {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, HorizontalRule, Paragraph, CodeBlock, Heading, StrongMark, EmMark, CodeMark} = require("../schema")
+const {browser} = require("../dom")
+const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem, chain, newlineInCode} = require("../edit/commands")
+const {Plugin} = require("../edit")
 
 // :: (Schema) → Keymap
 // Inspect the given schema looking for marks and nodes from the
@@ -25,7 +23,7 @@ import {Plugin} from "../edit"
 //   the same time splitting the list item
 // * **Ctrl/Cmd-Enter** to insert a hard break
 // * **Ctrl/Cmd-Shift-minus** to insert a horizontal rule
-export function defaultSchemaKeymap(schema) {
+function defaultSchemaKeymap(schema) {
   let keys = {}
   for (let name in schema.marks) {
     let mark = schema.marks[name]
@@ -66,11 +64,12 @@ export function defaultSchemaKeymap(schema) {
   }
   return new Keymap(keys)
 }
+exports.defaultSchemaKeymap = defaultSchemaKeymap
 
 // :: Plugin
 // A convenience plugin to automatically add a keymap created by
 // `defaultSchemaKeymap` to an editor.
-export const defaultSchemaKeymapPlugin = new Plugin(class {
+const defaultSchemaKeymapPlugin = new Plugin(class {
   constructor(pm) {
     this.keymap = defaultSchemaKeymap(pm.schema)
     pm.addKeymap(this.keymap)
@@ -79,3 +78,4 @@ export const defaultSchemaKeymapPlugin = new Plugin(class {
     pm.removeKeymap(this.keymap)
   }
 })
+exports.defaultSchemaKeymapPlugin = defaultSchemaKeymapPlugin

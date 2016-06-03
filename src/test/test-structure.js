@@ -1,9 +1,9 @@
-import {Schema, Block, Text, Attribute, Slice} from "../model"
-import {EmMark} from "../schema"
-import {canSplit, liftTarget, findWrapping, Transform} from "../transform"
+const {Schema, Block, Text, Attribute, Slice} = require("../model")
+const {EmMark} = require("../schema")
+const {canSplit, liftTarget, findWrapping, Transform} = require("../transform")
 
-import {defTest} from "./tests"
-import {cmpNode, is} from "./cmp"
+const {defTest} = require("./tests")
+const {cmpNode, is} = require("./cmp")
 
 const schema = new Schema({
   nodes: {

@@ -1,8 +1,8 @@
-import {Plugin} from "../edit"
-import {elt, insertCSS} from "../dom"
-import {UpdateScheduler} from "../ui/update"
+const {Plugin} = require("../edit")
+const {elt, insertCSS} = require("../dom")
+const {UpdateScheduler} = require("../ui/update")
 
-import {renderGrouped} from "./menu"
+const {renderGrouped} = require("./menu")
 
 const prefix = "ProseMirror-menubar"
 
@@ -117,10 +117,11 @@ function findWrappingScrollable(node) {
 //
 // **`content`**`: [`[`MenuGroup`](#MenuGroup)`]`
 //   : Determines the content of the menu.
-export const menuBar = new Plugin(MenuBar, {
+const menuBar = new Plugin(MenuBar, {
   content: [],
   float: false
 })
+exports.menuBar = menuBar
 
 insertCSS(`
 .${prefix} {

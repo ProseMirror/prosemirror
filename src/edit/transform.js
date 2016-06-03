@@ -1,11 +1,11 @@
-import {Fragment} from "../model"
-import {Transform, insertPoint} from "../transform"
+const {Fragment} = require("../model")
+const {Transform, insertPoint} = require("../transform")
 
 const applyAndScroll = {scrollIntoView: true}
 
 // ;; A selection-aware extension of `Transform`. Use
 // `ProseMirror.tr` to create an instance.
-export class EditorTransform extends Transform {
+class EditorTransform extends Transform {
   constructor(pm) {
     super(pm.doc)
     this.pm = pm
@@ -100,3 +100,4 @@ export class EditorTransform extends Transform {
     return this.replaceSelection(this.pm.schema.text(text), true)
   }
 }
+exports.EditorTransform = EditorTransform

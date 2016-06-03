@@ -1,13 +1,13 @@
-import Keymap from "browserkeymap"
-import {fromDOMInContext, toHTML} from "../htmlformat"
-import {Slice, Fragment} from "../model"
+const Keymap = require("browserkeymap")
+const {fromDOMInContext, toHTML} = require("../htmlformat")
+const {Slice, Fragment} = require("../model")
 
-import {captureKeys} from "./capturekeys"
-import {elt, browser, contains} from "../dom"
+const {captureKeys} = require("./capturekeys")
+const {elt, browser, contains} = require("../dom")
 
-import {readInputChange, readCompositionChange} from "./domchange"
-import {findSelectionNear, hasFocus} from "./selection"
-import {posBeforeFromDOM, handleNodeClick, selectableNodeAbove} from "./dompos"
+const {readInputChange, readCompositionChange} = require("./domchange")
+const {findSelectionNear, hasFocus} = require("./selection")
+const {posBeforeFromDOM, handleNodeClick, selectableNodeAbove} = require("./dompos")
 
 let stopSeq = null
 
@@ -15,7 +15,7 @@ let stopSeq = null
 // to invoke when the event fires.
 const handlers = {}
 
-export class Input {
+class Input {
   constructor(pm) {
     this.pm = pm
 
@@ -117,6 +117,7 @@ export class Input {
     if (andFlush) this.pm.flush()
   }
 }
+exports.Input = Input
 
 handlers.keydown = (pm, e) => {
   // :: () #path=ProseMirror#events#interaction

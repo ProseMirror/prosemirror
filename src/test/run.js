@@ -1,8 +1,8 @@
-import {Failure} from "./failure"
-import "./all"
+const {Failure} = require("./failure")
+require("./all")
 require("source-map-support").install()
 
-import {tests, filter} from "./tests"
+const {tests, filter} = require("./tests")
 
 let fail = 0, ran = 0
 

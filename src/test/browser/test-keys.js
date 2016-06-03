@@ -1,9 +1,9 @@
-import {namespace, dispatch} from "./def"
-import {doc, p} from "../build"
-import {cmp, is} from "../cmp"
-import {defTest} from "../tests"
+const {namespace, dispatch} = require("./def")
+const {doc, p} = require("../build")
+const {cmp, is} = require("../cmp")
+const {defTest} = require("../tests")
 
-import {Keymap} from "../../edit"
+const {Keymap} = require("../../edit")
 
 function trace(prop) { return pm => pm.cached[prop] = (pm.cached[prop] || 0) + 1 }
 

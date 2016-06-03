@@ -1,6 +1,6 @@
-import markdownit from "markdown-it"
-import {defaultSchema} from "../schema"
-import {Mark} from "../model"
+const markdownit = require("markdown-it")
+const {defaultSchema} = require("../schema")
+const {Mark} = require("../model")
 
 const noMarks = []
 
@@ -184,7 +184,7 @@ class MarkdownParser {
 // A parser parsing unextended [CommonMark](http://commonmark.org/),
 // without inline HTML, and producing a document in ProseMirror's
 // default schema.
-export const defaultMarkdownParser = new MarkdownParser(defaultSchema, markdownit("commonmark", {html: false}), {
+const defaultMarkdownParser = new MarkdownParser(defaultSchema, markdownit("commonmark", {html: false}), {
   blockquote: {block: "blockquote"},
   paragraph: {block: "paragraph"},
   list_item: {block: "list_item"},
@@ -209,3 +209,4 @@ export const defaultMarkdownParser = new MarkdownParser(defaultSchema, markdowni
   })},
   code_inline: {mark: "code"}
 })
+exports.defaultMarkdownParser = defaultMarkdownParser

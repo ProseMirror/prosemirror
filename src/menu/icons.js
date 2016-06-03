@@ -1,4 +1,4 @@
-import {insertCSS} from "../dom"
+const {insertCSS} = require("../dom")
 
 let svgCollection = null
 const svgBuilt = Object.create(null)
@@ -15,7 +15,7 @@ function hashPath(path) {
   return hash
 }
 
-export function getIcon(icon) {
+function getIcon(icon) {
   let node = document.createElement("div")
   node.className = prefix
   if (icon.path) {
@@ -33,6 +33,7 @@ export function getIcon(icon) {
   }
   return node
 }
+exports.getIcon = getIcon
 
 function buildSVG(name, data) {
   if (!svgCollection) {

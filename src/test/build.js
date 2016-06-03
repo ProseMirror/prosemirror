@@ -1,5 +1,5 @@
-import {defaultSchema as schema} from "../schema"
-import {Node} from "../model"
+const {defaultSchema: schema} = require("../schema")
+const {Node} = require("../model")
 
 // This file defines a set of helpers for building up documents to be
 // used in the test suite. You can say, for example, `doc(p("foo"))`
@@ -73,25 +73,44 @@ function mark(type, attrs) {
   }
 }
 
-export const dataImage = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+const dataImage = "data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw=="
+exports.dataImage = dataImage
 
-export const doc = block("doc")
-export const p = block("paragraph")
-export const blockquote = block("blockquote")
-export const pre = block("code_block")
-export const h1 = block("heading", {level: 1})
-export const h2 = block("heading", {level: 2})
-export const li = block("list_item")
-export const ul = block("bullet_list")
-export const ol = block("ordered_list")
+const doc = block("doc")
+exports.doc = doc
+const p = block("paragraph")
+exports.p = p
+const blockquote = block("blockquote")
+exports.blockquote = blockquote
+const pre = block("code_block")
+exports.pre = pre
+const h1 = block("heading", {level: 1})
+exports.h1 = h1
+const h2 = block("heading", {level: 2})
+exports.h2 = h2
+const li = block("list_item")
+exports.li = li
+const ul = block("bullet_list")
+exports.ul = ul
+const ol = block("ordered_list")
+exports.ol = ol
 
-export const br = schema.node("hard_break")
-export const img = schema.node("image", {src: dataImage, alt: "x"})
-export const img2 = schema.node("image", {src: dataImage, alt: "y"})
-export const hr = schema.node("horizontal_rule")
+const br = schema.node("hard_break")
+exports.br = br
+const img = schema.node("image", {src: dataImage, alt: "x"})
+exports.img = img
+const img2 = schema.node("image", {src: dataImage, alt: "y"})
+exports.img2 = img2
+const hr = schema.node("horizontal_rule")
+exports.hr = hr
 
-export const em = mark("em")
-export const strong = mark("strong")
-export const code = mark("code")
-export const a = mark("link", {href: "http://foo"})
-export const a2 = mark("link", {href: "http://bar"})
+const em = mark("em")
+exports.em = em
+const strong = mark("strong")
+exports.strong = strong
+const code = mark("code")
+exports.code = code
+const a = mark("link", {href: "http://foo"})
+exports.a = a
+const a2 = mark("link", {href: "http://bar"})
+exports.a2 = a2

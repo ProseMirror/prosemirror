@@ -1,4 +1,4 @@
-import {insertCSS} from "../dom"
+const {insertCSS} = require("../dom")
 
 insertCSS(`
 

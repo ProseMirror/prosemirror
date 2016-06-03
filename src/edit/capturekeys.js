@@ -1,7 +1,7 @@
-import Keymap from "browserkeymap"
+const Keymap = require("browserkeymap")
 
-import {findSelectionFrom, verticalMotionLeavesTextblock, NodeSelection, TextSelection} from "./selection"
-import {browser} from "../dom"
+const {findSelectionFrom, verticalMotionLeavesTextblock, NodeSelection, TextSelection} = require("./selection")
+const {browser} = require("../dom")
 
 function nothing() {}
 
@@ -134,4 +134,5 @@ if (browser.mac) {
   keys["Ctrl-Backspace"] = keys["Ctrl-Delete"] = nothing
 }
 
-export const captureKeys = new Keymap(keys)
+const captureKeys = new Keymap(keys)
+exports.captureKeys = captureKeys

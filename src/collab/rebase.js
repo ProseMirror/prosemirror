@@ -1,6 +1,6 @@
-import {Remapping, Transform} from "../transform"
+const {Remapping, Transform} = require("../transform")
 
-export function rebaseSteps(doc, forward, steps, maps) {
+function rebaseSteps(doc, forward, steps, maps) {
   let remap = new Remapping([], forward.slice())
   let transform = new Transform(doc)
   let positions = []
@@ -18,3 +18,4 @@ export function rebaseSteps(doc, forward, steps, maps) {
   }
   return {doc: transform.doc, transform, mapping: remap, positions}
 }
+exports.rebaseSteps = rebaseSteps

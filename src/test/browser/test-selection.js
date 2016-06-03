@@ -1,6 +1,6 @@
-import {namespace} from "./def"
-import {doc, blockquote, p, em, img, strong, code, br, hr} from "../build"
-import {cmp, cmpNode, gt} from "../cmp"
+const {namespace} = require("./def")
+const {doc, blockquote, p, em, img, strong, code, br, hr} = require("../build")
+const {cmp, cmpNode, gt} = require("../cmp")
 
 function allPositions(doc) {
   let found = []
@@ -17,7 +17,7 @@ function allPositions(doc) {
 
 const test = namespace("selection")
 
-export function findTextNode(node, text) {
+function findTextNode(node, text) {
   if (node.nodeType == 3) {
     if (node.nodeValue == text) return node
   } else if (node.nodeType == 1) {
@@ -27,6 +27,7 @@ export function findTextNode(node, text) {
     }
   }
 }
+exports.findTextNode = findTextNode
 
 function setSel(node, offset) {
   let range = document.createRange()

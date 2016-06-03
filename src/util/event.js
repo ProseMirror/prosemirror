@@ -84,8 +84,9 @@ const methods = {
 // :: (())
 // Add the methods in the `EventMixin` interface to the prototype
 // object of the given constructor.
-export function eventMixin(ctor) {
+function eventMixin(ctor) {
   let proto = ctor.prototype
   for (var prop in methods) if (methods.hasOwnProperty(prop))
     proto[prop] = methods[prop]
 }
+exports.eventMixin = eventMixin

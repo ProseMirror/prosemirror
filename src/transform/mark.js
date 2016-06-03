@@ -1,8 +1,8 @@
-import {MarkType, Slice} from "../model"
+const {MarkType, Slice} = require("../model")
 
-import {Transform} from "./transform"
-import {AddMarkStep, RemoveMarkStep} from "./mark_step"
-import {ReplaceStep} from "./replace_step"
+const {Transform} = require("./transform")
+const {AddMarkStep, RemoveMarkStep} = require("./mark_step")
+const {ReplaceStep} = require("./replace_step")
 
 // :: (number, number, Mark) → Transform
 // Add the given mark to the inline content between `from` and `to`.

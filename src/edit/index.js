@@ -3,12 +3,11 @@
 // the browser. `ProseMirror` is the class you'll want to instantiate
 // and interact with when using the editor.
 
-export {ProseMirror} from "./main"
-export {Selection, TextSelection, NodeSelection} from "./selection"
-export {MarkedRange} from "./range"
-export {baseKeymap, defaultEnter} from "./keymap"
-export {Plugin} from "./plugin"
-import * as commands from "./commands"
-export {commands}
+exports.ProseMirror = require("./main").ProseMirror
+;({Selection: exports.Selection, TextSelection: exports.TextSelection, NodeSelection: exports.NodeSelection} = require("./selection"))
+;({MarkedRange: exports.MarkedRange} = require("./range"))
+;({baseKeymap: exports.baseKeymap, defaultEnter: exports.defaultEnter} = require("./keymap"))
+;({Plugin: exports.Plugin} = require("./plugin"))
+exports.commands = require("./commands")
 
-export {default as Keymap} from "browserkeymap"
+exports.Keymap = require("browserkeymap")

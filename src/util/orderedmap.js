@@ -1,6 +1,6 @@
 // ;; Persistent data structure representing an ordered mapping from
 // strings to values, with some convenient update methods.
-export class OrderedMap {
+class OrderedMap {
   constructor(content) {
     this.content = content
   }
@@ -111,3 +111,4 @@ export class OrderedMap {
     return new OrderedMap(content)
   }
 }
+exports.OrderedMap = OrderedMap

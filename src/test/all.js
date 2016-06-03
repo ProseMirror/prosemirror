@@ -1,13 +1,13 @@
-import "./test-node"
-import "./test-resolve"
-import "./test-diff"
-import "./test-parse"
-import "./test-dom"
-import "./test-slice"
-import "./test-mark"
-import "./test-json"
-import "./test-content"
-import "./test-structure"
-import "./test-replace"
-import "./test-trans"
-import "./test-rebase"
+require("./test-node")
+require("./test-resolve")
+require("./test-diff")
+require("./test-parse")
+require("./test-dom")
+require("./test-slice")
+require("./test-mark")
+require("./test-json")
+require("./test-content")
+require("./test-structure")
+require("./test-replace")
+require("./test-trans")
+require("./test-rebase")

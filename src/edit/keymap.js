@@ -1,18 +1,19 @@
-import Keymap from "browserkeymap"
-import {browser} from "../dom"
+const Keymap = require("browserkeymap")
+const {browser} = require("../dom")
 
-import * as c from "./commands"
+const c = require("./commands")
 
 // :: (ProseMirror) → bool
 // The default binding for enter. Tries `newlineInCode`,
 // `createParagraphNear`, `liftEmptyBlock`, and `splitTextblock` in
 // order.
-export const defaultEnter = c.chain(c.newlineInCode,
+const defaultEnter = c.chain(c.newlineInCode,
                                     c.createParagraphNear,
                                     c.liftEmptyBlock,
                                     c.splitBlock)
+exports.defaultEnter = defaultEnter
 
-export const baseKeymap = new Keymap({
+const baseKeymap = new Keymap({
   "Enter": defaultEnter,
 
   "Backspace": c.chain(c.deleteSelection, c.joinBackward, c.deleteCharBefore),
@@ -29,6 +30,7 @@ export const baseKeymap = new Keymap({
   "Mod-Y": c.redo,
   "Shift-Mod-Z": c.redo
 })
+exports.baseKeymap = baseKeymap
 
 if (browser.mac) baseKeymap.addBindings({
   "Ctrl-H": baseKeymap.lookup("Backspace"),

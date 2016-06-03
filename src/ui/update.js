@@ -65,16 +65,18 @@ class CentralScheduler {
 // done in the function returned from the first call. If that has to
 // be followed by another _write_, that should be done in a function
 // returned from the second function, and so on.
-export function scheduleDOMUpdate(pm, f) { CentralScheduler.get(pm).set(f) }
+function scheduleDOMUpdate(pm, f) { CentralScheduler.get(pm).set(f) }
+exports.scheduleDOMUpdate = scheduleDOMUpdate
 
 // :: (ProseMirror, () -> ?() -> ?())
 // Cancel an update scheduled with `scheduleDOMUpdate`. Calling this with
 // a function that is not actually scheduled is harmless.
-export function unscheduleDOMUpdate(pm, f) { CentralScheduler.get(pm).unset(f) }
+function unscheduleDOMUpdate(pm, f) { CentralScheduler.get(pm).unset(f) }
+exports.unscheduleDOMUpdate = unscheduleDOMUpdate
 
 // ;; Helper for scheduling updates whenever any of a series of events
 // happen.
-export class UpdateScheduler {
+class UpdateScheduler {
   // :: (ProseMirror, string, () -> ?())
   // Creates an update scheduler for the given editor. `events` should
   // be a space-separated list of event names (for example
@@ -112,3 +114,4 @@ export class UpdateScheduler {
     }
   }
 }
+exports.UpdateScheduler = UpdateScheduler

@@ -1,6 +1,6 @@
 // ;; Superclass for ProseMirror-related errors. Does some magic to
 // make it safely subclassable even on ES5 runtimes.
-export function ProseMirrorError(message) {
+function ProseMirrorError(message) {
   Error.call(this, message)
   if (this.message != message) {
     this.message = message
@@ -8,6 +8,7 @@ export function ProseMirrorError(message) {
     else this.stack = (new Error(message)).stack
   }
 }
+exports.ProseMirrorError = ProseMirrorError
 
 ProseMirrorError.prototype = Object.create(Error.prototype)
 

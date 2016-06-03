@@ -8,7 +8,7 @@
 // Throughout this interface, methods that take an optional `depth`
 // parameter will interpret undefined as `this.depth` and negative
 // numbers as `this.depth + value`.
-export class ResolvedPos {
+class ResolvedPos {
   constructor(pos, path, parentOffset) {
     // :: number The position that was resolved.
     this.pos = pos
@@ -188,11 +188,12 @@ export class ResolvedPos {
     return result
   }
 }
+exports.ResolvedPos = ResolvedPos
 
 let resolveCache = [], resolveCachePos = 0, resolveCacheSize = 6
 
 // ;; Represents a flat range of content.
-export class NodeRange {
+class NodeRange {
   constructor(from, to, depth) {
     // :: ResolvedPos A resolved position along the start of the
     // content. May have a `depth` greater than this object's `depth`
@@ -219,3 +220,4 @@ export class NodeRange {
   // :: number The end index of the range in the parent node.
   get endIndex() { return this.to.indexAfter(this.depth) }
 }
+exports.NodeRange = NodeRange

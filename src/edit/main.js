@@ -1,18 +1,17 @@
-import "./css"
+require("./css")
 
-import {Map} from "../util/map"
-import {eventMixin} from "../util/event"
-import {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} from "../dom"
+const {Map} = require("../util/map")
+const {eventMixin} = require("../util/event")
+const {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} = require("../dom")
 
-import {parseOptions, initOptions, setOption} from "./options"
-import {SelectionState, TextSelection, NodeSelection,
-        findSelectionAtStart, hasFocus} from "./selection"
-import {scrollIntoView, posAtCoords, coordsAtPos} from "./dompos"
-import {draw, redraw} from "./draw"
-import {Input} from "./input"
-import {History} from "./history"
-import {RangeStore, MarkedRange} from "./range"
-import {EditorTransform} from "./transform"
+const {parseOptions, initOptions, setOption} = require("./options")
+const {SelectionState, TextSelection, NodeSelection, findSelectionAtStart, hasFocus} = require("./selection")
+const {scrollIntoView, posAtCoords, coordsAtPos} = require("./dompos")
+const {draw, redraw, DIRTY_REDRAW, DIRTY_RESCAN} = require("./draw")
+const {Input} = require("./input")
+const {History} = require("./history")
+const {RangeStore, MarkedRange} = require("./range")
+const {EditorTransform} = require("./transform")
 
 // ;; This is the class used to represent instances of the editor. A
 // ProseMirror editor holds a [document](#Node) and a
@@ -21,7 +20,7 @@ import {EditorTransform} from "./transform"
 //
 // Contains event methods (`on`, etc) from the [event
 // mixin](#EventMixin).
-export class ProseMirror {
+class ProseMirror {
   // :: (Object)
   // Construct a new editor from a set of [options](#edit_options)
   // and, if it has a [`place`](#place) option, add it to the
@@ -467,8 +466,7 @@ export class ProseMirror {
     return trans ? trans(string) : string
   }
 }
-
-export const DIRTY_RESCAN = 1, DIRTY_REDRAW = 2
+exports.ProseMirror = ProseMirror
 
 const nullOptions = {}
 
