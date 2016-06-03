@@ -395,11 +395,11 @@ export function insertItem(nodeType, options) {
 export function wrapItem(nodeType, options) {
   return new MenuItem(copyObj(options, {
     run(pm) {
-      if (options.attrs instanceof Function) options.attrs(pm, attrs => wrapIn(pm, nodeType, attrs))
-      else wrapIn(pm, nodeType, options.attrs)
+      if (options.attrs instanceof Function) options.attrs(pm, attrs => wrapIn(nodeType, attrs)(pm))
+      else wrapIn(nodeType, options.attrs)(pm)
     },
     select(pm) {
-      return wrapIn(pm, nodeType, options.attrs instanceof Function ? null : options.attrs, false)
+      return wrapIn(nodeType, options.attrs instanceof Function ? null : options.attrs)(pm, false)
     }
   }))
 }
@@ -410,13 +410,10 @@ export function wrapItem(nodeType, options) {
 // properties. Others must be given in `options`. `options.attrs` may
 // be an object to provide the attributes for the textblock node.
 export function blockTypeItem(nodeType, options) {
+  let command = setBlockType(nodeType, options.attrs)
   return new MenuItem(copyObj(options, {
-    run(pm) {
-      setBlockType(pm, nodeType, options.attrs)
-    },
-    select(pm) {
-      return setBlockType(pm, nodeType, options.attrs, false)
-    },
+    run: command,
+    select(pm) { return command(pm, false) },
     active(pm) {
       let {from, to, node} = pm.selection
       if (node) return node.hasMarkup(nodeType, options.attrs)
@@ -431,9 +428,10 @@ export function blockTypeItem(nodeType, options) {
 // `options.attrs` may be an object to provide the attributes for the
 // list node.
 export function wrapListItem(nodeType, options) {
+  let command = wrapInList(nodeType, options.attrs)
   return new MenuItem(copyObj(options, {
-    run(pm) { wrapInList(pm, nodeType, options.attrs) },
-    select(pm) { return wrapInList(pm, nodeType, options.attrs, false) }
+    run: command,
+    select(pm) { return command(pm, false) }
   }))
 }
 

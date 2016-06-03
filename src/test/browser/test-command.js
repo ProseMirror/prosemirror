@@ -13,7 +13,8 @@ function test(cmd, ...args) {
   let known = used[cmd] || 0
   defTest("command_" + cmd + "_" + known, () => {
     let pm = tempEditor({doc: args[args.length - 2]})
-    commands[cmd](pm, ...args.slice(0, args.length - 2))
+    let prep = args.slice(0, args.length - 2)
+    ;(prep.length ? commands[cmd](...prep) : commands[cmd])(pm)
     cmpNode(pm.doc, args[args.length - 1])
   })
   used[cmd] = known + 1

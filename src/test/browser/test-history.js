@@ -232,11 +232,11 @@ test("unsynced_overwrite", pm => {
 
 test("unsynced_list_manip", pm => {
   pm.history.preserveItems++
-  splitListItem(pm, pm.schema.nodes.list_item)
-  sinkListItem(pm, pm.schema.nodes.list_item)
+  splitListItem(pm.schema.nodes.list_item)(pm)
+  sinkListItem(pm.schema.nodes.list_item)(pm)
   type(pm, "abc")
   cutHistory(pm)
-  splitListItem(pm, pm.schema.nodes.list_item)
+  splitListItem(pm.schema.nodes.list_item)(pm)
   dispatch(pm, "Enter")
   cmpNode(pm.doc, doc(ul(li(p("hello"), ul(li(p("abc"))), p()))))
   pm.history.undo()
@@ -247,16 +247,16 @@ test("unsynced_list_manip", pm => {
 
 test("unsynced_list_indent", pm => {
   pm.history.preserveItems++
-  splitListItem(pm, pm.schema.nodes.list_item)
-  sinkListItem(pm, pm.schema.nodes.list_item)
+  splitListItem(pm.schema.nodes.list_item)(pm)
+  sinkListItem(pm.schema.nodes.list_item)(pm)
   type(pm, "abc")
   cutHistory(pm)
-  splitListItem(pm, pm.schema.nodes.list_item)
-  sinkListItem(pm, pm.schema.nodes.list_item)
+  splitListItem(pm.schema.nodes.list_item)(pm)
+  sinkListItem(pm.schema.nodes.list_item)(pm)
   type(pm, "def")
   cutHistory(pm)
   pm.setTextSelection(12)
-  liftListItem(pm, pm.schema.nodes.list_item)
+  liftListItem(pm.schema.nodes.list_item)(pm)
   cmpNode(pm.doc, doc(ul(li(p("hello")), li(p("abc"), ul(li(p("def")))))))
   pm.history.undo()
   cmpNode(pm.doc, doc(ul(li(p("hello"), ul(li(p("abc"), ul(li(p("def")))))))))
