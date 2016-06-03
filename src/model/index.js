@@ -12,7 +12,7 @@
 // (i.e. you can load it into any JavaScript environment).
 
 export {Node} from "./node"
-export {ResolvedPos} from "./resolvedpos"
+export {ResolvedPos, NodeRange} from "./resolvedpos"
 export {Fragment} from "./fragment"
 export {Slice, ReplaceError} from "./replace"
 export {Mark} from "./mark"

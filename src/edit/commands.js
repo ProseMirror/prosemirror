@@ -1,6 +1,6 @@
 import {browser} from "../dom"
-import {joinPoint, joinable, canLift, canSplit, canWrap, ReplaceAroundStep} from "../transform"
-import {Slice, Fragment} from "../model"
+import {joinPoint, joinable, liftTarget, canSplit, canWrap, ReplaceAroundStep} from "../transform"
+import {Slice, Fragment, NodeRange} from "../model"
 
 import {charCategory, isExtendingChar} from "./char"
 import {findSelectionFrom, TextSelection, NodeSelection} from "./selection"
@@ -59,8 +59,9 @@ export function joinBackward(pm, apply) {
 
   // If there is no node before this, try to lift
   if (!before) {
-    if (!canLift(pm.doc, head, head)) return false
-    if (apply !== false) pm.tr.lift(head, head).apply(pm.apply.scroll)
+    let range = $head.blockRange(), target = range && liftTarget(range)
+    if (target == null) return false
+    if (apply !== false) pm.tr.lift(range, target).apply(pm.apply.scroll)
     return true
   }
 
@@ -211,8 +212,9 @@ export function joinDown(pm, apply) {
 // selection that can be lifted, out of its parent node.
 export function lift(pm, apply) {
   let {from, to} = pm.selection
-  if (!canLift(pm.doc, from, to)) return false
-  if (apply !== false) pm.tr.lift(from, to).apply(pm.apply.scroll)
+  let range = pm.doc.resolve(from).blockRange(pm.doc.resolve(to)), target = range && liftTarget(range)
+  if (target == null) return false
+  if (apply !== false) pm.tr.lift(range, target).apply(pm.apply.scroll)
   return true
 }
 
@@ -256,8 +258,9 @@ export function liftEmptyBlock(pm, apply) {
       return true
     }
   }
-  if (!canLift(pm.doc, head, head)) return false
-  if (apply !== false) pm.tr.lift(head, head).apply(pm.apply.scroll)
+  let range = $head.blockRange(), target = range && liftTarget(range)
+  if (target == null) return false
+  if (apply !== false) pm.tr.lift(range, target).apply(pm.apply.scroll)
   return true
 }
 
@@ -348,9 +351,9 @@ function deleteBarrier(pm, cut, apply) {
     return true
   } else {
     let selAfter = findSelectionFrom(pm.doc, cut, 1)
-    if (!canLift(pm.doc, selAfter.from, selAfter.to)) return false
-    if (apply !== false)
-      pm.tr.lift(selAfter.from, selAfter.to).apply(pm.apply.scroll)
+    let range = pm.doc.resolve(selAfter.from).blockRange(pm.doc.resolve(selAfter.to)), target = range && liftTarget(range)
+    if (target == null) return false
+    if (apply !== false) pm.tr.lift(range, target).apply(pm.apply.scroll)
     return true
   }
 }
@@ -529,20 +532,21 @@ export function splitListItem(nodeType) {
 // a wrapping list.
 export function liftListItem(nodeType) {
   return function(pm, apply) {
-    let {from, to} = pm.selection, $from = pm.doc.resolve(from)
-    let depth = $from.blockRangeDepth(to, node => node.childCount && node.firstChild.type == nodeType)
-    if (depth == null || depth < 2 || $from.node(depth - 1).type != nodeType) return false
+    let {from, to} = pm.selection, $from = pm.doc.resolve(from), $to = pm.doc.resolve(to)
+    let range = $from.blockRange($to, node => node.childCount && node.firstChild.type == nodeType)
+    if (!range || range.depth < 2 || $from.node(range.depth - 1).type != nodeType) return false
     if (apply !== false) {
       let $to = pm.doc.resolve(to)
-      let tr = pm.tr, end = $to.after(depth + 1), endOfList = $to.end(depth)
+      let tr = pm.tr, end = range.end, endOfList = $to.end(range.depth)
       if (end < endOfList) {
         // There are siblings after the lifted items, which must become
         // children of the last item
         tr.step(new ReplaceAroundStep(end - 1, endOfList, end, endOfList,
-                                      new Slice(Fragment.from(nodeType.create(null, $to.node(depth).copy())), 1, 0), 1, true))
-        end = endOfList
+                                      new Slice(Fragment.from(nodeType.create(null, range.parent.copy())), 1, 0), 1, true))
+        range = new NodeRange(tr.doc.resolveNoCache(from), tr.doc.resolveNoCache(endOfList), range.depth)
       }
-      tr.lift($from.before(depth + 1), end).apply(pm.apply.scroll)
+
+      tr.lift(range, liftTarget(range)).apply(pm.apply.scroll)
     }
     return true
   }

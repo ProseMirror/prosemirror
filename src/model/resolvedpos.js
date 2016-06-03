@@ -136,6 +136,13 @@ export class ResolvedPos {
         return d
   }
 
+  blockRange(other = this, pred) {
+    if (other.pos < this.pos) return other.blockRange(this)
+    for (let d = this.depth - (this.parent.isTextblock || this.pos == other.pos ? 1 : 0); d >= 0; d--)
+      if (other.pos <= this.end(d) && (!pred || pred(this.node(d))))
+        return new NodeRange(this, other, d)
+  }
+
   // :: (ResolvedPos) → bool
   // Query whether the given position shares the same parent node.
   sameParent(other) {
@@ -178,3 +185,18 @@ export class ResolvedPos {
 }
 
 let resolveCache = [], resolveCachePos = 0, resolveCacheSize = 6
+
+export class NodeRange {
+  constructor(from, to, depth) {
+    this.from = from
+    this.to = to
+    this.depth = depth
+  }
+
+  get start() { return this.from.before(this.depth + 1) }
+  get end() { return this.to.after(this.depth + 1) }
+
+  get parent() { return this.from.node(this.depth) }
+  get startIndex() { return this.from.index(this.depth) }
+  get endIndex() { return this.to.indexAfter(this.depth) }
+}

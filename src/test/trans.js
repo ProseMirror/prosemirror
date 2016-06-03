@@ -1,4 +1,4 @@
-import {Transform, Step, Remapping, TransformError} from "../transform"
+import {Transform, Step, Remapping, TransformError, liftTarget} from "../transform"
 import {Node} from "../model"
 import {cmpNode, cmpStr} from "./cmp"
 import {Failure} from "./failure"
@@ -54,7 +54,11 @@ class DelayedTransform {
   }
 
   lift(from, to) {
-    return this.plus(tr => tr.lift(tag(tr, from || "a"), tag(tr, to || "b")))
+    return this.plus(tr => {
+      let $from = tr.doc.resolve(tag(tr, from || "a")), toTag = tag(tr, to || "b")
+      let range = $from.blockRange(toTag == null ? undefined : tr.doc.resolve(toTag))
+      return tr.lift(range, liftTarget(range))
+    })
   }
 
   wrap(type, attrs, from, to) {

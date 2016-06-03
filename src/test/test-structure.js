@@ -1,6 +1,6 @@
 import {Schema, Block, Text, Attribute, Slice} from "../model"
 import {EmMark} from "../schema"
-import {canSplit, canLift, canWrap, Transform} from "../transform"
+import {canSplit, liftTarget, canWrap, Transform} from "../transform"
 
 import {defTest} from "./tests"
 import {cmpNode, is} from "./cmp"
@@ -92,12 +92,14 @@ noSplit(115)
 
 function lift(pos, end) {
   defTest("struct_lift_can_" + pos, () => {
-    is(canLift(doc, pos, end), "canLift unexpectedly returned false")
+    let range = doc.resolve(pos).blockRange(end == null ? undefined : doc.resolve(end))
+    is((range && liftTarget(range)) != null, "liftTarget unexpectedly returned null")
   })
 }
 function noLift(pos, end) {
   defTest("struct_lift_cant_" + pos, () => {
-    is(!canLift(doc, pos, end), "canLift unexpectedly returned true")
+    let range = doc.resolve(pos).blockRange(end == null ? undefined : doc.resolve(end))
+    is((range && liftTarget(range)) == null, "liftTarget unexpectedly returned a value")
   })
 }
 
