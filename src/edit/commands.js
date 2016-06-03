@@ -603,14 +603,12 @@ exports.sinkListItem = sinkListItem
 function liftNested(nodeType) {
   let lift = liftListItem(nodeType)
   return function(pm, apply) {
-    let {head, empty} = pm.selection
+    let {$head, empty} = pm.selection
     if (!empty) return false
-
-    let $head = pm.doc.resolve(head)
     if ($head.parentOffset > 0) return false
 
-    let {from, to} = pm.selection, $from = pm.doc.resolve(from)
-    let depth = $from.blockRangeDepth(to, node => node.childCount && node.firstChild.type == nodeType)
+    let {$from, $to} = pm.selection
+    let depth = $from.depth
 
     // Skip if not a nested list
     if (depth == null || depth < 3) return false
@@ -626,10 +624,8 @@ exports.liftNested = liftNested
 function sinkNested(nodeType) {
   let sink = sinkListItem(nodeType)
   return function(pm, apply) {
-    let {head, empty} = pm.selection
+    let {$head, empty} = pm.selection
     if (!empty) return false
-
-    let $head = pm.doc.resolve(head)
     if ($head.parentOffset > 0) return false
 
     return sink(pm, apply)
