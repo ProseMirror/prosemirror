@@ -95,7 +95,7 @@ export class FieldPrompt {
         this.reportInvalid(dom, this.pm.translate(bad))
         return null
       }
-      result[name] = value
+      result[name] = field.clean(value)
     }
     return result
   }
@@ -153,6 +153,12 @@ export class Field {
     if (!value && this.options.required)
       return "Required field"
     return this.validateType(value) || (this.options.validate && this.options.validate(value))
+  }
+
+  // :: (any) → ?string
+  // Function to clean user input
+  clean(value) {
+    return this.options.clean ? this.options.clean(value) : value
   }
 }
 
