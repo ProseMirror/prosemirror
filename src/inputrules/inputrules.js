@@ -65,30 +65,29 @@ class InputRules {
   }
 
   onTextInput(text) {
-    let pos = this.pm.selection.head
-    if (!pos) return
+    let $pos = this.pm.selection.$head
+    if (!$pos) return
 
-    let textBefore, isCode, $pos
+    let textBefore, isCode
     let lastCh = text[text.length - 1]
 
     for (let i = 0; i < this.rules.length; i++) {
       let rule = this.rules[i], match
       if (rule.filter && rule.filter != lastCh) continue
-      if (!$pos) {
-        $pos = this.pm.doc.resolve(pos)
+      if (textBefore == null) {
         ;({textBefore, isCode} = getContext($pos))
         if (isCode) return
       }
       if (match = rule.match.exec(textBefore)) {
         let startVersion = this.pm.history.getVersion()
         if (typeof rule.handler == "string") {
-          let start = pos - (match[1] || match[0]).length
-          let marks = this.pm.doc.marksAt(pos)
-          this.pm.tr.delete(start, pos)
+          let start = $pos.pos - (match[1] || match[0]).length
+          let marks = this.pm.doc.marksAt($pos.pos)
+          this.pm.tr.delete(start, $pos.pos)
                     .insert(start, this.pm.schema.text(rule.handler, marks))
                     .apply()
         } else {
-          rule.handler(this.pm, match, pos)
+          rule.handler(this.pm, match, $pos.pos)
         }
         this.cancelVersion = startVersion
         return

@@ -54,7 +54,7 @@ function isAtStart($pos, depth) {
 }
 
 function rangeAroundSelection(pm) {
-  let {sel, doc} = pm.operation, $from = doc.resolve(sel.from), $to = doc.resolve(sel.to)
+  let {$from, $to} = pm.operation.sel
   // When the selection is entirely inside a text block, use
   // rangeAroundComposition to get a narrow range.
   if ($from.sameParent($to) && $from.parent.isTextblock && $from.parentOffset && $to.parentOffset < $to.parent.content.size)
@@ -74,8 +74,7 @@ function rangeAroundSelection(pm) {
 }
 
 function rangeAroundComposition(pm, margin) {
-  let {sel, doc} = pm.operation
-  let $from = doc.resolve(sel.from), $to = doc.resolve(sel.to)
+  let {$from, $to} = pm.operation.sel
   if (!$from.sameParent($to)) return rangeAroundSelection(pm)
   let startOff = Math.max(0, $from.parentOffset - margin)
   let size = $from.parent.content.size

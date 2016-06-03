@@ -44,10 +44,9 @@ export function deleteSelection(pm, apply) {
 // before it, moving it into a parent of that node, or joining it with
 // that.
 export function joinBackward(pm, apply) {
-  let {head, empty} = pm.selection
+  let {$head, empty} = pm.selection
   if (!empty) return false
 
-  let $head = pm.doc.resolve(head)
   if ($head.parentOffset > 0) return false
 
   // Find the node before this one
@@ -93,8 +92,8 @@ export function joinBackward(pm, apply) {
 // into parents of the cursor block, or joining the two when they are
 // siblings).
 export function joinForward(pm, apply) {
-  let {head, empty} = pm.selection, $head
-  if (!empty || ($head = pm.doc.resolve(head)).parentOffset < $head.parent.content.size) return false
+  let {$head, empty} = pm.selection
+  if (!empty || $head.parentOffset < $head.parent.content.size) return false
 
   // Find the node after this one
   let after, cut
@@ -124,11 +123,11 @@ export function joinForward(pm, apply) {
 // and the cursor isn't at the start of a textblock.
 export function deleteCharBefore(pm, apply) {
   if (browser.ios) return false
-  let {head, empty} = pm.selection
-  if (!empty || pm.doc.resolve(head).parentOffset == 0) return false
+  let {$head, empty} = pm.selection
+  if (!empty || $head.parentOffset == 0) return false
   if (apply !== false) {
-    let dest = moveBackward(pm.doc, head, "char")
-    pm.tr.delete(dest, head).apply(pm.apply.scroll)
+    let dest = moveBackward($head, "char")
+    pm.tr.delete(dest, $head.pos).apply(pm.apply.scroll)
   }
   return true
 }
@@ -137,11 +136,11 @@ export function deleteCharBefore(pm, apply) {
 // Delete the word before the cursor, if the selection is empty and
 // the cursor isn't at the start of a textblock.
 export function deleteWordBefore(pm, apply) {
-  let {head, empty} = pm.selection
-  if (!empty || pm.doc.resolve(head).parentOffset == 0) return false
+  let {$head, empty} = pm.selection
+  if (!empty || $head.parentOffset == 0) return false
   if (apply !== false) {
-    let dest = moveBackward(pm.doc, head, "word")
-    pm.tr.delete(dest, head).apply(pm.apply.scroll)
+    let dest = moveBackward($head, "word")
+    pm.tr.delete(dest, $head.pos).apply(pm.apply.scroll)
   }
   return true
 }
@@ -150,11 +149,11 @@ export function deleteWordBefore(pm, apply) {
 // Delete the character after the cursor, if the selection is empty
 // and the cursor isn't at the end of its textblock.
 export function deleteCharAfter(pm, apply) {
-  let {head, empty} = pm.selection, $head
-  if (!empty || ($head = pm.doc.resolve(head)).parentOffset == $head.parent.content.size) return false
+  let {$head, empty} = pm.selection
+  if (!empty || $head.parentOffset == $head.parent.content.size) return false
   if (apply !== false) {
-    let dest = moveForward(pm.doc, head, "char")
-    pm.tr.delete(head, dest).apply(pm.apply.scroll)
+    let dest = moveForward($head, "char")
+    pm.tr.delete($head.pos, dest).apply(pm.apply.scroll)
   }
   return true
 }
@@ -163,11 +162,11 @@ export function deleteCharAfter(pm, apply) {
 // Delete the word after the cursor, if the selection is empty and the
 // cursor isn't at the end of a textblock.
 export function deleteWordAfter(pm, apply) {
-  let {head, empty} = pm.selection, $head
-  if (!empty || ($head = pm.doc.resolve(head)).parentOffset == $head.parent.content.size) return false
+  let {$head, empty} = pm.selection
+  if (!empty || $head.parentOffset == $head.parent.content.size) return false
   if (apply !== false) {
-    let dest = moveForward(pm.doc, head, "word")
-    pm.tr.delete(head, dest).apply(pm.apply.scroll)
+    let dest = moveForward($head, "word")
+    pm.tr.delete($head.pos, dest).apply(pm.apply.scroll)
   }
   return true
 }
@@ -211,8 +210,8 @@ export function joinDown(pm, apply) {
 // Lift the selected block, or the closest ancestor block of the
 // selection that can be lifted, out of its parent node.
 export function lift(pm, apply) {
-  let {from, to} = pm.selection
-  let range = pm.doc.resolve(from).blockRange(pm.doc.resolve(to)), target = range && liftTarget(range)
+  let {$from, $to} = pm.selection
+  let range = $from.blockRange($to), target = range && liftTarget(range)
   if (target == null) return false
   if (apply !== false) pm.tr.lift(range, target).apply(pm.apply.scroll)
   return true
@@ -222,10 +221,9 @@ export function lift(pm, apply) {
 // If the selection is in a node whose type has a truthy `isCode`
 // property, replace the selection with a newline character.
 export function newlineInCode(pm, apply) {
-  let {from, to, node} = pm.selection
+  let {$from, $to, node} = pm.selection
   if (node) return false
-  let $from = pm.doc.resolve(from)
-  if (!$from.parent.type.isCode || to >= $from.end()) return false
+  if (!$from.parent.type.isCode || $to.pos >= $from.end()) return false
   if (apply !== false) pm.tr.typeText("\n").apply(pm.apply.scroll)
   return true
 }
@@ -234,12 +232,12 @@ export function newlineInCode(pm, apply) {
 // If a block node is selected, create an empty paragraph before (if
 // it is its parent's first child) or after it.
 export function createParagraphNear(pm, apply) {
-  let {from, to, node} = pm.selection
+  let {$from, from, to, node} = pm.selection
   if (!node || !node.isBlock) return false
-  let $from = pm.doc.resolve(from), side = $from.parentOffset ? to : from
   let type = $from.parent.defaultContentType($from.indexAfter())
   if (!type.isTextblock) return false
   if (apply !== false) {
+    let side = $from.parentOffset ? to : from
     let tr = pm.tr.insert(side, type.createAndFill())
     tr.apply({scrollIntoView: true, selection: new TextSelection(tr.doc.resolve(side + 1))})
   }
@@ -250,8 +248,8 @@ export function createParagraphNear(pm, apply) {
 // If the cursor is in an empty textblock that can be lifted, lift the
 // block.
 export function liftEmptyBlock(pm, apply) {
-  let {head, empty} = pm.selection, $head
-  if (!empty || ($head = pm.doc.resolve(head)).parent.content.size) return false
+  let {$head, empty} = pm.selection
+  if (!empty || $head.parent.content.size) return false
   if ($head.depth > 1 && $head.after() != $head.end(-1)) {
     let before = $head.before()
     if (canSplit(pm.doc, before)) {
@@ -269,18 +267,18 @@ export function liftEmptyBlock(pm, apply) {
 // Split the parent block of the selection. If the selection is a text
 // selection, delete it.
 export function splitBlock(pm, apply) {
-  let {from, to, node} = pm.selection, $from = pm.doc.resolve(from)
+  let {$from, $to, node} = pm.selection
   if (node && node.isBlock) {
-    if (!$from.parentOffset || !canSplit(pm.doc, from)) return false
-    if (apply !== false) pm.tr.split(from).apply(pm.apply.scroll)
+    if (!$from.parentOffset || !canSplit(pm.doc, $from.pos)) return false
+    if (apply !== false) pm.tr.split($from.pos).apply(pm.apply.scroll)
     return true
   } else {
     if (apply === false) return true
-    let $to = pm.doc.resolve(to), atEnd = $to.parentOffset == $to.parent.content.size
-    let tr = pm.tr.delete(from, to)
+    let atEnd = $to.parentOffset == $to.parent.content.size
+    let tr = pm.tr.delete($from.pos, $to.pos)
     let deflt = $from.node(-1).defaultContentType($from.indexAfter(-1)), type = atEnd ? deflt : null
-    if (canSplit(tr.doc, from, 1, type)) {
-      tr.split(from, 1, type)
+    if (canSplit(tr.doc, $from.pos, 1, type)) {
+      tr.split($from.pos, 1, type)
       if (!atEnd && !$from.parentOffset && $from.parent.type != deflt)
         tr.setNodeType($from.before(), deflt)
     }
@@ -295,14 +293,12 @@ export function splitBlock(pm, apply) {
 export function selectParentNode(pm, apply) {
   let sel = pm.selection, pos
   if (sel.node) {
-    let $from = pm.doc.resolve(sel.from)
-    if (!$from.depth) return false
-    pos = $from.before()
+    if (!sel.$from.depth) return false
+    pos = sel.$from.before()
   } else {
-    let $head = pm.doc.resolve(sel.head)
-    let same = $head.sameDepth(pm.doc.resolve(sel.anchor))
+    let same = sel.$head.sameDepth(sel.$anchor)
     if (same == 0) return false
-    pos = $head.before(same)
+    pos = sel.$head.before(same)
   }
   if (apply !== false) pm.setNodeSelection(pos)
   return true
@@ -351,8 +347,8 @@ function deleteBarrier(pm, cut, apply) {
       .apply(pm.apply.scroll)
     return true
   } else {
-    let selAfter = findSelectionFrom(pm.doc.resolve(cut), 1)
-    let range = pm.doc.resolve(selAfter.from).blockRange(pm.doc.resolve(selAfter.to)), target = range && liftTarget(range)
+    let selAfter = findSelectionFrom($cut, 1)
+    let range = selAfter.$from.blockRange(selAfter.$to), target = range && liftTarget(range)
     if (target == null) return false
     if (apply !== false) pm.tr.lift(range, target).apply(pm.apply.scroll)
     return true
@@ -360,14 +356,13 @@ function deleteBarrier(pm, cut, apply) {
 }
 
 // Get an offset moving backward from a current offset inside a node.
-function moveBackward(doc, pos, by) {
+function moveBackward($pos, by) {
   if (by != "char" && by != "word")
     throw new RangeError("Unknown motion unit: " + by)
 
-  let $pos = doc.resolve(pos)
   let parent = $pos.parent, offset = $pos.parentOffset
 
-  let cat = null, counted = 0
+  let cat = null, counted = 0, pos = $pos.pos
   for (;;) {
     if (offset == 0) return pos
     let {offset: start, node} = parent.childBefore(offset)
@@ -397,12 +392,11 @@ function moveBackward(doc, pos, by) {
   }
 }
 
-function moveForward(doc, pos, by) {
+function moveForward($pos, by) {
   if (by != "char" && by != "word")
     throw new RangeError("Unknown motion unit: " + by)
 
-  let $pos = doc.resolve(pos)
-  let parent = $pos.parent, offset = $pos.parentOffset
+  let parent = $pos.parent, offset = $pos.parentOffset, pos = $pos.pos
 
   let cat = null, counted = 0
   for (;;) {
@@ -445,7 +439,7 @@ function joinPointBelow(pm) {
 // possible, without performing any action.
 export function wrapIn(nodeType, attrs) {
   return function(pm, apply) {
-    let {from, to} = pm.selection, $from = pm.doc.resolve(from), $to = pm.doc.resolve(to)
+    let {$from, $to} = pm.selection
     let range = $from.blockRange($to), wrapping = range && findWrapping(range, nodeType, attrs)
     if (!wrapping) return false
     if (apply !== false) pm.tr.wrap(range, wrapping).apply(pm.apply.scroll)
@@ -460,11 +454,11 @@ export function wrapIn(nodeType, attrs) {
 // don't perform any action.
 export function setBlockType(nodeType, attrs) {
   return function(pm, apply) {
-    let {from, to, node} = pm.selection, $from = pm.doc.resolve(from), depth
+    let {$from, $to, node} = pm.selection, depth
     if (node) {
       depth = $from.depth
     } else {
-      if (to > $from.end()) return false
+      if ($to.pos > $from.end()) return false
       depth = $from.depth - 1
     }
     if ((node || $from.parent).hasMarkup(nodeType, attrs)) return false
@@ -489,7 +483,7 @@ export function setBlockType(nodeType, attrs) {
 // perform the change.
 export function wrapInList(nodeType, attrs) {
   return function(pm, apply) {
-    let {from, to} = pm.selection, $from = pm.doc.resolve(from), $to = pm.doc.resolve(to)
+    let {$from, $to} = pm.selection
     let range = $from.blockRange($to), doJoin = false
     // This is at the top of an existing list item
     if (range.depth >= 2 && $from.node(range.depth - 1).type.compatibleContent(nodeType) && range.startIndex == 0) {
@@ -501,7 +495,7 @@ export function wrapInList(nodeType, attrs) {
       let tr = pm.tr
       if (doJoin) {
         tr.join($from.before(range.depth))
-        range = tr.doc.resolveNoCache(from - 2).blockRange(tr.doc.resolveNoCache(to - 2))
+        range = tr.doc.resolveNoCache($from.pos - 2).blockRange(tr.doc.resolveNoCache($to.pos - 2))
       }
       tr.wrap(range, findWrapping(range, nodeType, attrs)).apply(pm.apply.scroll)
     }
@@ -514,15 +508,15 @@ export function wrapInList(nodeType, attrs) {
 // of a list item by also splitting that list item.
 export function splitListItem(nodeType) {
   return function(pm) {
-    let {from, to, node} = pm.selection, $from = pm.doc.resolve(from)
+    let {$from, $to, node} = pm.selection
     if ((node && node.isBlock) || !$from.parent.content.size ||
-        $from.depth < 2 || !$from.sameParent(pm.doc.resolve(to))) return false
+        $from.depth < 2 || !$from.sameParent($to)) return false
     let grandParent = $from.node(-1)
     if (grandParent.type != nodeType) return false
-    let nextType = to == $from.end() ? grandParent.defaultContentType($from.indexAfter(-1)) : null
-    let tr = pm.tr.delete(from, to)
-    if (!canSplit(tr.doc, from, 2, nextType)) return false
-    tr.split(from, 2, nextType).apply(pm.apply.scroll)
+    let nextType = $to.pos == $from.end() ? grandParent.defaultContentType($from.indexAfter(-1)) : null
+    let tr = pm.tr.delete($from.pos, $to.pos)
+    if (!canSplit(tr.doc, $from.pos, 2, nextType)) return false
+    tr.split($from.pos, 2, nextType).apply(pm.apply.scroll)
     return true
   }
 }
@@ -532,18 +526,17 @@ export function splitListItem(nodeType) {
 // a wrapping list.
 export function liftListItem(nodeType) {
   return function(pm, apply) {
-    let {from, to} = pm.selection, $from = pm.doc.resolve(from), $to = pm.doc.resolve(to)
+    let {$from, $to} = pm.selection
     let range = $from.blockRange($to, node => node.childCount && node.firstChild.type == nodeType)
     if (!range || range.depth < 2 || $from.node(range.depth - 1).type != nodeType) return false
     if (apply !== false) {
-      let $to = pm.doc.resolve(to)
       let tr = pm.tr, end = range.end, endOfList = $to.end(range.depth)
       if (end < endOfList) {
         // There are siblings after the lifted items, which must become
         // children of the last item
         tr.step(new ReplaceAroundStep(end - 1, endOfList, end, endOfList,
                                       new Slice(Fragment.from(nodeType.create(null, range.parent.copy())), 1, 0), 1, true))
-        range = new NodeRange(tr.doc.resolveNoCache(from), tr.doc.resolveNoCache(endOfList), range.depth)
+        range = new NodeRange(tr.doc.resolveNoCache($from.pos), tr.doc.resolveNoCache(endOfList), range.depth)
       }
 
       tr.lift(range, liftTarget(range)).apply(pm.apply.scroll)
@@ -557,7 +550,7 @@ export function liftListItem(nodeType) {
 // into an inner list.
 export function sinkListItem(nodeType) {
   return function(pm, apply) {
-    let {from, to} = pm.selection, $from = pm.doc.resolve(from), $to = pm.doc.resolve(to)
+    let {$from, $to} = pm.selection
     let range = $from.blockRange($to, node => node.childCount && node.firstChild.type == nodeType)
     if (!range) return false
     let startIndex = range.startIndex

@@ -390,10 +390,9 @@ export function findSelectionAtEnd(doc, text) {
 // : (ProseMirror, number, number)
 // Whether vertical position motion in a given direction
 // from a position would leave a text block.
-export function verticalMotionLeavesTextblock(pm, pos, dir) {
-  let $pos = pm.doc.resolve(pos)
+export function verticalMotionLeavesTextblock(pm, $pos, dir) {
   let dom = DOMAfterPos(pm, $pos.before())
-  let coords = coordsAtPos(pm, pos)
+  let coords = coordsAtPos(pm, $pos.pos)
   for (let child = dom.firstChild; child; child = child.nextSibling) {
     if (child.nodeType != 1) continue
     let boxes = child.getClientRects()

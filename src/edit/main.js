@@ -372,10 +372,9 @@ export class ProseMirror {
   setMark(type, to, attrs) {
     let sel = this.selection
     if (sel.empty) {
-      let marks = this.activeMarks(), $head
+      let marks = this.activeMarks()
       if (to == null) to = !type.isInSet(marks)
-      if (to && ($head = this.doc.resolve(sel.head)) &&
-          !$head.parent.contentMatchAt($head.index()).allowsMark(type)) return
+      if (to && !sel.$head.parent.contentMatchAt(sel.$head.index()).allowsMark(type)) return
       this.input.storedMarks = to ? type.create(attrs).addToSet(marks) : type.removeFromSet(marks)
       // :: () #path=ProseMirror#events#activeMarkChange
       // Fired when the set of [active marks](#ProseMirror.activeMarks) changes.

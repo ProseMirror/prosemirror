@@ -28,7 +28,7 @@ export class EditorTransform extends Transform {
   // is null. When `inheritMarks` is true and the node is an inline
   // node, it inherits the marks from the place where it is inserted.
   replaceSelection(node, inheritMarks) {
-    let {empty, from, to, node: selNode} = this.selection
+    let {empty, $from, $to, from, to, node: selNode} = this.selection
 
     if (node && node.isInline && inheritMarks !== false)
       node = node.mark(empty ? this.pm.input.storedMarks : this.doc.marksAt(from))
@@ -40,7 +40,7 @@ export class EditorTransform extends Transform {
       from++
       to--
     } else if (selNode) {
-      let $from = this.doc.resolve(from), $to = this.doc.resolve(to), depth = $from.depth
+      let depth = $from.depth
       // This node can not simply be removed/replaced. Remove its parent as well
       while (depth && $from.node(depth).childCount == 1 &&
              !$from.node(depth).canReplace($from.index(depth), $to.indexAfter(depth), fragment)) {

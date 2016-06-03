@@ -164,10 +164,10 @@ function selectClickedNode(pm, e, target) {
   let pos = selectableNodeAbove(pm, target, {left: e.clientX, top: e.clientY}, true)
   if (pos == null) return pm.sel.fastPoll()
 
-  let {node, from} = pm.selection
+  let {node, $from} = pm.selection
   if (node) {
-    let $pos = pm.doc.resolve(pos), $from = pm.doc.resolve(from)
-    if ($pos.depth >= $from.depth && $pos.before($from.depth + 1) == from) {
+    let $pos = pm.doc.resolve(pos)
+    if ($pos.depth >= $from.depth && $pos.before($from.depth + 1) == $from.pos) {
       if ($from.depth == 0) return pm.sel.fastPoll()
       pos = $pos.before($from.depth)
     }
@@ -388,7 +388,7 @@ function canUpdateClipboard(dataTransfer) {
 // into the document.
 
 // : (ProseMirror, DataTransfer, ?bool) → ?Slice
-function fromClipboard(pm, dataTransfer, plainText, target) {
+function fromClipboard(pm, dataTransfer, plainText, $target) {
   let txt = dataTransfer.getData("text/plain")
   let html = dataTransfer.getData("text/html")
   if (!html && !txt) return null
@@ -406,7 +406,7 @@ function fromClipboard(pm, dataTransfer, plainText, target) {
     openLeft = +m[1]
     openRight = +m[2]
   }
-  let slice = fromDOMInContext(pm.doc.resolve(target), dom, {openLeft, openRight, preserveWhiteSpace: true})
+  let slice = fromDOMInContext($target, dom, {openLeft, openRight, preserveWhiteSpace: true})
   return pm.signalPipelined("transformPasted", slice)
 }
 
@@ -429,10 +429,10 @@ handlers.paste = (pm, e) => {
     return
   }
   let sel = pm.selection
-  let slice = fromClipboard(pm, e.clipboardData, pm.input.shiftKey, sel.from)
+  let slice = fromClipboard(pm, e.clipboardData, pm.input.shiftKey, sel.$from)
   if (slice) {
     e.preventDefault()
-    let start = sel.from, $from, wrap = slice.possibleParent
+    let start = sel.from, wrap = slice.possibleParent
     if (!wrap && slice.openLeft) {
       wrap = slice.content.firstChild
       for (let i = 1; i < slice.openLeft; i++) wrap = wrap.firstChild
@@ -440,7 +440,7 @@ handlers.paste = (pm, e) => {
     // When pasting textblock content in an empty textblock, preserve
     // the original type.
     if (wrap && wrap.isTextblock &&
-        ($from = pm.doc.resolve(sel.from)).parent.isTextblock && !$from.parent.content.size) {
+        sel.$from.parent.isTextblock && !sel.$from.parent.content.size) {
       start--
       if (slice.openLeft) slice = new Slice(slice.content, slice.openLeft - 1, slice.openRight)
       else slice = new Slice(Fragment.from(wrap.copy(slice.content)), 0, slice.openRight + 1)
@@ -458,16 +458,15 @@ class Dragging {
   }
 }
 
-function dropPos(pm, slice, pos) {
-  if (!slice || !slice.content.size) return pos
-  let $pos = pm.doc.resolve(pos)
+function dropPos(slice, $pos) {
+  if (!slice || !slice.content.size) return $pos.pos
   for (let d = $pos.depth; d >= 0; d--) {
-    let bias = d == $pos.depth ? 0 : pos <= ($pos.start(d + 1) + $pos.end(d + 1)) / 2 ? -1 : 1
+    let bias = d == $pos.depth ? 0 : $pos.pos <= ($pos.start(d + 1) + $pos.end(d + 1)) / 2 ? -1 : 1
     let insertPos = $pos.index(d) + (bias > 0 ? 1 : 0)
     if ($pos.node(d).canReplace(insertPos, insertPos, slice.content))
-      return bias == 0 ? pos : bias < 0 ? $pos.before(d + 1) : $pos.after(d + 1)
+      return bias == 0 ? $pos.pos : bias < 0 ? $pos.before(d + 1) : $pos.after(d + 1)
   }
-  return pos
+  return $pos.pos
 }
 
 function removeDropTarget(pm) {
@@ -512,7 +511,8 @@ handlers.dragover = handlers.dragenter = (pm, e) => {
   if (!target)
     target = pm.input.dropTarget = pm.wrapper.appendChild(elt("div", {class: "ProseMirror-drop-target"}))
 
-  let pos = dropPos(pm, pm.input.dragging && pm.input.dragging.slice, pm.posAtCoords({left: e.clientX, top: e.clientY}))
+  let pos = dropPos(pm.input.dragging && pm.input.dragging.slice,
+                    pm.doc.resolve(pm.posAtCoords({left: e.clientX, top: e.clientY})))
   if (pos == null) return
   let coords = pm.coordsAtPos(pos)
   let rect = pm.wrapper.getBoundingClientRect()
@@ -540,13 +540,13 @@ handlers.drop = (pm, e) => {
   // or returning a truthy value.
   if (!e.dataTransfer || pm.signalDOM(e)) return
 
-  let mousePos = pm.posAtCoords({left: e.clientX, top: e.clientY})
-  if (mousePos == null) return
-  let slice = dragging && dragging.slice || fromClipboard(pm, e.dataTransfer, mousePos)
+  let $mouse = pm.doc.resolve(pm.posAtCoords({left: e.clientX, top: e.clientY}))
+  if (!$mouse) return
+  let slice = dragging && dragging.slice || fromClipboard(pm, e.dataTransfer, $mouse)
   if (!slice) return
 
   e.preventDefault()
-  let insertPos = dropPos(pm, slice, mousePos), start = insertPos
+  let insertPos = dropPos(slice, $mouse), start = insertPos
   let tr = pm.tr
   if (dragging && !e.ctrlKey && dragging.from != null) {
     tr.delete(dragging.from, dragging.to)

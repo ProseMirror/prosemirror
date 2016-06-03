@@ -36,7 +36,7 @@ class TooltipMenu {
   }
 
   update() {
-    let {empty, node, from, to} = this.pm.selection, link
+    let {empty, node, $from, to} = this.pm.selection, link
     if (!this.pm.hasFocus()) {
       this.tooltip.close()
     } else if (node && node.isBlock) {
@@ -46,13 +46,11 @@ class TooltipMenu {
       }
     } else if (!empty) {
       return () => {
-        let coords = node ? this.nodeSelectionCoords() : this.selectionCoords(), $from
-        let showBlock = this.selectedBlockMenu &&
-            ($from = this.pm.doc.resolve(from)).parentOffset == 0 &&
-            $from.end() == to
+        let coords = node ? this.nodeSelectionCoords() : this.selectionCoords()
+        let showBlock = this.selectedBlockMenu && $from.parentOffset == 0 && $from.end() == to
         return () => this.show(showBlock ? this.selectedBlockContent : this.config.inlineContent, coords)
       }
-    } else if (this.selectedBlockMenu && this.pm.doc.resolve(from).parent.content.size == 0) {
+    } else if (this.selectedBlockMenu && $from.parent.content.size == 0) {
       return () => {
         let coords = this.selectionCoords()
         return () => this.show(this.config.blockContent, coords)

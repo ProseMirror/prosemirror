@@ -369,7 +369,7 @@ export function toggleMarkItem(markType, options) {
 export function insertItem(nodeType, options) {
   return new MenuItem(copyObj(options, {
     select(pm) {
-      let $from = pm.doc.resolve(pm.selection.from)
+      let $from = pm.selection.$from
       for (let d = $from.depth; d >= 0; d--) {
         let index = $from.index(d)
         if ($from.node(d).canReplaceWith(index, index, nodeType,
@@ -415,9 +415,8 @@ export function blockTypeItem(nodeType, options) {
     run: command,
     select(pm) { return command(pm, false) },
     active(pm) {
-      let {from, to, node} = pm.selection
+      let {$from, to, node} = pm.selection
       if (node) return node.hasMarkup(nodeType, options.attrs)
-      let $from = pm.doc.resolve(from)
       return to <= $from.end() && $from.parent.hasMarkup(nodeType, options.attrs)
     }
   }))
