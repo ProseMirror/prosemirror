@@ -49,9 +49,18 @@ export const icons = {
 // the result.
 export function promptLinkAttrs(pm, callback) {
   new FieldPrompt(pm, "Create a link", {
-    href: new TextField({label: "Link target", required: true}),
+    href: new TextField({
+      label: "Link target",
+      required: true,
+      clean: (val) => {
+        if (!/^https?:\/\//i.test(val))
+          val = 'http://' + val
+        return val
+      }
+    }),
     title: new TextField({label: "Title"})
-  }).open(callback)
+  })
+    .open(callback)
 }
 
 // :: (ProseMirror, (attrs: ?Object))
