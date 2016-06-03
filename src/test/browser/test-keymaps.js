@@ -139,3 +139,22 @@ test("Enter_lift",
 test("Enter_code_newline",
      doc(pre("foo<a>bar")),
      doc(pre("foo\nbar")))
+
+test("Tab_start_list_sink",
+     doc(ul(li(p("ab")), li(p("<a>cd")))),
+     doc(ul(li(p("ab"), ul(li(p("cd")))))))
+test("Tab_middle_list_noop",
+     doc(ul(li(p("ab")), li(p("cd<a>ef")))),
+     doc(ul(li(p("ab")), li(p("cdef")))))
+test("Tab_start_nested_list_noop",
+     doc(ul(li(p("ab"), ul(li(p("<a>cd")))))),
+     doc(ul(li(p("ab"), ul(li(p("cd")))))))
+test("Shift-Tab_start_list_lift",
+     doc(ul(li(p("ab"), ul(li(p("<a>cd")))))),
+     doc(ul(li(p("ab")), li(p("cd")))))
+test("Shift-Tab_middle_list_noop",
+     doc(ul(li(p("ab"), ul(li(p("cd<a>ef")))))),
+     doc(ul(li(p("ab"), ul(li(p("cdef")))))))
+test("Shift-Tab_start_flat_list_noop",
+     doc(ul(li(p("ab")), li(p("<a>cd")))),
+     doc(ul(li(p("ab")), li(p("cd")))))
