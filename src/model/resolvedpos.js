@@ -154,6 +154,13 @@ export class ResolvedPos {
     return str + ":" + this.parentOffset
   }
 
+  plusOne() {
+    let copy = this.path.slice(), skip = this.nodeAfter.nodeSize
+    copy[copy.length - 2] += 1
+    let pos = copy[copy.length - 1] = this.pos + skip
+    return new ResolvedPos(pos, copy, this.parentOffset + skip)
+  }
+
   static resolve(doc, pos) {
     if (!(pos >= 0 && pos <= doc.content.size)) throw new RangeError("Position " + pos + " out of range")
     let path = []

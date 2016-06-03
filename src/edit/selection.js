@@ -168,15 +168,29 @@ export class SelectionState {
 // selected [node](#NodeSelection.node) or the
 // [head](#TextSelection.head) and [anchor](#TextSelection.anchor)).
 export class Selection {
-  // :: number #path=Selection.prototype.from
-  // The left-bound of the selection.
+  // :: number
+  // The left bound of the selection.
+  get from() { return this.$from.pos }
 
-  // :: number #path=Selection.prototype.to
-  // The right-bound of the selection.
+  // :: number
+  // The right bound of the selection.
+  get to() { return this.$to.pos }
 
-  // :: bool #path=Selection.prototype.empty
+  constructor($from, $to) {
+    // :: ResolvedPos
+    // The resolved left bound of the selection
+    this.$from = $from
+    // :: ResolvedPos
+    // The resolved right bound of the selection
+    this.$to = $to
+  }
+
+  // :: bool
   // True if the selection is an empty text selection (head an anchor
   // are the same).
+  get empty() {
+    return this.from == this.to
+  }
 
   // :: (other: Selection) → bool #path=Selection.prototype.eq
   // Test whether the selection is the same as another selection.
@@ -191,36 +205,38 @@ export class Selection {
 // side), both of which point into textblock nodes. It can be empty (a
 // regular cursor position).
 export class TextSelection extends Selection {
-  // :: (number, ?number)
+  // :: number
+  // The selection's immobile side (does not move when pressing
+  // shift-arrow).
+  get anchor() { return this.$anchor.pos }
+  // :: number
+  // The selection's mobile side (the side that moves when pressing
+  // shift-arrow).
+  get head() { return this.$head.pos }
+
+  // :: (ResolvedPos, ?ResolvedPos)
   // Construct a text selection. When `head` is not given, it defaults
   // to `anchor`.
-  constructor(anchor, head) {
-    super()
-    // :: number
-    // The selection's immobile side (does not move when pressing
-    // shift-arrow).
-    this.anchor = anchor
-    // :: number
-    // The selection's mobile side (the side that moves when pressing
-    // shift-arrow).
-    this.head = head == null ? anchor : head
+  constructor($anchor, $head = $anchor) {
+    let inv = $anchor.pos > $head.pos
+    super(inv ? $head : $anchor, inv ? $anchor : $head)
+    // :: ResolvedPos The resolved anchor of the selection.
+    this.$anchor = $anchor
+    // :: ResolvedPos The resolved head of the selection.
+    this.$head = $head
   }
 
   get inverted() { return this.anchor > this.head }
-  get from() { return Math.min(this.head, this.anchor) }
-  get to() { return Math.max(this.head, this.anchor) }
-  get empty() { return this.anchor == this.head }
 
   eq(other) {
     return other instanceof TextSelection && other.head == this.head && other.anchor == this.anchor
   }
 
   map(doc, mapping) {
-    let head = mapping.map(this.head)
-    if (!doc.resolve(head).parent.isTextblock)
-      return findSelectionNear(doc, head)
-    let anchor = mapping.map(this.anchor)
-    return new TextSelection(doc.resolve(anchor).parent.isTextblock ? anchor : head, head)
+    let $head = doc.resolve(mapping.map(this.head))
+    if (!$head.parent.isTextblock) return findSelectionNear($head)
+    let $anchor = doc.resolve(mapping.map(this.anchor))
+    return new TextSelection($anchor.parent.isTextblock ? $anchor : $head, $head)
   }
 
   get token() {
@@ -232,9 +248,10 @@ export class TextSelection extends Selection {
   }
 
   static fromToken(token, doc) {
-    if (!doc.resolve(token.b).parent.isTextblock)
-      return findSelectionNear(doc, token.b)
-    return new TextSelection(doc.resolve(token.a).parent.isTextblock ? token.a : token.b, token.b)
+    let $head = doc.resolve(token.b)
+    if (!$head.parent.isTextblock) return findSelectionNear($head)
+    let $anchor = doc.resolve(token.a)
+    return new TextSelection($anchor.parent.isTextblock ? $anchor : $head, $head)
   }
 }
 
@@ -243,58 +260,43 @@ export class TextSelection extends Selection {
 // can be the target of a node selection. In such an object, `from`
 // and `to` point directly before and after the selected node.
 export class NodeSelection extends Selection {
-  // :: (number, number, Node)
+  // :: (ResolvedPos)
   // Create a node selection. Does not verify the validity of its
-  // arguments. Use `ProseMirror.setNodeSelection` for an easier,
+  // argument. Use `ProseMirror.setNodeSelection` for an easier,
   // error-checking way to create a node selection.
-  constructor(from, to, node) {
-    super()
-    this.from = from
-    this.to = to
+  constructor($from) {
+    let $to = $from.plusOne()
+    super($from, $to)
     // :: Node The selected node.
-    this.node = node
+    this.node = $from.nodeAfter
   }
-
-  get empty() { return false }
 
   eq(other) {
     return other instanceof NodeSelection && this.from == other.from
   }
 
   map(doc, mapping) {
-    let from = mapping.map(this.from, 1)
+    let $from = doc.resolve(mapping.map(this.from, 1))
     let to = mapping.map(this.to, -1)
-    let node = doc.nodeAt(from)
-    if (node && to == from + node.nodeSize && node.type.selectable)
-      return new NodeSelection(from, to, node)
-    return findSelectionNear(doc, from)
+    let node = $from.nodeAfter
+    if (node && to == $from.pos + node.nodeSize && node.type.selectable)
+      return new NodeSelection($from)
+    return findSelectionNear($from)
   }
 
   get token() {
     return new SelectionToken(NodeSelection, this.from, this.to)
   }
 
-  // :: (Node, number) → NodeSelection
-  // Create a node selection at the given position. Raise an error
-  // when the position doesn't point at a selectable node.
-  static at(doc, pos) {
-    let node = doc.nodeAt(pos)
-    if (!node)
-      throw new RangeError("Trying to create a node selection that doesn't point at a node")
-    if (!node.type.selectable)
-      throw new RangeError("Trying to select a non-selectable node")
-    return new NodeSelection(pos, pos + node.nodeSize, node)
-  }
-
   static mapToken(token, mapping) {
-    return new SelectionToken(TextSelection, mapping.map(token.a, 1), mapping.map(token.b, -1))
+    return new SelectionToken(NodeSelection, mapping.map(token.a, 1), mapping.map(token.b, -1))
   }
 
   static fromToken(token, doc) {
-    let node = doc.nodeAt(token.a)
+    let $from = doc.resolve(token.a), node = $from.nodeAfter
     if (node && token.b == token.a + node.nodeSize && node.type.selectable)
-      return new NodeSelection(token.a, token.b, node)
-    return findSelectionNear(doc, token.a)
+      return new NodeSelection($from)
+    return findSelectionNear($from)
   }
 }
 
@@ -311,16 +313,16 @@ export function selectionFromDOM(pm, doc, oldHead, loose) {
   let anchor = posFromDOM(pm, sel.anchorNode, sel.anchorOffset, loose)
   let head = sel.isCollapsed ? anchor : posFromDOM(pm, sel.focusNode, sel.focusOffset, loose)
 
-  let range = findSelectionNear(doc, head, oldHead != null && oldHead < head ? 1 : -1)
+  let range = findSelectionNear(doc.resolve(head), oldHead != null && oldHead < head ? 1 : -1)
   if (range instanceof TextSelection) {
-    let selNearAnchor = findSelectionNear(doc, anchor, anchor > range.to ? -1 : 1, true)
-    range = new TextSelection(selNearAnchor.anchor, range.head)
+    let selNearAnchor = findSelectionNear(doc.resolve(anchor), anchor > range.to ? -1 : 1, true)
+    range = new TextSelection(selNearAnchor.$anchor, range.$head)
   } else if (anchor < range.from || anchor > range.to) {
     // If head falls on a node, but anchor falls outside of it,
     // create a text selection between them
     let inv = anchor > range.to
-    range = new TextSelection(findSelectionNear(doc, anchor, inv ? -1 : 1, true).anchor,
-                              findSelectionNear(doc, inv ? range.from : range.to, inv ? 1 : -1, true).head)
+    range = new TextSelection(findSelectionNear(doc.resolve(anchor), inv ? -1 : 1, true).$anchor,
+                              findSelectionNear(inv ? range.$from : range.$to, inv ? 1 : -1, true).$head)
   }
   return {range, adjusted: head != range.head || anchor != range.anchor}
 }
@@ -334,16 +336,15 @@ export function hasFocus(pm) {
 // Try to find a selection inside the given node. `pos` points at the
 // position where the search starts. When `text` is true, only return
 // text selections.
-function findSelectionIn(node, pos, index, dir, text) {
+function findSelectionIn(doc, node, pos, index, dir, text) {
   for (let i = index - (dir > 0 ? 0 : 1); dir > 0 ? i < node.childCount : i >= 0; i += dir) {
     let child = node.child(i)
-    if (child.isTextblock) return new TextSelection(pos + dir)
+    if (child.isTextblock) return new TextSelection(doc.resolve(pos + dir))
     if (!child.type.isLeaf) {
-      let inner = findSelectionIn(child, pos + dir, dir < 0 ? child.childCount : 0, dir, text)
+      let inner = findSelectionIn(doc, child, pos + dir, dir < 0 ? child.childCount : 0, dir, text)
       if (inner) return inner
     } else if (!text && child.type.selectable) {
-      return new NodeSelection(pos - (dir < 0 ? child.nodeSize : 0),
-                               pos + (dir > 0 ? child.nodeSize : 0), child)
+      return new NodeSelection(doc.resolve(pos - (dir < 0 ? child.nodeSize : 0)))
     }
     pos += child.nodeSize * dir
   }
@@ -355,35 +356,35 @@ function findSelectionIn(node, pos, index, dir, text) {
 // given direction. When a selection isn't found at the given position,
 // walks up the document tree one level and one step in the
 // desired direction.
-export function findSelectionFrom(doc, pos, dir, text) {
-  let $pos = doc.resolve(pos)
-  let inner = $pos.parent.isTextblock ? new TextSelection(pos)
-      : findSelectionIn($pos.parent, pos, $pos.index(), dir, text)
+export function findSelectionFrom($pos, dir, text) {
+  let inner = $pos.parent.isTextblock ? new TextSelection($pos)
+      : findSelectionIn($pos.node(0), $pos.parent, $pos.pos, $pos.index(), dir, text)
   if (inner) return inner
 
   for (let depth = $pos.depth - 1; depth >= 0; depth--) {
     let found = dir < 0
-        ? findSelectionIn($pos.node(depth), $pos.before(depth + 1), $pos.index(depth), dir, text)
-        : findSelectionIn($pos.node(depth), $pos.after(depth + 1), $pos.index(depth) + 1, dir, text)
+        ? findSelectionIn($pos.node(0), $pos.node(depth), $pos.before(depth + 1), $pos.index(depth), dir, text)
+        : findSelectionIn($pos.node(0), $pos.node(depth), $pos.after(depth + 1), $pos.index(depth) + 1, dir, text)
     if (found) return found
   }
 }
 
-export function findSelectionNear(doc, pos, bias = 1, text) {
-  let result = findSelectionFrom(doc, pos, bias, text) || findSelectionFrom(doc, pos, -bias, text)
-  if (!result) throw new RangeError("Searching for selection in invalid document " + doc)
+export function findSelectionNear($pos, bias = 1, text) {
+  let result = findSelectionFrom($pos, bias, text) ||
+      findSelectionFrom($pos, -bias, text)
+  if (!result) throw new RangeError("Searching for selection in invalid document " + $pos.node(0))
   return result
 }
 
 // Find the selection closest to the start of the given node. `pos`,
 // if given, should point at the start of the node's content.
-export function findSelectionAtStart(node, text) {
-  return findSelectionIn(node, 0, 0, 1, text)
+export function findSelectionAtStart(doc, text) {
+  return findSelectionIn(doc, doc, 0, 0, 1, text)
 }
 
 // Find the selection closest to the end of the given node.
-export function findSelectionAtEnd(node, text) {
-  return findSelectionIn(node, node.content.size, node.childCount, -1, text)
+export function findSelectionAtEnd(doc, text) {
+  return findSelectionIn(doc, doc, doc.content.size, doc.childCount, -1, text)
 }
 
 // : (ProseMirror, number, number)

@@ -71,7 +71,7 @@ export function joinBackward(pm, apply) {
     if (apply !== false) {
       let tr = pm.tr.delete(cut, cut + $head.parent.nodeSize)
       tr.apply({scrollIntoView: true,
-                selection: NodeSelection.at(tr.doc, cut - before.nodeSize)})
+                selection: new NodeSelection(tr.doc.resolve(cut - before.nodeSize))})
     }
     return true
   }
@@ -187,7 +187,7 @@ export function joinUp(pm, apply) {
   }
   if (apply !== false) {
     let tr = pm.tr.join(point), selection
-    if (pm.selection.node) selection = NodeSelection.at(tr.doc, point - pm.doc.resolve(point).nodeBefore.nodeSize)
+    if (pm.selection.node) selection = new NodeSelection(tr.doc.resolve(point - pm.doc.resolve(point).nodeBefore.nodeSize))
     tr.apply({selection})
   }
   return true
@@ -202,7 +202,7 @@ export function joinDown(pm, apply) {
   if (!point) return false
   if (apply !== false) {
     let tr = pm.tr.join(point)
-    tr.apply({selection: node && NodeSelection.at(tr.doc, nodeAt)})
+    tr.apply({selection: node && new NodeSelection(tr.doc.resolve(nodeAt))})
   }
   return true
 }
@@ -239,9 +239,10 @@ export function createParagraphNear(pm, apply) {
   let $from = pm.doc.resolve(from), side = $from.parentOffset ? to : from
   let type = $from.parent.defaultContentType($from.indexAfter())
   if (!type.isTextblock) return false
-  if (apply !== false)
-    pm.tr.insert(side, type.createAndFill()).apply({scrollIntoView: true,
-                                                    selection: new TextSelection(side + 1)})
+  if (apply !== false) {
+    let tr = pm.tr.insert(side, type.createAndFill())
+    tr.apply({scrollIntoView: true, selection: new TextSelection(tr.doc.resolve(side + 1))})
+  }
   return true
 }
 
@@ -350,7 +351,7 @@ function deleteBarrier(pm, cut, apply) {
       .apply(pm.apply.scroll)
     return true
   } else {
-    let selAfter = findSelectionFrom(pm.doc, cut, 1)
+    let selAfter = findSelectionFrom(pm.doc.resolve(cut), 1)
     let range = pm.doc.resolve(selAfter.from).blockRange(pm.doc.resolve(selAfter.to)), target = range && liftTarget(range)
     if (target == null) return false
     if (apply !== false) pm.tr.lift(range, target).apply(pm.apply.scroll)

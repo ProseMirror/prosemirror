@@ -117,7 +117,7 @@ function readDOMChange(pm, range) {
   // If this looks like the effect of pressing Enter, just dispatch an
   // Enter key instead.
   if (!$from.sameParent($to) && $from.pos < parsed.content.size &&
-      (nextSel = findSelectionFrom(parsed, $from.pos + 1, 1, true)) &&
+      (nextSel = findSelectionFrom(parsed.resolve($from.pos + 1), 1, true)) &&
       nextSel.head == $to.pos) {
     pm.input.dispatchKey("Enter")
   } else if ($from.sameParent($to) && $from.parent.isTextblock &&

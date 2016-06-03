@@ -89,7 +89,7 @@ export class Input {
     let tr = pm.tr.replaceWith(from, to, text ? pm.schema.text(text, marks) : null)
     tr.apply({
       scrollIntoView: true,
-      selection: findSelection && findSelection(tr.doc) || findSelectionNear(tr.doc, tr.map(to), -1, true)
+      selection: findSelection && findSelection(tr.doc) || findSelectionNear(tr.doc.resolve(tr.map(to)), -1, true)
     })
     // :: () #path=ProseMirror#events#textInput
     // Fired when the user types text into the editor.
@@ -446,7 +446,7 @@ handlers.paste = (pm, e) => {
       else slice = new Slice(Fragment.from(wrap.copy(slice.content)), 0, slice.openRight + 1)
     }
     let tr = pm.tr.replace(start, sel.to, slice)
-    tr.apply({scrollIntoView: true, selection: findSelectionNear(tr.doc, tr.map(sel.to))})
+    tr.apply({scrollIntoView: true, selection: findSelectionNear(tr.doc.resolve(tr.map(sel.to)))})
   }
 }
 
@@ -559,8 +559,8 @@ handlers.drop = (pm, e) => {
       (found = pm.doc.nodeAt(insertPos)) && found.sameMarkup(slice.content.child(0))) {
     pm.setNodeSelection(insertPos)
   } else {
-    let left = findSelectionNear(pm.doc, insertPos, 1, true).from
-    let right = findSelectionNear(pm.doc, tr.map(start), -1, true).to
+    let left = findSelectionNear(pm.doc.resolve(insertPos), 1, true).from
+    let right = findSelectionNear(pm.doc.resolve(tr.map(start)), -1, true).to
     pm.setTextSelection(left, right)
   }
   pm.focus()

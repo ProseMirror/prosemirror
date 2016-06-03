@@ -94,16 +94,18 @@ export class ProseMirror {
   // `anchor` to `head`, or, if `head` is null, a cursor selection at
   // `anchor`.
   setTextSelection(anchor, head = anchor) {
-    this.checkPos(head, true)
-    if (anchor != head) this.checkPos(anchor, true)
-    this.setSelection(new TextSelection(anchor, head))
+    let $head = this.checkPos(head, true)
+    let $anchor = anchor != head ? this.checkPos(anchor, true) : $head
+    this.setSelection(new TextSelection($anchor, $head))
   }
 
   // :: (number)
   // Set the selection to a node selection on the node after `pos`.
   setNodeSelection(pos) {
-    this.checkPos(pos, false)
-    this.setSelection(NodeSelection.at(this.doc, pos))
+    let $pos = this.checkPos(pos, false), node = $pos.nodeAfter
+    if (!node || !node.type.selectable)
+      throw new RangeError("Trying to create a node selection that doesn't point at a selectable node")
+    this.setSelection(new NodeSelection($pos))
   }
 
   // :: (Selection)
@@ -215,11 +217,12 @@ export class ProseMirror {
   // and throw an error otherwise. When `textblock` is true, the position
   // must also fall within a textblock node.
   checkPos(pos, textblock) {
-    let valid = pos >= 0 && pos <= this.doc.content.size
-    if (valid && textblock)
-      valid = this.doc.resolve(pos).parent.isTextblock
-    if (!valid)
-      throw new RangeError("Position " + pos + " is not valid in current document")
+    if (pos < 0 || pos > this.doc.content.size)
+      throw new RangeError("Position " + pos + " is outside of the document")
+    let $pos = this.doc.resolve(pos)
+    if (textblock && !$pos.parent.isTextblock)
+      throw new RangeError("Position " + pos + " does not point into a textblock")
+    return $pos
   }
 
   // : (?Object) → Operation
