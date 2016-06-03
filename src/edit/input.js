@@ -4,7 +4,7 @@ const {fromDOMInContext, toHTML} = require("../htmlformat")
 const {Slice, Fragment} = require("../model")
 
 const {captureKeys} = require("./capturekeys")
-const {elt, contains} = require("../dom")
+const {elt, contains} = require("../util/dom")
 
 const {readInputChange, readCompositionChange} = require("./domchange")
 const {findSelectionNear, hasFocus} = require("./selection")

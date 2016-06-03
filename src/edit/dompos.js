@@ -1,4 +1,4 @@
-const {contains} = require("../dom")
+const {contains} = require("../util/dom")
 
 // : (ProseMirror, DOMNode) → number
 // Get the path for a given a DOM node in a document.

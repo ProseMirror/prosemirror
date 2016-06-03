@@ -1,4 +1,4 @@
-const {insertCSS} = require("../dom")
+const {insertCSS} = require("../util/dom")
 
 let svgCollection = null
 const svgBuilt = Object.create(null)

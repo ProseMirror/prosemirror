@@ -1,4 +1,4 @@
-const {elt, insertCSS} = require("../dom")
+const {elt, insertCSS} = require("../util/dom")
 const {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType, wrapInList} = require("../edit/commands")
 const {copyObj} = require("../util/obj")
 

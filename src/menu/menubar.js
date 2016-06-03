@@ -1,5 +1,5 @@
 const {Plugin} = require("../edit")
-const {elt, insertCSS} = require("../dom")
+const {elt, insertCSS} = require("../util/dom")
 const {UpdateScheduler} = require("../ui/update")
 
 const {renderGrouped} = require("./menu")

@@ -1,4 +1,4 @@
-const {elt, insertCSS} = require("../dom")
+const {elt, insertCSS} = require("../util/dom")
 
 const prefix = "ProseMirror-tooltip"
 

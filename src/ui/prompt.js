@@ -1,4 +1,4 @@
-const {elt, insertCSS} = require("../dom")
+const {elt, insertCSS} = require("../util/dom")
 
 // !! The `ui/prompt` module implements functionality for prompting
 // the user for input.

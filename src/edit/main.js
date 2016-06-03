@@ -2,7 +2,7 @@ require("./css")
 
 const {Map} = require("../util/map")
 const {eventMixin} = require("../util/event")
-const {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} = require("../dom")
+const {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} = require("../util/dom")
 
 const {parseOptions, initOptions, setOption} = require("./options")
 const {SelectionState, TextSelection, NodeSelection, findSelectionAtStart, hasFocus} = require("./selection")

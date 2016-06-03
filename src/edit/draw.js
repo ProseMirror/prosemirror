@@ -1,5 +1,5 @@
 const {toDOM, nodeToDOM} = require("../htmlformat")
-const {elt} = require("../dom")
+const {elt} = require("../util/dom")
 const browser = require("../util/browser")
 
 const {childContainer} = require("./dompos")
