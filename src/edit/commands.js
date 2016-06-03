@@ -596,3 +596,39 @@ function sinkListItem(nodeType) {
   }
 }
 exports.sinkListItem = sinkListItem
+
+// :: (NodeType) → (pm: ProseMirror, apply: ?bool) → bool
+// Create a command to lift the list item into a wrapping list (if
+// any) if the selection is empty and at the start of the item.
+function liftNested(nodeType) {
+  let lift = liftListItem(nodeType)
+  return function(pm, apply) {
+    let {$head, empty} = pm.selection
+    if (!empty) return false
+    if ($head.parentOffset > 0) return false
+
+    let {$from, $to} = pm.selection
+    let depth = $from.depth
+
+    // Skip if not a nested list
+    if (depth == null || depth < 3) return false
+
+    return lift(pm, apply)
+  }
+}
+exports.liftNested = liftNested
+
+// :: (NodeType) → (pm: ProseMirror, apply: ?bool) → bool
+// Create a command to sink the list item into an inner list if the
+// selection is empty and at the start of the item.
+function sinkNested(nodeType) {
+  let sink = sinkListItem(nodeType)
+  return function(pm, apply) {
+    let {$head, empty} = pm.selection
+    if (!empty) return false
+    if ($head.parentOffset > 0) return false
+
+    return sink(pm, apply)
+  }
+}
+exports.sinkNested = sinkNested

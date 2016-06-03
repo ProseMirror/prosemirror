@@ -1,7 +1,7 @@
 const Keymap = require("browserkeymap")
 const {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, HorizontalRule, Paragraph, CodeBlock, Heading, StrongMark, EmMark, CodeMark} = require("../schema")
 const browser = require("../util/browser")
-const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem, chain, newlineInCode} = require("../edit/commands")
+const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem, chain, newlineInCode, sinkNested, liftNested} = require("../edit/commands")
 const {Plugin} = require("../edit")
 
 // :: (Schema) → Keymap
@@ -50,6 +50,8 @@ function defaultSchemaKeymap(schema) {
     }
     if (node instanceof ListItem) {
       keys["Enter"] = splitListItem(node)
+      keys["Tab"] = sinkNested(node)
+      keys["Shift-Tab"] = liftNested(node)
       keys["Mod-["] = liftListItem(node)
       keys["Mod-]"] = sinkListItem(node)
     }
