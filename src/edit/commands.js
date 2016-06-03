@@ -1,6 +1,6 @@
-const {browser} = require("../dom")
 const {joinPoint, joinable, findWrapping, liftTarget, canSplit, ReplaceAroundStep} = require("../transform")
 const {Slice, Fragment, NodeRange} = require("../model")
+const browser = require("../util/browser")
 
 const {charCategory, isExtendingChar} = require("./char")
 const {findSelectionFrom, TextSelection, NodeSelection} = require("./selection")

@@ -1,5 +1,5 @@
 const Keymap = require("browserkeymap")
-const {browser} = require("../dom")
+const browser = require("../util/browser")
 
 const c = require("./commands")
 

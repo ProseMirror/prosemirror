@@ -1,9 +1,10 @@
 const Keymap = require("browserkeymap")
+const browser = require("../util/browser")
 const {fromDOMInContext, toHTML} = require("../htmlformat")
 const {Slice, Fragment} = require("../model")
 
 const {captureKeys} = require("./capturekeys")
-const {elt, browser, contains} = require("../dom")
+const {elt, contains} = require("../dom")
 
 const {readInputChange, readCompositionChange} = require("./domchange")
 const {findSelectionNear, hasFocus} = require("./selection")

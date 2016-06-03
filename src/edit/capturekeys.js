@@ -1,7 +1,7 @@
 const Keymap = require("browserkeymap")
 
 const {findSelectionFrom, verticalMotionLeavesTextblock, NodeSelection, TextSelection} = require("./selection")
-const {browser} = require("../dom")
+const browser = require("../util/browser")
 
 function nothing() {}
 

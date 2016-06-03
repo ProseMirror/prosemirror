@@ -1,6 +1,6 @@
 const Keymap = require("browserkeymap")
 const {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, HorizontalRule, Paragraph, CodeBlock, Heading, StrongMark, EmMark, CodeMark} = require("../schema")
-const {browser} = require("../dom")
+const browser = require("../util/browser")
 const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem, chain, newlineInCode} = require("../edit/commands")
 const {Plugin} = require("../edit")
 

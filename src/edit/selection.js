@@ -1,4 +1,5 @@
-const {contains, browser} = require("../dom")
+const {contains} = require("../dom")
+const browser = require("../util/browser")
 
 const {posFromDOM, DOMAfterPos, DOMFromPos, coordsAtPos} = require("./dompos")
 
