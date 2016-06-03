@@ -1,7 +1,7 @@
-import {doc, p, li, ul, em, a, blockquote} from "./build"
+const {doc, p, li, ul, em, a, blockquote} = require("./build")
 
-import {defTest} from "./tests"
-import {cmpNode, cmp} from "./cmp"
+const {defTest} = require("./tests")
+const {cmpNode, cmp} = require("./cmp")
 
 function t(name, doc, expect, openLeft, openRight) {
   defTest("slice_" + name, () => {

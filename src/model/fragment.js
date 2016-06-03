@@ -4,7 +4,7 @@
 // Fragments are persistent data structures. That means you should
 // _not_ mutate them or their content, but create new instances
 // whenever needed. The API tries to make this easy.
-export class Fragment {
+class Fragment {
   constructor(content, size) {
     this.content = content
     this.size = size || 0
@@ -224,6 +224,7 @@ export class Fragment {
     }
   }
 }
+exports.Fragment = Fragment
 
 const found = {index: 0, offset: 0}
 function retIndex(index, offset) {

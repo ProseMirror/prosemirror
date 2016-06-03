@@ -1,13 +1,13 @@
-var ProseMirror = require("../dist/edit").ProseMirror
-var fromDOM = require("../dist/htmlformat").fromDOM
-var schema = require("../dist/schema").defaultSchema
-var inputRules = require("../dist/inputrules")
-var defaultRules = require("../dist/schema/inputrules").defaultRules
-var menuBar = require("../dist/menu/menubar").menuBar
-var tooltipMenu = require("../dist/menu/tooltipmenu").tooltipMenu
-var schemaMenu = require("../dist/schema/menu")
-var schemaKeys = require("../dist/schema/keymap")
-var defaultStyle = require("../dist/schema/style").defaultSchemaStyle
+var ProseMirror = require("../src/edit").ProseMirror
+var fromDOM = require("../src/htmlformat").fromDOM
+var schema = require("../src/schema").defaultSchema
+var inputRules = require("../src/inputrules")
+var defaultRules = require("../src/schema/inputrules").defaultRules
+var menuBar = require("../src/menu/menubar").menuBar
+var tooltipMenu = require("../src/menu/tooltipmenu").tooltipMenu
+var schemaMenu = require("../src/schema/menu")
+var schemaKeys = require("../src/schema/keymap")
+var defaultStyle = require("../src/schema/style").defaultSchemaStyle
 
 var menu = schemaMenu.defaultMenuItems(schema)
 

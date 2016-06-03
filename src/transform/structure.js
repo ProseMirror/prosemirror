@@ -1,151 +1,107 @@
-import {Slice, Fragment} from "../model"
+const {Slice, Fragment} = require("../model")
 
-import {Transform} from "./transform"
-import {ReplaceStep, ReplaceAroundStep} from "./replace_step"
-
-// :: (Node, number, ?number) → bool
-// Tells you whether the range in the given positions' shared
-// ancestor, or any of _its_ ancestor nodes, can be lifted out of a
-// parent.
-export function canLift(doc, from, to) {
-  return !!findLiftable(doc.resolve(from), doc.resolve(to == null ? from : to))
-}
-
-function rangeDepth($from, $to) {
-  let shared = $from.sameDepth($to)
-  if ($from.node(shared).isTextblock || $from.pos == $to.pos) --shared
-  if (shared < 0 || $from.pos > $to.pos) return null
-  return shared
-}
+const {Transform} = require("./transform")
+const {ReplaceStep, ReplaceAroundStep} = require("./replace_step")
 
 function canCut(node, start, end) {
   return (start == 0 || node.canReplace(start, node.childCount)) &&
     (end == node.childCount || node.canReplace(0, start))
 }
 
-function findLiftable($from, $to) {
-  let shared = rangeDepth($from, $to)
-  if (!shared) return null
-  let parent = $from.node(shared), content = parent.content.cutByIndex($from.index(shared), $to.indexAfter(shared))
-  for (let depth = shared;; --depth) {
-    let node = $from.node(depth), index = $from.index(depth)
-    if (depth < shared && node.canReplace(index, index + 1, content))
-      return {depth, shared, unwrap: false}
-    if (depth == 0 || !canCut(node, index, index + 1)) break
-  }
-
-  if (parent.isBlock) {
-    let joined = Fragment.empty
-    content.forEach(node => joined = joined.append(node.content))
-    for (let depth = shared;; --depth) {
-      let node = $from.node(depth), index = $from.index(depth)
-      if (depth < shared && node.canReplace(index, index + 1, joined))
-        return {depth, shared, unwrap: true}
-      if (depth == 0 || !canCut(node, index, index + 1)) break
-    }
+// :: (NodeRange) → ?number
+// Try to find a target depth to which the content in the given range
+// can be lifted.
+function liftTarget(range) {
+  let parent = range.parent
+  let content = parent.content.cutByIndex(range.startIndex, range.endIndex)
+  for (let depth = range.depth;; --depth) {
+    let node = range.from.node(depth), index = range.from.index(depth), endIndex = range.to.indexAfter(depth)
+    if (depth < range.depth && node.canReplace(index, endIndex, content))
+      return depth
+    if (depth == 0 || !canCut(node, index, endIndex)) break
   }
 }
+exports.liftTarget = liftTarget
 
-// :: (number, ?number, ?bool) → Transform
-// Lift the nearest liftable ancestor of the [sibling
-// range](#Node.siblingRange) of the given positions out of its parent
-// (or do nothing if no such node exists). When `silent` is true, this
-// won't raise an error when the lift is impossible.
-Transform.prototype.lift = function(from, to = from, silent = false) {
-  let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
-  let liftable = findLiftable($from, $to)
-  if (!liftable) {
-    if (!silent) throw new RangeError("No valid lift target")
-    return this
-  }
+// :: (NodeRange, number) → Transform
+// Split the content in the given range off from its parent, if there
+// is subling content before or after it, and move it up the tree to
+// the depth specified by `target`. You'll probably want to use
+// `liftTarget` to compute `target`, in order to be sure the lift is
+// valid.
+Transform.prototype.lift = function(range, target) {
+  let {from: $from, to: $to, depth} = range
 
-  let {depth, shared, unwrap} = liftable
-
-  if (unwrap) {
-    let parent = $from.node(shared), pos = $to.after(shared + 1)
-    for (let i = $to.indexAfter(shared); pos > from; i--) {
-      let size = parent.child(i - 1).nodeSize
-      this.lift(pos - size + 1, pos - 1, silent)
-      pos -= size
-    }
-    return this
-  }
-
-  let gapStart = $from.before(shared + 1), gapEnd = $to.after(shared + 1)
+  let gapStart = $from.before(depth + 1), gapEnd = $to.after(depth + 1)
   let start = gapStart, end = gapEnd
 
-  let before = Fragment.empty, beforeDepth = 0
-  for (let d = shared, splitting = false; d > depth; d--)
+  let before = Fragment.empty, openLeft = 0
+  for (let d = depth, splitting = false; d > target; d--)
     if (splitting || $from.index(d) > 0) {
       splitting = true
       before = Fragment.from($from.node(d).copy(before))
-      beforeDepth++
+      openLeft++
     } else {
       start--
     }
-  let after = Fragment.empty, afterDepth = 0
-  for (let d = shared, splitting = false; d > depth; d--)
+  let after = Fragment.empty, openRight = 0
+  for (let d = depth, splitting = false; d > target; d--)
     if (splitting || $to.after(d + 1) < $to.end(d)) {
       splitting = true
       after = Fragment.from($to.node(d).copy(after))
-      afterDepth++
+      openRight++
     } else {
       end++
     }
 
   return this.step(new ReplaceAroundStep(start, end, gapStart, gapEnd,
-                                         new Slice(before.append(after), beforeDepth, afterDepth),
-                                         before.size - beforeDepth, true))
+                                         new Slice(before.append(after), openLeft, openRight),
+                                         before.size - openLeft, true))
 }
 
-// :: (Node, number, ?number, NodeType, ?Object) → bool
-// Determines whether the [sibling range](#Node.siblingRange) of the
-// given positions can be wrapped in the given node type.
-export function canWrap(doc, from, to, type, attrs) {
-  return !!checkWrap(doc.resolve(from), doc.resolve(to == null ? from : to), type, attrs)
-}
-
-function checkWrap($from, $to, type, attrs) {
-  let shared = rangeDepth($from, $to)
-  if (shared == null) return null
-  let parent = $from.node(shared), parentFrom = $from.index(shared), parentTo = $to.indexAfter(shared)
-  let around = parent.contentMatchAt(parentFrom).findWrapping(type, attrs)
+// :: (NodeRange, NodeType, ?Object) → ?[{type: NodeType, attrs: ?Object}]
+// Try to find a valid way to wrap the content in the given range in a
+// node of the given type. May introduce extra nodes around and inside
+// the wrapper node, if necessary.
+function findWrapping(range, nodeType, attrs) {
+  let parent = range.parent, parentFrom = range.startIndex, parentTo = range.endIndex
+  let around = parent.contentMatchAt(parentFrom).findWrapping(nodeType, attrs)
   if (!around) return null
-  if (!parent.canReplaceWith(parentFrom, parentTo, around.length ? around[0].type : type,
-                             around.length ? around[0].attrs : attrs)) return null
+  let wrappers = around.concat({type: nodeType, attrs}), wrapLen = wrappers.length
+  if (!parent.canReplaceWith(parentFrom, parentTo, wrappers[0].type, wrappers[0].attrs))
+    return null
   let inner = parent.child(parentFrom)
-  let inside = type.contentExpr.start(attrs || type.defaultAttrs).findWrapping(inner.type, inner.attrs)
+  let inside = nodeType.contentExpr.start(attrs).findWrapping(inner.type, inner.attrs)
   if (!inside) return null
-  let lastInside = inside[inside.length - 1]
-  let innerMatch = (lastInside ? lastInside.type : type).contentExpr.start(lastInside ? lastInside.attrs : attrs)
+  wrappers = wrappers.concat(inside)
+  let last = wrappers[wrappers.length - 1]
+  let innerMatch = last.type.contentExpr.start(last.attrs)
   for (let i = parentFrom; i < parentTo; i++)
-    if (!(innerMatch = innerMatch.matchNode(parent.child(i)))) return null
-  return {shared, around, inside}
+    innerMatch = innerMatch && innerMatch.matchNode(parent.child(i))
+  if (!innerMatch || !innerMatch.validEnd()) return null
+  wrappers.splitFrom = wrapLen
+  return wrappers
 }
+exports.findWrapping = findWrapping
 
-// :: (number, ?number, NodeType, ?Object) → Transform
-// Wrap the [sibling range](#Node.siblingRange) of the given positions
-// in a node of the given type, with the given attributes (if
-// possible).
-Transform.prototype.wrap = function(from, to = from, type, wrapAttrs) {
-  let $from = this.doc.resolve(from), $to = this.doc.resolve(to)
-  let check = checkWrap($from, $to, type, wrapAttrs)
-  if (!check) throw new RangeError("Wrap not possible")
-  let {shared, around, inside} = check
+// :: (NodeRange, [{type: NodeType, attrs: ?Object}]) → Transform
+// Wrap the given [range](#NodeRange) in the given set of wrappers.
+// The wrappers are assumed to be valid in this position, and should
+// probably be computed with `findWrapping`.
+Transform.prototype.wrap = function(range, wrappers) {
+  let content = Fragment.empty
+  for (let i = wrappers.length - 1; i >= 0; i--)
+    content = Fragment.from(wrappers[i].type.create(wrappers[i].attrs, content))
 
-  let content = Fragment.empty, open = inside.length + 1 + around.length
-  for (let i = inside.length - 1; i >= 0; i--) content = Fragment.from(inside[i].type.create(inside[i].attrs, content))
-  content = Fragment.from(content.size ? type.createChecked(wrapAttrs, content) : type.create(wrapAttrs))
-  for (let i = around.length - 1; i >= 0; i--) content = Fragment.from(around[i].type.create(around[i].attrs, content))
+  let start = range.start, end = range.end
+  this.step(new ReplaceAroundStep(start, end, start, end, new Slice(content, 0, 0), wrappers.length, true))
 
-  let start = $from.before(shared + 1), end = $to.after(shared + 1)
-  this.step(new ReplaceAroundStep(start, end, start, end, new Slice(content, 0, 0), open, true))
-
-  if (inside.length) {
-    let splitPos = start + open, parent = $from.node(shared)
-    for (let i = $from.index(shared), e = $to.index(shared) + 1, first = true; i < e; i++, first = false) {
-      if (!first) this.split(splitPos, inside.length)
-      splitPos += parent.child(i).nodeSize + (first ? 0 : 2 * inside.length)
+  let splitDepth = wrappers.length - wrappers.splitFrom
+  if (splitDepth) {
+    let splitPos = start + wrappers.length, parent = range.parent
+    for (let i = range.startIndex, e = range.endIndex, first = true; i < e; i++, first = false) {
+      if (!first) this.split(splitPos, splitDepth)
+      splitPos += parent.child(i).nodeSize + (first ? 0 : 2 * splitDepth)
     }
   }
   return this
@@ -188,7 +144,7 @@ Transform.prototype.setNodeType = function(pos, type, attrs) {
 
 // :: (Node, number, ?NodeType, ?Object) → bool
 // Check whether splitting at the given position is allowed.
-export function canSplit(doc, pos, depth = 1, typeAfter, attrsAfter) {
+function canSplit(doc, pos, depth = 1, typeAfter, attrsAfter) {
   let $pos = doc.resolve(pos), base = $pos.depth - depth
   if (base < 0 ||
       !$pos.parent.canReplace($pos.index(), $pos.parent.childCount) ||
@@ -206,6 +162,7 @@ export function canSplit(doc, pos, depth = 1, typeAfter, attrsAfter) {
   return $pos.node(base).canReplaceWith(index, index, typeAfter || $pos.node(base + 1).type,
                                         typeAfter ? attrsAfter : $pos.node(base + 1).attrs)
 }
+exports.canSplit = canSplit
 
 // :: (number, ?number, ?NodeType, ?Object) → Transform
 // Split the node at the given position, and optionally, if `depth` is
@@ -225,11 +182,12 @@ Transform.prototype.split = function(pos, depth = 1, typeAfter, attrsAfter) {
 // :: (Node, number) → bool
 // Test whether the blocks before and after a given position can be
 // joined.
-export function joinable(doc, pos) {
+function joinable(doc, pos) {
   let $pos = doc.resolve(pos), index = $pos.index()
   return canJoin($pos.nodeBefore, $pos.nodeAfter) &&
     $pos.parent.canReplace(index, index + 1)
 }
+exports.joinable = joinable
 
 function canJoin(a, b) {
   return a && b && !a.isText && a.canAppend(b)
@@ -239,7 +197,7 @@ function canJoin(a, b) {
 // Find an ancestor of the given position that can be joined to the
 // block before (or after if `dir` is positive). Returns the joinable
 // point, if any.
-export function joinPoint(doc, pos, dir = -1) {
+function joinPoint(doc, pos, dir = -1) {
   let $pos = doc.resolve(pos)
   for (let d = $pos.depth;; d--) {
     let before, after
@@ -258,6 +216,7 @@ export function joinPoint(doc, pos, dir = -1) {
     pos = dir < 0 ? $pos.before(d) : $pos.after(d)
   }
 }
+exports.joinPoint = joinPoint
 
 // :: (number, ?number, ?bool) → Transform
 // Join the blocks around the given position. When `silent` is true,
@@ -276,7 +235,7 @@ Transform.prototype.join = function(pos, depth = 1, silent = false) {
 // near `pos`, by searching up the node hierarchy when `pos` itself
 // isn't a valid place but is at the start or end of a node. Return
 // null if no position was found.
-export function insertPoint(doc, pos, nodeType, attrs) {
+function insertPoint(doc, pos, nodeType, attrs) {
   let $pos = doc.resolve(pos)
   if ($pos.parent.canReplaceWith($pos.index(), $pos.index(), nodeType, attrs)) return pos
 
@@ -293,3 +252,4 @@ export function insertPoint(doc, pos, nodeType, attrs) {
       if (index < $pos.node(d).childCount) return null
     }
 }
+exports.insertPoint = insertPoint

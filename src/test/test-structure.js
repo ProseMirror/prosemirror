@@ -1,9 +1,9 @@
-import {Schema, Block, Text, Attribute, Slice} from "../model"
-import {EmMark} from "../schema"
-import {canSplit, canLift, canWrap, Transform} from "../transform"
+const {Schema, Block, Text, Attribute, Slice} = require("../model")
+const {EmMark} = require("../schema")
+const {canSplit, liftTarget, findWrapping, Transform} = require("../transform")
 
-import {defTest} from "./tests"
-import {cmpNode, is} from "./cmp"
+const {defTest} = require("./tests")
+const {cmpNode, is} = require("./cmp")
 
 const schema = new Schema({
   nodes: {
@@ -90,14 +90,20 @@ noSplit(107)
 noSplit(103)
 noSplit(115)
 
+function range(pos, end) {
+  return doc.resolve(pos).blockRange(end == null ? undefined : doc.resolve(end))
+}
+
 function lift(pos, end) {
   defTest("struct_lift_can_" + pos, () => {
-    is(canLift(doc, pos, end), "canLift unexpectedly returned false")
+    let r = range(pos, end)
+    is((r && liftTarget(r)) != null, "liftTarget unexpectedly returned null")
   })
 }
 function noLift(pos, end) {
   defTest("struct_lift_cant_" + pos, () => {
-    is(!canLift(doc, pos, end), "canLift unexpectedly returned true")
+    let r = range(pos, end)
+    is((r && liftTarget(r)) == null, "liftTarget unexpectedly returned a value")
   })
 }
 
@@ -111,12 +117,14 @@ noLift(94)
 
 function wrap(pos, end, type) {
   defTest("struct_wrap_can_" + pos, () => {
-    is(canWrap(doc, pos, end, schema.nodes[type]), "canWrap unexpectedly returned false")
+    let r = range(pos, end), wrapping = r && findWrapping(r, schema.nodes[type])
+    is(!!wrapping, "findWrapping unexpectedly returned null")
   })
 }
 function noWrap(pos, end, type) {
   defTest("struct_wrap_cant_" + pos, () => {
-    is(!canWrap(doc, pos, end, schema.nodes[type]), "canWrap unexpectedly returned true")
+    let r = range(pos, end), wrapping = r && findWrapping(r, schema.nodes[type])
+    is(!wrapping, "findWrapping unexpectedly returned a result")
   })
 }
 

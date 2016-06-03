@@ -1,4 +1,4 @@
-export const Map = window.Map || class {
+const Map = window.Map || class {
   constructor() { this.content = [] }
   set(key, value) {
     let found = this.find(key)
@@ -23,3 +23,4 @@ export const Map = window.Map || class {
     this.content.length = 0
   }
 }
+exports.Map = Map

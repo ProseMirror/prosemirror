@@ -1,7 +1,7 @@
-import {Transform, Step, Remapping, TransformError} from "../transform"
-import {Node} from "../model"
-import {cmpNode, cmpStr} from "./cmp"
-import {Failure} from "./failure"
+const {Transform, Step, Remapping, TransformError, liftTarget, findWrapping} = require("../transform")
+const {Node} = require("../model")
+const {cmpNode, cmpStr} = require("./cmp")
+const {Failure} = require("./failure")
 
 function tag(tr, name) {
   let calc = /^(.*)([+-]\d+)$/.exec(name), extra = 0
@@ -13,6 +13,11 @@ function tag(tr, name) {
 
 function mrk(tr, mark) {
   return mark && (typeof mark == "string" ? tr.doc.type.schema.mark(mark) : mark)
+}
+
+function range(tr, from, to) {
+  let $from = tr.doc.resolve(tag(tr, from || "a")), toTag = tag(tr, to || "b")
+  return $from.blockRange(toTag == null ? undefined : tr.doc.resolve(toTag))
 }
 
 class DelayedTransform {
@@ -54,11 +59,17 @@ class DelayedTransform {
   }
 
   lift(from, to) {
-    return this.plus(tr => tr.lift(tag(tr, from || "a"), tag(tr, to || "b")))
+    return this.plus(tr => {
+      let r = range(tr, from, to)
+      return tr.lift(r, liftTarget(r))
+    })
   }
 
   wrap(type, attrs, from, to) {
-    return this.plus(tr => tr.wrap(tag(tr, from || "a"), tag(tr, to || "b"), tr.doc.type.schema.nodeType(type), attrs))
+    return this.plus(tr => {
+      let r = range(tr, from, to)
+      return tr.wrap(r, findWrapping(r, tr.doc.type.schema.nodeType(type), attrs))
+    })
   }
 
   blockType(type, attrs, from, to) {
@@ -84,7 +95,8 @@ class DelayedTransform {
   }
 }
 
-export const tr = new DelayedTransform([])
+const tr = new DelayedTransform([])
+exports.tr = tr
 
 function invert(transform) {
   let out = new Transform(transform.doc)
@@ -112,7 +124,7 @@ function testStepJSON(tr) {
   cmpNode(tr.doc, newTR.doc)
 }
 
-export function testTransform(delayedTr, doc, expect) {
+function testTransform(delayedTr, doc, expect) {
   let tr
   try {
     tr = delayedTr.get(doc)
@@ -133,3 +145,4 @@ export function testTransform(delayedTr, doc, expect) {
   for (var tag in expect.tag) // FIXME Babel 6.5.1 screws this up when I use let
     testMapping(maps, tr.before.tag[tag], expect.tag[tag], tag)
 }
+exports.testTransform = testTransform

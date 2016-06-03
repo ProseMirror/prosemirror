@@ -1,7 +1,7 @@
-import {doc, p, em, blockquote} from "./build"
+const {doc, p, em, blockquote} = require("./build")
 
-import {defTest} from "./tests"
-import {cmpNode, cmp} from "./cmp"
+const {defTest} = require("./tests")
+const {cmpNode, cmp} = require("./cmp")
 
 const testDoc = doc(p("ab"), blockquote(p(em("cd"), "ef")))
 const _doc = {node: testDoc, start: 0, end: 12}

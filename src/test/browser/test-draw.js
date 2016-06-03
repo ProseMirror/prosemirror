@@ -1,6 +1,6 @@
-import {namespace} from "./def"
-import {doc, pre, h1, p} from "../build"
-import {cmp, cmpStr} from "../cmp"
+const {namespace} = require("./def")
+const {doc, pre, h1, p} = require("../build")
+const {cmp, cmpStr} = require("../cmp")
 
 const test = namespace("draw")
 

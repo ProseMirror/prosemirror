@@ -1,18 +1,20 @@
-import {findDiffStart, findDiffEnd, Mark} from "../model"
-import {fromDOM} from "../htmlformat"
-import {mapThroughResult} from "../transform/map"
+const {findDiffStart, findDiffEnd, Mark} = require("../model")
+const {fromDOM} = require("../htmlformat")
+const {mapThroughResult} = require("../transform/map")
 
-import {findSelectionFrom, selectionFromDOM} from "./selection"
-import {DOMFromPos} from "./dompos"
+const {findSelectionFrom, selectionFromDOM} = require("./selection")
+const {DOMFromPos} = require("./dompos")
 
-export function readInputChange(pm) {
+function readInputChange(pm) {
   pm.ensureOperation({readSelection: false})
   return readDOMChange(pm, rangeAroundSelection(pm))
 }
+exports.readInputChange = readInputChange
 
-export function readCompositionChange(pm, margin) {
+function readCompositionChange(pm, margin) {
   return readDOMChange(pm, rangeAroundComposition(pm, margin))
 }
+exports.readCompositionChange = readCompositionChange
 
 // Note that all referencing and parsing is done with the
 // start-of-operation selection and document, since that's the one
@@ -54,7 +56,7 @@ function isAtStart($pos, depth) {
 }
 
 function rangeAroundSelection(pm) {
-  let {sel, doc} = pm.operation, $from = doc.resolve(sel.from), $to = doc.resolve(sel.to)
+  let {$from, $to} = pm.operation.sel
   // When the selection is entirely inside a text block, use
   // rangeAroundComposition to get a narrow range.
   if ($from.sameParent($to) && $from.parent.isTextblock && $from.parentOffset && $to.parentOffset < $to.parent.content.size)
@@ -74,8 +76,7 @@ function rangeAroundSelection(pm) {
 }
 
 function rangeAroundComposition(pm, margin) {
-  let {sel, doc} = pm.operation
-  let $from = doc.resolve(sel.from), $to = doc.resolve(sel.to)
+  let {$from, $to} = pm.operation.sel
   if (!$from.sameParent($to)) return rangeAroundSelection(pm)
   let startOff = Math.max(0, $from.parentOffset - margin)
   let size = $from.parent.content.size
@@ -117,7 +118,7 @@ function readDOMChange(pm, range) {
   // If this looks like the effect of pressing Enter, just dispatch an
   // Enter key instead.
   if (!$from.sameParent($to) && $from.pos < parsed.content.size &&
-      (nextSel = findSelectionFrom(parsed, $from.pos + 1, 1, true)) &&
+      (nextSel = findSelectionFrom(parsed.resolve($from.pos + 1), 1, true)) &&
       nextSel.head == $to.pos) {
     pm.input.dispatchKey("Enter")
   } else if ($from.sameParent($to) && $from.parent.isTextblock &&
@@ -126,10 +127,8 @@ function readDOMChange(pm, range) {
   } else {
     let slice = parsed.slice(change.start - range.from, change.endB - range.from)
     let tr = pm.tr.replace(fromMapped.pos, toMapped.pos, slice)
-    tr.apply({
-      scrollIntoView: true,
-      selection: domSel(pm, tr.doc)
-    })
+    tr.setSelection(domSel(pm, tr.doc))
+    tr.applyAndScroll()
   }
   return true
 }

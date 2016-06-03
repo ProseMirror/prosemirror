@@ -1,18 +1,18 @@
-import "./css"
+require("./css")
 
-import {Map} from "../util/map"
-import {eventMixin} from "../util/event"
-import {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} from "../dom"
+const {Map} = require("../util/map")
+const {eventMixin} = require("../util/event")
+const {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} = require("../util/dom")
 
-import {parseOptions, initOptions, setOption} from "./options"
-import {SelectionState, TextSelection, NodeSelection,
-        findSelectionAtStart, hasFocus} from "./selection"
-import {scrollIntoView, posAtCoords, coordsAtPos} from "./dompos"
-import {draw, redraw} from "./draw"
-import {Input} from "./input"
-import {History} from "./history"
-import {RangeStore, MarkedRange} from "./range"
-import {EditorTransform} from "./transform"
+const {parseOptions, initOptions, setOption} = require("./options")
+const {SelectionState, TextSelection, NodeSelection, findSelectionAtStart, hasFocus} = require("./selection")
+const {scrollIntoView, posAtCoords, coordsAtPos} = require("./dompos")
+const {draw, redraw, DIRTY_REDRAW, DIRTY_RESCAN} = require("./draw")
+const {Input} = require("./input")
+const {History} = require("./history")
+const {RangeStore, MarkedRange} = require("./range")
+const {EditorTransform} = require("./transform")
+const {EditorScheduler, UpdateScheduler} = require("./update")
 
 // ;; This is the class used to represent instances of the editor. A
 // ProseMirror editor holds a [document](#Node) and a
@@ -21,7 +21,7 @@ import {EditorTransform} from "./transform"
 //
 // Contains event methods (`on`, etc) from the [event
 // mixin](#EventMixin).
-export class ProseMirror {
+class ProseMirror {
   // :: (Object)
   // Construct a new editor from a set of [options](#edit_options)
   // and, if it has a [`place`](#place) option, add it to the
@@ -60,6 +60,7 @@ export class ProseMirror {
     this.operation = null
     this.dirtyNodes = new Map // Maps node object to 1 (re-scan content) or 2 (redraw entirely)
     this.flushScheduled = null
+    this.centralScheduler = new EditorScheduler(this)
 
     this.sel = new SelectionState(this, findSelectionAtStart(this.doc))
     this.accurateSelection = false
@@ -94,16 +95,18 @@ export class ProseMirror {
   // `anchor` to `head`, or, if `head` is null, a cursor selection at
   // `anchor`.
   setTextSelection(anchor, head = anchor) {
-    this.checkPos(head, true)
-    if (anchor != head) this.checkPos(anchor, true)
-    this.setSelection(new TextSelection(anchor, head))
+    let $head = this.checkPos(head, true)
+    let $anchor = anchor != head ? this.checkPos(anchor, true) : $head
+    this.setSelection(new TextSelection($anchor, $head))
   }
 
   // :: (number)
   // Set the selection to a node selection on the node after `pos`.
   setNodeSelection(pos) {
-    this.checkPos(pos, false)
-    this.setSelection(NodeSelection.at(this.doc, pos))
+    let $pos = this.checkPos(pos, false), node = $pos.nodeAfter
+    if (!node || !node.type.selectable)
+      throw new RangeError("Trying to create a node selection that doesn't point at a selectable node")
+    this.setSelection(new NodeSelection($pos))
   }
 
   // :: (Selection)
@@ -164,12 +167,12 @@ export class ProseMirror {
   // [`tr` getter](#ProseMirror.tr)) to the document in the editor.
   // The following options are supported:
   //
-  // **`selection`**`: ?Selection`
-  //   : A new selection to set after the transformation is applied.
-  //
   // **`scrollIntoView`**: ?bool
   //   : When true, scroll the selection into view on the next
   //     [redraw](#ProseMirror.flush).
+  //
+  // **`selection`**`: ?Selection`
+  //   : A new selection to set after the transformation is applied.
   //
   // **`filter`**: ?bool
   //   : When set to false, suppresses the ability of the
@@ -177,8 +180,6 @@ export class ProseMirror {
   //     to cancel this transform.
   //
   // Returns the transform itself.
-  //
-  // Has the following property:
   apply(transform, options = nullOptions) {
     if (!transform.steps.length) return transform
     if (!transform.docs[0].eq(this.doc))
@@ -199,7 +200,7 @@ export class ProseMirror {
     // [steps](#Step) to the transform, but it it not allowed to
     // interfere with the editor's state.
     this.signal("beforeTransform", transform, options)
-    this.updateDoc(transform.doc, transform, options.selection)
+    this.updateDoc(transform.doc, transform, options.selection || transform.selection)
     // :: (transform: Transform, selectionBeforeTransform: Selection, options: Object) #path=ProseMirror#events#transform
     // Signals that a (non-empty) transformation has been aplied to
     // the editor. Passes the `Transform`, the selection before the
@@ -215,11 +216,12 @@ export class ProseMirror {
   // and throw an error otherwise. When `textblock` is true, the position
   // must also fall within a textblock node.
   checkPos(pos, textblock) {
-    let valid = pos >= 0 && pos <= this.doc.content.size
-    if (valid && textblock)
-      valid = this.doc.resolve(pos).parent.isTextblock
-    if (!valid)
-      throw new RangeError("Position " + pos + " is not valid in current document")
+    if (pos < 0 || pos > this.doc.content.size)
+      throw new RangeError("Position " + pos + " is outside of the document")
+    let $pos = this.doc.resolve(pos)
+    if (textblock && !$pos.parent.isTextblock)
+      throw new RangeError("Position " + pos + " does not point into a textblock")
+    return $pos
   }
 
   // : (?Object) → Operation
@@ -369,10 +371,9 @@ export class ProseMirror {
   setMark(type, to, attrs) {
     let sel = this.selection
     if (sel.empty) {
-      let marks = this.activeMarks(), $head
+      let marks = this.activeMarks()
       if (to == null) to = !type.isInSet(marks)
-      if (to && ($head = this.doc.resolve(sel.head)) &&
-          !$head.parent.contentMatchAt($head.index()).allowsMark(type)) return
+      if (to && !sel.$head.parent.contentMatchAt(sel.$head.index()).allowsMark(type)) return
       this.input.storedMarks = to ? type.create(attrs).addToSet(marks) : type.removeFromSet(marks)
       // :: () #path=ProseMirror#events#activeMarkChange
       // Fired when the set of [active marks](#ProseMirror.activeMarks) changes.
@@ -466,14 +467,39 @@ export class ProseMirror {
     let trans = this.options.translate
     return trans ? trans(string) : string
   }
+
+  // :: (() -> ?() -> ?())
+  // Schedule a DOM update function to be called either the next time
+  // the editor is [flushed](#ProseMirror.flush), or if no flush happens
+  // immediately, after 200 milliseconds. This is used to synchronize
+  // DOM updates and read to prevent [DOM layout
+  // thrashing](http://eloquentjavascript.net/13_dom.html#p_nnTb9RktUT).
+  //
+  // Often, your updates will need to both read and write from the DOM.
+  // To schedule such access in lockstep with other modules, the
+  // function you give can return another function, which may return
+  // another function, and so on. The first call should _write_ to the
+  // DOM, and _not read_. If a _read_ needs to happen, that should be
+  // done in the function returned from the first call. If that has to
+  // be followed by another _write_, that should be done in a function
+  // returned from the second function, and so on.
+  scheduleDOMUpdate(f) { this.centralScheduler.set(f) }
+
+  // :: (() -> ?() -> ?())
+  // Cancel an update scheduled with `scheduleDOMUpdate`. Calling this
+  // with a function that is not actually scheduled is harmless.
+  unscheduleDOMUpdate(f) { this.centralScheduler.unset(f) }
+
+  // :: (string, () -> ?()) → UpdateScheduler
+  // Creates an update scheduler for this given editor. `events` should
+  // be a space-separated list of event names (for example
+  // `"selectionChange change"`). `start` should be a function as
+  // expected by [`scheduleDOMUpdate`](ProseMirror.scheduleDOMUpdate).
+  updateScheduler(events, start) {
+    return new UpdateScheduler(this, events, start)
+  }
 }
-
-// :: Object
-// The object `{scrollIntoView: true}`, which is a common argument to
-// pass to `ProseMirror.apply` or `EditorTransform.apply`.
-ProseMirror.prototype.apply.scroll = {scrollIntoView: true}
-
-export const DIRTY_RESCAN = 1, DIRTY_REDRAW = 2
+exports.ProseMirror = ProseMirror
 
 const nullOptions = {}
 

@@ -1,11 +1,12 @@
-export {Transform, TransformError} from "./transform"
-export {Step, StepResult} from "./step"
-export {canWrap, canLift, joinPoint, joinable, canSplit, insertPoint} from "./structure"
-export {PosMap, MapResult, Remapping} from "./map"
-export {AddMarkStep, RemoveMarkStep} from "./mark_step"
-export {ReplaceStep, ReplaceAroundStep} from "./replace_step"
-import "./mark"
-import "./replace"
+;({Transform: exports.Transform, TransformError: exports.TransformError} = require("./transform"))
+;({Step: exports.Step, StepResult: exports.StepResult} = require("./step"))
+;({joinPoint: exports.joinPoint, joinable: exports.joinable, canSplit: exports.canSplit,
+   insertPoint: exports.insertPoint, liftTarget: exports.liftTarget, findWrapping: exports.findWrapping} = require("./structure"))
+;({PosMap: exports.PosMap, MapResult: exports.MapResult, Remapping: exports.Remapping} = require("./map"))
+;({AddMarkStep: exports.AddMarkStep, RemoveMarkStep: exports.RemoveMarkStep} = require("./mark_step"))
+;({ReplaceStep: exports.ReplaceStep, ReplaceAroundStep: exports.ReplaceAroundStep} = require("./replace_step"))
+require("./mark")
+require("./replace")
 
 // !! This module defines a way to transform documents. Transforming
 // happens in `Step`s, which are atomic, well-defined modifications to

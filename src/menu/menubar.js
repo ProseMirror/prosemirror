@@ -1,8 +1,7 @@
-import {Plugin} from "../edit"
-import {elt, insertCSS} from "../dom"
-import {UpdateScheduler} from "../ui/update"
+const {Plugin} = require("../edit")
+const {elt, insertCSS} = require("../util/dom")
 
-import {renderGrouped} from "./menu"
+const {renderGrouped} = require("./menu")
 
 const prefix = "ProseMirror-menubar"
 
@@ -15,7 +14,7 @@ class MenuBar {
     this.maxHeight = 0
     this.widthForMaxHeight = 0
 
-    this.updater = new UpdateScheduler(pm, "selectionChange change activeMarkChange commandsChanged", () => this.update())
+    this.updater = pm.updateScheduler("selectionChange change activeMarkChange commandsChanged", () => this.update())
     this.content = config.content
     this.updater.force()
 
@@ -117,10 +116,11 @@ function findWrappingScrollable(node) {
 //
 // **`content`**`: [`[`MenuGroup`](#MenuGroup)`]`
 //   : Determines the content of the menu.
-export const menuBar = new Plugin(MenuBar, {
+const menuBar = new Plugin(MenuBar, {
   content: [],
   float: false
 })
+exports.menuBar = menuBar
 
 insertCSS(`
 .${prefix} {

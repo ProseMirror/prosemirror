@@ -1,8 +1,11 @@
-import {toDOM, nodeToDOM} from "../htmlformat"
-import {elt, browser} from "../dom"
+const {toDOM, nodeToDOM} = require("../htmlformat")
+const {elt} = require("../util/dom")
+const browser = require("../util/browser")
 
-import {DIRTY_REDRAW} from "./main"
-import {childContainer} from "./dompos"
+const {childContainer} = require("./dompos")
+
+const DIRTY_RESCAN = 1, DIRTY_REDRAW = 2
+exports.DIRTY_RESCAN = DIRTY_RESCAN; exports.DIRTY_REDRAW = DIRTY_REDRAW
 
 function options(ranges) {
   return {
@@ -75,10 +78,11 @@ function splitSpan(span, at) {
   return newNode
 }
 
-export function draw(pm, doc) {
+function draw(pm, doc) {
   pm.content.textContent = ""
   pm.content.appendChild(toDOM(doc, options(pm.ranges.activeRangeTracker())))
 }
+exports.draw = draw
 
 function adjustTrailingHacks(dom, node) {
   let needs = node.content.size == 0 || node.lastChild.type.isBR ||
@@ -108,7 +112,7 @@ function movePast(dom) {
   return next
 }
 
-export function redraw(pm, dirty, doc, prev) {
+function redraw(pm, dirty, doc, prev) {
   if (dirty.get(prev) == DIRTY_REDRAW) return draw(pm, doc)
 
   let opts = options(pm.ranges.activeRangeTracker())
@@ -160,6 +164,7 @@ export function redraw(pm, dirty, doc, prev) {
   }
   scan(pm.content, doc, prev, 0)
 }
+exports.redraw = redraw
 
 function iosHacks(dom) {
   if (dom.nodeName == "UL" || dom.nodeName == "OL") {

@@ -1,9 +1,8 @@
-import {Plugin} from "../edit"
-import {elt, insertCSS} from "../dom"
-import {Tooltip} from "../ui/tooltip"
-import {UpdateScheduler} from "../ui/update"
+const {Plugin} = require("../edit")
+const {elt, insertCSS} = require("../util/dom")
+const {Tooltip} = require("../ui/tooltip")
 
-import {renderGrouped} from "./menu"
+const {renderGrouped} = require("./menu")
 
 const classPrefix = "ProseMirror-tooltipmenu"
 
@@ -13,7 +12,7 @@ class TooltipMenu {
     this.config = config
 
     this.selectedBlockMenu = this.config.selectedBlockMenu
-    this.updater = new UpdateScheduler(pm, "change selectionChange blur focus commandsChanged", () => this.update())
+    this.updater = pm.updateScheduler("change selectionChange blur focus commandsChanged", () => this.update())
     this.onContextMenu = this.onContextMenu.bind(this)
     pm.content.addEventListener("contextmenu", this.onContextMenu)
 
@@ -36,7 +35,7 @@ class TooltipMenu {
   }
 
   update() {
-    let {empty, node, from, to} = this.pm.selection, link
+    let {empty, node, $from, to} = this.pm.selection, link
     if (!this.pm.hasFocus()) {
       this.tooltip.close()
     } else if (node && node.isBlock) {
@@ -46,13 +45,11 @@ class TooltipMenu {
       }
     } else if (!empty) {
       return () => {
-        let coords = node ? this.nodeSelectionCoords() : this.selectionCoords(), $from
-        let showBlock = this.selectedBlockMenu &&
-            ($from = this.pm.doc.resolve(from)).parentOffset == 0 &&
-            $from.end() == to
+        let coords = node ? this.nodeSelectionCoords() : this.selectionCoords()
+        let showBlock = this.selectedBlockMenu && $from.parentOffset == 0 && $from.end() == to
         return () => this.show(showBlock ? this.selectedBlockContent : this.config.inlineContent, coords)
       }
-    } else if (this.selectedBlockMenu && this.pm.doc.resolve(from).parent.content.size == 0) {
+    } else if (this.selectedBlockMenu && $from.parent.content.size == 0) {
       return () => {
         let coords = this.selectionCoords()
         return () => this.show(this.config.blockContent, coords)
@@ -189,7 +186,7 @@ function bottomCenterOfSelection() {
 // **`position`**`: string`
 //  : Where, relative to the selection, the tooltip should appear.
 //    Defaults to `"above"`. Can also be set to `"below"`.
-export const tooltipMenu = new Plugin(TooltipMenu, {
+const tooltipMenu = new Plugin(TooltipMenu, {
   showLinks: true,
   selectedBlockMenu: false,
   inlineContent: [],
@@ -197,6 +194,7 @@ export const tooltipMenu = new Plugin(TooltipMenu, {
   selectedBlockContent: null,
   position: "above"
 })
+exports.tooltipMenu = tooltipMenu
 
 insertCSS(`
 

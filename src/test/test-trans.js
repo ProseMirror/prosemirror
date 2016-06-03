@@ -1,9 +1,9 @@
-import {defaultSchema as schema} from "../schema"
+const {defaultSchema: schema} = require("../schema")
 
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, img, img2, dataImage, br, hr} from "./build"
+const {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, img, img2, dataImage, br, hr} = require("./build")
 
-import {defTest} from "./tests"
-import {tr, testTransform} from "./trans"
+const {defTest} = require("./tests")
+const {tr, testTransform} = require("./trans")
 
 function add(name, doc, expect, mark) {
   defTest("addMark_" + name, () => testTransform(tr.addMark(mark), doc, expect))
@@ -247,15 +247,9 @@ lift("deeper",
 lift("from_list",
      doc(ul(li(p("one")), li(p("two<a>")), li(p("three")))),
      doc(ul(li(p("one"))), p("two<a>"), ul(li(p("three")))))
-lift("multiple_from_list",
-     doc(ul("<1>", li(p("one<a>")), li(p("two<b>")), li(p("three<after>")))),
-     doc("<1>", p("one<a>"), p("two<b>"), ul(li(p("three<after>")))))
 lift("end_of_list",
      doc(ul(li(p("a")), li(p("b<a>")), "<1>")),
      doc(ul(li(p("a"))), p("b<a>"), "<1>"))
-lift("multiple_from_list_with_two_items",
-     doc(ul(li(p("one<a>"), p("<half>half")), li(p("two<b>")), li(p("three<after>")))),
-     doc(p("one<a>"), p("<half>half"), p("two<b>"), ul(li(p("three<after>")))))
 
 function wrap(name, doc, expect, type, attrs) {
   defTest("wrap_" + name, () => testTransform(tr.wrap(type, attrs), doc, expect))

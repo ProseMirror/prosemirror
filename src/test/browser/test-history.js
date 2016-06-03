@@ -1,8 +1,8 @@
-import {namespace, dispatch} from "./def"
-import {doc, p, ul, li} from "../build"
-import {is, cmp, cmpStr, cmpNode} from "../cmp"
+const {namespace, dispatch} = require("./def")
+const {doc, p, ul, li} = require("../build")
+const {is, cmp, cmpStr, cmpNode} = require("../cmp")
 
-import {sinkListItem, liftListItem, splitListItem} from "../../edit/commands"
+const {sinkListItem, liftListItem, splitListItem} = require("../../edit/commands")
 
 const test = namespace("history")
 

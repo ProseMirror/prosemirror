@@ -1,6 +1,6 @@
-import {Fragment} from "./fragment"
+const {Fragment} = require("./fragment")
 
-export class ContentExpr {
+class ContentExpr {
   constructor(nodeType, elements, inlineContent) {
     this.nodeType = nodeType
     this.elements = elements
@@ -107,6 +107,7 @@ export class ContentExpr {
     return new ContentExpr(nodeType, elements, !!inline)
   }
 }
+exports.ContentExpr = ContentExpr
 
 class ContentElement {
   constructor(nodeTypes, attrs, marks, min, max) {
@@ -169,7 +170,7 @@ class ContentElement {
 
 // ;; Represents a partial match of a node type's [content
 // expression](#SchemaSpec.nodes).
-export class ContentMatch {
+class ContentMatch {
   constructor(expr, attrs, index, count) {
     this.expr = expr
     this.attrs = attrs
@@ -326,6 +327,7 @@ export class ContentMatch {
     }
   }
 }
+exports.ContentMatch = ContentMatch
 
 class AttrValue {
   constructor(attr) { this.attr = attr }

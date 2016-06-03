@@ -1,10 +1,10 @@
-import {Slice} from "../model"
+const {Slice} = require("../model")
 
-import {Step, StepResult} from "./step"
-import {PosMap} from "./map"
+const {Step, StepResult} = require("./step")
+const {PosMap} = require("./map")
 
 // ;; Replace a part of the document with a slice of new content.
-export class ReplaceStep extends Step {
+class ReplaceStep extends Step {
   // :: (number, number, Slice, bool)
   // The given `slice` should fit the 'gap' between `from` and
   // `to`—the depths must line up, and the surrounding nodes must be
@@ -45,13 +45,14 @@ export class ReplaceStep extends Step {
     return new ReplaceStep(json.from, json.to, Slice.fromJSON(schema, json.slice))
   }
 }
+exports.ReplaceStep = ReplaceStep
 
 Step.jsonID("replace", ReplaceStep)
 
 // ;; Replace a part of the document with a slice of content, but
 // preserve a range of the replaced content by moving it into the
 // slice.
-export class ReplaceAroundStep extends Step {
+class ReplaceAroundStep extends Step {
   // :: (number, number, number, number, Slice, number, bool)
   // Create a replace-wrap step with the given range and gap. `inset`
   // should be the point in the slice into which the gap should be
@@ -106,6 +107,7 @@ export class ReplaceAroundStep extends Step {
                                  Slice.fromJSON(schema, json.slice), json.insert, json.structure)
   }
 }
+exports.ReplaceAroundStep = ReplaceAroundStep
 
 Step.jsonID("replaceAround", ReplaceAroundStep)
 

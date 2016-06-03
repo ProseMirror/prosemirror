@@ -1,10 +1,10 @@
-import {rebaseSteps} from "../collab/rebase"
+const {rebaseSteps} = require("../collab/rebase")
 
-import {doc, blockquote, p, li, ul, em} from "./build"
-import {Failure} from "./failure"
-import {defTest} from "./tests"
-import {cmpNode, cmpStr} from "./cmp"
-import {tr} from "./trans"
+const {doc, blockquote, p, li, ul, em} = require("./build")
+const {Failure} = require("./failure")
+const {defTest} = require("./tests")
+const {cmpNode, cmpStr} = require("./cmp")
+const {tr} = require("./trans")
 
 function runRebase(transforms, expected) {
   let start = transforms[0].before, doc = start, maps = []

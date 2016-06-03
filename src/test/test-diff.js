@@ -1,10 +1,10 @@
-import {findDiffStart, findDiffEnd} from "../model"
+const {findDiffStart, findDiffEnd} = require("../model")
 
-import {doc, blockquote, h1, p, em, strong} from "./build"
+const {doc, blockquote, h1, p, em, strong} = require("./build")
 
-import {defTest} from "./tests"
-import {cmpStr} from "./cmp"
-import {Failure} from "./failure"
+const {defTest} = require("./tests")
+const {cmpStr} = require("./cmp")
+const {Failure} = require("./failure")
 
 function t(name, type, a, b, pos) {
   defTest("diff_" + type + "_" + name, () => {

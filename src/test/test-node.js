@@ -1,11 +1,11 @@
-import {Fragment} from "../model"
-import {defaultSchema as schema} from "../schema"
+const {Fragment} = require("../model")
+const {defaultSchema: schema} = require("../schema")
 
-import {doc, blockquote, p, li, ul, em, strong, code, br, img} from "./build"
+const {doc, blockquote, p, li, ul, em, strong, code, br, img} = require("./build")
 
-import {Failure} from "./failure"
-import {defTest} from "./tests"
-import {cmpNode, cmpStr} from "./cmp"
+const {Failure} = require("./failure")
+const {defTest} = require("./tests")
+const {cmpNode, cmpStr} = require("./cmp")
 
 function str(name, node, str) {
   defTest("node_string_" + name, () => cmpStr(node, str))

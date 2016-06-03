@@ -1,33 +1,33 @@
-import Keymap from "browserkeymap"
+const Keymap = require("browserkeymap")
 
-import {findSelectionFrom, verticalMotionLeavesTextblock, NodeSelection} from "./selection"
-import {browser} from "../dom"
+const {findSelectionFrom, verticalMotionLeavesTextblock, NodeSelection, TextSelection} = require("./selection")
+const browser = require("../util/browser")
 
 function nothing() {}
 
 function moveSelectionBlock(pm, dir) {
-  let {from, to, node} = pm.selection
-  let side = pm.doc.resolve(dir > 0 ? to : from)
-  return findSelectionFrom(pm.doc, node && node.isBlock ? side.pos : dir > 0 ? side.after(side.depth) : side.before(side.depth), dir)
+  let {$from, $to, node} = pm.selection
+  let $side = dir > 0 ? $to : $from
+  let $start = node && node.isBlock ? $side : pm.doc.resolve(dir > 0 ? $side.after() : $side.before())
+  return findSelectionFrom($start, dir)
 }
 
 function selectNodeHorizontally(pm, dir) {
-  let {empty, node, from, to} = pm.selection
+  let {empty, node, $from, $to} = pm.selection
   if (!empty && !node) return false
 
   if (node && node.isInline) {
-    pm.setTextSelection(dir > 0 ? to : from)
+    pm.setSelection(new TextSelection(dir > 0 ? $to : $from))
     return true
   }
 
   if (!node) {
-    let $from = pm.doc.resolve(from)
     let {node: nextNode, offset} = dir > 0
         ? $from.parent.childAfter($from.parentOffset)
         : $from.parent.childBefore($from.parentOffset)
     if (nextNode) {
       if (nextNode.type.selectable && offset == $from.parentOffset - (dir > 0 ? 0 : nextNode.nodeSize)) {
-        pm.setNodeSelection(dir < 0 ? from - nextNode.nodeSize : from)
+        pm.setSelection(new NodeSelection(dir < 0 ? pm.doc.resolve($from.pos - nextNode.nodeSize) : $from))
         return true
       }
       return false
@@ -55,13 +55,13 @@ function horiz(dir) {
 // selections. If so, apply it (if not, the result is left to the
 // browser)
 function selectNodeVertically(pm, dir) {
-  let {empty, node, from, to} = pm.selection
+  let {empty, node, $from, $to} = pm.selection
   if (!empty && !node) return false
 
-  let leavingTextblock = true
+  let leavingTextblock = true, $start = dir < 0 ? $from : $to
   if (!node || node.isInline) {
     pm.flush() // verticalMotionLeavesTextblock needs an up-to-date DOM
-    leavingTextblock = verticalMotionLeavesTextblock(pm, dir > 0 ? to : from, dir)
+    leavingTextblock = verticalMotionLeavesTextblock(pm, $start, dir)
   }
 
   if (leavingTextblock) {
@@ -74,7 +74,7 @@ function selectNodeVertically(pm, dir) {
 
   if (!node || node.isInline) return false
 
-  let beyond = findSelectionFrom(pm.doc, dir < 0 ? from : to, dir)
+  let beyond = findSelectionFrom($start, dir)
   if (beyond) pm.setSelection(beyond)
   return true
 }
@@ -134,4 +134,5 @@ if (browser.mac) {
   keys["Ctrl-Backspace"] = keys["Ctrl-Delete"] = nothing
 }
 
-export const captureKeys = new Keymap(keys)
+const captureKeys = new Keymap(keys)
+exports.captureKeys = captureKeys

@@ -15,7 +15,7 @@ function registerProp(name = "plugin") {
 // plugin object is the interface to enabling and disabling the
 // plugin, and for those where this is relevant, for accessing its
 // state.
-export class Plugin {
+class Plugin {
   // :: (constructor, ?Object)
   // Create a plugin object for the given state class. If desired, you
   // can pass a collection of options. When initializing the plugin,
@@ -71,3 +71,4 @@ export class Plugin {
     return new Plugin(this.State, result, this.prop)
   }
 }
+exports.Plugin = Plugin

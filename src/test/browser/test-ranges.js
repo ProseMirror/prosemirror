@@ -1,6 +1,6 @@
-import {namespace} from "./def"
-import {doc, p, li, ul, hr, blockquote} from "../build"
-import {cmp, cmpStr} from "../cmp"
+const {namespace} = require("./def")
+const {doc, p, li, ul, hr, blockquote} = require("../build")
+const {cmp, cmpStr} = require("../cmp")
 
 const test = namespace("ranges", {doc: doc(p("hello"))})
 

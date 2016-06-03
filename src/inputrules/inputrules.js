@@ -1,10 +1,10 @@
-import {Keymap, Plugin} from "../edit"
+const {Keymap, Plugin} = require("../edit")
 
 // ;; Input rules are regular expressions describing a piece of text
 // that, when typed, causes something to happen. This might be
 // changing two dashes into an emdash, wrapping a paragraph starting
 // with `"> "` into a blockquote, or something entirely different.
-export class InputRule {
+class InputRule {
   // :: (RegExp, ?string, union<string, (pm: ProseMirror, match: [string], pos: number)>)
   // Create an input rule. The rule applies when the user typed
   // something and the text directly in front of the cursor matches
@@ -24,6 +24,7 @@ export class InputRule {
     this.handler = handler
   }
 }
+exports.InputRule = InputRule
 
 // ;; Manages the set of active input rules for an editor. Created
 // with the `inputRules` plugin.
@@ -65,30 +66,29 @@ class InputRules {
   }
 
   onTextInput(text) {
-    let pos = this.pm.selection.head
-    if (!pos) return
+    let $pos = this.pm.selection.$head
+    if (!$pos) return
 
-    let textBefore, isCode, $pos
+    let textBefore, isCode
     let lastCh = text[text.length - 1]
 
     for (let i = 0; i < this.rules.length; i++) {
       let rule = this.rules[i], match
       if (rule.filter && rule.filter != lastCh) continue
-      if (!$pos) {
-        $pos = this.pm.doc.resolve(pos)
+      if (textBefore == null) {
         ;({textBefore, isCode} = getContext($pos))
         if (isCode) return
       }
       if (match = rule.match.exec(textBefore)) {
         let startVersion = this.pm.history.getVersion()
         if (typeof rule.handler == "string") {
-          let start = pos - (match[1] || match[0]).length
-          let marks = this.pm.doc.marksAt(pos)
-          this.pm.tr.delete(start, pos)
+          let start = $pos.pos - (match[1] || match[0]).length
+          let marks = this.pm.doc.marksAt($pos.pos)
+          this.pm.tr.delete(start, $pos.pos)
                     .insert(start, this.pm.schema.text(rule.handler, marks))
                     .apply()
         } else {
-          rule.handler(this.pm, match, pos)
+          rule.handler(this.pm, match, $pos.pos)
         }
         this.cancelVersion = startVersion
         return
@@ -126,6 +126,7 @@ function getContext($pos) {
 //
 // Takes a single option, `rules`, which may be an array of
 // `InputRules` objects to add to initially add.
-export const inputRules = new Plugin(InputRules, {
+const inputRules = new Plugin(InputRules, {
   rules: []
 })
+exports.inputRules = inputRules

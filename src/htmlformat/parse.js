@@ -1,11 +1,11 @@
-import {Fragment, NodeType} from "../model"
+const {Fragment, NodeType} = require("../model")
 
 // :: (Schema, DOMNode, ?Object) → Node
 // Parse document from the content of a DOM node. To pass an explicit
 // parent document (for example, when not in a browser window
 // environment, where we simply use the global document), pass it as
 // the `document` property of `options`.
-export function fromDOM(schema, dom, options = {}) {
+function fromDOM(schema, dom, options = {}) {
   let topNode = options.topNode
   let top = new NodeBuilder(topNode ? topNode.type : schema.nodes.doc,
                             topNode ? topNode.attrs : null, true)
@@ -15,12 +15,13 @@ export function fromDOM(schema, dom, options = {}) {
   context.addAll(start, end)
   return top.finish()
 }
+exports.fromDOM = fromDOM
 
 // :: (ResolvedPos, DOMNode, number, number, ?Object) → Slice
 // Parse a DOM fragment into a `Slice`, starting with the context at
 // `$context`. If the DOM nodes are known to be 'open' (as in
 // `Slice`), pass their open depth as `openLeft` and `openRight`.
-export function fromDOMInContext($context, dom, options = {}) {
+function fromDOMInContext($context, dom, options = {}) {
   let {builder, top, left} = builderFromContext($context, dom)
   let context = new DOMParseState($context.node(0).type.schema, options, builder)
   context.addAll(dom.firstChild, null)
@@ -37,6 +38,7 @@ export function fromDOMInContext($context, dom, options = {}) {
   for (let node = doc.firstChild; node && !node.type.isLeaf; node = node.firstChild) ++maxOpenLeft
   return doc.slice(Math.min(builder.depth + openLeft, maxOpenLeft), doc.content.size - openTo)
 }
+exports.fromDOMInContext = fromDOMInContext
 
 function builderFromContext($context, dom) {
   let topNode = $context.node(0), matches = []
@@ -84,11 +86,12 @@ function parseInfoAtSide(schema, dom, side) {
 
 // :: (Schema, string, ?Object) → Node
 // Parses the HTML into a DOM, and then calls through to `fromDOM`.
-export function fromHTML(schema, html, options) {
+function fromHTML(schema, html, options) {
   let wrap = (options && options.document || window.document).createElement("div")
   wrap.innerHTML = html
   return fromDOM(schema, wrap, options)
 }
+exports.fromHTML = fromHTML
 
 // :: union<?Object, [?Object, {content: ?union<bool, DOMNode>, preserveWhiteSpace: ?bool}]>
 // #path=ParseSpec #kind=interface

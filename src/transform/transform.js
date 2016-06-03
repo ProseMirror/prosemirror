@@ -1,8 +1,9 @@
-import {ProseMirrorError} from "../util/error"
+const {ProseMirrorError} = require("../util/error")
 
-import {mapThrough, mapThroughResult} from "./map"
+const {mapThrough, mapThroughResult} = require("./map")
 
-export class TransformError extends ProseMirrorError {}
+class TransformError extends ProseMirrorError {}
+exports.TransformError = TransformError
 
 // ;; A change to a document often consists of a series of
 // [steps](#Step). This class provides a convenience abstraction to
@@ -11,7 +12,7 @@ export class TransformError extends ProseMirrorError {}
 //
 // The high-level transforming methods return the `Transform` object
 // itself, so that they can be chained.
-export class Transform {
+class Transform {
   // :: (Node)
   // Create a transformation that starts with the given document.
   constructor(doc) {
@@ -57,3 +58,4 @@ export class Transform {
   // mapped position.
   map(pos, bias, start) { return mapThrough(this.maps, pos, bias, start) }
 }
+exports.Transform = Transform

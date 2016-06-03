@@ -1,10 +1,10 @@
-import "./test-command"
-import "./test-selection"
-import "./test-node-selection"
-import "./test-keys"
-import "./test-keymaps"
-import "./test-domchange"
-import "./test-history"
-import "./test-collab"
-import "./test-ranges"
-import "./test-draw"
+require("./test-command")
+require("./test-selection")
+require("./test-node-selection")
+require("./test-keys")
+require("./test-keymaps")
+require("./test-domchange")
+require("./test-history")
+require("./test-collab")
+require("./test-ranges")
+require("./test-draw")

@@ -1,9 +1,9 @@
-import {Plugin} from "../edit"
-import {eventMixin} from "../util/event"
-import {Transform} from "../transform"
+const {Plugin} = require("../edit")
+const {eventMixin} = require("../util/event")
+const {Transform} = require("../transform")
 
-import {rebaseSteps} from "./rebase"
-export {rebaseSteps}
+const {rebaseSteps} = require("./rebase")
+exports.rebaseSteps = rebaseSteps
 
 // !! This module implements an API into which a communication channel
 // for collaborative editing can be hooked. See [this
@@ -131,6 +131,7 @@ eventMixin(Collab)
 //
 // You can pass a `version` option, which determines the starting
 // version number of the collaborative editing, and defaults to 0.
-export const collabEditing = new Plugin(Collab, {
+const collabEditing = new Plugin(Collab, {
   version: 0
 })
+exports.collabEditing = collabEditing

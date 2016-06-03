@@ -1,10 +1,10 @@
-import {Node, TextNode} from "./node"
-import {Fragment} from "./fragment"
-import {Mark} from "./mark"
-import {ContentExpr} from "./content"
+const {Node, TextNode} = require("./node")
+const {Fragment} = require("./fragment")
+const {Mark} = require("./mark")
+const {ContentExpr} = require("./content")
 
-import {copyObj} from "../util/obj"
-import {OrderedMap} from "../util/orderedmap"
+const {copyObj} = require("../util/obj")
+const {OrderedMap} = require("../util/orderedmap")
 
 // For node types where all attrs have a default value (or which don't
 // have any attributes), build up a single reusable default attribute
@@ -44,7 +44,7 @@ function computeAttrs(attrs, value) {
 // the node type (its name, its allowed attributes, methods for
 // serializing it to various formats, information to guide
 // deserialization, and so on).
-export class NodeType {
+class NodeType {
   constructor(name, schema) {
     // :: string
     // The name the node type has in this schema.
@@ -173,20 +173,23 @@ export class NodeType {
     return result
   }
 }
+exports.NodeType = NodeType
 
 // ;; Base type for block nodetypes.
-export class Block extends NodeType {
+class Block extends NodeType {
   get isBlock() { return true }
   get isTextblock() { return this.contentExpr.inlineContent }
 }
+exports.Block = Block
 
 // ;; Base type for inline node types.
-export class Inline extends NodeType {
+class Inline extends NodeType {
   get isInline() { return true }
 }
+exports.Inline = Inline
 
 // ;; The text node type.
-export class Text extends Inline {
+class Text extends Inline {
   get selectable() { return false }
   get isText() { return true }
 
@@ -195,6 +198,7 @@ export class Text extends Inline {
   }
   toDOM(node) { return node.text }
 }
+exports.Text = Text
 
 // Attribute descriptors
 
@@ -202,7 +206,7 @@ export class Text extends Inline {
 // Each node type or mark type has a fixed set of attributes, which
 // instances of this class are used to control. Attribute values must
 // be JSON-serializable.
-export class Attribute {
+class Attribute {
   // :: (Object)
   // Create an attribute. `options` is an object containing the
   // settings for the attributes. The following settings are
@@ -227,13 +231,14 @@ export class Attribute {
     return this.default === undefined && !this.compute
   }
 }
+exports.Attribute = Attribute
 
 // Marks
 
 // ;; Like nodes, marks (which are associated with nodes to signify
 // things like emphasis or being part of a link) are tagged with type
 // objects, which are instantiated once per `Schema`.
-export class MarkType {
+class MarkType {
   constructor(name, rank, schema) {
     // :: string
     // The name of the mark type.
@@ -284,6 +289,7 @@ export class MarkType {
       if (set[i].type == this) return set[i]
   }
 }
+exports.MarkType = MarkType
 
 // ;; #path=SchemaSpec #kind=interface
 // An object describing a schema, as passed to the `Schema`
@@ -313,7 +319,7 @@ export class MarkType {
 // ;; Each document is based on a single schema, which provides the
 // node and mark types that it is made up of (which, in turn,
 // determine the structure it is allowed to have).
-export class Schema {
+class Schema {
   // :: (SchemaSpec)
   // Construct a schema from a specification.
   constructor(spec) {
@@ -415,3 +421,4 @@ export class Schema {
     return found
   }
 }
+exports.Schema = Schema

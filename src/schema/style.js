@@ -1,5 +1,5 @@
-import {insertCSS} from "../dom"
-import {Plugin} from "../edit"
+const {insertCSS} = require("../util/dom")
+const {Plugin} = require("../edit")
 
 const cls = "ProseMirror-default-schema-style"
 const scope = "." + cls + " .ProseMirror-content"
@@ -36,7 +36,7 @@ ${scope} img {
 // - Makes HR nodes bigger, so that you can click them to select them.
 //
 // - Gives IMG nodes a default mouse cursor.
-export const defaultSchemaStyle = new Plugin(class {
+const defaultSchemaStyle = new Plugin(class {
   constructor(pm) {
     pm.wrapper.classList.add(cls)
   }
@@ -44,3 +44,4 @@ export const defaultSchemaStyle = new Plugin(class {
     pm.wrapper.classList.remove(cls)
   }
 })
+exports.defaultSchemaStyle = defaultSchemaStyle

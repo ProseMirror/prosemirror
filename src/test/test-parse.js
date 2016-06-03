@@ -1,8 +1,8 @@
-import {doc, blockquote, h1, h2, p, hr, li, ol, ul, em, strong, code, a, br, img, dataImage} from "./build"
-import {cmpNode, cmpStr} from "./cmp"
-import {defTest} from "./tests"
+const {doc, blockquote, h1, h2, p, hr, li, ol, ul, em, strong, code, a, br, img, dataImage} = require("./build")
+const {cmpNode, cmpStr} = require("./cmp")
+const {defTest} = require("./tests")
 
-import {defaultMarkdownParser, defaultMarkdownSerializer} from "../markdown"
+const {defaultMarkdownParser, defaultMarkdownSerializer} = require("../markdown")
 
 function t(name, text, doc) {
   defTest("parse_" + name, () => {

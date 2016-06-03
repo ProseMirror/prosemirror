@@ -1,4 +1,4 @@
-import {Transform, Remapping} from "../transform"
+const {Transform, Remapping} = require("../transform")
 
 // ProseMirror's history implements not a way to roll back to a
 // previous state, because ProseMirror supports applying changes
@@ -283,7 +283,7 @@ class BranchRemapping {
 }
 
 // ;; An undo/redo history manager for an editor instance.
-export class History {
+class History {
   constructor(pm) {
     this.pm = pm
 
@@ -407,3 +407,4 @@ export class History {
     this.undone.rebased(newMaps, rebasedTransform, positions)
   }
 }
+exports.History = History

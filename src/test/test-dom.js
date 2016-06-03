@@ -1,10 +1,10 @@
-import {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, img, hr} from "./build"
-import {Failure} from "./failure"
-import {cmpNode, cmp} from "./cmp"
-import {defTest} from "./tests"
+const {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, img, hr} = require("./build")
+const {Failure} = require("./failure")
+const {cmpNode, cmp} = require("./cmp")
+const {defTest} = require("./tests")
 
-import {defaultSchema as schema} from "../schema"
-import {toDOM, fromDOM, fromDOMInContext} from "../htmlformat"
+const {defaultSchema: schema} = require("../schema")
+const {toDOM, fromDOM, fromDOMInContext} = require("../htmlformat")
 
 let document = typeof window == "undefined" ? require("jsdom").jsdom() : window.document
 

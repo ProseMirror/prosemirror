@@ -1,9 +1,9 @@
-import {readInputChange, readCompositionChange} from "../../edit/domchange"
+const {readInputChange, readCompositionChange} = require("../../edit/domchange")
 
-import {namespace} from "./def"
-import {doc, p, em, img, strong, blockquote} from "../build"
-import {cmpNode} from "../cmp"
-import {findTextNode} from "./test-selection"
+const {namespace} = require("./def")
+const {doc, p, em, img, strong, blockquote} = require("../build")
+const {cmpNode} = require("../cmp")
+const {findTextNode} = require("./test-selection")
 
 const test = namespace("domchange", {doc: doc(p("hello"))})
 

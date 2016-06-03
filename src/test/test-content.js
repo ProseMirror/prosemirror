@@ -1,9 +1,9 @@
-import {ContentExpr} from "../model/content"
-import {defaultSchema as schema} from "../schema"
+const {ContentExpr} = require("../model/content")
+const {defaultSchema: schema} = require("../schema")
 
-import {defTest} from "./tests"
-import {doc, p, pre, img, br, h1, h2, em, hr} from "./build"
-import {cmp, cmpNode, is} from "./cmp"
+const {defTest} = require("./tests")
+const {doc, p, pre, img, br, h1, h2, em, hr} = require("./build")
+const {cmp, cmpNode, is} = require("./cmp")
 
 function get(expr) { return ContentExpr.parse(schema.nodes.heading, expr, schema.nodeSpec) }
 

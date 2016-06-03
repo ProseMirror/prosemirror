@@ -1,8 +1,8 @@
-import {elt, insertCSS} from "../dom"
-import {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType, wrapInList} from "../edit/commands"
-import {copyObj} from "../util/obj"
+const {elt, insertCSS} = require("../util/dom")
+const {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType, wrapInList} = require("../edit/commands")
+const {copyObj} = require("../util/obj")
 
-import {getIcon} from "./icons"
+const {getIcon} = require("./icons")
 
 // !! This module defines a number of building blocks for ProseMirror
 // menus, as consumed by the [`menubar`](#menu/menubar) and
@@ -21,7 +21,7 @@ import {getIcon} from "./icons"
 const prefix = "ProseMirror-menu"
 
 // ;; An icon or label that, when clicked, executes a command.
-export class MenuItem {
+class MenuItem {
   // :: (MenuItemSpec)
   constructor(spec) {
     // :: MenuItemSpec
@@ -65,6 +65,7 @@ export class MenuItem {
     return dom
   }
 }
+exports.MenuItem = MenuItem
 
 // :: Object #path=MenuItemSpec #kind=interface
 // The configuration object passed to the `MenuItem` constructor.
@@ -122,7 +123,7 @@ export class MenuItem {
 
 // ;; A drop-down menu, displayed as a label with a downwards-pointing
 // triangle to the right of it.
-export class Dropdown {
+class Dropdown {
   // :: ([MenuElement], ?Object)
   // Create a dropdown wrapping the elements. Options may include
   // the following properties:
@@ -184,6 +185,7 @@ export class Dropdown {
     return finish
   }
 }
+exports.Dropdown = Dropdown
 
 function renderDropdownItems(items, pm) {
   let rendered = []
@@ -196,7 +198,7 @@ function renderDropdownItems(items, pm) {
 
 // ;; Represents a submenu wrapping a group of elements that start
 // hidden and expand to the right when hovered over or tapped.
-export class DropdownSubmenu {
+class DropdownSubmenu {
   // :: ([MenuElement], ?Object)
   // Creates a submenu for the given group of menu elements. The
   // following options are recognized:
@@ -224,13 +226,14 @@ export class DropdownSubmenu {
     return wrap
   }
 }
+exports.DropdownSubmenu = DropdownSubmenu
 
 // :: (ProseMirror, [union<MenuElement, [MenuElement]>]) → ?DOMFragment
 // Render the given, possibly nested, array of menu elements into a
 // document fragment, placing separators between them (and ensuring no
 // superfluous separators appear when some of the groups turn out to
 // be empty).
-export function renderGrouped(pm, content) {
+function renderGrouped(pm, content) {
   let result = document.createDocumentFragment(), needSep = false
   for (let i = 0; i < content.length; i++) {
     let items = content[i], added = false
@@ -246,6 +249,7 @@ export function renderGrouped(pm, content) {
   }
   return result
 }
+exports.renderGrouped = renderGrouped
 
 function separator() {
   return elt("span", {class: prefix + "separator"})
@@ -255,7 +259,7 @@ function separator() {
 // the properties `join`, `lift`, `selectParentNode`, `undo`, and
 // `redo`, each holding an object that can be used as the `icon`
 // option to `MenuItem`.
-export const icons = {
+const icons = {
   join: {
     width: 800, height: 900,
     path: "M0 75h800v125h-800z M0 825h800v-125h-800z M250 400h100v-100h100v100h100v100h-100v100h-100v-100h-100z"
@@ -274,51 +278,57 @@ export const icons = {
     path: "M576 248v-248l384 384-384 384v-253c-446-10-427 303-313 509-280-303-221-789 313-775z"
   }
 }
+exports.icons = icons
 
 // :: MenuItem
 // Menu item for the `joinUp` command.
-export const joinUpItem = new MenuItem({
+const joinUpItem = new MenuItem({
   title: "Join with above block",
   run: joinUp,
   select: pm => joinUp(pm, false),
   icon: icons.join
 })
+exports.joinUpItem = joinUpItem
 
 // :: MenuItem
 // Menu item for the `lift` command.
-export const liftItem = new MenuItem({
+const liftItem = new MenuItem({
   title: "Lift out of enclosing block",
   run: lift,
   select: pm => lift(pm, false),
   icon: icons.lift
 })
+exports.liftItem = liftItem
 
 // :: MenuItem
 // Menu item for the `selectParentNode` command.
-export const selectParentNodeItem = new MenuItem({
+const selectParentNodeItem = new MenuItem({
   title: "Select parent node",
   run: selectParentNode,
   select: pm => selectParentNode(pm, false),
   icon: icons.selectParentNode
 })
+exports.selectParentNodeItem = selectParentNodeItem
 
 // :: MenuItem
 // Menu item for the `undo` command.
-export const undoItem = new MenuItem({
+const undoItem = new MenuItem({
   title: "Undo last change",
   run: undo,
   select: pm => undo(pm, false),
   icon: icons.undo
 })
+exports.undoItem = undoItem
 
 // :: MenuItem
 // Menu item for the `redo` command.
-export const redoItem = new MenuItem({
+const redoItem = new MenuItem({
   title: "Redo last undone change",
   run: redo,
   select: pm => redo(pm, false),
   icon: icons.redo
 })
+exports.redoItem = redoItem
 
 function markActive(pm, type) {
   let {from, to, empty} = pm.selection
@@ -345,7 +355,7 @@ function canToggleMark(pm, type) {
 // (attrs: ?Object))` arguments, and should produce the attributes for
 // the mark and then call the callback. Otherwise, it may be an object
 // providing the attributes directly.
-export function toggleMarkItem(markType, options) {
+function toggleMarkItem(markType, options) {
   let base = {
     run(pm) { pm.setMark(markType, null, options.attrs) },
     active(pm) { return markActive(pm, markType) },
@@ -360,16 +370,17 @@ export function toggleMarkItem(markType, options) {
 
   return new MenuItem(copyObj(options, base))
 }
+exports.toggleMarkItem = toggleMarkItem
 
 // :: (NodeType, Object) → MenuItem
 // Create a menu item for inserting a node of the given type. Adds
 // `run` and `select` properties to the ones provided in `options`.
 // `options.attrs` can be an object or a function, like in
 // `toggleMarkItem`.
-export function insertItem(nodeType, options) {
+function insertItem(nodeType, options) {
   return new MenuItem(copyObj(options, {
     select(pm) {
-      let $from = pm.doc.resolve(pm.selection.from)
+      let $from = pm.selection.$from
       for (let d = $from.depth; d >= 0; d--) {
         let index = $from.index(d)
         if ($from.node(d).canReplaceWith(index, index, nodeType,
@@ -386,13 +397,14 @@ export function insertItem(nodeType, options) {
     }
   }))
 }
+exports.insertItem = insertItem
 
 // :: (NodeType, Object) → MenuItem
 // Build a menu item for wrapping the selection in a given node type.
 // Adds `run` and `select` properties to the ones present in
 // `options`. `options.attrs` may be an object or a function, as in
 // `toggleMarkItem`.
-export function wrapItem(nodeType, options) {
+function wrapItem(nodeType, options) {
   return new MenuItem(copyObj(options, {
     run(pm) {
       if (options.attrs instanceof Function) options.attrs(pm, attrs => wrapIn(nodeType, attrs)(pm))
@@ -403,37 +415,39 @@ export function wrapItem(nodeType, options) {
     }
   }))
 }
+exports.wrapItem = wrapItem
 
 // :: (NodeType, Object) → MenuItem
 // Build a menu item for changing the type of the textblock around the
 // selection to the given type. Provides `run`, `active`, and `select`
 // properties. Others must be given in `options`. `options.attrs` may
 // be an object to provide the attributes for the textblock node.
-export function blockTypeItem(nodeType, options) {
+function blockTypeItem(nodeType, options) {
   let command = setBlockType(nodeType, options.attrs)
   return new MenuItem(copyObj(options, {
     run: command,
     select(pm) { return command(pm, false) },
     active(pm) {
-      let {from, to, node} = pm.selection
+      let {$from, to, node} = pm.selection
       if (node) return node.hasMarkup(nodeType, options.attrs)
-      let $from = pm.doc.resolve(from)
       return to <= $from.end() && $from.parent.hasMarkup(nodeType, options.attrs)
     }
   }))
 }
+exports.blockTypeItem = blockTypeItem
 
 // :: (NodeType, Object) → MenuItem
 // Build a menu item for wrapping the selection in a list.
 // `options.attrs` may be an object to provide the attributes for the
 // list node.
-export function wrapListItem(nodeType, options) {
+function wrapListItem(nodeType, options) {
   let command = wrapInList(nodeType, options.attrs)
   return new MenuItem(copyObj(options, {
     run: command,
     select(pm) { return command(pm, false) }
   }))
 }
+exports.wrapListItem = wrapListItem
 
 insertCSS(`
 

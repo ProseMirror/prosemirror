@@ -1,4 +1,4 @@
-import {elt, insertCSS} from "../dom"
+const {elt, insertCSS} = require("../util/dom")
 
 const prefix = "ProseMirror-tooltip"
 
@@ -7,7 +7,7 @@ const prefix = "ProseMirror-tooltip"
 // shown and hidden. It is positioned relative to a position (passed
 // when showing the tooltip), and points at that position with a
 // little arrow-like triangle attached to the node.
-export class Tooltip {
+class Tooltip {
   // :: (DOMNode, union<string, Object>)
   // Create a new tooltip that lives in the wrapper node, which should
   // be its offset anchor, i.e. it should have a `relative` or
@@ -134,6 +134,7 @@ export class Tooltip {
     }
   }
 }
+exports.Tooltip = Tooltip
 
 function windowRect() {
   return {

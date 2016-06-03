@@ -1,10 +1,10 @@
-import {defTest} from "../tests"
-import {ProseMirror} from "../../edit"
-import {defaultSchema} from "../../schema"
+const {defTest} = require("../tests")
+const {ProseMirror} = require("../../edit")
+const {defaultSchema} = require("../../schema")
 
 let tempPMs = null
 
-export function tempEditors(options) {
+function tempEditors(options) {
   let space = document.querySelector("#workspace")
   if (tempPMs) {
     tempPMs.forEach(pm => space.removeChild(pm.wrapper))
@@ -23,12 +23,14 @@ export function tempEditors(options) {
     return pm
   })
 }
+exports.tempEditors = tempEditors
 
-export function tempEditor(options) {
+function tempEditor(options) {
   return tempEditors([options])[0]
 }
+exports.tempEditor = tempEditor
 
-export function namespace(space, defaults) {
+function namespace(space, defaults) {
   return (name, f, options) => {
     if (!options) options = {}
     if (defaults) for (let opt in defaults)
@@ -36,5 +38,7 @@ export function namespace(space, defaults) {
     defTest(space + "_" + name, () => f(tempEditor(options)))
   }
 }
+exports.namespace = namespace
 
-export function dispatch(pm, key) { pm.input.dispatchKey(key) }
+function dispatch(pm, key) { pm.input.dispatchKey(key) }
+exports.dispatch = dispatch
