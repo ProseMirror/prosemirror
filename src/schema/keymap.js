@@ -39,11 +39,11 @@ export function defaultSchemaKeymap(schema) {
   for (let name in schema.nodes) {
     let node = schema.nodes[name]
     if (node instanceof BulletList)
-      keys["Shift-Ctrl-8"] = pm => wrapInList(pm, node)
+      keys["Shift-Ctrl-8"] = wrapInList(node)
     if (node instanceof OrderedList)
-      keys["Shift-Ctrl-9"] = pm => wrapInList(pm, node)
+      keys["Shift-Ctrl-9"] = wrapInList(node)
     if (node instanceof BlockQuote)
-      keys["Shift-Ctrl-."] = pm => wrapIn(pm, node)
+      keys["Shift-Ctrl-."] = wrapIn(node)
     if (node instanceof HardBreak) {
       let cmd = chain(newlineInCode,
                       pm => pm.tr.replaceSelection(node.create()).apply(pm.apply.scroll))
@@ -51,16 +51,16 @@ export function defaultSchemaKeymap(schema) {
       if (browser.mac) keys["Ctrl-Enter"] = cmd
     }
     if (node instanceof ListItem) {
-      keys["Enter"] = pm => splitListItem(pm, node)
-      keys["Mod-["] = pm => liftListItem(pm, node)
-      keys["Mod-]"] = pm => sinkListItem(pm, node)
+      keys["Enter"] = splitListItem(node)
+      keys["Mod-["] = liftListItem(node)
+      keys["Mod-]"] = sinkListItem(node)
     }
     if (node instanceof Paragraph)
-      keys["Shift-Ctrl-0"] = pm => setBlockType(pm, node)
+      keys["Shift-Ctrl-0"] = setBlockType(node)
     if (node instanceof CodeBlock)
-      keys["Shift-Ctrl-\\"] = pm => setBlockType(pm, node)
+      keys["Shift-Ctrl-\\"] = setBlockType(node)
     if (node instanceof Heading) for (let i = 1; i <= 6; i++)
-      keys["Shift-Ctrl-" + i] = pm => setBlockType(pm, node, {level: i})
+      keys["Shift-Ctrl-" + i] = setBlockType(node, {level: i})
     if (node instanceof HorizontalRule)
       keys["Mod-Shift--"] = pm => pm.tr.replaceSelection(node.create()).apply(pm.apply.scroll)
   }
