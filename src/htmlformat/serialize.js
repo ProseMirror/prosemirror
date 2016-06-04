@@ -114,7 +114,7 @@ class DOMSerializer {
 // To define rendering behavior for your own [node](#NodeType) and
 // [mark](#MarkType) types, give them a [`toDOM`](#NodeType.toDOM)
 // method.
-function toDOM(content, options) {
+function toDOM(content, options = {}) {
   return new DOMSerializer(options)
     .renderFragment(content instanceof Node ? content.content : content, null, options.pos || 0)
 }
@@ -148,7 +148,7 @@ exports.toDOM = toDOM
 // Serialize a given node to a DOM node. This is useful when you need
 // to serialize a part of a document, as opposed to the whole
 // document.
-function nodeToDOM(node, options, offset) {
+function nodeToDOM(node, options, offset = {}) {
   let serializer = new DOMSerializer(options), pos = options.pos || 0
   let dom = serializer.renderNode(node, pos, offset)
   if (node.isInline) {
@@ -164,7 +164,7 @@ exports.nodeToDOM = nodeToDOM
 // Serialize a node as an HTML string. Goes through `toDOM` and then
 // serializes the result. Again, you must pass a `document` option
 // when not in the browser.
-function toHTML(content, options) {
+function toHTML(content, options = {}) {
   let serializer = new DOMSerializer(options)
   let wrap = serializer.doc.createElement("div")
   wrap.appendChild(serializer.renderFragment(content instanceof Node ? content.content : content, null, options.pos || 0))
