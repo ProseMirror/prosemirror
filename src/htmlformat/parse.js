@@ -43,7 +43,7 @@ exports.fromDOMInContext = fromDOMInContext
 function builderFromContext($context, dom) {
   let topNode = $context.node(0), matches = []
   for (let i = 0; i < $context.depth; i++)
-    matches.push($context.node(i).contentMatchAt($context.indexAfter(i)))
+    matches.push($context.node(i).contentMatchAt($context.index(i)))
   let left = parseInfoAtSide(topNode.type.schema, dom, -1), start = $context.depth, wrap = []
   search: if (left) {
     for (let i = matches.length - 1; i >= 0; i--)
@@ -177,7 +177,7 @@ class NodeBuilder {
   // Try to start a new node at this point.
   start(type, attrs, solid, match) {
     let matched = this.match.matchType(type, attrs, noMarks)
-    if (!matched) return null
+    if (!matched) return console.log("failed to put", type.name, "in", this.type.name), null
     this.closeChild()
     this.match = matched
     return this.openChild = new NodeBuilder(type, attrs, solid, this, match)
