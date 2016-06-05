@@ -1,6 +1,6 @@
 const Keymap = require("browserkeymap")
 const browser = require("../util/browser")
-const {fromDOMInContext, toHTML} = require("../htmlformat")
+const {fromDOMInContext, toDOM} = require("../htmlformat")
 const {Slice, Fragment} = require("../model")
 
 const {captureKeys} = require("./capturekeys")
@@ -355,10 +355,14 @@ function toClipboard(doc, from, to, dataTransfer) {
   let slice = doc.slice(from, to)
   if (!slice.openLeft && !slice.openRight && slice.possibleParent)
     slice = new Slice(Fragment.from(slice.possibleParent.copy(slice.content), 1, 1))
-  let attr = slice.openLeft + "/" + slice.openRight
-  let html = `<div pm-context="${attr}">${toHTML(slice.content)}</div>`
+  let dom = toDOM(slice.content), wrap = document.createElement("div")
+  if (dom.firstChild && dom.firstChild.nodeType == 1)
+    dom.firstChild.setAttribute("pm-open-left", slice.openLeft)
+  if (dom.lastChild && dom.lastChild.nodeType == 1)
+    dom.lastChild.setAttribute("pm-open-right", slice.openRight)
+  wrap.appendChild(dom)
   dataTransfer.clearData()
-  dataTransfer.setData("text/html", html)
+  dataTransfer.setData("text/html", wrap.innerHTML)
   dataTransfer.setData("text/plain", slice.content.textBetween(0, slice.content.size, "\n\n"))
   return slice
 }
@@ -392,22 +396,43 @@ function fromClipboard(pm, dataTransfer, plainText, $target) {
   let txt = dataTransfer.getData("text/plain")
   let html = dataTransfer.getData("text/html")
   if (!html && !txt) return null
-  let dom = document.createElement("div")
+  let dom
   if ((plainText || !html) && txt) {
+    dom = document.createElement("div")
     pm.signalPipelined("transformPastedText", txt).split(/\n{2,}/).forEach(para => {
       dom.appendChild(document.createElement("paragraph")).textContent = para
     })
   } else {
-    dom.innerHTML = pm.signalPipelined("transformPastedHTML", html)
+    dom = readHTML(pm.signalPipelined("transformPastedHTML", html))
   }
-  let wrap = dom.querySelector("[pm-context]"), m, openLeft = null, openRight = null
-  if (wrap && (m = /^(\d+)\/(\d+)$/.exec(wrap.getAttribute("pm-context")))) {
-    dom = wrap
-    openLeft = +m[1]
-    openRight = +m[2]
-  }
+  let openLeft = null, openRight = null, m
+  let foundLeft = dom.querySelector("[pm-open-left]"), foundRight = dom.querySelector("[pm-open-right]")
+  if (foundLeft && (m = /^\d+$/.exec(foundLeft.getAttribute("pm-open-left"))))
+    openLeft = +m[0]
+  if (foundRight && (m = /^\d+$/.exec(foundRight.getAttribute("pm-open-right"))))
+    openRight = +m[0]
   let slice = fromDOMInContext($target, dom, {openLeft, openRight, preserveWhiteSpace: true})
   return pm.signalPipelined("transformPasted", slice)
+}
+
+// Trick from jQuery -- some elements must be wrapped in other
+// elements for innerHTML to work. I.e. if you do `div.innerHTML =
+// "<td>..</td>"` the table cells are ignored.
+const wrapMap = {thead: "table", col: "table colgroup", tr: "table tbody",
+                 td: "table tbody tr", th: "table tbody tr"}
+function readHTML(html) {
+  let metas = /(\s*<meta [^>]*>)*/.exec(html)
+  if (metas) html = html.slice(metas[0].length)
+  let elt = document.createElement("div")
+  let firstTag = /(?:<meta [^>]*>)*<([a-z][^>\s]+)/i.exec(html), wrap, depth = 0
+  if (wrap = firstTag && wrapMap[firstTag[1].toLowerCase()]) {
+    let nodes = wrap.split(" ")
+    html = nodes.map(n => "<" + n + ">").join("") + html + nodes.map(n => "</" + n + ">").reverse().join("")
+    depth = nodes.length
+  }
+  elt.innerHTML = html
+  for (let i = 0; i < depth; i++) elt = elt.firstChild
+  return elt
 }
 
 handlers.copy = handlers.cut = (pm, e) => {

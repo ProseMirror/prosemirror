@@ -177,7 +177,7 @@ class NodeBuilder {
   // Try to start a new node at this point.
   start(type, attrs, solid, match) {
     let matched = this.match.matchType(type, attrs, noMarks)
-    if (!matched) return console.log("failed to put", type.name, "in", this.type.name), null
+    if (!matched) return null
     this.closeChild()
     this.match = matched
     return this.openChild = new NodeBuilder(type, attrs, solid, this, match)
