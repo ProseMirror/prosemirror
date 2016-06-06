@@ -22,15 +22,16 @@ exports.fromDOM = fromDOM
 // `$context`. If the DOM nodes are known to be 'open' (as in
 // `Slice`), pass their open depth as `openLeft` and `openRight`.
 function fromDOMInContext($context, dom, options = {}) {
-  let {builder, top} = builderFromContext($context)
-  let context = new DOMParseState($context.node(0).type.schema, options, builder)
+  let schema = $context.parent.type.schema
+  let openLeft = options.openLeft != null ? options.openLeft : textblockAtSide(schema, dom, -1) ? 1 : 0
+  let openRight = options.openRight != null ? options.openRight : textblockAtSide(schema, dom, 1) ? 1 : 0
 
-  let openLeft = options.openLeft != null ? options.openLeft : textblockAtSide(top.type.schema, dom, -1) ? 1 : 0
-  let openRight = options.openRight != null ? options.openRight : textblockAtSide(top.type.schema, dom, 1) ? 1 : 0
+  let {builder, top, skipLeft} = builderFromContext($context, openLeft)
+  let context = new DOMParseState(schema, options, builder)
 
   context.onEnter = () => {
-    if (openLeft == 0) return false
-    openLeft--
+    if (skipLeft == 0) return false
+    skipLeft--
     return null
   }
   context.addAll(dom.firstChild, null)
@@ -42,16 +43,20 @@ function fromDOMInContext($context, dom, options = {}) {
 }
 exports.fromDOMInContext = fromDOMInContext
 
-function builderFromContext($context) {
-  let top, builder
-  for (let i = 0; i <= $context.depth; i++) {
+function builderFromContext($context, openLeft) {
+  let top, builder, depth = $context.depth
+  while (openLeft > 0 && $context.start(depth) == $context.before(depth + 1)) {
+    openLeft--
+    depth--
+  }
+  for (let i = 0; i <= depth; i++) {
     let node = $context.node(i), match = node.contentMatchAt($context.index(i))
     if (i == 0)
       builder = top = new NodeBuilder(node.type, node.attrs, true, null, match)
     else
       builder = builder.start(node.type, node.attrs, false, match)
   }
-  return {builder, top}
+  return {builder, top, skipLeft: openLeft}
 }
 
 function textblockAtSide(schema, dom, side) {

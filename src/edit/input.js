@@ -457,10 +457,12 @@ handlers.paste = (pm, e) => {
   let slice = fromClipboard(pm, e.clipboardData, pm.input.shiftKey, sel.$from)
   if (slice) {
     e.preventDefault()
-    let start = sel.from, wrap = slice.possibleParent
-    if (!wrap && slice.openLeft) {
+    let start = sel.from, wrap
+    if (slice.openLeft) {
       wrap = slice.content.firstChild
       for (let i = 1; i < slice.openLeft; i++) wrap = wrap.firstChild
+    } else {
+      wrap = slice.possibleParent
     }
     // When pasting textblock content in an empty textblock, preserve
     // the original type.

@@ -182,4 +182,14 @@ ctx("mess",
 ctx("preserve_type",
     doc(p("<a>")),
     "<h1>bar</h1>", 1, 1,
-    p("<a>bar<b>"), 0, 0, "heading")
+    p("<a>bar<b>"), "heading")
+
+ctx("preserve_type_deep",
+    doc(p("<a>")),
+    "<h1>bar</h1><p>foo</p>", 1, 1,
+    doc(h1("<a>bar"), p("foo<b>")))
+
+ctx("leave_marks",
+    doc(pre("<a>")),
+    "<p>foo<strong>bar</strong></p>", 1, 1,
+    p("<a>foo", strong("bar<b>")))
