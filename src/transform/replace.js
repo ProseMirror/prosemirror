@@ -108,7 +108,7 @@ function fitRightJoin(content, parent, $from, $to, depth, openLeft, openRight) {
       if (inner) {
         let last = content.lastChild.copy(inner)
         if (joinable.size)
-          return content.sliceByIndex(0, count - 1).append(joinable).addToEnd(last)
+          return content.cutByIndex(0, count - 1).append(joinable).addToEnd(last)
         else
           return content.replaceChild(count - 1, last)
       }
