@@ -306,18 +306,15 @@ class ContentMatch {
     let seen = Object.create(null), first = {match: this, via: null}, active = [first]
     while (active.length) {
       let current = active.shift(), match = current.match
+      if (match.matchType(target, targetAttrs, [])) {
+        let result = []
+        for (let obj = current; obj != first; obj = obj.via)
+          result.push({type: obj.match.expr.nodeType, attrs: obj.match.attrs})
+        return result.reverse()
+      }
       let possible = match.possibleContent()
       for (let i = 0; i < possible.length; i++) {
         let {type, attrs} = possible[i], fullAttrs = type.computeAttrs(attrs)
-        if (type == target) {
-          let fits = match.matchType(type, targetAttrs, [])
-          if (fits && fits.validEnd()) {
-            let result = []
-            for (let obj = current; obj.via; obj = obj.via)
-              result.push({type: obj.match.expr.nodeType, attrs: obj.match.attrs})
-            return result.reverse()
-          }
-        }
         if (!type.isLeaf && !(type.name in seen) &&
             (current == first || match.matchType(type, fullAttrs, []).validEnd())) {
           active.push({match: type.contentExpr.start(fullAttrs), via: current})
