@@ -1,6 +1,6 @@
 const {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, br, img, hr} = require("./build")
 const {Failure} = require("./failure")
-const {cmpNode, cmp} = require("./cmp")
+const {cmpNode, cmp, cmpStr} = require("./cmp")
 const {defTest} = require("./tests")
 
 const {defaultSchema: schema} = require("../schema")
@@ -154,9 +154,7 @@ function ctx(name, doc, html, openLeft, openRight, slice, parent) {
     dom.innerHTML = html
     let result = fromDOMInContext(doc.resolve(doc.tag.a), dom, {openLeft, openRight})
     let expected = slice.slice(slice.tag.a, slice.tag.b)
-    cmpNode(result.content, expected.content)
-    cmp(result.openLeft, expected.openLeft, "openLeft")
-    cmp(result.openRight, expected.openRight, "openRight")
+    cmpStr(result, expected)
     if (parent) cmp(parent, result.possibleParent && result.possibleParent.type.name, "parent")
   })
 }
@@ -179,14 +177,9 @@ ctx("text_in_text",
 ctx("mess",
     doc(p("foo<a>")),
     "<p>a</p>b<li>c</li>", 0, 0,
-    doc("<a>", p("a"), p("b"), ol(li(p("c"))), "<b>"))
+    doc("<a>", p("a"), p("b"), ol(li(p("c")), "<b>")))
 
 ctx("preserve_type",
     doc(p("<a>")),
     "<h1>bar</h1>", 1, 1,
     p("<a>bar<b>"), 0, 0, "heading")
-
-ctx("leave_marks",
-    doc(pre("<a>")),
-    "<p>foo<strong>bar</strong></p>", 1, 1,
-    p("<a>foo", strong("bar<b>")), 0, 0)

@@ -158,7 +158,7 @@ class NodeType {
 
   // :: (Fragment, ?Object) → bool
   // Returns true if the given fragment is valid content for this node
-  // type.
+  // type with the given attributes.
   validContent(content, attrs) {
     return this.contentExpr.matches(attrs, content)
   }

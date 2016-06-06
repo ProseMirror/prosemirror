@@ -22,53 +22,39 @@ exports.fromDOM = fromDOM
 // `$context`. If the DOM nodes are known to be 'open' (as in
 // `Slice`), pass their open depth as `openLeft` and `openRight`.
 function fromDOMInContext($context, dom, options = {}) {
-  let {builder, top, left} = builderFromContext($context, dom)
+  let {builder, top} = builderFromContext($context)
   let context = new DOMParseState($context.node(0).type.schema, options, builder)
+
+  let openLeft = options.openLeft != null ? options.openLeft : textblockAtSide(top.type.schema, dom, -1) ? 1 : 0
+  let openRight = options.openRight != null ? options.openRight : textblockAtSide(top.type.schema, dom, 1) ? 1 : 0
+
+  context.onEnter = () => {
+    if (openLeft == 0) return false
+    openLeft--
+    return null
+  }
   context.addAll(dom.firstChild, null)
 
-  let openLeft = options.openLeft != null ? options.openLeft : left && left.isTextblock ? 1 : 0
-  let openRight = options.openRight
-  if (openRight == null) {
-    let right = parseInfoAtSide(top.type.schema, dom, 1)
-    openRight = right && right.isTextblock ? 1 : 0
-  }
-
-  let openTo = Math.min(top.openDepth, builder.depth + openRight)
-  let doc = top.finish(openTo), maxOpenLeft = 0
-  for (let node = doc.firstChild; node && !node.type.isLeaf; node = node.firstChild) ++maxOpenLeft
-  return doc.slice(Math.min(builder.depth + openLeft, maxOpenLeft), doc.content.size - openTo)
+  let openTo = Math.min(top.openDepth, context.top.depth + openRight)
+  let doc = top.finish(openTo), startPos = $context.depth, $startPos = doc.resolve(startPos)
+  for (let d = $startPos.depth; d >= 0 && startPos == $startPos.end(d); d--) ++startPos
+  return doc.slice(startPos, doc.content.size - openTo)
 }
 exports.fromDOMInContext = fromDOMInContext
 
-function builderFromContext($context, dom) {
-  let topNode = $context.node(0), matches = []
-  for (let i = 0; i < $context.depth; i++)
-    matches.push($context.node(i).contentMatchAt($context.index(i)))
-  let left = parseInfoAtSide(topNode.type.schema, dom, -1), start = $context.depth, wrap = []
-  search: if (left) {
-    for (let i = matches.length - 1; i >= 0; i--)
-      if (matches[i].matchType(left.type, left.attrs, noMarks)) {
-        start = i
-        break search
-      }
-    for (let i = matches.length - 1, wrapping; i >= 0; i--)
-      if (wrapping = matches[i].findWrapping(left.type, left.attrs)) {
-        start = i
-        wrap = wrapping
-        break search
-      }
+function builderFromContext($context) {
+  let top, builder
+  for (let i = 0; i <= $context.depth; i++) {
+    let node = $context.node(i), match = node.contentMatchAt($context.index(i))
+    if (i == 0)
+      builder = top = new NodeBuilder(node.type, node.attrs, true, null, match)
+    else
+      builder = builder.start(node.type, node.attrs, false, match)
   }
-  let top = new NodeBuilder(topNode.type, topNode.attrs, true), builder = top
-  for (let i = 1; i <= start; i++) {
-    let node = $context.node(i)
-    builder = builder.start(node.type, node.attrs, true, matches[i])
-  }
-  for (let i = 0; i < wrap.length; i++)
-    builder = builder.start(wrap[i].type, wrap[i].attrs, false)
-  return {builder, top, left}
+  return {builder, top}
 }
 
-function parseInfoAtSide(schema, dom, side) {
+function textblockAtSide(schema, dom, side) {
   let info = schemaInfo(schema).selectors
   for (let cur = dom, next;; cur = next) {
     next = cur && (side > 0 ? cur.lastChild || cur.previousSibling : cur.firstChild || cur.nextSibling)
@@ -78,7 +64,7 @@ function parseInfoAtSide(schema, dom, side) {
     if (next.nodeType == 1) {
       let result = matchTag(info, next)
       if (result && result.type instanceof NodeType)
-        return result.type.create(result.attrs)
+        return result.type.isTextblock
     }
     cur = next
   }
@@ -282,6 +268,7 @@ class DOMParseState {
     // : bool Whether to preserve whitespace
     this.preserveWhitespace = this.options.preserveWhitespace
     this.info = schemaInfo(schema)
+    this.onEnter = null
   }
 
   // : (Mark) → [Mark]
@@ -412,6 +399,10 @@ class DOMParseState {
   // Try to start a node of the given type, adjusting the context when
   // necessary.
   enter(type, attrs) {
+    if (this.onEnter) {
+      let result = this.onEnter()
+      if (result !== false) return result
+    }
     let ok = this.top.findPlace(type, attrs)
     if (ok) {
       this.sync(ok)
