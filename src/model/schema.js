@@ -163,6 +163,8 @@ class NodeType {
     return this.contentExpr.matches(attrs, content)
   }
 
+  get ephemeral() { return false }
+
   static compile(nodes, schema) {
     let result = Object.create(null)
     nodes.forEach((name, spec) => result[name] = new spec.type(name, schema))

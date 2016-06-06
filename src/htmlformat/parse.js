@@ -204,22 +204,21 @@ class NodeBuilder {
   // entirety and return the builder to which it was added. If not,
   // start a node of the given type and return the builder for it.
   findPlace(type, attrs, node) {
+    let route, builder
     for (let top = this;; top = top.prev) {
-      let ok = node ? top.add(node) && top : top.start(type, attrs, true)
-      if (ok) return ok
+      let found = top.match.findWrapping(type, attrs)
+      if (found && (!route || route.length > found.length) && (!type.ephemeral || found.length == 0)) {
+        route = found
+        builder = top
+        if (!found.length) break
+      }
       if (top.solid) break
     }
 
-    for (let top = this;; top = top.prev) {
-      let route = top.match.findWrapping(type, attrs)
-      if (route) {
-        for (let i = 0; i < route.length; i++)
-          top = top.start(route[i].type, route[i].attrs, false)
-        return node ? top.add(node) && top : top.start(type, attrs, true)
-      } else if (top.solid) {
-        return null
-      }
-    }
+    if (!route) return null
+    for (let i = 0; i < route.length; i++)
+      builder = builder.start(route[i].type, route[i].attrs, false)
+    return node ? builder.add(node) && builder : builder.start(type, attrs, true)
   }
 
   get depth() {
