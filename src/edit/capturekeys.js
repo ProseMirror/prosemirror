@@ -8,8 +8,8 @@ function nothing() {}
 function moveSelectionBlock(pm, dir) {
   let {$from, $to, node} = pm.selection
   let $side = dir > 0 ? $to : $from
-  let $start = node && node.isBlock ? $side : pm.doc.resolve(dir > 0 ? $side.after() : $side.before())
-  return findSelectionFrom($start, dir)
+  let $start = node && node.isBlock ? $side : $side.depth ? pm.doc.resolve(dir > 0 ? $side.after() : $side.before()) : null
+  return $start && findSelectionFrom($start, dir)
 }
 
 function selectNodeHorizontally(pm, dir) {

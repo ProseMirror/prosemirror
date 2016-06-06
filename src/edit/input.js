@@ -353,8 +353,8 @@ handlers.input = pm => {
 
 function toClipboard(doc, from, to, dataTransfer) {
   let slice = doc.slice(from, to)
-  if (!slice.openLeft && !slice.openRight && slice.possibleParent)
-    slice = new Slice(Fragment.from(slice.possibleParent.copy(slice.content), 1, 1))
+  if (!slice.openLeft && !slice.openRight && slice.possibleParent && slice.possibleParent.type != doc.type.schema.nodes.doc)
+    slice = new Slice(Fragment.from(slice.possibleParent.copy(slice.content)), 1, 1)
   let dom = toDOM(slice.content), wrap = document.createElement("div")
   if (dom.firstChild && dom.firstChild.nodeType == 1)
     dom.firstChild.setAttribute("pm-open-left", slice.openLeft)

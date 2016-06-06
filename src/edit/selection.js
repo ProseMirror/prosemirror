@@ -344,9 +344,9 @@ exports.hasFocus = hasFocus
 // position where the search starts. When `text` is true, only return
 // text selections.
 function findSelectionIn(doc, node, pos, index, dir, text) {
+  if (node.isTextblock) return new TextSelection(doc.resolve(pos + dir))
   for (let i = index - (dir > 0 ? 0 : 1); dir > 0 ? i < node.childCount : i >= 0; i += dir) {
     let child = node.child(i)
-    if (child.isTextblock) return new TextSelection(doc.resolve(pos + dir))
     if (!child.type.isLeaf) {
       let inner = findSelectionIn(doc, child, pos + dir, dir < 0 ? child.childCount : 0, dir, text)
       if (inner) return inner
@@ -402,7 +402,7 @@ exports.findSelectionAtEnd = findSelectionAtEnd
 // Whether vertical position motion in a given direction
 // from a position would leave a text block.
 function verticalMotionLeavesTextblock(pm, $pos, dir) {
-  let dom = DOMAfterPos(pm, $pos.before())
+  let dom = $pos.depth ? DOMAfterPos(pm, $pos.before()) : pm.content
   let coords = coordsAtPos(pm, $pos.pos)
   for (let child = dom.firstChild; child; child = child.nextSibling) {
     if (child.nodeType != 1) continue
