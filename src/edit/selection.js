@@ -344,7 +344,7 @@ exports.hasFocus = hasFocus
 // position where the search starts. When `text` is true, only return
 // text selections.
 function findSelectionIn(doc, node, pos, index, dir, text) {
-  if (node.isTextblock) return new TextSelection(doc.resolve(pos + dir))
+  if (node.isTextblock) return new TextSelection(doc.resolve(pos))
   for (let i = index - (dir > 0 ? 0 : 1); dir > 0 ? i < node.childCount : i >= 0; i += dir) {
     let child = node.child(i)
     if (!child.type.isLeaf) {
