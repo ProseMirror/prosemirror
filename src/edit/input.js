@@ -178,7 +178,12 @@ function selectClickedNode(pm, e, target) {
   e.preventDefault()
 }
 
-let lastClick = 0, oneButLastClick = 0
+let lastClick = {time: 0, x: 0, y: 0}, oneButLastClick = lastClick
+
+function isNear(event, click) {
+  let dx = click.x - event.clientX, dy = click.y - event.clientY
+  return dx * dx + dy * dy < 100
+}
 
 function handleTripleClick(pm, e, target) {
   e.preventDefault()
@@ -197,9 +202,11 @@ function handleTripleClick(pm, e, target) {
 
 handlers.mousedown = (pm, e) => {
   pm.signal("interaction")
-  let now = Date.now(), doubleClick = now - lastClick < 500, tripleClick = now - oneButLastClick < 600
+  let now = Date.now()
+  let doubleClick = now - lastClick.time < 500 && isNear(e, lastClick)
+  let tripleClick = doubleClick && now - oneButLastClick.time < 600 && isNear(e, oneButLastClick)
   oneButLastClick = lastClick
-  lastClick = now
+  lastClick = {time: now, x: e.clientX, y: e.clientY}
 
   let target = realTarget(pm, e)
   if (tripleClick) handleTripleClick(pm, e, target)
