@@ -1,9 +1,17 @@
 const {readInputChange, readCompositionChange} = require("../../edit/domchange")
 
 const {namespace} = require("./def")
-const {doc, p, em, img, strong, blockquote} = require("../build")
-const {cmpNode} = require("../cmp")
+const {doc, p, h1, em, img, strong, blockquote} = require("../build")
+const {cmpNode, cmp} = require("../cmp")
 const {findTextNode} = require("./test-selection")
+
+function setSel(aNode, aOff, fNode, fOff) {
+  let r = document.createRange(), s = window.getSelection()
+  r.setEnd(fNode || aNode, fNode ? fOff : aOff)
+  r.setStart(aNode, aOff)
+  s.removeAllRanges()
+  s.addRange(r)
+}
 
 const test = namespace("domchange", {doc: doc(p("hello"))})
 
@@ -105,3 +113,24 @@ test("composition_type_ambiguous", pm => {
   readCompositionChange(pm, 0)
   cmpNode(pm.doc, doc(p("fo", strong("o"), "o")))
 }, {doc: doc(p("fo<a>o"))})
+
+test("get_selection", pm => {
+  let textNode = findTextNode(pm.content, "abc")
+  textNode.nodeValue = "abcd"
+  setSel(textNode, 3)
+  readInputChange(pm)
+  cmpNode(pm.doc, doc(p("abcd")))
+  cmp(pm.selection.anchor, 4)
+  cmp(pm.selection.head, 4)
+}, {doc: doc(p("abc<a>"))})
+
+test("crude_split", pm => {
+  let para = pm.content.querySelector("p")
+  let split = para.parentNode.appendChild(para.cloneNode())
+  split.innerHTML = "fg"
+  findTextNode(para, "defg").nodeValue = "dexy"
+  setSel(split.firstChild, 0)
+  readInputChange(pm)
+  cmpNode(pm.doc, doc(h1("abc"), p("dexy"), p("fg")))
+  cmp(pm.selection.anchor, 12)
+}, {doc: doc(h1("abc"), p("defg<a>"))})

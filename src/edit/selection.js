@@ -313,10 +313,10 @@ class SelectionToken {
   }
 }
 
-function selectionFromDOM(pm, doc, oldHead, loose) {
+function selectionFromDOM(pm, doc, oldHead) {
   let sel = window.getSelection()
-  let anchor = posFromDOM(pm, sel.anchorNode, sel.anchorOffset, loose)
-  let head = sel.isCollapsed ? anchor : posFromDOM(pm, sel.focusNode, sel.focusOffset, loose)
+  let anchor = posFromDOM(pm, sel.anchorNode, sel.anchorOffset)
+  let head = sel.isCollapsed ? anchor : posFromDOM(pm, sel.focusNode, sel.focusOffset)
 
   let range = findSelectionNear(doc.resolve(head), oldHead != null && oldHead < head ? 1 : -1)
   if (range instanceof TextSelection) {

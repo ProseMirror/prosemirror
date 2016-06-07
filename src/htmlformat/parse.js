@@ -10,9 +10,7 @@ function fromDOM(schema, dom, options = {}) {
   let top = new NodeBuilder(topNode ? topNode.type : schema.nodes.doc,
                             topNode ? topNode.attrs : null, true)
   let context = new DOMParseState(schema, options, top)
-  let start = options.from ? dom.childNodes[options.from] : dom.firstChild
-  let end = options.to != null && dom.childNodes[options.to] || null
-  context.addAll(start, end)
+  context.addAll(dom, null, options.from, options.to)
   return top.finish()
 }
 exports.fromDOM = fromDOM
@@ -34,7 +32,7 @@ function fromDOMInContext($context, dom, options = {}) {
     skipLeft--
     return null
   }
-  context.addAll(dom.firstChild, null)
+  context.addAll(dom)
 
   let openTo = Math.min(top.openDepth, context.top.depth + openRight)
   let doc = top.finish(openTo), startPos = $context.depth, $startPos = doc.resolve(startPos)
@@ -237,6 +235,18 @@ class NodeBuilder {
     for (let c = this.openChild; c; c = c.openChild) d++
     return d
   }
+
+  get posBeforeLastChild() {
+    let pos = this.prev ? this.prev.posBeforeLastChild + 1 : 0
+    for (let i = 0; i < this.content.length; i++)
+      pos += this.content[i].nodeSize
+    return pos
+  }
+
+  get currentPos() {
+    this.closeChild()
+    return this.posBeforeLastChild
+  }
 }
 
 // : Object<bool> The block-level tags in HTML5
@@ -273,6 +283,7 @@ class DOMParseState {
     this.preserveWhitespace = this.options.preserveWhitespace
     this.info = schemaInfo(schema)
     this.onEnter = null
+    this.find = options.findPositions
   }
 
   // : (Mark) → [Mark]
@@ -301,6 +312,9 @@ class DOMParseState {
         }
         if (value)
           this.insertNode(this.schema.text(value, this.marks))
+        this.findInText(dom)
+      } else {
+        this.findInside(dom)
       }
     } else if (dom.nodeType == 1 && !dom.hasAttribute("pm-ignore")) {
       let style = dom.getAttribute("style")
@@ -317,10 +331,14 @@ class DOMParseState {
     if (listTags.hasOwnProperty(name)) this.normalizeList(dom)
     // Ignore trailing BR nodes, which browsers create during editing
     if (this.options.editableContent && name == "br" && !dom.nextSibling) return
-    if (!this.parseNodeType(dom, name) && !ignoreTags.hasOwnProperty(name)) {
-      let sync = blockTags.hasOwnProperty(name) && this.top
-      this.addAll(dom.firstChild, null)
-      if (sync) this.sync(sync)
+    if (!this.parseNodeType(dom, name)) {
+      if (ignoreTags.hasOwnProperty(name)) {
+        this.findInside(dom)
+      } else {
+        let sync = blockTags.hasOwnProperty(name) && this.top
+        this.addAll(dom)
+        if (sync) this.sync(sync)
+      }
     }
   }
 
@@ -360,25 +378,34 @@ class DOMParseState {
     }
 
     if (contentNode) {
+      this.findAround(dom, contentNode, true)
       if (preserve != null) this.preserveWhitespace = preserve
-      this.addAll(contentNode.firstChild, null, sync)
+      this.addAll(contentNode, sync)
       if (sync) this.sync(sync.prev)
       else if (before) this.marks = before
       if (preserve != null) this.preserveWhitespace = prevPreserve
+      this.findAround(dom, contentNode, true)
+    } else {
+      this.findInside(parent)
     }
     return true
   }
 
-  // : (?DOMNode, ?DOMNode, ?NodeBuilder)
-  // Add all nodes between `from` and `to` (via `nextSibling`). If
-  // `sync` is passed, use it to synchronize after every block
-  // element.
-  addAll(from, to, sync) {
-    for (let dom = from; dom != to; dom = dom.nextSibling) {
+  // : (DOMNode, ?NodeBuilder, ?number, ?number)
+  // Add all child nodes between `startIndex` and `endIndex` (or the
+  // whole node, if not given). If `sync` is passed, use it to
+  // synchronize after every block element.
+  addAll(parent, sync, startIndex, endIndex) {
+    let index = startIndex || 0
+    for (let dom = startIndex ? parent.childNodes[startIndex] : parent.firstChild,
+             end = endIndex == null ? null : parent.childNodes[endIndex];
+         dom != end; dom = dom.nextSibling, ++index) {
+      this.findAtPoint(parent, index)
       this.addDOM(dom)
       if (sync && blockTags.hasOwnProperty(dom.nodeName.toLowerCase()))
         this.sync(sync)
     }
+    this.findAtPoint(parent, index)
   }
 
   // : (Node) → ?Node
@@ -442,6 +469,37 @@ class DOMParseState {
         prev.appendChild(child)
         child = prev
       }
+    }
+  }
+
+  findAtPoint(parent, offset) {
+    if (this.find) for (let i = 0; i < this.find.length; i++) {
+      if (this.find[i].node == parent && this.find[i].offset == offset)
+        this.find[i].pos = this.top.currentPos
+    }
+  }
+
+  findInside(parent) {
+    if (this.find) for (let i = 0; i < this.find.length; i++) {
+      if (this.find[i].pos == null && parent.contains(this.find[i].node))
+        this.find[i].pos = this.top.currentPos
+    }
+  }
+
+  findAround(parent, content, before) {
+    if (parent != content && this.find) for (let i = 0; i < this.find.length; i++) {
+      if (this.find[i].pos == null && parent.contains(this.find[i].node)) {
+        let pos = content.compareDocumentPosition(this.find[i].node)
+        if (pos & (before ? 2 : 4))
+          this.find[i].pos = this.top.currentPos
+      }
+    }
+  }
+
+  findInText(textNode) {
+    if (this.find) for (let i = 0; i < this.find.length; i++) {
+      if (this.find[i].node == textNode)
+        this.find[i].pos = this.top.currentPos - (textNode.nodeValue.length - this.find[i].offset)
     }
   }
 }

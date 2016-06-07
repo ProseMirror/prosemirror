@@ -148,6 +148,59 @@ recover("font_weight",
         "<p style='font-weight: bold'>Hello</p>",
         doc(p(strong("Hello"))))
 
+recover("ignore_inline_tag",
+        "<p><u>a</u>bc</p>",
+        doc(p("abc")))
+
+function find(name, html, doc) {
+  defTest("dom_find_" + name, () => {
+    let dom = document.createElement("div")
+    dom.innerHTML = html
+    let tag = dom.querySelector("var"), prev = tag.previousSibling, next = tag.nextSibling, pos
+    if (prev && next && prev.nodeType == 3 && next.nodeType == 3) {
+      pos = {node: prev, offset: prev.nodeValue.length}
+      prev.nodeValue += next.nodeValue
+      next.parentNode.removeChild(next)
+    } else {
+      pos = {node: tag.parentNode, offset: Array.prototype.indexOf.call(tag.parentNode.childNodes, tag)}
+    }
+    tag.parentNode.removeChild(tag)
+    let result = fromDOM(schema, dom, {
+      findPositions: [pos]
+    })
+    cmpNode(result, doc)
+    cmp(pos.pos, doc.tag.a)
+  })
+}
+
+find("start_of_para",
+     "<p><var></var>hello</p>",
+     doc(p("<a>hello")))
+
+find("end_of_para",
+     "<p>hello<var></var></p>",
+     doc(p("hello<a>")))
+
+find("in_text",
+     "<p>hel<var></var>lo</p>",
+     doc(p("hel<a>lo")))
+
+find("ignored_node",
+     "<p>hi</p><object><var></var>foo</object><p>ok</p>",
+     doc(p("hi"), "<a>", p("ok")))
+
+find("between_nodes",
+     "<ul><li>foo</li><var></var><li>bar</li></ul>",
+     doc(ul(li(p("foo")), "<a>", li(p("bar")))))
+
+find("start_of_doc",
+     "<var></var><p>hi</p>",
+     doc("<a>", p("hi")))
+
+find("end_of_doc",
+     "<p>hi</p><var></var>",
+     doc(p("hi"), "<a>"))
+
 function ctx(name, doc, html, openLeft, openRight, slice, parent) {
   defTest("dom_context_" + name, () => {
     let dom = document.createElement("div")
