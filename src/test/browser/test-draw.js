@@ -15,7 +15,7 @@ test("minimal_at_end", pm => {
   pm.tr.typeText("!").apply()
   pm.flush()
   cmp(pm.content.querySelector("p"), oldP)
-}, {doc: doc(h1("foo"), p("bar"))})
+}, {doc: doc(h1("foo<a>"), p("bar"))})
 
 test("minimal_at_start", pm => {
   let oldP = pm.content.querySelector("p")

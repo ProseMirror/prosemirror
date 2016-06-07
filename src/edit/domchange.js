@@ -43,7 +43,7 @@ function parseBetween(pm, from, to) {
       find.push({node: domSel.focusNode, offset: domSel.focusOffset})
   }
   let sel = null, doc = fromDOM(pm.schema, parent, {
-    topNode: pm.doc.resolve(from).parent.copy(),
+    topNode: pm.operation.doc.resolve(from).parent.copy(),
     from: startOff,
     to: endOff,
     preserveWhitespace: true,
