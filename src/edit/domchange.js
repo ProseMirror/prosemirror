@@ -3,7 +3,7 @@ const {fromDOM} = require("../htmlformat")
 const {mapThroughResult} = require("../transform/map")
 
 const {findSelectionFrom, findSelectionNear, TextSelection} = require("./selection")
-const {DOMFromPos} = require("./dompos")
+const {DOMFromPos, DOMFromPosFromEnd} = require("./dompos")
 
 function readInputChange(pm) {
   pm.ensureOperation({readSelection: false})
@@ -24,7 +24,8 @@ exports.readCompositionChange = readCompositionChange
 
 function parseBetween(pm, from, to) {
   let {node: parent, offset: startOff} = DOMFromPos(pm, from, true)
-  let endOff = DOMFromPos(pm, to, true).offset
+  let {node: parentRight, offset: endOff} = DOMFromPosFromEnd(pm, to)
+  if (parent != parentRight) return null
   while (startOff) {
     let prev = parent.childNodes[startOff - 1]
     if (prev.nodeType != 1 || !prev.hasAttribute("pm-offset")) --startOff
@@ -115,7 +116,15 @@ function readDOMChange(pm, range) {
     return false
   }
 
-  let {doc: parsed, sel: parsedSel} = parseBetween(pm, range.from, range.to)
+  let parseResult
+  for (;;) {
+    parseResult = parseBetween(pm, range.from, range.to)
+    if (parseResult) break
+    range = {from: op.doc.resolve(range.from).before(),
+             to: op.doc.resolve(range.to).after()}
+  }
+  let {doc: parsed, sel: parsedSel} = parseResult
+
   let compare = op.doc.slice(range.from, range.to)
   let change = findDiff(compare.content, parsed.content, range.from, op.sel.from)
   if (!change) return false

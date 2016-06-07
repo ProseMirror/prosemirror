@@ -125,12 +125,26 @@ test("get_selection", pm => {
 }, {doc: doc(p("abc<a>"))})
 
 test("crude_split", pm => {
+  pm.flush()
   let para = pm.content.querySelector("p")
   let split = para.parentNode.appendChild(para.cloneNode())
   split.innerHTML = "fg"
   findTextNode(para, "defg").nodeValue = "dexy"
-  setSel(split.firstChild, 0)
+  setSel(split.firstChild, 1)
   readInputChange(pm)
   cmpNode(pm.doc, doc(h1("abc"), p("dexy"), p("fg")))
-  cmp(pm.selection.anchor, 12)
+  cmp(pm.selection.anchor, 13)
 }, {doc: doc(h1("abc"), p("defg<a>"))})
+
+test("deep_split", pm => {
+  pm.flush()
+  let quote = pm.content.querySelector("blockquote")
+  let quote2 = pm.content.appendChild(quote.cloneNode(true))
+  findTextNode(quote, "abcd").nodeValue = "abx"
+  let text2 = findTextNode(quote2, "abcd")
+  text2.nodeValue = "cd"
+  setSel(text2.parentNode, 0)
+  readInputChange(pm)
+  cmpNode(pm.doc, doc(blockquote(p("abx")), blockquote(p("cd"))))
+  cmp(pm.selection.anchor, 9)
+}, {doc: doc(blockquote(p("ab<a>cd")))})

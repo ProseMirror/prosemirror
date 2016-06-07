@@ -102,6 +102,38 @@ function DOMFromPos(pm, pos, loose) {
 }
 exports.DOMFromPos = DOMFromPos
 
+// : (ProseMirror, number) → {node: DOMNode, offset: number}
+// The same as DOMFromPos, but searching from the bottom instead of
+// the top. This is needed in domchange.js, when there is an arbitrary
+// DOM change somewhere in our document, and we can no longer rely on
+// the DOM structure around the selection.
+function DOMFromPosFromEnd(pm, pos) {
+  let container = pm.content, dist = pm.operation.doc.content.size - pos
+  for (;;) {
+    for (let child = container.lastChild, i = container.childNodes.length;; child = child.previousSibling, i--) {
+      if (!child) return {node: container, offset: i}
+
+      let size = child.nodeType == 1 && child.getAttribute("pm-size")
+      if (size) {
+        if (!dist) return {node: container, offset: i}
+        size = +size
+        if (dist < size) {
+          container = childContainer(child)
+          if (!container) {
+            return leafAt(child, size - dist)
+          } else {
+            dist--
+            break
+          }
+        } else {
+          dist -= size
+        }
+      }
+    }
+  }
+}
+exports.DOMFromPosFromEnd = DOMFromPosFromEnd
+
 // : (ProseMirror, number) → DOMNode
 function DOMAfterPos(pm, pos) {
   let {node, offset} = DOMFromPos(pm, pos)
