@@ -322,13 +322,18 @@ exports.MarkType = MarkType
 // node and mark types that it is made up of (which, in turn,
 // determine the structure it is allowed to have).
 class Schema {
-  // :: (SchemaSpec)
+  // :: (SchemaSpec, any)
   // Construct a schema from a specification.
-  constructor(spec) {
+  constructor(spec, data) {
     // :: OrderedMap<NodeSpec> The node specs that the schema is based on.
     this.nodeSpec = OrderedMap.from(spec.nodes)
     // :: OrderedMap<constructor<MarkType>> The mark spec that the schema is based on.
     this.markSpec = OrderedMap.from(spec.marks)
+
+    // :: any A generic field that you can use (by passing a value to
+    // the constructor) to store arbitrary data or references in your
+    // schema object, for use by node- or mark- methods.
+    this.data = data
 
     // :: Object<NodeType>
     // An object mapping the schema's node names to node type objects.
