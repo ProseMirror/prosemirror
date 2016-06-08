@@ -214,7 +214,7 @@ class MouseDown {
     this.target = target
     this.leaveToBrowser = pm.input.shiftKey || doubleClick
 
-    let pos = posBeforeFromDOM(pm, this.target), node = pm.doc.nodeAt(pos)
+    let pos = posBeforeFromDOM(this.target), node = pm.doc.nodeAt(pos)
     this.mightDrag = node.type.draggable || node == pm.sel.range.node ? pos : null
     if (this.mightDrag != null) {
       this.target.draggable = true

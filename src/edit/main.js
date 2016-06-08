@@ -3,6 +3,7 @@ require("./css")
 const {Map} = require("../util/map")
 const {Subscription, PipelineSubscription, StoppableSubscription, DOMSubscription} = require("../util/subscription")
 const {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} = require("../util/dom")
+const {mapThrough} = require("../transform/map")
 
 const {parseOptions, initOptions, setOption} = require("./options")
 const {SelectionState, TextSelection, NodeSelection, findSelectionAtStart, hasFocus} = require("./selection")
@@ -471,8 +472,15 @@ class ProseMirror {
   // content, this method will return the document position that
   // corresponds to those coordinates.
   posAtCoords(coords) {
-    this.flush()
-    return posAtCoords(this, coords)
+    // If the DOM has been changed, flush so that we have a proper DOM to read
+    if (this.operation && (this.dirtyNodes.size > 0 || this.operation.composing || this.operation.docSet))
+      this.flush()
+    let pos = posAtCoords(this, coords)
+    if (pos == null) return pos
+    // If there's an active operation, we need to map forward through
+    // its changes to get a position that applies to the current
+    // document
+    return this.operation ? mapThrough(this.operation.mappings, pos) : pos
   }
 
   // :: (number) → {top: number, left: number, bottom: number}

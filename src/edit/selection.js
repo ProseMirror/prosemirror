@@ -83,7 +83,7 @@ class SelectionState {
   readFromDOM() {
     if (!hasFocus(this.pm) || !this.domChanged()) return false
 
-    let {range, adjusted} = selectionFromDOM(this.pm, this.pm.doc, this.range.head)
+    let {range, adjusted} = selectionFromDOM(this.pm.doc, this.range.head)
     this.setAndSignal(range)
 
     if (range instanceof NodeSelection || adjusted) {
@@ -311,10 +311,10 @@ class SelectionToken {
   }
 }
 
-function selectionFromDOM(pm, doc, oldHead) {
+function selectionFromDOM(doc, oldHead) {
   let sel = window.getSelection()
-  let anchor = posFromDOM(pm, sel.anchorNode, sel.anchorOffset)
-  let head = sel.isCollapsed ? anchor : posFromDOM(pm, sel.focusNode, sel.focusOffset)
+  let anchor = posFromDOM(sel.anchorNode, sel.anchorOffset)
+  let head = sel.isCollapsed ? anchor : posFromDOM(sel.focusNode, sel.focusOffset)
 
   let range = findSelectionNear(doc.resolve(head), oldHead != null && oldHead < head ? 1 : -1)
   if (range instanceof TextSelection) {
@@ -329,7 +329,6 @@ function selectionFromDOM(pm, doc, oldHead) {
   }
   return {range, adjusted: head != range.head || anchor != range.anchor}
 }
-exports.selectionFromDOM = selectionFromDOM
 
 function hasFocus(pm) {
   if (document.activeElement != pm.content) return false

@@ -1,10 +1,14 @@
 const {contains} = require("../util/dom")
 
-// : (ProseMirror, DOMNode) → number
-// Get the path for a given a DOM node in a document.
-function posBeforeFromDOM(pm, node) {
+function isEditorContent(dom) {
+  return dom.classList.contains("ProseMirror-content")
+}
+
+// : (DOMNode) → number
+// Get the position before a given a DOM node in a document.
+function posBeforeFromDOM(node) {
   let pos = 0, add = 0
-  for (let cur = node; cur != pm.content; cur = cur.parentNode) {
+  for (let cur = node; !isEditorContent(cur); cur = cur.parentNode) {
     let attr = cur.getAttribute("pm-offset")
     if (attr) { pos += +attr + add; add = 1 }
   }
@@ -12,11 +16,8 @@ function posBeforeFromDOM(pm, node) {
 }
 exports.posBeforeFromDOM = posBeforeFromDOM
 
-// : (ProseMirror, DOMNode, number) → number
-function posFromDOM(pm, dom, domOffset) {
-  if (pm.operation && pm.doc != pm.operation.doc)
-    throw new RangeError("Fetching a position from an outdated DOM structure")
-
+// : (DOMNode, DOMNode, number) → number
+function posFromDOM(dom, domOffset) {
   if (domOffset == null) {
     domOffset = Array.prototype.indexOf.call(dom.parentNode.childNodes, dom)
     dom = dom.parentNode
@@ -33,7 +34,7 @@ function posFromDOM(pm, dom, domOffset) {
       let size = +dom.getAttribute("pm-size")
       if (domOffset == dom.childNodes.length) innerOffset = size
       else innerOffset = Math.min(innerOffset, size)
-      return posBeforeFromDOM(pm, dom) + innerOffset
+      return posBeforeFromDOM(dom) + innerOffset
     } else if (dom.hasAttribute("pm-container")) {
       break
     } else if (tag = dom.getAttribute("pm-inner-offset")) {
@@ -48,7 +49,7 @@ function posFromDOM(pm, dom, domOffset) {
     dom = parent
   }
 
-  let start = dom == pm.content ? 0 : posBeforeFromDOM(pm, dom) + 1, before = 0
+  let start = isEditorContent(dom) ? 0 : posBeforeFromDOM(dom) + 1, before = 0
 
   for (let child = dom.childNodes[domOffset - 1]; child; child = child.previousSibling) {
     if (child.nodeType == 1 && (tag = child.getAttribute("pm-offset"))) {
@@ -252,7 +253,7 @@ function posAtCoords(pm, coords) {
 
   if (!elt.firstChild) elt = elt.parentNode
   let {node, offset} = findOffsetInNode(elt, coords)
-  return posFromDOM(pm, node, offset)
+  return posFromDOM(node, offset)
 }
 exports.posAtCoords = posAtCoords
 
@@ -323,7 +324,7 @@ function selectableNodeAbove(pm, dom, coords, liberal) {
   dom = targetKludge(dom, coords)
   for (; dom && dom != pm.content; dom = dom.parentNode) {
     if (dom.hasAttribute("pm-offset")) {
-      let pos = posBeforeFromDOM(pm, dom), node = pm.doc.nodeAt(pos)
+      let pos = posBeforeFromDOM(dom), node = pm.doc.nodeAt(pos)
       // Leaf nodes are implicitly clickable
       if ((liberal || node.type.isLeaf) && node.type.selectable) return pos
       if (!liberal) return null
@@ -369,7 +370,7 @@ exports.selectableNodeAbove = selectableNodeAbove
 function handleNodeClick(pm, type, event, target, direct) {
   for (let dom = target; dom && dom != pm.content; dom = dom.parentNode) {
     if (dom.hasAttribute("pm-offset")) {
-      let pos = posBeforeFromDOM(pm, dom), node = pm.doc.nodeAt(pos)
+      let pos = posBeforeFromDOM(dom), node = pm.doc.nodeAt(pos)
       let handled = node.type[type] && node.type[type](pm, event, pos, node) !== false
       if (direct || handled) return handled
     }
