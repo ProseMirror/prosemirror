@@ -39,6 +39,8 @@ function setSel(node, offset) {
 }
 
 test("read", pm => {
+  // disabled when the document doesn't have focus, since that causes this to fail
+  if (!document.hasFocus()) return
   function test(node, offset, expected, comment) {
     setSel(node, offset)
     pm.sel.readFromDOM()
@@ -78,6 +80,8 @@ function getSel() {
 }
 
 test("set", pm => {
+  // disabled when the document doesn't have focus, since that causes this to fail
+  if (!document.hasFocus()) return
   function test(pos, node, offset) {
     pm.setTextSelection(pos)
     pm.flush()
