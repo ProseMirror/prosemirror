@@ -105,11 +105,11 @@ class TooltipMenu {
   onContextMenu(e) {
     if (!this.pm.selection.empty) return
     let pos = this.pm.posAtCoords({left: e.clientX, top: e.clientY})
-    if (!pos || !pos.isValid(this.pm.doc, true)) return
+    if (!pos || !this.pm.doc.resolve(pos).parent.isTextblock) return
 
     this.pm.setTextSelection(pos, pos)
     this.pm.flush()
-    this.show(this.inlineContent, this.selectionCoords())
+    this.show(this.config.inlineContent, this.selectionCoords())
   }
 }
 
