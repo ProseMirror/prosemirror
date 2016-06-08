@@ -12,7 +12,12 @@ class TooltipMenu {
     this.config = config
 
     this.selectedBlockMenu = this.config.selectedBlockMenu
-    this.updater = pm.updateScheduler("change selectionChange blur focus commandsChanged", () => this.update())
+    this.updater = pm.updateScheduler([
+      pm.on.change,
+      pm.on.selectionChange,
+      pm.on.blur,
+      pm.on.focus
+    ], () => this.update())
     this.onContextMenu = this.onContextMenu.bind(this)
     pm.content.addEventListener("contextmenu", this.onContextMenu)
 

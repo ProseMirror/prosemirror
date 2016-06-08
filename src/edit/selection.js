@@ -28,9 +28,7 @@ class SelectionState {
   // Set the current selection and signal an event on the editor.
   setAndSignal(range, clearLast) {
     this.set(range, clearLast)
-    // :: () #path=ProseMirror#events#selectionChange
-    // Indicates that the editor's selection has changed.
-    this.pm.signal("selectionChange")
+    this.pm.on.selectionChange.dispatch()
   }
 
   // : (Selection, boolean)

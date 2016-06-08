@@ -34,16 +34,16 @@ class InputRules {
     this.rules = []
     this.cancelVersion = null
 
-    pm.on("selectionChange", this.onSelChange = () => this.cancelVersion = null)
-    pm.on("textInput", this.onTextInput = this.onTextInput.bind(this))
+    pm.on.selectionChange.add(this.onSelChange = () => this.cancelVersion = null)
+    pm.on.textInput.add(this.onTextInput = this.onTextInput.bind(this))
     pm.addKeymap(new Keymap({Backspace: pm => this.backspace(pm)}, {name: "inputRules"}), 20)
 
     options.rules.forEach(rule => this.addRule(rule))
   }
 
   detach() {
-    this.pm.off("selectionChange", this.onSelChange)
-    this.pm.off("textInput", this.onTextInput)
+    this.pm.on.selectionChange.remove(this.onSelChange)
+    this.pm.on.textInput.remove(this.onTextInput)
     this.pm.removeKeymap("inputRules")
   }
 

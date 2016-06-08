@@ -14,7 +14,11 @@ class MenuBar {
     this.maxHeight = 0
     this.widthForMaxHeight = 0
 
-    this.updater = pm.updateScheduler("selectionChange change activeMarkChange commandsChanged", () => this.update())
+    this.updater = pm.updateScheduler([
+      pm.on.selectionChange,
+      pm.on.change,
+      pm.on.activeMarkChange
+    ], () => this.update())
     this.content = config.content
     this.updater.force()
 

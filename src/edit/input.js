@@ -37,7 +37,7 @@ class Input {
       pm.content.addEventListener(event, e => handler(pm, e))
     }
 
-    pm.on("selectionChange", () => this.storedMarks = null)
+    pm.on.selectionChange.add(() => this.storedMarks = null)
   }
 
   // Dispatch a key press to the internal keymaps, which will override the default
@@ -90,9 +90,7 @@ class Input {
     let tr = pm.tr.replaceWith(from, to, text ? pm.schema.text(text, marks) : null)
     tr.setSelection(findSelection && findSelection(tr.doc) || findSelectionNear(tr.doc.resolve(tr.map(to)), -1, true))
     tr.applyAndScroll()
-    // :: () #path=ProseMirror#events#textInput
-    // Fired when the user types text into the editor.
-    if (text) pm.signal("textInput", text)
+    if (text) pm.on.textInput.dispatch(text)
   }
 
   get composing() {
@@ -121,13 +119,8 @@ class Input {
 exports.Input = Input
 
 handlers.keydown = (pm, e) => {
-  // :: () #path=ProseMirror#events#interaction
-  // Fired when the user interacts with the editor, for example by
-  // clicking on it or pressing a key while it is focused. Mostly
-  // useful for closing or resetting transient UI state such as open
-  // menus.
   if (!hasFocus(pm)) return
-  pm.signal("interaction")
+  pm.on.interaction.dispatch()
   if (e.keyCode == 16) pm.input.shiftKey = true
   if (pm.input.composing) return
   let name = Keymap.keyName(e)
@@ -201,7 +194,7 @@ function handleTripleClick(pm, e, target) {
 }
 
 handlers.mousedown = (pm, e) => {
-  pm.signal("interaction")
+  pm.on.interaction.dispatch()
   let now = Date.now()
   let doubleClick = now - lastClick.time < 500 && isNear(e, lastClick)
   let tripleClick = doubleClick && now - oneButLastClick.time < 600 && isNear(e, oneButLastClick)
@@ -384,22 +377,6 @@ function canUpdateClipboard(dataTransfer) {
   return cachedCanUpdateClipboard = dataTransfer.getData("text/html") == "<hr>"
 }
 
-// :: (text: string) → string #path=ProseMirror#events#transformPastedText
-// Fired when plain text is pasted. Handlers must return the given
-// string or a [transformed](#EventMixin.signalPipelined) version of
-// it.
-
-// :: (html: string) → string #path=ProseMirror#events#transformPastedHTML
-// Fired when html content is pasted or dragged into the editor.
-// Handlers must return the given string or a
-// [transformed](#EventMixin.signalPipelined) version of it.
-
-// :: (slice: Slice) → Slice #path=ProseMirror#events#transformPasted
-// Fired when something is pasted or dragged into the editor. The
-// given slice represents the pasted content, and your handler can
-// return a modified version to manipulate it before it is inserted
-// into the document.
-
 // : (ProseMirror, DataTransfer, ?bool) → ?Slice
 function fromClipboard(pm, dataTransfer, plainText, $target) {
   let txt = dataTransfer.getData("text/plain")
@@ -408,11 +385,11 @@ function fromClipboard(pm, dataTransfer, plainText, $target) {
   let dom
   if ((plainText || !html) && txt) {
     dom = document.createElement("div")
-    pm.signalPipelined("transformPastedText", txt).split(/\n{2,}/).forEach(para => {
+    pm.on.transformPastedText.dispatch(txt).split(/\n{2,}/).forEach(para => {
       dom.appendChild(document.createElement("paragraph")).textContent = para
     })
   } else {
-    dom = readHTML(pm.signalPipelined("transformPastedHTML", html))
+    dom = readHTML(pm.on.transformPastedHTML.dispatch(html))
   }
   let openLeft = null, openRight = null, m
   let foundLeft = dom.querySelector("[pm-open-left]"), foundRight = dom.querySelector("[pm-open-right]")
@@ -421,7 +398,7 @@ function fromClipboard(pm, dataTransfer, plainText, $target) {
   if (foundRight && (m = /^\d+$/.exec(foundRight.getAttribute("pm-open-right"))))
     openRight = +m[0]
   let slice = fromDOMInContext($target, dom, {openLeft, openRight, preserveWhiteSpace: true})
-  return pm.signalPipelined("transformPasted", slice)
+  return pm.on.transformPasted.dispatch(slice)
 }
 
 // Trick from jQuery -- some elements must be wrapped in other
@@ -571,11 +548,7 @@ handlers.drop = (pm, e) => {
   pm.input.dragging = null
   removeDropTarget(pm)
 
-  // :: (event: DOMEvent) #path=ProseMirror#events#drop
-  // Fired when a drop event occurs on the editor content. A handler
-  // may declare the event handled by calling `preventDefault` on it
-  // or returning a truthy value.
-  if (!e.dataTransfer || pm.signalDOM(e)) return
+  if (!e.dataTransfer || pm.on.domDrom.dispatch(e)) return
 
   let $mouse = pm.doc.resolve(pm.posAtCoords({left: e.clientX, top: e.clientY}))
   if (!$mouse) return
@@ -605,14 +578,10 @@ handlers.drop = (pm, e) => {
 
 handlers.focus = pm => {
   pm.wrapper.classList.add("ProseMirror-focused")
-  // :: () #path=ProseMirror#events#focus
-  // Fired when the editor gains focus.
-  pm.signal("focus")
+  pm.on.focus.dispatch()
 }
 
 handlers.blur = pm => {
   pm.wrapper.classList.remove("ProseMirror-focused")
-  // :: () #path=ProseMirror#events#blur
-  // Fired when the editor loses focus.
-  pm.signal("blur")
+  pm.on.blur.dispatch()
 }

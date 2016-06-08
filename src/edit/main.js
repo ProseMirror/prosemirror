@@ -1,7 +1,7 @@
 require("./css")
 
 const {Map} = require("../util/map")
-const {eventMixin} = require("../util/event")
+const {Subscription, PipelineSubscription, StoppableSubscription, DOMSubscription} = require("../util/subscription")
 const {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} = require("../util/dom")
 
 const {parseOptions, initOptions, setOption} = require("./options")
@@ -18,9 +18,6 @@ const {EditorScheduler, UpdateScheduler} = require("./update")
 // ProseMirror editor holds a [document](#Node) and a
 // [selection](#Selection), and displays an editable surface
 // representing that document in the browser document.
-//
-// Contains event methods (`on`, etc) from the [event
-// mixin](#EventMixin).
 class ProseMirror {
   // :: (Object)
   // Construct a new editor from a set of [options](#edit_options)
@@ -42,6 +39,95 @@ class ProseMirror {
     // The outer DOM element of the editor.
     this.wrapper = elt("div", {class: "ProseMirror"}, this.content)
     this.wrapper.ProseMirror = this
+
+    // :: Object<Subscription>
+    // A wrapper object containing the various [event
+    // subscribers](#Subscription) exposed by an editor instance.
+    this.on = {
+      // :: Subscription<()>
+      // Dispatched when the document has changed. See
+      // [`setDoc`](#ProseMirror.on.setDoc) and
+      // [`transform`](#ProseMirror.on.transform) for more specific
+      // change-related events.
+      change: new Subscription,
+      // :: Subscription<()>
+      // Indicates that the editor's selection has changed.
+      selectionChange: new Subscription,
+      // :: Subscription<()>
+      // Dispatched when the user types text into the editor.
+      textInput: new Subscription,
+      // :: Subscription<(doc: Node, selection: Selection)>
+      // Dispatched when [`setDoc`](#ProseMirror.setDoc) is called, before
+      // the document is actually updated.
+      beforeSetDoc: new Subscription,
+      // :: Subscription<(doc: Node, selection: Selection)>
+      // Dispatched when [`setDoc`](#ProseMirror.setDoc) is called, after
+      // the document is updated.
+      setDoc: new Subscription,
+      // :: Subscription<()>
+      // Dispatched when the user interacts with the editor, for example by
+      // clicking on it or pressing a key while it is focused. Mostly
+      // useful for closing or resetting transient UI state such as open
+      // menus.
+      interaction: new Subscription,
+      // :: Subscription<()>
+      // Dispatched when the editor gains focus.
+      focus: new Subscription,
+      // :: Subscription<()>
+      // Dispatched when the editor loses focus.
+      blur: new Subscription,
+      // :: PipelineSubscription<(slice: Slice) → Slice>
+      // Dispatched when something is pasted or dragged into the editor. The
+      // given slice represents the pasted content, and your handler can
+      // return a modified version to manipulate it before it is inserted
+      // into the document.
+      transformPasted: new PipelineSubscription,
+      // :: PipelineSubscription<(text: string) → string>
+      // Dispatched when plain text is pasted. Handlers must return the given
+      // string or a transformed version of it.
+      transformPastedText: new PipelineSubscription,
+      // :: PipelineSubscription<(html: string) → string>
+      // Dispatched when html content is pasted or dragged into the editor.
+      // Handlers must return the given string or a transformed
+      // version of it.
+      transformPastedHTML: new PipelineSubscription,
+      // :: Subscription<(transform: Transform, selectionBeforeTransform: Selection, options: Object)>
+      // Signals that a (non-empty) transformation has been aplied to
+      // the editor. Passes the `Transform`, the selection before the
+      // transform, and the options given to [`apply`](#ProseMirror.apply)
+      // as arguments to the handler.
+      transform: new Subscription,
+      // :: Subscription<(transform: Transform, options: Object)>
+      // Indicates that the given transform is about to be
+      // [applied](#ProseMirror.apply). The handler may add additional
+      // [steps](#Step) to the transform, but it it not allowed to
+      // interfere with the editor's state.
+      beforeTransform: new Subscription,
+      // :: StoppableSubscription<(transform: Transform)>
+      // Dispatched before a transform (applied without `filter: false`) is
+      // applied. The handler can return a truthy value to cancel the
+      // transform.
+      filterTransform: new StoppableSubscription,
+      // :: Subscription<()>
+      // Dispatched when the editor is about to [flush](#ProseMirror.flush)
+      // an update to the DOM.
+      flushing: new Subscription,
+      // :: Subscription<()>
+      // Dispatched when the editor has finished
+      // [flushing](#ProseMirror.flush) an update to the DOM.
+      flush: new Subscription,
+      // :: Subscription<()>
+      // Dispatched when the editor redrew its document in the DOM.
+      draw: new Subscription,
+      // :: Subscription<()>
+      // Dispatched when the set of [active marks](#ProseMirror.activeMarks) changes.
+      activeMarkChange: new Subscription,
+      // :: StoppableSubscription<(DOMEvent)>
+      // Dispatched when a DOM `drop` event happens on the editor.
+      // Handlers may declare the event as being handled by calling
+      // `preventDefault` on it or returning a truthy value.
+      domDrop: new DOMSubscription
+    }
 
     if (opts.place && opts.place.appendChild)
       opts.place.appendChild(this.wrapper)
@@ -74,9 +160,6 @@ class ProseMirror {
   // Update the value of the given [option](#edit_options).
   setOption(name, value) {
     setOption(this, name, value)
-    // :: (name: string, value: *) #path=ProseMirror#events#optionChanged
-    // Fired when [`setOption`](#ProseMirror.setOption) is called.
-    this.signal("optionChanged", name, value)
   }
 
   // :: (string) → any
@@ -130,18 +213,12 @@ class ProseMirror {
   // Set the editor's content, and optionally include a new selection.
   setDoc(doc, sel) {
     if (!sel) sel = findSelectionAtStart(doc)
-    // :: (doc: Node, selection: Selection) #path=ProseMirror#events#beforeSetDoc
-    // Fired when [`setDoc`](#ProseMirror.setDoc) is called, before
-    // the document is actually updated.
-    this.signal("beforeSetDoc", doc, sel)
+    this.on.beforeSetDoc.dispatch(doc, sel)
     this.ensureOperation()
     this.setDocInner(doc)
     this.operation.docSet = true
     this.sel.set(sel, true)
-    // :: (doc: Node, selection: Selection) #path=ProseMirror#events#setDoc
-    // Fired when [`setDoc`](#ProseMirror.setDoc) is called, after
-    // the document is updated.
-    this.signal("setDoc", doc, sel)
+    this.on.setDoc.dispatch(doc, sel)
   }
 
   updateDoc(doc, mapping, selection) {
@@ -150,12 +227,7 @@ class ProseMirror {
     this.operation.mappings.push(mapping)
     this.doc = doc
     this.sel.setAndSignal(selection || this.sel.range.map(doc, mapping))
-    // :: () #path=ProseMirror#events#change
-    // Fired when the document has changed. See
-    // [`setDoc`](#ProseMirror.event_setDoc) and
-    // [`transform`](#ProseMirror.event_transform) for more specific
-    // change-related events.
-    this.signal("change")
+    this.on.change.dispatch()
   }
 
   // :: EditorTransform
@@ -185,28 +257,14 @@ class ProseMirror {
     if (!transform.docs[0].eq(this.doc))
       throw new RangeError("Applying a transform that does not start with the current document")
 
-    // :: (transform: Transform) #path=ProseMirror#events#filterTransform
-    // Fired before a transform (applied without `filter: false`) is
-    // applied. The handler can return a truthy value to cancel the
-    // transform.
-    if (options.filter !== false && this.signalHandleable("filterTransform", transform))
+    if (options.filter !== false && this.on.filterTransform.dispatch(transform))
       return transform
 
     let selectionBeforeTransform = this.selection
 
-    // :: (transform: Transform, options: Object) #path=ProseMirror#events#beforeTransform
-    // Indicates that the given transform is about to be
-    // [applied](#ProseMirror.apply). The handler may add additional
-    // [steps](#Step) to the transform, but it it not allowed to
-    // interfere with the editor's state.
-    this.signal("beforeTransform", transform, options)
+    this.on.beforeTransform.dispatch(transform, options)
     this.updateDoc(transform.doc, transform, options.selection || transform.selection)
-    // :: (transform: Transform, selectionBeforeTransform: Selection, options: Object) #path=ProseMirror#events#transform
-    // Signals that a (non-empty) transformation has been aplied to
-    // the editor. Passes the `Transform`, the selection before the
-    // transform, and the options given to [`apply`](#ProseMirror.apply)
-    // as arguments to the handler.
-    this.signal("transform", transform, selectionBeforeTransform, options)
+    this.on.transform.dispatch(transform, selectionBeforeTransform, options)
     if (options.scrollIntoView) this.scrollIntoView()
     return transform
   }
@@ -265,10 +323,7 @@ class ProseMirror {
     this.unscheduleFlush()
 
     if (!document.body.contains(this.wrapper) || !this.operation) return false
-    // :: () #path=ProseMirror#events#flushing
-    // Fired when the editor is about to [flush](#ProseMirror.flush)
-    // an update to the DOM.
-    this.signal("flushing")
+    this.on.flushing.dispatch()
 
     let op = this.operation, redrawn = false
     if (!op) return false
@@ -290,13 +345,8 @@ class ProseMirror {
     // doesn't cause extra layout
     if (op.scrollIntoView !== false)
       scrollIntoView(this, op.scrollIntoView)
-    // :: () #path=ProseMirror#events#draw
-    // Fired when the editor redrew its document in the DOM.
-    if (redrawn) this.signal("draw")
-    // :: () #path=ProseMirror#events#flush
-    // Fired when the editor has finished
-    // [flushing](#ProseMirror.flush) an update to the DOM.
-    this.signal("flush")
+    if (redrawn) this.on.draw.dispatch()
+    this.on.flush.dispatch()
     this.accurateSelection = false
     return redrawn
   }
@@ -345,9 +395,13 @@ class ProseMirror {
   //   : Whether the range should be forgotten when it becomes empty
   //     (because all of its content was deleted).
   //
-  // **`className`**: string
+  // **`className`**`: string`
   //   : A CSS class to add to the inline content that is part of this
   //     range.
+  //
+  // **`onRemove`**`: fn(number, number)`
+  //   : When given, this function will be called when the range is
+  //     removed from the editor.
   markRange(from, to, options) {
     this.checkPos(from)
     this.checkPos(to)
@@ -375,9 +429,7 @@ class ProseMirror {
       if (to == null) to = !type.isInSet(marks)
       if (to && !sel.$head.parent.contentMatchAt(sel.$head.index()).allowsMark(type)) return
       this.input.storedMarks = to ? type.create(attrs).addToSet(marks) : type.removeFromSet(marks)
-      // :: () #path=ProseMirror#events#activeMarkChange
-      // Fired when the set of [active marks](#ProseMirror.activeMarks) changes.
-      this.signal("activeMarkChange")
+      this.on.activeMarkChange.dispatch()
     } else {
       if (to != null ? to : !this.doc.rangeHasMark(sel.from, sel.to, type))
         this.apply(this.tr.addMark(sel.from, sel.to, type.create(attrs)))
@@ -490,20 +542,18 @@ class ProseMirror {
   // with a function that is not actually scheduled is harmless.
   unscheduleDOMUpdate(f) { this.centralScheduler.unset(f) }
 
-  // :: (string, () -> ?()) → UpdateScheduler
-  // Creates an update scheduler for this given editor. `events` should
-  // be a space-separated list of event names (for example
-  // `"selectionChange change"`). `start` should be a function as
-  // expected by [`scheduleDOMUpdate`](ProseMirror.scheduleDOMUpdate).
-  updateScheduler(events, start) {
-    return new UpdateScheduler(this, events, start)
+  // :: ([Subscription], () -> ?()) → UpdateScheduler
+  // Creates an update scheduler for this given editor. `subscribers`
+  // should be an array of subscribers to listen for. `start` should
+  // be a function as expected by
+  // [`scheduleDOMUpdate`](ProseMirror.scheduleDOMUpdate).
+  updateScheduler(subscriptions, start) {
+    return new UpdateScheduler(this, subscriptions, start)
   }
 }
 exports.ProseMirror = ProseMirror
 
 const nullOptions = {}
-
-eventMixin(ProseMirror)
 
 // Operations are used to delay/batch DOM updates. When a change to
 // the editor state happens, it is not immediately flushed to the DOM,

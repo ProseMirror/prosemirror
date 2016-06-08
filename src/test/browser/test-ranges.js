@@ -33,8 +33,9 @@ test("rightInclusive", pm => {
 })
 
 test("deleted", pm => {
-  let range = pm.markRange(2, 3), cleared = false
-  range.on("removed", () => cleared = true)
+  let cleared = false, range = pm.markRange(2, 3, {
+    onRemove: () => cleared = true
+  })
   pm.tr.insertText(2, "A").apply()
   cmp(cleared, false)
   pm.tr.delete(3, 5).apply()
@@ -43,16 +44,19 @@ test("deleted", pm => {
 })
 
 test("cleared", pm => {
-  let range = pm.markRange(2, 3), cleared = false
-  range.on("removed", () => cleared = true)
+  let cleared = false, range = pm.markRange(2, 3, {
+    onRemove: () => cleared = true
+  })
   pm.removeRange(range)
   cmp(cleared, true)
   cmp(range.from, null)
 })
 
 test("stay_when_empty", pm => {
-  let range = pm.markRange(2, 3, {removeWhenEmpty: false}), cleared = false
-  range.on("removed", () => cleared = true)
+  let cleared = false, range = pm.markRange(2, 3, {
+    removeWhenEmpty: false,
+    onRemove: () => cleared = true
+  })
   pm.tr.delete(1, 5).apply()
   cmp(cleared, false)
   cmpStr(range.from, 1)

@@ -103,7 +103,7 @@ test("set", pm => {
 
 test("change_event", pm => {
   let received = 0
-  pm.on("selectionChange", () => ++received)
+  pm.on.selectionChange.add(() => ++received)
   pm.setTextSelection(2)
   pm.setTextSelection(2)
   cmp(received, 1, "changed")

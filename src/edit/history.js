@@ -294,7 +294,7 @@ class History {
     this.ignoreTransform = false
     this.preserveItems = 0
 
-    pm.on("transform", this.recordTransform.bind(this))
+    pm.on.transform.add(this.recordTransform.bind(this))
   }
 
   // : (Transform, Selection, Object)

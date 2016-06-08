@@ -59,7 +59,7 @@ class MenuItem {
     if (spec.css) dom.style.cssText += spec.css
     if (!disabled) dom.addEventListener(spec.execEvent || "mousedown", e => {
       e.preventDefault(); e.stopPropagation()
-      pm.signal("interaction")
+      pm.on.interaction.dispatch()
       spec.run(pm)
     })
     return dom
@@ -175,13 +175,13 @@ class Dropdown {
     function finish() {
       if (done) return
       done = true
-      pm.off("interaction", finish)
+      pm.on.interaction.remove(finish)
       pm.wrapper.removeChild(menuDOM)
       return true
     }
-    pm.signal("interaction")
+    pm.on.interaction.dispatch()
     pm.wrapper.appendChild(menuDOM)
-    pm.on("interaction", finish)
+    pm.on.interaction.add(finish)
     return finish
   }
 }

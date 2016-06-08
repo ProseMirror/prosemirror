@@ -1,7 +1,4 @@
-const {eventMixin} = require("../util/event")
-
-// ;; A [marked range](#ProseMirror.markRange). Includes the methods
-// from the [event mixin](#EventMixin).
+// ;; A [marked range](#ProseMirror.markRange).
 class MarkedRange {
   constructor(from, to, options) {
     this.options = options || {}
@@ -18,15 +15,11 @@ class MarkedRange {
   }
 
   remove() {
-    // :: (from: number, to: number) #path=MarkedRange#events#removed
-    // Signalled when the marked range is removed from the editor.
-    this.signal("removed", this.from, Math.max(this.to, this.from))
+    if (this.options.onRemove) this.options.onRemove(this.from, Math.max(this.to, this.from))
     this.from = this.to = null
   }
 }
 exports.MarkedRange = MarkedRange
-
-eventMixin(MarkedRange)
 
 class RangeSorter {
   constructor() {

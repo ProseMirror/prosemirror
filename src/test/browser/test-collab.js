@@ -13,7 +13,7 @@ class DummyServer {
 
   attach(pm) {
     let mod = collabEditing.get(pm)
-    mod.on("mustSend", () => this.mustSend(pm, mod.clientID))
+    mod.mustSend.add(() => this.mustSend(pm, mod.clientID))
     this.pms.push(pm)
   }
 
@@ -37,7 +37,7 @@ function delay(pm, f) {
   mod.frozen = true
   f()
   mod.frozen = false
-  if (mod.hasSendableSteps()) mod.signal("mustSend")
+  if (mod.hasSendableSteps()) mod.mustSend.dispatch()
 }
 
 function test(name, f, options, n) {

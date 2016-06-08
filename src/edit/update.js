@@ -13,7 +13,7 @@ class EditorScheduler {
       else
         this.force()
     }
-    pm.on("flush", this.onFlush.bind(this))
+    pm.on.flush.add(this.onFlush.bind(this))
   }
 
   set(f) {
@@ -50,20 +50,20 @@ exports.EditorScheduler = EditorScheduler
 // ;; Helper for scheduling updates whenever any of a series of events
 // happen.
 class UpdateScheduler {
-  constructor(pm, events, start) {
+  constructor(pm, subscriptions, start) {
     this.pm = pm
     this.start = start
 
-    this.events = events.split(" ")
+    this.subscriptions = subscriptions
     this.onEvent = this.onEvent.bind(this)
-    this.events.forEach(event => pm.on(event, this.onEvent))
+    this.subscriptions.forEach(sub => sub.add(this.onEvent))
   }
 
   // :: ()
   // Detach the event handlers registered by this scheduler.
   detach() {
     this.pm.unscheduleDOMUpdate(this.start)
-    this.events.forEach(event => this.pm.off(event, this.onEvent))
+    this.subscriptions.forEach(sub => sub.remove(this.onEvent))
   }
 
   onEvent() {

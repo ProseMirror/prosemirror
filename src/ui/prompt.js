@@ -218,14 +218,14 @@ function openPrompt(pm, content, options) {
   }
 
   let close = () => {
-    pm.off("interaction", close)
+    pm.on.interaction.remove(close)
     if (wrapper.parentNode) {
       wrapper.parentNode.removeChild(wrapper)
       if (options && options.onClose) options.onClose()
     }
   }
   button.addEventListener("click", close)
-  pm.on("interaction", close)
+  pm.on.interaction.add(close)
   return {close}
 }
 exports.openPrompt = openPrompt

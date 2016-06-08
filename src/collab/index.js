@@ -1,6 +1,6 @@
 const {Plugin} = require("../edit")
-const {eventMixin} = require("../util/event")
 const {Transform} = require("../transform")
+const {Subscription} = require("../util/subscription")
 
 const {rebaseSteps} = require("./rebase")
 exports.rebaseSteps = rebaseSteps
@@ -18,8 +18,6 @@ function randomID() { return Math.floor(Math.random() * 0xFFFFFFFF) }
 // attached to the editor when the [plugin](#collabEditing) is enabled,
 // and can be accessed with
 // [`collabEditing.get`](#Plugin.get).
-//
-// Includes the [event mixin](#EventMixin).
 class Collab {
   constructor(pm, options) {
     this.pm = pm
@@ -37,25 +35,33 @@ class Collab {
     this.unconfirmedSteps = []
     this.unconfirmedMaps = []
 
-    pm.on("transform", this.onTransform = transform => {
+    // :: Subscription<()>
+    // Fired when there are new steps to send to the central
+    // authority. Consumers should respond by calling
+    // `sendableSteps` and pushing those to the authority.
+    this.mustSend = new Subscription
+
+    // :: Subscription<(transform: Transform, selectionBeforeTransform: Selection)>
+    // Signals that a transformation has been aplied to the editor.
+    // Passes the `Transform` and the selection before the transform
+    // as arguments to the handler.
+    this.receivedTransform = new Subscription
+
+    pm.on.transform.add(this.onTransform = transform => {
       for (let i = 0; i < transform.steps.length; i++) {
         this.unconfirmedSteps.push(transform.steps[i])
         this.unconfirmedMaps.push(transform.maps[i])
       }
-      // :: () #path=Collab#events#mustSend
-      // Fired when there are new steps to send to the central
-      // authority. Consumers should respond by calling
-      // `sendableSteps` and pushing those to the authority.
-      this.signal("mustSend")
+      this.mustSend.dispatch()
     })
-    pm.on("beforeSetDoc", this.onSetDoc = () => {
+    pm.on.beforeSetDoc.add(this.onSetDoc = () => {
       throw new RangeError("setDoc is not supported on a collaborative editor")
     })
   }
 
   detach() {
-    this.pm.off("transform", this.onTransform)
-    this.pm.off("beforeSetDoc", this.onSetDoc)
+    this.pm.on.transform.remove(this.onTransform)
+    this.pm.on.beforeSetDoc.remove(this.onSetDoc)
     this.pm.history.preserveItems++
   }
 
@@ -115,15 +121,10 @@ class Collab {
     let selectionBefore = this.pm.selection
     this.pm.updateDoc(rebased.doc, rebased.mapping)
     this.pm.history.rebased(newMaps, rebased.transform, rebased.positions)
-    // :: (transform: Transform, selectionBeforeTransform: Selection) #path=Collab#events#collabTransform
-    // Signals that a transformation has been aplied to the editor. Passes the `Transform` and the selection
-    // before the transform as arguments to the handler.
-    this.signal("collabTransform", transform, selectionBefore)
+    this.receivedTransform.dispatch(transform, selectionBefore)
     return transform.maps
   }
 }
-
-eventMixin(Collab)
 
 // :: Plugin
 //
