@@ -14,9 +14,12 @@ function posBeforeFromDOM(node) {
   }
   return pos
 }
-exports.posBeforeFromDOM = posBeforeFromDOM
 
-// : (DOMNode, DOMNode, number) → number
+// : number Extra return value from posFromDOM, indicating whether the
+// position was inside a leaf node.
+let posInLeaf = null
+
+// : (DOMNode, number) → number
 function posFromDOM(dom, domOffset) {
   if (domOffset == null) {
     domOffset = Array.prototype.indexOf.call(dom.parentNode.childNodes, dom)
@@ -34,7 +37,8 @@ function posFromDOM(dom, domOffset) {
       let size = +dom.getAttribute("pm-size")
       if (domOffset == dom.childNodes.length) innerOffset = size
       else innerOffset = Math.min(innerOffset, size)
-      return posBeforeFromDOM(dom) + innerOffset
+      posInLeaf = posBeforeFromDOM(dom)
+      return posInLeaf + innerOffset
     } else if (dom.hasAttribute("pm-container")) {
       break
     } else if (tag = dom.getAttribute("pm-inner-offset")) {
@@ -57,6 +61,7 @@ function posFromDOM(dom, domOffset) {
       break
     }
   }
+  posInLeaf = null
   return start + before + innerOffset
 }
 exports.posFromDOM = posFromDOM
@@ -227,8 +232,7 @@ function findOffsetInNode(node, coords) {
   }
   if (!closest) return {node, offset}
   if (closest.nodeType == 3) return findOffsetInText(closest, coordsClosest)
-  if (closest.firstChild) return findOffsetInNode(closest, coordsClosest)
-  return {node, offset}
+  return findOffsetInNode(closest, coordsClosest)
 }
 
 function findOffsetInText(node, coords) {
@@ -246,14 +250,26 @@ function findOffsetInText(node, coords) {
   return {node, offset: 0}
 }
 
+function targetKludge(dom, coords) {
+  if (/^[uo]l$/i.test(dom.nodeName)) {
+    for (let child = dom.firstChild; child; child = child.nextSibling) {
+      if (child.nodeType != 1 || !child.hasAttribute("pm-offset") || !/^li$/i.test(child.nodeName)) continue
+      let childBox = child.getBoundingClientRect()
+      if (coords.left > childBox.left - 2) break
+      if (childBox.top <= coords.top && childBox.bottom >= coords.top) return child
+    }
+  }
+  return dom
+}
+
 // Given an x,y position on the editor, get the position in the document.
 function posAtCoords(pm, coords) {
-  let elt = document.elementFromPoint(coords.left, coords.top + 1)
+  let elt = targetKludge(document.elementFromPoint(coords.left, coords.top + 1), coords)
   if (!contains(pm.content, elt)) return null
 
-  if (!elt.firstChild) elt = elt.parentNode
   let {node, offset} = findOffsetInNode(elt, coords)
-  return posFromDOM(node, offset)
+  let pos = posFromDOM(node, offset)
+  return {pos, inside: posInLeaf}
 }
 exports.posAtCoords = posAtCoords
 
@@ -303,77 +319,3 @@ function coordsAtPos(pm, pos) {
   return {top: rect.top, bottom: rect.bottom, left: x, right: x}
 }
 exports.coordsAtPos = coordsAtPos
-
-// ;; #path=NodeType #kind=class #noAnchor
-// You can add several properties to [node types](#NodeType) to
-// influence the way the editor interacts with them.
-
-function targetKludge(dom, coords) {
-  if (/^[uo]l$/i.test(dom.nodeName)) {
-    for (let child = dom.firstChild; child; child = child.nextSibling) {
-      if (child.nodeType != 1 || !child.hasAttribute("pm-offset") || !/^li$/i.test(child.nodeName)) continue
-      let childBox = child.getBoundingClientRect()
-      if (coords.left > childBox.left - 2) break
-      if (childBox.top <= coords.top && childBox.bottom >= coords.top) return child
-    }
-  }
-  return dom
-}
-
-function selectableNodeAbove(pm, dom, coords, liberal) {
-  dom = targetKludge(dom, coords)
-  for (; dom && dom != pm.content; dom = dom.parentNode) {
-    if (dom.hasAttribute("pm-offset")) {
-      let pos = posBeforeFromDOM(dom), node = pm.doc.nodeAt(pos)
-      // Leaf nodes are implicitly clickable
-      if ((liberal || node.type.isLeaf) && node.type.selectable) return pos
-      if (!liberal) return null
-    }
-  }
-}
-exports.selectableNodeAbove = selectableNodeAbove
-
-// :: (pm: ProseMirror, event: MouseEvent, pos: number, node: Node) → bool
-// #path=NodeType.prototype.handleClick
-// If a node is directly clicked (that is, the click didn't land in a
-// DOM node belonging to a child node), and its type has a
-// `handleClick` method, that method is given a chance to handle the
-// click. The method is called, and should return `false` if it did
-// _not_ handle the click.
-//
-// The `event` passed is the event for `"mousedown"`, but calling
-// `preventDefault` on it has no effect, since this method is only
-// called after a corresponding `"mouseup"` has occurred and
-// ProseMirror has determined that this is not a drag or multi-click
-// event.
-
-// :: (pm: ProseMirror, event: MouseEvent, pos: number, node: Node) → bool
-// #path=NodeType.prototype.handleDoubleClick
-// This works like [`handleClick`](#NodeType.handleClick), but is
-// called for double clicks instead.
-
-// :: (pm: ProseMirror, event: MouseEvent, pos: number, node: Node) → bool
-// #path=NodeType.prototype.handleContextMenu
-//
-// When the [context
-// menu](https://developer.mozilla.org/en-US/docs/Web/Events/contextmenu)
-// is activated in the editable context, nodes that the clicked
-// position falls inside of get a chance to react to it. Node types
-// may define a `handleContextMenu` method, which will be called when
-// present, first on inner nodes and then up the document tree, until
-// one of the methods returns something other than `false`.
-//
-// The handlers can inspect `event.target` to figure out whether they
-// were directly clicked, and may call `event.preventDefault()` to
-// prevent the native context menu.
-
-function handleNodeClick(pm, type, event, target, direct) {
-  for (let dom = target; dom && dom != pm.content; dom = dom.parentNode) {
-    if (dom.hasAttribute("pm-offset")) {
-      let pos = posBeforeFromDOM(dom), node = pm.doc.nodeAt(pos)
-      let handled = node.type[type] && node.type[type](pm, event, pos, node) !== false
-      if (direct || handled) return handled
-    }
-  }
-}
-exports.handleNodeClick = handleNodeClick

@@ -77,6 +77,19 @@ class ProseMirror {
       // :: Subscription<()>
       // Dispatched when the editor loses focus.
       blur: new Subscription,
+      // :: StoppableSubscription<(pos: number, inside: [{node: Node, pos: number}])>
+      // Dispatched when the editor is clicked. Return a truthy
+      // value to indicate that the click was handled, and no further
+      // action needs to be taken.
+      click: new StoppableSubscription,
+      // :: StoppableSubscription<(pos: number, inside: [{node: Node, pos: number}])>
+      // Dispatched when the editor is double-clicked. Return a truthy
+      // value to indicate that the click was handled.
+      doubleClick: new StoppableSubscription,
+      // :: StoppableSubscription<(pos: number, inside: [{node: Node, pos: number}])>
+      // Dispatched when the context menu is opened on the editor.
+      // Return a truthy value to indicate that you handled the event.
+      contextMenu: new StoppableSubscription,
       // :: PipelineSubscription<(slice: Slice) → Slice>
       // Dispatched when something is pasted or dragged into the editor. The
       // given slice represents the pasted content, and your handler can
@@ -472,15 +485,29 @@ class ProseMirror {
   // content, this method will return the document position that
   // corresponds to those coordinates.
   posAtCoords(coords) {
-    // If the DOM has been changed, flush so that we have a proper DOM to read
-    if (this.operation && (this.dirtyNodes.size > 0 || this.operation.composing || this.operation.docSet))
-      this.flush()
-    let pos = posAtCoords(this, coords)
-    if (pos == null) return pos
-    // If there's an active operation, we need to map forward through
-    // its changes to get a position that applies to the current
-    // document
-    return this.operation ? mapThrough(this.operation.mappings, pos) : pos
+    let result = mappedPosAtCoords(this, coords)
+    return result && result.pos
+  }
+
+  // :: ({top: number, left: number}) → ?{pos: number, inside: [{pos: number, node: Node}]}
+  // If the given coordinates fall within the editable content, this
+  // method will return the document position that corresponds to
+  // those coordinates, along with a stack of nodes and their
+  // positions (excluding the top node) that the coordinates fall
+  // into.
+  contextAtCoords(coords) {
+    let result = mappedPosAtCoords(this, coords)
+    if (!result) return null
+
+    let $pos = this.doc.resolve(result.inside == null ? result.pos : result.inside), inside = []
+    for (let i = 1; i <= $pos.depth; i++)
+      inside.push({pos: $pos.before(i), node: $pos.node(i)})
+    if (result.inside != null) {
+      let after = $pos.nodeAfter
+      if (after && !after.isText && after.type.isLeaf)
+        inside.push({pos: result.inside, node: after})
+    }
+    return {pos: result.pos, inside}
   }
 
   // :: (number) → {top: number, left: number, bottom: number}
@@ -560,6 +587,23 @@ class ProseMirror {
   }
 }
 exports.ProseMirror = ProseMirror
+
+function mappedPosAtCoords(pm, coords) {
+  // If the DOM has been changed, flush so that we have a proper DOM to read
+  if (pm.operation && (pm.dirtyNodes.size > 0 || pm.operation.composing || pm.operation.docSet))
+    pm.flush()
+  let result = posAtCoords(pm, coords)
+  if (!result) return null
+
+  // If there's an active operation, we need to map forward through
+  // its changes to get a position that applies to the current
+  // document
+  if (pm.operation)
+    return {pos: mapThrough(pm.operation.mappings, result.pos),
+            inside: result.inside == null ? null : mapThrough(pm.operation.mappings, result.inside)}
+  else
+    return result
+}
 
 const nullOptions = {}
 

@@ -8,7 +8,6 @@ const {elt, contains} = require("../util/dom")
 
 const {readInputChange, readCompositionChange} = require("./domchange")
 const {findSelectionNear, hasFocus} = require("./selection")
-const {posBeforeFromDOM, handleNodeClick, selectableNodeAbove} = require("./dompos")
 
 let stopSeq = null
 
@@ -146,29 +145,33 @@ handlers.keypress = (pm, e) => {
   }
 }
 
-function realTarget(pm, mouseEvent) {
-  if (pm.operation && pm.flush())
-    return document.elementFromPoint(mouseEvent.clientX, mouseEvent.clientY)
-  else
-    return mouseEvent.target
+function contextFromEvent(pm, event) {
+  return pm.contextAtCoords({left: event.clientX, top: event.clientY})
 }
 
-function selectClickedNode(pm, e, target) {
-  let pos = selectableNodeAbove(pm, target, {left: e.clientX, top: e.clientY}, true)
-  if (pos == null) return pm.sel.fastPoll()
+function selectClickedNode(pm, context) {
+  let {node: selectedNode, $from} = pm.selection, selectAt
 
-  let {node, $from} = pm.selection
-  if (node) {
-    let $pos = pm.doc.resolve(pos)
-    if ($pos.depth >= $from.depth && $pos.before($from.depth + 1) == $from.pos) {
-      if ($from.depth == 0) return pm.sel.fastPoll()
-      pos = $pos.before($from.depth)
+  for (let i = context.inside.length - 1; i >= 0; i--) {
+    let {pos, node} = context.inside[i]
+    if (node.type.selectable) {
+      selectAt = pos
+      if (selectedNode && $from.depth > 0) {
+        let $pos = pm.doc.resolve(pos)
+        if ($pos.depth >= $from.depth && $pos.before($from.depth + 1) == $from.pos)
+          selectAt = $pos.before($from.depth)
+      }
+      break
     }
   }
 
-  pm.setNodeSelection(pos)
-  pm.focus()
-  e.preventDefault()
+  if (selectAt != null) {
+    pm.setNodeSelection(selectAt)
+    pm.focus()
+    return true
+  } else {
+    return false
+  }
 }
 
 let lastClick = {time: 0, x: 0, y: 0}, oneButLastClick = lastClick
@@ -178,18 +181,17 @@ function isNear(event, click) {
   return dx * dx + dy * dy < 100
 }
 
-function handleTripleClick(pm, e, target) {
-  e.preventDefault()
-  let pos = selectableNodeAbove(pm, target, {left: e.clientX, top: e.clientY}, true)
-  if (pos != null) {
-    let $pos = pm.doc.resolve(pos), node = $pos.nodeAfter
-    if (node.isBlock && !node.isTextblock) // Non-textblock block, select it
-      pm.setNodeSelection(pos)
-    else if (node.isInline) // Inline node, select whole parent
-      pm.setTextSelection($pos.start(), $pos.end())
-    else // Textblock, select content
+function handleTripleClick(pm, context) {
+  for (let i = context.inside.length - 1; i >= 0; i--) {
+    let {pos, node} = context.inside[i]
+    if (node.isTextblock)
       pm.setTextSelection(pos + 1, pos + 1 + node.content.size)
+    else if (node.type.selectable)
+      pm.setNodeSelection(pos)
+    else
+      continue
     pm.focus()
+    break
   }
 }
 
@@ -201,28 +203,31 @@ handlers.mousedown = (pm, e) => {
   oneButLastClick = lastClick
   lastClick = {time: now, x: e.clientX, y: e.clientY}
 
-  let target = realTarget(pm, e)
-  if (tripleClick) handleTripleClick(pm, e, target)
-  else if (doubleClick && handleNodeClick(pm, "handleDoubleClick", e, target, true)) {}
-  else pm.input.mouseDown = new MouseDown(pm, e, target, doubleClick)
+  let context = contextFromEvent(pm, e)
+  if (context == null) return
+  if (tripleClick) { e.preventDefault(); handleTripleClick(pm, context) }
+  else if (doubleClick && pm.on.doubleClick.dispatch(context.pos, context.inside)) e.preventDefault()
+  else pm.input.mouseDown = new MouseDown(pm, e, context, doubleClick)
 }
 
 class MouseDown {
-  constructor(pm, event, target, doubleClick) {
+  constructor(pm, event, context, doubleClick) {
     this.pm = pm
     this.event = event
-    this.target = target
+    this.context = context
     this.leaveToBrowser = pm.input.shiftKey || doubleClick
+    this.x = event.clientX; this.y = event.clientY
 
-    let pos = posBeforeFromDOM(this.target), node = pm.doc.nodeAt(pos)
-    this.mightDrag = node.type.draggable || node == pm.sel.range.node ? pos : null
-    if (this.mightDrag != null) {
+    let inner = context.inside[context.inside.length - 1]
+    this.mightDrag = inner && (inner.node.type.draggable || inner.node == pm.sel.range.node) ? inner : null
+    this.target = event.target
+    if (this.mightDrag) {
+      if (!contains(pm.content, this.target))
+        this.target = document.elementFromPoint(this.x, this.y)
       this.target.draggable = true
       if (browser.gecko && (this.setContentEditable = !this.target.hasAttribute("contentEditable")))
         this.target.setAttribute("contentEditable", "false")
     }
-
-    this.x = event.clientX; this.y = event.clientY
 
     window.addEventListener("mouseup", this.up = this.up.bind(this))
     window.addEventListener("mousemove", this.move = this.move.bind(this))
@@ -232,7 +237,7 @@ class MouseDown {
   done() {
     window.removeEventListener("mouseup", this.up)
     window.removeEventListener("mousemove", this.move)
-    if (this.mightDrag != null) {
+    if (this.mightDrag) {
       this.target.draggable = false
       if (browser.gecko && this.setContentEditable)
         this.target.removeAttribute("contentEditable")
@@ -242,15 +247,18 @@ class MouseDown {
   up(event) {
     this.done()
 
-    let target = realTarget(this.pm, event)
-    if (this.leaveToBrowser || !contains(this.pm.content, target)) {
-      this.pm.sel.fastPoll()
-    } else if (this.event.ctrlKey) {
-      selectClickedNode(this.pm, event, target)
-    } else if (!handleNodeClick(this.pm, "handleClick", event, target, true)) {
-      let pos = selectableNodeAbove(this.pm, target, {left: this.x, top: this.y})
-      if (pos) {
-        this.pm.setNodeSelection(pos)
+    if (this.leaveToBrowser || !contains(this.pm.content, event.target))
+      return this.pm.sel.fastPoll()
+
+    let context = contextFromEvent(this.pm, event)
+    if (this.event.ctrlKey && selectClickedNode(this.pm, context)) {
+      event.preventDefault()
+    } else if (this.pm.on.click.dispatch(this.context.pos, this.context.inside)) {
+      event.preventDefault()
+    } else {
+      let inner = this.context.inside[this.context.inside.length - 1]
+      if (inner && inner.node.type.isLeaf && inner.node.type.selectable) {
+        this.pm.setNodeSelection(inner.pos)
         this.pm.focus()
       } else {
         this.pm.sel.fastPoll()
@@ -271,7 +279,9 @@ handlers.touchdown = pm => {
 }
 
 handlers.contextmenu = (pm, e) => {
-  handleNodeClick(pm, "handleContextMenu", e, realTarget(pm, e), false)
+  let context = contextFromEvent(pm, e)
+  if (context && pm.on.contextMenu.dispatch(context.pos, context.inside))
+    e.preventDefault()
 }
 
 // Input compositions are hard. Mostly because the events fired by
@@ -474,10 +484,12 @@ class Dragging {
 
 function dropPos(slice, $pos) {
   if (!slice || !slice.content.size) return $pos.pos
+  let content = slice.content
+  for (let i = 0; i < slice.openLeft; i++) content = content.firstChild.content
   for (let d = $pos.depth; d >= 0; d--) {
     let bias = d == $pos.depth ? 0 : $pos.pos <= ($pos.start(d + 1) + $pos.end(d + 1)) / 2 ? -1 : 1
     let insertPos = $pos.index(d) + (bias > 0 ? 1 : 0)
-    if ($pos.node(d).canReplace(insertPos, insertPos, slice.content))
+    if ($pos.node(d).canReplace(insertPos, insertPos, content))
       return bias == 0 ? $pos.pos : bias < 0 ? $pos.before(d + 1) : $pos.after(d + 1)
   }
   return $pos.pos
@@ -500,9 +512,9 @@ handlers.dragstart = (pm, e) => {
   let pos = !empty && pm.posAtCoords({left: e.clientX, top: e.clientY})
   if (pos != null && pos >= from && pos <= to) {
     dragging = {from, to}
-  } else if (mouseDown && mouseDown.mightDrag != null) {
-    let pos = mouseDown.mightDrag
-    dragging = {from: pos, to: pos + pm.doc.nodeAt(pos).nodeSize}
+  } else if (mouseDown && mouseDown.mightDrag) {
+    let pos = mouseDown.mightDrag.pos
+    dragging = {from: pos, to: pos + mouseDown.mightDrag.node.nodeSize}
   }
 
   if (dragging) {
@@ -548,7 +560,7 @@ handlers.drop = (pm, e) => {
   pm.input.dragging = null
   removeDropTarget(pm)
 
-  if (!e.dataTransfer || pm.on.domDrom.dispatch(e)) return
+  if (!e.dataTransfer || pm.on.domDrop.dispatch(e)) return
 
   let $mouse = pm.doc.resolve(pm.posAtCoords({left: e.clientX, top: e.clientY}))
   if (!$mouse) return
