@@ -359,7 +359,9 @@ handlers.input = pm => {
 }
 
 function toClipboard(doc, from, to, dataTransfer) {
-  let slice = doc.slice(from, to)
+  let $from = doc.resolve(from), start = from
+  for (let d = $from.depth; d > 0 && $from.end(d) == start; d--) start++
+  let slice = doc.slice(start, to)
   if (!slice.openLeft && !slice.openRight && slice.possibleParent && slice.possibleParent.type != doc.type.schema.nodes.doc)
     slice = new Slice(Fragment.from(slice.possibleParent.copy(slice.content)), 1, 1)
   let dom = toDOM(slice.content), wrap = document.createElement("div")
