@@ -170,6 +170,49 @@ class CodeMark extends MarkType {
 }
 exports.CodeMark = CodeMark
 
+// ;; The default table node type.
+class Table extends Block {
+  get matchDOMTag() { return {"table": null} }
+  toDOM() { return ["table", 0] }
+}
+exports.Table = Table
+
+// ;; The default caption node type.
+class Caption extends Block {
+  get matchDOMTag() { return {"caption": null} }
+  toDOM() { return ["caption", 0] }
+}
+exports.Caption = Caption
+
+// ;; The default table body node type.
+class TableBody extends Block {
+  get matchDOMTag() { return {"tbody": null} }
+  toDOM() { return ["tbody", 0] }
+}
+exports.TableBody = TableBody
+
+// ;; The default table row node type.
+class TableRow extends Block {
+  get matchDOMTag() { return {"tr": null} }
+  toDOM() { return ["tr", 0] }
+}
+exports.TableRow = TableRow
+
+// ;; The default table cell node type.
+class TableCell extends Block {
+  get isCell() { return true }
+  get matchDOMTag() { return {"td": null} }
+  toDOM() { return ["td", 0] }
+}
+exports.TableCell = TableCell
+
+// ;; The default table header cell node type.
+class TableHeaderCell extends TableCell {
+  get matchDOMTag() { return {"th": null} }
+  toDOM() { return ["th", 0] }
+}
+exports.TableHeaderCell = TableHeaderCell
+
 // :: Schema
 // ProseMirror's default document schema.
 const defaultSchema = new Schema({
@@ -188,7 +231,14 @@ const defaultSchema = new Schema({
 
     text: {type: Text, group: "inline"},
     image: {type: Image, group: "inline"},
-    hard_break: {type: HardBreak, group: "inline"}
+    hard_break: {type: HardBreak, group: "inline"},
+
+    table: {type: Table, content: "table_block+", group: "block"},
+    caption: {type: Caption, content: "text*", group: "table_block"},
+    tbody: {type: TableBody, content: "tr+", group: "table_block"},
+    tr: {type: TableRow, content: "cell+"},
+    td: {type: TableCell, content: "block+", group: "cell"},
+    th: {type: TableHeaderCell, content: "block+", group: "cell"}
   },
 
   marks: {
