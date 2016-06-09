@@ -1,7 +1,7 @@
 const {defTest} = require("../tests")
 const {tempEditor} = require("./def")
 const {cmpNode} = require("../cmp")
-const {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, hr} = require("../build")
+const {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, hr, table, tr, td} = require("../build")
 
 const {commands} = require("../../edit")
 const {defaultSchema: schema} = require("../../schema")
@@ -62,6 +62,12 @@ test("joinBackward",
 test("joinBackward",
      doc(p("<a>foo")),
      doc(p("foo")))
+test("joinBackward",
+     doc(p("hi"), table(tr(td(p("<a>there"))))),
+     doc(p("hi"), table(tr(td(p("there"))))))
+test("joinBackward",
+     doc(table(tr(td(p("there"), p("<a>foo"))))),
+     doc(table(tr(td(p("therefoo"))))))
 
 test("deleteSelection",
      doc(p("f<a>o<b>o")),
@@ -132,6 +138,12 @@ test("joinForward",
 test("joinForward",
      doc(blockquote(p("there<a>")), hr),
      doc(blockquote(p("there"))))
+test("joinForward",
+     doc(p("hi"), table(tr(td(p("there<a>"))))),
+     doc(p("hi"), table(tr(td(p("there"))))))
+test("joinForward",
+     doc(table(tr(td(p("there<a>"), p("foo"))))),
+     doc(table(tr(td(p("therefoo"))))))
 
 test("deleteCharAfter",
      doc(p("b<a>ar")),
@@ -340,6 +352,9 @@ test("liftEmptyBlock",
 test("liftEmptyBlock",
      doc(ul(li(p("hi")), li(p("<a>")))),
      doc(ul(li(p("hi"))), p()))
+test("liftEmptyBlock",
+     doc(table(tr(td(p("<a>"))))),
+     doc(table(tr(td(p())))))
 
 test("createParagraphNear",
      doc("<a>", hr),
