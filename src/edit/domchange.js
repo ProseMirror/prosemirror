@@ -1,6 +1,6 @@
 const {findDiffStart, findDiffEnd, Mark} = require("../model")
 const {fromDOM} = require("../htmlformat")
-const {mapThroughResult} = require("../transform/map")
+const {mapThroughResult} = require("../transform")
 
 const {findSelectionFrom, findSelectionNear, TextSelection} = require("./selection")
 const {DOMFromPos, DOMFromPosFromEnd} = require("./dompos")

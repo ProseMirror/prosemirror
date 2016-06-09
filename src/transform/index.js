@@ -2,7 +2,8 @@
 ;({Step: exports.Step, StepResult: exports.StepResult} = require("./step"))
 ;({joinPoint: exports.joinPoint, joinable: exports.joinable, canSplit: exports.canSplit,
    insertPoint: exports.insertPoint, liftTarget: exports.liftTarget, findWrapping: exports.findWrapping} = require("./structure"))
-;({PosMap: exports.PosMap, MapResult: exports.MapResult, Remapping: exports.Remapping} = require("./map"))
+;({PosMap: exports.PosMap, MapResult: exports.MapResult, Remapping: exports.Remapping,
+   mapThrough: exports.mapThrough, mapThroughResult: exports.mapThroughResult} = require("./map"))
 ;({AddMarkStep: exports.AddMarkStep, RemoveMarkStep: exports.RemoveMarkStep} = require("./mark_step"))
 ;({ReplaceStep: exports.ReplaceStep, ReplaceAroundStep: exports.ReplaceAroundStep} = require("./replace_step"))
 require("./mark")

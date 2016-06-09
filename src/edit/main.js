@@ -3,7 +3,7 @@ require("./css")
 const {Map} = require("../util/map")
 const {Subscription, PipelineSubscription, StoppableSubscription, DOMSubscription} = require("../util/subscription")
 const {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} = require("../util/dom")
-const {mapThrough} = require("../transform/map")
+const {mapThrough} = require("../transform")
 
 const {parseOptions, initOptions, setOption} = require("./options")
 const {SelectionState, TextSelection, NodeSelection, findSelectionAtStart, hasFocus} = require("./selection")
