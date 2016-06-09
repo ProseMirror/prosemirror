@@ -207,7 +207,7 @@ function scrollIntoView(pm, pos) {
 exports.scrollIntoView = scrollIntoView
 
 function findOffsetInNode(node, coords) {
-  let closest, dyClosest = 2e8, coordsClosest, offset = 0
+  let closest, dxClosest = 2e8, coordsClosest, offset = 0
   for (let child = node.firstChild; child; child = child.nextSibling) {
     let rects
     if (child.nodeType == 1) rects = child.getClientRects()
@@ -216,20 +216,19 @@ function findOffsetInNode(node, coords) {
 
     for (let i = 0; i < rects.length; i++) {
       let rect = rects[i]
-      if (rect.left <= coords.left && rect.right >= coords.left) {
-        let dy = rect.top > coords.top ? rect.top - coords.top
-            : rect.bottom < coords.top ? coords.top - rect.bottom : 0
-        if (dy < dyClosest) { // FIXME does not group by row
+      if (rect.top <= coords.top && rect.bottom >= coords.top) {
+        let dx = rect.left > coords.left ? rect.left - coords.left
+            : rect.right < coords.left ? coords.left - rect.right : 0
+        if (dx < dxClosest) {
           closest = child
-          dyClosest = dy
-          coordsClosest = dy ? {left: coords.left, top: rect.top} : coords
+          dxClosest = dx
+          coordsClosest = dx && closest.nodeType == 3 ? {left: rect.right < coords.left ? rect.right : rect.left, top: coords.top} : coords
           if (child.nodeType == 1 && !child.firstChild)
             offset = i + (coords.left >= (rect.left + rect.right) / 2 ? 1 : 0)
           continue
         }
       }
-      if (!closest &&
-          (coords.top >= rect.bottom || coords.top >= rect.top && coords.left >= rect.right))
+      if (!closest && (coords.left >= rect.right || coords.left >= rect.left && coords.top >= rect.bottom))
         offset = i + 1
     }
   }
@@ -244,7 +243,7 @@ function findOffsetInText(node, coords) {
   for (let i = 0; i < len; i++) {
     range.setEnd(node, i + 1)
     range.setStart(node, i)
-    let rect = range.getBoundingClientRect()
+    let rect = singleRect(range, 1)
     if (rect.top == rect.bottom) continue
     if (rect.left - 1 <= coords.left && rect.right + 1 >= coords.left &&
         rect.top - 1 <= coords.top && rect.bottom + 1 >= coords.top)

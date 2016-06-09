@@ -195,3 +195,14 @@ test("type_over_hr", pm => {
   cmp(pm.selection.head, 5)
   cmp(pm.selection.anchor, 5)
 }, {doc: doc(p("a"), "<a>", hr, p("b"))})
+
+test("pos_at_coords_after_wrapped", pm => {
+  let top = pm.coordsAtPos(1), pos = 1, end
+  for (;;) {
+    pm.tr.typeText("abc def ghi ").apply()
+    pos += 12
+    end = pm.coordsAtPos(pos)
+    if (end.bottom > top.bottom + 4) break
+  }
+  cmp(pm.posAtCoords({left: end.left + 50, top: end.top + 5}), pos)
+})
