@@ -9,7 +9,7 @@ class Handler {
 // ;; A subscription is an object that you can add subscribers
 // (functions) to, which will be called every time the subscription is
 // dispatched.
-const Subscription = exports.Subscription = class {
+class Subscription {
   // :: ()
   constructor() {
     this.handlers = []
@@ -72,11 +72,11 @@ const Subscription = exports.Subscription = class {
       handlers[i].f(...args)
   }
 }
+exports.Subscription = Subscription
 
-// ;; A pipelined subscription runs its handlers one a value one at a
-// time, passing the return value from the previous handler to the
-// next one.
-exports.PipelineSubscription = class extends Subscription {
+// ;; A pipelined subscription runs its handlers one at a time,
+// passing the return value from the previous handler to the next one.
+class PipelineSubscription extends Subscription {
   // :: (any) → any
   // Run all handlers on the given value, returning the result.
   dispatch(value) {
@@ -86,10 +86,11 @@ exports.PipelineSubscription = class extends Subscription {
     return value
   }
 }
+exports.PipelineSubscription = PipelineSubscription
 
 // ;; A stoppable subscription is a subscription that stops calling
 // handlers as soon as a handler returns a truthy value.
-exports.StoppableSubscription = class extends Subscription {
+class StoppableSubscription extends Subscription {
   // :: (...any) → any
   // Call handlers with the given arguments. When one of them returns
   // a truthy value, immediately return that value.
@@ -101,11 +102,12 @@ exports.StoppableSubscription = class extends Subscription {
     }
   }
 }
+exports.StoppableSubscription = StoppableSubscription
 
 // ;; A DOM subscription can be used to allow intermediate handlers
 // for DOM events. It will call handlers until one of them returns a
 // truthy value or calls `preventDefault` on the DOM event.
-exports.DOMSubscription = class extends Subscription {
+class DOMSubscription extends Subscription {
   // :: (DOMEvent) → bool
   // Run handlers on the given DOM event until one of them returns a
   // truty value or prevents the event's default behavior. Returns
@@ -117,3 +119,4 @@ exports.DOMSubscription = class extends Subscription {
     return false
   }
 }
+exports.DOMSubscription = DOMSubscription

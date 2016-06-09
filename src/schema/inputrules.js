@@ -1,6 +1,8 @@
 const {wrappingInputRule, textblockTypeInputRule} = require("../inputrules")
 const {Heading, OrderedList, BulletList, BlockQuote, CodeBlock} = require("./index")
 
+// !! Defines several input rule builders for the default schema.
+
 // :: (NodeType) → InputRule
 // Given a blockquote node type, returns an input rule that turns `"> "`
 // at the start of a textblock into a blockquote.

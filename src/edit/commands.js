@@ -5,8 +5,8 @@ const browser = require("../util/browser")
 const {charCategory, isExtendingChar} = require("./char")
 const {findSelectionFrom, TextSelection, NodeSelection} = require("./selection")
 
-// !! This module defines a number of ‘commands‘, functions that take
-// a ProseMirror instance and try to perform some action on it,
+// This module defines a number of ‘commands‘, functions that take a
+// ProseMirror instance and try to perform some action on it,
 // returning `false` if they don't apply. These are used to bind keys
 // to, and to define [menu items](#menu).
 //

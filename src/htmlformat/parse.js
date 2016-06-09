@@ -101,6 +101,14 @@ exports.fromHTML = fromHTML
 // can set `preserveWhiteSpace` to a boolean to enable or disable
 // preserving of whitespace when parsing the content.
 
+// ;; #path=NodeType #noAnchor #kind=class
+// This module gives meaning to the following properties in the
+// `NodeType` class:
+
+// ;; #path=MarkType #noAnchor #kind=class
+// This module gives meaning to the following properties in the
+// `MarkType` class:
+
 // :: Object<union<ParseSpec, (DOMNode) → union<bool, ParseSpec>>> #path=NodeType.prototype.matchDOMTag
 // Defines the way nodes of this type are parsed. Should contain an
 // object mapping CSS selectors (such as `"p"` for `<p>` tags, or

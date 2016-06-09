@@ -70,7 +70,7 @@ exports.MenuItem = MenuItem
 // :: Object #path=MenuItemSpec #kind=interface
 // The configuration object passed to the `MenuItem` constructor.
 
-// :: (ProseMirror)
+// :: (ProseMirror) #path=MenuItemSpec.run
 // The function to execute when the menu item is activated.
 
 // :: ?(ProseMirror) → bool #path=MenuItemSpec.select

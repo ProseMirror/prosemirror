@@ -14,9 +14,7 @@ class FieldPrompt {
   // Construct a prompt. Note that this does not
   // [open](#FieldPrompt.open) it yet.
   constructor(pm, title, fields) {
-    // :: ProseMirror
     this.pm = pm
-    // :: Command
     this.title = title
     this.fields = fields
     this.doClose = null

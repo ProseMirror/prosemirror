@@ -4,6 +4,9 @@ const browser = require("../util/browser")
 const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem, chain, newlineInCode} = require("../edit/commands")
 const {Plugin} = require("../edit")
 
+// !! Helper utilities for assigning key bindings to functionality
+// related to the basic schema.
+
 // :: (Schema) → Keymap
 // Inspect the given schema looking for marks and nodes from the
 // default schema, and if found, add key bindings related to them.
