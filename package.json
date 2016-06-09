@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "browserkeymap": "^1.0.0",
+    "subscription": "^3.0.0",
     "markdown-it": "^6.0.4"
   },
   "devDependencies": {

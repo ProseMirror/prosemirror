@@ -1,6 +1,6 @@
 const {Plugin} = require("../edit")
 const {Transform} = require("../transform")
-const {Subscription} = require("../util/subscription")
+const {Subscription} = require("subscription")
 
 const {rebaseSteps} = require("./rebase")
 exports.rebaseSteps = rebaseSteps

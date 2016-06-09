@@ -1,7 +1,7 @@
 require("./css")
 
 const {Map} = require("../util/map")
-const {Subscription, PipelineSubscription, StoppableSubscription, DOMSubscription} = require("../util/subscription")
+const {Subscription, PipelineSubscription, StoppableSubscription, DOMSubscription} = require("subscription")
 const {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} = require("../util/dom")
 const {mapThrough} = require("../transform")
 
