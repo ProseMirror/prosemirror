@@ -20,7 +20,7 @@ function posBeforeFromDOM(node) {
 let posInLeaf = null
 
 // : (DOMNode, number) → number
-function posFromDOM(dom, domOffset) {
+function posFromDOM(dom, domOffset, bias = 0) {
   if (domOffset == null) {
     domOffset = Array.prototype.indexOf.call(dom.parentNode.childNodes, dom)
     dom = dom.parentNode
@@ -35,7 +35,8 @@ function posFromDOM(dom, domOffset) {
       innerOffset += domOffset
     } else if (tag = dom.getAttribute("pm-offset") && !childContainer(dom)) {
       let size = +dom.getAttribute("pm-size")
-      if (domOffset == dom.childNodes.length) innerOffset = size
+      if (dom.nodeType == 1 && !dom.firstChild) innerOffset = bias > 0 ? size : 0
+      else if (domOffset == dom.childNodes.length) innerOffset = size
       else innerOffset = Math.min(innerOffset, size)
       posInLeaf = posBeforeFromDOM(dom)
       return posInLeaf + innerOffset
@@ -44,13 +45,15 @@ function posFromDOM(dom, domOffset) {
     } else if (tag = dom.getAttribute("pm-inner-offset")) {
       innerOffset += +tag
       adjust = -1
-    } else if (domOffset && domOffset == dom.childNodes.length) {
-      adjust = 1
+    } else if (domOffset == dom.childNodes.length) {
+      if (domOffset) adjust = 1
+      else adjust = bias > 0 ? 1 : 0
     }
 
     let parent = dom.parentNode
     domOffset = adjust < 0 ? 0 : Array.prototype.indexOf.call(parent.childNodes, dom) + adjust
     dom = parent
+    bias = 0
   }
 
   let start = isEditorContent(dom) ? 0 : posBeforeFromDOM(dom) + 1, before = 0
@@ -267,8 +270,12 @@ function posAtCoords(pm, coords) {
   let elt = targetKludge(document.elementFromPoint(coords.left, coords.top + 1), coords)
   if (!contains(pm.content, elt)) return null
 
-  let {node, offset} = findOffsetInNode(elt, coords)
-  let pos = posFromDOM(node, offset)
+  let {node, offset} = findOffsetInNode(elt, coords), bias = -1
+  if (node.nodeType == 1 && !node.firstChild) {
+    let rect = node.getBoundingClientRect()
+    bias = rect.left != rect.right && coords.left > (rect.left + rect.right) / 2 ? 1 : -1
+  }
+  let pos = posFromDOM(node, offset, bias)
   return {pos, inside: posInLeaf}
 }
 exports.posAtCoords = posAtCoords

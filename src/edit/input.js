@@ -195,6 +195,12 @@ function handleTripleClick(pm, context) {
   }
 }
 
+function runHandlerOnContext(handler, context) {
+  for (let i = context.inside.length - 1; i >= 0; i--)
+    if (handler.dispatch(context.pos, context.inside[i].node, context.inside[i].pos))
+      return true
+}
+
 handlers.mousedown = (pm, e) => {
   pm.on.interaction.dispatch()
   let now = Date.now()
@@ -205,9 +211,17 @@ handlers.mousedown = (pm, e) => {
 
   let context = contextFromEvent(pm, e)
   if (context == null) return
-  if (tripleClick) { e.preventDefault(); handleTripleClick(pm, context) }
-  else if (doubleClick && pm.on.doubleClick.dispatch(context.pos, context.inside)) e.preventDefault()
-  else pm.input.mouseDown = new MouseDown(pm, e, context, doubleClick)
+  if (tripleClick) {
+    e.preventDefault()
+    handleTripleClick(pm, context)
+  } else if (doubleClick) {
+    if (runHandlerOnContext(pm.on.doubleClickOn, context) || pm.on.doubleClick.dispatch(context.pos))
+      e.preventDefault()
+    else
+      pm.sel.fastPoll()
+  } else {
+    pm.input.mouseDown = new MouseDown(pm, e, context, doubleClick)
+  }
 }
 
 class MouseDown {
@@ -253,7 +267,8 @@ class MouseDown {
     let context = contextFromEvent(this.pm, event)
     if (this.event.ctrlKey && selectClickedNode(this.pm, context)) {
       event.preventDefault()
-    } else if (this.pm.on.click.dispatch(this.context.pos, this.context.inside)) {
+    } else if (runHandlerOnContext(this.pm.on.clickOn, this.context) ||
+               this.pm.on.click.dispatch(this.context.pos)) {
       event.preventDefault()
     } else {
       let inner = this.context.inside[this.context.inside.length - 1]
@@ -280,8 +295,11 @@ handlers.touchdown = pm => {
 
 handlers.contextmenu = (pm, e) => {
   let context = contextFromEvent(pm, e)
-  if (context && pm.on.contextMenu.dispatch(context.pos, context.inside))
-    e.preventDefault()
+  if (context) {
+    let inner = context.inside[context.inside.length - 1]
+    if (pm.on.contextMenu.dispatch(context.pos, inner ? inner.node : pm.doc))
+      e.preventDefault()
+  }
 }
 
 // Input compositions are hard. Mostly because the events fired by

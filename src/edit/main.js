@@ -77,16 +77,23 @@ class ProseMirror {
       // :: Subscription<()>
       // Dispatched when the editor loses focus.
       blur: new Subscription,
-      // :: StoppableSubscription<(pos: number, inside: [{node: Node, pos: number}])>
+      // :: StoppableSubscription<(pos: number)>
       // Dispatched when the editor is clicked. Return a truthy
       // value to indicate that the click was handled, and no further
       // action needs to be taken.
       click: new StoppableSubscription,
-      // :: StoppableSubscription<(pos: number, inside: [{node: Node, pos: number}])>
-      // Dispatched when the editor is double-clicked. Return a truthy
-      // value to indicate that the click was handled.
+      // :: StoppableSubscription<(pos: number, node: Node, nodePos: number)>
+      // Dispatched for every node around a click in the editor,
+      // before `click` is dispatched.
+      clickOn: new StoppableSubscription,
+      // :: StoppableSubscription<(pos: number)>
+      // Dispatched when the editor is double-clicked.
       doubleClick: new StoppableSubscription,
-      // :: StoppableSubscription<(pos: number, inside: [{node: Node, pos: number}])>
+      // :: StoppableSubscription<(pos: number, node: Node, nodePos: number)>
+      // Dispatched for every node around a double click in the
+      // editor, before `doubleClick` is dispatched.
+      doubleClickOn: new StoppableSubscription,
+      // :: StoppableSubscription<(pos: number, node: Node)>
       // Dispatched when the context menu is opened on the editor.
       // Return a truthy value to indicate that you handled the event.
       contextMenu: new StoppableSubscription,
