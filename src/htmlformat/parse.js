@@ -9,68 +9,49 @@ function fromDOM(schema, dom, options = {}) {
   let topNode = options.topNode
   let top = new NodeBuilder(topNode ? topNode.type : schema.nodes.doc,
                             topNode ? topNode.attrs : null, true)
-  let context = new DOMParseState(schema, options, top)
-  context.addAll(dom, null, options.from, options.to)
+  let state = new DOMParseState(schema, options, top)
+  state.addAll(dom, null, options.from, options.to)
   return top.finish()
 }
 exports.fromDOM = fromDOM
 
-// :: (ResolvedPos, DOMNode, number, number, ?Object) → Slice
+// :: (ResolvedPos, DOMNode, ?Object) → Slice
 // Parse a DOM fragment into a `Slice`, starting with the context at
 // `$context`. If the DOM nodes are known to be 'open' (as in
-// `Slice`), pass their open depth as `openLeft` and `openRight`.
+// `Slice`), pass their left open depth as the `openLeft` option.
 function fromDOMInContext($context, dom, options = {}) {
   let schema = $context.parent.type.schema
-  let openLeft = options.openLeft != null ? options.openLeft : textblockAtSide(schema, dom, -1) ? 1 : 0
-  let openRight = options.openRight != null ? options.openRight : textblockAtSide(schema, dom, 1) ? 1 : 0
 
-  let {builder, top, skipLeft} = builderFromContext($context, openLeft)
-  let context = new DOMParseState(schema, options, builder)
+  let {builder, top} = builderFromContext($context)
+  let openLeft = options.openLeft, startPos = $context.depth
 
-  context.onEnter = () => {
-    if (skipLeft == 0) return false
-    skipLeft--
-    return null
-  }
-  context.addAll(dom)
+  new class extends DOMParseState {
+    enter(type, attrs) {
+      if (openLeft == null) openLeft = type.isTextblock ? 1 : 0
+      if (openLeft > 0 && this.top.match.matchType(type, attrs, [])) openLeft = 0
+      if (openLeft == 0) return super.enter(type, attrs)
 
-  let openTo = Math.min(top.openDepth, context.top.depth + openRight)
-  let doc = top.finish(openTo), startPos = $context.depth, $startPos = doc.resolve(startPos)
+      openLeft--
+      return null
+    }
+  }(schema, options, builder).addAll(dom)
+
+  let openTo = top.openDepth, doc = top.finish(openTo), $startPos = doc.resolve(startPos)
   for (let d = $startPos.depth; d >= 0 && startPos == $startPos.end(d); d--) ++startPos
   return doc.slice(startPos, doc.content.size - openTo)
 }
 exports.fromDOMInContext = fromDOMInContext
 
-function builderFromContext($context, openLeft) {
-  let top, builder, depth = $context.depth
-  while (openLeft > 0 && $context.start(depth) == $context.before(depth + 1)) {
-    openLeft--
-    depth--
-  }
-  for (let i = 0; i <= depth; i++) {
+function builderFromContext($context) {
+  let top, builder
+  for (let i = 0; i <= $context.depth; i++) {
     let node = $context.node(i), match = node.contentMatchAt($context.index(i))
     if (i == 0)
       builder = top = new NodeBuilder(node.type, node.attrs, true, null, match)
     else
       builder = builder.start(node.type, node.attrs, false, match)
   }
-  return {builder, top, skipLeft: openLeft}
-}
-
-function textblockAtSide(schema, dom, side) {
-  let info = schemaInfo(schema).selectors
-  for (let cur = dom, next;; cur = next) {
-    next = cur && (side > 0 ? cur.lastChild || cur.previousSibling : cur.firstChild || cur.nextSibling)
-    if (!next && cur != dom)
-      next = side > 0 ? cur.parentNode.previousSibling : cur.parentNode.nextSibling
-    if (!next) return null
-    if (next.nodeType == 1) {
-      let result = matchTag(info, next)
-      if (result && result.type instanceof NodeType)
-        return result.type.isTextblock
-    }
-    cur = next
-  }
+  return {builder, top}
 }
 
 // :: (Schema, string, ?Object) → Node
@@ -290,7 +271,6 @@ class DOMParseState {
     // : bool Whether to preserve whitespace
     this.preserveWhitespace = this.options.preserveWhitespace
     this.info = schemaInfo(schema)
-    this.onEnter = null
     this.find = options.findPositions
   }
 
@@ -438,10 +418,6 @@ class DOMParseState {
   // Try to start a node of the given type, adjusting the context when
   // necessary.
   enter(type, attrs) {
-    if (this.onEnter) {
-      let result = this.onEnter()
-      if (result !== false) return result
-    }
     let ok = this.top.findPlace(type, attrs)
     if (ok) {
       this.sync(ok)

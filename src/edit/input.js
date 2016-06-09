@@ -383,13 +383,11 @@ function toClipboard(doc, from, to, dataTransfer) {
   let $from = doc.resolve(from), start = from
   for (let d = $from.depth; d > 0 && $from.end(d) == start; d--) start++
   let slice = doc.slice(start, to)
-  if (!slice.openLeft && !slice.openRight && slice.possibleParent && slice.possibleParent.type != doc.type.schema.nodes.doc)
-    slice = new Slice(Fragment.from(slice.possibleParent.copy(slice.content)), 1, 1)
+  if (slice.possibleParent.type != doc.type.schema.nodes.doc)
+    slice = new Slice(Fragment.from(slice.possibleParent.copy(slice.content)), slice.openLeft + 1, slice.openRight + 1)
   let dom = toDOM(slice.content), wrap = document.createElement("div")
   if (dom.firstChild && dom.firstChild.nodeType == 1)
     dom.firstChild.setAttribute("pm-open-left", slice.openLeft)
-  if (dom.lastChild && dom.lastChild.nodeType == 1)
-    dom.lastChild.setAttribute("pm-open-right", slice.openRight)
   wrap.appendChild(dom)
   dataTransfer.clearData()
   dataTransfer.setData("text/html", wrap.innerHTML)
@@ -405,7 +403,7 @@ function canUpdateClipboard(dataTransfer) {
   return cachedCanUpdateClipboard = dataTransfer.getData("text/html") == "<hr>"
 }
 
-// : (ProseMirror, DataTransfer, ?bool) → ?Slice
+// : (ProseMirror, DataTransfer, ?bool, ResolvedPos) → ?Slice
 function fromClipboard(pm, dataTransfer, plainText, $target) {
   let txt = dataTransfer.getData("text/plain")
   let html = dataTransfer.getData("text/html")
@@ -419,21 +417,26 @@ function fromClipboard(pm, dataTransfer, plainText, $target) {
   } else {
     dom = readHTML(pm.on.transformPastedHTML.dispatch(html))
   }
-  let openLeft = null, openRight = null, m
-  let foundLeft = dom.querySelector("[pm-open-left]"), foundRight = dom.querySelector("[pm-open-right]")
+  let openLeft = null, m
+  let foundLeft = dom.querySelector("[pm-open-left]")
   if (foundLeft && (m = /^\d+$/.exec(foundLeft.getAttribute("pm-open-left"))))
     openLeft = +m[0]
-  if (foundRight && (m = /^\d+$/.exec(foundRight.getAttribute("pm-open-right"))))
-    openRight = +m[0]
-  let slice = fromDOMInContext($target, dom, {openLeft, openRight, preserveWhiteSpace: true})
+  let slice = fromDOMInContext($target, dom, {openLeft, preserveWhiteSpace: true})
   return pm.on.transformPasted.dispatch(slice)
+}
+
+function insertRange($from, $to) {
+  let from = $from.pos, to = $to.pos
+  for (let d = $to.depth; d > 0 && $to.end(d) == to; d--) to++
+  for (let d = $from.depth; d > 0 && $from.start(d) == from && $from.end(d) <= to; d--) from--
+  return {from, to}
 }
 
 // Trick from jQuery -- some elements must be wrapped in other
 // elements for innerHTML to work. I.e. if you do `div.innerHTML =
 // "<td>..</td>"` the table cells are ignored.
-const wrapMap = {thead: "table", col: "table colgroup", tr: "table tbody",
-                 td: "table tbody tr", th: "table tbody tr"}
+const wrapMap = {thead: "table", colgroup: "table", col: "table colgroup",
+                 tr: "table tbody", td: "table tbody tr", th: "table tbody tr"}
 function readHTML(html) {
   let metas = /(\s*<meta [^>]*>)*/.exec(html)
   if (metas) html = html.slice(metas[0].length)
@@ -467,27 +470,12 @@ handlers.paste = (pm, e) => {
     if (browser.ie && browser.ie_version <= 11) readInputSoon(pm)
     return
   }
-  let sel = pm.selection
-  let slice = fromClipboard(pm, e.clipboardData, pm.input.shiftKey, sel.$from)
+  let sel = pm.selection, range = insertRange(sel.$from, sel.$to)
+  let slice = fromClipboard(pm, e.clipboardData, pm.input.shiftKey, pm.doc.resolve(range.from))
   if (slice) {
     e.preventDefault()
-    let start = sel.from, wrap
-    if (slice.openLeft) {
-      wrap = slice.content.firstChild
-      for (let i = 1; i < slice.openLeft; i++) wrap = wrap.firstChild
-    } else {
-      wrap = slice.possibleParent
-    }
-    // When pasting textblock content in an empty textblock, preserve
-    // the original type.
-    if (wrap && wrap.isTextblock &&
-        sel.$from.parent.isTextblock && !sel.$from.parent.content.size) {
-      start--
-      if (slice.openLeft) slice = new Slice(slice.content, slice.openLeft - 1, slice.openRight)
-      else slice = new Slice(Fragment.from(wrap.copy(slice.content)), 0, slice.openRight + 1)
-    }
-    let tr = pm.tr.replace(start, sel.to, slice)
-    tr.setSelection(findSelectionNear(tr.doc.resolve(tr.map(sel.to))))
+    let tr = pm.tr.replace(range.from, range.to, slice)
+    tr.setSelection(findSelectionNear(tr.doc.resolve(tr.map(range.to)), -1))
     tr.applyAndScroll()
   }
 }
@@ -582,25 +570,25 @@ handlers.drop = (pm, e) => {
 
   let $mouse = pm.doc.resolve(pm.posAtCoords({left: e.clientX, top: e.clientY}))
   if (!$mouse) return
-  let slice = dragging && dragging.slice || fromClipboard(pm, e.dataTransfer, $mouse)
+  let range = insertRange($mouse, $mouse)
+  let slice = dragging && dragging.slice || fromClipboard(pm, e.dataTransfer, pm.doc.resolve(range.from))
   if (!slice) return
+  let insertPos = dropPos(slice, pm.doc.resolve(range.from))
 
   e.preventDefault()
-  let insertPos = dropPos(slice, $mouse), start = insertPos
   let tr = pm.tr
-  if (dragging && !e.ctrlKey && dragging.from != null) {
+  if (dragging && !e.ctrlKey && dragging.from != null)
     tr.delete(dragging.from, dragging.to)
-    insertPos = tr.map(insertPos)
-  }
-  tr.replace(insertPos, insertPos, slice).apply()
-  let found
+  let start = tr.map(insertPos), found
+  tr.replace(start, tr.map(insertPos), slice).apply()
+
   if (slice.content.childCount == 1 && slice.openLeft == 0 && slice.openRight == 0 &&
       slice.content.child(0).type.selectable &&
-      (found = pm.doc.nodeAt(insertPos)) && found.sameMarkup(slice.content.child(0))) {
-    pm.setNodeSelection(insertPos)
+      (found = pm.doc.nodeAt(start)) && found.sameMarkup(slice.content.child(0))) {
+    pm.setNodeSelection(start)
   } else {
-    let left = findSelectionNear(pm.doc.resolve(insertPos), 1, true).from
-    let right = findSelectionNear(pm.doc.resolve(tr.map(start)), -1, true).to
+    let left = findSelectionNear(pm.doc.resolve(start), 1, true).from
+    let right = findSelectionNear(pm.doc.resolve(tr.map(insertPos)), -1, true).to
     pm.setTextSelection(left, right)
   }
   pm.focus()

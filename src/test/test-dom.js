@@ -201,48 +201,66 @@ find("end_of_doc",
      "<p>hi</p><var></var>",
      doc(p("hi"), "<a>"))
 
-function ctx(name, doc, html, openLeft, openRight, slice, parent) {
+function ctx(name, doc, html, openLeft, slice) {
   defTest("dom_context_" + name, () => {
     let dom = document.createElement("div")
     dom.innerHTML = html
-    let result = fromDOMInContext(doc.resolve(doc.tag.a), dom, {openLeft, openRight})
-    let expected = slice.slice(slice.tag.a, slice.tag.b)
+    let insert = doc.tag.a, $insert = doc.resolve(insert)
+    for (let d = $insert.depth; d > 0 && insert == $insert.start(d) && $insert.end(d) == $insert.after(d + 1); d--) insert--
+    let result = fromDOMInContext(doc.resolve(insert), dom, {openLeft})
+    let sliceContent = slice.content, sliceEnd = sliceContent.size
+    while (sliceContent.lastChild && !sliceContent.lastChild.type.isLeaf) { sliceEnd--; sliceContent = sliceContent.lastChild.content }
+    let expected = slice.slice(slice.tag.a, sliceEnd)
     cmpStr(result, expected)
-    if (parent) cmp(parent, result.possibleParent && result.possibleParent.type.name, "parent")
   })
 }
 
 ctx("in_list",
     doc(ul(li(p("foo")), "<a>")),
-    "<li>bar</li>", 0, 0,
-    ul("<a>", li(p("bar")), "<b>"))
+    "<li>bar</li>", 0,
+    ul("<a>", li(p("bar"))))
 
 ctx("in_list_item",
     doc(ul(li(p("foo<a>")))),
-    "<li>bar</li>", 0, 0,
-    ul("<a>", li(p("bar")), "<b>"))
+    "<li>bar</li>", 0,
+    ul("<a>", li(p("bar"))))
 
 ctx("text_in_text",
     doc(p("foo<a>")),
-    "<h1>bar</h1>", 1, 1,
-    p("<a>bar<b>"))
+    "<h1>bar</h1>", 1,
+    p("<a>bar"))
 
 ctx("mess",
     doc(p("foo<a>")),
-    "<p>a</p>b<li>c</li>", 0, 0,
-    doc("<a>", p("a"), p("b"), ol(li(p("c")), "<b>")))
+    "<p>a</p>b<li>c</li>", 0,
+    doc("<a>", p("a"), p("b"), ol(li(p("c")))))
+
+ctx("open_fits",
+    doc(p("foo<a>")),
+    "<p>hello</p><p>there</p>", 1,
+    doc(p("<a>hello"), p("there")))
 
 ctx("preserve_type",
     doc(p("<a>")),
-    "<h1>bar</h1>", 1, 1,
-    p("<a>bar<b>"), "heading")
+    "<h1>bar</h1>", 1,
+    doc("<a>", h1("bar")))
 
 ctx("preserve_type_deep",
     doc(p("<a>")),
-    "<h1>bar</h1><p>foo</p>", 1, 1,
-    doc(h1("<a>bar"), p("foo<b>")))
+    "<h1>bar</h1><p>foo</p>", 1,
+    doc("<a>", h1("bar"), p("foo")))
 
 ctx("leave_marks",
     doc(pre("<a>")),
-    "<p>foo<strong>bar</strong></p>", 1, 1,
-    p("<a>foo", strong("bar<b>")))
+    "<p>foo<strong>bar</strong></p>", 1,
+    doc("<a>", p("foo", strong("bar"))))
+
+ctx("paste_list",
+    doc(p("<a>")),
+    "<ol><li><p>foo</p></li><li><p>bar</p></li></ol>", 3,
+    doc("<a>", ol(li(p("foo")), li(p("bar")))))
+
+ctx("join_list",
+    doc(ol(li(p("x<a>")))),
+    "<ol><li><p>foo</p></li><li><p>bar</p></li></ol>", 3,
+    doc(ol(li(p("<a>foo")), li(p("bar")))))
