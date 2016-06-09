@@ -19,7 +19,7 @@ var pm = window.pm = new ProseMirror({
             tooltipMenu.config({selectedBlockMenu: true,
                                 inlineContent: menu.inlineMenu,
                                 blockContent: menu.blockMenu}),
-            inputRules.inputRules.config({rules: inputRules.all.concat(defaultRules(schema))}),
+            inputRules.inputRules.config({rules: inputRules.allInputRules.concat(defaultRules(schema))}),
             schemaKeys.defaultSchemaKeymapPlugin,
             defaultStyle]
 })

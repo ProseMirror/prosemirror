@@ -22,6 +22,7 @@ exports.closeSingleQuote = closeSingleQuote
 // :: [InputRule] Smart-quote related input rules.
 const smartQuotes = [openDoubleQuote, closeDoubleQuote, openSingleQuote, closeSingleQuote]
 exports.smartQuotes = smartQuotes
+
 // :: [InputRule] All schema-independent input rules defined in this module.
-const all = [emDash, ellipsis].concat(smartQuotes)
-exports.all = all
+const allInputRules = [emDash, ellipsis].concat(smartQuotes)
+exports.allInputRules = allInputRules

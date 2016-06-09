@@ -61,8 +61,7 @@ function promptLinkAttrs(pm, callback) {
       }
     }),
     title: new TextField({label: "Title"})
-  })
-    .open(callback)
+  }).open(callback)
 }
 exports.promptLinkAttrs = promptLinkAttrs
 

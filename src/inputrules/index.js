@@ -6,5 +6,5 @@
 ;({InputRule: exports.InputRule, inputRules: exports.inputRules, InputRules: exports.InputRules} = require("./inputrules"))
 ;({emDash: exports.emDash, ellipsis: exports.ellipsis, openDoubleQuote: exports.openDoubleQuote,
    closeDoubleQuote: exports.closeDoubleQuote, openSingleQuote: exports.openSingleQuote,
-   closeSingleQuote: exports.closeSingleQuote, smartQuotes: exports.smartQuotes, all: exports.all} = require("./rules"))
+   closeSingleQuote: exports.closeSingleQuote, smartQuotes: exports.smartQuotes, allInputRules: exports.allInputRules} = require("./rules"))
 ;({wrappingInputRule: exports.wrappingInputRule, textblockTypeInputRule: exports.textblockTypeInputRule} = require("./util"))
