@@ -1,4 +1,4 @@
-const {Fragment, NodeType} = require("../model")
+const {Fragment, NodeType, Mark} = require("../model")
 
 // :: (Schema, DOMNode, ?Object) → Node
 // Parse document from the content of a DOM node. To pass an explicit
@@ -28,7 +28,7 @@ function fromDOMInContext($context, dom, options = {}) {
   new class extends DOMParseState {
     enter(type, attrs) {
       if (openLeft == null) openLeft = type.isTextblock ? 1 : 0
-      if (openLeft > 0 && this.top.match.matchType(type, attrs, [])) openLeft = 0
+      if (openLeft > 0 && this.top.match.matchType(type, attrs)) openLeft = 0
       if (openLeft == 0) return super.enter(type, attrs)
 
       openLeft--
@@ -154,7 +154,7 @@ class NodeBuilder {
   // : (NodeType, ?Object, bool, ?ContentMatch) → ?NodeBuilder
   // Try to start a new node at this point.
   start(type, attrs, solid, match) {
-    let matched = this.match.matchType(type, attrs, noMarks)
+    let matched = this.match.matchType(type, attrs)
     if (!matched) return null
     this.closeChild()
     this.match = matched
@@ -255,8 +255,6 @@ const ignoreTags = {
 // : Object<bool> List tags.
 const listTags = {ol: true, ul: true}
 
-const noMarks = []
-
 // A state object used to track context during a parse.
 class DOMParseState {
   // : (Schema, Object, NodeBuilder)
@@ -267,7 +265,7 @@ class DOMParseState {
     this.schema = schema
     this.top = top
     // : [Mark] The current set of marks
-    this.marks = noMarks
+    this.marks = Mark.none
     // : bool Whether to preserve whitespace
     this.preserveWhitespace = this.options.preserveWhitespace
     this.info = schemaInfo(schema)

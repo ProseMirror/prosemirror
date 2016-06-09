@@ -1,4 +1,5 @@
 const {Fragment} = require("./fragment")
+const {Mark} = require("./mark")
 
 class ContentExpr {
   constructor(nodeType, elements, inlineContent) {
@@ -197,7 +198,7 @@ class ContentMatch {
   // :: (NodeType, ?Object, [Mark]) → ?ContentMatch
   // Match a node type and marks, returning an updated match if
   // successful.
-  matchType(type, attrs, marks) {
+  matchType(type, attrs, marks = Mark.none) {
     // FIXME `var` to work around Babel bug T7293
     for (var {index, count} = this; index < this.expr.elements.length; index++, count = 0) {
       let elt = this.expr.elements[index], max = this.resolveValue(elt.max)
@@ -306,7 +307,7 @@ class ContentMatch {
     let seen = Object.create(null), first = {match: this, via: null}, active = [first]
     while (active.length) {
       let current = active.shift(), match = current.match
-      if (match.matchType(target, targetAttrs, [])) {
+      if (match.matchType(target, targetAttrs)) {
         let result = []
         for (let obj = current; obj != first; obj = obj.via)
           result.push({type: obj.match.expr.nodeType, attrs: obj.match.attrs})
@@ -316,7 +317,7 @@ class ContentMatch {
       for (let i = 0; i < possible.length; i++) {
         let {type, attrs} = possible[i], fullAttrs = type.computeAttrs(attrs)
         if (!type.isLeaf && !(type.name in seen) &&
-            (current == first || match.matchType(type, fullAttrs, []).validEnd())) {
+            (current == first || match.matchType(type, fullAttrs).validEnd())) {
           active.push({match: type.contentExpr.start(fullAttrs), via: current})
           seen[type.name] = true
         }

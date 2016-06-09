@@ -4,7 +4,7 @@ const {Slice, replace} = require("./replace")
 const {ResolvedPos} = require("./resolvedpos")
 const {compareDeep} = require("../util/comparedeep")
 
-const emptyArray = [], emptyAttrs = Object.create(null)
+const emptyAttrs = Object.create(null)
 
 // ;; This class represents a node in the tree that makes up a
 // ProseMirror document. So a document is an instance of `Node`, with
@@ -37,7 +37,7 @@ class Node {
     // :: [Mark]
     // The marks (things like whether it is emphasized or part of a
     // link) associated with this node.
-    this.marks = marks || emptyArray
+    this.marks = marks || Mark.none
   }
 
   // :: number
@@ -104,7 +104,7 @@ class Node {
   hasMarkup(type, attrs, marks) {
     return this.type == type &&
       compareDeep(this.attrs, attrs || type.defaultAttrs || emptyAttrs) &&
-      Mark.sameSet(this.marks, marks || emptyArray)
+      Mark.sameSet(this.marks, marks || Mark.none)
   }
 
   // :: (?Fragment) → Node
@@ -216,7 +216,7 @@ class Node {
     let $pos = this.resolve(pos), parent = $pos.parent, index = $pos.index()
 
     // In an empty parent, return the empty array
-    if (parent.content.size == 0) return emptyArray
+    if (parent.content.size == 0) return Mark.none
     // When inside a text node or at the start of the parent node, return the node's marks
     if (index == 0 || !$pos.atNodeBoundary) return parent.child(index).marks
 
@@ -286,7 +286,7 @@ class Node {
   // Test whether replacing the range `from` to `to` (by index) with a
   // node of the given type and marks would be valid.
   canReplaceWith(from, to, type, attrs, marks) {
-    return this.type.contentExpr.checkReplaceWith(this.attrs, this.content, from, to, type, attrs, marks || emptyArray)
+    return this.type.contentExpr.checkReplaceWith(this.attrs, this.content, from, to, type, attrs, marks || Mark.none)
   }
 
   // :: (Node) → bool

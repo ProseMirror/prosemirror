@@ -96,7 +96,7 @@ Transform.prototype.clearMarkupFor = function(pos, newType, newAttrs) {
   let delSteps = []
   for (let i = 0, cur = pos + 1; i < node.childCount; i++) {
     let child = node.child(i), end = cur + child.nodeSize
-    let allowed = match.matchType(child.type, child.attrs, [])
+    let allowed = match.matchType(child.type, child.attrs)
     if (!allowed) {
       delSteps.push(new ReplaceStep(cur, end, Slice.empty))
     } else {
