@@ -38,6 +38,7 @@ class MenuBar {
   detach() {
     this.updater.detach()
     this.wrapper.parentNode.removeChild(this.wrapper)
+    if (this.spacer) this.spacer.parentNode.removeChild(this.spacer)
 
     if (this.scrollFunc)
       window.removeEventListener("scroll", this.scrollFunc)
