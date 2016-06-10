@@ -14,8 +14,9 @@ const {defaultSchemaStyle} = require("./style")
 // real-world situations.
 const defaultSetup = new Plugin(class DefaultSetup {
   constructor(pm, options) {
-    let menu = defaultMenuItems(pm.schema).fullMenu
-    if (options.updateMenu) menu = options.updateMenu(menu)
+    let menu = options.menu
+    if (menu == null)
+      menu = defaultMenuItems(pm.schema).fullMenu
 
     this.plugins = (menu ? [menuBar.config({float: true, content: menu})] : []).concat([
       inputRules.config({rules: allInputRules.concat(defaultRules(pm.schema))}),
