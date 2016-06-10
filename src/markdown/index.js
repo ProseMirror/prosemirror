@@ -3,4 +3,5 @@
 // [`format`](#format) module under `"markdown"`).
 
 ;({defaultMarkdownParser: exports.defaultMarkdownParser, MarkdownParser: exports.MarkdownParser} = require("./from_markdown"))
-;({MakdownSerializer: exports.MakdownSerializer, defaultMarkdownSerializer: exports.defaultMarkdownSerializer, MarkdownSerializerState: exports.MarkdownSerializerState} = require("./to_markdown"))
+;({MarkdownSerializer: exports.MarkdownSerializer, defaultMarkdownSerializer: exports.defaultMarkdownSerializer,
+   MarkdownSerializerState: exports.MarkdownSerializerState} = require("./to_markdown"))
