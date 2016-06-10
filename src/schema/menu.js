@@ -1,5 +1,7 @@
-const {StrongMark, EmMark, CodeMark, LinkMark, Image, BulletList, OrderedList, BlockQuote, Heading, Paragraph, CodeBlock, HorizontalRule} = require("./index")
-const {toggleMarkItem, insertItem, wrapItem, blockTypeItem, Dropdown, joinUpItem, liftItem, selectParentNodeItem, undoItem, redoItem, wrapListItem} = require("../menu/menu")
+const {StrongMark, EmMark, CodeMark, LinkMark, Image, BulletList, OrderedList, BlockQuote,
+       Heading, Paragraph, CodeBlock, HorizontalRule} = require("./index")
+const {toggleMarkItem, insertItem, wrapItem, blockTypeItem, Dropdown, DropdownSubmenu, joinUpItem, liftItem,
+       selectParentNodeItem, undoItem, redoItem, wrapListItem} = require("../menu/menu")
 
 const {FieldPrompt, TextField} = require("../ui/prompt")
 
@@ -196,7 +198,7 @@ function defaultMenuItems(schema) {
       for (let i = 1; i <= 10; i++)
         r["makeHead" + i] = blockTypeItem(node, {
           title: "Change to heading " + i,
-          label: "Head " + i,
+          label: "Level " + i,
           attrs: {level: i}
         })
     if (node instanceof HorizontalRule)
@@ -208,9 +210,9 @@ function defaultMenuItems(schema) {
 
   let cut = arr => arr.filter(x => x)
   r.insertMenu = new Dropdown(cut([r.insertImage, r.insertHorizontalRule]), {label: "Insert"})
-  r.typeMenu = new Dropdown(cut([r.makeParagraph, r.makeCodeBlock, r.makeHead1,
-                                 r.makeHead2, r.makeHead3, r.makeHead4, r.makeHead5,
-                                 r.makeHead6]), {label: "Type..."})
+  r.typeMenu = new Dropdown(cut([r.makeParagraph, r.makeCodeBlock, r.makeHead1 && new DropdownSubmenu(cut([
+    r.makeHead1, r.makeHead2, r.makeHead3, r.makeHead4, r.makeHead5, r.makeHead6
+  ]), {label: "Heading"})]), {label: "Type..."})
   r.inlineMenu = [cut([r.toggleStrong, r.toggleEm, r.toggleCode, r.toggleLink]), [r.insertMenu]]
   r.blockMenu = [cut([r.typeMenu, r.wrapBulletList, r.wrapOrderedList, r.wrapBlockQuote, joinUpItem,
                            liftItem, selectParentNodeItem])]
