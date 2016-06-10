@@ -59,6 +59,16 @@ class OrderedMap {
     return new OrderedMap(content)
   }
 
+  // :: (string, string, any) → OrderedMap
+  // Add a key after the given key. If `place` is not found, the new
+  // key is added to the end.
+  addBefore(place, key, value) {
+    let without = this.remove(key), content = without.content.slice()
+    let found = without.find(place)
+    content.splice(found == -1 ? content.length : found, 0, key, value)
+    return new OrderedMap(content)
+  }
+
   // :: ((key: string, value: any))
   // Call the given function for each key/value pair in the map, in
   // order.
