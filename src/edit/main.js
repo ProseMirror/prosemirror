@@ -30,9 +30,11 @@ class ProseMirror {
     opts = this.options = parseOptions(opts)
     // :: Schema
     // The schema for this editor's document.
-    this.schema = opts.schema
+    this.schema = opts.schema || (opts.doc && opts.doc.type.schema)
     if (!this.schema) throw new RangeError("You must specify a schema option")
     if (opts.doc == null) opts.doc = this.schema.nodes.doc.createAndFill()
+    if (opts.doc.type.schema != this.schema)
+      throw new RangeError("Schema option does not correspond to schema used in doc option")
     // :: DOMNode
     // The editable DOM node containing the document.
     this.content = elt("div", {class: "ProseMirror-content", "pm-container": true})

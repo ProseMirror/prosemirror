@@ -10,7 +10,6 @@ var menu = schemaMenu.defaultMenuItems(schema)
 var pm = window.pm = new ProseMirror({
   place: document.querySelector(".full"),
   doc: fromDOM(schema, document.querySelector("#content")),
-  schema: schema,
   plugins: [tooltipMenu.config({selectedBlockMenu: true,
                                 inlineContent: menu.inlineMenu,
                                 blockContent: menu.blockMenu}),

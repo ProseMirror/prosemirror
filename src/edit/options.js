@@ -27,7 +27,8 @@ function defineOption(name, defaultValue, update, updateOnInit) {
 }
 
 // :: Schema #path=schema #kind=option
-// The [schema](#Schema) that the editor's document should use.
+// The [schema](#Schema) that the editor's document should use. Will
+// default to the schema of the `doc` option, if that is given.
 defineOption("schema", null, false)
 
 // :: Node #path=doc #kind=option
