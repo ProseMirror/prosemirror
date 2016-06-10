@@ -40,6 +40,9 @@ class Node {
     this.marks = marks || Mark.none
   }
 
+  // :: ?string #path=Node.prototype.text
+  // For text nodes, this contains the node's text content.
+
   // :: number
   // The size of this node. For text node, this is the amount of
   // characters. For leaf nodes, it is one. And for non-leaf nodes, it
@@ -328,15 +331,12 @@ class Node {
 }
 exports.Node = Node
 
-// ;; #forward=Node
 class TextNode extends Node {
   constructor(type, attrs, content, marks) {
     super(type, attrs, null, marks)
 
     if (!content) throw new RangeError("Empty text nodes are not allowed")
 
-    // :: ?string
-    // For text nodes, this contains the node's text content.
     this.text = content
   }
 
