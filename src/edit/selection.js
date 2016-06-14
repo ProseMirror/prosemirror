@@ -163,7 +163,7 @@ class SelectionState {
 exports.SelectionState = SelectionState
 
 // ;; An editor selection. Can be one of two selection types:
-// `TextSelection` and `NodeSelection`. Both have the properties
+// `TextSelection` or `NodeSelection`. Both have the properties
 // listed here, but also contain more information (such as the
 // selected [node](#NodeSelection.node) or the
 // [head](#TextSelection.head) and [anchor](#TextSelection.anchor)).

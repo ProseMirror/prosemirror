@@ -79,6 +79,9 @@ defineOption("label", null)
 // a string, i.e. :: (string) → string
 defineOption("translate", null) // FIXME create a way to explicitly force a menu redraw
 
+// :: [Plugin] #path=plugins #kind=option
+// A set of plugins to enable when the editor is initialized. Defaults
+// to the empty array.
 defineOption("plugins", [], false)
 
 function parseOptions(obj) {

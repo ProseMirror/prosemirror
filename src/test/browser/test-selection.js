@@ -184,7 +184,7 @@ test("replace_with_block", pm => {
   pm.setTextSelection(10)
   pm.tr.replaceSelection(pm.schema.node("horizontal_rule")).apply()
   cmpNode(pm.doc, doc(p("foo"), hr, p("bar"), hr), "inserted after")
-  cmp(pm.selection.head, 10, "stayed in paragraph")
+  cmp(pm.selection.from, 11, "selected hr")
 }, {
   doc: doc(p("foobar"))
 })

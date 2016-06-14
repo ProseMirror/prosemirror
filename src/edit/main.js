@@ -550,8 +550,8 @@ class ProseMirror {
   }
 
   // :: (string) → string
-  // Return a translated string, if a translate function has been supplied,
-  // or the original string.
+  // Return a translated string, if a [translate function](#translate)
+  // has been supplied, or the original string.
   translate(string) {
     let trans = this.options.translate
     return trans ? trans(string) : string
@@ -580,8 +580,8 @@ class ProseMirror {
   unscheduleDOMUpdate(f) { this.centralScheduler.unset(f) }
 
   // :: ([Subscription], () -> ?()) → UpdateScheduler
-  // Creates an update scheduler for this given editor. `subscribers`
-  // should be an array of subscribers to listen for. `start` should
+  // Creates an update scheduler for this editor. `subscriptions`
+  // should be an array of subscriptions to listen for. `start` should
   // be a function as expected by
   // [`scheduleDOMUpdate`](ProseMirror.scheduleDOMUpdate).
   updateScheduler(subscriptions, start) {

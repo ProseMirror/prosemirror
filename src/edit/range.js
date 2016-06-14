@@ -1,4 +1,5 @@
-// ;; A [marked range](#ProseMirror.markRange).
+// ;; A marked range as created by
+// [`markRange`](#ProseMirror.markRange).
 class MarkedRange {
   constructor(from, to, options) {
     this.options = options || {}
