@@ -3,19 +3,10 @@ const browser = require("../util/browser")
 
 const c = require("./commands").commands
 
-// :: (ProseMirror) → bool
-// The default binding for enter. Tries `newlineInCode`,
-// `createParagraphNear`, `liftEmptyBlock`, and `splitTextblock` in
-// order.
-const defaultEnter = c.chainCommands(c.newlineInCode,
-                                     c.createParagraphNear,
-                                     c.liftEmptyBlock,
-                                     c.splitBlock)
-exports.defaultEnter = defaultEnter
-
 // :: Keymap A basic keymap containing bindings not specific to any schema.
 const baseKeymap = new Keymap({
-  "Enter": defaultEnter,
+  "Enter": c.chainCommands(c.newlineInCode, c.createParagraphNear,
+                           c.liftEmptyBlock, c.splitBlock),
 
   "Backspace": c.chainCommands(c.deleteSelection, c.joinBackward, c.deleteCharBefore),
   "Mod-Backspace": c.chainCommands(c.deleteSelection, c.joinBackward, c.deleteWordBefore),
