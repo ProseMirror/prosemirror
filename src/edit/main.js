@@ -4,6 +4,7 @@ const {Map} = require("../util/map")
 const {Subscription, PipelineSubscription, StoppableSubscription, DOMSubscription} = require("subscription")
 const {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} = require("../util/dom")
 const {mapThrough} = require("../transform")
+const {Mark} = require("../model")
 
 const {parseOptions, initOptions, setOption} = require("./options")
 const {SelectionState, TextSelection, NodeSelection, findSelectionAtStart, hasFocus} = require("./selection")
@@ -400,7 +401,7 @@ class ProseMirror {
   // changes, they are updated to move, grow, and shrink along with
   // their content.
   //
-  // `options` may be an object containing these properties:
+  // The `options` parameter may be an object containing these properties:
   //
   // **`inclusiveLeft`**`: bool = false`
   //   : Whether the left side of the range is inclusive. When it is,
@@ -433,37 +434,37 @@ class ProseMirror {
     this.ranges.removeRange(range)
   }
 
-  // :: (MarkType, ?bool, ?Object)
-  // Set (when `to` is true), unset (`to` is false), or toggle (`to`
-  // is null) the given mark type on the selection. When there is a
-  // non-empty selection, the marks of the selection are updated. When
-  // the selection is empty, the set of [active
-  // marks](#ProseMirror.activeMarks) is updated.
-  setMark(type, to, attrs) {
-    let sel = this.selection
-    if (sel.empty) {
-      let marks = this.activeMarks()
-      if (to == null) to = !type.isInSet(marks)
-      if (to && !sel.$head.parent.contentMatchAt(sel.$head.index()).allowsMark(type)) return
-      this.input.storedMarks = to ? type.create(attrs).addToSet(marks) : type.removeFromSet(marks)
-      this.on.activeMarkChange.dispatch()
-    } else {
-      if (to != null ? to : !this.doc.rangeHasMark(sel.from, sel.to, type))
-        this.apply(this.tr.addMark(sel.from, sel.to, type.create(attrs)))
-      else
-        this.apply(this.tr.removeMark(sel.from, sel.to, type))
-    }
-  }
-
   // :: () → [Mark]
   // Get the marks at the cursor. By default, this yields the marks
   // associated with the content at the cursor, as per `Node.marksAt`.
-  // But `setMark` may have been used to change the set of active
-  // marks, in which case that set is returned.
+  // But if the set of active marks was updated with
+  // [`addActiveMark`](#ProseMirror.addActiveMark) or
+  // [`removeActiveMark`](#ProseMirror.removeActiveMark), the updated
+  // set is returned.
   activeMarks() {
     var head
     return this.input.storedMarks ||
-      ((head = this.selection.head) != null ? this.doc.marksAt(head) : [])
+      ((head = this.selection.head) != null ? this.doc.marksAt(head) : Mark.none)
+  }
+
+  // :: (Mark)
+  // Add a mark to the set of overridden active marks that will be
+  // applied to subsequently typed text. Does not do anything when the
+  // selection isn't collapsed.
+  addActiveMark(mark) {
+    if (this.selection.empty) {
+      this.input.storedMarks = mark.addToSet(this.input.storedMarks || Mark.none)
+      this.on.activeMarkChange.dispatch()
+    }
+  }
+
+  // :: (MarkType)
+  // Remove any mark of the given type from the set of overidden active marks.
+  removeActiveMark(markType) {
+    if (this.selection.empty) {
+      this.input.storedMarks = markType.removeFromSet(this.input.storedMarks || Mark.none)
+      this.on.activeMarkChange.dispatch()
+    }
   }
 
   // :: ()

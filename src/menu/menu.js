@@ -1,5 +1,5 @@
 const {elt, insertCSS} = require("../util/dom")
-const {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType, wrapInList} = require("../edit/commands")
+const {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType, wrapInList, toggleMark} = require("../edit/commands")
 const {copyObj} = require("../util/obj")
 
 const {getIcon} = require("./icons")
@@ -336,17 +336,6 @@ function markActive(pm, type) {
   else return pm.doc.rangeHasMark(from, to, type)
 }
 
-function canToggleMark(pm, type) {
-  let {from, to} = pm.selection
-  let can = false
-  pm.doc.nodesBetween(from, to, (node, _, parent, i) => {
-    if (can) return false
-    can = (node.isTextblock && node.contentMatchAt(0).allowsMark(type)) ||
-      (node.isInline && parent.contentMatchAt(i + 1).allowsMark(type))
-  })
-  return can
-}
-
 // :: (MarkType, Object) → MenuItem
 // Create a menu item for toggling a mark on the selection. Will create
 // `run`, `active`, and `select` properties. Other properties have to
@@ -356,16 +345,15 @@ function canToggleMark(pm, type) {
 // the mark and then call the callback. Otherwise, it may be an object
 // providing the attributes directly.
 function toggleMarkItem(markType, options) {
+  let command = toggleMark(markType, options.attrs)
   let base = {
-    run(pm) { pm.setMark(markType, null, options.attrs) },
+    run(pm) { command(pm) },
     active(pm) { return markActive(pm, markType) },
-    select(pm) { return canToggleMark(pm, markType) }
+    select(pm) { return command(pm, false) }
   }
   if (options.attrs instanceof Function) base.run = pm => {
-    if (markActive(pm, markType))
-      pm.setMark(markType, false)
-    else
-      options.attrs(pm, attrs => pm.setMark(markType, true, attrs))
+    if (markActive(pm, markType)) command(pm)
+    else options.attrs(pm, attrs => toggleMark(markType, attrs)(pm))
   }
 
   return new MenuItem(copyObj(options, base))

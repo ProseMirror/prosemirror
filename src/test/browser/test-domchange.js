@@ -34,7 +34,7 @@ test("remove_ambiguous_text", pm => {
 })
 
 test("active_marks", pm => {
-  pm.setMark(pm.schema.marks.em, null)
+  pm.addActiveMark(pm.schema.marks.em.create())
   findTextNode(pm.content, "hello").nodeValue = "helloo"
   readInputChange(pm)
   cmpNode(pm.doc, doc(p("hello", em("o"))))
@@ -107,7 +107,7 @@ test("composition_type_inside_markup", pm => {
 
 test("composition_type_ambiguous", pm => {
   pm.flush()
-  pm.setMark(pm.schema.marks.strong, null)
+  pm.addActiveMark(pm.schema.marks.strong.create())
   findTextNode(pm.content, "foo").nodeValue = "fooo"
   pm.startOperation()
   readCompositionChange(pm, 0)

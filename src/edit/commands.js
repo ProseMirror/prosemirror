@@ -596,3 +596,41 @@ function sinkListItem(nodeType) {
   }
 }
 exports.sinkListItem = sinkListItem
+
+function markApplies(doc, from, to, type) {
+  let can = false
+  doc.nodesBetween(from, to, node => {
+    if (can) return false
+    can = node.isTextblock && node.contentMatchAt(0).allowsMark(type)
+  })
+  return can
+}
+
+// :: (MarkType, ?Object) → (pm: ProseMirror, apply: ?bool) → bool
+// Create a command function that toggles the given mark with the
+// given attributes. Will return `false` when the current selection
+// doesn't support that mark. If `apply` is not `false`, it will
+// remove the mark if any marks of that type exist in the selection,
+// or add it otherwise. If the selection is empty, this applies to the
+// [active marks](#ProseMirror.activeMarks) instead of a range of the
+// document.
+function toggleMark(markType, attrs) {
+  return function(pm, apply) {
+    let {empty, from, to} = pm.selection
+    if (!markApplies(pm.doc, from, to, markType)) return false
+    if (apply === false) return true
+    if (empty) {
+      if (markType.isInSet(pm.activeMarks()))
+        pm.removeActiveMark(markType)
+      else
+        pm.addActiveMark(markType.create(attrs))
+    } else {
+      if (pm.doc.rangeHasMark(from, to, markType))
+        pm.tr.removeMark(from, to, markType).applyAndScroll()
+      else
+        pm.tr.addMark(from, to, markType.create(attrs)).applyAndScroll()
+    }
+    return true
+  }
+}
+exports.toggleMark = toggleMark

@@ -1,7 +1,9 @@
 const Keymap = require("browserkeymap")
-const {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, HorizontalRule, Paragraph, CodeBlock, Heading, StrongMark, EmMark, CodeMark} = require("../schema")
+const {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, HorizontalRule, Paragraph, CodeBlock, Heading,
+       StrongMark, EmMark, CodeMark} = require("../schema")
 const browser = require("../util/browser")
-const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem, chain, newlineInCode} = require("../edit/commands")
+const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem, chain, newlineInCode,
+       toggleMark} = require("../edit/commands")
 const {Plugin} = require("../edit")
 
 // !! Helper utilities for assigning key bindings to functionality
@@ -31,11 +33,11 @@ function defaultSchemaKeymap(schema) {
   for (let name in schema.marks) {
     let mark = schema.marks[name]
     if (mark instanceof StrongMark)
-      keys["Mod-B"] = pm => pm.setMark(mark, null)
+      keys["Mod-B"] = toggleMark(mark)
     if (mark instanceof EmMark)
-      keys["Mod-I"] = pm => pm.setMark(mark, null)
+      keys["Mod-I"] = toggleMark(mark)
     if (mark instanceof CodeMark)
-      keys["Mod-`"] = pm => pm.setMark(mark, null)
+      keys["Mod-`"] = toggleMark(mark)
   }
   for (let name in schema.nodes) {
     let node = schema.nodes[name]
