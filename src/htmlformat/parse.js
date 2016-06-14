@@ -199,7 +199,7 @@ class NodeBuilder {
     let route, builder
     for (let top = this;; top = top.prev) {
       let found = top.match.findWrapping(type, attrs)
-      if (found && (!route || route.length > found.length) && (!type.ephemeral || found.length == 0)) {
+      if (found && (!route || route.length > found.length)) {
         route = found
         builder = top
         if (!found.length) break
