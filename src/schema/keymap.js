@@ -3,7 +3,7 @@ const {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, HorizontalRule,
        StrongMark, EmMark, CodeMark} = require("../schema")
 const browser = require("../util/browser")
 const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem, chainCommands, newlineInCode,
-       toggleMark} = require("../edit/commands")
+       toggleMark} = require("../edit").commands
 const {Plugin} = require("../edit")
 
 // !! Helper utilities for assigning key bindings to functionality

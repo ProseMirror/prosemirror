@@ -8,6 +8,6 @@ exports.ProseMirror = require("./main").ProseMirror
 ;({MarkedRange: exports.MarkedRange} = require("./range"))
 ;({baseKeymap: exports.baseKeymap, defaultEnter: exports.defaultEnter} = require("./keymap"))
 ;({Plugin: exports.Plugin} = require("./plugin"))
-exports.commands = require("./commands")
+exports.commands = require("./commands").commands
 
 exports.Keymap = require("browserkeymap")

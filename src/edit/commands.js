@@ -5,39 +5,40 @@ const browser = require("../util/browser")
 const {charCategory, isExtendingChar} = require("./char")
 const {findSelectionFrom, TextSelection, NodeSelection} = require("./selection")
 
-// This module defines a number of ‘commands‘, functions that take a
+// :: Object
+// This object contains a number of ‘commands‘, functions that take a
 // ProseMirror instance and try to perform some action on it,
 // returning `false` if they don't apply. These are used to bind keys
 // to, and to define [menu items](#menu).
 //
-// Some of the command functions defined here take a second, optional,
+// Most of the command functions defined here take a second, optional,
 // boolean parameter. This can be set to `false` to do a ‘dry run’,
 // where the function won't take any actual action, but will return
 // information about whether it applies.
+const commands = Object.create(null)
+exports.commands = commands
 
 // :: (...[(ProseMirror, ?bool) → bool]) → (ProseMirror, ?bool) → bool
 // Combine a number of command functions into a single function (which
 // calls them one by one until one returns something other than
 // `false`).
-function chainCommands(...functions) {
+commands.chainCommands = function(...commands) {
   return function(pm, apply) {
-    for (let i = 0; i < functions.length; i++) {
-      let val = functions[i](pm, apply)
+    for (let i = 0; i < commands.length; i++) {
+      let val = commands[i](pm, apply)
       if (val !== false) return val
     }
     return false
   }
 }
-exports.chainCommands = chainCommands
 
 // :: (ProseMirror, ?bool) → bool
 // Delete the selection, if there is one.
-function deleteSelection(pm, apply) {
+commands.deleteSelection = function(pm, apply) {
   if (pm.selection.empty) return false
   if (apply !== false) pm.tr.replaceSelection().applyAndScroll()
   return true
 }
-exports.deleteSelection = deleteSelection
 
 // :: (ProseMirror, ?bool) → bool
 // If the selection is empty and at the start of a textblock, move
@@ -45,7 +46,7 @@ exports.deleteSelection = deleteSelection
 // parent or, if it has no parent it doesn't share with the node
 // before it, moving it into a parent of that node, or joining it with
 // that.
-function joinBackward(pm, apply) {
+commands.joinBackward = function(pm, apply) {
   let {$head, empty} = pm.selection
   if (!empty) return false
 
@@ -86,7 +87,6 @@ function joinBackward(pm, apply) {
   // Apply the joining algorithm
   return deleteBarrier(pm, cut, apply)
 }
-exports.joinBackward = joinBackward
 
 // :: (ProseMirror, ?bool) → bool
 // If the selection is empty and the cursor is at the end of a
@@ -94,7 +94,7 @@ exports.joinBackward = joinBackward
 // cursor (lifting it out of parents that aren't shared, moving it
 // into parents of the cursor block, or joining the two when they are
 // siblings).
-function joinForward(pm, apply) {
+commands.joinForward = function(pm, apply) {
   let {$head, empty} = pm.selection
   if (!empty || $head.parentOffset < $head.parent.content.size) return false
 
@@ -120,12 +120,11 @@ function joinForward(pm, apply) {
     return deleteBarrier(pm, cut, true)
   }
 }
-exports.joinForward = joinForward
 
 // :: (ProseMirror, ?bool) → bool
 // Delete the character before the cursor, if the selection is empty
 // and the cursor isn't at the start of a textblock.
-function deleteCharBefore(pm, apply) {
+commands.deleteCharBefore = function(pm, apply) {
   if (browser.ios) return false
   let {$head, empty} = pm.selection
   if (!empty || $head.parentOffset == 0) return false
@@ -135,12 +134,11 @@ function deleteCharBefore(pm, apply) {
   }
   return true
 }
-exports.deleteCharBefore = deleteCharBefore
 
 // :: (ProseMirror, ?bool) → bool
 // Delete the word before the cursor, if the selection is empty and
 // the cursor isn't at the start of a textblock.
-function deleteWordBefore(pm, apply) {
+commands.deleteWordBefore = function(pm, apply) {
   let {$head, empty} = pm.selection
   if (!empty || $head.parentOffset == 0) return false
   if (apply !== false) {
@@ -149,12 +147,11 @@ function deleteWordBefore(pm, apply) {
   }
   return true
 }
-exports.deleteWordBefore = deleteWordBefore
 
 // :: (ProseMirror, ?bool) → bool
 // Delete the character after the cursor, if the selection is empty
 // and the cursor isn't at the end of its textblock.
-function deleteCharAfter(pm, apply) {
+commands.deleteCharAfter = function(pm, apply) {
   let {$head, empty} = pm.selection
   if (!empty || $head.parentOffset == $head.parent.content.size) return false
   if (apply !== false) {
@@ -163,12 +160,11 @@ function deleteCharAfter(pm, apply) {
   }
   return true
 }
-exports.deleteCharAfter = deleteCharAfter
 
 // :: (ProseMirror, ?bool) → bool
 // Delete the word after the cursor, if the selection is empty and the
 // cursor isn't at the end of a textblock.
-function deleteWordAfter(pm, apply) {
+commands.deleteWordAfter = function(pm, apply) {
   let {$head, empty} = pm.selection
   if (!empty || $head.parentOffset == $head.parent.content.size) return false
   if (apply !== false) {
@@ -177,13 +173,12 @@ function deleteWordAfter(pm, apply) {
   }
   return true
 }
-exports.deleteWordAfter = deleteWordAfter
 
 // :: (ProseMirror, ?bool) → bool
 // Join the selected block or, if there is a text selection, the
 // closest ancestor block of the selection that can be joined, with
 // the sibling above it.
-function joinUp(pm, apply) {
+commands.joinUp = function(pm, apply) {
   let {node, from} = pm.selection, point
   if (node) {
     if (node.isTextblock || !joinable(pm.doc, from)) return false
@@ -199,12 +194,11 @@ function joinUp(pm, apply) {
   }
   return true
 }
-exports.joinUp = joinUp
 
 // :: (ProseMirror, ?bool) → bool
 // Join the selected block, or the closest ancestor of the selection
 // that can be joined, with the sibling after it.
-function joinDown(pm, apply) {
+commands.joinDown = function(pm, apply) {
   let node = pm.selection.node, nodeAt = pm.selection.from
   let point = joinPointBelow(pm)
   if (!point) return false
@@ -215,36 +209,33 @@ function joinDown(pm, apply) {
   }
   return true
 }
-exports.joinDown = joinDown
 
 // :: (ProseMirror, ?bool) → bool
 // Lift the selected block, or the closest ancestor block of the
 // selection that can be lifted, out of its parent node.
-function lift(pm, apply) {
+commands.lift = function(pm, apply) {
   let {$from, $to} = pm.selection
   let range = $from.blockRange($to), target = range && liftTarget(range)
   if (target == null) return false
   if (apply !== false) pm.tr.lift(range, target).applyAndScroll()
   return true
 }
-exports.lift = lift
 
 // :: (ProseMirror, ?bool) → bool
 // If the selection is in a node whose type has a truthy `isCode`
 // property, replace the selection with a newline character.
-function newlineInCode(pm, apply) {
+commands.newlineInCode = function(pm, apply) {
   let {$from, $to, node} = pm.selection
   if (node) return false
   if (!$from.parent.type.isCode || $to.pos >= $from.end()) return false
   if (apply !== false) pm.tr.typeText("\n").applyAndScroll()
   return true
 }
-exports.newlineInCode = newlineInCode
 
 // :: (ProseMirror, ?bool) → bool
 // If a block node is selected, create an empty paragraph before (if
 // it is its parent's first child) or after it.
-function createParagraphNear(pm, apply) {
+commands.createParagraphNear = function(pm, apply) {
   let {$from, from, to, node} = pm.selection
   if (!node || !node.isBlock) return false
   let type = $from.parent.defaultContentType($from.indexAfter())
@@ -257,12 +248,11 @@ function createParagraphNear(pm, apply) {
   }
   return true
 }
-exports.createParagraphNear = createParagraphNear
 
 // :: (ProseMirror, ?bool) → bool
 // If the cursor is in an empty textblock that can be lifted, lift the
 // block.
-function liftEmptyBlock(pm, apply) {
+commands.liftEmptyBlock = function(pm, apply) {
   let {$head, empty} = pm.selection
   if (!empty || $head.parent.content.size) return false
   if ($head.depth > 1 && $head.after() != $head.end(-1)) {
@@ -277,12 +267,11 @@ function liftEmptyBlock(pm, apply) {
   if (apply !== false) pm.tr.lift(range, target).applyAndScroll()
   return true
 }
-exports.liftEmptyBlock = liftEmptyBlock
 
 // :: (ProseMirror, ?bool) → bool
 // Split the parent block of the selection. If the selection is a text
 // selection, delete it.
-function splitBlock(pm, apply) {
+commands.splitBlock = function(pm, apply) {
   let {$from, $to, node} = pm.selection
   if (node && node.isBlock) {
     if (!$from.parentOffset || !canSplit(pm.doc, $from.pos)) return false
@@ -302,12 +291,11 @@ function splitBlock(pm, apply) {
     return true
   }
 }
-exports.splitBlock = splitBlock
 
 // :: (ProseMirror, ?bool) → bool
 // Move the selection to the node wrapping the current selection, if
 // any. (Will not select the document node.)
-function selectParentNode(pm, apply) {
+commands.selectParentNode = function(pm, apply) {
   let sel = pm.selection, pos
   if (sel.node) {
     if (!sel.$from.depth) return false
@@ -320,11 +308,10 @@ function selectParentNode(pm, apply) {
   if (apply !== false) pm.setNodeSelection(pos)
   return true
 }
-exports.selectParentNode = selectParentNode
 
 // :: (ProseMirror, ?bool) → bool
 // Undo the most recent change event, if any.
-function undo(pm, apply) {
+commands.undo = function(pm, apply) {
   if (pm.history.undoDepth == 0) return false
   if (apply !== false) {
     pm.scrollIntoView()
@@ -332,11 +319,10 @@ function undo(pm, apply) {
   }
   return true
 }
-exports.undo = undo
 
 // :: (ProseMirror, ?bool) → bool
 // Redo the most recently undone change event, if any.
-function redo(pm, apply) {
+commands.redo = function(pm, apply) {
   if (pm.history.redoDepth == 0) return false
   if (apply !== false) {
     pm.scrollIntoView()
@@ -344,7 +330,6 @@ function redo(pm, apply) {
   }
   return true
 }
-exports.redo = redo
 
 function deleteBarrier(pm, cut, apply) {
   let $cut = pm.doc.resolve(cut), before = $cut.nodeBefore, after = $cut.nodeAfter, conn
@@ -457,7 +442,7 @@ function joinPointBelow(pm) {
 // Wrap the selection in a node of the given type with the given
 // attributes. When `apply` is `false`, just tell whether this is
 // possible, without performing any action.
-function wrapIn(nodeType, attrs) {
+commands.wrapIn = function(nodeType, attrs) {
   return function(pm, apply) {
     let {$from, $to} = pm.selection
     let range = $from.blockRange($to), wrapping = range && findWrapping(range, nodeType, attrs)
@@ -466,14 +451,13 @@ function wrapIn(nodeType, attrs) {
     return true
   }
 }
-exports.wrapIn = wrapIn
 
 // :: (NodeType, ?Object) → (pm: ProseMirror, apply: ?bool) → bool
 // Try to the textblock around the selection to the given node type
 // with the given attributes. Return `true` when this is possible. If
 // `apply` is `false`, just report whether the change is possible,
 // don't perform any action.
-function setBlockType(nodeType, attrs) {
+commands.setBlockType = function(nodeType, attrs) {
   return function(pm, apply) {
     let {$from, $to, node} = pm.selection, depth
     if (node) {
@@ -494,7 +478,6 @@ function setBlockType(nodeType, attrs) {
     return true
   }
 }
-exports.setBlockType = setBlockType
 
 // List-related commands
 
@@ -503,7 +486,7 @@ exports.setBlockType = setBlockType
 // the given type an attributes. If `apply` is `false`, only return a
 // value to indicate whether this is possible, but don't actually
 // perform the change.
-function wrapInList(nodeType, attrs) {
+commands.wrapInList = function(nodeType, attrs) {
   return function(pm, apply) {
     let {$from, $to} = pm.selection
     let range = $from.blockRange($to), doJoin = false
@@ -524,12 +507,11 @@ function wrapInList(nodeType, attrs) {
     return true
   }
 }
-exports.wrapInList = wrapInList
 
 // :: (NodeType) → (pm: ProseMirror) → bool
 // Build a command that splits a non-empty textblock at the top level
 // of a list item by also splitting that list item.
-function splitListItem(nodeType) {
+commands.splitListItem = function(nodeType) {
   return function(pm) {
     let {$from, $to, node} = pm.selection
     if ((node && node.isBlock) || !$from.parent.content.size ||
@@ -543,12 +525,11 @@ function splitListItem(nodeType) {
     return true
   }
 }
-exports.splitListItem = splitListItem
 
 // :: (NodeType) → (pm: ProseMirror, apply: ?bool) → bool
 // Create a command to lift the list item around the selection up into
 // a wrapping list.
-function liftListItem(nodeType) {
+commands.liftListItem = function(nodeType) {
   return function(pm, apply) {
     let {$from, $to} = pm.selection
     let range = $from.blockRange($to, node => node.childCount && node.firstChild.type == nodeType)
@@ -568,12 +549,11 @@ function liftListItem(nodeType) {
     return true
   }
 }
-exports.liftListItem = liftListItem
 
 // :: (NodeType) → (pm: ProseMirror, apply: ?bool) → bool
 // Create a command to sink the list item around the selection down
 // into an inner list.
-function sinkListItem(nodeType) {
+commands.sinkListItem = function(nodeType) {
   return function(pm, apply) {
     let {$from, $to} = pm.selection
     let range = $from.blockRange($to, node => node.childCount && node.firstChild.type == nodeType)
@@ -595,7 +575,6 @@ function sinkListItem(nodeType) {
     return true
   }
 }
-exports.sinkListItem = sinkListItem
 
 function markApplies(doc, from, to, type) {
   let can = false
@@ -614,7 +593,7 @@ function markApplies(doc, from, to, type) {
 // or add it otherwise. If the selection is empty, this applies to the
 // [active marks](#ProseMirror.activeMarks) instead of a range of the
 // document.
-function toggleMark(markType, attrs) {
+commands.toggleMark = function(markType, attrs) {
   return function(pm, apply) {
     let {empty, from, to} = pm.selection
     if (!markApplies(pm.doc, from, to, markType)) return false
@@ -633,4 +612,3 @@ function toggleMark(markType, attrs) {
     return true
   }
 }
-exports.toggleMark = toggleMark

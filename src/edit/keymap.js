@@ -1,7 +1,7 @@
 const Keymap = require("browserkeymap")
 const browser = require("../util/browser")
 
-const c = require("./commands")
+const c = require("./commands").commands
 
 // :: (ProseMirror) → bool
 // The default binding for enter. Tries `newlineInCode`,
