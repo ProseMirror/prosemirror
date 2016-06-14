@@ -1,7 +1,4 @@
-// :: (Node, Node) → ?number
-// Find the first position at which nodes `a` and `b` differ, or
-// `null` if they are the same.
-function findDiffStart(a, b, pos = 0) {
+function findDiffStart(a, b, pos) {
   for (let i = 0;; i++) {
     if (i == a.childCount || i == b.childCount)
       return a.childCount == b.childCount ? null : pos
@@ -25,12 +22,7 @@ function findDiffStart(a, b, pos = 0) {
 }
 exports.findDiffStart = findDiffStart
 
-// :: (Node, Node) → ?{a: number, b: number}
-// Find the first position, searching from the end, at which nodes `a`
-// and `b` differ, or `null` if they are the same. Since this position
-// will not be the same in both nodes, an object with two separate
-// positions is returned.
-function findDiffEnd(a, b, posA = a.size, posB = b.size) {
+function findDiffEnd(a, b, posA, posB) {
   for (let iA = a.childCount, iB = b.childCount;;) {
     if (iA == 0 || iB == 0)
       return iA == iB ? null : {a: posA, b: posB}

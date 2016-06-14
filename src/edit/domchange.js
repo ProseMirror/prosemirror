@@ -1,4 +1,4 @@
-const {findDiffStart, findDiffEnd, Mark} = require("../model")
+const {Mark} = require("../model")
 const {mapThroughResult} = require("../transform")
 
 const {findSelectionFrom, findSelectionNear, TextSelection} = require("./selection")
@@ -179,9 +179,9 @@ function uniformTextBetween(node, from, to) {
 }
 
 function findDiff(a, b, pos, preferedStart) {
-  let start = findDiffStart(a, b, pos)
+  let start = a.findDiffStart(b, pos)
   if (!start) return null
-  let {a: endA, b: endB} = findDiffEnd(a, b, pos + a.size, pos + b.size)
+  let {a: endA, b: endB} = a.findDiffEnd(b, pos + a.size, pos + b.size)
   if (endA < start) {
     let move = preferedStart <= start && preferedStart >= endA ? start - preferedStart : 0
     start -= move

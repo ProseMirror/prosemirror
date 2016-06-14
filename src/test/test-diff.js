@@ -1,5 +1,3 @@
-const {findDiffStart, findDiffEnd} = require("../model")
-
 const {doc, blockquote, h1, p, em, strong} = require("./build")
 
 const {defTest} = require("./tests")
@@ -10,9 +8,9 @@ function t(name, type, a, b, pos) {
   defTest("diff_" + type + "_" + name, () => {
     let result
     if (type == "start") {
-      result = findDiffStart(a.content, b.content)
+      result = a.content.findDiffStart(b.content)
     } else {
-      let found = findDiffEnd(a.content, b.content)
+      let found = a.content.findDiffEnd(b.content)
       result = found && found.a
     }
     if (pos == null) {

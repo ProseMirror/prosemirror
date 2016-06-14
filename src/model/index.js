@@ -22,6 +22,4 @@ exports.Mark = require("./mark").Mark
    MarkType: exports.MarkType, Attribute: exports.Attribute, NodeKind: exports.NodeKind} = require("./schema"))
 ;({ContentMatch: exports.ContentMatch} = require("./content"))
 
-;({findDiffStart: exports.findDiffStart, findDiffEnd: exports.findDiffEnd} = require("./diff"))
-
 exports.parseDOMInContext = require("./from_dom").parseDOMInContext

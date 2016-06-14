@@ -1,4 +1,5 @@
 const {fragmentToDOM} = require("./to_dom")
+const {findDiffStart, findDiffEnd} = require("./diff")
 
 // ;; Fragment is the type used to represent a node's collection of
 // child nodes.
@@ -206,6 +207,22 @@ class Fragment {
       f(child, p, i)
       p += child.nodeSize
     }
+  }
+
+  // :: (Fragment) → ?number
+  // Find the first position at which this fragment and another
+  // fragment differ, or `null` if they are the same.
+  findDiffStart(other, pos = 0) {
+    return findDiffStart(this, other, pos)
+  }
+
+  // :: (Node) → ?{a: number, b: number}
+  // Find the first position, searching from the end, at which this
+  // fragment and the given fragment differ, or `null` if they are the
+  // same. Since this position will not be the same in both nodes, an
+  // object with two separate positions is returned.
+  findDiffEnd(other, pos = this.size, otherPos = other.size) {
+    return findDiffEnd(this, other, pos, otherPos)
   }
 
   // : (number, ?number) → {index: number, offset: number}
