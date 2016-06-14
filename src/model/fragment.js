@@ -1,3 +1,5 @@
+const {fragmentToDOM} = require("./to_dom")
+
 // ;; Fragment is the type used to represent a node's collection of
 // child nodes.
 //
@@ -223,6 +225,17 @@ class Fragment {
       curPos = end
     }
   }
+
+  // :: (?Object) → DOMFragment
+  // Serialize the content of this fragment to a DOM fragment. When
+  // not in the browser, the `document` option, containing a DOM
+  // document, should be passed so that the serialize can create
+  // nodes.
+  //
+  // To define rendering behavior for your own [node](#NodeType) and
+  // [mark](#MarkType) types, define a [`toDOM`](#NodeType.toDOM)
+  // method.
+  toDOM(options = {}) { return fragmentToDOM(this, options) }
 }
 exports.Fragment = Fragment
 

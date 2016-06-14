@@ -1,11 +1,7 @@
-const {Fragment, NodeType, Mark} = require("../model")
+const {Fragment} = require("./fragment")
+const {Mark} = require("./mark")
 
-// :: (Schema, DOMNode, ?Object) → Node
-// Parse document from the content of a DOM node. To pass an explicit
-// parent document (for example, when not in a browser window
-// environment, where we simply use the global document), pass it as
-// the `document` property of `options`.
-function fromDOM(schema, dom, options = {}) {
+function parseDOM(schema, dom, options) {
   let topNode = options.topNode
   let top = new NodeBuilder(topNode ? topNode.type : schema.nodes.doc,
                             topNode ? topNode.attrs : null, true)
@@ -13,13 +9,13 @@ function fromDOM(schema, dom, options = {}) {
   state.addAll(dom, null, options.from, options.to)
   return top.finish()
 }
-exports.fromDOM = fromDOM
+exports.parseDOM = parseDOM
 
 // :: (ResolvedPos, DOMNode, ?Object) → Slice
 // Parse a DOM fragment into a `Slice`, starting with the context at
 // `$context`. If the DOM nodes are known to be 'open' (as in
 // `Slice`), pass their left open depth as the `openLeft` option.
-function fromDOMInContext($context, dom, options = {}) {
+function parseDOMInContext($context, dom, options = {}) {
   let schema = $context.parent.type.schema
 
   let {builder, top} = builderFromContext($context)
@@ -40,7 +36,7 @@ function fromDOMInContext($context, dom, options = {}) {
   for (let d = $startPos.depth; d >= 0 && startPos == $startPos.end(d); d--) ++startPos
   return doc.slice(startPos, doc.content.size - openTo)
 }
-exports.fromDOMInContext = fromDOMInContext
+exports.parseDOMInContext = parseDOMInContext
 
 function builderFromContext($context) {
   let top, builder
@@ -53,15 +49,6 @@ function builderFromContext($context) {
   }
   return {builder, top}
 }
-
-// :: (Schema, string, ?Object) → Node
-// Parses the HTML into a DOM, and then calls through to `fromDOM`.
-function fromHTML(schema, html, options) {
-  let wrap = (options && options.document || window.document).createElement("div")
-  wrap.innerHTML = html
-  return fromDOM(schema, wrap, options)
-}
-exports.fromHTML = fromHTML
 
 // :: union<?Object, [?Object, {content: ?union<bool, DOMNode>, preserveWhiteSpace: ?bool}]>
 // #path=ParseSpec #kind=interface
@@ -81,33 +68,6 @@ exports.fromHTML = fromHTML
 // representation puts its child nodes in an inner wrapping node). You
 // can set `preserveWhiteSpace` to a boolean to enable or disable
 // preserving of whitespace when parsing the content.
-
-// ;; #path=NodeType #noAnchor #kind=class
-// This module gives meaning to the following properties in the
-// `NodeType` class:
-
-// ;; #path=MarkType #noAnchor #kind=class
-// This module gives meaning to the following properties in the
-// `MarkType` class:
-
-// :: Object<union<ParseSpec, (DOMNode) → union<bool, ParseSpec>>> #path=NodeType.prototype.matchDOMTag
-// Defines the way nodes of this type are parsed. Should contain an
-// object mapping CSS selectors (such as `"p"` for `<p>` tags, or
-// `div[data-type="foo"]` for `<div>` tags with a specific attribute)
-// to [parse specs](#ParseSpec) or functions that, when given a DOM
-// node, return either `false` or a parse spec.
-
-// :: Object<union<ParseSpec, (DOMNode) → union<bool, ParseSpec>>> #path=MarkType.prototype.matchDOMTag
-// Defines the way marks of this type are parsed. Works just like
-// `NodeType.matchTag`, but produces marks rather than nodes.
-
-// :: Object<union<?Object, (string) → union<bool, ?Object>>> #path=MarkType.prototype.matchDOMStyle
-// Defines the way DOM styles are mapped to marks of this type. Should
-// contain an object mapping CSS property names, as found in inline
-// styles, to either attributes for this mark (null for default
-// attributes), or a function mapping the style's value to either a
-// set of attributes or `false` to indicate that the style does not
-// match.
 
 class NodeBuilder {
   constructor(type, attrs, solid, prev, match) {
@@ -337,7 +297,7 @@ class DOMParseState {
       let result = matchStyle(this.info.styles, styles[i], styles[i + 1])
       if (!result) continue
       if (result.attrs === false) return
-      marks = result.type.create(result.attrs).addToSet(marks)
+      marks = result.mark.create(result.attrs).addToSet(marks)
     }
     this.marks = marks
     this.addElement(dom)
@@ -352,9 +312,9 @@ class DOMParseState {
     let result = matchTag(this.info.selectors, dom)
     if (!result) return false
 
-    let isNode = result.type instanceof NodeType, sync, before
-    if (isNode) sync = this.enter(result.type, result.attrs)
-    else before = this.addMark(result.type.create(result.attrs))
+    let sync, before
+    if (result.node) sync = this.enter(result.node, result.attrs)
+    else before = this.addMark(result.mark.create(result.attrs))
 
     let contentNode = dom, preserve = null, prevPreserve = this.preserveWhitespace
     if (result.content) {
@@ -508,14 +468,14 @@ function summarizeSchemaInfo(schema) {
   for (let name in schema.nodes) {
     let type = schema.nodes[name], match = type.matchDOMTag
     if (match) for (let selector in match)
-      selectors.push({selector, type, value: match[selector]})
+      selectors.push({selector, node: type, value: match[selector]})
   }
   for (let name in schema.marks) {
     let type = schema.marks[name], match = type.matchDOMTag, props = type.matchDOMStyle
     if (match) for (let selector in match)
-      selectors.push({selector, type, value: match[selector]})
+      selectors.push({selector, mark: type, value: match[selector]})
     if (props) for (let prop in props)
-      styles.push({prop, type, value: props[prop]})
+      styles.push({prop, mark: type, value: props[prop]})
   }
   return {selectors, styles}
 }
@@ -532,7 +492,7 @@ function matchTag(selectors, dom) {
       if (Array.isArray(value)) {
         ;([value, content] = value)
       }
-      return {type: cur.type, attrs: value, content}
+      return {node: cur.node, mark: cur.mark, attrs: value, content}
     }
   }
 }
@@ -546,7 +506,7 @@ function matchStyle(styles, prop, value) {
         attrs = attrs(value)
         if (attrs === false) continue
       }
-      return {type: cur.type, attrs}
+      return {mark: cur.mark, attrs}
     }
   }
 }

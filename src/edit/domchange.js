@@ -1,5 +1,4 @@
 const {findDiffStart, findDiffEnd, Mark} = require("../model")
-const {fromDOM} = require("../htmlformat")
 const {mapThroughResult} = require("../transform")
 
 const {findSelectionFrom, findSelectionNear, TextSelection} = require("./selection")
@@ -42,7 +41,7 @@ function parseBetween(pm, from, to) {
     if (!domSel.isCollapsed)
       find.push({node: domSel.focusNode, offset: domSel.focusOffset})
   }
-  let sel = null, doc = fromDOM(pm.schema, parent, {
+  let sel = null, doc = pm.schema.parseDOM(parent, {
     topNode: pm.operation.doc.resolve(from).parent.copy(),
     from: startOff,
     to: endOff,

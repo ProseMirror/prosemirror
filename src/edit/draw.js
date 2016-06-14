@@ -1,4 +1,3 @@
-const {toDOM, nodeToDOM} = require("../htmlformat")
 const {elt} = require("../util/dom")
 const browser = require("../util/browser")
 
@@ -80,7 +79,7 @@ function splitSpan(span, at) {
 
 function draw(pm, doc) {
   pm.content.textContent = ""
-  pm.content.appendChild(toDOM(doc, options(pm.ranges.activeRangeTracker())))
+  pm.content.appendChild(doc.content.toDOM(options(pm.ranges.activeRangeTracker())))
 }
 exports.draw = draw
 
@@ -151,7 +150,8 @@ function redraw(pm, dirty, doc, prev) {
           scan(childContainer(domPos), child, pChild, pos + offset + 1)
       } else {
         opts.pos = pos + offset
-        let rendered = nodeToDOM(child, opts, offset)
+        opts.offset = offset
+        let rendered = child.toDOM(opts)
         dom.insertBefore(rendered, domPos)
         reuseDOM = false
       }

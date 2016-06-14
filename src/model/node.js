@@ -2,6 +2,7 @@ const {Fragment} = require("./fragment")
 const {Mark} = require("./mark")
 const {Slice, replace} = require("./replace")
 const {ResolvedPos} = require("./resolvedpos")
+const {nodeToDOM} = require("./to_dom")
 const {compareDeep} = require("../util/comparedeep")
 
 const emptyAttrs = Object.create(null)
@@ -328,6 +329,12 @@ class Node {
     let content = json.text != null ? json.text : Fragment.fromJSON(schema, json.content)
     return type.create(json.attrs, content, json.marks && json.marks.map(schema.markFromJSON))
   }
+
+  // :: (?Object) → DOMNode
+  // Serialize this node to a DOM node. This is useful when you need
+  // to serialize a part of a document, as opposed to the whole
+  // document.
+  toDOM(options = {}) { return nodeToDOM(this, options) }
 }
 exports.Node = Node
 

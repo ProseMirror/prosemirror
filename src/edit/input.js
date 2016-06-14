@@ -1,7 +1,6 @@
 const Keymap = require("browserkeymap")
 const browser = require("../util/browser")
-const {fromDOMInContext, toDOM} = require("../htmlformat")
-const {Slice, Fragment} = require("../model")
+const {Slice, Fragment, parseDOMInContext} = require("../model")
 
 const {captureKeys} = require("./capturekeys")
 const {elt, contains} = require("../util/dom")
@@ -385,7 +384,7 @@ function toClipboard(doc, from, to, dataTransfer) {
   let slice = doc.slice(start, to)
   if (slice.possibleParent.type != doc.type.schema.nodes.doc)
     slice = new Slice(Fragment.from(slice.possibleParent.copy(slice.content)), slice.openLeft + 1, slice.openRight + 1)
-  let dom = toDOM(slice.content), wrap = document.createElement("div")
+  let dom = slice.content.toDOM(), wrap = document.createElement("div")
   if (dom.firstChild && dom.firstChild.nodeType == 1)
     dom.firstChild.setAttribute("pm-open-left", slice.openLeft)
   wrap.appendChild(dom)
@@ -421,7 +420,7 @@ function fromClipboard(pm, dataTransfer, plainText, $target) {
   let foundLeft = dom.querySelector("[pm-open-left]")
   if (foundLeft && (m = /^\d+$/.exec(foundLeft.getAttribute("pm-open-left"))))
     openLeft = +m[0]
-  let slice = fromDOMInContext($target, dom, {openLeft, preserveWhiteSpace: true})
+  let slice = parseDOMInContext($target, dom, {openLeft, preserveWhiteSpace: true})
   return pm.on.transformPasted.dispatch(slice)
 }
 

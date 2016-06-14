@@ -1,4 +1,17 @@
-const {Node} = require("../model")
+// :: union<string, DOMNode, [any]> #path=DOMOutputSpec #kind=interface
+// A description of a DOM structure. Strings are interpreted as text
+// nodes. A DOM node simply means itself.
+//
+// An array describes a DOM element. The first element in the array
+// should be a string, and is the name of the DOM element. If the
+// second element is a non-Array, non-DOM node object, it is
+// interpreted as an object providing the DOM element's attributes.
+// Any elements after that (including the 2nd if it's not an attribute
+// object) are interpreted as children of the DOM elements, and must
+// either be valid `DOMOutputSpec` values, or the number zero.
+//
+// The number zero (pronounce “hole”) is used to indicate the place
+// where a ProseMirror node's content should be inserted.
 
 // Object used to to expose relevant values and methods
 // to DOM serializer functions.
@@ -106,68 +119,19 @@ class DOMSerializer {
   }
 }
 
-// :: (union<Node, Fragment>, ?Object) → DOMFragment
-// Serialize the given content to a DOM fragment. When not
-// in the browser, the `document` option, containing a DOM document,
-// should be passed so that the serialize can create nodes.
-//
-// To define rendering behavior for your own [node](#NodeType) and
-// [mark](#MarkType) types, give them a [`toDOM`](#NodeType.toDOM)
-// method.
-function toDOM(content, options = {}) {
-  return new DOMSerializer(options)
-    .renderFragment(content instanceof Node ? content.content : content, null, options.pos || 0)
+function fragmentToDOM(fragment, options) {
+  return new DOMSerializer(options).renderFragment(fragment, null, options.pos || 0)
 }
-exports.toDOM = toDOM
+exports.fragmentToDOM = fragmentToDOM
 
-// :: (Node) → DOMOutputSpec #path=NodeType.prototype.toDOM
-// Defines the way the node should be serialized to DOM/HTML. Should
-// return an [array structure](#DOMOutputSpec) that describes the
-// resulting DOM structure, with an optional number zero (“hole”) in
-// it to indicate where the node's content should be inserted.
-
-// :: (Node) → DOMOutputSpec #path=MarkType.prototype.toDOM
-// Defines the way the mark should be serialized to DOM/HTML.
-
-// :: union<string, DOMNode, [any]> #path=DOMOutputSpec #kind=interface
-// A description of a DOM structure. Strings are interpreted as text
-// nodes. A DOM node simply means itself.
-//
-// An array describes a DOM element. The first element in the array
-// should be a string, and is the name of the DOM element. If the
-// second element is a non-Array, non-DOM node object, it is
-// interpreted as an object providing the DOM element's attributes.
-// Any elements after that (including the 2nd if it's not an attribute
-// object) are interpreted as children of the DOM elements, and must
-// either be valid `DOMOutputSpec` values, or the number zero.
-//
-// The number zero (pronounce “hole”) is used to indicate the place
-// where a ProseMirror node's content should be inserted.
-
-// :: (Node, ?Object) → DOMNode
-// Serialize a given node to a DOM node. This is useful when you need
-// to serialize a part of a document, as opposed to the whole
-// document.
-function nodeToDOM(node, options, offset = {}) {
+function nodeToDOM(node, options) {
   let serializer = new DOMSerializer(options), pos = options.pos || 0
-  let dom = serializer.renderNode(node, pos, offset)
+  let dom = serializer.renderNode(node, pos, options.offset || 0)
   if (node.isInline) {
     dom = serializer.wrapInlineFlat(dom, node.marks)
     if (serializer.options.renderInlineFlat)
-      dom = options.renderInlineFlat(node, dom, pos, offset) || dom
+      dom = options.renderInlineFlat(node, dom, pos, options.offset || 0) || dom
   }
   return dom
 }
 exports.nodeToDOM = nodeToDOM
-
-// :: (union<Node, Fragment>, ?Object) → string
-// Serialize a node as an HTML string. Goes through `toDOM` and then
-// serializes the result. Again, you must pass a `document` option
-// when not in the browser.
-function toHTML(content, options = {}) {
-  let serializer = new DOMSerializer(options)
-  let wrap = serializer.doc.createElement("div")
-  wrap.appendChild(serializer.renderFragment(content instanceof Node ? content.content : content, null, options.pos || 0))
-  return wrap.innerHTML
-}
-exports.toHTML = toHTML

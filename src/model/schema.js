@@ -2,6 +2,7 @@ const {Node, TextNode} = require("./node")
 const {Fragment} = require("./fragment")
 const {Mark} = require("./mark")
 const {ContentExpr} = require("./content")
+const {parseDOM} = require("./from_dom")
 
 const {copyObj} = require("../util/obj")
 const {OrderedMap} = require("../util/orderedmap")
@@ -172,6 +173,21 @@ class NodeType {
 
     return result
   }
+
+  // :: (Node) → DOMOutputSpec
+  // Defines the way the node should be serialized to DOM/HTML. Should
+  // return an [array structure](#DOMOutputSpec) that describes the
+  // resulting DOM structure, with an optional number zero (“hole”) in
+  // it to indicate where the node's content should be inserted.
+  toDOM(_) { throw new Error("Failed to override NodeType.toDOM") }
+
+  // :: Object<union<ParseSpec, (DOMNode) → union<bool, ParseSpec>>>
+  // Defines the way nodes of this type are parsed. Should contain an
+  // object mapping CSS selectors (such as `"p"` for `<p>` tags, or
+  // `div[data-type="foo"]` for `<div>` tags with a specific attribute)
+  // to [parse specs](#ParseSpec) or functions that, when given a DOM
+  // node, return either `false` or a parse spec.
+  get matchDOMTag() {}
 }
 exports.NodeType = NodeType
 
@@ -288,6 +304,24 @@ class MarkType {
     for (let i = 0; i < set.length; i++)
       if (set[i].type == this) return set[i]
   }
+
+  // :: (mark: Mark) → DOMOutputSpec
+  // Defines the way the mark should be serialized to DOM/HTML.
+  toDOM(_) { throw new Error("Failed to override MarkType.toDOM") }
+
+  // :: Object<union<ParseSpec, (DOMNode) → union<bool, ParseSpec>>>
+  // Defines the way marks of this type are parsed. Works just like
+  // `NodeType.matchTag`, but produces marks rather than nodes.
+  get matchDOMTag() {}
+
+  // :: Object<union<?Object, (string) → union<bool, ?Object>>>
+  // Defines the way DOM styles are mapped to marks of this type. Should
+  // contain an object mapping CSS property names, as found in inline
+  // styles, to either attributes for this mark (null for default
+  // attributes), or a function mapping the style's value to either a
+  // set of attributes or `false` to indicate that the style does not
+  // match.
+  get matchDOMStyle() {}
 }
 exports.MarkType = MarkType
 
@@ -424,6 +458,15 @@ class Schema {
     let found = this.nodes[name]
     if (!found) throw new RangeError("Unknown node type: " + name)
     return found
+  }
+
+  // :: (DOMNode, ?Object) → Node
+  // Parse document from the content of a DOM node. To provide an
+  // explicit parent document (for example, when not in a browser
+  // window environment, where we simply use the global document),
+  // pass it as the `document` property of `options`.
+  parseDOM(dom, options = {}) {
+    return parseDOM(this, dom, options)
   }
 }
 exports.Schema = Schema

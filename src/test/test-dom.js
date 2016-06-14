@@ -4,14 +4,14 @@ const {cmpNode, cmp, cmpStr} = require("./cmp")
 const {defTest} = require("./tests")
 
 const {defaultSchema: schema} = require("../schema")
-const {toDOM, fromDOM, fromDOMInContext} = require("../htmlformat")
+const {parseDOMInContext} = require("../model")
 
 let document = typeof window == "undefined" ? require("jsdom").jsdom() : window.document
 
 function t(name, doc, dom) {
   defTest("dom_" + name, () => {
     let derivedDOM = document.createElement("div")
-    derivedDOM.appendChild(toDOM(doc, {document}))
+    derivedDOM.appendChild(doc.content.toDOM({document}))
     let declaredDOM = document.createElement("div")
     declaredDOM.innerHTML = dom
 
@@ -20,7 +20,7 @@ function t(name, doc, dom) {
     if (derivedText != declaredText)
       throw new Failure("DOM text mismatch: " + derivedText + " vs " + declaredText)
 
-    cmpNode(fromDOM(schema, derivedDOM), doc)
+    cmpNode(schema.parseDOM(derivedDOM), doc)
   })
 }
 
@@ -76,7 +76,7 @@ function recover(name, html, doc) {
   defTest("dom_recover_" + name, () => {
     let dom = document.createElement("div")
     dom.innerHTML = html
-    cmpNode(fromDOM(schema, dom), doc)
+    cmpNode(schema.parseDOM(dom), doc)
   })
 }
 
@@ -165,7 +165,7 @@ function find(name, html, doc) {
       pos = {node: tag.parentNode, offset: Array.prototype.indexOf.call(tag.parentNode.childNodes, tag)}
     }
     tag.parentNode.removeChild(tag)
-    let result = fromDOM(schema, dom, {
+    let result = schema.parseDOM(dom, {
       findPositions: [pos]
     })
     cmpNode(result, doc)
@@ -207,7 +207,7 @@ function ctx(name, doc, html, openLeft, slice) {
     dom.innerHTML = html
     let insert = doc.tag.a, $insert = doc.resolve(insert)
     for (let d = $insert.depth; d > 0 && insert == $insert.start(d) && $insert.end(d) == $insert.after(d + 1); d--) insert--
-    let result = fromDOMInContext(doc.resolve(insert), dom, {openLeft})
+    let result = parseDOMInContext(doc.resolve(insert), dom, {openLeft})
     let sliceContent = slice.content, sliceEnd = sliceContent.size
     while (sliceContent.lastChild && !sliceContent.lastChild.type.isLeaf) { sliceEnd--; sliceContent = sliceContent.lastChild.content }
     let expected = slice.slice(slice.tag.a, sliceEnd)

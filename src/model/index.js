@@ -23,3 +23,5 @@ exports.Mark = require("./mark").Mark
 ;({ContentMatch: exports.ContentMatch} = require("./content"))
 
 ;({findDiffStart: exports.findDiffStart, findDiffEnd: exports.findDiffEnd} = require("./diff"))
+
+exports.parseDOMInContext = require("./from_dom").parseDOMInContext
