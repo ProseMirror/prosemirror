@@ -13,6 +13,7 @@ const defaultEnter = c.chain(c.newlineInCode,
                                     c.splitBlock)
 exports.defaultEnter = defaultEnter
 
+// :: Keymap A basic keymap containing bindings not specific to any schema.
 const baseKeymap = new Keymap({
   "Enter": defaultEnter,
 

@@ -45,7 +45,8 @@ class ProseMirror {
 
     // :: Object<Subscription>
     // A wrapper object containing the various [event
-    // subscribers](#Subscription) exposed by an editor instance.
+    // subscriptions](https://github.com/marijnh/subscription#readme)
+    // exposed by an editor instance.
     this.on = {
       // :: Subscription<()>
       // Dispatched when the document has changed. See
@@ -85,8 +86,10 @@ class ProseMirror {
       // action needs to be taken.
       click: new StoppableSubscription,
       // :: StoppableSubscription<(pos: number, node: Node, nodePos: number)>
-      // Dispatched for every node around a click in the editor,
-      // before `click` is dispatched.
+      // Dispatched for every node around a click in the editor, before
+      // `click` is dispatched, from inner to outer nodes. `pos` is
+      // the position neares to the click, `nodePos` is the position
+      // directly in front of `node`.
       clickOn: new StoppableSubscription,
       // :: StoppableSubscription<(pos: number)>
       // Dispatched when the editor is double-clicked.
@@ -201,15 +204,16 @@ class ProseMirror {
   // `anchor` to `head`, or, if `head` is null, a cursor selection at
   // `anchor`.
   setTextSelection(anchor, head = anchor) {
-    let $head = this.checkPos(head, true)
-    let $anchor = anchor != head ? this.checkPos(anchor, true) : $head
+    let $anchor = this.doc.resolve(anchor), $head = this.doc.resolve(head)
+    if (!$anchor.parent.isTextblock || !$head.parent.isTextblock)
+      throw new RangeError("Setting text selection with an end not in a textblock")
     this.setSelection(new TextSelection($anchor, $head))
   }
 
   // :: (number)
   // Set the selection to a node selection on the node after `pos`.
   setNodeSelection(pos) {
-    let $pos = this.checkPos(pos, false), node = $pos.nodeAfter
+    let $pos = this.doc.resolve(pos), node = $pos.nodeAfter
     if (!node || !node.type.selectable)
       throw new RangeError("Trying to create a node selection that doesn't point at a selectable node")
     this.setSelection(new NodeSelection($pos))
@@ -254,7 +258,8 @@ class ProseMirror {
   }
 
   // :: EditorTransform
-  // Create an editor- and selection-aware `Transform` for this editor.
+  // Create an editor- and selection-aware `Transform` object for this
+  // editor.
   get tr() { return new EditorTransform(this) }
 
   // :: (Transform, ?Object) → Transform
@@ -268,10 +273,14 @@ class ProseMirror {
   //
   // **`selection`**`: ?Selection`
   //   : A new selection to set after the transformation is applied.
+  //     If `transform` is an `EditorTransform`, this will default to
+  //     that object's current selection. If no selection is provided,
+  //     the new selection is determined by [mapping](#Selection.map)
+  //     the existing selection through the transform.
   //
   // **`filter`**: ?bool
   //   : When set to false, suppresses the ability of the
-  //     [`"filterTransform"` event](#ProseMirror.event_beforeTransform)
+  //     [`filterTransform` event](#ProseMirror.on.filterTransform)
   //     to cancel this transform.
   //
   // Returns the transform itself.
@@ -290,19 +299,6 @@ class ProseMirror {
     this.on.transform.dispatch(transform, selectionBeforeTransform, options)
     if (options.scrollIntoView) this.scrollIntoView()
     return transform
-  }
-
-  // :: (number, ?bool)
-  // Verify that the given position is valid in the current document,
-  // and throw an error otherwise. When `textblock` is true, the position
-  // must also fall within a textblock node.
-  checkPos(pos, textblock) {
-    if (pos < 0 || pos > this.doc.content.size)
-      throw new RangeError("Position " + pos + " is outside of the document")
-    let $pos = this.doc.resolve(pos)
-    if (textblock && !$pos.parent.isTextblock)
-      throw new RangeError("Position " + pos + " does not point into a textblock")
-    return $pos
   }
 
   // : (?Object) → Operation
@@ -426,8 +422,6 @@ class ProseMirror {
   //   : When given, this function will be called when the range is
   //     removed from the editor.
   markRange(from, to, options) {
-    this.checkPos(from)
-    this.checkPos(to)
     let range = new MarkedRange(from, to, options)
     this.ranges.addRange(range)
     return range
@@ -523,7 +517,6 @@ class ProseMirror {
   // Find the screen coordinates (relative to top left corner of the
   // window) of the given document position.
   coordsAtPos(pos) {
-    this.checkPos(pos)
     this.flush()
     return coordsAtPos(this, pos)
   }
@@ -532,7 +525,6 @@ class ProseMirror {
   // Scroll the given position, or the cursor position if `pos` isn't
   // given, into view.
   scrollIntoView(pos = null) {
-    if (pos) this.checkPos(pos)
     this.ensureOperation()
     this.operation.scrollIntoView = pos
   }
