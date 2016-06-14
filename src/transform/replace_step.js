@@ -54,10 +54,10 @@ Step.jsonID("replace", ReplaceStep)
 // slice.
 class ReplaceAroundStep extends Step {
   // :: (number, number, number, number, Slice, number, bool)
-  // Create a replace-wrap step with the given range and gap. `inset`
+  // Create a replace-wrap step with the given range and gap. `insert`
   // should be the point in the slice into which the gap should be
   // moved. `structure` has the same meaning as it has in the
-  // `Replace` step.
+  // `ReplaceStep` class.
   constructor(from, to, gapFrom, gapTo, slice, insert, structure) {
     super()
     this.from = from

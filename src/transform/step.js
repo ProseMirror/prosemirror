@@ -15,11 +15,11 @@ const stepsByID = Object.create(null)
 // methods, and registering your class with a unique
 // JSON-serialization identifier using `Step.jsonID`.
 class Step {
-  // :: (doc: Node) → ?StepResult
+  // :: (doc: Node) → StepResult
   // Applies this step to the given document, returning a result
-  // containing the transformed document (the input document is not
-  // changed) and a `PosMap`. If the step could not meaningfully be
-  // applied to the given document, this returns `null`.
+  // object that either indicates failure, if the step can not be
+  // applied to this document, or indicates success by containing a
+  // transformed document.
   apply(_doc) { return mustOverride() }
 
   // :: () → PosMap
@@ -63,7 +63,8 @@ class Step {
   // :: (string, constructor<Step>)
   // To be able to serialize steps to JSON, each step needs a string
   // ID to attach to its JSON representation. Use this method to
-  // register an ID for your step classes.
+  // register an ID for your step classes. Try to pick something
+  // that's unlikely to clash with steps from other modules.
   static jsonID(id, stepClass) {
     if (id in stepsByID) throw new RangeError("Duplicate use of step JSON ID " + id)
     stepsByID[id] = stepClass
@@ -76,11 +77,11 @@ exports.Step = Step
 // ;; The result of [applying](#Step.apply) a step. Contains either a
 // new document or a failure value.
 class StepResult {
-  // :: (?Node, ?string)
+  // : (?Node, ?string)
   constructor(doc, failed) {
     // :: ?Node The transformed document.
     this.doc = doc
-    // :: ?string A text providing information about a failed step.
+    // :: ?string Text providing information about a failed step.
     this.failed = failed
   }
 
@@ -90,11 +91,12 @@ class StepResult {
 
   // :: (string) → StepResult
   // Create a failed step result.
-  static fail(val) { return new StepResult(null, val) }
+  static fail(message) { return new StepResult(null, message) }
 
   // :: (Node, number, number, Slice) → StepResult
-  // Run `Node.replace`, create a successful result if it succeeds,
-  // and a failed one if it throws a `ReplaceError`.
+  // Call `Node.replace` with the given arguments. Create a successful
+  // result if it succeeds, and a failed one if it throws a
+  // `ReplaceError`.
   static fromReplace(doc, from, to, slice) {
     try {
       return StepResult.ok(doc.replace(from, to, slice))

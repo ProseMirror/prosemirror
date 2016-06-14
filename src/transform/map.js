@@ -4,9 +4,9 @@
 // the codebase, only an agreed-on interface.
 
 // :: (pos: number, bias: ?number) → number #path=Mappable.map
-// Map a position through this object. When given, the `bias`
-// determines in which direction to move when a chunk of content is
-// inserted at or around the mapped position.
+// Map a position through this object. When given, `bias` (should be
+// -1 or 1) determines in which direction to move when a chunk of
+// content is inserted at or around the mapped position.
 
 // :: (pos: number, bias: ?number) → MapResult #path=Mappable.mapResult
 // Map a position, and return an object containing additional
@@ -31,7 +31,8 @@ function makeRecover(index, offset) { return index + offset * factor16 }
 function recoverIndex(value) { return value & lower16 }
 function recoverOffset(value) { return (value - (value & lower16)) / factor16 }
 
-// ;; The return value of mapping a position.
+// ;; An object representing a mapped position with some extra
+// information.
 class MapResult {
   constructor(pos, deleted = false, recover = null) {
     // :: number The mapped version of the position.
@@ -51,7 +52,7 @@ class PosMap {
   // :: ([number])
   // Create a position map. The modifications to the document are
   // represented as an array of numbers, in which each group of three
-  // represents an [start, oldSize, newSize] chunk.
+  // represents a modified chunk as `[start, oldSize, newSize]`.
   constructor(ranges, inverted = false) {
     this.ranges = ranges
     this.inverted = inverted
@@ -137,6 +138,7 @@ class Remapping {
     // positions first, back-to-front. So the map at the end of this
     // array (if any) is the very first one applied.
     this.head = head
+    // :: [PosMap]
     // The maps in the tail are applied last, front-to-back.
     this.tail = tail
     this.mirror = Object.create(null)

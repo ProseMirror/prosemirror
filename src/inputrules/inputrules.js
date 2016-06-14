@@ -125,7 +125,7 @@ function getContext($pos) {
 // instance of the plugin state and add a rule to it.
 //
 // Takes a single option, `rules`, which may be an array of
-// `InputRules` objects to add to initially add.
+// `InputRules` objects to initially add.
 const inputRules = new Plugin(InputRules, {
   rules: []
 })

@@ -2,7 +2,6 @@ const {InputRule} = require("./inputrules")
 const {findWrapping, joinable} = require("../transform")
 
 // :: (RegExp, string, NodeType, ?union<Object, ([string]) → ?Object>, ?([string], Node) → bool) → InputRule
-
 // Build an input rule for automatically wrapping a textblock when a
 // given string is typed. The `regexp` and `filter` arguments are
 // directly passed through to the `InputRule` constructor. You'll

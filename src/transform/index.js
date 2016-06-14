@@ -11,9 +11,11 @@ require("./replace")
 
 // !! This module defines a way to transform documents. Transforming
 // happens in `Step`s, which are atomic, well-defined modifications to
-// a document. [Applying](`Step.apply`) a step produces a new document
-// and a [position map](#PosMap) that maps positions in the old
-// document to position in the new document. Steps can be
+// a document. [Applying](`Step.apply`) a step produces a new
+// document.
+//
+// Each step provides a [position map](#PosMap) that maps positions in
+// the old document to position in the new document. Steps can be
 // [inverted](#Step.invert) to create a step that undoes their effect,
 // and chained together in a convenience object called a `Transform`.
 //
