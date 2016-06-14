@@ -197,13 +197,13 @@ class Fragment {
     return this.content[index]
   }
 
-  // :: ((node: Node, offset: number))
-  // Call `f` for every child node, passing the node and its offset
-  // into this parent node.
+  // :: ((node: Node, offset: number, index: number))
+  // Call `f` for every child node, passing the node, its offset
+  // into this parent node, and its index.
   forEach(f) {
     for (let i = 0, p = 0; i < this.content.length; i++) {
       let child = this.content[i]
-      f(child, p)
+      f(child, p, i)
       p += child.nodeSize
     }
   }

@@ -126,12 +126,12 @@ class ResolvedPos {
   }
 
   // :: (?ResolvedPos, ?(Node) → bool) → ?NodeRange
-  // Returns a range at which this position and the given position
-  // diverge around block content. If both point into the same
-  // textblock, for example, a range around that textblock will be
-  // returned. If they point into different blocks, the range around
-  // those blocks or their ancestors in their common ancestor is
-  // returned. You can pass in an optional predicate that will be
+  // Returns a range based on the place where this position and the
+  // given position diverge around block content. If both point into
+  // the same textblock, for example, a range around that textblock
+  // will be returned. If they point into different blocks, the range
+  // around those blocks or their ancestors in their common ancestor
+  // is returned. You can pass in an optional predicate that will be
   // called with a parent node to see if a range into that parent is
   // acceptable.
   blockRange(other = this, pred) {
@@ -194,30 +194,30 @@ let resolveCache = [], resolveCachePos = 0, resolveCacheSize = 6
 
 // ;; Represents a flat range of content.
 class NodeRange {
-  constructor(from, to, depth) {
+  constructor($from, $to, depth) {
     // :: ResolvedPos A resolved position along the start of the
     // content. May have a `depth` greater than this object's `depth`
     // property, since these are the positions that were used to
     // compute the range, not re-resolved positions directly at its
     // boundaries.
-    this.from = from
+    this.$from = $from
     // :: ResolvedPos A position along the end of the content. See
     // caveat for [`from`](#NodeRange.from).
-    this.to = to
+    this.$to = $to
     // :: number The depth of the node that this range points into.
     this.depth = depth
   }
 
   // :: number The position at the start of the range.
-  get start() { return this.from.before(this.depth + 1) }
+  get start() { return this.$from.before(this.depth + 1) }
   // :: number The position at the end of the range.
-  get end() { return this.to.after(this.depth + 1) }
+  get end() { return this.$to.after(this.depth + 1) }
 
   // :: Node The parent node that the range points into.
-  get parent() { return this.from.node(this.depth) }
+  get parent() { return this.$from.node(this.depth) }
   // :: number The start index of the range in the parent node.
-  get startIndex() { return this.from.index(this.depth) }
+  get startIndex() { return this.$from.index(this.depth) }
   // :: number The end index of the range in the parent node.
-  get endIndex() { return this.to.indexAfter(this.depth) }
+  get endIndex() { return this.$to.indexAfter(this.depth) }
 }
 exports.NodeRange = NodeRange

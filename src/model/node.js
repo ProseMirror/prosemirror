@@ -26,13 +26,13 @@ class Node {
     this.type = type
 
     // :: Object
-    // An object mapping attribute names to string values. The kind of
+    // An object mapping attribute names to values. The kind of
     // attributes allowed and required are determined by the node
     // type.
     this.attrs = attrs
 
     // :: Fragment
-    // The node's content.
+    // A container holding the node's children.
     this.content = content || Fragment.empty
 
     // :: [Mark]
@@ -45,7 +45,7 @@ class Node {
   // For text nodes, this contains the node's text content.
 
   // :: number
-  // The size of this node. For text node, this is the amount of
+  // The size of this node. For text nodes, this is the amount of
   // characters. For leaf nodes, it is one. And for non-leaf nodes, it
   // is the size of the content plus two (the start and end token).
   get nodeSize() { return this.type.isLeaf ? 1 : 2 + this.content.size }
@@ -55,7 +55,7 @@ class Node {
   get childCount() { return this.content.childCount }
 
   // :: (number) → Node
-  // Get the child node at the given index. Raise an error when the
+  // Get the child node at the given index. Raises an error when the
   // index is out of range.
   child(index) { return this.content.child(index) }
 
@@ -63,13 +63,13 @@ class Node {
   // Get the child node at the given index, if it exists.
   maybeChild(index) { return this.content.maybeChild(index) }
 
-  // :: ((node: Node, offset: number))
-  // Call `f` for every child node, passing the node and its offset
-  // into this parent node.
+  // :: ((node: Node, offset: number, index: number))
+  // Call `f` for every child node, passing the node, its offset
+  // into this parent node, and its index.
   forEach(f) { this.content.forEach(f) }
 
   // :: string
-  // Concatenate all the text nodes found in this fragment and its
+  // Concatenates all the text nodes found in this fragment and its
   // children.
   get textContent() { this.textBetween(0, this.content.size, "") }
 
@@ -288,7 +288,8 @@ class Node {
 
   // :: (number, number, NodeType, ?[Mark]) → bool
   // Test whether replacing the range `from` to `to` (by index) with a
-  // node of the given type and marks would be valid.
+  // node of the given type with the given attributes and marks would
+  // be valid.
   canReplaceWith(from, to, type, attrs, marks) {
     return this.type.contentExpr.checkReplaceWith(this.attrs, this.content, from, to, type, attrs, marks || Mark.none)
   }
@@ -331,9 +332,10 @@ class Node {
   }
 
   // :: (?Object) → DOMNode
-  // Serialize this node to a DOM node. This is useful when you need
-  // to serialize a part of a document, as opposed to the whole
-  // document.
+  // Serialize this node to a DOM node. This can be useful when you
+  // need to serialize a part of a document, as opposed to the whole
+  // document, but you'll usually want to do
+  // `doc.content.`[`toDOM()`](#Fragment.toDOM) instead.
   toDOM(options = {}) { return nodeToDOM(this, options) }
 }
 exports.Node = Node

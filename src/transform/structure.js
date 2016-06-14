@@ -15,7 +15,7 @@ function liftTarget(range) {
   let parent = range.parent
   let content = parent.content.cutByIndex(range.startIndex, range.endIndex)
   for (let depth = range.depth;; --depth) {
-    let node = range.from.node(depth), index = range.from.index(depth), endIndex = range.to.indexAfter(depth)
+    let node = range.$from.node(depth), index = range.$from.index(depth), endIndex = range.$to.indexAfter(depth)
     if (depth < range.depth && node.canReplace(index, endIndex, content))
       return depth
     if (depth == 0 || !canCut(node, index, endIndex)) break
@@ -30,7 +30,7 @@ exports.liftTarget = liftTarget
 // `liftTarget` to compute `target`, in order to be sure the lift is
 // valid.
 Transform.prototype.lift = function(range, target) {
-  let {from: $from, to: $to, depth} = range
+  let {$from, $to, depth} = range
 
   let gapStart = $from.before(depth + 1), gapEnd = $to.after(depth + 1)
   let start = gapStart, end = gapEnd
