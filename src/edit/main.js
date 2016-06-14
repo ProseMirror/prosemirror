@@ -374,13 +374,13 @@ class ProseMirror {
   // Add a
   // [keymap](https://github.com/marijnh/browserkeymap#an-object-type-for-keymaps)
   // to the editor. Keymaps added in this way are queried before the
-  // base keymap. The `rank` parameter can be used to
+  // base keymap. The `priority` parameter can be used to
   // control when they are queried relative to other maps added like
-  // this. Maps with a lower rank get queried first.
-  addKeymap(map, rank = 50) {
+  // this. Maps with a higher priority get queried first.
+  addKeymap(map, priority = 50) {
     let i = 0, maps = this.input.keymaps
-    for (; i < maps.length; i++) if (maps[i].rank > rank) break
-    maps.splice(i, 0, {map, rank})
+    for (; i < maps.length; i++) if (maps[i].priority < priority) break
+    maps.splice(i, 0, {map, priority})
   }
 
   // :: (union<string, Keymap>)
