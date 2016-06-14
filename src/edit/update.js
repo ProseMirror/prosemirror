@@ -48,7 +48,8 @@ class EditorScheduler {
 exports.EditorScheduler = EditorScheduler
 
 // ;; Helper for scheduling updates whenever any of a series of events
-// happen.
+// happen. Created with the
+// [`updateScheduler`](#ProseMirror.updateScheduler) method.
 class UpdateScheduler {
   constructor(pm, subscriptions, start) {
     this.pm = pm

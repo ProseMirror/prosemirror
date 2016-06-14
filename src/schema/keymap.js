@@ -2,7 +2,7 @@ const Keymap = require("browserkeymap")
 const {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, HorizontalRule, Paragraph, CodeBlock, Heading,
        StrongMark, EmMark, CodeMark} = require("../schema")
 const browser = require("../util/browser")
-const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem, chain, newlineInCode,
+const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem, chainCommands, newlineInCode,
        toggleMark} = require("../edit/commands")
 const {Plugin} = require("../edit")
 
@@ -48,8 +48,8 @@ function defaultSchemaKeymap(schema) {
     if (node instanceof BlockQuote)
       keys["Shift-Ctrl-."] = wrapIn(node)
     if (node instanceof HardBreak) {
-      let cmd = chain(newlineInCode,
-                      pm => pm.tr.replaceSelection(node.create()).applyAndScroll())
+      let cmd = chainCommands(newlineInCode,
+                              pm => pm.tr.replaceSelection(node.create()).applyAndScroll())
       keys["Mod-Enter"] = keys["Shift-Enter"] = cmd
       if (browser.mac) keys["Ctrl-Enter"] = cmd
     }

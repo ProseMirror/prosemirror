@@ -15,20 +15,20 @@ const {findSelectionFrom, TextSelection, NodeSelection} = require("./selection")
 // where the function won't take any actual action, but will return
 // information about whether it applies.
 
-// :: (...(ProseMirror) → bool) → (ProseMirror) → bool
+// :: (...[(ProseMirror, ?bool) → bool]) → (ProseMirror, ?bool) → bool
 // Combine a number of command functions into a single function (which
 // calls them one by one until one returns something other than
 // `false`).
-function chain(...functions) {
-  return function(pm) {
+function chainCommands(...functions) {
+  return function(pm, apply) {
     for (let i = 0; i < functions.length; i++) {
-      let val = functions[i](pm)
+      let val = functions[i](pm, apply)
       if (val !== false) return val
     }
     return false
   }
 }
-exports.chain = chain
+exports.chainCommands = chainCommands
 
 // :: (ProseMirror, ?bool) → bool
 // Delete the selection, if there is one.

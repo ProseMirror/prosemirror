@@ -7,20 +7,20 @@ const c = require("./commands")
 // The default binding for enter. Tries `newlineInCode`,
 // `createParagraphNear`, `liftEmptyBlock`, and `splitTextblock` in
 // order.
-const defaultEnter = c.chain(c.newlineInCode,
-                                    c.createParagraphNear,
-                                    c.liftEmptyBlock,
-                                    c.splitBlock)
+const defaultEnter = c.chainCommands(c.newlineInCode,
+                                     c.createParagraphNear,
+                                     c.liftEmptyBlock,
+                                     c.splitBlock)
 exports.defaultEnter = defaultEnter
 
 // :: Keymap A basic keymap containing bindings not specific to any schema.
 const baseKeymap = new Keymap({
   "Enter": defaultEnter,
 
-  "Backspace": c.chain(c.deleteSelection, c.joinBackward, c.deleteCharBefore),
-  "Mod-Backspace": c.chain(c.deleteSelection, c.joinBackward, c.deleteWordBefore),
-  "Delete": c.chain(c.deleteSelection, c.joinForward, c.deleteCharAfter),
-  "Mod-Delete": c.chain(c.deleteSelection, c.joinForward, c.deleteWordAfter),
+  "Backspace": c.chainCommands(c.deleteSelection, c.joinBackward, c.deleteCharBefore),
+  "Mod-Backspace": c.chainCommands(c.deleteSelection, c.joinBackward, c.deleteWordBefore),
+  "Delete": c.chainCommands(c.deleteSelection, c.joinForward, c.deleteCharAfter),
+  "Mod-Delete": c.chainCommands(c.deleteSelection, c.joinForward, c.deleteWordAfter),
 
   "Alt-Up": c.joinUp,
   "Alt-Down": c.joinDown,
