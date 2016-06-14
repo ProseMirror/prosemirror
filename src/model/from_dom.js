@@ -11,7 +11,7 @@ function parseDOM(schema, dom, options) {
 }
 exports.parseDOM = parseDOM
 
-// :: (ResolvedPos, DOMNode, ?Object) → Slice
+// : (ResolvedPos, DOMNode, ?Object) → Slice
 // Parse a DOM fragment into a `Slice`, starting with the context at
 // `$context`. If the DOM nodes are known to be 'open' (as in
 // `Slice`), pass their left open depth as the `openLeft` option.
@@ -50,8 +50,7 @@ function builderFromContext($context) {
   return {builder, top}
 }
 
-// :: union<?Object, [?Object, {content: ?union<bool, DOMNode>, preserveWhiteSpace: ?bool}]>
-// #path=ParseSpec #kind=interface
+// ;; #path=ParseSpec #kind=interface
 // A value that describes how to parse a given DOM node as a
 // ProseMirror node or mark type. Specifies the attributes of the new
 // node or mark, along with optional information about the way the
@@ -60,14 +59,19 @@ function builderFromContext($context) {
 // May either be a set of attributes, where `null` indicates the
 // node's default attributes, or an array containing first a set of
 // attributes and then an object describing the treatment of the
-// node's content. If the `content` property is `false`, the content
-// will be ignored. If it is not given, the DOM node's children will
-// be parsed as content of the ProseMirror node or mark. If it is a
-// DOM node, that DOM node's content is treated as the content of the
-// new node or mark (this is useful if, for example, your DOM
-// representation puts its child nodes in an inner wrapping node). You
-// can set `preserveWhiteSpace` to a boolean to enable or disable
-// preserving of whitespace when parsing the content.
+// node's content. Such an object may have the following properties:
+//
+// **`content`**`: ?union<bool, DOMNode>`
+//   : If this is `false`, the content will be ignored. If it is not
+//     given, the DOM node's children will be parsed as content of the
+//     ProseMirror node or mark. If it is a DOM node, that DOM node's
+//     content is treated as the content of the new node or mark (this
+//     is useful if, for example, your DOM representation puts its
+//     child nodes in an inner wrapping node).
+//
+// **`preserveWhiteSpace`**`: ?bool`
+//   : When given, this enables or disables preserving of whitespace
+//     when parsing the content.
 
 class NodeBuilder {
   constructor(type, attrs, solid, prev, match) {

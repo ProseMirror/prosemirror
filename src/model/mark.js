@@ -26,8 +26,10 @@ class Mark {
 
   // :: ([Mark]) → [Mark]
   // Given a set of marks, create a new set which contains this one as
-  // well, in the right position. If this mark or another of its type
-  // is already in the set, the set itself is returned.
+  // well, in the right position. If this mark is already in the set,
+  // the set itself is returned. If a mark of this type with different
+  // attributes is already in the set, a set in which it is replaced
+  // by this one is returned.
   addToSet(set) {
     for (var i = 0; i < set.length; i++) {
       var other = set[i]

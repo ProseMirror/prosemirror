@@ -33,7 +33,7 @@ class Fragment {
     }
   }
 
-  // :: (number, number, string) → string
+  // : (number, number, string) → string
   textBetween(from, to, separator) {
     let text = "", separated = true
     this.nodesBetween(from, to, (node, pos) => {
@@ -232,9 +232,9 @@ class Fragment {
   // document, should be passed so that the serialize can create
   // nodes.
   //
-  // To define rendering behavior for your own [node](#NodeType) and
+  // To specify rendering behavior for your own [node](#NodeType) and
   // [mark](#MarkType) types, define a [`toDOM`](#NodeType.toDOM)
-  // method.
+  // method on them.
   toDOM(options = {}) { return fragmentToDOM(this, options) }
 }
 exports.Fragment = Fragment

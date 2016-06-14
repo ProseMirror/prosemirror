@@ -60,6 +60,9 @@ class NodeType {
     this.schema = schema
   }
 
+  // :: Object<Attribute> #path=NodeType.prototype.attrs
+  // The attributes for this node type.
+
   // :: bool
   // True if this is a block type.
   get isBlock() { return false }
@@ -78,8 +81,12 @@ class NodeType {
   get isText() { return false }
 
   // :: bool
-  // Controls whether nodes of this type can be selected (as a user
-  // node selection).
+  // True for node types that allow no content.
+  get isLeaf() { return this.contentExpr.isLeaf }
+
+  // :: bool
+  // Controls whether nodes of this type can be selected (as a [node
+  // selection](#NodeSelection)).
   get selectable() { return true }
 
   // :: bool
@@ -90,14 +97,6 @@ class NodeType {
   // transfer](https://developer.mozilla.org/en-US/docs/Web/API/DataTransfer)
   // when dragged.
   get draggable() { return false }
-
-  // :: bool
-  // Controls whether this node type is locked.
-  get locked() { return false }
-
-  // :: bool
-  // True for node types that allow no content.
-  get isLeaf() { return this.contentExpr.isLeaf }
 
   hasRequiredAttrs(ignore) {
     for (let n in this.attrs)
@@ -175,18 +174,20 @@ class NodeType {
   }
 
   // :: (Node) → DOMOutputSpec
-  // Defines the way the node should be serialized to DOM/HTML. Should
-  // return an [array structure](#DOMOutputSpec) that describes the
-  // resulting DOM structure, with an optional number zero (“hole”) in
-  // it to indicate where the node's content should be inserted.
+  // Defines the way a node of this type should be serialized to
+  // DOM/HTML. Should return an [array structure](#DOMOutputSpec) that
+  // describes the resulting DOM structure, with an optional number
+  // zero (“hole”) in it to indicate where the node's content should
+  // be inserted.
   toDOM(_) { throw new Error("Failed to override NodeType.toDOM") }
 
   // :: Object<union<ParseSpec, (DOMNode) → union<bool, ParseSpec>>>
-  // Defines the way nodes of this type are parsed. Should contain an
-  // object mapping CSS selectors (such as `"p"` for `<p>` tags, or
-  // `div[data-type="foo"]` for `<div>` tags with a specific attribute)
-  // to [parse specs](#ParseSpec) or functions that, when given a DOM
-  // node, return either `false` or a parse spec.
+  // Defines the way nodes of this type are parsed. Should, if
+  // present, contain an object mapping CSS selectors (such as `"p"`
+  // for `<p>` tags, or `"div[data-type=foo]"` for `<div>` tags with a
+  // specific attribute) to [parse specs](#ParseSpec) or functions
+  // that, when given a DOM node, return either `false` or a parse
+  // spec.
   get matchDOMTag() {}
 }
 exports.NodeType = NodeType
@@ -306,7 +307,7 @@ class MarkType {
   }
 
   // :: (mark: Mark) → DOMOutputSpec
-  // Defines the way the mark should be serialized to DOM/HTML.
+  // Defines the way marks of this type should be serialized to DOM/HTML.
   toDOM(_) { throw new Error("Failed to override MarkType.toDOM") }
 
   // :: Object<union<ParseSpec, (DOMNode) → union<bool, ParseSpec>>>
@@ -342,9 +343,9 @@ exports.MarkType = MarkType
 // The `NodeType` class to be used for this node.
 
 // :: ?string #path=NodeSpec.content
-// The content expression for this node, as parsed by
-// `ContentExpr.parse`. When not given, the node does not allow any
-// content.
+// The content expression for this node, as described in the [schema
+// guide](guide/schema.html). When not given, the node does not allow
+// any content.
 
 // :: ?string #path=NodeSpec.group
 // The group or space-separated groups to which this node belongs, as
@@ -354,7 +355,7 @@ exports.MarkType = MarkType
 // node and mark types that it is made up of (which, in turn,
 // determine the structure it is allowed to have).
 class Schema {
-  // :: (SchemaSpec, any)
+  // :: (SchemaSpec, ?any)
   // Construct a schema from a specification.
   constructor(spec, data) {
     // :: OrderedMap<NodeSpec> The node specs that the schema is based on.
@@ -461,7 +462,7 @@ class Schema {
   }
 
   // :: (DOMNode, ?Object) → Node
-  // Parse document from the content of a DOM node. To provide an
+  // Parse a document from the content of a DOM node. To provide an
   // explicit parent document (for example, when not in a browser
   // window environment, where we simply use the global document),
   // pass it as the `document` property of `options`.

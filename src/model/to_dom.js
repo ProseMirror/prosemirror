@@ -1,6 +1,7 @@
-// :: union<string, DOMNode, [any]> #path=DOMOutputSpec #kind=interface
-// A description of a DOM structure. Strings are interpreted as text
-// nodes. A DOM node simply means itself.
+// ;; #path=DOMOutputSpec #kind=interface
+// A description of a DOM structure. Can be either a string, which is
+// interpreted as a text node, a DOM node, which is interpreted as
+// itself, or an array.
 //
 // An array describes a DOM element. The first element in the array
 // should be a string, and is the name of the DOM element. If the
@@ -10,7 +11,7 @@
 // object) are interpreted as children of the DOM elements, and must
 // either be valid `DOMOutputSpec` values, or the number zero.
 //
-// The number zero (pronounce “hole”) is used to indicate the place
+// The number zero (pronounced “hole”) is used to indicate the place
 // where a ProseMirror node's content should be inserted.
 
 // Object used to to expose relevant values and methods
