@@ -109,7 +109,7 @@ test("change_event", pm => {
   cmp(received, 1, "changed")
   pm.setTextSelection(1)
   cmp(received, 2, "changed back")
-  pm.setOption("doc", doc(p("hi")))
+  pm.setDoc(doc(p("hi")))
   cmp(received, 2, "new doc")
   pm.tr.insertText(3, "you").apply()
   cmp(received, 3, "doc changed")

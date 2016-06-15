@@ -6,7 +6,7 @@ const {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} = requi
 const {mapThrough} = require("../transform")
 const {Mark} = require("../model")
 
-const {parseOptions, initOptions, setOption} = require("./options")
+const {parseOptions} = require("./options")
 const {SelectionState, TextSelection, NodeSelection, findSelectionAtStart, hasFocus} = require("./selection")
 const {scrollIntoView, posAtCoords, coordsAtPos} = require("./dompos")
 const {draw, redraw, DIRTY_REDRAW, DIRTY_RESCAN} = require("./draw")
@@ -58,7 +58,7 @@ class ProseMirror {
       // :: Subscription<()>
       // Indicates that the editor's selection has changed.
       selectionChange: new Subscription,
-      // :: Subscription<()>
+      // :: Subscription<(text: string)>
       // Dispatched when the user types text into the editor.
       textInput: new Subscription,
       // :: Subscription<(doc: Node, selection: Selection)>
@@ -179,18 +179,11 @@ class ProseMirror {
     this.accurateSelection = false
     this.input = new Input(this)
 
-    initOptions(this)
     this.options.plugins.forEach(plugin => plugin.attach(this))
   }
 
-  // :: (string, any)
-  // Update the value of the given [option](#edit_options).
-  setOption(name, value) {
-    setOption(this, name, value)
-  }
-
   // :: (string) → any
-  // Get the current value of the given [option](#edit_options).
+  // Get the value of the given [option](#edit_options).
   getOption(name) { return this.options[name] }
 
   // :: Selection
