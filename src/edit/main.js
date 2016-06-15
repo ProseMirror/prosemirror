@@ -178,6 +178,7 @@ class ProseMirror {
     this.sel = new SelectionState(this, findSelectionAtStart(this.doc))
     this.accurateSelection = false
     this.input = new Input(this)
+    this.addKeymap(this.options.keymap, -100)
 
     this.options.plugins.forEach(plugin => plugin.attach(this))
   }
@@ -371,7 +372,7 @@ class ProseMirror {
   // base keymap. The `priority` parameter can be used to
   // control when they are queried relative to other maps added like
   // this. Maps with a higher priority get queried first.
-  addKeymap(map, priority = 50) {
+  addKeymap(map, priority = 0) {
     let i = 0, maps = this.input.keymaps
     for (; i < maps.length; i++) if (maps[i].priority < priority) break
     maps.splice(i, 0, {map, priority})
