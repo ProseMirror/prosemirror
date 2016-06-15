@@ -1,17 +1,13 @@
 const Keymap = require("browserkeymap")
 const {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, HorizontalRule, Paragraph, CodeBlock, Heading,
-       StrongMark, EmMark, CodeMark} = require("../schema")
+       StrongMark, EmMark, CodeMark} = require("../schema-basic")
 const browser = require("../util/browser")
 const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem, chainCommands, newlineInCode,
        toggleMark} = require("../edit").commands
-const {Plugin} = require("../edit")
 
-// !! Helper utilities for assigning key bindings to functionality
-// related to the basic schema.
-
-// :: (Schema) → Keymap
+// :: (Schema, ?Object) → Keymap
 // Inspect the given schema looking for marks and nodes from the
-// default schema, and if found, add key bindings related to them.
+// basic schema, and if found, add key bindings related to them.
 // This will add:
 //
 // * **Ctrl/Cmd-B** for toggling [strong](#StrongMark)
@@ -28,59 +24,59 @@ const {Plugin} = require("../edit")
 //   the same time splitting the list item
 // * **Ctrl/Cmd-Enter** to insert a hard break
 // * **Ctrl/Cmd-Shift-minus** to insert a horizontal rule
-function defaultSchemaKeymap(schema) {
+//
+// You can suppress or map these bindings by passing a `mapKeys`
+// argument, which maps key names (say `"Mod-B"` to either `false`, to
+// remove the binding, or a new key name string.
+function buildKeymap(schema, mapKeys) {
   let keys = {}
+  function bind(key, cmd) {
+    if (mapKeys) {
+      let mapped = mapKeys[key]
+      if (mapped === false) return
+      if (mapped) key = mapped
+    }
+    keys[key] = cmd
+  }
+
   for (let name in schema.marks) {
     let mark = schema.marks[name]
     if (mark instanceof StrongMark)
-      keys["Mod-B"] = toggleMark(mark)
+      bind("Mod-B", toggleMark(mark))
     if (mark instanceof EmMark)
-      keys["Mod-I"] = toggleMark(mark)
+      bind("Mod-I", toggleMark(mark))
     if (mark instanceof CodeMark)
-      keys["Mod-`"] = toggleMark(mark)
+      bind("Mod-`", toggleMark(mark))
   }
   for (let name in schema.nodes) {
     let node = schema.nodes[name]
     if (node instanceof BulletList)
-      keys["Shift-Ctrl-8"] = wrapInList(node)
+      bind("Shift-Ctrl-8", wrapInList(node))
     if (node instanceof OrderedList)
-      keys["Shift-Ctrl-9"] = wrapInList(node)
+      bind("Shift-Ctrl-9", wrapInList(node))
     if (node instanceof BlockQuote)
-      keys["Shift-Ctrl-."] = wrapIn(node)
+      bind("Shift-Ctrl-.", wrapIn(node))
     if (node instanceof HardBreak) {
       let cmd = chainCommands(newlineInCode,
                               pm => pm.tr.replaceSelection(node.create()).applyAndScroll())
-      keys["Mod-Enter"] = keys["Shift-Enter"] = cmd
-      if (browser.mac) keys["Ctrl-Enter"] = cmd
+      bind("Mod-Enter", cmd)
+      bind("Shift-Enter", cmd)
+      if (browser.mac) bind("Ctrl-Enter", cmd)
     }
     if (node instanceof ListItem) {
-      keys["Enter"] = splitListItem(node)
-      keys["Mod-["] = liftListItem(node)
-      keys["Mod-]"] = sinkListItem(node)
+      bind("Enter", splitListItem(node))
+      bind("Mod-[", liftListItem(node))
+      bind("Mod-]", sinkListItem(node))
     }
     if (node instanceof Paragraph)
-      keys["Shift-Ctrl-0"] = setBlockType(node)
+      bind("Shift-Ctrl-0", setBlockType(node))
     if (node instanceof CodeBlock)
-      keys["Shift-Ctrl-\\"] = setBlockType(node)
+      bind("Shift-Ctrl-\\", setBlockType(node))
     if (node instanceof Heading) for (let i = 1; i <= 6; i++)
-      keys["Shift-Ctrl-" + i] = setBlockType(node, {level: i})
+      bind("Shift-Ctrl-" + i, setBlockType(node, {level: i}))
     if (node instanceof HorizontalRule)
-      keys["Mod-Shift--"] = pm => pm.tr.replaceSelection(node.create()).applyAndScroll()
+      bind("Mod-Shift--", pm => pm.tr.replaceSelection(node.create()).applyAndScroll())
   }
   return new Keymap(keys)
 }
-exports.defaultSchemaKeymap = defaultSchemaKeymap
-
-// :: Plugin
-// A convenience plugin to automatically add a keymap created by
-// `defaultSchemaKeymap` to an editor.
-const defaultSchemaKeymapPlugin = new Plugin(class {
-  constructor(pm) {
-    this.keymap = defaultSchemaKeymap(pm.schema)
-    pm.addKeymap(this.keymap)
-  }
-  detach(pm) {
-    pm.removeKeymap(this.keymap)
-  }
-})
-exports.defaultSchemaKeymapPlugin = defaultSchemaKeymapPlugin
+exports.buildKeymap = buildKeymap

@@ -2,7 +2,7 @@ const {doc, blockquote, p, hr, li, ul, em, strong, a, img} = require("./build")
 const {cmpNode} = require("./cmp")
 const {defTest} = require("./tests")
 
-const {defaultSchema: schema} = require("../schema")
+const {schema} = require("../schema-basic")
 
 function node(name, doc) {
   defTest("json_node_" + name, () => cmpNode(schema.nodeFromJSON(doc.toJSON()), doc))

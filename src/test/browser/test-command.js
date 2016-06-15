@@ -4,7 +4,7 @@ const {cmpNode} = require("../cmp")
 const {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, hr} = require("../build")
 
 const {commands} = require("../../edit")
-const {defaultSchema: schema} = require("../../schema")
+const {schema} = require("../../schema-basic")
 
 const used = Object.create(null)
 const n = schema.nodes

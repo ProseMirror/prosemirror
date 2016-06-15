@@ -1,5 +1,5 @@
 const {Mark} = require("../model")
-const {defaultSchema: schema} = require("../schema")
+const {schema} = require("../schema-basic")
 const {Failure} = require("./failure")
 const {defTest} = require("./tests")
 const {doc, p, em, a} = require("./build")

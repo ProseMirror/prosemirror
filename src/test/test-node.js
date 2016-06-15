@@ -1,5 +1,5 @@
 const {Fragment} = require("../model")
-const {defaultSchema: schema} = require("../schema")
+const {schema} = require("../schema-basic")
 
 const {doc, blockquote, p, li, ul, em, strong, code, br, img} = require("./build")
 

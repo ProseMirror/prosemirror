@@ -1,5 +1,5 @@
 const markdownit = require("markdown-it")
-const {defaultSchema} = require("../schema")
+const {schema} = require("../schema-basic")
 const {Mark} = require("../model")
 
 function maybeMerge(a, b) {
@@ -180,9 +180,8 @@ class MarkdownParser {
 
 // :: MarkdownParser
 // A parser parsing unextended [CommonMark](http://commonmark.org/),
-// without inline HTML, and producing a document in ProseMirror's
-// default schema.
-const defaultMarkdownParser = new MarkdownParser(defaultSchema, markdownit("commonmark", {html: false}), {
+// without inline HTML, and producing a document in the basic schema.
+const defaultMarkdownParser = new MarkdownParser(schema, markdownit("commonmark", {html: false}), {
   blockquote: {block: "blockquote"},
   paragraph: {block: "paragraph"},
   list_item: {block: "list_item"},

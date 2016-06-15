@@ -1,6 +1,6 @@
 const {defTest} = require("../tests")
 const {ProseMirror} = require("../../edit")
-const {defaultSchema} = require("../../schema")
+const {schema} = require("../../schema-basic")
 
 let tempPMs = null
 
@@ -13,7 +13,7 @@ function tempEditors(options) {
   return tempPMs = options.map(options => {
     if (!options) options = {}
     options.place = space
-    options.schema = defaultSchema
+    options.schema = schema
     let pm = new ProseMirror(options)
     let a = options.doc && options.doc.tag && options.doc.tag.a
     if (a != null) {

@@ -1,5 +1,5 @@
 const {ContentExpr} = require("../model/content")
-const {defaultSchema: schema} = require("../schema")
+const {schema} = require("../schema-basic")
 
 const {defTest} = require("./tests")
 const {doc, p, pre, img, br, h1, h2, em, hr} = require("./build")

@@ -1,4 +1,4 @@
-const {defaultSchema: schema} = require("../schema")
+const {schema} = require("../schema-basic")
 
 const {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, strong, code, a, a2, img, img2, dataImage, br, hr} = require("./build")
 

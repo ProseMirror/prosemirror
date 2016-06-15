@@ -3,12 +3,13 @@ const {tempEditor, dispatch} = require("./def")
 const {cmpNode} = require("../cmp")
 const {doc, blockquote, pre, h1, h2, p, li, ul, em, strong, code, br, hr} = require("../build")
 
-const {defaultSchemaKeymapPlugin} = require("../../schema/keymap")
+const {buildKeymap} = require("../../example-setup")
 const Keymap = require("browserkeymap")
 
 function test(key, before, after) {
   defTest("keymap_" + key, () => {
-    let pm = tempEditor({doc: before, plugins: [defaultSchemaKeymapPlugin]})
+    let pm = tempEditor({doc: before})
+    pm.addKeymap(buildKeymap(pm.schema))
     dispatch(pm, Keymap.normalizeKeyName(key.split("_")[0]))
     cmpNode(pm.doc, after)
   })

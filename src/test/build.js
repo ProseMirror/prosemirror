@@ -1,4 +1,4 @@
-const {defaultSchema: schema} = require("../schema")
+const {schema} = require("../schema-basic")
 const {Node} = require("../model")
 
 // This file defines a set of helpers for building up documents to be

@@ -3,7 +3,7 @@ const {Failure} = require("./failure")
 const {cmpNode, cmp, cmpStr} = require("./cmp")
 const {defTest} = require("./tests")
 
-const {defaultSchema: schema} = require("../schema")
+const {schema} = require("../schema-basic")
 const {parseDOMInContext} = require("../model")
 
 let document = typeof window == "undefined" ? require("jsdom").jsdom() : window.document

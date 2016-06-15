@@ -1,5 +1,5 @@
 const {Schema, Block, Text, Attribute, Slice} = require("../model")
-const {EmMark} = require("../schema")
+const {EmMark} = require("../schema-basic")
 const {canSplit, liftTarget, findWrapping, Transform} = require("../transform")
 
 const {defTest} = require("./tests")

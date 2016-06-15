@@ -173,7 +173,7 @@ exports.CodeMark = CodeMark
 
 // :: Schema
 // A basic document schema.
-const defaultSchema = new Schema({
+const schema = new Schema({
   nodes: {
     doc: {type: Doc, content: "block+"},
 
@@ -199,4 +199,4 @@ const defaultSchema = new Schema({
     code: CodeMark
   }
 })
-exports.defaultSchema = defaultSchema
+exports.schema = schema
