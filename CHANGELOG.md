@@ -1,3 +1,237 @@
+## 0.8.0 (2016-06-15)
+
+### Breaking changes
+
+The `src/` directory no longer uses ES6 modules, and is now
+CommonJS-based instead. With ES6 support—_except_ for modules—being
+pretty much complete in browsers and node, that was the only thing
+holding us back from running the code directly, without compilation.
+
+There is no longer a default schema in the `model` module. The new
+[`schema-basic`](http://prosemirror.net/version/0.8.0.html#schema-basic) module exports the schema, node
+types, and mark types that used to make up the default schema.
+
+The [`schema`](http://prosemirror.net/version/0.8.0.html#option_schema) option is no longer optional (though
+it is implied if you pass a [`doc`](http://prosemirror.net/version/0.8.0.html#option_doc) option).
+
+The `Command` abstraction was entirely removed. When the docs talk
+about _commands_ now, they refer to plain functions that take an
+editor instance as argument and return a boolean indicating whether
+they could perform their action.
+
+Keymaps now map keys to such command functions. The basic keymap for
+an editor is no longer inferred from commands, but is now determined
+by the [`keymap`](http://prosemirror.net/version/0.8.0.html#option_keymap) option. The
+[default value](http://prosemirror.net/version/0.8.0.html#baseKeymap) contains a minimal set of bindings not
+related to any schema elements.
+
+Defining new options is no longer a thing. Modules that used to use
+`defineOption` now export [plugins](http://prosemirror.net/version/0.8.0.html#Plugin).
+
+Changing options at run-time through `setOption` is no longer
+supported, since the remaining built-in options don't require this.
+
+The `docFormat` option, `getContent`/`setContent` editor methods, and
+the `format` module have been dropped. You need to explicitly convert
+between formats yourself now.
+
+The DOM parsing and serializing from the `format` module was moved
+into the `model` module, as the [`toDOM`](http://prosemirror.net/version/0.8.0.html#Fragment.toDOM) and
+[`parseDOM`](http://prosemirror.net/version/0.8.0.html#Schema.parseDOM) methods.
+
+The conversions to and from text and HTML were dropped. HTML can be
+done by going through the DOM representation, the text format
+conversions were never very well defined to begin with.
+
+Declaring the way a node or mark type is parsed or serialized was
+simplified. See the new [`toDOM`](http://prosemirror.net/version/0.8.0.html#NodeType.toDOM),
+[`matchDOMTag`](http://prosemirror.net/version/0.8.0.html#NodeType.matchDOMTag) and
+[`matchDOMStyle`](http://prosemirror.net/version/0.8.0.html#MarkType.matchDOMStyle) properties.
+
+The `SchemaItem` class, along with the `register` and `updateAttrs`
+static methods on that class, have been removed. `NodeType` and
+`MarkType` no longer share a superclass, and registering values on
+such types is no longer a thing.
+
+`Textblock` is no longer a class that you derive node type classes
+from. Just use `Block`, and the `isTextblock` getter will return the
+right value based on the node type's content.
+
+Event handlers are no longer registered with node-style `on` methods,
+but attached to specific values representing an event source. The
+[subscription](https://github.com/marijnh/subscription#readme) module
+is used for this. The event emitters for an editor instance are
+grouped in its [`on`](http://prosemirror.net/version/0.8.0.html#ProseMirror.on) property. So now you'd say
+`pm.on.change.add(...)` to register a change handler.
+
+The event-like node type methods `handleClick`, `handleDoubleClick`,
+and `handleContextMenu` are no longer supported. Instead, you're
+expected to use the [`click`](http://prosemirror.net/version/0.8.0.html#ProseMirror.on.click),
+[`clickOn`](http://prosemirror.net/version/0.8.0.html#ProseMirror.on.clickOn),
+[`doubleClick`](http://prosemirror.net/version/0.8.0.html#ProseMirror.on.doubleClick),
+[`doubleClickOn`](http://prosemirror.net/version/0.8.0.html#ProseMirror.on.doubleClickOn), and
+[`contextMenu`](http://prosemirror.net/version/0.8.0.html#ProseMirror.on.contextMenu) event emitters.
+
+The `removed` event on [marked ranges](http://prosemirror.net/version/0.8.0.html#MarkedRange) was replaced by
+an `onRemove` option.
+
+The [`apply`](http://prosemirror.net/version/0.8.0.html#ProseMirror.apply) method on an editor now always
+returns the transform, whereas it used to return `false` if no change
+was made. Its `scroll` property (containing a commonly used options
+object) was removed.
+
+The `checkPos` method on editor objects was removed.
+
+The `rank` argument to [`addKeymap`](http://prosemirror.net/version/0.8.0.html#ProseMirror.addKeymap) was
+renamed `priority` and its meaning was inverted.
+
+The `setMark` method on editor instances was removed. Its role is
+mostly taken over by the [`toggleMark`](http://prosemirror.net/version/0.8.0.html#commands.toggleMark)
+command.
+
+The functionality from the `ui/update` module was moved into the
+`edit` module and is now available through the
+[`scheduleDOMUpdate`](http://prosemirror.net/version/0.8.0.html#ProseMirror.scheduleDOMUpdate),
+[`unscheduleDOMUpdate`](http://prosemirror.net/version/0.8.0.html#ProseMirror.unscheduleDOMUpdate), and
+[`updateScheduler`](http://prosemirror.net/version/0.8.0.html#ProseMirror.updateScheduler) methods.
+
+[Selection](http://prosemirror.net/version/0.8.0.html#Selection) objects now contain [resolved](http://prosemirror.net/version/0.8.0.html#ResolvedPos)
+positions, because that's what you need 99% of the time when you
+access them. Their old properties are still there, in addition to
+`$from`, `$to`, `$anchor`, and `$head` properties. The constructors of
+the selection classes expect resolved positions now.
+
+The `findDiffStart` and `findDiffEnd` functions were moved to
+[methods](http://prosemirror.net/version/0.8.0.html#Fragment.findDiffStart) on `Fragment`.
+
+Some [transformation](http://prosemirror.net/version/0.8.0.html#Transform) methods are now less vague in their
+parameters. [`wrap`](http://prosemirror.net/version/0.8.0.html#Transform.wrap) requires the range to wrap and
+the entire set of wrappers as argument, [`lift`](http://prosemirror.net/version/0.8.0.html#Transform.lift)
+expects a range and target depth.
+
+The [`findWrapping`](http://prosemirror.net/version/0.8.0.html#findWrapping) and [`liftTarget`](http://prosemirror.net/version/0.8.0.html#liftTarget)
+functions are used to compute these before trying to apply the
+transformation. They replace `canWrap` and `canLift`.
+
+The structure of the [markdown](http://prosemirror.net/version/0.8.0.html#markdown) parser and serializer was
+changed to no longer rely on `SchemaItem.register`. Adjusting the
+parser and serializer now works differently (you explicitly create an
+object rather than relying on information attached to node types).
+
+The `autoinput` module was removed. The [`inputrules`](http://prosemirror.net/version/0.8.0.html#inputrules)
+module now exports a plugin that can be used to add input rules, along
+with a number of basic input rules and helper functions to create
+schema-specific input rules.
+
+The [`menu`](http://prosemirror.net/version/0.8.0.html#menu) module is now a single module, which exports the
+menu primitives along with the [`menuBar`](http://prosemirror.net/version/0.8.0.html#menuBar) and
+[`tooltipMenu`](http://prosemirror.net/version/0.8.0.html#tooltipMenu) plugins.
+
+Menu construction is no longer entangled with command definitions. The
+`MenuCommand` class was replaced with a [`MenuItem`](http://prosemirror.net/version/0.8.0.html#MenuItem)
+class, which directly declares the things it would previously get from
+a command. The concept of a `MenuGroup` was dropped (we just use
+arrays, since they are always static). Some helper functions for
+creating menu items, along with some basic icons, are exported from
+the `menu` module.
+
+The `ui` module is now a single module, which exports the
+[`Tooltip`](http://prosemirror.net/version/0.8.0.html#Tooltip) class and the [prompt](http://prosemirror.net/version/0.8.0.html#FieldPrompt)-related
+functionality. Now that command parameters no longer exist, the
+interface for creating a prompt was also changed.
+
+The events emitted by the [`collab`](http://prosemirror.net/version/0.8.0.html#collab) module (which now
+exports a plugin) are now
+[subscriptions](https://github.com/marijnh/subscription#readme) on the
+plugin state object, named [`mustSend`](http://prosemirror.net/version/0.8.0.html#Collab.mustSend) and
+[`receivedTransform`](http://prosemirror.net/version/0.8.0.html#Collab.receivedTransform).
+
+`Step.register` was renamed to [`Step.jsonID`](http://prosemirror.net/version/0.8.0.html#Step.jsonID).
+
+All non-essential CSS rules were removed from the core.
+
+### Bug fixes
+
+Several issues where the code didn't properly enforce the content
+constraints introduced in 0.7.0 were fixed.
+
+When pasting content into an empty textblock, the parent node it was
+originally copied from is now restored, when possible.
+
+Several improvements in the handling of composition and input events
+(mostly used on mobile platforms). Fixes problem where you'd get a
+strange selection after a complex composition event.
+
+Make by-word deletion work properly on astral plane characters.
+
+Fix leaked spacer node when the menu bar was disabled while it was
+floating.
+
+### New features
+
+[Plugins](http://prosemirror.net/version/0.8.0.html#Plugin) are objects used to attach (and detach) a specific
+piece of functionality to an editor. Modules that extend the editor
+now export values of this type. The [`plugins`](http://prosemirror.net/version/0.8.0.html#option_plugins)
+option is the easiest way to enable plugins.
+
+The [`contextAtCoords`](http://prosemirror.net/version/0.8.0.html#ProseMirror.contextAtCoords) method provides
+more precise information about a given position (including the exact
+nodes around the position) than the existing `posAtCoords` method.
+
+The [`EditorTransform`](http://prosemirror.net/version/0.8.0.html#EditorTransform) abstraction is now more
+closely integrated with the editor selection, and you can call
+[`setSelection`](http://prosemirror.net/version/0.8.0.html#EditorTransform.setSelection) on it to update the
+selection during a transform.
+
+The new [`applyAndScroll`](http://prosemirror.net/version/0.8.0.html#EditorTransform.applyAndScroll) method on
+editor transforms provides a convenient shortcut for the common case
+of applying a transformation and scrolling the selection into view.
+
+The new methods [`addActiveMark`](http://prosemirror.net/version/0.8.0.html#ProseMirror.addActiveMark) and
+[`removeActiveMark`](http://prosemirror.net/version/0.8.0.html#ProseMirror.removeActiveMark) provide explicit
+control over the active stored marks.
+
+The `edit` module now exports an object `commands` containing a number
+of command functions and functions that produce command functions.
+Most of the old command objects have an equivalent here.
+
+The [`forEach`](http://prosemirror.net/version/0.8.0.html#Node.forEach) method on nodes and fragments now also
+passes the node's index to its callback.
+
+Nodes now have a [`textBetween`](http://prosemirror.net/version/0.8.0.html#Node.textBetween) method that
+retrieves the text between two positions.
+
+A new [`NodeRange`](http://prosemirror.net/version/0.8.0.html#NodeRange) abstraction (created with the
+[`blockRange`](http://prosemirror.net/version/0.8.0.html#ResolvedPos.blockRange) method on positions) is used
+to specify the range that some of the transformation methods act on.
+
+Node types got two new variants of their [`create`](http://prosemirror.net/version/0.8.0.html#NodeType.create)
+method: [`createChecked`](http://prosemirror.net/version/0.8.0.html#NodeType.createChecked), which raises an
+error if the given content isn't valid (full) content for the node,
+and [`createAndFill`](http://prosemirror.net/version/0.8.0.html#NodeType.createAndFill), which will
+automatically insert required nodes to make the content valid.
+
+The `fixContent` method on node types was removed.
+
+You can now pass a second argument to the [`Schema`](http://prosemirror.net/version/0.8.0.html#Schema)
+constructor, and access its value under the schema object's `data`
+property, to store arbitrary user data in a schema.
+
+The transform module now exports an [`insertPoint`](http://prosemirror.net/version/0.8.0.html#insertPoint)
+function for finding the position at which a node can be inserted.
+
+The [`OrderedMap`](http://prosemirror.net/version/0.8.0.html#OrderedMap) class received a new method,
+[`addBefore`](http://prosemirror.net/version/0.8.0.html#OrderedMap.addBefore).
+
+A new module, [`example-setup`](http://prosemirror.net/version/0.8.0.html#example-setup) provides a plugin
+that makes it easy to set up a simple editor with the
+[basic schema](http://prosemirror.net/version/0.8.0.html#schema-basic) and the key bindings, menu items, and
+input rules that used to be the default.
+
+The [list](http://prosemirror.net/version/0.8.0.html#ListItem) node types in the basic schema now require the
+first child of a list item to be a regular paragraph. The list-related
+commands are now aware of this restriction.
+
 ## 0.7.0 (2016-05-19)
 
 ### Breaking changes
