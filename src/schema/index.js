@@ -4,20 +4,20 @@ exports.Text = Text
 // !! This module defines a number of basic node and mark types, and a
 // schema that combines them.
 
-// ;; The default top-level document node type.
+// ;; A default top-level document node type.
 class Doc extends Block {}
 exports.Doc = Doc
 
-// ;; The default blockquote node type.
+// ;; A blockquote node type.
 class BlockQuote extends Block {
   get matchDOMTag() { return {"blockquote": null} }
   toDOM() { return ["blockquote", 0] }
 }
 exports.BlockQuote = BlockQuote
 
-// ;; The default ordered list node type. Has a single attribute,
-// `order`, which determines the number at which the list starts
-// counting, and defaults to 1.
+// ;; An ordered list node type. Has a single attribute, `order`,
+// which determines the number at which the list starts counting, and
+// defaults to 1.
 class OrderedList extends Block {
   get attrs() { return {order: new Attribute({default: 1})} }
   get matchDOMTag() {
@@ -31,29 +31,29 @@ class OrderedList extends Block {
 }
 exports.OrderedList = OrderedList
 
-// ;; The default bullet list node type.
+// ;; A bullet list node type.
 class BulletList extends Block {
   get matchDOMTag() { return {"ul": null} }
   toDOM() { return ["ul", 0] }
 }
 exports.BulletList = BulletList
 
-// ;; The default list item node type.
+// ;; A list item node type.
 class ListItem extends Block {
   get matchDOMTag() { return {"li": null} }
   toDOM() { return ["li", 0] }
 }
 exports.ListItem = ListItem
 
-// ;; The default horizontal rule node type.
+// ;; A node type for horizontal rules.
 class HorizontalRule extends Block {
   get matchDOMTag() { return {"hr": null} }
   toDOM() { return ["div", ["hr"]] }
 }
 exports.HorizontalRule = HorizontalRule
 
-// ;; The default heading node type. Has a single attribute
-// `level`, which indicates the heading level, and defaults to 1.
+// ;; A heading node type. Has a single attribute `level`, which
+// indicates the heading level, and defaults to 1.
 class Heading extends Block {
   get attrs() { return {level: new Attribute({default: 1})} }
   // :: number
@@ -74,8 +74,7 @@ class Heading extends Block {
 }
 exports.Heading = Heading
 
-// ;; The default code block / listing node type. Only
-// allows unmarked text nodes inside of it.
+// ;; A code block / listing node type.
 class CodeBlock extends Block {
   get isCode() { return true }
   get matchDOMTag() { return {"pre": [null, {preserveWhitespace: true}]} }
@@ -83,15 +82,14 @@ class CodeBlock extends Block {
 }
 exports.CodeBlock = CodeBlock
 
-// ;; The default paragraph node type.
+// ;; A paragraph node type.
 class Paragraph extends Block {
   get matchDOMTag() { return {"p": null} }
   toDOM() { return ["p", 0] }
 }
 exports.Paragraph = Paragraph
 
-// ;; The default inline image node type. Has these
-// attributes:
+// ;; An inline image node type. Has these attributes:
 //
 // - **`src`** (required): The URL of the image.
 // - **`alt`**: The alt text.
@@ -116,7 +114,7 @@ class Image extends Inline {
 }
 exports.Image = Image
 
-// ;; The default hard break node type.
+// ;; A hard break node type.
 class HardBreak extends Inline {
   get selectable() { return false }
   get isBR() { return true }
@@ -125,7 +123,7 @@ class HardBreak extends Inline {
 }
 exports.HardBreak = HardBreak
 
-// ;; The default emphasis mark type.
+// ;; An emphasis mark type.
 class EmMark extends MarkType {
   get matchDOMTag() { return {"i": null, "em": null} }
   get matchDOMStyle() {
@@ -135,7 +133,7 @@ class EmMark extends MarkType {
 }
 exports.EmMark = EmMark
 
-// ;; The default strong mark type.
+// ;; A strong mark type.
 class StrongMark extends MarkType {
   get matchDOMTag() { return {"b": null, "strong": null} }
   get matchDOMStyle() {
@@ -145,7 +143,7 @@ class StrongMark extends MarkType {
 }
 exports.StrongMark = StrongMark
 
-// ;; The default link mark type. Has these attributes:
+// ;; A link mark type. Has these attributes:
 //
 // - **`href`** (required): The link target.
 // - **`title`**: The link's title.
@@ -165,7 +163,7 @@ class LinkMark extends MarkType {
 }
 exports.LinkMark = LinkMark
 
-// ;; The default code font mark type.
+// ;; A code font mark type.
 class CodeMark extends MarkType {
   get isCode() { return true }
   get matchDOMTag() { return {"code": null} }
@@ -174,7 +172,7 @@ class CodeMark extends MarkType {
 exports.CodeMark = CodeMark
 
 // :: Schema
-// ProseMirror's default document schema.
+// A basic document schema.
 const defaultSchema = new Schema({
   nodes: {
     doc: {type: Doc, content: "block+"},
