@@ -44,8 +44,8 @@ class Transform {
   }
 
   // :: (Step) → StepResult
-  // Apply a new step in this transformation, returning the step
-  // result.
+  // Try to apply a step in this transformation, ignoring it if it
+  // fails. Returns the step result.
   maybeStep(step) {
     let result = step.apply(this.doc)
     if (!result.failed) {
