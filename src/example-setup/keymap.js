@@ -10,9 +10,9 @@ const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListIt
 // basic schema, and if found, add key bindings related to them.
 // This will add:
 //
-// * **Ctrl/Cmd-B** for toggling [strong](#StrongMark)
-// * **Ctrl/Cmd-I** for toggling [emphasis](#EmMark)
-// * **Ctrl/Cmd-\`** for toggling [code font](#CodeMark)
+// * **Mod-B** for toggling [strong](#StrongMark)
+// * **Mod-I** for toggling [emphasis](#EmMark)
+// * **Mod-\`** for toggling [code font](#CodeMark)
 // * **Ctrl-Shift-0** for making the current textblock a paragraph
 // * **Ctrl-Shift-1** to **Ctrl-Shift-6** for making the current
 //   textblock a heading of the corresponding level
@@ -22,8 +22,8 @@ const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListIt
 // * **Ctrl-Shift-.** to wrap the selection in a block quote
 // * **Enter** to split a non-empty textblock in a list item while at
 //   the same time splitting the list item
-// * **Ctrl/Cmd-Enter** to insert a hard break
-// * **Ctrl/Cmd-Shift-minus** to insert a horizontal rule
+// * **Mod-Enter** to insert a hard break
+// * **Mod-Shift-minus** to insert a horizontal rule
 //
 // You can suppress or map these bindings by passing a `mapKeys`
 // argument, which maps key names (say `"Mod-B"` to either `false`, to
