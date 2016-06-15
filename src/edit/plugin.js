@@ -33,9 +33,9 @@ class Plugin {
 
   // :: (ProseMirror) → any
   // Initialize the plugin for the given editor. If it was already
-  // enabled, it is first disabled and then re-enabled.
+  // enabled, this throws an error.
   attach(pm) {
-    this.detach(pm)
+    if (this.get(pm)) throw new RangeError("Attaching plugin multiple times")
     return pm.plugin[this.prop] = new this.State(pm, this.options)
   }
 
