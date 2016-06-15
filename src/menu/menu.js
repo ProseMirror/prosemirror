@@ -4,20 +4,6 @@ const {copyObj} = require("../util/obj")
 
 const {getIcon} = require("./icons")
 
-// !! This module defines a number of building blocks for ProseMirror
-// menus, as consumed by the [`menubar`](#menu/menubar) and
-// [`tooltipmenu`](#menu/tooltipmenu) modules.
-
-// ;; #path=MenuElement #kind=interface
-// The types defined in this module aren't the only thing you can
-// display in your menu. Anything that conforms to this interface can
-// be put into a menu structure.
-
-// :: (pm: ProseMirror) → ?DOMNode #path=MenuElement.render
-// Render the element for display in the menu. Returning `null` can be
-// used to signal that this element shouldn't be displayed for the
-// given editor state.
-
 const prefix = "ProseMirror-menu"
 
 // ;; An icon or label that, when clicked, executes a command.

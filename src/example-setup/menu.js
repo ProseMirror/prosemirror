@@ -1,7 +1,7 @@
 const {StrongMark, EmMark, CodeMark, LinkMark, Image, BulletList, OrderedList, BlockQuote,
        Heading, Paragraph, CodeBlock, HorizontalRule} = require("../schema-basic")
 const {toggleMarkItem, insertItem, wrapItem, blockTypeItem, Dropdown, DropdownSubmenu, joinUpItem, liftItem,
-       selectParentNodeItem, undoItem, redoItem, wrapListItem, icons} = require("../menu/menu")
+       selectParentNodeItem, undoItem, redoItem, wrapListItem, icons} = require("../menu")
 
 const {FieldPrompt, TextField} = require("../ui/prompt")
 
@@ -105,7 +105,7 @@ function promptImageAttrs(pm, callback, nodeType) {
 //
 // **`fullMenu`**`: [[MenuElement]]`
 //   : An array of arrays of menu elements for use as the full menu
-//     for, for example the [menu bar](#menu/menubar).
+//     for, for example the [menu bar](#menuBar).
 function buildMenuItems(schema) {
   let r = {}
   for (let name in schema.marks) {

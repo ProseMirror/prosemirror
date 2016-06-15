@@ -2,8 +2,7 @@ const {blockQuoteRule, orderedListRule, bulletListRule, codeBlockRule, headingRu
        inputRules, allInputRules} = require("../inputrules")
 const {BlockQuote, OrderedList, BulletList, CodeBlock, Heading} = require("../schema-basic")
 const {Plugin} = require("../edit")
-const {menuBar} = require("../menu/menubar")
-const {tooltipMenu} = require("../menu/tooltipmenu")
+const {menuBar, tooltipMenu} = require("../menu")
 
 const {className} = require("./style")
 const {buildMenuItems} = require("./menu")
