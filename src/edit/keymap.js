@@ -3,7 +3,23 @@ const browser = require("../util/browser")
 
 const c = require("./commands").commands
 
-// :: Keymap A basic keymap containing bindings not specific to any schema.
+// :: Keymap
+
+// A basic keymap containing bindings not specific to any schema.
+// Binds the following keys (when multiple commands are listed, they
+// are chained with [`chainCommands`](#commands.chainCommands):
+//
+// * **Enter** to `newlineInCode`, `createParagraphNear`, `liftEmptyBlock`, `splitBlock`
+// * **Backspace** to `deleteSelection`, `joinBackward`, `deleteCharBefore`
+// * **Mod-Backspace** to `deleteSelection`, `joinBackward`, `deleteWordBefore`
+// * **Delete** to `deleteSelection`, `joinForward`, `deleteCharAfter`
+// * **Mod-Delete** to `deleteSelection`, `joinForward`, `deleteWordAfter`
+// * **Alt-Up** to `joinUp`
+// * **Alt-Down** to `joinDown`
+// * **Mod-[** to `lift`
+// * **Esc** to `selectParentNode`
+// * **Mod-Z** to `undo`
+// * **Mod-Y** and **Shift-Mod-Z** to `redo`
 const baseKeymap = new Keymap({
   "Enter": c.chainCommands(c.newlineInCode, c.createParagraphNear,
                            c.liftEmptyBlock, c.splitBlock),
