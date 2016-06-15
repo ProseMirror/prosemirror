@@ -1,12 +1,5 @@
 const {elt, insertCSS} = require("../util/dom")
 
-// !! The `ui/prompt` module implements functionality for prompting
-// the user for input.
-//
-// The default implementation gets the job done, roughly, but you'll
-// probably want to customize it in your own system (or submit patches
-// to improve this implementation).
-
 // ;; This class represents a dialog that prompts for a set of
 // fields.
 class FieldPrompt {

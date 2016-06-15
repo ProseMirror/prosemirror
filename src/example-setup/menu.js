@@ -3,7 +3,7 @@ const {StrongMark, EmMark, CodeMark, LinkMark, Image, BulletList, OrderedList, B
 const {toggleMarkItem, insertItem, wrapItem, blockTypeItem, Dropdown, DropdownSubmenu, joinUpItem, liftItem,
        selectParentNodeItem, undoItem, redoItem, wrapListItem, icons} = require("../menu")
 
-const {FieldPrompt, TextField} = require("../ui/prompt")
+const {FieldPrompt, TextField} = require("../ui")
 
 // Helpers to create specific types of items
 
