@@ -10,6 +10,14 @@ textarea {
   padding: 4px 8px;
 }
 
+table {
+  border-collapse: collapse;
+}
+
+td, th {
+  border: 1px solid #000;
+}
+
 .left, .right {
   width: 50%;
   float: left;
@@ -41,4 +49,3 @@ textarea {
   padding: 4px 8px 4px 14px;
   line-height: 1.2;
 }
-

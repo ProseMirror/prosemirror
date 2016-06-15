@@ -52,6 +52,10 @@ commands.joinBackward = function(pm, apply) {
 
   if ($head.parentOffset > 0) return false
 
+  let grandParent = $head.node($head.depth -1)
+  let isParentFirstChild = grandParent.child(0).eq($head.parent)
+  if (grandParent.type.isCell && isParentFirstChild) return false
+
   // Find the node before this one
   let before, cut
   for (let i = $head.depth - 1; !before && i >= 0; i--) if ($head.index(i) > 0) {
@@ -97,6 +101,10 @@ commands.joinBackward = function(pm, apply) {
 commands.joinForward = function(pm, apply) {
   let {$head, empty} = pm.selection
   if (!empty || $head.parentOffset < $head.parent.content.size) return false
+
+  let grandParent = $head.node($head.depth -1)
+  let isParentLastChild = grandParent.child(grandParent.childCount - 1).eq($head.parent)
+  if (grandParent.type.isCell && isParentLastChild) return false
 
   // Find the node after this one
   let after, cut
@@ -255,6 +263,10 @@ commands.createParagraphNear = function(pm, apply) {
 commands.liftEmptyBlock = function(pm, apply) {
   let {$head, empty} = pm.selection
   if (!empty || $head.parent.content.size) return false
+
+  let grandParent = $head.node($head.depth -1)
+  if (grandParent.type.isCell) return false
+
   if ($head.depth > 1 && $head.after() != $head.end(-1)) {
     let before = $head.before()
     if (canSplit(pm.doc, before)) {

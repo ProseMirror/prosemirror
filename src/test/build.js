@@ -94,6 +94,12 @@ const ul = block("bullet_list")
 exports.ul = ul
 const ol = block("ordered_list")
 exports.ol = ol
+const table = block("table")
+exports.table = table
+const tr = block("tr")
+exports.tr = tr
+const td = block("td")
+exports.td = td
 
 const br = schema.node("hard_break")
 exports.br = br
