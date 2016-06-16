@@ -35,6 +35,7 @@ class MarkdownSerializer {
     return state.out
   }
 }
+exports.MarkdownSerializer = MarkdownSerializer
 
 // :: MarkdownSerializer
 // A serializer for the [basic schema](#schema).
@@ -304,3 +305,4 @@ class MarkdownSerializerState {
     return typeof value == "string" ? value : value(this, mark)
   }
 }
+exports.MarkdownSerializerState = MarkdownSerializerState

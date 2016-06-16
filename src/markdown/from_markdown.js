@@ -177,6 +177,7 @@ class MarkdownParser {
     return doc
   }
 }
+exports.MarkdownParser = MarkdownParser
 
 // :: MarkdownParser
 // A parser parsing unextended [CommonMark](http://commonmark.org/),
