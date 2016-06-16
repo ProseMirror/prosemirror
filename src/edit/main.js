@@ -436,9 +436,7 @@ class ProseMirror {
   // [`removeActiveMark`](#ProseMirror.removeActiveMark), the updated
   // set is returned.
   activeMarks() {
-    var head
-    return this.input.storedMarks ||
-      ((head = this.selection.head) != null ? this.doc.marksAt(head) : Mark.none)
+    return this.input.storedMarks || currentMarks(this)
   }
 
   // :: (Mark)
@@ -447,7 +445,7 @@ class ProseMirror {
   // selection isn't collapsed.
   addActiveMark(mark) {
     if (this.selection.empty) {
-      this.input.storedMarks = mark.addToSet(this.input.storedMarks || Mark.none)
+      this.input.storedMarks = mark.addToSet(this.input.storedMarks || currentMarks(this))
       this.on.activeMarkChange.dispatch()
     }
   }
@@ -456,7 +454,7 @@ class ProseMirror {
   // Remove any mark of the given type from the set of overidden active marks.
   removeActiveMark(markType) {
     if (this.selection.empty) {
-      this.input.storedMarks = markType.removeFromSet(this.input.storedMarks || Mark.none)
+      this.input.storedMarks = markType.removeFromSet(this.input.storedMarks || currentMarks(this))
       this.on.activeMarkChange.dispatch()
     }
   }
@@ -599,6 +597,11 @@ function mappedPosAtCoords(pm, coords) {
             inside: result.inside == null ? null : mapThrough(pm.operation.mappings, result.inside)}
   else
     return result
+}
+
+function currentMarks(pm) {
+  let head = pm.selection.head
+  return head == null ? Mark.none : pm.doc.marksAt(head)
 }
 
 const nullOptions = {}
