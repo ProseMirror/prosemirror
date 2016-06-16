@@ -1,3 +1,13 @@
+## 0.8.1 (2016-06-16)
+
+### Bug fixes
+
+Fixes `addActiveMark` and `removeActiveMark` ignoring marks from the
+document, and thus accidentally resetting the set of marks when used.
+
+Properly export the parser, serializer, and state classes from the
+`markdown` module.
+
 ## 0.8.0 (2016-06-15)
 
 ### Breaking changes
