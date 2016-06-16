@@ -81,8 +81,8 @@ class OrderedMap {
   // Create a new map by prepending the keys in this map that don't
   // appear in `map` before the keys in `map`.
   prepend(map) {
-    if (!map.size) return this
     map = OrderedMap.from(map)
+    if (!map.size) return this
     return new OrderedMap(map.content.concat(this.subtract(map).content))
   }
 
@@ -90,8 +90,9 @@ class OrderedMap {
   // Create a new map by appending the keys in this map that don't
   // appear in `map` after the keys in `map`.
   append(map) {
-    if (!map.size) return this
     map = OrderedMap.from(map)
+    if (!map.size) return this
+    console.log("append", map.content)
     return new OrderedMap(this.subtract(map).content.concat(map.content))
   }
 
