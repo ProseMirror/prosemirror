@@ -92,7 +92,6 @@ class OrderedMap {
   append(map) {
     map = OrderedMap.from(map)
     if (!map.size) return this
-    console.log("append", map.content)
     return new OrderedMap(this.subtract(map).content.concat(map.content))
   }
 
