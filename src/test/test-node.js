@@ -78,6 +78,20 @@ between("inline",
         doc(p(em("x"), "f<a>oo", em("bar", img, strong("baz"), br), "quux", code("xy<b>z"))),
         "paragraph", "foo", "bar", "image", "baz", "hard_break", "quux", "xyz")
 
+function textContent(name, node, expect) {
+  defTest("node_textContent_" + name, () => {
+    cmpStr(node.textContent, expect)
+  })
+}
+
+textContent("doc",
+            doc(p("foo")),
+            "foo")
+
+textContent("text",
+            schema.text("foo"),
+            "foo")
+
 function from(name, arg, expect) {
   defTest("node_fragment_from_" + name, () => {
     cmpNode(expect.copy(Fragment.from(arg)), expect)
