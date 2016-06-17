@@ -71,7 +71,7 @@ class Node {
   // :: string
   // Concatenates all the text nodes found in this fragment and its
   // children.
-  get textContent() { this.textBetween(0, this.content.size, "") }
+  get textContent() { return this.textBetween(0, this.content.size, "") }
 
   // :: (number, number, ?string) → string
   // Get all text between positions `from` and `to`. When `separator`
