@@ -1,7 +1,9 @@
 const {StrongMark, EmMark, CodeMark, LinkMark, Image, BulletList, OrderedList, BlockQuote,
        Heading, Paragraph, CodeBlock, HorizontalRule} = require("../schema-basic")
 const {toggleMarkItem, insertItem, wrapItem, blockTypeItem, Dropdown, DropdownSubmenu, joinUpItem, liftItem,
-       selectParentNodeItem, undoItem, redoItem, wrapListItem, icons} = require("../menu")
+       selectParentNodeItem, undoItem, redoItem, wrapListItem, icons, MenuItem} = require("../menu")
+const {Table, TableRow, createTable, addColumnBefore, addColumnAfter, removeColumn,
+       addRowBefore, addRowAfter, removeRow} = require("../schema-table")
 
 const {FieldPrompt, TextField} = require("../ui")
 
@@ -40,6 +42,46 @@ function promptImageAttrs(pm, callback, nodeType) {
   }).open(callback)
 }
 
+function positiveInteger(value) {
+  if (!/^[1-9]\d*$/.test(value)) return "Should be a positive integer"
+}
+
+function promptTableSize(pm, callback) {
+  new FieldPrompt(pm, "Insert table", {
+    rows: new TextField({label: "Rows", validate: positiveInteger}),
+    cols: new TextField({label: "Columns", validate: positiveInteger})
+  }).open(callback)
+}
+
+function insertTableItem(tableType) {
+  return new MenuItem({
+    title: "Insert a table",
+    run(pm) {
+      promptTableSize(pm, ({rows, cols}) => {
+        pm.tr.replaceSelection(createTable(tableType, +rows, +cols)).applyAndScroll()
+      })
+    },
+    select(pm) {
+      let $from = pm.selection.$from
+      for (let d = $from.depth; d >= 0; d--) {
+        let index = $from.index(d)
+        if ($from.node(d).canReplaceWith(index, index, tableType)) return true
+      }
+      return false
+    },
+    label: "Table"
+  })
+}
+
+function simpleItem(label, cmd) {
+  return new MenuItem({
+    title: label,
+    label,
+    run: cmd,
+    select(pm) { return cmd(pm, false) }
+  })
+}
+
 // :: (Schema) → Object
 // Given a schema, look for default mark and node types in it and
 // return an object with relevant menu items relating to those marks:
@@ -75,6 +117,12 @@ function promptImageAttrs(pm, callback, nodeType) {
 // **`makeCodeBlock`**`: MenuItem`
 //   : A menu item to set the current textblock to be a
 //     [code block](#CodeBlock).
+//
+// **`insertTable`**`: MenuItem`
+//   : An item to insert a [table](#schema-table).
+//
+// **`addRowBefore`**, **`addRowAfter`**, **`removeRow`**, **`addColumnBefore`**, **`addColumnAfter`**, **`removeColumn`**`: MenuItem`
+//   : Table-manipulation items.
 //
 // **`makeHead[N]`**`: MenuItem`
 //   : Where _N_ is 1 to 6. Menu items to set the current textblock to
@@ -164,16 +212,30 @@ function buildMenuItems(schema) {
         title: "Insert horizontal rule",
         label: "Horizontal rule"
       })
+    if (node instanceof Table)
+      r.insertTable = insertTableItem(node)
+    if (node instanceof TableRow) {
+      r.addRowBefore = simpleItem("Add row before", addRowBefore)
+      r.addRowAfter = simpleItem("Add row after", addRowAfter)
+      r.removeRow = simpleItem("Remove row", removeRow)
+      r.addColumnBefore = simpleItem("Add column before", addColumnBefore)
+      r.addColumnAfter = simpleItem("Add column after", addColumnAfter)
+      r.removeColumn = simpleItem("Remove column", removeColumn)
+    }
   }
 
   let cut = arr => arr.filter(x => x)
-  r.insertMenu = new Dropdown(cut([r.insertImage, r.insertHorizontalRule]), {label: "Insert"})
+  r.insertMenu = new Dropdown(cut([r.insertImage, r.insertHorizontalRule, r.insertTable]), {label: "Insert"})
   r.typeMenu = new Dropdown(cut([r.makeParagraph, r.makeCodeBlock, r.makeHead1 && new DropdownSubmenu(cut([
     r.makeHead1, r.makeHead2, r.makeHead3, r.makeHead4, r.makeHead5, r.makeHead6
   ]), {label: "Heading"})]), {label: "Type..."})
+  let tableItems = cut([r.addRowBefore, r.addRowAfter, r.removeRow, r.addColumnBefore, r.addColumnAfter, r.removeColumn])
+  if (tableItems.length)
+    r.tableMenu = new Dropdown(tableItems, {label: "Table"})
+
   r.inlineMenu = [cut([r.toggleStrong, r.toggleEm, r.toggleCode, r.toggleLink]), [r.insertMenu]]
-  r.blockMenu = [cut([r.typeMenu, r.wrapBulletList, r.wrapOrderedList, r.wrapBlockQuote, joinUpItem,
-                           liftItem, selectParentNodeItem])]
+  r.blockMenu = [cut([r.typeMenu, r.tableMenu, r.wrapBulletList, r.wrapOrderedList, r.wrapBlockQuote, joinUpItem,
+                      liftItem, selectParentNodeItem])]
   r.fullMenu = r.inlineMenu.concat(r.blockMenu).concat([[undoItem, redoItem]])
 
   return r

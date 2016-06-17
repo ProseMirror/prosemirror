@@ -27,18 +27,7 @@ textarea {
   border: 1px solid silver;
 }
 
-.ProseMirror-content p:first-child,
-.ProseMirror-content h1:first-child,
-.ProseMirror-content h2:first-child,
-.ProseMirror-content h3:first-child,
-.ProseMirror-content h4:first-child,
-.ProseMirror-content h5:first-child,
-.ProseMirror-content h6:first-child {
-  margin-top: .3em;
-}
-
 .ProseMirror-content {
   padding: 4px 8px 4px 14px;
   line-height: 1.2;
 }
-

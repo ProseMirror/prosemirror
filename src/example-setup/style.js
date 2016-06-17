@@ -27,4 +27,14 @@ ${scope} img {
   cursor: default;
 }
 
+${scope} table {
+  border-collapse: collapse;
+}
+
+${scope} td {
+  vertical-align: top;
+  border: 1px solid #ddd;
+  padding: 3px 5px;
+}
+
 `)
