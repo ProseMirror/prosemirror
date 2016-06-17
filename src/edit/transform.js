@@ -1,6 +1,6 @@
 const {Fragment} = require("../model")
 const {Transform, insertPoint} = require("../transform")
-const {findSelectionNear} = require("./selection")
+const {Selection} = require("./selection")
 
 const applyAndScroll = {scrollIntoView: true}
 
@@ -88,7 +88,7 @@ class EditorTransform extends Transform {
 
     this.replaceWith(from, to, fragment)
     let map = this.maps[this.maps.length - 1]
-    this.setSelection(findSelectionNear(this.doc.resolve(map.map(to))))
+    this.setSelection(Selection.findNear(this.doc.resolve(map.map(to))))
     return this
   }
 

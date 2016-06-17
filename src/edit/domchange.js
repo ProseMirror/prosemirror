@@ -1,7 +1,7 @@
 const {Mark} = require("../model")
 const {mapThroughResult} = require("../transform")
 
-const {findSelectionFrom, findSelectionNear, TextSelection} = require("./selection")
+const {Selection, TextSelection} = require("./selection")
 const {DOMFromPos, DOMFromPosFromEnd} = require("./dompos")
 
 function readInputChange(pm) {
@@ -136,7 +136,7 @@ function readDOMChange(pm, range) {
 
   function newSelection(doc) {
     if (!parsedSel) return false
-    let newSel = findSelectionNear(doc.resolve(range.from + parsedSel.head))
+    let newSel = Selection.findNear(doc.resolve(range.from + parsedSel.head))
     if (parsedSel.anchor != parsedSel.head && newSel.$head) {
       let $anchor = doc.resolve(range.from + parsedSel.anchor)
       if ($anchor.parent.isTextblock) newSel = new TextSelection($anchor, newSel.$head)
@@ -150,7 +150,7 @@ function readDOMChange(pm, range) {
   // If this looks like the effect of pressing Enter, just dispatch an
   // Enter key instead.
   if (!$from.sameParent($to) && $from.pos < parsed.content.size &&
-      (nextSel = findSelectionFrom(parsed.resolve($from.pos + 1), 1, true)) &&
+      (nextSel = Selection.findFrom(parsed.resolve($from.pos + 1), 1, true)) &&
       nextSel.head == $to.pos) {
     pm.input.dispatchKey("Enter")
   } else if ($from.sameParent($to) && $from.parent.isTextblock &&

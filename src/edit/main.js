@@ -7,7 +7,7 @@ const {mapThrough} = require("../transform")
 const {Mark} = require("../model")
 
 const {parseOptions} = require("./options")
-const {SelectionState, TextSelection, NodeSelection, findSelectionAtStart, hasFocus} = require("./selection")
+const {SelectionState, TextSelection, NodeSelection, Selection, hasFocus} = require("./selection")
 const {scrollIntoView, posAtCoords, coordsAtPos} = require("./dompos")
 const {draw, redraw, DIRTY_REDRAW, DIRTY_RESCAN} = require("./draw")
 const {Input} = require("./input")
@@ -175,7 +175,7 @@ class ProseMirror {
     this.flushScheduled = null
     this.centralScheduler = new EditorScheduler(this)
 
-    this.sel = new SelectionState(this, findSelectionAtStart(this.doc))
+    this.sel = new SelectionState(this, Selection.findAtStart(this.doc))
     this.accurateSelection = false
     this.input = new Input(this)
     this.addKeymap(this.options.keymap, -100)
@@ -234,7 +234,7 @@ class ProseMirror {
   // :: (Node, ?Selection)
   // Set the editor's content, and optionally include a new selection.
   setDoc(doc, sel) {
-    if (!sel) sel = findSelectionAtStart(doc)
+    if (!sel) sel = Selection.findAtStart(doc)
     this.on.beforeSetDoc.dispatch(doc, sel)
     this.ensureOperation()
     this.setDocInner(doc)

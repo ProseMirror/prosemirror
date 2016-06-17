@@ -1,6 +1,6 @@
 const Keymap = require("browserkeymap")
 
-const {findSelectionFrom, verticalMotionLeavesTextblock, NodeSelection, TextSelection} = require("./selection")
+const {Selection, verticalMotionLeavesTextblock, NodeSelection, TextSelection} = require("./selection")
 const browser = require("../util/browser")
 
 function nothing() {}
@@ -9,7 +9,7 @@ function moveSelectionBlock(pm, dir) {
   let {$from, $to, node} = pm.selection
   let $side = dir > 0 ? $to : $from
   let $start = node && node.isBlock ? $side : $side.depth ? pm.doc.resolve(dir > 0 ? $side.after() : $side.before()) : null
-  return $start && findSelectionFrom($start, dir)
+  return $start && Selection.findFrom($start, dir)
 }
 
 function selectNodeHorizontally(pm, dir) {
@@ -74,7 +74,7 @@ function selectNodeVertically(pm, dir) {
 
   if (!node || node.isInline) return false
 
-  let beyond = findSelectionFrom($start, dir)
+  let beyond = Selection.findFrom($start, dir)
   if (beyond) pm.setSelection(beyond)
   return true
 }

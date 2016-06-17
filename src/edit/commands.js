@@ -3,7 +3,7 @@ const {Slice, Fragment, NodeRange} = require("../model")
 const browser = require("../util/browser")
 
 const {charCategory, isExtendingChar} = require("./char")
-const {findSelectionFrom, TextSelection, NodeSelection} = require("./selection")
+const {Selection, TextSelection, NodeSelection} = require("./selection")
 
 // :: Object
 // This object contains a number of ‘commands‘, functions that take a
@@ -352,7 +352,7 @@ function deleteBarrier(pm, cut, apply) {
       .applyAndScroll()
     return true
   } else {
-    let selAfter = findSelectionFrom($cut, 1)
+    let selAfter = Selection.findFrom($cut, 1)
     let range = selAfter.$from.blockRange(selAfter.$to), target = range && liftTarget(range)
     if (target == null) return false
     if (apply !== false) pm.tr.lift(range, target).applyAndScroll()

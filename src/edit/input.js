@@ -6,7 +6,7 @@ const {captureKeys} = require("./capturekeys")
 const {elt, contains} = require("../util/dom")
 
 const {readInputChange, readCompositionChange} = require("./domchange")
-const {findSelectionNear, hasFocus} = require("./selection")
+const {Selection, hasFocus} = require("./selection")
 
 let stopSeq = null
 
@@ -86,7 +86,7 @@ class Input {
     if (from == to && !text) return
     let pm = this.pm, marks = pm.input.storedMarks || pm.doc.marksAt(from)
     let tr = pm.tr.replaceWith(from, to, text ? pm.schema.text(text, marks) : null)
-    tr.setSelection(findSelection && findSelection(tr.doc) || findSelectionNear(tr.doc.resolve(tr.map(to)), -1, true))
+    tr.setSelection(findSelection && findSelection(tr.doc) || Selection.findNear(tr.doc.resolve(tr.map(to)), -1))
     tr.applyAndScroll()
     if (text) pm.on.textInput.dispatch(text)
   }
@@ -474,7 +474,7 @@ handlers.paste = (pm, e) => {
   if (slice) {
     e.preventDefault()
     let tr = pm.tr.replace(range.from, range.to, slice)
-    tr.setSelection(findSelectionNear(tr.doc.resolve(tr.map(range.to)), -1))
+    tr.setSelection(Selection.findNear(tr.doc.resolve(tr.map(range.to)), -1))
     tr.applyAndScroll()
   }
 }
@@ -586,9 +586,9 @@ handlers.drop = (pm, e) => {
       (found = pm.doc.nodeAt(start)) && found.sameMarkup(slice.content.child(0))) {
     pm.setNodeSelection(start)
   } else {
-    let left = findSelectionNear(pm.doc.resolve(start), 1, true).from
-    let right = findSelectionNear(pm.doc.resolve(tr.map(insertPos)), -1, true).to
-    pm.setTextSelection(left, right)
+    let left = Selection.findFrom(pm.doc.resolve(start), 1, true)
+    let right = Selection.findFrom(pm.doc.resolve(tr.map(insertPos)), -1, true)
+    if (left && right) pm.setTextSelection(left.from, right.to)
   }
   pm.focus()
 }
