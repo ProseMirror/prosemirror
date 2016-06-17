@@ -575,7 +575,7 @@ class ProseMirror {
   // Creates an update scheduler for this editor. `subscriptions`
   // should be an array of subscriptions to listen for. `start` should
   // be a function as expected by
-  // [`scheduleDOMUpdate`](ProseMirror.scheduleDOMUpdate).
+  // [`scheduleDOMUpdate`](#ProseMirror.scheduleDOMUpdate).
   updateScheduler(subscriptions, start) {
     return new UpdateScheduler(this, subscriptions, start)
   }
