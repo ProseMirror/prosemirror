@@ -489,23 +489,43 @@ commands.setBlockType = function(nodeType, attrs) {
 commands.wrapInList = function(nodeType, attrs) {
   return function(pm, apply) {
     let {$from, $to} = pm.selection
-    let range = $from.blockRange($to), doJoin = false
+    let range = $from.blockRange($to), doJoin = false, outerRange = range
     // This is at the top of an existing list item
     if (range.depth >= 2 && $from.node(range.depth - 1).type.compatibleContent(nodeType) && range.startIndex == 0) {
       // Don't do anything if this is the top of the list
       if ($from.index(range.depth - 1) == 0) return false
+      let $insert = pm.doc.resolve(range.start - 2)
+      outerRange = new NodeRange($insert, $insert, range.depth)
+      if (range.endIndex < range.parent.childCount)
+        range = new NodeRange($from, pm.doc.resolve($to.end(range.depth)), range.depth)
       doJoin = true
     }
-    if (apply !== false) {
-      let tr = pm.tr
-      if (doJoin) {
-        tr.join($from.before(range.depth))
-        range = tr.doc.resolveNoCache($from.pos - 2).blockRange(tr.doc.resolveNoCache($to.pos - 2))
-      }
-      tr.wrap(range, findWrapping(range, nodeType, attrs)).applyAndScroll()
-    }
+    let wrap = findWrapping(outerRange, nodeType, attrs, range)
+    if (!wrap) return false
+    if (apply !== false)
+      doWrapInList(pm.tr, range, wrap, doJoin, nodeType).applyAndScroll()
     return true
   }
+}
+
+function doWrapInList(tr, range, wrappers, joinBefore, nodeType) {
+  let content = Fragment.empty
+  for (let i = wrappers.length - 1; i >= 0; i--)
+    content = Fragment.from(wrappers[i].type.create(wrappers[i].attrs, content))
+
+  tr.step(new ReplaceAroundStep(range.start - (joinBefore ? 2 : 0), range.end, range.start, range.end,
+                                new Slice(content, 0, 0), wrappers.length, true))
+
+  let found = 0
+  for (let i = 0; i < wrappers.length; i++) if (wrappers[i].type == nodeType) found = i + 1
+  let splitDepth = wrappers.length - found
+
+  let splitPos = range.start + wrappers.length - (joinBefore ? 2 : 0), parent = range.parent
+  for (let i = range.startIndex, e = range.endIndex, first = true; i < e; i++, first = false) {
+    if (!first) tr.split(splitPos, splitDepth)
+    splitPos += parent.child(i).nodeSize + (first ? 0 : 2 * splitDepth)
+  }
+  return tr
 }
 
 // :: (NodeType) → (pm: ProseMirror) → bool
