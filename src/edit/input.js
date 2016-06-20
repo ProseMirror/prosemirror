@@ -55,7 +55,7 @@ class Input {
 
     let handle = function(bound) {
       if (bound === false) return "nothing"
-      if (bound == "...") return "multi"
+      if (bound == Keymap.unfinished) return "multi"
       if (bound == null) return false
       return bound(pm) == false ? false : "handled"
     }

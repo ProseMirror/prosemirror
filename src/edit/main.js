@@ -378,12 +378,11 @@ class ProseMirror {
     maps.splice(i, 0, {map, priority})
   }
 
-  // :: (union<string, Keymap>)
-  // Remove the given keymap, or the keymap with the given name, from
-  // the editor.
+  // :: (Keymap)
+  // Remove the given keymap from the editor.
   removeKeymap(map) {
     let maps = this.input.keymaps
-    for (let i = 0; i < maps.length; ++i) if (maps[i].map == map || maps[i].map.options.name == map) {
+    for (let i = 0; i < maps.length; ++i) if (maps[i].map == map) {
       maps.splice(i, 1)
       return true
     }

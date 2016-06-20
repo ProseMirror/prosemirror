@@ -38,9 +38,8 @@ const baseKeymap = new Keymap({
   "Mod-Y": c.redo,
   "Shift-Mod-Z": c.redo
 })
-exports.baseKeymap = baseKeymap
 
-if (browser.mac) baseKeymap.addBindings({
+if (browser.mac) baseKeymap = baseKeymap.update({
   "Ctrl-H": baseKeymap.lookup("Backspace"),
   "Alt-Backspace": baseKeymap.lookup("Mod-Backspace"),
   "Ctrl-D": baseKeymap.lookup("Delete"),
@@ -48,3 +47,5 @@ if (browser.mac) baseKeymap.addBindings({
   "Alt-Delete": baseKeymap.lookup("Mod-Delete"),
   "Alt-D": baseKeymap.lookup("Mod-Delete")
 })
+
+exports.baseKeymap = baseKeymap
