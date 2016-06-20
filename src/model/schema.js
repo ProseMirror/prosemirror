@@ -125,7 +125,7 @@ class NodeType {
   }
 
   // :: (?Object, ?union<Fragment, Node, [Node]>, ?[Mark]) → Node
-  // Like [`create`](NodeType.create), but check the given content
+  // Like [`create`](#NodeType.create), but check the given content
   // against the node type's content restrictions, and throw an error
   // if it doesn't match.
   createChecked(attrs, content, marks) {
@@ -137,7 +137,7 @@ class NodeType {
   }
 
   // :: (?Object, ?union<Fragment, Node, [Node]>, ?[Mark]) → ?Node
-  // Like [`create`](NodeType.create), but see if it is necessary to
+  // Like [`create`](#NodeType.create), but see if it is necessary to
   // add nodes to the start or end of the given fragment to make it
   // fit the node. If no fitting wrapping can be found, return null.
   // Note that, due to the fact that required nodes can always be
