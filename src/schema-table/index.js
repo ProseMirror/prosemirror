@@ -27,7 +27,6 @@ class TableRow extends Block {
   get matchDOMTag() {
     return {"tr": dom => dom.children.length ? {columns: dom.children.length} : false}
   }
-  get ephemeral() { return true }
 }
 exports.TableRow = TableRow
 
