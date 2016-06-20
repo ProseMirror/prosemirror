@@ -265,11 +265,11 @@ wrap("two",
      "blockquote")
 wrap("list",
      doc(p("<a>one"), p("<b>two")),
-     doc(ol(li(p("<a>one")), li(p("<b>two")))),
+     doc(ol(li(p("<a>one"), p("<b>two")))),
      "ordered_list")
 wrap("nested_list",
      doc(ol(li(p("<1>one")), li(p("..."), p("<a>two"), p("<b>three")), li(p("<4>four")))),
-     doc(ol(li(p("<1>one")), li(p("..."), ol(li(p("<a>two")), li(p("<b>three")))), li(p("<4>four")))),
+     doc(ol(li(p("<1>one")), li(p("..."), ol(li(p("<a>two"), p("<b>three")))), li(p("<4>four")))),
      "ordered_list")
 wrap("include_parent",
      doc(blockquote(p("<1>one"), p("two<a>")), p("three<b>")),

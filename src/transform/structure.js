@@ -63,26 +63,37 @@ Transform.prototype.lift = function(range, target) {
 // Try to find a valid way to wrap the content in the given range in a
 // node of the given type. May introduce extra nodes around and inside
 // the wrapper node, if necessary.
-function findWrapping(range, nodeType, attrs) {
-  let parent = range.parent, parentFrom = range.startIndex, parentTo = range.endIndex
-  let around = parent.contentMatchAt(parentFrom).findWrapping(nodeType, attrs)
-  if (!around) return null
-  let wrappers = around.concat({type: nodeType, attrs}), wrapLen = wrappers.length
-  if (!parent.canReplaceWith(parentFrom, parentTo, wrappers[0].type, wrappers[0].attrs))
-    return null
-  let inner = parent.child(parentFrom)
-  let inside = nodeType.contentExpr.start(attrs).findWrapping(inner.type, inner.attrs)
-  if (!inside) return null
-  wrappers = wrappers.concat(inside)
-  let last = wrappers[wrappers.length - 1]
-  let innerMatch = last.type.contentExpr.start(last.attrs)
-  for (let i = parentFrom; i < parentTo; i++)
-    innerMatch = innerMatch && innerMatch.matchNode(parent.child(i))
-  if (!innerMatch || !innerMatch.validEnd()) return null
-  wrappers.splitFrom = wrapLen
-  return wrappers
+function findWrapping(range, nodeType, attrs, innerRange = range) {
+  let wrap = {type: nodeType, attrs}
+  let around = findWrappingOutside(range, wrap)
+  let inner = around && findWrappingInside(innerRange, wrap)
+  if (!inner) return null
+  return around.concat(wrap).concat(inner)
 }
 exports.findWrapping = findWrapping
+
+function findWrappingOutside(range, wrap) {
+  let {parent, startIndex, endIndex} = range
+  let around = parent.contentMatchAt(startIndex).findWrapping(wrap.type, wrap.attrs)
+  if (!around) return null
+  let outer = around.length ? around[0] : wrap
+  if (!parent.canReplaceWith(startIndex, endIndex, outer.type, outer.attrs))
+    return null
+  return around
+}
+
+function findWrappingInside(range, wrap) {
+  let {parent, startIndex, endIndex} = range
+  let inner = parent.child(startIndex)
+  let inside = wrap.type.contentExpr.start(wrap.attrs).findWrapping(inner.type, inner.attrs)
+  if (!inside) return null
+  let last = inside.length ? inside[inside.length - 1] : wrap
+  let innerMatch = last.type.contentExpr.start(last.attrs)
+  for (let i = startIndex; i < endIndex; i++)
+    innerMatch = innerMatch && innerMatch.matchNode(parent.child(i))
+  if (!innerMatch || !innerMatch.validEnd()) return null
+  return inside
+}
 
 // :: (NodeRange, [{type: NodeType, attrs: ?Object}]) → Transform
 // Wrap the given [range](#NodeRange) in the given set of wrappers.
@@ -94,17 +105,7 @@ Transform.prototype.wrap = function(range, wrappers) {
     content = Fragment.from(wrappers[i].type.create(wrappers[i].attrs, content))
 
   let start = range.start, end = range.end
-  this.step(new ReplaceAroundStep(start, end, start, end, new Slice(content, 0, 0), wrappers.length, true))
-
-  let splitDepth = wrappers.length - wrappers.splitFrom
-  if (splitDepth) {
-    let splitPos = start + wrappers.length, parent = range.parent
-    for (let i = range.startIndex, e = range.endIndex, first = true; i < e; i++, first = false) {
-      if (!first) this.split(splitPos, splitDepth)
-      splitPos += parent.child(i).nodeSize + (first ? 0 : 2 * splitDepth)
-    }
-  }
-  return this
+  return this.step(new ReplaceAroundStep(start, end, start, end, new Slice(content, 0, 0), wrappers.length, true))
 }
 
 // :: (number, ?number, NodeType, ?Object) → Transform
