@@ -2,7 +2,7 @@ const {namespace, dispatch} = require("./def")
 const {doc, blockquote, pre, p, li, ul, img, br, hr} = require("../build")
 const {cmp, cmpStr, cmpNode, is} = require("../cmp")
 
-const {selectParentNode, lift, joinDown, joinUp, deleteSelection} = require("../../edit").commands
+const {selectParentNode, lift, joinDown, joinUp, deleteSelection} = require("../../commands")
 
 const test = namespace("nodeselection")
 

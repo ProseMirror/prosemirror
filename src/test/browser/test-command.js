@@ -3,7 +3,7 @@ const {tempEditor} = require("./def")
 const {cmpNode} = require("../cmp")
 const {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, hr} = require("../build")
 
-const {commands} = require("../../edit")
+const commands = require("../../commands")
 const listCommands = require("../../command-list")
 const {Schema} = require("../../model")
 const {schema, Heading, Doc} = require("../../schema-basic")

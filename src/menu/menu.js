@@ -1,5 +1,5 @@
 const {elt, insertCSS} = require("../util/dom")
-const {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType, toggleMark} = require("../edit").commands
+const {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType, toggleMark} = require("../commands")
 const {copyObj} = require("../util/obj")
 
 const {getIcon} = require("./icons")

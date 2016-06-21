@@ -1,5 +1,3 @@
-const {baseKeymap} = require("./keymap")
-
 // Object mapping option names to default values.
 const options = Object.create(null)
 
@@ -41,9 +39,13 @@ options.scrollThreshold = 0
 // surpassed. Defaults to 5.
 options.scrollMargin = 5
 
-// :: Keymap #path=keymap #kind=option
-// Sets the base keymap for the editor. Defaults to `baseKeymap`.
-options.keymap = baseKeymap
+// :: [Keymap] #path=keymaps #kind=option
+// Provides an array of starting keymaps for the editor. These will be
+// added, in order, with a priority of -100, so that the ones coming
+// earlier in the array take precedence, and keymaps added with
+// `addKeymap` will, unless given a large negative priority, end up
+// with a higher priority than these. Defaults to the empty array.
+options.keymaps = []
 
 // :: ?string #path=label #kind=option
 // The label of the editor. When set, the editable DOM node gets an

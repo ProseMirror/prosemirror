@@ -179,7 +179,7 @@ class ProseMirror {
     this.sel = new SelectionState(this, Selection.findAtStart(this.doc))
     this.accurateSelection = false
     this.input = new Input(this)
-    this.addKeymap(this.options.keymap, -100)
+    this.options.keymaps.forEach(map => this.addKeymap(map, -100))
 
     this.options.plugins.forEach(plugin => plugin.attach(this))
   }

@@ -3,6 +3,7 @@ const {blockQuoteRule, orderedListRule, bulletListRule, codeBlockRule, headingRu
 const {BlockQuote, OrderedList, BulletList, CodeBlock, Heading} = require("../schema-basic")
 const {Plugin} = require("../edit")
 const {menuBar, tooltipMenu} = require("../menu")
+const {baseKeymap} = require("../commands")
 
 const {className} = require("./style")
 const {buildMenuItems} = require("./menu")
@@ -42,6 +43,7 @@ exports.exampleSetup = new Plugin(class {
   constructor(pm, options) {
     pm.wrapper.classList.add(className)
     this.keymap = buildKeymap(pm.schema, options.mapKeys)
+    pm.addKeymap(baseKeymap, -100)
     pm.addKeymap(this.keymap)
     this.inputRules = allInputRules.concat(buildInputRules(pm.schema))
     let rules = inputRules.ensure(pm)
@@ -67,6 +69,7 @@ exports.exampleSetup = new Plugin(class {
   }
   detach(pm) {
     pm.wrapper.classList.remove(className)
+    pm.removeKeymap(baseKeymap)
     pm.removeKeymap(this.keymap)
     let rules = inputRules.ensure(pm)
     this.inputRules.forEach(rule => rules.removeRule(rule))
