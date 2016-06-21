@@ -236,12 +236,12 @@ commands.newlineInCode = function(pm, apply) {
 // If a block node is selected, create an empty paragraph before (if
 // it is its parent's first child) or after it.
 commands.createParagraphNear = function(pm, apply) {
-  let {$from, from, to, node} = pm.selection
+  let {$from, $to, node} = pm.selection
   if (!node || !node.isBlock) return false
-  let type = $from.parent.defaultContentType($from.indexAfter())
-  if (!type.isTextblock) return false
+  let type = $from.parent.defaultContentType($to.indexAfter())
+  if (!type || !type.isTextblock) return false
   if (apply !== false) {
-    let side = $from.parentOffset ? to : from
+    let side = ($from.parentOffset ? $to : $from).pos
     let tr = pm.tr.insert(side, type.createAndFill())
     tr.setSelection(new TextSelection(tr.doc.resolve(side + 1)))
     tr.applyAndScroll()

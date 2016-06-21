@@ -183,6 +183,14 @@ class ContentMatch {
 
   get element() { return this.expr.elements[this.index] }
 
+  get nextElement() {
+    for (let i = this.index, count = this.count; i < this.expr.elements.length; i++) {
+      let element = this.expr.elements[i]
+      if (this.resolveValue(element.max) > count) return element
+      count = 0
+    }
+  }
+
   move(index, count) {
     return new ContentMatch(this.expr, this.attrs, index, count)
   }

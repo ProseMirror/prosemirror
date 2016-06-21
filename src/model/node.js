@@ -305,7 +305,8 @@ class Node {
   }
 
   defaultContentType(at) {
-    return this.contentMatchAt(at).element.defaultType()
+    let elt = this.contentMatchAt(at).nextElement
+    return elt && elt.defaultType()
   }
 
   // :: () → Object
