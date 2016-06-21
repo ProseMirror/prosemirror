@@ -5,7 +5,7 @@ const {exampleSetup} = require("../src/example-setup")
 const {addTableNodes} = require("../src/schema-table")
 
 const mySchema = new Schema({
-  nodes: addTableNodes(schema.nodeSpec, "block+"),
+  nodes: addTableNodes(schema.nodeSpec, "block+", "block"),
   marks: schema.markSpec
 })
 
