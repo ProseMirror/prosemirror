@@ -17,7 +17,7 @@ function add(value, target) {
 
   if (Array.isArray(value)) {
     for (let i = 0; i < value.length; i++) add(value[i], target)
-  } else {
+  } else if (value) {
     target.appendChild(value)
   }
 }
