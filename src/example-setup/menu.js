@@ -1,11 +1,12 @@
 const {StrongMark, EmMark, CodeMark, LinkMark, Image, BulletList, OrderedList, BlockQuote,
        Heading, Paragraph, CodeBlock, HorizontalRule} = require("../schema-basic")
 const {toggleMarkItem, insertItem, wrapItem, blockTypeItem, Dropdown, DropdownSubmenu, joinUpItem, liftItem,
-       selectParentNodeItem, undoItem, redoItem, wrapListItem, icons, MenuItem} = require("../menu")
+       selectParentNodeItem, undoItem, redoItem, icons, MenuItem} = require("../menu")
+const {wrapInList} = require("../command-list")
 const {Table, TableRow, createTable} = require("../schema-table")
 const {addColumnBefore, addColumnAfter, removeColumn, addRowBefore, addRowAfter, removeRow} = require("../command-table")
-
 const {FieldPrompt, TextField} = require("../prompt")
+const {copyObj} = require("../util/obj")
 
 // Helpers to create specific types of items
 
@@ -80,6 +81,14 @@ function simpleItem(label, cmd) {
     run: cmd,
     select(pm) { return cmd(pm, false) }
   })
+}
+
+function wrapListItem(nodeType, options) {
+  let command = wrapInList(nodeType, options.attrs)
+  return new MenuItem(copyObj(options, {
+    run: command,
+    select(pm) { return command(pm, false) }
+  }))
 }
 
 // :: (Schema) → Object

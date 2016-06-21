@@ -2,10 +2,10 @@ const Keymap = require("browserkeymap")
 const {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, HorizontalRule, Paragraph, CodeBlock, Heading,
        StrongMark, EmMark, CodeMark} = require("../schema-basic")
 const browser = require("../util/browser")
-const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem, chainCommands, newlineInCode,
-       toggleMark} = require("../edit").commands
+const {wrapIn, setBlockType, chainCommands, newlineInCode, toggleMark} = require("../edit").commands
 const {TableRow} = require("../schema-table")
 const {selectNextCell, selectPreviousCell} = require("../command-table")
+const {wrapInList, splitListItem, liftListItem, sinkListItem} = require("../command-list")
 
 // :: (Schema, ?Object) → Keymap
 // Inspect the given schema looking for marks and nodes from the

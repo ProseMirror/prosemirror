@@ -4,6 +4,7 @@ const {cmpNode} = require("../cmp")
 const {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, hr} = require("../build")
 
 const {commands} = require("../../edit")
+const listCommands = require("../../command-list")
 const {Schema} = require("../../model")
 const {schema, Heading, Doc} = require("../../schema-basic")
 
@@ -15,7 +16,9 @@ function test(cmd, ...args) {
   defTest("command_" + cmd + "_" + known, () => {
     let pm = tempEditor({doc: args[args.length - 2]})
     let prep = args.slice(0, args.length - 2)
-    ;(prep.length ? commands[cmd](...prep) : commands[cmd])(pm)
+    let f = commands[cmd] || listCommands[cmd]
+    if (prep.length) f = f(...prep)
+    f(pm)
     cmpNode(pm.doc, args[args.length - 1])
   })
   used[cmd] = known + 1

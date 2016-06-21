@@ -1,5 +1,5 @@
 const {elt, insertCSS} = require("../util/dom")
-const {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType, wrapInList, toggleMark} = require("../edit").commands
+const {undo, redo, lift, joinUp, selectParentNode, wrapIn, setBlockType, toggleMark} = require("../edit").commands
 const {copyObj} = require("../util/obj")
 
 const {getIcon} = require("./icons")
@@ -439,19 +439,6 @@ function blockTypeItem(nodeType, options) {
   }))
 }
 exports.blockTypeItem = blockTypeItem
-
-// :: (NodeType, Object) → MenuItem
-// Build a menu item for wrapping the selection in a list.
-// `options.attrs` may be an object to provide the attributes for the
-// list node.
-function wrapListItem(nodeType, options) {
-  let command = wrapInList(nodeType, options.attrs)
-  return new MenuItem(copyObj(options, {
-    run: command,
-    select(pm) { return command(pm, false) }
-  }))
-}
-exports.wrapListItem = wrapListItem
 
 insertCSS(`
 
