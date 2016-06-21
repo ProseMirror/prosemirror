@@ -53,8 +53,8 @@ Before reporting a bug, read these pointers.
   the `test/` directory. Either put them in an existing `test-*.js`
   file, if they fit there, or add a new file.
 
-- Make sure all tests pass. Run `npm run test` verify tests pass.
-  Also run browser tests by starting the demo (`npm run demo`) and
+- Make sure all tests pass. Run `npm run test` verify tests pass (you will need
+  Node.js v6+). Also run browser tests by starting the demo (`npm run demo`) and
   visiting [http://localhost:8080/test.html](http://localhost:8080/test.html)
   in a browser.
 
