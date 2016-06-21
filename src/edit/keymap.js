@@ -20,7 +20,7 @@ const c = require("./commands").commands
 // * **Esc** to `selectParentNode`
 // * **Mod-Z** to `undo`
 // * **Mod-Y** and **Shift-Mod-Z** to `redo`
-const baseKeymap = new Keymap({
+var baseKeymap = new Keymap({
   "Enter": c.chainCommands(c.newlineInCode, c.createParagraphNear,
                            c.liftEmptyBlock, c.splitBlock),
 
