@@ -56,6 +56,13 @@ options.label = null
 // a string, i.e. :: (string) → string
 options.translate = null
 
+// :: bool #path=spellCheck #kind=option
+// Controls whether the browser's native spell-checking is enabled for
+// the editor. Defaults to true. Due to the way ProseMirror works,
+// some browsers may get confused and not show spelling hints as
+// expected.
+options.spellCheck = true
+
 // :: [Plugin] #path=plugins #kind=option
 // A set of plugins to enable when the editor is initialized. Defaults
 // to the empty array.

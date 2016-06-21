@@ -39,6 +39,7 @@ class ProseMirror {
     // :: DOMNode
     // The editable DOM node containing the document.
     this.content = elt("div", {class: "ProseMirror-content", "pm-container": true})
+    if (!opts.spellCheck) this.content.spellcheck = false
     // :: DOMNode
     // The outer DOM element of the editor.
     this.wrapper = elt("div", {class: "ProseMirror"}, this.content)
