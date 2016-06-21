@@ -4,7 +4,8 @@ const {cmpNode} = require("../cmp")
 const {doc, blockquote, pre, h1, h2, p, li, ol, ul, em, hr} = require("../build")
 
 const {commands} = require("../../edit")
-const {schema} = require("../../schema-basic")
+const {Schema} = require("../../model")
+const {schema, Heading, Doc} = require("../../schema-basic")
 
 const used = Object.create(null)
 const n = schema.nodes
@@ -294,6 +295,31 @@ test("splitBlock",
 test("splitBlock",
      doc(h1("<a>foo")),
      doc(p(), h1("foo")))
+
+const hSchema = new Schema({
+  nodes: schema.nodeSpec.update("heading", {type: Heading, content: "inline<_>*"})
+    .update("doc", {type: Doc, content: "heading block*"})
+})
+function hDoc(a) {
+  const hDoc = hSchema.node("doc", null, [
+    hSchema.node("heading", {level: 1}, hSchema.text("foobar"))
+  ])
+  hDoc.tag = {a}
+  return hDoc
+}
+
+test("splitBlock",
+     hDoc(7),
+     hSchema.node("doc", null, [
+       hSchema.node("heading", {level: 1}, hSchema.text("foobar")),
+       hSchema.node("paragraph")
+     ]))
+test("splitBlock",
+     hDoc(4),
+     hSchema.node("doc", null, [
+       hSchema.node("heading", {level: 1}, hSchema.text("foo")),
+       hSchema.node("paragraph", null, hSchema.text("bar"))
+     ]))
 
 test("splitListItem", n.list_item,
      doc(p("foo<a>bar")),

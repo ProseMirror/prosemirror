@@ -13,7 +13,7 @@ function tempEditors(options) {
   return tempPMs = options.map(options => {
     if (!options) options = {}
     options.place = space
-    options.schema = schema
+    if (!options.doc) options.schema = schema
     let pm = new ProseMirror(options)
     let a = options.doc && options.doc.tag && options.doc.tag.a
     if (a != null) {

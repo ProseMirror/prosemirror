@@ -282,7 +282,12 @@ commands.splitBlock = function(pm, apply) {
     let atEnd = $to.parentOffset == $to.parent.content.size
     let tr = pm.tr.delete($from.pos, $to.pos)
     let deflt = $from.node(-1).defaultContentType($from.indexAfter(-1)), type = atEnd ? deflt : null
-    if (canSplit(tr.doc, $from.pos, 1, type)) {
+    let can = canSplit(tr.doc, $from.pos, 1, type)
+    if (!type && !can && canSplit(tr.doc, $from.pos, 1, deflt)) {
+      type = deflt
+      can = true
+    }
+    if (can) {
       tr.split($from.pos, 1, type)
       if (!atEnd && !$from.parentOffset && $from.parent.type != deflt)
         tr.setNodeType($from.before(), deflt)
