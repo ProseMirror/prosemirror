@@ -4,8 +4,8 @@ const {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, HorizontalRule,
 const browser = require("../util/browser")
 const {wrapIn, setBlockType, chainCommands, newlineInCode, toggleMark} = require("../commands")
 const {TableRow} = require("../schema-table")
-const {selectNextCell, selectPreviousCell} = require("../command-table")
-const {wrapInList, splitListItem, liftListItem, sinkListItem} = require("../command-list")
+const {selectNextCell, selectPreviousCell} = require("../commands-table")
+const {wrapInList, splitListItem, liftListItem, sinkListItem} = require("../commands-list")
 
 // :: (Schema, ?Object) → Keymap
 // Inspect the given schema looking for marks and nodes from the

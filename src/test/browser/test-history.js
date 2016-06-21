@@ -2,7 +2,7 @@ const {namespace, dispatch} = require("./def")
 const {doc, p, ul, li} = require("../build")
 const {is, cmp, cmpStr, cmpNode} = require("../cmp")
 
-const {sinkListItem, liftListItem, splitListItem} = require("../../command-list")
+const {sinkListItem, liftListItem, splitListItem} = require("../../commands-list")
 
 const test = namespace("history")
 
