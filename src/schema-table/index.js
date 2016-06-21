@@ -37,15 +37,15 @@ class TableCell extends Block {
 }
 exports.TableCell = TableCell
 
-// :: (OrderedMap, string) → OrderedMap
+// :: (OrderedMap, string, ?string) → OrderedMap
 // Convenience function for adding table-related node types to a map
 // describing the nodes in a schema. Adds `Table` as `"table"`,
 // `TableRow` as `"table_row"`, and `TableCell` as `"table_cell"`.
 // `cellContent` should be a content expression describing what may
 // occur inside cells.
-function addTableNodes(nodes, cellContent) {
+function addTableNodes(nodes, cellContent, tableGroup) {
   return nodes.append({
-    table: {type: Table, content: "table_row[columns=.columns]+", group: "block"},
+    table: {type: Table, content: "table_row[columns=.columns]+", group: tableGroup},
     table_row: {type: TableRow, content: "table_cell{.columns}"},
     table_cell: {type: TableCell, content: cellContent}
   })
