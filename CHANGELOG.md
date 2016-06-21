@@ -1,3 +1,15 @@
+## 0.8.2 (2016-06-21)
+
+### Bug fixes
+
+Fix `OrderedMap.append` and `OrderedMap.prepend` to allow raw-object
+arguments.
+
+Fix bug where `Node.textContent` didn't actually return a value.
+
+Make the `wrapInList` command more robust in the face of schema
+constraints.
+
 ## 0.8.1 (2016-06-16)
 
 ### Bug fixes
