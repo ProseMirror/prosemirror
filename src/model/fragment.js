@@ -192,6 +192,14 @@ class Fragment {
     return found
   }
 
+  // :: (number) → number
+  // Get the offset at (size of children before) the given index.
+  offsetAt(index) {
+    let offset = 0
+    for (let i = 0; i < index; i++) offset += this.content[i].nodeSize
+    return offset
+  }
+
   // :: (number) → ?Node
   // Get the child node at the given index, if it exists.
   maybeChild(index) {

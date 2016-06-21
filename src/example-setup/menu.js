@@ -2,8 +2,8 @@ const {StrongMark, EmMark, CodeMark, LinkMark, Image, BulletList, OrderedList, B
        Heading, Paragraph, CodeBlock, HorizontalRule} = require("../schema-basic")
 const {toggleMarkItem, insertItem, wrapItem, blockTypeItem, Dropdown, DropdownSubmenu, joinUpItem, liftItem,
        selectParentNodeItem, undoItem, redoItem, wrapListItem, icons, MenuItem} = require("../menu")
-const {Table, TableRow, createTable, addColumnBefore, addColumnAfter, removeColumn,
-       addRowBefore, addRowAfter, removeRow} = require("../schema-table")
+const {Table, TableRow, createTable} = require("../schema-table")
+const {addColumnBefore, addColumnAfter, removeColumn, addRowBefore, addRowAfter, removeRow} = require("../command-table")
 
 const {FieldPrompt, TextField} = require("../ui")
 

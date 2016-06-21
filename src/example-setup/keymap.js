@@ -4,6 +4,8 @@ const {HardBreak, BulletList, OrderedList, ListItem, BlockQuote, HorizontalRule,
 const browser = require("../util/browser")
 const {wrapIn, setBlockType, wrapInList, splitListItem, liftListItem, sinkListItem, chainCommands, newlineInCode,
        toggleMark} = require("../edit").commands
+const {TableRow} = require("../schema-table")
+const {selectNextCell, selectPreviousCell} = require("../command-table")
 
 // :: (Schema, ?Object) → Keymap
 // Inspect the given schema looking for marks and nodes from the
@@ -76,6 +78,11 @@ function buildKeymap(schema, mapKeys) {
       bind("Shift-Ctrl-" + i, setBlockType(node, {level: i}))
     if (node instanceof HorizontalRule)
       bind("Mod-Shift--", pm => pm.tr.replaceSelection(node.create()).applyAndScroll())
+
+    if (node instanceof TableRow) {
+      bind("Tab", selectNextCell)
+      bind("Shift-Tab", selectPreviousCell)
+    }
   }
   return new Keymap(keys)
 }
