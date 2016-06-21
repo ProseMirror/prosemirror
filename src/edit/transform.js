@@ -36,7 +36,7 @@ class EditorTransform extends Transform {
     if (this.curSelectionAt < this.steps.length) {
       if (this.curSelectionAt) {
         for (let i = this.curSelectionAt; i < this.steps.length; i++)
-          this.curSelection = this.curSelection.map(i == this.steps.length ? this.doc : this.docs[i + 1], this.maps[i])
+          this.curSelection = this.curSelection.map(i == this.steps.length - 1 ? this.doc : this.docs[i + 1], this.maps[i])
       } else {
         this.curSelection = this.curSelection.map(this.doc, this)
       }
