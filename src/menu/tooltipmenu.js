@@ -1,6 +1,6 @@
 const {Plugin} = require("../edit")
 const {elt, insertCSS} = require("../util/dom")
-const {Tooltip} = require("../ui")
+const {Tooltip} = require("../tooltip")
 
 const {renderGrouped} = require("./menu")
 

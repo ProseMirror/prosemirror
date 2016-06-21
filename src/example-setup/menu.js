@@ -5,7 +5,7 @@ const {toggleMarkItem, insertItem, wrapItem, blockTypeItem, Dropdown, DropdownSu
 const {Table, TableRow, createTable} = require("../schema-table")
 const {addColumnBefore, addColumnAfter, removeColumn, addRowBefore, addRowAfter, removeRow} = require("../command-table")
 
-const {FieldPrompt, TextField} = require("../ui")
+const {FieldPrompt, TextField} = require("../prompt")
 
 // Helpers to create specific types of items
 
