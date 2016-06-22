@@ -11,7 +11,6 @@ const {SelectionState, TextSelection, NodeSelection, Selection, hasFocus} = requ
 const {scrollIntoView, posAtCoords, coordsAtPos} = require("./dompos")
 const {draw, redraw, DIRTY_REDRAW, DIRTY_RESCAN} = require("./draw")
 const {Input} = require("./input")
-const {History} = require("./history")
 const {RangeStore, MarkedRange} = require("./range")
 const {EditorTransform} = require("./transform")
 const {EditorScheduler, UpdateScheduler} = require("./update")
@@ -171,6 +170,11 @@ class ProseMirror {
     // A namespace where plugins can store their state. See the `Plugin` class.
     this.plugin = Object.create(null)
     this.cached = Object.create(null)
+
+    // :: History A property into which a [history
+    // plugin](#historyPlugin) may put a history implementation.
+    this.history = null
+
     this.operation = null
     this.dirtyNodes = new Map // Maps node object to 1 (re-scan content) or 2 (redraw entirely)
     this.flushScheduled = null
@@ -228,8 +232,6 @@ class ProseMirror {
     // :: Node The current document.
     this.doc = doc
     this.ranges = new RangeStore(this)
-    // :: History The edit history for the editor.
-    this.history = new History(this)
   }
 
   // :: (Node, ?Selection)

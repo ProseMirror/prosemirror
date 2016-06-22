@@ -1,4 +1,5 @@
 const {collabEditing} = require("../../collab")
+const {historyPlugin} = require("../../history")
 
 const {doc, p} = require("../build")
 const {defTest} = require("../tests")
@@ -45,7 +46,7 @@ function test(name, f, options, n) {
     let server = new DummyServer
     let optArray = []
     for (let i = 0; i < (n || 2); i++) {
-      let copy = {}
+      let copy = {plugins: [historyPlugin]}
       for (var prop in options) copy[prop] = options[prop]
       copy.plugins = (copy.plugins || []).concat(collabEditing.config({version: server.version}))
       optArray.push(copy)
@@ -60,8 +61,6 @@ function type(pm, text, pos) {
   pm.tr.insertText(pos || pm.selection.head, text).apply()
 }
 
-function cut(pm) { pm.history.lastAddedAt = 0 }
-
 function conv(...args) {
   let d = args.pop()
   if (typeof d == "string") d = doc(p(d))
@@ -74,7 +73,7 @@ test("converge_easy", (pm1, pm2) => {
   type(pm1, "!", 5)
   type(pm2, "...", 1)
   conv(pm1, pm2, "...hiok!")
-})
+}, {plugins: []})
 
 test("converge_rebased", (pm1, pm2) => {
   type(pm1, "hi")
@@ -136,12 +135,12 @@ test("undo_deep", (pm1, pm2) => {
   pm2.setTextSelection(11)
   type(pm1, "!")
   type(pm2, "!")
-  cut(pm1)
+  pm1.history.cut()
   delay(pm1, () => {
     type(pm1, " ...")
     type(pm2, " ,,,")
   })
-  cut(pm1)
+  pm1.history.cut()
   type(pm1, "*")
   type(pm2, "*")
   pm1.history.undo()

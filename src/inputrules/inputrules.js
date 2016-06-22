@@ -80,7 +80,7 @@ class InputRules {
         if (isCode) return
       }
       if (match = rule.match.exec(textBefore)) {
-        let startVersion = this.pm.history.getVersion()
+        let startVersion = this.pm.history && this.pm.history.getVersion()
         if (typeof rule.handler == "string") {
           let start = $pos.pos - (match[1] || match[0]).length
           let marks = this.pm.doc.marksAt($pos.pos)
@@ -97,7 +97,7 @@ class InputRules {
   }
 
   backspace() {
-    if (this.cancelVersion) {
+    if (this.cancelVersion && this.pm.history) {
       this.pm.history.backToVersion(this.cancelVersion)
       this.cancelVersion = null
     } else {

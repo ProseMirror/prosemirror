@@ -2,6 +2,7 @@ const {blockQuoteRule, orderedListRule, bulletListRule, codeBlockRule, headingRu
        inputRules, allInputRules} = require("../inputrules")
 const {BlockQuote, OrderedList, BulletList, CodeBlock, Heading} = require("../schema-basic")
 const {Plugin} = require("../edit")
+const {historyPlugin} = require("../history")
 const {menuBar, tooltipMenu} = require("../menu")
 const {baseKeymap} = require("../commands")
 
@@ -66,6 +67,9 @@ exports.exampleSetup = new Plugin(class {
                           blockContent: builtMenu.blockMenu}
     }
     if (this.tooltipConf) tooltipMenu.config(this.tooltipConf).attach(pm)
+
+    if (this.addHistory = !historyPlugin.get(pm))
+      historyPlugin.attach(pm)
   }
   detach(pm) {
     pm.wrapper.classList.remove(className)
@@ -75,6 +79,7 @@ exports.exampleSetup = new Plugin(class {
     this.inputRules.forEach(rule => rules.removeRule(rule))
     if (this.barConf) menuBar.detach(pm)
     if (this.tooltipConf) tooltipMenu.detach(pm)
+    if (this.addHistory) historyPlugin.detach(pm)
   }
 }, {
   menuBar: true,

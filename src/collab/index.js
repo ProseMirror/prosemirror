@@ -30,7 +30,7 @@ class Collab {
     // was enabled.
     this.version = options.version
     this.versionDoc = pm.doc
-    pm.history.preserveItems++
+    if (pm.history) pm.history.preserveItems++
 
     this.unconfirmedSteps = []
     this.unconfirmedMaps = []
@@ -62,7 +62,7 @@ class Collab {
   detach() {
     this.pm.on.transform.remove(this.onTransform)
     this.pm.on.beforeSetDoc.remove(this.onSetDoc)
-    this.pm.history.preserveItems++
+    if (this.pm.history) this.pm.history.preserveItems++
   }
 
   // :: () → bool
@@ -120,7 +120,7 @@ class Collab {
 
     let selectionBefore = this.pm.selection
     this.pm.updateDoc(rebased.doc, rebased.mapping)
-    this.pm.history.rebased(newMaps, rebased.transform, rebased.positions)
+    if (this.pm.history) this.pm.history.rebased(newMaps, rebased.transform, rebased.positions)
     this.receivedTransform.dispatch(transform, selectionBefore)
     return transform.maps
   }

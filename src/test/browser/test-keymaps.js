@@ -3,7 +3,6 @@ const {tempEditor, dispatch} = require("./def")
 const {cmpNode} = require("../cmp")
 const {doc, blockquote, pre, h1, h2, p, li, ul, em, strong, code, br, hr} = require("../build")
 
-const {baseKeymap} = require("../../commands")
 const {buildKeymap} = require("../../example-setup")
 const Keymap = require("browserkeymap")
 

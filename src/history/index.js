@@ -1,9 +1,9 @@
+const {Plugin} = require("../edit")
 const {Transform, Remapping} = require("../transform")
 
-// ProseMirror's history implements not a way to roll back to a
-// previous state, because ProseMirror supports applying changes
-// without adding them to the history (for example during
-// collaboration).
+// ProseMirror's history isn't simply a way to roll back to a previous
+// state, because ProseMirror supports applying changes without adding
+// them to the history (for example during collaboration).
 //
 // To this end, each 'Branch' (one for the undo history and one for
 // the redo history) keeps an array of 'Items', which can optionally
@@ -284,17 +284,35 @@ class BranchRemapping {
 
 // ;; An undo/redo history manager for an editor instance.
 class History {
-  constructor(pm) {
-    this.pm = pm
+  constructor(pm, options) {
+    if (pm.history)
+      throw new RangeError("ProseMirror instance already has a history object")
+    pm.history = this
 
-    this.done = new Branch(pm.options.historyDepth)
-    this.undone = new Branch(pm.options.historyDepth)
+    this.pm = pm
+    this.options = options
+
+    this.resetState()
+
+    this.recordTransform = this.recordTransform.bind(this)
+    pm.on.transform.add(this.recordTransform)
+    this.resetSelf = () => this.resetState()
+    pm.on.setDoc.add(this.resetSelf)
+  }
+
+  resetState() {
+    this.done = new Branch(this.options.depth)
+    this.undone = new Branch(this.options.depth)
 
     this.lastAddedAt = 0
     this.ignoreTransform = false
     this.preserveItems = 0
+  }
 
-    pm.on.transform.add(this.recordTransform.bind(this))
+  detach(pm) {
+    pm.on.transform.remove(this.recordTransform)
+    pm.on.setDoc.remove(this.resetSelf)
+    pm.history = null
   }
 
   // : (Transform, Selection, Object)
@@ -302,13 +320,13 @@ class History {
   recordTransform(transform, selection, options) {
     if (this.ignoreTransform) return
 
-    if (options.addToHistory == false) {
+    if (options.addToHistory == false && this.options.selective) {
       this.done.addMaps(transform.maps)
       this.undone.addMaps(transform.maps)
     } else {
       let now = Date.now()
       // Group transforms that occur in quick succession into one event.
-      let newGroup = now > this.lastAddedAt + this.pm.options.historyEventDelay
+      let newGroup = now > this.lastAddedAt + this.options.eventDelay
       this.done.addTransform(transform, newGroup ? selection.token : null)
       this.undone.clear()
       this.lastAddedAt = now
@@ -337,6 +355,11 @@ class History {
   // :: number
   // The amount of redoable events available.
   get redoDepth() { return this.undone.events }
+
+  // :: ()
+  // Makes sure that the next change made will start a new history
+  // event, not be added to the last event.
+  cut() { this.lastAddedAt = 0 }
 
   // : (Branch, Branch) → bool
   // Apply the latest event from one branch to the document and optionally
@@ -403,8 +426,34 @@ class History {
   // Used by the collab module to tell the history that some of its
   // content has been rebased.
   rebased(newMaps, rebasedTransform, positions) {
+    if (!this.options.selective)
+      throw new RangeError("Non-selective history can not be rebased")
     this.done.rebased(newMaps, rebasedTransform, positions)
     this.undone.rebased(newMaps, rebasedTransform, positions)
   }
 }
 exports.History = History
+
+// :: Plugin
+// A plugin that enables the undo history for an editor. Has the
+// effect of setting the editor's `history` property to an instance of
+// `History`. Takes the following options:
+//
+// **`depth`**`: number`
+//   : The amount of history events that are collected before the
+//     oldest events are discarded. Defaults to 100.
+//
+// **`eventDelay`**`: number`
+//   : The amount of milliseconds that must pass between changes to
+//     start a new history event. Defaults to 500.
+//
+// **`selective`**`: bool`
+//   : Controls whether the history allows changes that aren't added
+//     to the history, as used by collaborative editing and transforms
+//     with the `addToHistory` option set to false. Defaults to true.
+const historyPlugin = new Plugin(History, {
+  depth: 100,
+  eventDelay: 500,
+  selective: true
+})
+exports.historyPlugin = historyPlugin

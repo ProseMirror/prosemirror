@@ -18,16 +18,6 @@ options.doc = null
 // into the document.
 options.place = null
 
-// :: number #path=historyDepth #kind=option
-// The amount of history events that are collected before the oldest
-// events are discarded. Defaults to 100.
-options.historyDepth = 100
-
-// :: number #path=historyEventDelay #kind=option
-// The amount of milliseconds that must pass between changes to
-// start a new history event. Defaults to 500.
-options.historyEventDelay = 500
-
 // :: number #path=scrollThreshold #kind=option
 // The minimum distance to keep between the position of document
 // changes and the editor bounding rectangle before scrolling the view.

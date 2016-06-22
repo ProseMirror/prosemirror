@@ -331,7 +331,7 @@ exports.selectParentNode = selectParentNode
 // :: (ProseMirror, ?bool) → bool
 // Undo the most recent change event, if any.
 function undo(pm, apply) {
-  if (pm.history.undoDepth == 0) return false
+  if (!pm.history || pm.history.undoDepth == 0) return false
   if (apply !== false) {
     pm.scrollIntoView()
     pm.history.undo()
@@ -343,7 +343,7 @@ exports.undo = undo
 // :: (ProseMirror, ?bool) → bool
 // Redo the most recently undone change event, if any.
 function redo(pm, apply) {
-  if (pm.history.redoDepth == 0) return false
+  if (!pm.history || pm.history.redoDepth == 0) return false
   if (apply !== false) {
     pm.scrollIntoView()
     pm.history.redo()
