@@ -44,7 +44,8 @@ const defaultMarkdownSerializer = new MarkdownSerializer({
   },
   code_block(state, node) {
     if (node.attrs.params == null) {
-      state.wrapBlock("    ", null, node, () => state.text(node.textContent, false))
+      let textContent = node.textContent || node.content.firstChild.text
+      state.wrapBlock("    ", null, node, () => state.text(textContent, false))
     } else {
       state.write("```" + node.attrs.params + "\n")
       state.text(node.textContent, false)
