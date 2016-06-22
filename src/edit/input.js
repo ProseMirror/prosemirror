@@ -410,8 +410,12 @@ function fromClipboard(pm, dataTransfer, plainText, $target) {
   let dom
   if ((plainText || !html) && txt) {
     dom = document.createElement("div")
-    pm.on.transformPastedText.dispatch(txt).split(/\n{2,}/).forEach(para => {
-      dom.appendChild(document.createElement("paragraph")).textContent = para
+    pm.on.transformPastedText.dispatch(txt).split(/(?:\r\n?|\n){2,}/).forEach(block => {
+      let para = dom.appendChild(document.createElement("p"))
+      block.split(/\r\n?|\n/).forEach((line, i) => {
+        if (i) para.appendChild(document.createElement("br"))
+        para.appendChild(document.createTextNode(line))
+      })
     })
   } else {
     dom = readHTML(pm.on.transformPastedHTML.dispatch(html))
