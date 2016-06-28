@@ -469,10 +469,11 @@ commands.setBlockType = function(nodeType, attrs) {
     if (node) {
       depth = $from.depth
     } else {
-      if ($to.pos > $from.end()) return false
+      if (!$from.depth || $to.pos > $from.end()) return false
       depth = $from.depth - 1
     }
-    if ((node || $from.parent).hasMarkup(nodeType, attrs)) return false
+    let target = node || $from.parent
+    if (!target.isTextblock || target.hasMarkup(nodeType, attrs)) return false
     let index = $from.index(depth)
     if (!$from.node(depth).canReplaceWith(index, index + 1, nodeType)) return false
     if (apply !== false) {
