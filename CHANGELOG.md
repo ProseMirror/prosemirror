@@ -1,3 +1,16 @@
+## 0.8.3 (2016-06-28)
+
+### Bug fixes
+
+When pasting text, assign some basic structure to it by inserting
+`<p>` and `<br>` tags.
+
+Fix a bug in `EditorTranform.selection`.
+
+Disable the `setBlockType` command for non-textblock blocks.
+
+Make `splitBlock` handle content restrictions better.
+
 ## 0.8.2 (2016-06-21)
 
 ### Bug fixes
