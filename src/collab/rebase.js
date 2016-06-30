@@ -1,16 +1,16 @@
 const {Remapping, Transform} = require("../transform")
 
 function rebaseSteps(doc, forward, steps, maps) {
-  let remap = new Remapping([], forward.slice())
+  let remap = new Remapping(maps.map(m => m.invert()).reverse().concat(forward), maps.length)
   let transform = new Transform(doc)
   let positions = []
 
   for (let i = 0; i < steps.length; i++) {
     let step = steps[i].map(remap)
     let result = step && transform.maybeStep(step)
-    let id = remap.addToFront(maps[i].invert())
+    remap.mapFrom--
     if (result && result.doc) {
-      remap.addToBack(step.posMap(), id)
+      remap.appendMap(step.posMap(), remap.mapFrom)
       positions.push(transform.steps.length - 1)
     } else {
       positions.push(-1)

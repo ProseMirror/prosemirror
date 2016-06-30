@@ -33,30 +33,37 @@ class Branch {
   // Pop the latest event off the branch's history and apply it
   // to a document transform, returning the transform and the step IDs.
   popEvent(doc, preserveItems, upto) {
-    let preserve = preserveItems, transform = new Transform(doc)
-    let remap = new BranchRemapping
-    let selection, ids = [], i = this.items.length
+    let end = this.items.length
+    for (;; end--) {
+      let next = this.items[end - 1]
+      if (upto && next == upto) break
+      if (!next.map) return null
+      if (next.selection && !upto) { --end; break }
+    }
 
-    for (;;) {
-      let cur = this.items[--i]
-      if (upto && cur == upto) break
-      if (!cur.map) return null
+    let remap = preserveItems ? this.remapping(end, this.items.length) : null
+    let transform = new Transform(doc)
+    let selection, ids = []
+
+    for (let i = this.items.length - 1; i >= end; i--) {
+      let cur = this.items[i]
 
       if (!cur.step) {
-        remap.add(cur)
-        preserve = true
+        if (!remap) remap = this.remapping(end, i + 1)
+        remap.mapFrom--
         continue
       }
 
-      if (preserve) {
-        let step = cur.step.map(remap.remap), map
+      if (remap) {
+        let step = cur.step.map(remap), map
 
         this.items[i] = new MapItem(cur.map)
         if (step && transform.maybeStep(step).doc) {
           map = transform.maps[transform.maps.length - 1]
           this.items.push(new MapItem(map, this.items[i].id))
         }
-        remap.movePastStep(cur, map)
+        remap.mapFrom--
+        if (map) remap.appendMap(map, remap.mapFrom)
       } else {
         this.items.pop()
         transform.maybeStep(cur.step)
@@ -66,7 +73,7 @@ class Branch {
       if (cur.selection) {
         this.events--
         if (!upto) {
-          selection = cur.selection.type.mapToken(cur.selection, remap.remap)
+          selection = remap ? cur.selection.type.mapToken(cur.selection, remap) : cur.selection
           break
         }
       }
@@ -111,6 +118,21 @@ class Branch {
     }
   }
 
+  remapping(from, to) {
+    let maps = [], mirrors = []
+    for (let i = from; i < to; i++) {
+      let item = this.items[i]
+      if (item.mirror != null) {
+        for (let j = i - 1; j >= from; j--) if (this.items[j].id == item.mirror) {
+          mirrors.push(maps.indexOf(this.items[j].map), maps.length)
+          break
+        }
+      }
+      maps.push(item.map)
+    }
+    return new Remapping(maps, maps.length, mirrors)
+  }
+
   addMaps(array) {
     if (this.events == 0) return
     for (let i = 0; i < array.length; i++)
@@ -151,9 +173,10 @@ class Branch {
     }
 
     if (positions.length) {
-      let remap = new Remapping([], newMaps.slice())
+      let inverted = this.items.slice(start).reverse().map(i => i.map.invert())
+      let remap = new Remapping(inverted.concat(newMaps), inverted.length)
       for (let iItem = start, iPosition = startPos; iItem < this.items.length; iItem++) {
-        let item = this.items[iItem], pos = positions[iPosition++], id
+        let item = this.items[iItem], pos = positions[iPosition++]
         if (pos != -1) {
           let map = rebasedTransform.maps[pos]
           if (item.step) {
@@ -163,9 +186,9 @@ class Branch {
           } else {
             rebasedItems.push(new MapItem(map))
           }
-          id = remap.addToBack(map)
+          remap.appendMap(map, remap.mapFrom - 1)
         }
-        remap.addToFront(item.map.invert(), id)
+        remap.mapFrom--
       }
 
       this.items.length = start
@@ -193,22 +216,24 @@ class Branch {
   // because `rebased` relies on a clean, untouched set of items in
   // order to associate old ids to rebased steps.
   compress(upto) {
-    let remap = new BranchRemapping
+    if (upto == null) upto = this.items.length
+    let remap = this.remapping(1, upto)
     let items = [], events = 0
     for (let i = this.items.length - 1; i >= 0; i--) {
       let item = this.items[i]
       if (i >= upto) {
         items.push(item)
       } else if (item.step) {
-        let step = item.step.map(remap.remap), map = step && step.posMap()
-        remap.movePastStep(item, map)
+        let step = item.step.map(remap), map = step && step.posMap()
+        remap.mapFrom--
+        if (map) remap.appendMap(map, remap.mapFrom)
         if (step) {
-          let selection = item.selection && item.selection.type.mapToken(item.selection, remap.remap)
+          let selection = item.selection && item.selection.type.mapToken(item.selection, remap)
           items.push(new StepItem(map.invert(), item.id, step, selection))
           if (selection) events++
         }
       } else if (item.map) {
-        remap.add(item)
+        remap.mapFrom--
       } else {
         items.push(item)
       }
@@ -259,26 +284,6 @@ class MapItem extends Item {
   constructor(map, mirror) {
     super(map)
     this.mirror = mirror
-  }
-}
-
-// Assists with remapping a step with other changes that have been
-// made since the step was first applied.
-class BranchRemapping {
-  constructor() {
-    this.remap = new Remapping
-    this.mirrorBuffer = Object.create(null)
-  }
-
-  add(item) {
-    let id = this.remap.addToFront(item.map, this.mirrorBuffer[item.id])
-    if (item.mirror != null) this.mirrorBuffer[item.mirror] = id
-    return id
-  }
-
-  movePastStep(item, map) {
-    let id = this.add(item)
-    if (map) this.remap.addToBack(map, id)
   }
 }
 

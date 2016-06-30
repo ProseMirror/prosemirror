@@ -61,7 +61,7 @@ function unsyncedComplex(pm, compress) {
   pm.tr.split(3).apply()
   cmpNode(pm.doc, doc(p(".."), p("..hello!")))
   pm.tr.split(2).apply({addToHistory: false})
-  if (compress) pm.history.done.compress(Infinity)
+  if (compress) pm.history.done.compress()
   pm.history.undo()
   cmpNode(pm.doc, doc(p("."), p("...hello")))
   pm.history.undo()
@@ -145,10 +145,10 @@ test("ping_pong_unsynced", pm => {
   pm.tr.insertText(1, "yyy").apply({addToHistory: false})
   pm.tr.insertText(7, "zzz").apply({addToHistory: false})
   for (let i = 0; i < 3; i++) {
-    if (i == 2) pm.history.done.compress(Infinity)
+    if (i == 2) pm.history.done.compress()
     for (let j = 0; j < 4; j++) cmp(pm.history.undo(), j < 3)
     cmpNode(pm.doc, doc(p("yyyzzzxxx")), i + " undo")
-    if (i == 2) pm.history.undone.compress(Infinity)
+    if (i == 2) pm.history.undone.compress()
     for (let j = 0; j < 4; j++) cmp(pm.history.redo(), j < 3)
     cmpNode(pm.doc, doc(p("yyytopzzz"), p("zero one twoxxx three")), i + " redo")
   }

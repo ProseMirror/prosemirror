@@ -110,11 +110,9 @@ function testMapping(maps, pos, newPos, label) {
   maps.forEach(m => mapped = m.map(mapped, 1))
   cmpStr(mapped, newPos, label)
 
-  let remap = new Remapping()
-  for (let i = maps.length - 1; i >= 0; i--) {
-    let id = remap.addToFront(maps[i])
-    remap.addToBack(maps[i].invert(), id)
-  }
+  let remap = new Remapping(maps.map(m => m.invert()), maps.length)
+  for (let i = maps.length - 1; i >= 0; i--)
+    remap.appendMap(maps[i], --remap.mapFrom)
   cmpStr(remap.map(pos, 1), pos, label + " round trip")
 }
 
