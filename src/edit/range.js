@@ -120,8 +120,11 @@ class RangeStore {
 }
 exports.RangeStore = RangeStore
 
-function significant(range) {
-  return range.options.className && range.from != range.to
+function significant(obj) {
+  let range = obj.range
+  return range.options.className && range.from != range.to ||
+    range.options.elementBefore && obj.type == "open" ||
+    range.options.elementAfter && obj.type == "close"
 }
 
 class RangeTracker {
@@ -129,17 +132,22 @@ class RangeTracker {
     this.sorted = sorted
     this.pos = 0
     this.current = []
+    this.element = null
   }
 
   advanceTo(pos) {
     let next
+    this.element = null
     while (this.pos < this.sorted.length && (next = this.sorted[this.pos]).at <= pos) {
-      if (significant(next.range)) {
-        let className = next.range.options.className
-        if (next.type == "open")
-          this.current.push(className)
-        else
-          this.current.splice(this.current.indexOf(className), 1)
+      if (significant(next)) {
+        let className = next.range.options.className, element = next.range.options.elementBefore
+        if (className) {
+          if (next.type == "open")
+            this.current.push(className)
+          else
+            this.current.splice(this.current.indexOf(className), 1)
+        }
+        if (element && next.type == "open" && next.at == pos) this.element = element
       }
       this.pos++
     }
@@ -149,7 +157,7 @@ class RangeTracker {
     for (;;) {
       if (this.pos == this.sorted.length) return -1
       let next = this.sorted[this.pos]
-      if (!significant(next.range))
+      if (!significant(next))
         this.pos++
       else if (next.at >= pos)
         return -1
