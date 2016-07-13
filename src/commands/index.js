@@ -577,11 +577,11 @@ let baseKeymap = new Keymap({
 
 if (browser.mac) baseKeymap = baseKeymap.update({
   "Ctrl-H": baseKeymap.lookup("Backspace"),
-  "Alt-Backspace": baseKeymap.lookup("Mod-Backspace"),
+  "Alt-Backspace": baseKeymap.lookup("Cmd-Backspace"),
   "Ctrl-D": baseKeymap.lookup("Delete"),
-  "Ctrl-Alt-Backspace": baseKeymap.lookup("Mod-Delete"),
-  "Alt-Delete": baseKeymap.lookup("Mod-Delete"),
-  "Alt-D": baseKeymap.lookup("Mod-Delete")
+  "Ctrl-Alt-Backspace": baseKeymap.lookup("Cmd-Delete"),
+  "Alt-Delete": baseKeymap.lookup("Cmd-Delete"),
+  "Alt-D": baseKeymap.lookup("Cmd-Delete")
 })
 
 exports.baseKeymap = baseKeymap
