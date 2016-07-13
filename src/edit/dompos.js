@@ -42,9 +42,6 @@ function posFromDOM(dom, domOffset, bias = 0) {
       return posInLeaf + innerOffset
     } else if (dom.hasAttribute("pm-container")) {
       break
-    } else if (tag = dom.getAttribute("pm-inner-offset")) {
-      innerOffset += +tag
-      adjust = -1
     } else if (domOffset == dom.childNodes.length) {
       if (domOffset) adjust = 1
       else adjust = bias > 0 ? 1 : 0
@@ -158,16 +155,6 @@ function leafAt(node, offset) {
     let child = node.firstChild
     if (!child) return {node, offset}
     if (child.nodeType != 1) return {node: child, offset}
-    if (child.hasAttribute("pm-inner-offset")) {
-      let nodeOffset = 0
-      for (;;) {
-        let nextSib = child.nextSibling, nextOffset
-        if (!nextSib || (nextOffset = +nextSib.getAttribute("pm-inner-offset")) >= offset) break
-        child = nextSib
-        nodeOffset = nextOffset
-      }
-      offset -= nodeOffset
-    }
     node = child
   }
 }
