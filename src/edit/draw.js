@@ -35,7 +35,6 @@ function options(ranges) {
         ranges.advanceTo(pos)
         let nextCut = ranges.nextChangeBefore(end), nextDOM, size
         if (nextCut > -1) {
-          if (!fragment) fragment = document.createDocumentFragment()
           size = nextCut - pos
           nextDOM = splitTextNode(dom, size)
         } else {
@@ -46,7 +45,13 @@ function options(ranges) {
         dom.setAttribute("pm-size", size)
         if (ranges.current.length)
           dom.className = ranges.current.join(" ")
-        if (fragment) fragment.appendChild(dom)
+
+        if (!fragment && (nextCut > -1 || ranges.element))
+          fragment = document.createDocumentFragment()
+        if (ranges.element)
+          fragment.appendChild(elt("span", {contenteditable: false, "pm-ignore": true}, ranges.element))
+        if (fragment)
+          fragment.appendChild(dom)
 
         if (nextCut == -1) break
         offset += size
