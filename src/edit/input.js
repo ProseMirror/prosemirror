@@ -551,13 +551,15 @@ handlers.dragover = handlers.dragenter = (pm, e) => {
   if (pos == null) return
   let coords = pm.coordsAtPos(pos)
   let rect = pm.wrapper.getBoundingClientRect()
+  let scaleX = pm.wrapper.clientWidth / rect.width
+  let scaleY = pm.wrapper.clientHeight / rect.height
   coords.top -= rect.top
   coords.right -= rect.left
   coords.bottom -= rect.top
   coords.left -= rect.left
-  target.style.left = (coords.left - 1) + "px"
-  target.style.top = coords.top + "px"
-  target.style.height = (coords.bottom - coords.top) + "px"
+  target.style.left = (coords.left - 1) * scaleX + "px"
+  target.style.top = coords.top * scaleY + "px"
+  target.style.height = (coords.bottom - coords.top) * scaleY + "px"
 }
 
 handlers.dragleave = (pm, e) => {
