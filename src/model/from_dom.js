@@ -317,7 +317,8 @@ class DOMParseState {
     if (!result) return false
 
     let sync, before
-    if (result.node) sync = this.enter(result.node, result.attrs)
+    if (result.node && result.node.isLeaf) this.insertNode(result.node.create(result.attrs))
+    else if (result.node) sync = this.enter(result.node, result.attrs)
     else before = this.addMark(result.mark.create(result.attrs))
 
     let contentNode = dom, preserve = null, prevPreserve = this.preserveWhitespace
@@ -325,6 +326,8 @@ class DOMParseState {
       if (result.content.content === false) contentNode = null
       else if (result.content.content) contentNode = result.content.content
       preserve = result.content.preserveWhitespace
+    } else if (result.node && result.node.isLeaf) {
+      contentNode = null
     }
 
     if (contentNode) {
