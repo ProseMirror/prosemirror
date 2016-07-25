@@ -132,8 +132,8 @@ function redraw(pm, dirty, doc, prev) {
       if (found > -1) {
         matching = child
         while (iPrev != found) {
-          oPrev += prev.child(iPrev).nodeSize
-          iPrev++
+          oPrev += pChild.nodeSize
+          pChild = prev.maybeChild(++iPrev)
         }
       }
 
