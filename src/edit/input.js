@@ -194,9 +194,9 @@ function handleTripleClick(pm, context) {
   }
 }
 
-function runHandlerOnContext(handler, context) {
+function runHandlerOnContext(handler, context, event) {
   for (let i = context.inside.length - 1; i >= 0; i--)
-    if (handler.dispatch(context.pos, context.inside[i].node, context.inside[i].pos))
+    if (handler.dispatch(context.pos, context.inside[i].node, context.inside[i].pos, event))
       return true
 }
 
@@ -214,7 +214,7 @@ handlers.mousedown = (pm, e) => {
     e.preventDefault()
     handleTripleClick(pm, context)
   } else if (doubleClick) {
-    if (runHandlerOnContext(pm.on.doubleClickOn, context) || pm.on.doubleClick.dispatch(context.pos))
+    if (runHandlerOnContext(pm.on.doubleClickOn, context, e) || pm.on.doubleClick.dispatch(context.pos, e))
       e.preventDefault()
     else
       pm.sel.fastPoll()
@@ -266,8 +266,8 @@ class MouseDown {
     let context = contextFromEvent(this.pm, event)
     if (this.event.ctrlKey && selectClickedNode(this.pm, context)) {
       event.preventDefault()
-    } else if (runHandlerOnContext(this.pm.on.clickOn, this.context) ||
-               this.pm.on.click.dispatch(this.context.pos)) {
+    } else if (runHandlerOnContext(this.pm.on.clickOn, this.context, event) ||
+               this.pm.on.click.dispatch(this.context.pos, event)) {
       event.preventDefault()
     } else {
       let inner = this.context.inside[this.context.inside.length - 1]
@@ -296,7 +296,7 @@ handlers.contextmenu = (pm, e) => {
   let context = contextFromEvent(pm, e)
   if (context) {
     let inner = context.inside[context.inside.length - 1]
-    if (pm.on.contextMenu.dispatch(context.pos, inner ? inner.node : pm.doc))
+    if (pm.on.contextMenu.dispatch(context.pos, inner ? inner.node : pm.doc, e))
       e.preventDefault()
   }
 }
