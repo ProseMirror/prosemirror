@@ -85,23 +85,41 @@ function attrs(given, token) {
   return given instanceof Function ? given(token) : given
 }
 
+// Code content is represented as a single token with a `content`
+// property in Markdown-it.
+function noOpenClose(type) {
+  return type == "code_inline" || type == "code_block" || type == "fence"
+}
+
+function withoutTrailingNewline(str) {
+  return str[str.length - 1] == "\n" ? str.slice(0, str.length - 1) : str
+}
+
 function tokenHandlers(schema, tokens) {
   let handlers = Object.create(null)
   for (let type in tokens) {
     let spec = tokens[type]
     if (spec.block) {
       let nodeType = schema.nodeType(spec.block)
-      handlers[type + "_open"] = (state, tok) => state.openNode(nodeType, attrs(spec.attrs, tok))
-      handlers[type + "_close"] = state => state.closeNode()
+      if (noOpenClose(type)) {
+        handlers[type] = (state, tok) => {
+          state.openNode(nodeType, attrs(spec.attrs, tok))
+          state.addText(withoutTrailingNewline(tok.content))
+          state.closeNode()
+        }
+      } else {
+        handlers[type + "_open"] = (state, tok) => state.openNode(nodeType, attrs(spec.attrs, tok))
+        handlers[type + "_close"] = state => state.closeNode()
+      }
     } else if (spec.node) {
       let nodeType = schema.nodeType(spec.node)
       handlers[type] = (state, tok) => state.addNode(nodeType, attrs(spec.attrs, tok))
     } else if (spec.mark) {
       let markType = schema.marks[spec.mark]
-      if (type == "code_inline") { // code_inline tokens are strange
+      if (noOpenClose(type)) {
         handlers[type] = (state, tok) => {
           state.openMark(markType.create(attrs(spec.attrs, tok)))
-          state.addText(tok.content)
+          state.addText(withoutTrailingNewline(tok.content))
           state.closeMark(markType)
         }
       } else {

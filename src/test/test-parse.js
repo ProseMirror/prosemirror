@@ -1,4 +1,4 @@
-const {doc, blockquote, h1, h2, p, hr, li, ol, ul, em, strong, code, a, br, img, dataImage} = require("./build")
+const {doc, blockquote, h1, h2, p, hr, li, ol, ul, pre, em, strong, code, a, br, img, dataImage} = require("./build")
 const {cmpNode, cmpStr} = require("./cmp")
 const {defTest} = require("./tests")
 
@@ -34,10 +34,9 @@ t("ordered_list",
   "1. Hello\n\n2. Goodbye\n\n3. Nest\n\n   1. Hey\n\n   2. Aye",
   doc(ol(li(p("Hello")), li(p("Goodbye")), li(p("Nest"), ol(li(p("Hey")), li(p("Aye")))))))
 
-/* FIXME disabled until we have markdown attributes
 t("code_block",
-  "```\nMy Code\n```\n\n    Other code\n\nPara",
-  doc(pre2("My Code"), pre("Other code"), p("Para")))*/
+  "Some code:\n\n    Here it is\n\nPara",
+  doc(p("Some code:"), pre("Here it is"), p("Para")))
 
 t("inline",
   "Hello. Some *em* text, some **strong** text, and some `code`",
