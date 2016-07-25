@@ -1,8 +1,5 @@
 const {insertCSS} = require("../util/dom")
 
-let svgCollection = null
-const svgBuilt = Object.create(null)
-
 const SVG = "http://www.w3.org/2000/svg"
 const XLINK = "http://www.w3.org/1999/xlink"
 
@@ -20,7 +17,7 @@ function getIcon(icon) {
   node.className = prefix
   if (icon.path) {
     let name = "pm-icon-" + hashPath(icon.path).toString(16)
-    if (!svgBuilt[name]) buildSVG(name, icon)
+    if (!document.getElementById(name)) buildSVG(name, icon)
     let svg = node.appendChild(document.createElementNS(SVG, "svg"))
     svg.style.width = (icon.width / icon.height) + "em"
     let use = svg.appendChild(document.createElementNS(SVG, "use"))
@@ -36,18 +33,19 @@ function getIcon(icon) {
 exports.getIcon = getIcon
 
 function buildSVG(name, data) {
-  if (!svgCollection) {
-    svgCollection = document.createElementNS(SVG, "svg")
-    svgCollection.style.display = "none"
-    document.body.insertBefore(svgCollection, document.body.firstChild)
+  let collection = document.getElementById(prefix + "-collection")
+  if (!collection) {
+    collection = document.createElementNS(SVG, "svg")
+    collection.className = prefix + "-collection"
+    collection.style.display = "none"
+    document.body.insertBefore(collection, document.body.firstChild)
   }
   let sym = document.createElementNS(SVG, "symbol")
   sym.id = name
   sym.setAttribute("viewBox", "0 0 " + data.width + " " + data.height)
   let path = sym.appendChild(document.createElementNS(SVG, "path"))
   path.setAttribute("d", data.path)
-  svgCollection.appendChild(sym)
-  svgBuilt[name] = true
+  collection.appendChild(sym)
 }
 
 insertCSS(`
