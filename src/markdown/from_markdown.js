@@ -91,6 +91,15 @@ function tokenHandlers(schema, tokens) {
     let spec = tokens[type]
     if (spec.block) {
       let nodeType = schema.nodeType(spec.block)
+
+      if (type == "code_block") { // code_block defined by alignment
+        handlers[type] = (state, tok) => {
+          state.openNode(nodeType, attrs(spec.attrs, tok))
+          state.addText(tok.content)
+          state.closeNode()
+        }
+      }
+
       handlers[type + "_open"] = (state, tok) => state.openNode(nodeType, attrs(spec.attrs, tok))
       handlers[type + "_close"] = state => state.closeNode()
     } else if (spec.node) {
