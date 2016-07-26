@@ -15,9 +15,7 @@ function posBeforeFromDOM(node) {
   return pos
 }
 
-// : number Extra return value from posFromDOM, indicating whether the
-// position was inside a leaf node.
-let posInLeaf = null
+const posFromDOMResult = {pos: 0, inLeaf: -1}
 
 // : (DOMNode, number) → number
 function posFromDOM(dom, domOffset, bias = 0) {
@@ -38,8 +36,9 @@ function posFromDOM(dom, domOffset, bias = 0) {
       if (dom.nodeType == 1 && !dom.firstChild) innerOffset = bias > 0 ? size : 0
       else if (domOffset == dom.childNodes.length) innerOffset = size
       else innerOffset = Math.min(innerOffset, size)
-      posInLeaf = posBeforeFromDOM(dom)
-      return posInLeaf + innerOffset
+      let inLeaf = posFromDOMResult.inLeaf = posBeforeFromDOM(dom)
+      posFromDOMResult.pos = inLeaf + innerOffset
+      return posFromDOMResult
     } else if (dom.hasAttribute("pm-container")) {
       break
     } else if (domOffset == dom.childNodes.length) {
@@ -61,8 +60,9 @@ function posFromDOM(dom, domOffset, bias = 0) {
       break
     }
   }
-  posInLeaf = null
-  return start + before + innerOffset
+  posFromDOMResult.inLeaf = -1
+  posFromDOMResult.pos = start + before + innerOffset
+  return posFromDOMResult
 }
 exports.posFromDOM = posFromDOM
 
@@ -261,8 +261,7 @@ function posAtCoords(pm, coords) {
     let rect = node.getBoundingClientRect()
     bias = rect.left != rect.right && coords.left > (rect.left + rect.right) / 2 ? 1 : -1
   }
-  let pos = posFromDOM(node, offset, bias)
-  return {pos, inside: posInLeaf}
+  return posFromDOM(node, offset, bias)
 }
 exports.posAtCoords = posAtCoords
 
