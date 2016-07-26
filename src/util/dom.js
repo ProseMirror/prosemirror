@@ -29,7 +29,7 @@ const cancelFrame = window.cancelAnimationFrame || window.mozCancelAnimationFram
       window.webkitCancelAnimationFrame || window.msCancelAnimationFrame
 
 function requestAnimationFrame(f) {
-  if (reqFrame) return reqFrame(f)
+  if (reqFrame) return reqFrame.call(window, f)
   else return setTimeout(f, 10)
 }
 exports.requestAnimationFrame = requestAnimationFrame
