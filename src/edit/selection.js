@@ -357,8 +357,12 @@ class SelectionToken {
 
 function selectionFromDOM(doc, oldHead) {
   let sel = window.getSelection()
-  let anchor = posFromDOM(sel.anchorNode, sel.anchorOffset)
-  let head = sel.isCollapsed ? anchor : posFromDOM(sel.focusNode, sel.focusOffset)
+  let {pos: head, inLeaf: headLeaf} = posFromDOM(sel.focusNode, sel.focusOffset)
+  if (headLeaf > -1 && sel.isCollapsed) {
+    let $leaf = doc.resolve(headLeaf)
+    if ($leaf.nodeAfter.type.selectable) return {range: new NodeSelection($leaf), adjusted: true}
+  }
+  let anchor = sel.isCollapsed ? head : posFromDOM(sel.anchorNode, sel.anchorOffset).pos
 
   let range = Selection.findNear(doc.resolve(head), oldHead != null && oldHead < head ? 1 : -1)
   if (range instanceof TextSelection) {

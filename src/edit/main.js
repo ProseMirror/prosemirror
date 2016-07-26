@@ -596,7 +596,7 @@ function mappedPosAtCoords(pm, coords) {
   // document
   if (pm.operation)
     return {pos: mapThrough(pm.operation.mappings, result.pos),
-            inside: result.inside == null ? null : mapThrough(pm.operation.mappings, result.inside)}
+            inside: result.inLeaf < 0 ? null : mapThrough(pm.operation.mappings, result.inLeaf)}
   else
     return result
 }

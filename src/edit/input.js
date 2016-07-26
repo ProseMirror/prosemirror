@@ -546,8 +546,8 @@ handlers.dragover = handlers.dragenter = (pm, e) => {
   if (!target)
     target = pm.input.dropTarget = pm.wrapper.appendChild(elt("div", {class: "ProseMirror-drop-target"}))
 
-  let pos = dropPos(pm.input.dragging && pm.input.dragging.slice,
-                    pm.doc.resolve(pm.posAtCoords({left: e.clientX, top: e.clientY})))
+  let mousePos = pm.posAtCoords({left: e.clientX, top: e.clientY})
+  let pos = mousePos == null ? null : dropPos(pm.input.dragging && pm.input.dragging.slice, pm.doc.resolve(mousePos))
   if (pos == null) return
   let coords = pm.coordsAtPos(pos)
   let rect = pm.wrapper.getBoundingClientRect()
