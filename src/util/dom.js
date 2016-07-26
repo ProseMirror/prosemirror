@@ -35,7 +35,7 @@ function requestAnimationFrame(f) {
 exports.requestAnimationFrame = requestAnimationFrame
 
 function cancelAnimationFrame(handle) {
-  if (reqFrame) return cancelFrame(handle)
+  if (reqFrame) return cancelFrame.call(window, handle)
   else clearTimeout(handle)
 }
 exports.cancelAnimationFrame = cancelAnimationFrame
