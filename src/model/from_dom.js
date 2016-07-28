@@ -339,7 +339,7 @@ class DOMParseState {
       if (preserve != null) this.preserveWhitespace = prevPreserve
       this.findAround(dom, contentNode, true)
     } else {
-      this.findInside(parent)
+      this.findInside(dom)
     }
     return true
   }
