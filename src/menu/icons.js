@@ -36,7 +36,7 @@ function buildSVG(name, data) {
   let collection = document.getElementById(prefix + "-collection")
   if (!collection) {
     collection = document.createElementNS(SVG, "svg")
-    collection.className = prefix + "-collection"
+    collection.id = prefix + "-collection"
     collection.style.display = "none"
     document.body.insertBefore(collection, document.body.firstChild)
   }
