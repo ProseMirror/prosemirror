@@ -219,8 +219,8 @@ function findOffsetInNode(node, coords) {
         offset = i + 1
     }
   }
-  if (!closest) return {node, offset}
-  if (closest.nodeType == 3) return findOffsetInText(closest, coordsClosest)
+  if (closest && closest.nodeType == 3) return findOffsetInText(closest, coordsClosest)
+  if (!closest || !closest.childNodes.length) return {node, offset}
   return findOffsetInNode(closest, coordsClosest)
 }
 
