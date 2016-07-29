@@ -58,7 +58,6 @@ test("read", pm => {
   test(two, 0, 8, "force 1:0")
   test(two, 3, 11, "force 1:3")
   test(two.parentNode, 1, 11, "force :1 from two")
-  test(pm.content, 1, 4, "force :1")
   test(pm.content, 1, 5, "force :1")
   test(pm.content, 2, 8, "force :2")
   test(pm.content, 3, 11, "force :3")
