@@ -1,3 +1,38 @@
+## 0.9.1 (2016-07-29)
+
+### Bug fixes
+
+Fix DOM node leak in the creation of menu SVG icons.
+
+Fix regression where `clickOn` and `doubleClickOn` handlers weren't
+called on clicked leaf nodes.
+
+Fix crash in DOM parser when parsing a DOM change.
+
+## 0.9.0 (2016-07-26)
+
+### Bug fixes
+
+Pasting a single leaf node (a node that doesn't allow content) works
+again.
+
+Parsing Markdown text with code blocks (indented or fenced) works again.
+
+Fixes a bug where clicking a selectable leaf node would create a
+selection before that node.
+
+Fix the way `requestAnimationFrame` is called to please Internet
+Explorer.
+
+### New features
+
+Mouse-related event handlers (`click`, `clickOn`, `doubleClick`,
+`doubleClickOn`, `contextMenu`) are now passed the original DOM event.
+
+Adds a new module `schema-tables`, that exports node types and
+commands for tables, along with a way to easily add them to your
+schema.
+
 ## 0.8.3 (2016-06-28)
 
 ### Bug fixes
