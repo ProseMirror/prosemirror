@@ -1,3 +1,14 @@
+## 0.9.1 (2016-07-29)
+
+### Bug fixes
+
+Fix DOM node leak in the creation of menu SVG icons.
+
+Fix regression where `clickOn` and `doubleClickOn` handlers weren't
+called on clicked leaf nodes.
+
+Fix crash in DOM parser when parsing a DOM change.
+
 ## 0.9.0 (2016-07-26)
 
 ### Bug fixes
