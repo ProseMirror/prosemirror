@@ -495,13 +495,13 @@ class ProseMirror {
     let result = mappedPosAtCoords(this, coords)
     if (!result) return null
 
-    let $pos = this.doc.resolve(result.inside == null ? result.pos : result.inside), inside = []
+    let $pos = this.doc.resolve(result.inLeaf == -1 ? result.pos : result.inLeaf), inside = []
     for (let i = 1; i <= $pos.depth; i++)
       inside.push({pos: $pos.before(i), node: $pos.node(i)})
-    if (result.inside != null) {
+    if (result.inLeaf > -1) {
       let after = $pos.nodeAfter
       if (after && !after.isText && after.type.isLeaf)
-        inside.push({pos: result.inside, node: after})
+        inside.push({pos: result.inLeaf, node: after})
     }
     return {pos: result.pos, inside}
   }
@@ -594,7 +594,7 @@ function mappedPosAtCoords(pm, coords) {
   // document
   if (pm.operation)
     return {pos: mapThrough(pm.operation.mappings, result.pos),
-            inside: result.inLeaf < 0 ? null : mapThrough(pm.operation.mappings, result.inLeaf)}
+            inLeaf: result.inLeaf < 0 ? null : mapThrough(pm.operation.mappings, result.inLeaf)}
   else
     return result
 }
