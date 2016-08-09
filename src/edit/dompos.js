@@ -169,7 +169,7 @@ function scrollIntoView(pm, pos) {
   let coords = coordsAtPos(pm, pos)
   for (let parent = pm.content;; parent = parent.parentNode) {
     let {scrollThreshold, scrollMargin} = pm.options
-    let atBody = parent == document.body
+    let atBody = parent == pm.content.ownerDocument.body
     let rect = atBody ? windowRect() : parent.getBoundingClientRect()
     let moveX = 0, moveY = 0
     if (coords.top < rect.top + scrollThreshold)

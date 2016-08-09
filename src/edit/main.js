@@ -472,7 +472,7 @@ class ProseMirror {
   // Query whether the editor has focus.
   hasFocus() {
     if (this.sel.range instanceof NodeSelection)
-      return document.activeElement == this.content
+      return this.content.ownerDocument.activeElement == this.content
     else
       return hasFocus(this)
   }
