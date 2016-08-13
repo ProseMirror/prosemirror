@@ -381,7 +381,7 @@ function selectionFromDOM(doc, oldHead) {
 }
 
 function hasFocus(pm) {
-  if (pm.content.ownDocument.activeElement != pm.content) return false
+  if (pm.content.ownerDocument.activeElement != pm.content) return false
   let sel = window.getSelection()
   return sel.rangeCount && contains(pm.content, sel.anchorNode)
 }
