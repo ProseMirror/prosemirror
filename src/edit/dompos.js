@@ -164,12 +164,17 @@ function windowRect() {
           top: 0, bottom: window.innerHeight}
 }
 
+function parentNode(node) {
+  let parent = node.parentNode
+  return parent.nodeType == 11 ? parent.host : parent
+}
+
 function scrollIntoView(pm, pos) {
   if (!pos) pos = pm.sel.range.head || pm.sel.range.from
   let coords = coordsAtPos(pm, pos)
-  for (let parent = pm.content;; parent = parent.parentNode) {
+  for (let parent = pm.content;; parent = parentNode(parent)) {
     let {scrollThreshold, scrollMargin} = pm.options
-    let atBody = parent == pm.content.ownerDocument.body
+    let atBody = parent == document.body
     let rect = atBody ? windowRect() : parent.getBoundingClientRect()
     let moveX = 0, moveY = 0
     if (coords.top < rect.top + scrollThreshold)
