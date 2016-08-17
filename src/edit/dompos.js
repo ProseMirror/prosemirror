@@ -200,7 +200,7 @@ exports.scrollIntoView = scrollIntoView
 
 function findOffsetInNode(node, coords) {
   let closest, dxClosest = 2e8, coordsClosest, offset = 0
-  for (let child = node.firstChild; child; child = child.nextSibling) {
+  for (let child = node.firstChild, childIndex = 0; child; child = child.nextSibling, childIndex++) {
     let rects
     if (child.nodeType == 1) rects = child.getClientRects()
     else if (child.nodeType == 3) rects = textRange(child).getClientRects()
@@ -215,8 +215,8 @@ function findOffsetInNode(node, coords) {
           closest = child
           dxClosest = dx
           coordsClosest = dx && closest.nodeType == 3 ? {left: rect.right < coords.left ? rect.right : rect.left, top: coords.top} : coords
-          if (child.nodeType == 1 && !child.firstChild)
-            offset = i + (coords.left >= (rect.left + rect.right) / 2 ? 1 : 0)
+          if (child.nodeType == 1 && dx)
+            offset = childIndex + (coords.left >= (rect.left + rect.right) / 2 ? 1 : 0)
           continue
         }
       }
@@ -225,7 +225,7 @@ function findOffsetInNode(node, coords) {
     }
   }
   if (closest && closest.nodeType == 3) return findOffsetInText(closest, coordsClosest)
-  if (!closest || !closest.childNodes.length) return {node, offset}
+  if (!closest || (dxClosest && closest.nodeType == 1)) return {node, offset}
   return findOffsetInNode(closest, coordsClosest)
 }
 
