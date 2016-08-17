@@ -415,6 +415,7 @@ class DOMParseState {
       if (child.nodeType == 1 &&
           listTags.hasOwnProperty(child.nodeName.toLowerCase()) &&
           (prev = child.previousSibling)) {
+        while (prev.nodeType != 1) prev = prev.previousSibling;
         prev.appendChild(child)
         child = prev
       }
