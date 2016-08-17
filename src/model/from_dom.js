@@ -411,12 +411,15 @@ class DOMParseState {
   // tools and allowed by browsers to mean that the nested list is
   // actually part of the list item above it.
   normalizeList(dom) {
-    for (let child = dom.firstChild, prev; child; child = child.nextSibling) {
-      if (child.nodeType == 1 &&
-          listTags.hasOwnProperty(child.nodeName.toLowerCase()) &&
-          (prev = child.previousSibling)) {
-        prev.appendChild(child)
-        child = prev
+    for (let child = dom.firstChild, prevItem = null; child; child = child.nextSibling) {
+      let name = child.nodeType == 1 ? child.nodeName.toLowerCase() : null
+      if (name && listTags.hasOwnProperty(name) && prevItem) {
+        prevItem.appendChild(child)
+        child = prevItem
+      } else if (name == "li") {
+        prevItem = child
+      } else if (name) {
+        prevItem = null
       }
     }
   }
