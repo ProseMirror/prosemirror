@@ -191,7 +191,7 @@ function joinable(doc, pos) {
 exports.joinable = joinable
 
 function canJoin(a, b) {
-  return a && b && !a.isText && a.canAppend(b)
+  return a && b && !a.isLeaf && a.canAppend(b)
 }
 
 // :: (Node, number, ?number) → ?number
