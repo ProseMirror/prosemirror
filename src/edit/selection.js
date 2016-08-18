@@ -359,8 +359,8 @@ function selectionFromDOM(doc, oldHead) {
   let sel = window.getSelection()
   let {pos: head, inLeaf: headLeaf} = posFromDOM(sel.focusNode, sel.focusOffset)
   if (headLeaf > -1 && sel.isCollapsed) {
-    let $leaf = doc.resolve(headLeaf)
-    if ($leaf.nodeAfter.type.selectable) return {range: new NodeSelection($leaf), adjusted: true}
+    let $leaf = doc.resolve(headLeaf), node = $leaf.nodeAfter
+    if (node.type.selectable && !node.type.isInline) return {range: new NodeSelection($leaf), adjusted: true}
   }
   let anchor = sel.isCollapsed ? head : posFromDOM(sel.anchorNode, sel.anchorOffset).pos
 
