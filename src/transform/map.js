@@ -109,6 +109,19 @@ class PosMap {
     return false
   }
 
+  // :: ((oldStart: number, oldEnd: number, newStart: number, newEnd: number))
+  // Calls the given function on each of the changed ranges denoted by
+  // this map.
+  forEach(f) {
+    let oldIndex = this.inverted ? 2 : 1, newIndex = this.inverted ? 1 : 2
+    for (let i = 0, diff = 0; i < this.ranges.length; i += 3) {
+      let start = this.ranges[i], oldStart = start - (this.inverted ? diff : 0), newStart = start + (this.inverted ? 0 : diff)
+      let oldSize = this.ranges[i + oldIndex], newSize = this.ranges[i + newIndex]
+      f(oldStart, oldStart + oldSize, newStart, newStart + newSize)
+      diff += newSize - oldSize
+    }
+  }
+
   // :: () → PosMap
   // Create an inverted version of this map. The result can be used to
   // map positions in the post-step document to the pre-step document.
