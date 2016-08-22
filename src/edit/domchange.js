@@ -35,7 +35,7 @@ function parseBetween(pm, from, to) {
     if (next.nodeType != 1 || !next.hasAttribute("pm-offset")) ++endOff
     else break
   }
-  let domSel = window.getSelection(), find = null
+  let domSel = pm.root.getSelection(), find = null
   if (domSel.anchorNode && pm.content.contains(domSel.anchorNode)) {
     find = [{node: domSel.anchorNode, offset: domSel.anchorOffset}]
     if (!domSel.isCollapsed)
