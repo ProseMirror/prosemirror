@@ -236,7 +236,7 @@ class MouseDown {
     this.target = event.target
     if (this.mightDrag) {
       if (!contains(pm.content, this.target))
-        this.target = document.elementFromPoint(this.x, this.y)
+        this.target = pm.root.elementFromPoint(this.x, this.y)
       this.target.draggable = true
       if (browser.gecko && (this.setContentEditable = !this.target.hasAttribute("contentEditable")))
         this.target.setAttribute("contentEditable", "false")

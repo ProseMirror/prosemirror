@@ -1,7 +1,7 @@
 const {Mark} = require("../model")
 const {mapThroughResult} = require("../transform")
 
-const {findSelectionFrom, findSelectionNear, TextSelection} = require("./selection")
+const {findSelectionFrom, findSelectionNear, TextSelection, isCollapsed} = require("./selection")
 const {DOMFromPos, DOMFromPosFromEnd} = require("./dompos")
 
 function readInputChange(pm) {
@@ -35,10 +35,10 @@ function parseBetween(pm, from, to) {
     if (next.nodeType != 1 || !next.hasAttribute("pm-offset")) ++endOff
     else break
   }
-  let domSel = window.getSelection(), find = null
+  let domSel = pm.root.getSelection(), find = null
   if (domSel.anchorNode && pm.content.contains(domSel.anchorNode)) {
     find = [{node: domSel.anchorNode, offset: domSel.anchorOffset}]
-    if (!domSel.isCollapsed)
+    if (!isCollapsed(domSel))
       find.push({node: domSel.focusNode, offset: domSel.focusOffset})
   }
   let sel = null, doc = pm.schema.parseDOM(parent, {
