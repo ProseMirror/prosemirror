@@ -115,7 +115,7 @@ class TooltipMenu {
 
 // Get the x and y coordinates at the top center of the current DOM selection.
 function topCenterOfSelection() {
-  let range = window.getSelection().getRangeAt(0), rects = range.getClientRects()
+  let range = this.pm.root.getSelection().getRangeAt(0), rects = range.getClientRects()
   if (!rects.length) return range.getBoundingClientRect()
   let left, right, top, bottom
   for (let i = 0; i < rects.length; i++) {
@@ -134,7 +134,7 @@ function topCenterOfSelection() {
 }
 
 function bottomCenterOfSelection() {
-  let range = window.getSelection().getRangeAt(0), rects = range.getClientRects()
+  let range = this.pm.root.getSelection().getRangeAt(0), rects = range.getClientRects()
   if (!rects.length) {
     let rect = range.getBoundingClientRect()
     return {left: rect.left, top: rect.bottom}

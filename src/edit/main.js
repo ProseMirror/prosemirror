@@ -186,6 +186,9 @@ class ProseMirror {
     this.options.keymaps.forEach(map => this.addKeymap(map, -100))
 
     this.options.plugins.forEach(plugin => plugin.attach(this))
+
+    // get the root of prosemirror since it could be in a shadow dom
+    this.root = (opts.place && opts.place.host) || document
   }
 
   // :: (string) → any
@@ -472,7 +475,7 @@ class ProseMirror {
   // Query whether the editor has focus.
   hasFocus() {
     if (this.sel.range instanceof NodeSelection)
-      return this.content.ownerDocument.activeElement == this.content
+      return this.pm.root.activeElement == this.content
     else
       return hasFocus(this)
   }
