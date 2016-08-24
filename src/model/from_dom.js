@@ -97,6 +97,9 @@ class NodeBuilder {
     // The builder for the last child, if that is still open (see
     // `NodeBuilder.start`)
     this.openChild = null
+    // : bool
+    // True when the node is closed, and vice versa.
+    this.close = false
   }
 
   // : (Node) → ?Node
@@ -149,6 +152,7 @@ class NodeBuilder {
   // by filling in required content.
   finish(openRight) {
     this.closeChild(openRight)
+    this.close = true;
     let content = Fragment.from(this.content)
     if (!openRight) content = content.append(this.match.fillBefore(Fragment.empty, true))
     return this.type.create(this.match.attrs, content)
@@ -162,6 +166,7 @@ class NodeBuilder {
   findPlace(type, attrs, node) {
     let route, builder
     for (let top = this;; top = top.prev) {
+      if (top.close) continue
       let found = top.match.findWrapping(type, attrs)
       if (found && (!route || route.length > found.length)) {
         route = found
@@ -170,7 +175,6 @@ class NodeBuilder {
       }
       if (top.solid) break
     }
-
     if (!route) return null
     for (let i = 0; i < route.length; i++)
       builder = builder.start(route[i].type, route[i].attrs, false)
