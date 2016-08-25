@@ -1,5 +1,3 @@
-require("./css")
-
 const {Map} = require("../util/map")
 const {Subscription, PipelineSubscription, StoppableSubscription, DOMSubscription} = require("subscription")
 const {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} = require("../util/dom")
@@ -25,8 +23,6 @@ class ProseMirror {
   // and, if it has a [`place`](#place) option, add it to the
   // document.
   constructor(opts) {
-    ensureCSSAdded()
-
     opts = this.options = parseOptions(opts)
     // :: Schema
     // The schema for this editor's document.
@@ -171,6 +167,9 @@ class ProseMirror {
       }
     } else
       this.root = document
+
+    require("./css")(this)
+    ensureCSSAdded(this)
 
     this.setDocInner(opts.doc)
     draw(this, this.doc)
