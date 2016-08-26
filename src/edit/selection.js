@@ -313,9 +313,10 @@ class SelectionToken {
 
 function isCollapsed(sel) {
   // Selection.isCollapsed is broken in Chrome 52.
-  return sel.focusNode === sel.anchorNode && sel.focusOffset === sel.anchorOffset;
+  // See https://bugs.chromium.org/p/chromium/issues/detail?id=447523
+  return sel.focusNode === sel.anchorNode && sel.focusOffset === sel.anchorOffset
 }
-exports.isCollapsed = isCollapsed;
+exports.isCollapsed = isCollapsed
 
 function selectionFromDOM(pm, oldHead) {
   let sel = pm.root.getSelection()
