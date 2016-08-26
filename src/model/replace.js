@@ -118,7 +118,7 @@ function joinable($before, $after, depth) {
 function addNode(child, target) {
   let last = target.length - 1
   if (last >= 0 && child.isText && child.sameMarkup(target[last]))
-    target[last] = child.copy(target[last].text + child.text)
+    target[last] = child.withText(target[last].text + child.text)
   else
     target.push(child)
 }

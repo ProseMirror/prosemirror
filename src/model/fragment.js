@@ -86,7 +86,7 @@ class Fragment {
     if (!this.size) return other
     let last = this.lastChild, first = other.firstChild, content = this.content.slice(), i = 0
     if (last.isText && last.sameMarkup(first)) {
-      content[content.length - 1] = last.copy(last.text + first.text)
+      content[content.length - 1] = last.withText(last.text + first.text)
       i = 1
     }
     for (; i < other.content.length; i++) content.push(other.content[i])
@@ -142,7 +142,7 @@ class Fragment {
       size += node.nodeSize
       if (i && node.isText && array[i - 1].sameMarkup(node)) {
         if (!joined) joined = array.slice(0, i)
-        joined[joined.length - 1] = node.copy(joined[joined.length - 1].text + node.text)
+        joined[joined.length - 1] = node.withText(joined[joined.length - 1].text + node.text)
       } else if (joined) {
         joined.push(node)
       }

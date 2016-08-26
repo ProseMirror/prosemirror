@@ -362,9 +362,14 @@ class TextNode extends Node {
     return new TextNode(this.type, this.attrs, this.text, marks)
   }
 
+  withText(text) {
+    if (text == this.text) return this
+    return new TextNode(this.type, this.attrs, text, this.marks)
+  }
+
   cut(from = 0, to = this.text.length) {
     if (from == 0 && to == this.text.length) return this
-    return this.copy(this.text.slice(from, to))
+    return this.withText(this.text.slice(from, to))
   }
 
   eq(other) {
