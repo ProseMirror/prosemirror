@@ -161,16 +161,7 @@ class ProseMirror {
     else if (opts.place)
       opts.place(this.wrapper)
 
-    // does not support opts.place being a function and asynchronously mount prosemirror
-    this.root = this.wrapper.parentNode
-    if (this.root) {
-      // loop if root is not document (in light dom)
-      // only shadowRoot has property (in shadow dom)
-      while (this.root!== document && !this.root.host) {
-        this.root = this.root.parentNode
-      }
-    } else
-      this.root = document
+    this._root = null
 
     this.setDocInner(opts.doc)
     draw(this, this.doc)
@@ -197,6 +188,20 @@ class ProseMirror {
     this.options.keymaps.forEach(map => this.addKeymap(map, -100))
 
     this.options.plugins.forEach(plugin => plugin.attach(this))
+  }
+
+  // :: DOMDocument
+  // The root document that the editor is part of. Initialized lazily
+  // (falling back to the top-level document until the editor is
+  // placed in the DOM) to make sure asynchronously adding the editor
+  // to a shadow DOM works correctly.
+  get root() {
+    let cached = this._root
+    if (cached == null) for (let search = this.wrapper.parentNode; search; search = search.parentNode) {
+      if (search.nodeType == 9 || (search.nodeType == 11 && search.host))
+        return this._root = search
+    }
+    return cached || document
   }
 
   // :: (string) → any
