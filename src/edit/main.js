@@ -1,5 +1,3 @@
-require("./css")
-
 const {Map} = require("../util/map")
 const {Subscription, PipelineSubscription, StoppableSubscription, DOMSubscription} = require("subscription")
 const {requestAnimationFrame, cancelAnimationFrame, elt, ensureCSSAdded} = require("../util/dom")
@@ -25,8 +23,6 @@ class ProseMirror {
   // and, if it has a [`place`](#place) option, add it to the
   // document.
   constructor(opts) {
-    ensureCSSAdded()
-
     opts = this.options = parseOptions(opts)
     // :: Schema
     // The schema for this editor's document.
@@ -160,6 +156,20 @@ class ProseMirror {
       opts.place.appendChild(this.wrapper)
     else if (opts.place)
       opts.place(this.wrapper)
+
+    // does not support opts.place being a function and asynchronously mount prosemirror
+    this.root = this.wrapper.parentNode
+    if (this.root) {
+      // loop if root is not document (in light dom)
+      // only shadowRoot has property (in shadow dom)
+      while (this.root!== document && !this.root.host) {
+        this.root = this.root.parentNode
+      }
+    } else
+      this.root = document
+
+    require("./css")(this)
+    ensureCSSAdded(this)
 
     this.setDocInner(opts.doc)
     draw(this, this.doc)
@@ -339,7 +349,7 @@ class ProseMirror {
   flush() {
     this.unscheduleFlush()
 
-    if (!document.body.contains(this.wrapper) || !this.operation) return false
+    if (!this.root.contains(this.wrapper) || !this.operation) return false
     this.on.flushing.dispatch()
 
     let op = this.operation, redrawn = false
@@ -472,7 +482,7 @@ class ProseMirror {
   // Query whether the editor has focus.
   hasFocus() {
     if (this.sel.range instanceof NodeSelection)
-      return this.content.ownerDocument.activeElement == this.content
+      return this.root.activeElement == this.content
     else
       return hasFocus(this)
   }

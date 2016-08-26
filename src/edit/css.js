@@ -1,6 +1,6 @@
 const {insertCSS} = require("../util/dom")
 
-insertCSS(`
+const css = `
 
 .ProseMirror {
   position: relative;
@@ -62,4 +62,8 @@ li.ProseMirror-selectednode:after {
   pointer-events: none;
 }
 
-`)
+`
+
+module.exports = (pm) => {
+  insertCSS(pm, css)
+};
