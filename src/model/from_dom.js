@@ -139,7 +139,7 @@ class NodeBuilder {
     let last = this.content[this.content.length - 1], m
     if (last && last.isText && (m = /\s+$/.exec(last.text))) {
       if (last.text.length == m[0].length) this.content.pop()
-      else this.content[this.content.length - 1] = last.copy(last.text.slice(0, last.text.length - m[0].length))
+      else this.content[this.content.length - 1] = last.withText(last.text.slice(0, last.text.length - m[0].length))
     }
   }
 
