@@ -150,6 +150,11 @@ class ProseMirror {
       // Dispatched when the set of [active marks](#ProseMirror.activeMarks) changes.
       activeMarkChange: new Subscription,
       // :: StoppableSubscription<(DOMEvent)>
+      // Dispatched when a DOM `paste` event happens on the editor.
+      // Handlers may declare the event as being handled by calling
+      // `preventDefault` on it or returning a truthy value.
+      domPaste: new DOMSubscription,
+      // :: StoppableSubscription<(DOMEvent)>
       // Dispatched when a DOM `drop` event happens on the editor.
       // Handlers may declare the event as being handled by calling
       // `preventDefault` on it or returning a truthy value.

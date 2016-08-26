@@ -468,7 +468,7 @@ handlers.copy = handlers.cut = (pm, e) => {
 }
 
 handlers.paste = (pm, e) => {
-  if (!hasFocus(pm)) return
+  if (!hasFocus(pm) || pm.on.domPaste.dispatch(e)) return
   if (!e.clipboardData) {
     if (browser.ie && browser.ie_version <= 11) readInputSoon(pm)
     return
