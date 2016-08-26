@@ -1,3 +1,35 @@
+## 0.10.0 (2016-08-26)
+
+### Bug fixes
+
+Fixed several issues in the handling of clicks on and near leaf nodes.
+
+Fix bug where
+[`liftTarget`](http://prosemirror.net/ref.html#liftTarget) would
+produce false positives.
+
+Improve support for using ProseMirror in a shadow DOM.
+
+### New features
+
+The
+[`ProseMirror.on.domPaste`](http://prosemirror.net/ref.html#ProseMirror.on.domPaste)
+event can now be used to entirely override the handling of paste
+events.
+
+The new
+[`ProseMirror.root`](http://prosemirror.net/ref.html#ProseMirror.root)
+property returns the document or shadow DOM root that the editor is
+part of.
+
+New method
+[`PosMap.forEach`](http://prosemirror.net/ref.html#PosMap.forEach) to
+easily iterate over the changed ranges in a position map.
+
+[Marked ranges](http://prosemirror.net/ref.html#ProseMirror.markRange)
+now support an `elementBefore` option to insert a DOM node before the
+range.
+
 ## 0.9.1 (2016-07-29)
 
 ### Bug fixes
