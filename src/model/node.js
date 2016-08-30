@@ -260,6 +260,10 @@ class Node {
   // True when this is a text node.
   get isText() { return this.type.isText }
 
+  // :: bool
+  // True when this is a leaf node.
+  get isLeaf() { return this.type.isLeaf }
+
   // :: () → string
   // Return a string representation of this node for debugging
   // purposes.
