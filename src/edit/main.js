@@ -360,7 +360,10 @@ class ProseMirror {
   flush() {
     this.unscheduleFlush()
 
-    if (!this.root.contains(this.wrapper) || !this.operation) return false
+    // IE11 supports `contains` only on elements.
+    // if Document node is set as the root, return its root element
+    var rootElement = this.root.nodeType === 9 ? this.root.documentElement : this.root;
+    if (!rootElement.contains(this.wrapper) || !this.operation) return false
     this.on.flushing.dispatch()
 
     let op = this.operation, redrawn = false
