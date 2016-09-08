@@ -1,0 +1,14 @@
+.tern-port
+/model
+/transform
+/state
+/view
+/history
+/collab
+/commands
+/inputrules
+/keymap
+/schema-basic
+/schema-list
+/schema-table
+/notes.txt
