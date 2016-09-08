@@ -4,10 +4,10 @@ const {Mark} = require("./mark")
 function parseDOM(schema, dom, options) {
   let topNode = options.topNode
   let top = new NodeBuilder(topNode ? topNode.type : schema.nodes.doc,
-                            topNode ? topNode.attrs : null, true)
+                            topNode ? topNode.attrs : null, true, null, null, options.preserveWhitespace)
   let state = new DOMParseState(schema, options, top)
   state.addAll(dom, null, options.from, options.to)
-  return top.finish()
+  return top.finish(null)
 }
 exports.parseDOM = parseDOM
 
@@ -18,19 +18,20 @@ exports.parseDOM = parseDOM
 function parseDOMInContext($context, dom, options = {}) {
   let schema = $context.parent.type.schema
 
-  let {builder, top} = builderFromContext($context)
+  let {builder, top} = builderFromContext($context, options.preserveWhitespace)
   let openLeft = options.openLeft, startPos = $context.depth
 
-  new class extends DOMParseState {
-    enter(type, attrs) {
+  let state = new class extends DOMParseState {
+    enter(type, attrs, preserveWhitespace) {
       if (openLeft == null) openLeft = type.isTextblock ? 1 : 0
       if (openLeft > 0 && this.top.match.matchType(type, attrs)) openLeft = 0
-      if (openLeft == 0) return super.enter(type, attrs)
+      if (openLeft == 0) return super.enter(type, attrs, preserveWhitespace)
 
       openLeft--
       return null
     }
-  }(schema, options, builder).addAll(dom)
+  }(schema, options, builder)
+  state.addAll(dom)
 
   let openTo = top.openDepth, doc = top.finish(openTo), $startPos = doc.resolve(startPos)
   for (let d = $startPos.depth; d >= 0 && startPos == $startPos.end(d); d--) ++startPos
@@ -38,14 +39,14 @@ function parseDOMInContext($context, dom, options = {}) {
 }
 exports.parseDOMInContext = parseDOMInContext
 
-function builderFromContext($context) {
+function builderFromContext($context, preserveWhitespace) {
   let top, builder
   for (let i = 0; i <= $context.depth; i++) {
     let node = $context.node(i), match = node.contentMatchAt($context.index(i))
     if (i == 0)
-      builder = top = new NodeBuilder(node.type, node.attrs, true, null, match)
+      builder = top = new NodeBuilder(node.type, node.attrs, true, null, match, preserveWhitespace)
     else
-      builder = builder.start(node.type, node.attrs, false, match)
+      builder = builder.start(node.type, node.attrs, false, match, preserveWhitespace)
   }
   return {builder, top}
 }
@@ -69,12 +70,12 @@ function builderFromContext($context) {
 //     is useful if, for example, your DOM representation puts its
 //     child nodes in an inner wrapping node).
 //
-// **`preserveWhiteSpace`**`: ?bool`
+// **`preserveWhitespace`**`: ?bool`
 //   : When given, this enables or disables preserving of whitespace
 //     when parsing the content.
 
 class NodeBuilder {
-  constructor(type, attrs, solid, prev, match) {
+  constructor(type, attrs, solid, prev, match, preserveWhitespace) {
     // : NodeType
     // The type of the node being built
     this.type = type
@@ -97,6 +98,8 @@ class NodeBuilder {
     // The builder for the last child, if that is still open (see
     // `NodeBuilder.start`)
     this.openChild = null
+    // : bool
+    this.preserveWhitespace = preserveWhitespace
   }
 
   // : (Node) → ?Node
@@ -117,12 +120,12 @@ class NodeBuilder {
 
   // : (NodeType, ?Object, bool, ?ContentMatch) → ?NodeBuilder
   // Try to start a new node at this point.
-  start(type, attrs, solid, match) {
+  start(type, attrs, solid, match, preserveWhitespace) {
     let matched = this.match.matchType(type, attrs)
     if (!matched) return null
     this.closeChild()
     this.match = matched
-    return this.openChild = new NodeBuilder(type, attrs, solid, this, match)
+    return this.openChild = new NodeBuilder(type, attrs, solid, this, match, preserveWhitespace)
   }
 
   closeChild(openRight) {
@@ -148,9 +151,11 @@ class NodeBuilder {
   // - 1` last children) is partial, and we don't need to 'close' it
   // by filling in required content.
   finish(openRight) {
+    if (!this.preserveWhitespace) this.stripTrailingSpace()
     this.closeChild(openRight)
     let content = Fragment.from(this.content)
     if (!openRight) content = content.append(this.match.fillBefore(Fragment.empty, true))
+    this.content = null
     return this.type.create(this.match.attrs, content)
   }
 
@@ -159,7 +164,7 @@ class NodeBuilder {
   // attributes. When successful, if `node` was given, add it in its
   // entirety and return the builder to which it was added. If not,
   // start a node of the given type and return the builder for it.
-  findPlace(type, attrs, node) {
+  findPlace(type, attrs, node, preserveWhitespace) {
     let route, builder
     for (let top = this;; top = top.prev) {
       let found = top.match.findWrapping(type, attrs)
@@ -174,7 +179,7 @@ class NodeBuilder {
     if (!route) return null
     for (let i = 0; i < route.length; i++)
       builder = builder.start(route[i].type, route[i].attrs, false)
-    return node ? builder.add(node) && builder : builder.start(type, attrs, true)
+    return node ? builder.add(node) && builder : builder.start(type, attrs, true, null, preserveWhitespace)
   }
 
   get depth() {
@@ -230,8 +235,6 @@ class DOMParseState {
     this.top = top
     // : [Mark] The current set of marks
     this.marks = Mark.none
-    // : bool Whether to preserve whitespace
-    this.preserveWhitespace = this.options.preserveWhitespace
     this.info = schemaInfo(schema)
     this.find = options.findPositions
   }
@@ -253,7 +256,7 @@ class DOMParseState {
       let value = dom.nodeValue
       let top = this.top
       if (/\S/.test(value) || top.type.isTextblock) {
-        if (!this.preserveWhitespace) {
+        if (!this.top.preserveWhitespace) {
           value = value.replace(/\s+/g, " ")
           // If this starts with whitespace, and there is either no node
           // before it or a node that ends with whitespace, strip the
@@ -316,27 +319,25 @@ class DOMParseState {
     let result = matchTag(this.info.selectors, dom)
     if (!result) return false
 
-    let sync, before
-    if (result.node && result.node.isLeaf) this.insertNode(result.node.create(result.attrs))
-    else if (result.node) sync = this.enter(result.node, result.attrs)
-    else before = this.addMark(result.mark.create(result.attrs))
-
-    let contentNode = dom, preserve = null, prevPreserve = this.preserveWhitespace
+    let sync, before, contentNode = dom, preserve = this.top.preserveWhitespace
     if (result.content) {
       if (result.content.content === false) contentNode = null
       else if (result.content.content) contentNode = result.content.content
-      preserve = result.content.preserveWhitespace
+      if (result.content.preserveWhitespace != null) preserve = result.content.preserveWhitespace
     } else if (result.node && result.node.isLeaf) {
       contentNode = null
     }
 
+    if (result.node && result.node.isLeaf) this.insertNode(result.node.create(result.attrs))
+    else if (result.node) sync = this.enter(result.node, result.attrs, preserve)
+    else before = this.addMark(result.mark.create(result.attrs))
+
+
     if (contentNode) {
       this.findAround(dom, contentNode, true)
-      if (preserve != null) this.preserveWhitespace = preserve
       this.addAll(contentNode, sync)
       if (sync) this.sync(sync.prev)
       else if (before) this.marks = before
-      if (preserve != null) this.preserveWhitespace = prevPreserve
       this.findAround(dom, contentNode, true)
     } else {
       this.findInside(dom)
@@ -374,8 +375,8 @@ class DOMParseState {
   // : (NodeType, ?Object) → ?NodeBuilder
   // Try to start a node of the given type, adjusting the context when
   // necessary.
-  enter(type, attrs) {
-    let ok = this.top.findPlace(type, attrs)
+  enter(type, attrs, preserveWhitespace) {
+    let ok = this.top.findPlace(type, attrs, null, preserveWhitespace)
     if (ok) {
       this.sync(ok)
       return ok
@@ -385,7 +386,6 @@ class DOMParseState {
   // : ()
   // Leave the node currently at the top.
   leave() {
-    if (!this.preserveWhitespace) this.top.stripTrailingSpace()
     this.top = this.top.prev
   }
 
