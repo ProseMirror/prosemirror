@@ -1,29 +1,34 @@
 #!/usr/bin/env node
 
+// FIXME
+//
+// Add a pre-release command that takes release note entries from the
+// commits, adds them to the changelog, and determines what kind of
+// version change is necessary.
+//
+// Describe some logic for automatically updating dependency numbers
+// -- i.e. when a package's major version changes, bump it for all
+// dependents. For minor versions, I guess we'll do it manually.
+
 process.chdir(__dirname + "/..")
 
 let child = require("child_process"), fs = require("fs")
 
-let core = ["model", "transform", "state", "view", "inputrules", "history", "collab", "schema-basic", "schema-list", "schema-table"]
-let all = core.concat(["menu", "prompt", "example-setup"])
+let mods = ["model", "transform", "state", "view",
+            "keymap", "inputrules", "history", "collab",
+            "schema-basic", "schema-list", "schema-table",
+            "menu", "example-setup"]
 
 let command = process.argv[2]
 
-if (command == "status") {
-  status()
-} else if (command == "commit") {
-  commit()
-} else if (command == "clone") {
-  clone()
-} else if (command == "test") {
-  test()
-} else if (command == "push") {
-  push()
-} else if (command == "--help") {
-  help(0)
-} else {
-  help(1)
-}
+if (command == "status") status()
+else if (command == "lint") lint()
+else if (command == "commit") commit()
+else if (command == "clone") clone()
+else if (command == "test") test()
+else if (command == "push") push()
+else if (command == "--help") help(0)
+else help(1)
 
 function help(status) {
   console.log(`Usage:
@@ -41,10 +46,21 @@ function run(cmd, args, repo) {
 }
 
 function status() {
-  core.forEach(repo => {
+  mods.forEach(repo => {
     let output = run("git", ["status", "-sb"], repo)
     if (output != "## master...origin/master\n")
       console.log(repo + ":\n" + run("git", ["status"], repo))
+  })
+}
+
+function lint() {
+  let blint = require("blint")
+  mods.forEach(repo => {
+    blint.checkDir(repo + "/src/", {
+      browser: ["view", "menu", "example-setup"].indexOf(repo) > -1,
+      ecmaVersion: 6,
+      semicolons: false
+    })
   })
 }
 
@@ -57,7 +73,7 @@ function commit() {
   }
   if (!message) help(1)
 
-  core.forEach(repo => {
+  mods.forEach(repo => {
     if (run("git", ["diff"], repo))
       console.log(repo + ":\n" + run("git", ["commit", "-a", "-m", message], repo))
   })
@@ -71,12 +87,12 @@ function clone() {
     else help(1)
   }
 
-  core.forEach(repo => {
+  mods.forEach(repo => {
     run("rm", ["-rf", repo])
     run("git", ["clone", origin.replace("___", repo), repo])
   })
 
-  core.forEach(repo => {
+  mods.forEach(repo => {
     run("mkdir", ["node_modules"], repo)
     let pkg = JSON.parse(fs.readFileSync(repo + "/package.json"), "utf8"), link = Object.create(null)
     function add(name) {
@@ -89,14 +105,14 @@ function clone() {
       run("ln", ["-s", "../../" + dep, "node_modules/prosemirror-" + dep], repo)
   })
 
-  core.forEach(repo => {
+  mods.forEach(repo => {
     run("npm", ["install"], repo)
   })
 }
 
 function test() {
   let mocha = new (require("../model/node_modules/mocha"))
-  core.forEach(repo => {
+  mods.forEach(repo => {
     if (repo == "view" || !fs.existsSync(repo + "/test")) return
     fs.readdirSync(repo + "/test").forEach(file => {
       if (/^test-/.test(file)) mocha.addFile(repo + "/test/" + file)
@@ -106,7 +122,7 @@ function test() {
 }
 
 function push() {
-  core.forEach(repo => {
+  mods.forEach(repo => {
     if (/\bahead\b/.test(run("git", ["status", "-sb"], repo)))
       run("git", ["push"], repo)
   })
