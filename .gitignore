@@ -1,4 +1,5 @@
 .tern-port
+/node_modules
 /model
 /transform
 /state
@@ -11,4 +12,6 @@
 /schema-basic
 /schema-list
 /schema-table
+/menu
+/example-setup
 /notes.txt

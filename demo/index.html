@@ -1,0 +1,79 @@
+<!doctype html>
+
+<meta charset="utf-8"/>
+<title>ProseMirror demo page</title>
+<link rel=stylesheet href="demo.css">
+<link rel=stylesheet href="parent/view/style/prosemirror.css">
+<link rel=stylesheet href="parent/menu/style/menu.css">
+<link rel=stylesheet href="parent/example-setup/style/style.css">
+
+<h1>ProseMirror demo page</h1>
+
+<div class="full"></div>
+
+<div id=content style="display: none">
+<h2>Demonstration Text</h2>
+
+<p>A ProseMirror document is based on a schema, which determines the
+kind of elements that may occur in it, and the relation they have to
+each other. This one is based on the basic schema, with lists and
+tables added. It allows the usual <strong>strong</strong>
+and <em>emphasized</em> text, <code>code font</code>,
+and <a href="http://marijnhaverbeke.nl">links</a>. There are also
+images: <img alt="demo picture" src="img.png">.</p>
+
+<p>On the block level you can have:</p>
+
+<ol>
+  <li>Ordered lists (such as this one)</li>
+  <li>Bullet lists</li>
+  <li>Blockquotes</li>
+  <li>Code blocks</li>
+  <li>Tables</li>
+  <li>Horizontal rules</li>
+</ol>
+
+<p>It isn't hard to define your own custom elements, and include them
+in your schema. These can be opaque 'leaf' nodes, that the user
+manipulates through extra interfaces you provide, or nodes with
+regular editable child nodes.</p>
+
+<hr>
+
+<h2>The Model</h2>
+
+<p>Nodes can nest arbitrarily deep. Thus, the document forms a tree,
+not dissimilar to the browser's DOM tree.</p>
+
+<p>At the inline level, the model works differently. Each block of
+text is a single node containing a flat series of inline elements.
+These are serialized as a tree structure when outputting HTML.</p>
+
+<p>Positions in the document are represented as a path (an array of
+offsets) through the block tree, and then an offset into the inline
+content of the block. Blocks that have no inline content (such as
+horizontal rules and HTML blocks) can not have the cursor inside of
+them. User-exposed operations on the document preserve the invariant
+that there is always at least a single valid cursor position.</p>
+
+<hr>
+
+<h2>Examples</h2>
+
+<blockquote><blockquote><p>We did not see a nested blockquote
+yet.</p></blockquote></blockquote>
+
+<pre><code class="lang-markdown">Nor did we see a code block
+
+Note that the content of a code block can't be styled.</code></pre>
+
+<p>This paragraph has<br>a hard break inside of it.</p>
+
+<table>
+  <tr><td>Column one</td><td>Column two</td></tr>
+  <tr><td>11</td><td>"foo"</td></tr>
+  <tr><td>32</td><td>"xyz"</td></tr>
+</table>
+</div>
+
+<script src="/moduleserve/load.js" data-module="./demo" data-require></script>

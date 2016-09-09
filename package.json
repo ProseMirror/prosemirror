@@ -1,0 +1,27 @@
+{
+  "name": "prosemirror",
+  "version": "0.0.0",
+  "description": "Structured WYSIWYM editor",
+  "license": "MIT",
+  "maintainers": [
+    {
+      "name": "Marijn Haverbeke",
+      "email": "marijnh@gmail.com",
+      "web": "http://marijnhaverbeke.nl"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/prosemirror/prosemirror.git"
+  },
+  "dependencies": {
+    "blint": "^0.5.0",
+    "moduleserve": "^0.7.0"
+  },
+  "scripts": {
+    "demo": "moduleserve demo",
+    "install": "bin/pm clone",
+    "test": "bin/pm test",
+    "lint": "bin/pm lint"
+  }
+}
