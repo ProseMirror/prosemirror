@@ -10,12 +10,14 @@
 // -- i.e. when a package's major version changes, bump it for all
 // dependents. For minor versions, I guess we'll do it manually.
 
+let origDir = process.cwd()
 process.chdir(__dirname + "/..")
 
-let child = require("child_process"), fs = require("fs")
+let child = require("child_process"), fs = require("fs"), path = require("path")
+let glob = require("glob")
 
 let mods = ["model", "transform", "state", "view",
-            "keymap", "inputrules", "history", "collab",
+            "keymap", "inputrules", "history", "collab", "commands",
             "schema-basic", "schema-list", "schema-table",
             "menu", "example-setup"]
 
@@ -27,6 +29,7 @@ else if (command == "commit") commit()
 else if (command == "clone") clone()
 else if (command == "test") test()
 else if (command == "push") push()
+else if (command == "grep") grep()
 else if (command == "--help") help(0)
 else help(1)
 
@@ -37,6 +40,7 @@ function help(status) {
   pm commit -m <message>
   pm test
   pm push
+  pm grep <pattern>
   pm --help`)
   process.exit(status)
 }
@@ -126,4 +130,16 @@ function push() {
     if (/\bahead\b/.test(run("git", ["status", "-sb"], repo)))
       run("git", ["push"], repo)
   })
+}
+
+function grep() {
+  let pattern = process.argv[3] || help(1), files = []
+  mods.forEach(repo => {
+    files = files.concat(glob.sync(repo + "/src/*.js")).concat(glob.sync(repo + "test/*.js"))
+  })
+  try {
+    console.log(run("grep", ["--color", "-nH", "-e", pattern].concat(files.map(f => path.relative(origDir, f))), origDir))
+  } catch(e) {
+    process.exit(1)
+  }
 }
