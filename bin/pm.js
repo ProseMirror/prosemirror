@@ -30,6 +30,7 @@ else if (command == "clone") clone()
 else if (command == "test") test()
 else if (command == "push") push()
 else if (command == "grep") grep()
+else if (command == "run") runCmd()
 else if (command == "--help") help(0)
 else help(1)
 
@@ -41,6 +42,7 @@ function help(status) {
   pm test
   pm push
   pm grep <pattern>
+  pm run <command>
   pm --help`)
   process.exit(status)
 }
@@ -142,4 +144,12 @@ function grep() {
   } catch(e) {
     process.exit(1)
   }
+}
+
+function runCmd() {
+  let cmd = process.argv.slice(3)
+  if (!cmd.length) help(1)
+  mods.forEach(repo => {
+    console.log(repo + ":\n" + run(cmd[0], cmd.slice(1), repo))
+  })
 }
