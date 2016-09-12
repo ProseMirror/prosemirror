@@ -1,3 +1,13 @@
+## 0.10.1 (2016-09-12)
+
+### Bug fixes
+
+Fixes a problem where the DOM parser would produce corrupted documents
+in some corner cases.
+
+Makes the editor useable on IE again by not assuming `document` has a
+`contains` method.
+
 ## 0.10.0 (2016-08-26)
 
 ### Bug fixes
