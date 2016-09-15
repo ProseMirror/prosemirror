@@ -62,26 +62,24 @@ function status() {
 function lint() {
   let blint = require("blint")
   mods.forEach(repo => {
-    blint.checkDir(repo + "/src/", {
+    let options = {
       browser: ["view", "menu", "example-setup"].indexOf(repo) > -1,
       ecmaVersion: 6,
-      semicolons: false
-    })
+      semicolons: false,
+      namedFunctions: true
+    }
+    blint.checkDir(repo + "/src/", options)
+    if (fs.existsSync(repo + "/test")) {
+      options.allowedGlobals = ["it", "describe"]
+      blint.checkDir(repo + "/test/", options)
+    }
   })
 }
 
 function commit() {
-  let message
-  for (let i = 3; i < process.argv.length; i++) {
-    let arg = process.argv[i]
-    if (arg == "-m") { message = process.argv[++i] }
-    else help(1)
-  }
-  if (!message) help(1)
-
   mods.forEach(repo => {
-    if (run("git", ["diff"], repo))
-      console.log(repo + ":\n" + run("git", ["commit", "-a", "-m", message], repo))
+    if (run("git", ["diff"], repo) || run("git", ["diff", "--cached"], repo))
+      console.log(repo + ":\n" + run("git", ["commit"].concat(process.argv.slice(3)), repo))
   })
 }
 
@@ -137,7 +135,7 @@ function push() {
 function grep() {
   let pattern = process.argv[3] || help(1), files = []
   mods.forEach(repo => {
-    files = files.concat(glob.sync(repo + "/src/*.js")).concat(glob.sync(repo + "test/*.js"))
+    files = files.concat(glob.sync(repo + "/src/*.js")).concat(glob.sync(repo + "/test/*.js"))
   })
   try {
     console.log(run("grep", ["--color", "-nH", "-e", pattern].concat(files.map(f => path.relative(origDir, f))), origDir))
