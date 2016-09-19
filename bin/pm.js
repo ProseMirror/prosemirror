@@ -84,19 +84,22 @@ function commit() {
 }
 
 function clone() {
-  let origin = "https://github.com/prosemirror/prosemirror-___.git"
+  let base = "https://github.com/prosemirror"
+  let all = mods.concat("website")
+
   for (let i = 3; i < process.argv.length; i++) {
     let arg = process.argv[i]
-    if (arg == "--ssh") { origin = "git@github.com:ProseMirror/prosemirror-___.git" }
+    if (arg == "--ssh") { base = "git@github.com:ProseMirror" }
     else help(1)
   }
 
-  mods.forEach(repo => {
+  all.forEach(repo => {
     run("rm", ["-rf", repo])
-    run("git", ["clone", origin.replace("___", repo), repo])
+    let origin = base + (repo == "website" ? "" : "prosemirror-") + repo + ".git"
+    run("git", ["clone", origin, repo])
   })
 
-  mods.forEach(repo => {
+  all.forEach(repo => {
     run("mkdir", ["node_modules"], repo)
     let pkg = JSON.parse(fs.readFileSync(repo + "/package.json"), "utf8"), link = Object.create(null)
     function add(name) {
@@ -109,7 +112,7 @@ function clone() {
       run("ln", ["-s", "../../" + dep, "node_modules/prosemirror-" + dep], repo)
   })
 
-  mods.forEach(repo => {
+  all.forEach(repo => {
     run("npm", ["install"], repo)
   })
 }
@@ -137,6 +140,7 @@ function grep() {
   mods.forEach(repo => {
     files = files.concat(glob.sync(repo + "/src/*.js")).concat(glob.sync(repo + "/test/*.js"))
   })
+  files = files.concat(glob.sync("website/src/**/*.js"))
   try {
     console.log(run("grep", ["--color", "-nH", "-e", pattern].concat(files.map(f => path.relative(origDir, f))), origDir))
   } catch(e) {
@@ -148,6 +152,12 @@ function runCmd() {
   let cmd = process.argv.slice(3)
   if (!cmd.length) help(1)
   mods.forEach(repo => {
-    console.log(repo + ":\n" + run(cmd[0], cmd.slice(1), repo))
+    console.log(repo + ":")
+    try {
+      console.log(run(cmd[0], cmd.slice(1), repo))
+    } catch (e) {
+      console.log(e.toString())
+      process.exit(1)
+    }
   })
 }
