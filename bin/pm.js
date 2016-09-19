@@ -47,8 +47,8 @@ function help(status) {
   process.exit(status)
 }
 
-function run(cmd, args, repo) {
-  return child.execFileSync(cmd, args, {cwd: repo, encoding: "utf8"})
+function run(cmd, args, wd) {
+  return child.execFileSync(cmd, args, {cwd: wd, encoding: "utf8"})
 }
 
 function status() {
