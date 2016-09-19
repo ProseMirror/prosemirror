@@ -20,6 +20,7 @@ let mods = ["model", "transform", "state", "view",
             "keymap", "inputrules", "history", "collab", "commands",
             "schema-basic", "schema-list", "schema-table",
             "menu", "example-setup"]
+let modsAndWebsite = mods.concat("website")
 
 let command = process.argv[2]
 
@@ -52,7 +53,7 @@ function run(cmd, args, wd) {
 }
 
 function status() {
-  mods.forEach(repo => {
+  modsAndWebsite.forEach(repo => {
     let output = run("git", ["status", "-sb"], repo)
     if (output != "## master...origin/master\n")
       console.log(repo + ":\n" + run("git", ["status"], repo))
@@ -77,7 +78,7 @@ function lint() {
 }
 
 function commit() {
-  mods.forEach(repo => {
+  modsAndWebsite.forEach(repo => {
     if (run("git", ["diff"], repo) || run("git", ["diff", "--cached"], repo))
       console.log(repo + ":\n" + run("git", ["commit"].concat(process.argv.slice(3)), repo))
   })
@@ -85,7 +86,6 @@ function commit() {
 
 function clone() {
   let base = "https://github.com/prosemirror"
-  let all = mods.concat("website")
 
   for (let i = 3; i < process.argv.length; i++) {
     let arg = process.argv[i]
@@ -93,13 +93,13 @@ function clone() {
     else help(1)
   }
 
-  all.forEach(repo => {
+  modsAndWebsite.forEach(repo => {
     run("rm", ["-rf", repo])
     let origin = base + (repo == "website" ? "" : "prosemirror-") + repo + ".git"
     run("git", ["clone", origin, repo])
   })
 
-  all.forEach(repo => {
+  modsAndWebsite.forEach(repo => {
     run("mkdir", ["node_modules"], repo)
     let pkg = JSON.parse(fs.readFileSync(repo + "/package.json"), "utf8"), link = Object.create(null)
     function add(name) {
@@ -112,7 +112,7 @@ function clone() {
       run("ln", ["-s", "../../" + dep, "node_modules/prosemirror-" + dep], repo)
   })
 
-  all.forEach(repo => {
+  modsAndWebsite.forEach(repo => {
     run("npm", ["install"], repo)
   })
 }
@@ -129,7 +129,7 @@ function test() {
 }
 
 function push() {
-  mods.forEach(repo => {
+  modsAndWebsite.forEach(repo => {
     if (/\bahead\b/.test(run("git", ["status", "-sb"], repo)))
       run("git", ["push"], repo)
   })
@@ -151,7 +151,7 @@ function grep() {
 function runCmd() {
   let cmd = process.argv.slice(3)
   if (!cmd.length) help(1)
-  mods.forEach(repo => {
+  modsAndWebsite.forEach(repo => {
     console.log(repo + ":")
     try {
       console.log(run(cmd[0], cmd.slice(1), repo))
