@@ -1,4 +1,4 @@
-const {Schema} = require("./parent/model")
+const {Schema, DOMParser} = require("./parent/model")
 const {EditorState} = require("./parent/state")
 const {schema} = require("./parent/schema-basic")
 const {addListNodes} = require("./parent/schema-list")
@@ -11,7 +11,7 @@ const demoSchema = new Schema({
   marks: schema.markSpec
 })
 
-let state = EditorState.create({doc: demoSchema.parseDOM(document.querySelector("#content")),
+let state = EditorState.create({doc: DOMParser.fromSchema(demoSchema).parse(document.querySelector("#content")),
                                 plugins: [exampleSetup({schema: demoSchema})]})
 
 let view = window.view = new MenuBarEditorView(document.querySelector(".full"), {
