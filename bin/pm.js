@@ -19,7 +19,7 @@ let glob = require("glob")
 let mods = ["model", "transform", "state", "view",
             "keymap", "inputrules", "history", "collab", "commands",
             "schema-basic", "schema-list", "schema-table",
-            "menu", "example-setup"]
+            "menu", "example-setup", "markdown"]
 let modsAndWebsite = mods.concat("website")
 
 let command = process.argv[2]
