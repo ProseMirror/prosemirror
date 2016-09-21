@@ -50,3 +50,13 @@ working with the repositories:
    modules for the given pattern
 
 (Functionality for managing releases will be added in the future.)
+
+## Running the demo
+
+To run the demo in `demo/`, do `npm run demo`, and go to
+[localhost:8080](http://localhost:8080/). This loads the individual
+JavaScript files from the distribution's `dist` directories, and will
+only need a refresh when those are changed. To directly test the
+actual code, in a browser that understands ES6, you can create a
+symlink from `dist` to `src` in each of the modules (`npm run
+link-src`).
