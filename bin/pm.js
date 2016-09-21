@@ -99,7 +99,7 @@ function clone() {
     run("git", ["clone", origin, repo])
   })
 
-  modsAndWebsite.forEach(repo => {
+  modsAndWebsite.concat("prebuilt").forEach(repo => {
     run("mkdir", ["node_modules"], repo)
     let pkg = JSON.parse(fs.readFileSync(repo + "/package.json"), "utf8"), link = Object.create(null)
     function add(name) {
@@ -151,7 +151,7 @@ function grep() {
 function runCmd() {
   let cmd = process.argv.slice(3)
   if (!cmd.length) help(1)
-  modsAndWebsite.forEach(repo => {
+  mods.forEach(repo => {
     console.log(repo + ":")
     try {
       console.log(run(cmd[0], cmd.slice(1), repo))

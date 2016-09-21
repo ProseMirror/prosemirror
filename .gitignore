@@ -17,3 +17,5 @@
 /website
 /example-setup
 /notes.txt
+/prebuilt/index.js
+/prebuilt/node_modules
