@@ -1,3 +1,214 @@
+## [prosemirror-model](http://prosemirror.net/version/2016.09.21.html#model) 0.11.0 (2016-09-21)
+
+### Breaking changes
+
+Moved into a separate module.
+
+The JSON representation of [marks](http://prosemirror.net/version/2016.09.21.html#model.Mark) has changed from
+`{"_": "type", "attr1": "value"}` to `{"type": "type", "attrs":
+{"attr1": "value"}}`, where `attrs` may be omitted when the mark has
+no attributes.
+
+Mark-related JSON methods now live on the
+[`Mark` class](http://prosemirror.net/version/2016.09.21.html#model.Mark^fromJSON).
+
+The way node and mark types in a schema are defined was changed from
+defining subclasses to passing plain objects
+([`NodeSpec`](http://prosemirror.net/version/2016.09.21.html#model.NodeSpec) and [`MarkSpec`](http://prosemirror.net/version/2016.09.21.html#model.MarkSpec)).
+
+DOM serialization and parsing logic is now done through dedicated
+objects ([`DOMSerializer`](http://prosemirror.net/version/2016.09.21.html#model.DOMSerializer) and
+[`DOMParser`](http://prosemirror.net/version/2016.09.21.html#model.DOMParser)), rather than through the schema. It
+is now possible to define alternative parsing and serializing
+strategies without touching the schema.
+
+### New features
+
+The [`Slice`](http://prosemirror.net/version/2016.09.21.html#model.Slice) class now has an [`eq` method](http://prosemirror.net/version/2016.09.21.html#model.Slice.eq).
+
+The [`Node.marksAt`](http://prosemirror.net/version/2016.09.21.html#model.Node.marksAt) method got a second
+parameter to indicate you're interested in the marks _after_ the
+position.
+
+## [prosemirror-transform](http://prosemirror.net/version/2016.09.21.html#transform) 0.11.0 (2016-09-21)
+
+### Breaking changes
+
+Moved into a separate module.
+
+The `Remapping` class was renamed to `Mapping` and works differently
+(simpler, grows in only one direction, and has provision for mapping
+through only a part of it).
+
+[`Transform`](http://prosemirror.net/version/2016.09.21.html#transform.Transform) objects now build up a `Mapping`
+instead of an array of maps.
+
+`PosMap` was renamed to [`StepMap`](http://prosemirror.net/version/2016.09.21.html#transform.StepMap) to make it
+clearer that this applies only to a single step (as opposed to
+[`Mapping`](http://prosemirror.net/version/2016.09.21.html#transform.Mapping).
+
+The arguments to [`canSplit`](http://prosemirror.net/version/2016.09.21.html#transform.canSplit) and
+[`split`](http://prosemirror.net/version/2016.09.21.html#transform.Transform.split) were changed to make it
+possible to specify multiple split-off node types for splits with a
+depth greater than 1.
+
+Rename `joinable` to [`canJoin`](http://prosemirror.net/version/2016.09.21.html#transform.canJoin).
+
+### New features
+
+Steps can now be [merged](http://prosemirror.net/version/2016.09.21.html#transform.Step.merge) in some
+circumstances, which can be useful when storing a lot of them.
+
+## [prosemirror-state](http://prosemirror.net/version/2016.09.21.html#state) 0.11.0 (2016-09-21)
+
+### Breaking changes
+
+New module inheriting the [`Selection`](http://prosemirror.net/version/2016.09.21.html#state.Selection) and
+[`EditorTransform`](http://prosemirror.net/version/2016.09.21.html#state.EditorTransform) abstraction, along with
+the persistent [state](http://prosemirror.net/version/2016.09.21.html#state.EditorState) value that is now separate
+from the display logic, and the [plugin](http://prosemirror.net/version/2016.09.21.html#state.Plugin) system.
+
+`Selection.findAtStart`/`End` was renamed to
+[`Selection.atStart`](http://prosemirror.net/version/2016.09.21.html#state.Selection^atStart)/[`End`](http://prosemirror.net/version/2016.09.21.html#state.Selection^atEnd),
+and `Selection.findNear` to
+[`Selection.near`](http://prosemirror.net/version/2016.09.21.html#state.Selection^near).
+
+## [prosemirror-view](http://prosemirror.net/version/2016.09.21.html#view) 0.11.0 (2016-09-21)
+
+### Breaking changes
+
+Moved into a separate module from the old `edit` submodule. Completely
+new approach to managing the editor's DOM representation and input.
+
+Event handlers and options are now replaced by
+[props](http://prosemirror.net/version/2016.09.21.html#view.EditorProps). The view's state is now 'shallow',
+represented entirely by a set of props, one of which holds an editor
+state value from the [state](http://prosemirror.net/version/2016.09.21.html#state) module.
+
+When the user interacts with the editor, it will pass an
+[action](http://prosemirror.net/version/2016.09.21.html#state.Action) to its
+[`onAction`](http://prosemirror.net/version/2016.09.21.html#view.EditorProps.onAction) prop, which is responsible
+for triggering an view update.
+
+The `markRange` system was dropped, to be replaced in the next release
+by a 'decoration' system.
+
+There is no keymap support in the view module anymore. Use a
+[keymap](http://prosemirror.net/version/2016.09.21.html#keymap) plugin for that.
+
+The undo [history](http://prosemirror.net/version/2016.09.21.html#history) is now a separate plugin.
+
+CSS needed by the editor is no longer injected implicitly into the
+page. Instead, you should arrange for the `style/prosemirror.css` file
+to be loaded into your page.
+
+### New features
+
+The DOM [parser](http://prosemirror.net/version/2016.09.21.html#model.DOMParser) and
+[serializer](http://prosemirror.net/version/2016.09.21.html#model.DOMSerializer) used to interact with the visible
+DOM and the clipboard can now be customized through
+[props](http://prosemirror.net/version/2016.09.21.html#view.EditorProps).
+
+You can now provide a catch-all DOM
+[event handler](http://prosemirror.net/version/2016.09.21.html#view.EditorProps.handleDOMEvent) to get a first
+chance at handling DOM events.
+
+The [`onUnmountDOM`](http://prosemirror.net/version/2016.09.21.html#view.EditorProps.onUnmountDOM) can be used to
+be notified when a piece of the document DOM is thrown away (in case
+cleanup is needed).
+
+## [prosemirror-keymap](http://prosemirror.net/version/2016.09.21.html#keymap) 0.11.0 (2016-09-21)
+
+### Breaking changes
+
+New module, takes the same role as the old built-in keymap support in
+the `ProseMirror` class.
+
+## [prosemirror-inputrules](http://prosemirror.net/version/2016.09.21.html#inputrules) 0.11.0 (2016-09-21)
+
+### Breaking changes
+
+Moved into a separate module.
+
+You can now add this plugin multiple times to add different sets of
+rules to an editor (if you want). It is not possible to change the set
+of rules of an existing plugin instance.
+
+[Rules](http://prosemirror.net/version/2016.09.21.html#inputrules.InputRule) no longer take a `filter` argument.
+
+The signature of the `handler` callback for a
+[rule](http://prosemirror.net/version/2016.09.21.html#inputrules.InputRule) changed.
+
+## [prosemirror-history](http://prosemirror.net/version/2016.09.21.html#history) 0.11.0 (2016-09-21)
+
+### Breaking changes
+
+Moved into a separate module. Now acts as a plugin that can be omitted
+or replaced by a different implementation if desired.
+
+Merging subsequent changes into a single undo 'event' is now done by
+proximity in the document (the changes must touch) rather than in
+time. This will probably have to be further refined.
+
+## [prosemirror-collab](http://prosemirror.net/version/2016.09.21.html#collab) 0.11.0 (2016-09-21)
+
+### Breaking changes
+
+Moved into a separate module.
+
+Interface [adjusted](http://prosemirror.net/version/2016.09.21.html#collab) to work with the new
+[plugin](http://prosemirror.net/version/2016.09.21.html#state.Plugin) system.
+
+### New features
+
+When receiving changes, the module now
+[generates](http://prosemirror.net/version/2016.09.21.html#collab.receiveAction) a regular
+[transform action](http://prosemirror.net/version/2016.09.21.html#state.TransformAction) instead of hard-setting
+the editor's document. This solves problematic corner cases for code
+keeping track of the document by listening to transform actions.
+
+## [prosemirror-commands](http://prosemirror.net/version/2016.09.21.html#commands) 0.11.0 (2016-09-21)
+
+### Breaking changes
+
+Moved into a separate module.
+
+The interface for command functions was changed to work with the new
+[state](http://prosemirror.net/version/2016.09.21.html#state.EditorState)/[action](http://prosemirror.net/version/2016.09.21.html#state.Action) abstractions.
+
+## [prosemirror-schema-basic](http://prosemirror.net/version/2016.09.21.html#schema-basic) 0.11.0 (2016-09-21)
+
+### Breaking changes
+
+Moved into a separate module.
+
+No longer exports the [specs](http://prosemirror.net/version/2016.09.21.html#model.NodeSpec) for the nodes and
+marks separately, since they are now plain objects, not subclasses.
+They are still exported through [nodes](http://prosemirror.net/version/2016.09.21.html#schema-basic.nodes) and
+[marks](http://prosemirror.net/version/2016.09.21.html#schema-basic.marks) objects.
+
+The list-related nodes were moved to the [schema-list](http://prosemirror.net/version/2016.09.21.html#schema-list)
+module.
+
+## [prosemirror-schema-list](http://prosemirror.net/version/2016.09.21.html#schema-list) 0.11.0 (2016-09-21)
+
+### Breaking changes
+
+New module combining the node [specs](http://prosemirror.net/version/2016.09.21.html#model.NodeSpec) from
+[schema-basic](http://prosemirror.net/version/2016.09.21.html#schema-basic), and the list-related
+[commands](http://prosemirror.net/version/2016.09.21.html#commands) from the commands module.
+
+## [prosemirror-schema-table](http://prosemirror.net/version/2016.09.21.html#schema-table) 0.11.0 (2016-09-21)
+
+### Breaking changes
+
+Moved into a separate module.
+
+Node types adjusted to the new [node spec](http://prosemirror.net/version/2016.09.21.html#model.NodeSpec)
+interface.
+
+Commands adjusted to the new [command](http://prosemirror.net/version/2016.09.21.html#commands) interface.
+
 ## 0.10.1 (2016-09-12)
 
 ### Bug fixes
