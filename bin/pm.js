@@ -85,11 +85,11 @@ function commit() {
 }
 
 function clone() {
-  let base = "https://github.com/prosemirror"
+  let base = "https://github.com/prosemirror/"
 
   for (let i = 3; i < process.argv.length; i++) {
     let arg = process.argv[i]
-    if (arg == "--ssh") { base = "git@github.com:ProseMirror" }
+    if (arg == "--ssh") { base = "git@github.com:ProseMirror/" }
     else help(1)
   }
 
