@@ -1,3 +1,11 @@
+## [prosemirror-view](http://prosemirror.net/version/2016.09.21.html#view) 0.11.2 (2016-10-04)
+
+### Bug fixes
+
+Pass actual event object to [`handleDOMEvent`](http://prosemirror.net/version/2016.09.21.html#view.EditorProps.handleDOMEvent), rather than just its name.
+
+Fix display corruption caused by using the wrong state as previous version during IME.
+
 ## [prosemirror-model](http://prosemirror.net/version/2016.09.21.html#model) 0.11.0 (2016-09-21)
 
 ### Breaking changes
