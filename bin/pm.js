@@ -32,6 +32,7 @@ else if (command == "test") test()
 else if (command == "push") push()
 else if (command == "grep") grep()
 else if (command == "run") runCmd()
+else if (command == "changes") changes()
 else if (command == "--help") help(0)
 else help(1)
 
@@ -159,5 +160,14 @@ function runCmd() {
       console.log(e.toString())
       process.exit(1)
     }
+  })
+}
+
+function changes() {
+  mods.forEach(repo => {
+    let lastTag = run("git", ["describe", "master", "--tags", "--abbrev=0"], repo).trim()
+    if (!lastTag) return console.log("No previous tag for " + repo + "\n")
+    let history = run("git", ["log", lastTag + "..master"], repo).trim()
+    if (history) console.log(repo + ":\n" + "=".repeat(repo.length + 1) + "\n\n" + history + "\n")
   })
 }
