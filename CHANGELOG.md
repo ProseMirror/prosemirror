@@ -118,7 +118,7 @@ expressions.
 
 ### Bug fixes
 
-Don't treat <b style=font-weight: normal> as strong when parsing.
+Don't treat \<b style=font-weight: normal> as strong when parsing.
 (Google Docs puts such ridiculous HTML on the clipboard.)
 
 ## [prosemirror-view](http://prosemirror.net/version/2016.09.21.html#view) 0.11.2 (2016-10-04)
