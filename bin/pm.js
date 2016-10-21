@@ -16,10 +16,10 @@ process.chdir(__dirname + "/..")
 let child = require("child_process"), fs = require("fs"), path = require("path")
 let glob = require("glob")
 
-let mods = ["model", "transform", "state", "view",
+let main = ["model", "transform", "state", "view",
             "keymap", "inputrules", "history", "collab", "commands",
-            "schema-basic", "schema-list", "schema-table",
-            "menu", "example-setup", "markdown"]
+            "schema-basic", "schema-list", "schema-table"]
+let mods = main.concat(["menu", "example-setup", "markdown"])
 let modsAndWebsite = mods.concat("website")
 
 let command = process.argv[2]
@@ -33,18 +33,20 @@ else if (command == "push") push()
 else if (command == "grep") grep()
 else if (command == "run") runCmd()
 else if (command == "changes") changes()
+else if (command == "changelog") buildChangelog(process.argv[3])
 else if (command == "--help") help(0)
 else help(1)
 
 function help(status) {
   console.log(`Usage:
-  pm clone [--ssh]
-  pm status
-  pm commit -m <message>
-  pm test
-  pm push
-  pm grep <pattern>
-  pm run <command>
+  pm clone [--ssh]        Clone and symlink the packages
+  pm status               Print out the git status of packages
+  pm commit <args>        Run git commit in all packages that have changes
+  pm push                 Run git push in packages that have new commits
+  pm test                 Run the tests from all packages
+  pm grep <pattern>       Grep through the source code for all packages
+  pm run <command>        Run the given command in each of the package dirs
+  pm changes              Show commits since the last release for all packages
   pm --help`)
   process.exit(status)
 }
@@ -169,5 +171,34 @@ function changes() {
     if (!lastTag) return console.log("No previous tag for " + repo + "\n")
     let history = run("git", ["log", lastTag + "..master"], repo).trim()
     if (history) console.log(repo + ":\n" + "=".repeat(repo.length + 1) + "\n\n" + history + "\n")
+  })
+}
+
+function changelog(repo, since) {
+  let tag = since || run("git", ["describe", "master", "--tags", "--abbrev=0"], repo).trim()
+  let commits = run("git", ["log", "--format=%B", "--reverse", tag + "..master"], repo)
+  let result = {fix: [], feature: [], breaking: [], tag}
+  let re = /\n\n(BREAKING|FIX|FEATURE):\s*([^]*?)(?=\n\n|\n?$)/g, match
+  while (match = re.exec(commits)) result[match[1].toLowerCase()].push(match[2])
+  return result
+}
+
+function buildChangelog(version) {
+  function pad(n) { return n < 10 ? "0" + n : n }
+  let d = new Date, date = d.getFullYear() + "-" + pad(d.getMonth()) + "-" + pad(d.getDate())
+
+  let file = "http://prosemirror.net/version/" + date.replace(/-/g, ".") + ".html"
+  let types = {breaking: "Breaking changes", fix: "Bug fixes", feature: "New features"}
+
+  main.forEach(repo => {
+    let log = changelog(repo)
+    if (log.fix.length || log.feature.length || log.breaking.length) {
+      console.log(`## [prosemirror-${repo}](${file}#${repo}) ${version} (${date})` + "\n")
+      for (let type in types) {
+        let messages = log[type]
+        if (messages.length) console.log("### " + types[type] + "\n")
+        messages.forEach(message => console.log(message.replace(/\]\(##/, "](" + file + "#") + "\n"))
+      }
+    }
   })
 }
