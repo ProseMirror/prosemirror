@@ -22,20 +22,23 @@ let main = ["model", "transform", "state", "view",
 let mods = main.concat(["menu", "example-setup", "markdown"])
 let modsAndWebsite = mods.concat("website")
 
-let command = process.argv[2]
+function start() {
+  let command = process.argv[2]
 
-if (command == "status") status()
-else if (command == "lint") lint()
-else if (command == "commit") commit()
-else if (command == "clone") clone()
-else if (command == "test") test()
-else if (command == "push") push()
-else if (command == "grep") grep()
-else if (command == "run") runCmd()
-else if (command == "changes") changes()
-else if (command == "changelog") buildChangelog(process.argv[3])
-else if (command == "--help") help(0)
-else help(1)
+  if (command == "status") status()
+  else if (command == "lint") lint()
+  else if (command == "commit") commit()
+  else if (command == "clone") clone()
+  else if (command == "test") test()
+  else if (command == "push") push()
+  else if (command == "grep") grep()
+  else if (command == "run") runCmd()
+  else if (command == "changes") changes()
+  else if (command == "changelog") buildChangelog(process.argv[3])
+  else if (command == "set-version") setVersions(process.argv[3])
+  else if (command == "--help") help(0)
+  else help(1)
+}
 
 function help(status) {
   console.log(`Usage:
@@ -202,3 +205,28 @@ function buildChangelog(version) {
     }
   })
 }
+
+let semver = /^(\^|~)?(\d+)\.(\d+)\.(\d+)$/
+
+function updateVersion(repo, versions) {
+  let file = repo + "/package.json"
+  let result = fs.readFileSync(file, "utf8")
+    .replace(/"version":\s*".*?"/, `"version": "${versions[repo]}"`)
+    .replace(/"prosemirror-(.*?)":\s*"(.*)?"/g, (match, mod, version) => {
+      let newVer = semver.exec(versions[mod])
+      let oldVer = semver.exec(version)
+      // If only patch version, or nothing at all, changed, leave alone
+      if (oldVer[2] == newVer[2] && oldVer[3] == newVer[3]) return match
+      return `"prosemirror-${mod}": "${oldVer[1]}${versions[mod]}"`
+    })
+  fs.writeFileSync(file, result)
+}
+
+function setVersions(version) {
+  let versions = {}
+  mods.forEach(repo => versions[repo] = version)
+  versions["website"] = "0.0.1"
+  modsAndWebsite.forEach(repo => updateVersion(repo, versions))
+}
+
+start()
