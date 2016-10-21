@@ -12,7 +12,7 @@ const demoSchema = new Schema({
 })
 
 let state = EditorState.create({doc: DOMParser.fromSchema(demoSchema).parse(document.querySelector("#content")),
-                                plugins: [exampleSetup({schema: demoSchema})]})
+                                plugins: exampleSetup({schema: demoSchema})})
 
 let view = window.view = new MenuBarEditorView(document.querySelector(".full"), {
   state,
