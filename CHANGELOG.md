@@ -1,4 +1,4 @@
-## [prosemirror-model](http://prosemirror.net/version/2016.09.21.html#model) 0.12.0 (2016-09-21)
+## [prosemirror-model](http://prosemirror.net/version/2016.10.21.html#model) 0.12.0 (2016-10-21)
 
 ### Breaking changes
 
@@ -10,7 +10,7 @@ serializer that were used by the view.
 When rendering DOM attributes, only ignore null values, not all
 falsy values.
 
-## [prosemirror-transform](http://prosemirror.net/version/2016.09.21.html#transform) 0.12.0 (2016-09-21)
+## [prosemirror-transform](http://prosemirror.net/version/2016.10.21.html#transform) 0.12.0 (2016-10-21)
 
 ### Breaking changes
 
@@ -19,16 +19,16 @@ side specified by the `assoc` parameter is deleted, rather than when
 both tokens around them are deleted. (This is usually what you already
 wanted anyway.)
 
-## [prosemirror-state](http://prosemirror.net/version/2016.09.21.html#state) 0.12.0 (2016-09-21)
+## [prosemirror-state](http://prosemirror.net/version/2016.10.21.html#state) 0.12.0 (2016-10-21)
 
 ### Breaking changes
 
 The interace to
-[`EditorState.toJSON`](http://prosemirror.net/version/2016.09.21.html#state.EditorState.toJSON) and
+[`EditorState.toJSON`](http://prosemirror.net/version/2016.10.21.html#state.EditorState.toJSON) and
 [`EditorState.fromJSON`](##state.EditorState.fromJSON) has changed.
 
 The way plugins declare their [state
-field](http://prosemirror.net/version/2016.09.21.html#state.Plugin.constructor.options.state) has changed. Only one
+field](http://prosemirror.net/version/2016.10.21.html#state.Plugin.constructor.options.state) has changed. Only one
 state field per plugin is supported, and state fields no longer have
 hard-coded names. [`Plugin.getState`](##state.Plugin.getState) is the
 way to access plugin state now.
@@ -36,7 +36,7 @@ way to access plugin state now.
 Plugin dependencies are no longer supported.
 
 `Plugin.reconfigure` is gone. Plugins are now always created
-with [`new Plugin`](http://prosemirror.net/version/2016.09.21.html#state.Plugin.constructor).
+with [`new Plugin`](http://prosemirror.net/version/2016.10.21.html#state.Plugin.constructor).
 
 Plugins no longer have a `config` field.
 
@@ -47,18 +47,18 @@ change that replaces their nodes.
 
 ### New features
 
-[Plugin keys](http://prosemirror.net/version/2016.09.21.html#state.PluginKey) can now be used to find
+[Plugin keys](http://prosemirror.net/version/2016.10.21.html#state.PluginKey) can now be used to find
 plugins by identity.
 
-[Transform actions](http://prosemirror.net/version/2016.09.21.html#state.TransformAction) now have a
+[Transform actions](http://prosemirror.net/version/2016.10.21.html#state.TransformAction) now have a
 `time` field containing the timestamp when the change was made.
 
-## [prosemirror-view](http://prosemirror.net/version/2016.09.21.html#view) 0.12.0 (2016-09-21)
+## [prosemirror-view](http://prosemirror.net/version/2016.10.21.html#view) 0.12.0 (2016-10-21)
 
 ### Breaking changes
 
 The return value of
-[`EditorView.posAtCoords`](http://prosemirror.net/version/2016.09.21.html#view.EditorView.posAtCoords) changed to
+[`EditorView.posAtCoords`](http://prosemirror.net/version/2016.10.21.html#view.EditorView.posAtCoords) changed to
 contain an `inside` property pointing at the innermost node that the
 coordinates are inside of. (Note that the docs for this method were
 wrong in the previous release.)
@@ -75,11 +75,11 @@ Don't treat fast ctrl-clicks as double or triple clicks.
 
 ### New features
 
-Implement [decorations](http://prosemirror.net/version/2016.09.21.html#view.Decoration), a way to
+Implement [decorations](http://prosemirror.net/version/2016.10.21.html#view.Decoration), a way to
 influence the way the document is drawn. Add the [`decorations`
 prop](##view.EditorProps.decorations) to specify them.
 
-## [prosemirror-keymap](http://prosemirror.net/version/2016.09.21.html#keymap) 0.12.0 (2016-09-21)
+## [prosemirror-keymap](http://prosemirror.net/version/2016.10.21.html#keymap) 0.12.0 (2016-10-21)
 
 ### Breaking changes
 
@@ -92,29 +92,29 @@ character typed, not the key name. So `Ctrl-Z` now means uppercase Z,
 and you'll usually want `Ctrl-z` instead. Single-quoted key names are
 no longer supported.
 
-## [prosemirror-history](http://prosemirror.net/version/2016.09.21.html#history) 0.12.0 (2016-09-21)
+## [prosemirror-history](http://prosemirror.net/version/2016.10.21.html#history) 0.12.0 (2016-10-21)
 
 ### Breaking changes
 
-The [`history`](http://prosemirror.net/version/2016.09.21.html#history.history) export is now a function
+The [`history`](http://prosemirror.net/version/2016.10.21.html#history.history) export is now a function
 that creates a history plugin, rather than a plugin instance.
 
 ### New features
 
 Add a
-[`newGroupDelay`](http://prosemirror.net/version/2016.09.21.html#history.history^config.newGroupDelay) plugin
+[`newGroupDelay`](http://prosemirror.net/version/2016.10.21.html#history.history^config.newGroupDelay) plugin
 option. This brings back the behavior where pausing between edits will
 automatically cause the history to put subsequent changes in a new
 undo event.
 
-## [prosemirror-commands](http://prosemirror.net/version/2016.09.21.html#commands) 0.12.0 (2016-09-21)
+## [prosemirror-commands](http://prosemirror.net/version/2016.10.21.html#commands) 0.12.0 (2016-10-21)
 
 ### Bug fixes
 
 Fix crash when backspacing into nodes with complex content
 expressions.
 
-## [prosemirror-schema-basic](http://prosemirror.net/version/2016.09.21.html#schema-basic) 0.12.0 (2016-09-21)
+## [prosemirror-schema-basic](http://prosemirror.net/version/2016.10.21.html#schema-basic) 0.12.0 (2016-10-21)
 
 ### Bug fixes
 

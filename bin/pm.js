@@ -188,7 +188,7 @@ function changelog(repo, since) {
 
 function buildChangelog(version) {
   function pad(n) { return n < 10 ? "0" + n : n }
-  let d = new Date, date = d.getFullYear() + "-" + pad(d.getMonth()) + "-" + pad(d.getDate())
+  let d = new Date, date = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
 
   let file = "http://prosemirror.net/version/" + date.replace(/-/g, ".") + ".html"
   let types = {breaking: "Breaking changes", fix: "Bug fixes", feature: "New features"}
