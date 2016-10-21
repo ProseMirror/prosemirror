@@ -1,3 +1,126 @@
+## [prosemirror-model](http://prosemirror.net/version/2016.09.21.html#model) 0.12.0 (2016-09-21)
+
+### Breaking changes
+
+Drops support for some undocumented options to the DOM
+serializer that were used by the view.
+
+### Bug fixes
+
+When rendering DOM attributes, only ignore null values, not all
+falsy values.
+
+## [prosemirror-transform](http://prosemirror.net/version/2016.09.21.html#transform) 0.12.0 (2016-09-21)
+
+### Breaking changes
+
+Mapped positions now count as deleted when the token to the
+side specified by the `assoc` parameter is deleted, rather than when
+both tokens around them are deleted. (This is usually what you already
+wanted anyway.)
+
+## [prosemirror-state](http://prosemirror.net/version/2016.09.21.html#state) 0.12.0 (2016-09-21)
+
+### Breaking changes
+
+The interace to
+[`EditorState.toJSON`](http://prosemirror.net/version/2016.09.21.html#state.EditorState.toJSON) and
+[`EditorState.fromJSON`](##state.EditorState.fromJSON) has changed.
+
+The way plugins declare their [state
+field](http://prosemirror.net/version/2016.09.21.html#state.Plugin.constructor.options.state) has changed. Only one
+state field per plugin is supported, and state fields no longer have
+hard-coded names. [`Plugin.getState`](##state.Plugin.getState) is the
+way to access plugin state now.
+
+Plugin dependencies are no longer supported.
+
+`Plugin.reconfigure` is gone. Plugins are now always created
+with [`new Plugin`](http://prosemirror.net/version/2016.09.21.html#state.Plugin.constructor).
+
+Plugins no longer have a `config` field.
+
+### Bug fixes
+
+Node selections are now properly dropped when mapped over a
+change that replaces their nodes.
+
+### New features
+
+[Plugin keys](http://prosemirror.net/version/2016.09.21.html#state.PluginKey) can now be used to find
+plugins by identity.
+
+[Transform actions](http://prosemirror.net/version/2016.09.21.html#state.TransformAction) now have a
+`time` field containing the timestamp when the change was made.
+
+## [prosemirror-view](http://prosemirror.net/version/2016.09.21.html#view) 0.12.0 (2016-09-21)
+
+### Breaking changes
+
+The return value of
+[`EditorView.posAtCoords`](http://prosemirror.net/version/2016.09.21.html#view.EditorView.posAtCoords) changed to
+contain an `inside` property pointing at the innermost node that the
+coordinates are inside of. (Note that the docs for this method were
+wrong in the previous release.)
+
+### Bug fixes
+
+Reduce reliance on shift-state tracking to minimize damage when
+it gets out of sync.
+
+Fix bug that'd produce bogus document positions for DOM positions
+inside non-document nodes.
+
+Don't treat fast ctrl-clicks as double or triple clicks.
+
+### New features
+
+Implement [decorations](http://prosemirror.net/version/2016.09.21.html#view.Decoration), a way to
+influence the way the document is drawn. Add the [`decorations`
+prop](##view.EditorProps.decorations) to specify them.
+
+## [prosemirror-keymap](http://prosemirror.net/version/2016.09.21.html#keymap) 0.12.0 (2016-09-21)
+
+### Breaking changes
+
+Key names are now based on
+[`KeyboardEvent.key`](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/key)
+instead of
+[`.code`](https://developer.mozilla.org/en-US/docs/Web/API/KeyboardEvent/code).
+This means that, for character-producing keys, you'll want to use the
+character typed, not the key name. So `Ctrl-Z` now means uppercase Z,
+and you'll usually want `Ctrl-z` instead. Single-quoted key names are
+no longer supported.
+
+## [prosemirror-history](http://prosemirror.net/version/2016.09.21.html#history) 0.12.0 (2016-09-21)
+
+### Breaking changes
+
+The [`history`](http://prosemirror.net/version/2016.09.21.html#history.history) export is now a function
+that creates a history plugin, rather than a plugin instance.
+
+### New features
+
+Add a
+[`newGroupDelay`](http://prosemirror.net/version/2016.09.21.html#history.history^config.newGroupDelay) plugin
+option. This brings back the behavior where pausing between edits will
+automatically cause the history to put subsequent changes in a new
+undo event.
+
+## [prosemirror-commands](http://prosemirror.net/version/2016.09.21.html#commands) 0.12.0 (2016-09-21)
+
+### Bug fixes
+
+Fix crash when backspacing into nodes with complex content
+expressions.
+
+## [prosemirror-schema-basic](http://prosemirror.net/version/2016.09.21.html#schema-basic) 0.12.0 (2016-09-21)
+
+### Bug fixes
+
+Don't treat <b style=font-weight: normal> as strong when parsing.
+(Google Docs puts such ridiculous HTML on the clipboard.)
+
 ## [prosemirror-view](http://prosemirror.net/version/2016.09.21.html#view) 0.11.2 (2016-10-04)
 
 ### Bug fixes
