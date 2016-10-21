@@ -182,7 +182,7 @@ function changelog(repo, since) {
   let commits = run("git", ["log", "--format=%B", "--reverse", tag + "..master"], repo)
   let result = {fix: [], feature: [], breaking: [], tag}
   let re = /\n\n(BREAKING|FIX|FEATURE):\s*([^]*?)(?=\n\n|\n?$)/g, match
-  while (match = re.exec(commits)) result[match[1].toLowerCase()].push(match[2])
+  while (match = re.exec(commits)) result[match[1].toLowerCase()].push(match[2].replace(/\n/g, " "))
   return result
 }
 
