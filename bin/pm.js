@@ -36,6 +36,7 @@ function start() {
   else if (command == "changes") changes()
   else if (command == "changelog") buildChangelog(process.argv[3])
   else if (command == "set-version") setVersions(process.argv[3])
+  else if (command == "modules") listModules()
   else if (command == "--help") help(0)
   else help(1)
 }
@@ -227,6 +228,10 @@ function setVersions(version) {
   mods.forEach(repo => versions[repo] = version)
   versions["website"] = "0.0.1"
   modsAndWebsite.forEach(repo => updateVersion(repo, versions))
+}
+
+function listModules() {
+  console.log((process.argv.indexOf("--core") > -1 ? main : mods).join("\n"))
 }
 
 start()
