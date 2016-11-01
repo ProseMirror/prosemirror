@@ -1,3 +1,26 @@
+## [prosemirror-view](http://prosemirror.net/version/2016.10.21.html#view) 0.12.1 (2016-11-01)
+
+### Bug fixes
+
+Use a separate document to parse pasted HTML to better protect
+against cross-site scripting attacks.
+
+Specifying multiple classes in a decoration now actually works.
+
+Ignore empty inline decorations when building a decoration set.
+
+## [prosemirror-history](http://prosemirror.net/version/2016.10.21.html#history) 0.12.1 (2016-11-01)
+
+### Bug fixes
+
+Fix crash in undo or redo commands when the history is empty.
+
+## [prosemirror-transform](http://prosemirror.net/version/2016.10.21.html#transform) 0.12.1 (2016-11-01)
+
+### Bug fixes
+
+Fix bug in `Transform.setBlockType` when used in a transform that already has steps.
+
 ## [prosemirror-model](http://prosemirror.net/version/2016.10.21.html#model) 0.12.0 (2016-10-21)
 
 ### Breaking changes
