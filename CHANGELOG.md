@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/version/2016.10.21.html#view) 0.12.2 (2016-11-02)
+
+### Bug fixes
+
+Inline decorations that span across an empty textblock no longer crash the display drawing code.
+
 ## [prosemirror-view](http://prosemirror.net/version/2016.10.21.html#view) 0.12.1 (2016-11-01)
 
 ### Bug fixes
