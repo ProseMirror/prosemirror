@@ -74,7 +74,8 @@ function lint() {
       browser: ["view", "menu", "example-setup"].indexOf(repo) > -1,
       ecmaVersion: 6,
       semicolons: false,
-      namedFunctions: true
+      namedFunctions: true,
+      trailingCommas: true
     }
     blint.checkDir(repo + "/src/", options)
     if (fs.existsSync(repo + "/test")) {
