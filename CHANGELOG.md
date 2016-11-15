@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/version/2016.11.11.html#view) 0.13.1 (2016-11-15)
+
+### Bug fixes
+
+Fixes event handler crash (and subsequent bad default behavior) when pasting some types of external HTML into an editor.
+
 ## [prosemirror-model](http://prosemirror.net/version/2016.11.11.html#model) 0.13.0 (2016-11-11)
 
 ### Breaking changes
