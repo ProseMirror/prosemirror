@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/version/2016.11.11.html#view) 0.13.2 (2016-11-15)
+
+### Bug fixes
+
+Fixes an issue where widget decorations in the middle of text nodes would sometimes disappear.
+
 ## [prosemirror-view](http://prosemirror.net/version/2016.11.11.html#view) 0.13.1 (2016-11-15)
 
 ### Bug fixes
