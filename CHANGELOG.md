@@ -2,7 +2,7 @@
 
 ### New features
 
-Parse rules now support [`skip`](http://prosemirror.net/version/2016.11.28.html#model.ParseRule.skip) (skip outer element, parse content) and [`getContent`](##model.ParseRule.getContent) (compute content using custom code) properties.
+Parse rules now support [`skip`](http://prosemirror.net/version/2016.11.28.html#model.ParseRule.skip) (skip outer element, parse content) and [`getContent`](http://prosemirror.net/version/2016.11.28.html#model.ParseRule.getContent) (compute content using custom code) properties.
 
 The `DOMSerializer` class now exports a static [`renderSpec`](http://prosemirror.net/version/2016.11.28.html#model.DOMSerializer^renderSpec) method that can help render DOM spec arrays.
 
@@ -32,7 +32,7 @@ The [`handleClickOn`](http://prosemirror.net/version/2016.11.28.html#view.Editor
 
 [Widget decorations](http://prosemirror.net/version/2016.11.28.html#view.Decoration^widget) now support a `stopEvent` option that can be used to control which DOM events that pass through them should be ignored by the editor view.
 
-You can now [specify](http://prosemirror.net/version/2016.11.28.html#view.EditorProps.nodeViews) custom [node views](##view.NodeView) for an editor view, which give you control over the way node of a given type are represented in the DOM.
+You can now [specify](http://prosemirror.net/version/2016.11.28.html#view.EditorProps.nodeViews) custom [node views](http://prosemirror.net/version/2016.11.28.html#view.NodeView) for an editor view, which give you control over the way node of a given type are represented in the DOM.
 
 ## [prosemirror-view](http://prosemirror.net/version/2016.11.11.html#view) 0.13.2 (2016-11-15)
 
@@ -56,11 +56,11 @@ Fixes event handler crash (and subsequent bad default behavior) when pasting som
 
 [`DOMSerializer`](http://prosemirror.net/version/2016.11.11.html#model.DOMSerializer)'s `nodes` and `marks` properties are now public.
 
-[`ContentMatch.findWrapping`](http://prosemirror.net/version/2016.11.11.html#model.ContentMatch.findWrapping) now takes a third argument, `marks`. There's a new method [`findWrappingFor`](##model.ContentMatch.findWrappingFor) that accepts a whole node.
+[`ContentMatch.findWrapping`](http://prosemirror.net/version/2016.11.11.html#model.ContentMatch.findWrapping) now takes a third argument, `marks`. There's a new method [`findWrappingFor`](http://prosemirror.net/version/2016.11.11.html#model.ContentMatch.findWrappingFor) that accepts a whole node.
 
 Adds [`Slice.maxOpen`](http://prosemirror.net/version/2016.11.11.html#model.Slice^maxOpen) static method to create maximally open slices.
 
-DOM parser objects now have a [`parseSlice`](http://prosemirror.net/version/2016.11.11.html#model.DOMParser.parseSlice) method which parses an HTML fragment into a [`Slice`](##model.Slice), rather than trying to create a whole document from it.
+DOM parser objects now have a [`parseSlice`](http://prosemirror.net/version/2016.11.11.html#model.DOMParser.parseSlice) method which parses an HTML fragment into a [`Slice`](http://prosemirror.net/version/2016.11.11.html#model.Slice), rather than trying to create a whole document from it.
 
 ## [prosemirror-transform](http://prosemirror.net/version/2016.11.11.html#transform) 0.13.0 (2016-11-11)
 
@@ -70,13 +70,13 @@ Fix issue where [`Transform.replace`](http://prosemirror.net/version/2016.11.11.
 
 ### New features
 
-The new [`Transform`](http://prosemirror.net/version/2016.11.11.html#transform.Transform) method [`replaceRange`](##transform.Transform.replaceRange), [`replaceRangeWith`](##transform.Transform.replaceRangeWith), and [`deleteRange`](##transform.Transform.deleteRange) provide a way to replace and delete content in a 'do what I mean' way, automatically expanding the replaced region over empty parent nodes and including the parent nodes in the inserted content when appropriate.
+The new [`Transform`](http://prosemirror.net/version/2016.11.11.html#transform.Transform) method [`replaceRange`](http://prosemirror.net/version/2016.11.11.html#transform.Transform.replaceRange), [`replaceRangeWith`](http://prosemirror.net/version/2016.11.11.html#transform.Transform.replaceRangeWith), and [`deleteRange`](http://prosemirror.net/version/2016.11.11.html#transform.Transform.deleteRange) provide a way to replace and delete content in a 'do what I mean' way, automatically expanding the replaced region over empty parent nodes and including the parent nodes in the inserted content when appropriate.
 
 ## [prosemirror-state](http://prosemirror.net/version/2016.11.11.html#state) 0.13.0 (2016-11-11)
 
 ### Breaking changes
 
-[`EditorTransform.replaceSelection`](http://prosemirror.net/version/2016.11.11.html#state.EditorTransform.replaceSelection) now takes a [slice](##model.Slice), no longer a node. The new [`replaceSelectionWith`](##state.EditorTransform.replaceSelectionWith) method should be used to replace the selection with a node. Until the next release, calling it the old way will still work and emit a warning.
+[`EditorTransform.replaceSelection`](http://prosemirror.net/version/2016.11.11.html#state.EditorTransform.replaceSelection) now takes a [slice](http://prosemirror.net/version/2016.11.11.html#model.Slice), no longer a node. The new [`replaceSelectionWith`](http://prosemirror.net/version/2016.11.11.html#state.EditorTransform.replaceSelectionWith) method should be used to replace the selection with a node. Until the next release, calling it the old way will still work and emit a warning.
 
 ### Bug fixes
 
@@ -86,11 +86,11 @@ The documentation for [`applyAction`](#state.StateField.applyAction) now actuall
 
 A state field's [`applyAction`](#state.StateField.applyAction) method is now passed the previous state as 4th argument, so that it has access to the new doc and selection.
 
-[`EditorTransform.replaceSelection`](http://prosemirror.net/version/2016.11.11.html#state.EditorTransform.replaceSelection) now accepts a slice (or, as before, as a node), and uses a revised algorithm, relying on the [`defining`](##model.NodeSpec.defining) node flag.
+[`EditorTransform.replaceSelection`](http://prosemirror.net/version/2016.11.11.html#state.EditorTransform.replaceSelection) now accepts a slice (or, as before, as a node), and uses a revised algorithm, relying on the [`defining`](http://prosemirror.net/version/2016.11.11.html#model.NodeSpec.defining) node flag.
 
-The [`TextSelection`](http://prosemirror.net/version/2016.11.11.html#state.TextSelection) and [`NodeSelection`](##state.NodeSelection) classes now have a static [`create`](##state.TextSelection^create) convenience method for creating selections from unresolved positions.
+The [`TextSelection`](http://prosemirror.net/version/2016.11.11.html#state.TextSelection) and [`NodeSelection`](http://prosemirror.net/version/2016.11.11.html#state.NodeSelection) classes now have a static [`create`](http://prosemirror.net/version/2016.11.11.html#state.TextSelection^create) convenience method for creating selections from unresolved positions.
 
-Allow [transform actions](http://prosemirror.net/version/2016.11.11.html#state.TransformAction) to be extended during dispatch using [`extendTransformAction`](##state.extendTransformAction). Introduce [`sealed`](##state.TransformAction.sealed) flag to indicate when this is not safe.
+Allow [transform actions](http://prosemirror.net/version/2016.11.11.html#state.TransformAction) to be extended during dispatch using [`extendTransformAction`](http://prosemirror.net/version/2016.11.11.html#state.extendTransformAction). Introduce [`sealed`](http://prosemirror.net/version/2016.11.11.html#state.TransformAction.sealed) flag to indicate when this is not safe.
 
 A new utility function [`NodeSelection.isSelectable`](http://prosemirror.net/version/2016.11.11.html#state.NodeSelection.isSelectable) can be used to test whether a node can be the target of a node selection.
 
@@ -112,7 +112,7 @@ Widget nodes at the end of textblocks are now reliably drawn during display upda
 
 [`DecorationSet.map`](http://prosemirror.net/version/2016.11.11.html#view.DecorationSet.map) now takes an options object which allows you to specify an `onRemove` callback to be notified when remapping drops decorations.
 
-The [`transformPastedHTML`](http://prosemirror.net/version/2016.11.11.html#view.EditorProps.transformPastedHTML) and [`transformPastedText`](##view.EditorProps.transformPastedText) props were (re-)added, and can be used to clean up pasted content.
+The [`transformPastedHTML`](http://prosemirror.net/version/2016.11.11.html#view.EditorProps.transformPastedHTML) and [`transformPastedText`](http://prosemirror.net/version/2016.11.11.html#view.EditorProps.transformPastedText) props were (re-)added, and can be used to clean up pasted content.
 
 ## [prosemirror-commands](http://prosemirror.net/version/2016.11.11.html#commands) 0.13.0 (2016-11-11)
 
@@ -176,12 +176,12 @@ wanted anyway.)
 
 The interace to
 [`EditorState.toJSON`](http://prosemirror.net/version/2016.10.21.html#state.EditorState.toJSON) and
-[`EditorState.fromJSON`](##state.EditorState.fromJSON) has changed.
+[`EditorState.fromJSON`](http://prosemirror.net/version/2016.10.21.html#state.EditorState.fromJSON) has changed.
 
 The way plugins declare their [state
 field](http://prosemirror.net/version/2016.10.21.html#state.Plugin.constructor.options.state) has changed. Only one
 state field per plugin is supported, and state fields no longer have
-hard-coded names. [`Plugin.getState`](##state.Plugin.getState) is the
+hard-coded names. [`Plugin.getState`](http://prosemirror.net/version/2016.10.21.html#state.Plugin.getState) is the
 way to access plugin state now.
 
 Plugin dependencies are no longer supported.
@@ -228,7 +228,7 @@ Don't treat fast ctrl-clicks as double or triple clicks.
 
 Implement [decorations](http://prosemirror.net/version/2016.10.21.html#view.Decoration), a way to
 influence the way the document is drawn. Add the [`decorations`
-prop](##view.EditorProps.decorations) to specify them.
+prop](http://prosemirror.net/version/2016.10.21.html#view.EditorProps.decorations) to specify them.
 
 ## [prosemirror-keymap](http://prosemirror.net/version/2016.10.21.html#keymap) 0.12.0 (2016-10-21)
 

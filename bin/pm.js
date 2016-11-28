@@ -202,7 +202,7 @@ function buildChangelog(version) {
       for (let type in types) {
         let messages = log[type]
         if (messages.length) console.log("### " + types[type] + "\n")
-        messages.forEach(message => console.log(message.replace(/\]\(##/, "](" + file + "#") + "\n"))
+        messages.forEach(message => console.log(message.replace(/\]\(##/g, "](" + file + "#") + "\n"))
       }
     }
   })
