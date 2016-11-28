@@ -1,3 +1,39 @@
+## [prosemirror-model](http://prosemirror.net/version/2016.11.28.html#model) 0.14.0 (2016-11-28)
+
+### New features
+
+Parse rules now support [`skip`](http://prosemirror.net/version/2016.11.28.html#model.ParseRule.skip) (skip outer element, parse content) and [`getContent`](##model.ParseRule.getContent) (compute content using custom code) properties.
+
+The `DOMSerializer` class now exports a static [`renderSpec`](http://prosemirror.net/version/2016.11.28.html#model.DOMSerializer^renderSpec) method that can help render DOM spec arrays.
+
+## [prosemirror-state](http://prosemirror.net/version/2016.11.28.html#state) 0.14.0 (2016-11-28)
+
+### New features
+
+[Selection actions](http://prosemirror.net/version/2016.11.28.html#state.SelectionAction) now have a `time` field and an (optional) `origin` field.
+
+## [prosemirror-view](http://prosemirror.net/version/2016.11.28.html#view) 0.14.0 (2016-11-28)
+
+### Breaking changes
+
+Wrapping decorations are now created using the [`nodeName`](http://prosemirror.net/version/2016.11.28.html#view.DecorationAttrs.nodeName) property. The `wrapper` property is no longer supported.
+
+The `onUnmountDOM` prop is no longer supported (use a node view with a [`destroy`](http://prosemirror.net/version/2016.11.28.html#view.NodeView.destroy) method instead).
+
+The `domSerializer` prop is no longer supported. Use [node views](http://prosemirror.net/version/2016.11.28.html#view.EditorProps.nodeViews) to configure editor-specific node representations.
+
+### New features
+
+Widget decorations can now be given a [`key`](http://prosemirror.net/version/2016.11.28.html#view.Decoration.widget^options.key) property to prevent unneccesary redraws.
+
+The `EditorView` class now has a [`destroy`](http://prosemirror.net/version/2016.11.28.html#view.EditorView.destroy) method for cleaning up.
+
+The [`handleClickOn`](http://prosemirror.net/version/2016.11.28.html#view.EditorProps.handleClickOn) prop and friends now receive a `direct` boolean argument that indicates whether the node was clicked directly.
+
+[Widget decorations](http://prosemirror.net/version/2016.11.28.html#view.Decoration^widget) now support a `stopEvent` option that can be used to control which DOM events that pass through them should be ignored by the editor view.
+
+You can now [specify](http://prosemirror.net/version/2016.11.28.html#view.EditorProps.nodeViews) custom [node views](##view.NodeView) for an editor view, which give you control over the way node of a given type are represented in the DOM.
+
 ## [prosemirror-view](http://prosemirror.net/version/2016.11.11.html#view) 0.13.2 (2016-11-15)
 
 ### Bug fixes
