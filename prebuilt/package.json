@@ -1,9 +1,10 @@
 {
   "name": "prosemirror-prebuilt",
-  "version": "0.12.0",
+  "version": "0.14.0",
   "description": "Structured WYSIWYM editor",
   "license": "MIT",
-  "index": "index.js",
+  "main": "index.js",
+  "style": "style.css",
   "maintainers": [
     {
       "name": "Marijn Haverbeke",
@@ -16,24 +17,24 @@
     "url": "git://github.com/prosemirror/prosemirror.git"
   },
   "devDependencies": {
-    "prosemirror-model": "^0.12.0",
-    "prosemirror-transform": "^0.12.0",
-    "prosemirror-state": "^0.12.0",
-    "prosemirror-view": "^0.12.0",
-    "prosemirror-inputrules": "^0.12.0",
-    "prosemirror-keymap": "^0.12.0",
-    "prosemirror-history": "^0.12.0",
-    "prosemirror-collab": "^0.12.0",
-    "prosemirror-commands": "^0.12.0",
-    "prosemirror-schema-basic": "^0.12.0",
-    "prosemirror-schema-list": "^0.12.0",
-    "prosemirror-schema-table": "^0.12.0",
-    "prosemirror-menu": "^0.12.0",
-    "prosemirror-example-setup": "^0.12.0",
+    "prosemirror-model": "^0.14.0",
+    "prosemirror-transform": "^0.14.0",
+    "prosemirror-state": "^0.14.0",
+    "prosemirror-view": "^0.14.0",
+    "prosemirror-inputrules": "^0.14.0",
+    "prosemirror-keymap": "^0.14.0",
+    "prosemirror-history": "^0.14.0",
+    "prosemirror-collab": "^0.14.0",
+    "prosemirror-commands": "^0.14.0",
+    "prosemirror-schema-basic": "^0.14.0",
+    "prosemirror-schema-list": "^0.14.0",
+    "prosemirror-schema-table": "^0.14.0",
+    "prosemirror-menu": "^0.14.0",
+    "prosemirror-example-setup": "^0.14.0",
     "bubleify": "^0.5.1",
     "browserify": "^13.0.0"
   },
   "scripts": {
-    "prepublish": "browserify --outfile index.js -t bubleify prebuilt.js"
+    "prepublish": "../node_modules/.bin/browserify --outfile index.js -t bubleify prebuilt.js && cat node_modules/prosemirror-view/style/prosemirror.css node_modules/prosemirror-menu/style/menu.css node_modules/prosemirror-example-setup/style/style.css > style.css"
   }
 }
