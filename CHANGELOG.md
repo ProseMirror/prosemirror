@@ -1,3 +1,15 @@
+## [prosemirror-view](http://prosemirror.net/version/2016.11.28.html#view) 0.14.2 (2016-11-29)
+
+### Bug fixes
+
+Fix a bug where inverted selections weren't created in the DOM correctly.
+
+## [prosemirror-view](http://prosemirror.net/version/2016.11.28.html#view) 0.14.1 (2016-11-29)
+
+### Bug fixes
+
+Restores previously broken kludge that allows the cursor to appear after non-text content at the end of a line.
+
 ## [prosemirror-model](http://prosemirror.net/version/2016.11.28.html#model) 0.14.0 (2016-11-28)
 
 ### New features
