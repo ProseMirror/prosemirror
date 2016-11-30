@@ -56,7 +56,7 @@ The [`handleClickOn`](http://prosemirror.net/version/2016.11.28.html#view.Editor
 
 [Widget decorations](http://prosemirror.net/version/2016.11.28.html#view.Decoration^widget) now support a `stopEvent` option that can be used to control which DOM events that pass through them should be ignored by the editor view.
 
-You can now [specify](http://prosemirror.net/version/2016.11.28.html#view.EditorProps.nodeViews) custom [node views](http://prosemirror.net/version/2016.11.28.html#view.NodeView) for an editor view, which give you control over the way node of a given type are represented in the DOM.
+You can now [specify](http://prosemirror.net/version/2016.11.28.html#view.EditorProps.nodeViews) custom [node views](http://prosemirror.net/version/2016.11.28.html#view.NodeView) for an editor view, which give you control over the way node of a given type are represented in the DOM. See the related [RFC](https://discuss.prosemirror.net/t/rfc-node-views-to-manage-the-representation-of-nodes/463).
 
 ## [prosemirror-view](http://prosemirror.net/version/2016.11.11.html#view) 0.13.2 (2016-11-15)
 
