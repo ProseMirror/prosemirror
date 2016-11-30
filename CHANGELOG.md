@@ -1,3 +1,15 @@
+## [prosemirror-model](http://prosemirror.net/version/2016.11.28.html#model) 0.14.1 (2016-11-30)
+
+### Bug fixes
+
+[`DOMParser.parseSlice`](http://prosemirror.net/version/2016.11.28.html#model.DOMParser.parseSlice) will now ignore whitespace-only text nodes at the top of the slice.
+
+## [prosemirror-view](http://prosemirror.net/version/2016.11.28.html#view) 0.14.2 (2016-11-30)
+
+### Bug fixes
+
+FIX: Avoid unneeded selection resets which sometimes confused browsers.
+
 ## [prosemirror-view](http://prosemirror.net/version/2016.11.28.html#view) 0.14.2 (2016-11-29)
 
 ### Bug fixes
