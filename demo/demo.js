@@ -1,10 +1,10 @@
-const {Schema, DOMParser} = require("./parent/model")
-const {EditorState} = require("./parent/state")
-const {schema} = require("./parent/schema-basic")
-const {addListNodes} = require("./parent/schema-list")
-const {addTableNodes} = require("./parent/schema-table")
-const {MenuBarEditorView} = require("./parent/menu")
-const {exampleSetup} = require("./parent/example-setup")
+const {Schema, DOMParser} = require("prosemirror-model")
+const {EditorState} = require("prosemirror-state")
+const {schema} = require("prosemirror-schema-basic")
+const {addListNodes} = require("prosemirror-schema-list")
+const {addTableNodes} = require("prosemirror-schema-table")
+const {MenuBarEditorView} = require("prosemirror-menu")
+const {exampleSetup} = require("prosemirror-example-setup")
 
 const demoSchema = new Schema({
   nodes: addListNodes(addTableNodes(schema.nodeSpec, "block+", "block"), "paragraph block*", "block"),

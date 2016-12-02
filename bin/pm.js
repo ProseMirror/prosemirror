@@ -123,6 +123,10 @@ function clone() {
   modsAndWebsite.forEach(repo => {
     run("npm", ["install"], repo)
   })
+
+  mods.forEach(repo => {
+    run("ln", ["-s", "../" + repo, "prosemirror-" + repo], "node_modules")
+  })
 }
 
 function test() {
