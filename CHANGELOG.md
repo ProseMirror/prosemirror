@@ -1,3 +1,11 @@
+## [prosemirror-view](http://prosemirror.net/version/2016.11.28.html#view) 0.14.4 (2016-12-02)
+
+### Bug fixes
+
+Fix issue where node decorations would stick around in the DOM after the decoration was removed.
+
+Setting or removing a node selection in an unfocused editor now properly updates the DOM to show that selection.
+
 ## [prosemirror-model](http://prosemirror.net/version/2016.11.28.html#model) 0.14.1 (2016-11-30)
 
 ### Bug fixes
