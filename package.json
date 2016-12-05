@@ -15,7 +15,7 @@
     "url": "git://github.com/prosemirror/prosemirror.git"
   },
   "dependencies": {
-    "blint": "^0.5.0",
+    "blint": "^1.0.0",
     "browserify": "^13.1.1",
     "bubleify": "^0.6.0",
     "glob": "^3.0.0",
