@@ -19,7 +19,7 @@ let glob = require("glob")
 let main = ["model", "transform", "state", "view",
             "keymap", "inputrules", "history", "collab", "commands",
             "schema-basic", "schema-list", "schema-table"]
-let mods = main.concat(["menu", "example-setup", "markdown"])
+let mods = main.concat(["menu", "example-setup", "markdown", "dropcursor"])
 let modsAndWebsite = mods.concat("website")
 
 function start() {
@@ -71,7 +71,7 @@ function lint() {
   let blint = require("blint")
   mods.forEach(repo => {
     let options = {
-      browser: ["view", "menu", "example-setup"].indexOf(repo) > -1,
+      browser: ["view", "menu", "example-setup", "dropcursor"].indexOf(repo) > -1,
       ecmaVersion: 6,
       semicolons: false,
       namedFunctions: true,
