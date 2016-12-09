@@ -1,3 +1,69 @@
+## [prosemirror-model](http://prosemirror.net/version/2016.12.10.html#model) 0.15.0 (2016-12-10)
+
+### Breaking changes
+
+`ResolvedPos.atNodeBoundary` is deprecated and will be removed in the next release. Use `textOffset > 0` instead.
+
+### New features
+
+Parse rules associated with a schema can now specify a [`priority`](http://prosemirror.net/version/2016.12.10.html#model.ParseRule.priority) to influence the order in which they are applied.
+
+Resolved positions have a new getter [`textOffset`](http://prosemirror.net/version/2016.12.10.html#model.ResolvedPos.textOffset) to find their position within a text node (if any).
+
+## [prosemirror-transform](http://prosemirror.net/version/2016.12.10.html#transform) 0.15.0 (2016-12-10)
+
+### Bug fixes
+
+Fix bug where pasted/inserted content would sometimes get incorrectly closed at the right side.
+
+## [prosemirror-state](http://prosemirror.net/version/2016.12.10.html#state) 0.15.0 (2016-12-10)
+
+### Breaking changes
+
+Selection actions no longer scroll the new selection into view by default (they never were supposed to, but due to a bug they did). Add a `scrollIntoView` property to the action to get this behavior.
+
+## [prosemirror-view](http://prosemirror.net/version/2016.12.10.html#view) 0.15.0 (2016-12-10)
+
+### Breaking changes
+
+The editor view no longer wraps its editable DOM element in a wrapper element. The `ProseMirror` CSS class now applies directly to the editable element. The `ProseMirror-content` CSS class is still present for ease of upgrading but will be dropped in the next release.
+
+The editor view no longer draws a drop cursor when dragging content over the editor. The new [`prosemirror-dropcursor`](https://github.com/prosemirror/prosemirror-dropcursor) module implements this as a plugin.
+
+### Bug fixes
+
+Simple typing and backspacing now gets handled by the browser without ProseMirror redrawing the touched nodes, making spell-checking and various platform-specific input tricks (long-press on OS X, double space on iOS) work in the editor.
+
+Improve tracking of DOM nodes that have been touched by user changes, so that [`updateState`](http://prosemirror.net/version/2016.12.10.html#view.EditorView.updateState) can reliably fix them.
+
+Changes to the document that happen while dragging editor content no longer break moving of the content.
+
+Adding or removing a mark directly in the DOM (for example with the bold/italic buttons in iOS' context menu) now produces mark steps, rather than replace steps.
+
+Pressing backspace at the start of a paragraph on Android now allows key handlers for backspace to fire.
+
+Toggling a mark when there is no selection now works better on mobile platforms.
+
+### New features
+
+Introduces an [`endOfTextblock`](http://prosemirror.net/version/2016.12.10.html#view.EditorView.endOfTextblock) method on views, which can be used to find out in a bidi- and layout-aware way whether the selection is on the edge of a textblock.
+
+## [prosemirror-commands](http://prosemirror.net/version/2016.12.10.html#commands) 0.15.0 (2016-12-10)
+
+### Breaking changes
+
+Drops suppport for `delete(Char|Word)(Before|After)` and `move(Back|For)ward`, since we are now letting the browser handle those natively.
+
+### Bug fixes
+
+The [`joinForward`](http://prosemirror.net/version/2016.12.10.html#commands.joinForward) and [`joinBackward`](http://prosemirror.net/version/2016.12.10.html#commands.joinBackward) commands can now strip out markup and nodes that aren't allowed in the joined node.
+
+### New features
+
+A new command [`exitCode`](http://prosemirror.net/version/2016.12.10.html#commands.exitCode) allows a user to exit a code block by creating a new paragraph below it.
+
+The [`joinForward`](http://prosemirror.net/version/2016.12.10.html#commands.joinForward) and [`joinBackward`](http://prosemirror.net/version/2016.12.10.html#commands.joinBackward) commands now use a bidirectional-text-aware way to determine whether the cursor is at the proper side of its parent textblock when they are passed a view.
+
 ## [prosemirror-view](http://prosemirror.net/version/2016.11.28.html#view) 0.14.4 (2016-12-02)
 
 ### Bug fixes
