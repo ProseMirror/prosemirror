@@ -35,6 +35,7 @@ function start() {
   else if (command == "run") runCmd()
   else if (command == "changes") changes()
   else if (command == "changelog") buildChangelog(process.argv[3])
+  else if (command == "link-src") linkSrc()
   else if (command == "set-version") setVersions(process.argv[3])
   else if (command == "modules") listModules()
   else if (command == "--help") help(0)
@@ -50,6 +51,7 @@ function help(status) {
   pm test                 Run the tests from all packages
   pm grep <pattern>       Grep through the source code for all packages
   pm run <command>        Run the given command in each of the package dirs
+  pm link-src             Symlink dist to src in all modules
   pm changes              Show commits since the last release for all packages
   pm --help`)
   process.exit(status)
@@ -171,6 +173,13 @@ function runCmd() {
       console.log(e.toString())
       process.exit(1)
     }
+  })
+}
+
+function linkSrc() {
+  mods.forEach(repo => {
+    run("rm", ["-rf", "dist"], repo)
+    run("ln", ["-s", "src", "dist"], repo)
   })
 }
 
