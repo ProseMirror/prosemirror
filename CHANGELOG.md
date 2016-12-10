@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/version/2016.12.10.html#view) 0.15.1 (2016-12-10)
+
+### Bug fixes
+
+Fix DOM parsing for decorated text nodes.
+
 ## [prosemirror-model](http://prosemirror.net/version/2016.12.10.html#model) 0.15.0 (2016-12-10)
 
 ### Breaking changes
