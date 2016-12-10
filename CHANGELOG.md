@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/version/2016.12.10.html#view) 0.15.2 (2016-12-10)
+
+### Bug fixes
+
+The native selection is now appropriately hidden when there is a node selection.
+
 ## [prosemirror-view](http://prosemirror.net/version/2016.12.10.html#view) 0.15.1 (2016-12-10)
 
 ### Bug fixes
