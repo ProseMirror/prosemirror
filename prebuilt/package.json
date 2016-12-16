@@ -31,7 +31,7 @@
     "prosemirror-schema-table": "^0.15.0",
     "prosemirror-menu": "^0.15.0",
     "prosemirror-example-setup": "^0.15.0",
-    "bubleify": "^0.5.1",
+    "bubleify": "^0.7.0",
     "browserify": "^13.0.0"
   },
   "scripts": {
