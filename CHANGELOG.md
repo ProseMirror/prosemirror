@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/version/2016.12.23.html#view) 0.16.0 (2016-12-23)
+
+### Bug fixes
+
+Solve problem where setting a node selection would trigger a DOM read, leading to the selection being reset.
+
 ## [prosemirror-state](http://prosemirror.net/version/2016.12.23.html#state) 0.16.0 (2016-12-23)
 
 ### New features
