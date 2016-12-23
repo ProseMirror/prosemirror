@@ -1,3 +1,35 @@
+## [prosemirror-state](http://prosemirror.net/version/2016.12.23.html#state) 0.16.0 (2016-12-23)
+
+### New features
+
+Plugins now take a [`view` option](http://prosemirror.net/version/2016.12.23.html#state.Plugin.constructor^options.view) that can be used to interact with the [editor view](http://prosemirror.net/version/2016.12.23.html#view.EditorView).
+
+## [prosemirror-view](http://prosemirror.net/version/2016.12.23.html#view) 0.16.0 (2016-12-23)
+
+### Breaking changes
+
+The `spellcheck`, `label`, and `class` props are now replaced by an [`attributes` prop](#view.EditorProps.attributes).
+
+### Bug fixes
+
+Ignoring/aborting an action should no longer lead to the DOM being stuck in an outdated state.
+
+Typing at the end of a textblock which ends in a non-text node now actually works.
+
+DOM nodes for leaf document nodes are now set as non-editable to prevent various issues such as stray cursors inside of them and Firefox adding image resize controls.
+
+Inserting a node no longer causes nodes of the same type after it to be neednessly redrawn.
+
+### New features
+
+Add a new editor prop [`editable`](http://prosemirror.net/version/2016.12.23.html#view.EditorProps.editable) which controls whether the editor's `contentEditable` behavior is enabled.
+
+Plugins and props can now set any DOM attribute on the outer editor node using the [`attributes` prop](#view.EditorProps.attributes).
+
+Node view constructors and update methods now have access to the node's wrapping decorations, which can be used to pass information to a node view without encoding it in the document.
+
+Attributes added or removed by node and inline [decorations](http://prosemirror.net/version/2016.12.23.html#view.Decoration) no longer cause the nodes inside of them to be fully redrawn, making node views more stable and allowing CSS transitions to be used.
+
 ## [prosemirror-view](http://prosemirror.net/version/2016.12.10.html#view) 0.15.2 (2016-12-10)
 
 ### Bug fixes
