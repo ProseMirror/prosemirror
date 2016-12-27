@@ -14,7 +14,7 @@ Plugins now take a [`view` option](http://prosemirror.net/version/2016.12.23.htm
 
 ### Breaking changes
 
-The `spellcheck`, `label`, and `class` props are now replaced by an [`attributes` prop](#view.EditorProps.attributes).
+The `spellcheck`, `label`, and `class` props are now replaced by an [`attributes` prop](http://prosemirror.net/version/2016.12.23.html#view.EditorProps.attributes).
 
 ### Bug fixes
 
