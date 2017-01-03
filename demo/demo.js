@@ -14,8 +14,5 @@ const demoSchema = new Schema({
 let state = EditorState.create({doc: DOMParser.fromSchema(demoSchema).parse(document.querySelector("#content")),
                                 plugins: exampleSetup({schema: demoSchema})})
 
-let view = new MenuBarEditorView(document.querySelector(".full"), {
-  state,
-  onAction: action => view.updateState(view.editor.state.applyAction(action))
-})
+let view = new MenuBarEditorView(document.querySelector(".full"), {state})
 window.view = view.editor
