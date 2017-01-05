@@ -1,3 +1,51 @@
+## [prosemirror-model](http://prosemirror.net/version/2017.01.05.html#model) 0.17.0 (2017-01-05)
+
+### Breaking changes
+
+`Node.marksAt` was replaced with [`ResolvedPos.marks`](http://prosemirror.net/version/2017.01.05.html#model.ResolvedPos.marks). It still works (with a warning) in this release, but will be removed in the next one.
+
+## [prosemirror-state](http://prosemirror.net/version/2017.01.05.html#state) 0.17.0 (2017-01-05)
+
+### Breaking changes
+
+The way state is updated was changed. Instead of applying an action (a raw object with a `type` property), it is now done by [applying](http://prosemirror.net/version/2017.01.05.html#state.EditorState.apply) a [`Transaction`](http://prosemirror.net/version/2017.01.05.html#state.Transaction).
+
+The `EditorTransform` class was renamed [`Transaction`](http://prosemirror.net/version/2017.01.05.html#state.Transaction), and extended to allow changing the set of stored marks and attaching custom metadata.
+
+### New features
+
+Plugins now accept a [`filterTransaction`](http://prosemirror.net/version/2017.01.05.html#state.Plugin.constructor^options.filterTransaction) option that can be used to filter out transactions as they come in.
+
+Plugins also got an [`appendTransaction`](http://prosemirror.net/version/2017.01.05.html#state.Plugin.constructor^options.appendTransaction) option making it possible to follow up transactions with another transaction.
+
+## [prosemirror-view](http://prosemirror.net/version/2017.01.05.html#view) 0.17.0 (2017-01-05)
+
+### Breaking changes
+
+The `handleDOMEvent` prop has been dropped in favor of the [`handleDOMEvents`](http://prosemirror.net/version/2017.01.05.html#view.EditorProps.handleDOMEvents) (plural) prop.
+
+The `onChange` prop has been replaced by a [`dispatchTransaction`](http://prosemirror.net/version/2017.01.05.html#view.EditorProps.dispatchTransaction) prop (which takes a transaction instead of an action).
+
+### New features
+
+Added support for a [`handleDOMEvents` prop](http://prosemirror.net/version/2017.01.05.html#view.EditorProps.handleDOMEvents), which allows you to provide handler functions per DOM event, and works even for events that the editor doesn't normally add a handler for.
+
+Add view method [`dispatch`](http://prosemirror.net/version/2017.01.05.html#view.EditorView.dispatch), which provides a convenient way to dispatch transactions.
+
+The [`dispatchTransaction`](http://prosemirror.net/version/2017.01.05.html#view.EditorProps.dispatchTransaction) (used to be `onAction`) prop is now optional, and will default to simply applying the transaction to the current view state.
+
+[Widget decorations](http://prosemirror.net/version/2017.01.05.html#view.Decoration.widget) now accept an option `associative` which can be used to configure on which side of content inserted at their position they end up.
+
+Typing immediately after deleting text now preserves the marks of the deleted text.
+
+Transactions that update the selection because of mouse or touch input now get a metadata property `pointer` with the value `true`.
+
+## [prosemirror-commands](http://prosemirror.net/version/2017.01.05.html#commands) 0.17.0 (2017-01-05)
+
+### Breaking changes
+
+The `dispatch` function passed to commands is now passed a [`Transaction`](http://prosemirror.net/version/2017.01.05.html#state.Transaction), not an action object.
+
 ## [prosemirror-view](http://prosemirror.net/version/2016.12.23.html#view) 0.16.0 (2016-12-23)
 
 ### Bug fixes
