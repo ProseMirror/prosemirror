@@ -1,3 +1,11 @@
+## [prosemirror-view](http://prosemirror.net/version/2017.01.05.html#view) 0.17.1 (2017-01-07)
+
+### Bug fixes
+
+Fix issue where a document update that left the selection in the same place sometimes led to an incorrect DOM selection.
+
+Make sure [`EditorView.focus`](##view.EditorView.focus) doesn't cause the browser to scroll the top of the editor into view.
+
 ## [prosemirror-model](http://prosemirror.net/version/2017.01.05.html#model) 0.17.0 (2017-01-05)
 
 ### Breaking changes
