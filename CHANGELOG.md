@@ -1,3 +1,17 @@
+## [prosemirror-view](http://prosemirror.net/version/2017.01.05.html#view) 0.17.2 (2017-01-16)
+
+### Bug fixes
+
+Call custom click handlers before applying select-node behavior for a ctrl/cmd-click.
+
+Fix failure to apply DOM changes that start at document position 0.
+
+## [prosemirror-commands](http://prosemirror.net/version/2017.01.05.html#commands) 0.17.1 (2017-01-16)
+
+### Bug fixes
+
+Make sure [`toggleMark`](##commands.toggleMark) also works in the top-level node (when it is a textblock).
+
 ## [prosemirror-view](http://prosemirror.net/version/2017.01.05.html#view) 0.17.1 (2017-01-07)
 
 ### Bug fixes
