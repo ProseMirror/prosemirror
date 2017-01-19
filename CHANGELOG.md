@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/version/2017.01.05.html#view) 0.17.3 (2017-01-19)
+
+### Bug fixes
+
+DOM changes deleting a node's inner wrapping DOM element (for example the `<code>` tag in a schema-basic code block) no longer break the editor.
+
 ## [prosemirror-view](http://prosemirror.net/version/2017.01.05.html#view) 0.17.2 (2017-01-16)
 
 ### Bug fixes
