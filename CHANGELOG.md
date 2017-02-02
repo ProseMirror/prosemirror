@@ -1,3 +1,21 @@
+## [prosemirror-view](http://prosemirror.net/version/2017.01.05.html#view) 0.17.4 (2017-02-02)
+
+### Bug fixes
+
+Fixes bug where widget decorations would sometimes get parsed as content when editing near them.
+
+The editor now prevents the behavior of Ctrl-d and Ctrl-h on textblock boundaries on OS X, as intended.
+
+Make sure long words don't cause a horizontal scrollbar in Firefox
+
+Various behavior fixes for IE11.
+
+## [prosemirror-history](http://prosemirror.net/version/2017.01.05.html#view) 0.17.1 (2017-02-02)
+
+### Bug fixes
+
+Fix issue where collaborative editing corner cases could corrupt the history.
+
 ## [prosemirror-view](http://prosemirror.net/version/2017.01.05.html#view) 0.17.3 (2017-01-19)
 
 ### Bug fixes
