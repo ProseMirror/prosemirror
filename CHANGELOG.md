@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/version/2017.01.05.html#view) 0.17.6 (2017-02-08)
+
+### Bug fixes
+
+Transactions that shouldn't [scroll the selection into view](http://prosemirror.net/version/2017.01.05.html#state.transaction.scrollIntoView) now no longer do so.
+
 ## [prosemirror-state](http://prosemirror.net/version/2017.01.05.html#state) 0.17.1 (2017-02-08)
 
 ### Bug fixes
