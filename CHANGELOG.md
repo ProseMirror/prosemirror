@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/version/2017.01.05.html#view) 0.17.7 (2017-02-08)
+
+### Bug fixes
+
+Fixes crash in the code that maintains the scroll position when the document is empty or hidden.
+
 ## [prosemirror-view](http://prosemirror.net/version/2017.01.05.html#view) 0.17.6 (2017-02-08)
 
 ### Bug fixes
