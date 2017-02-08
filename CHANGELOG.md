@@ -1,3 +1,17 @@
+## [prosemirror-state](http://prosemirror.net/version/2017.01.05.html#state) 0.17.1 (2017-02-08)
+
+### Bug fixes
+
+[`Transaction.scrolledIntoView`](http://prosemirror.net/version/2017.01.05.html##state.Transaction.scrolledIntoView) no longer always returns true.
+
+[`Selection.near`](http://prosemirror.net/version/2017.01.05.html#state.Selection^neard) now takes a third `textOnly` argument, as the docs already claimed.
+
+## [prosemirror-menu](http://prosemirror.net/version/2017.01.05.html#menu) 0.17.1 (2017-02-07)
+
+### Bug fixes
+
+Fix method call to method that doesn't exist on IE11.
+
 ## [prosemirror-view](http://prosemirror.net/version/2017.01.05.html#view) 0.17.4 (2017-02-02)
 
 ### Bug fixes
