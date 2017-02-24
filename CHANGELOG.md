@@ -26,7 +26,7 @@ The name of a schema's default top-level node is now [configurable](http://prose
 
 [`Transform.setNodeType`](http://prosemirror.net/version/0.18.0.html#transform.Transform.setNodeType) now takes an optional argument to set the new node's attributes.
 
-Steps now provide an [`offset`](#transform.Step.offset) method, which makes it possible to create a copy the step with its position offset by a given amount.
+Steps now provide an [`offset`](http://prosemirror.net/version/0.18.0.html#transform.Step.offset) method, which makes it possible to create a copy the step with its position offset by a given amount.
 
 [`docChanged`](http://prosemirror.net/version/0.18.0.html#transform.Transform.docChanged) is now a property on the `Transform` class, rather than its `Transaction` subclass.
 
@@ -42,7 +42,7 @@ Plugin objects now store their spec under a [`spec`](http://prosemirror.net/vers
 
 ### Breaking changes
 
-`Decoration` objects now store their definition object under [`spec`](#Decoration.spec), not `options`. The old property name still works, with a warning, until the next release.
+`Decoration` objects now store their definition object under [`spec`](http://prosemirror.net/version/0.18.0.html#Decoration.spec), not `options`. The old property name still works, with a warning, until the next release.
 
 ### Bug fixes
 
@@ -146,7 +146,7 @@ Fix failure to apply DOM changes that start at document position 0.
 
 ### Bug fixes
 
-Make sure [`toggleMark`](##commands.toggleMark) also works in the top-level node (when it is a textblock).
+Make sure [`toggleMark`](http://prosemirror.net/version/0.17.0.html#commands.toggleMark) also works in the top-level node (when it is a textblock).
 
 ## [prosemirror-view](http://prosemirror.net/version/0.17.0.html#view) 0.17.1 (2017-01-07)
 
@@ -154,7 +154,7 @@ Make sure [`toggleMark`](##commands.toggleMark) also works in the top-level node
 
 Fix issue where a document update that left the selection in the same place sometimes led to an incorrect DOM selection.
 
-Make sure [`EditorView.focus`](##view.EditorView.focus) doesn't cause the browser to scroll the top of the editor into view.
+Make sure [`EditorView.focus`](http://prosemirror.net/version/0.17.0.html#view.EditorView.focus) doesn't cause the browser to scroll the top of the editor into view.
 
 ## [prosemirror-model](http://prosemirror.net/version/0.17.0.html#model) 0.17.0 (2017-01-05)
 
@@ -236,7 +236,7 @@ Inserting a node no longer causes nodes of the same type after it to be needness
 
 Add a new editor prop [`editable`](http://prosemirror.net/version/0.16.0.html#view.EditorProps.editable) which controls whether the editor's `contentEditable` behavior is enabled.
 
-Plugins and props can now set any DOM attribute on the outer editor node using the [`attributes` prop](#view.EditorProps.attributes).
+Plugins and props can now set any DOM attribute on the outer editor node using the [`attributes` prop](http://prosemirror.net/version/0.16.0.html#view.EditorProps.attributes).
 
 Node view constructors and update methods now have access to the node's wrapping decorations, which can be used to pass information to a node view without encoding it in the document.
 
@@ -434,11 +434,11 @@ The new [`Transform`](http://prosemirror.net/version/0.13.0.html#transform.Trans
 
 ### Bug fixes
 
-The documentation for [`applyAction`](#state.StateField.applyAction) now actually reflects the arguments this method is given.
+The documentation for [`applyAction`](http://prosemirror.net/version/0.13.0.html#state.StateField.applyAction) now actually reflects the arguments this method is given.
 
 ### New features
 
-A state field's [`applyAction`](#state.StateField.applyAction) method is now passed the previous state as 4th argument, so that it has access to the new doc and selection.
+A state field's [`applyAction`](http://prosemirror.net/version/0.13.0.html#state.StateField.applyAction) method is now passed the previous state as 4th argument, so that it has access to the new doc and selection.
 
 [`EditorTransform.replaceSelection`](http://prosemirror.net/version/0.13.0.html#state.EditorTransform.replaceSelection) now accepts a slice (or, as before, as a node), and uses a revised algorithm, relying on the [`defining`](http://prosemirror.net/version/0.13.0.html#model.NodeSpec.defining) node flag.
 
