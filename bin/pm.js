@@ -154,7 +154,7 @@ function grep() {
   mods.forEach(repo => {
     files = files.concat(glob.sync(repo + "/src/*.js")).concat(glob.sync(repo + "/test/*.js"))
   })
-  files = files.concat(glob.sync("website/src/**/*.js"))
+  files = files.concat(glob.sync("website/src/**/*.js")).concat(glob.sync("website/pages/examples/*/*.js"))
   try {
     console.log(run("grep", ["--color", "-nH", "-e", pattern].concat(files.map(f => path.relative(origDir, f))), origDir))
   } catch(e) {
