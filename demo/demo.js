@@ -7,8 +7,8 @@ const {addTableNodes} = require("prosemirror-schema-table")
 const {exampleSetup} = require("prosemirror-example-setup")
 
 const demoSchema = new Schema({
-  nodes: addListNodes(addTableNodes(schema.nodeSpec, "block+", "block"), "paragraph block*", "block"),
-  marks: schema.markSpec
+  nodes: addListNodes(addTableNodes(schema.spec.nodes, "block+", "block"), "paragraph block*", "block"),
+  marks: schema.spec.marks
 })
 
 let state = EditorState.create({doc: DOMParser.fromSchema(demoSchema).parse(document.querySelector("#content")),
