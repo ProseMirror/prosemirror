@@ -69,22 +69,32 @@ function status() {
   })
 }
 
+function lintOptions(browser) {
+  return {
+    browser,
+    ecmaVersion: 6,
+    semicolons: false,
+    namedFunctions: true,
+    trailingCommas: true
+  }
+}
+
 function lint() {
   let blint = require("blint")
   mods.forEach(repo => {
-    let options = {
-      browser: ["view", "menu", "example-setup", "dropcursor"].indexOf(repo) > -1,
-      ecmaVersion: 6,
-      semicolons: false,
-      namedFunctions: true,
-      trailingCommas: true
-    }
+    let options = lintOptions(["view", "menu", "example-setup", "dropcursor"].indexOf(repo) > -1)
     blint.checkDir(repo + "/src/", options)
     if (fs.existsSync(repo + "/test")) {
       options.allowedGlobals = ["it", "describe"]
       blint.checkDir(repo + "/test/", options)
     }
   })
+  let websiteOptions = Object.assign(lintOptions(true), {
+    allowedGlobals: ["__dirname", "process"],
+    console: true
+  })
+  blint.checkDir("website/src/", websiteOptions)
+  glob.sync("website/pages/examples/*/example.js").forEach(file => blint.checkFile(file, websiteOptions))
 }
 
 function commit() {
