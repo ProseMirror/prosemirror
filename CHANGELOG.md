@@ -1,3 +1,77 @@
+## [prosemirror-model](http://prosemirror.net/docs/ref/version/0.19.0.html#model) 0.19.0 (2017-03-16)
+
+### Breaking changes
+
+`MarkSpec.inclusiveRight` was replaced by [`inclusive`](http://prosemirror.net/docs/ref/version/0.19.0.html#model.MarkSpec.inclusive), which behaves slightly differently. `inclusiveRight` will be interpreted as `inclusive` (with a warning) until the next release.
+
+### New features
+
+The new [`inlineContent`](http://prosemirror.net/docs/ref/version/0.19.0.html#model.Node.inlineContent) property on nodes and node types tells you whether a node type supports inline content.
+
+[`MarkSpec.inclusive`](http://prosemirror.net/docs/ref/version/0.19.0.html#model.MarkSpec.inclusive) can now be used to control whether content inserted at the boundary of a mark receives that mark.
+
+Parse rule [`context`](http://prosemirror.net/docs/ref/version/0.19.0.html#model.ParseRule.context) restrictions can now use node [groups](http://prosemirror.net/docs/ref/version/0.19.0.html#model.NodeSpec.group), not just node names, to specify valid context.
+
+## [prosemirror-state](http://prosemirror.net/docs/ref/version/0.19.0.html#state) 0.19.0 (2017-03-16)
+
+### Breaking changes
+
+`Selection.between` is now called [`TextSelection.between`](state.TextSelection^between), and only returns text selections.
+
+The JSON representation of selections changed. [`fromJSON`](http://prosemirror.net/docs/ref/version/0.19.0.html#state.Selection^fromJSON) will continue to understand the old representation, but if your own code touches the JSON data, you'll have to adjust it.
+
+All `Selection` objects now have [`$head`](http://prosemirror.net/docs/ref/version/0.19.0.html#state.Selection.$head)/[`$anchor`](http://prosemirror.net/docs/ref/version/0.19.0.html#state.Selection.$anchor) properties, so those can no longer be used to recognize text selections (use [`$cursor`](http://prosemirror.net/docs/ref/version/0.19.0.html#state.TextSelection.$cursor) or `instanceof`).
+
+### New features
+
+It is now possible to write your own [`Selection`](http://prosemirror.net/docs/ref/version/0.19.0.html#state.Selection) subclasses and set the editor selection to an instance of them (provided you implement all required methods and register them with [`Selection.jsonID`](http://prosemirror.net/docs/ref/version/0.19.0.html#state.Selection^jsonID)).
+
+Text selections now have a [`$cursor`](http://prosemirror.net/docs/ref/version/0.19.0.html#state.TextSelection.$cursor) getter which returns a position only if this is a cursor selection.
+
+The new [`Transaction.ensureMarks`](http://prosemirror.net/docs/ref/version/0.19.0.html#state.Transaction.ensureMarks) method makes it easier to ensure given set of active marks without needlessly setting `storedMarks`.
+
+## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.19.0.html#view) 0.19.0 (2017-03-16)
+
+### Breaking changes
+
+[`endOfTextblock`](http://prosemirror.net/docs/ref/version/0.19.0.html#view.EditorView.endOfTextblock) no longer always returns false for horizontal motion on non-cursor selections, but checks the position of the selection head instead.
+
+### Bug fixes
+
+Typing after adding/removing a mark no longer briefly shows the new text with the wrong marks.
+
+[`posAtCoords`](http://prosemirror.net/docs/ref/version/0.19.0.html#view.EditorView.posAtCoords) is now more reliable on modern browsers by using browser APIs.
+
+Fix a bug where the view would in some circumstances leave superfluous DOM nodes around inside marks.
+
+### New features
+
+You can now override the selection the editor creates for a given DOM selection with the [`createSelectionBetween`](http://prosemirror.net/docs/ref/version/0.19.0.html#view.EditorProps.createSelectionBetween) prop.
+
+## [prosemirror-history](http://prosemirror.net/docs/ref/version/0.19.0.html#history) 0.19.0 (2017-03-16)
+
+### New features
+
+A new function [`closeHistory`](http://prosemirror.net/docs/ref/version/0.19.0.html#history.closeHistory) can be used to force separation of history events at the start of a given transaction.
+
+## [prosemirror-collab](http://prosemirror.net/docs/ref/version/0.19.0.html#collab) 0.19.0 (2017-03-16)
+
+### New features
+
+You can now use strings (as well as numbers) as client IDs (this already worked, but now the documentation reflects this).
+
+## [prosemirror-commands](http://prosemirror.net/docs/ref/version/0.19.0.html#commands) 0.19.0 (2017-03-16)
+
+### Bug fixes
+
+Calling `joinBackward` at the start of a node that can't be joined no longer raises an error.
+
+## [prosemirror-schema-basic](http://prosemirror.net/docs/ref/version/0.19.0.html#schema-basic) 0.19.0 (2017-03-16)
+
+### Breaking changes
+
+Link marks are now non-inclusive by default.
+
 ## [prosemirror-model](http://prosemirror.net/docs/ref/version/0.18.0.html#model) 0.18.0 (2017-02-24)
 
 ### Breaking changes
