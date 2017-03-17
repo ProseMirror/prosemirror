@@ -1,3 +1,9 @@
+## [prosemirror-state](http://prosemirror.net/docs/ref/version/0.19.0.html#state) 0.19.1 (2017-03-17)
+
+### Bug fixes
+
+Fix an issue where `ensureMarks` would fail to reset the marks to the empty set when turning off the last mark.
+
 ## [prosemirror-model](http://prosemirror.net/docs/ref/version/0.19.0.html#model) 0.19.0 (2017-03-16)
 
 ### Breaking changes
