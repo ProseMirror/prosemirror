@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.19.0.html#view) 0.19.1 (2017-03-18)
+
+### Bug fixes
+
+Fixes a number of issues with characters being duplicated or disappearing when typing on mark boundaries.
+
 ## [prosemirror-state](http://prosemirror.net/docs/ref/version/0.19.0.html#state) 0.19.1 (2017-03-17)
 
 ### Bug fixes
