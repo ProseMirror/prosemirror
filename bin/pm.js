@@ -19,7 +19,7 @@ let glob = require("glob")
 let main = ["model", "transform", "state", "view",
             "keymap", "inputrules", "history", "collab", "commands",
             "schema-basic", "schema-list", "schema-table"]
-let mods = main.concat(["menu", "example-setup", "markdown", "dropcursor"])
+let mods = main.concat(["menu", "example-setup", "markdown", "dropcursor", "test-builder"])
 let modsAndWebsite = mods.concat("website")
 
 function start() {
