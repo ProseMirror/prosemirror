@@ -1,3 +1,95 @@
+## [prosemirror-model](http://prosemirror.net/docs/ref/version/0.20.0.html#model) 0.20.0 (2017-04-03)
+
+### Breaking changes
+
+Newlines in the text are now normalized to spaces when parsing except when you set `preserveWhitespace` to `"full"` in your [options](http://prosemirror.net/docs/ref/version/0.20.0.html#model.DOMParser.parse) or in a [parse rule](http://prosemirror.net/docs/ref/version/0.20.0.html#model.ParseRule.preserveWhitespace).
+
+### Bug fixes
+
+Fix crash in IE when parsing DOM content.
+
+### New features
+
+Fragments now have [`nodesBetween`](http://prosemirror.net/docs/ref/version/0.20.0.html#model.Fragment.nodesBetween) and [`descendants`](http://prosemirror.net/docs/ref/version/0.20.0.html#model.Fragments.descendants) methods, providing the same functionality as the methods by the same name on nodes.
+
+Resolved positions now have [`max`](http://prosemirror.net/docs/ref/version/0.20.0.html#model.ResolvedPos.max) and [`min`](http://prosemirror.net/docs/ref/version/0.20.0.html#model.ResolvedPos.min) methods to easily find a maximum or minimum position.
+
+## [prosemirror-transform](http://prosemirror.net/docs/ref/version/0.20.0.html#transform) 0.20.0 (2017-04-03)
+
+### Bug fixes
+
+Fixes issue where replacing would sometimes unexpectedly split nodes.
+
+## [prosemirror-state](http://prosemirror.net/docs/ref/version/0.20.0.html#state) 0.20.0 (2017-04-03)
+
+### Breaking changes
+
+[`Selection.near`](http://prosemirror.net/docs/ref/version/0.20.0.html#state.Selection^near) no longer accepts a `textOnly` parameter.
+
+### Bug fixes
+
+[`TextSelection.between`](http://prosemirror.net/docs/ref/version/0.20.0.html#state.TextSelection^between) may now return a node selection when the document does not contain a valid cursor position.
+
+### New features
+
+[`Selection`](http://prosemirror.net/docs/ref/version/0.20.0.html#model.Selection) objects now implement a [`content`](http://prosemirror.net/docs/ref/version/0.20.0.html#model.Selection.content) method that returns their content. This is used to determine what ends up on the clipboard when the selection is copied or dragged.
+
+Selections may now specify multiple [ranges](http://prosemirror.net/docs/ref/version/0.20.0.html#state.Selection.ranges) that they cover, to generalize to more types of selections. The [`Selection`](http://prosemirror.net/docs/ref/version/0.20.0.html#state.Selection) superclass constructor takes an array of [ranges](http://prosemirror.net/docs/ref/version/0.20.0.html#state.SelectionRange) as optional third argument.
+
+Selections gained new methods [`replace`](http://prosemirror.net/docs/ref/version/0.20.0.html#state.Selection.replace) and [`replaceWith`](http://prosemirror.net/docs/ref/version/0.20.0.html#state.Selection.replaceWith) to provide subclasses more control over how selections of that type respond to being deleted or overwritten.
+
+Selections have a new method [`getBookmark`](http://prosemirror.net/docs/ref/version/0.20.0.html#state.Selection.getBookmark) that custom selection classes can implement to allow the undo history to accurately store and restore them.
+
+The new selection class [`AllSelection`](http://prosemirror.net/docs/ref/version/0.20.0.html#state.AllSelection) can be used to select the entire document.
+
+## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.20.0.html#view) 0.20.0 (2017-04-03)
+
+### Breaking changes
+
+The `inclusiveLeft` and `inclusiveRight` options to inline decorations were renamed to [`inclusiveStart`](http://prosemirror.net/docs/ref/version/0.20.0.html#view.Decoration^inline^spec.inclusiveStart) and [`inclusiveEnd`](http://prosemirror.net/docs/ref/version/0.20.0.html#view.Decoration^inline^spec.inclusiveEnd) so that they also make sense in right-to-left text. The old names work with a warning until the next release.
+
+The default styling for lists and blockquotes was removed from `prosemirror.css`. (They were moved to the [`example-setup`](https://github.com/ProseMirror/prosemirror-example-setup) module.)
+
+### Bug fixes
+
+Fixes reading of selection in Chrome in a shadow DOM.
+
+Registering DOM event handlers that the editor doesn't listen to by default with the `handleDOMEvents` prop should work again.
+
+Backspacing after turning off a mark now works again in Firefox.
+
+### New features
+
+The new props [`handlePaste`](http://prosemirror.net/docs/ref/version/0.20.0.html#view.EditorProps.handlePaste) and [`handleDrop`](http://prosemirror.net/docs/ref/version/0.20.0.html#view.EditorProps.handleDrop) can be used to override drop and paste behavior.
+
+## [prosemirror-inputrules](http://prosemirror.net/docs/ref/version/0.20.0.html#inputrules) 0.20.0 (2017-04-03)
+
+### Breaking changes
+
+The input rules [plugin](http://prosemirror.net/docs/ref/version/0.20.0.html#inputrules.inputRules) no longer implicitly binds backspace to undo the last applied rule.
+
+### New features
+
+This module now exposes a command [`undoInputRule`](http://prosemirror.net/docs/ref/version/0.20.0.html#inputrules.undoInputRule), which will revert an input rule when run directly after one was applied.
+
+## [prosemirror-history](http://prosemirror.net/docs/ref/version/0.20.0.html#history) 0.20.0 (2017-04-03)
+
+### Bug fixes
+
+Appended transactions no longer generate undo history events.
+
+## [prosemirror-commands](http://prosemirror.net/docs/ref/version/0.20.0.html#commands) 0.20.0 (2017-04-03)
+
+### New features
+
+The new [`selectAll` command](http://prosemirror.net/docs/ref/version/0.20.0.html#commands.selectAll), bound to Mod-a in the base keymap, sets the selection to an [`AllSelection`](http://prosemirror.net/docs/ref/version/0.20.0.html#state.AllSelection).
+
+## [prosemirror-schema-list](http://prosemirror.net/docs/ref/version/0.20.0.html#schema-list) 0.20.0 (2017-04-03)
+
+### New features
+
+The [`liftListItem`](http://prosemirror.net/docs/ref/version/0.20.0.html#schema-list.liftListItem) command can now lift items out of a list entirely, when the parent node isn't another list.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.19.0.html#view) 0.19.1 (2017-03-18)
 
 ### Bug fixes
