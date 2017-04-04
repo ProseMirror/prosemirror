@@ -1,3 +1,13 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.20.0.html#view) 0.20.1 (2017-04-04)
+
+### Bug fixes
+
+Typing in code blocks no longer replaces newlines with spaces.
+
+Copy and paste on Internet Explorer, Edge, and mobile Safari should now behave more like it does on other browsers. Handlers are called, and the changes to the document are made by ProseMirror's code, not the browser.
+
+Fixes a problem where triple-clicking the editor would sometimes cause the scroll position to inexplicably jump around on IE11.
+
 ## [prosemirror-model](http://prosemirror.net/docs/ref/version/0.20.0.html#model) 0.20.0 (2017-04-03)
 
 ### Breaking changes
