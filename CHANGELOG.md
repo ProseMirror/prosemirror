@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.20.0.html#view) 0.20.2 (2017-04-05)
+
+### Bug fixes
+
+Fixes a bug that broke dragging from the editor.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.20.0.html#view) 0.20.1 (2017-04-04)
 
 ### Bug fixes
