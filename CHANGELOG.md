@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.20.0.html#view) 0.20.3 (2017-04-12)
+
+### Bug fixes
+
+Shift-pasting and pasting into a code block now does the right thing on IE and Edge.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.20.0.html#view) 0.20.2 (2017-04-05)
 
 ### Bug fixes
