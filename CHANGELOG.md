@@ -1,3 +1,15 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.20.0.html#view) 0.20.4 (2017-04-24)
+
+### Bug fixes
+
+Fix a bug that prevented the DOM selection from being updated when the new position was near the old one in some circumstances.
+
+Stop interfering with alt-d keypresses on OS X.
+
+Fix issue where reading a DOM change in a previously empty node could crash.
+
+Fixes crash when reading a change that removed a decorated text node from the DOM.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.20.0.html#view) 0.20.3 (2017-04-12)
 
 ### Bug fixes
