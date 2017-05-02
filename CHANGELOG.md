@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.20.0.html#view) 0.20.5 (2017-05-02)
+
+### Bug fixes
+
+Fixes an issue where the DOM selection could be shown on the wrong side of hard break or image nodes.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.20.0.html#view) 0.20.4 (2017-04-24)
 
 ### Bug fixes
