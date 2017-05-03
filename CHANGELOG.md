@@ -1,3 +1,37 @@
+## [prosemirror-model](http://prosemirror.net/docs/ref/version/0.21.0.html#model) 0.21.0 (2017-05-03)
+
+### Breaking changes
+
+The `openLeft` and `openRight` properties of `Slice` objects have been renamed to [`openStart`](http://prosemirror.net/docs/ref/version/0.21.0.html#model.Slice.openStart) and [`openEnd`](http://prosemirror.net/docs/ref/version/0.21.0.html#model.Slice.openEnd) to avoid confusion in right-to-left text. The old names will continue to work with a warning until the next release.
+
+### New features
+
+Mark [serializing functions](http://prosemirror.net/docs/ref/version/0.21.0.html#model.MarkSpec.toDOM) now get a second parameter that indicates whether the mark's content is inline or block nodes.
+
+Setting a mark serializer to `null` in a [`DOMSerializer`](http://prosemirror.net/docs/ref/version/0.21.0.html#model.DOMSerializer) can now be used to omit that mark when serializing.
+
+Node specs support a new property [`isolating`](http://prosemirror.net/docs/ref/version/0.21.0.html#model.NodeSpec.isolating), which is used to disable editing actions like backspacing and lifting across such a node's boundaries.
+
+## [prosemirror-state](http://prosemirror.net/docs/ref/version/0.21.0.html#state) 0.21.0 (2017-05-03)
+
+### Breaking changes
+
+[`Selection.atStart`](http://prosemirror.net/docs/ref/version/0.21.0.html#state.Selection^atStart), and [`atEnd`](http://prosemirror.net/docs/ref/version/0.21.0.html#state.Selection^atEnd) no longer take a second `textOnly` parameter.
+
+### New features
+
+[`Selection.near`](http://prosemirror.net/docs/ref/version/0.21.0.html#state.Selection^near), [`atStart`](http://prosemirror.net/docs/ref/version/0.21.0.html#state.Selection^atStart), and [`atEnd`](http://prosemirror.net/docs/ref/version/0.21.0.html#state.Selection^atEnd) will now fall back to returning an [`AllSelection`](http://prosemirror.net/docs/ref/version/0.21.0.html#state.AllSelection) when unable to find a valid selection. This removes the (undocumented) requirement that documents always contain a valid selection position (though you'll probably still want to maintain this for practical UI reasons).
+
+## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.21.0.html#view) 0.21.0 (2017-05-03)
+
+### Breaking changes
+
+The `associative` option to widget decorations is no longer supported. To make a widget left-associative, set its `side` option to a negative number. `associative` will continue to work with a warning until the next release.
+
+### New features
+
+[Widget decorations](http://prosemirror.net/docs/ref/version/0.21.0.html#view.Decoration^widget) now support a `side` option that controls which side of them the cursor is drawn, where they move when content is inserted at their position, and the order in which they appear relative to other widgets at the same position.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.20.0.html#view) 0.20.5 (2017-05-02)
 
 ### Bug fixes
