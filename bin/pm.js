@@ -120,7 +120,7 @@ function clone() {
   })
 
   modsAndWebsite.concat("prebuilt").forEach(repo => {
-    run("mkdir", ["node_modules"], repo)
+    run("mkdir", ["-p", "node_modules"], repo)
     let pkg = JSON.parse(fs.readFileSync(repo + "/package.json"), "utf8"), link = Object.create(null)
     function add(name) {
       let match = /^prosemirror-(.*)$/.exec(name)
