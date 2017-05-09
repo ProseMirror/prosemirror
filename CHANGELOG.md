@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.21.0.html#view) 0.21.1 (2017-05-09)
+
+### Bug fixes
+
+Copying and pasting table cells on Edge no longer strips the table structure.
+
 ## [prosemirror-model](http://prosemirror.net/docs/ref/version/0.21.0.html#model) 0.21.0 (2017-05-03)
 
 ### Breaking changes
