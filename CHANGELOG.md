@@ -1,3 +1,11 @@
+## [prosemirror-transform](http://prosemirror.net/docs/ref/version/0.21.0.html#transform) 0.21.1 (2017-05-16)
+
+### Bug fixes
+
+[`addMark`](http://prosemirror.net/docs/ref/version/0.21.0.html#transform.Transform.addMark) no longer assumes marks always [exclude](http://prosemirror.net/docs/ref/version/0.21.0.html#model.MarkSpec.excludes) only themselves.
+
+`replaceRange`](http://prosemirror.net/docs/ref/version/0.21.0.html#transform.Transform.replaceRange) and [`deleteRange`](http://prosemirror.net/docs/ref/version/0.21.0.html#transform.Transform.deleteRange) will no longer expand the range across isolating node boundaries.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.21.0.html#view) 0.21.1 (2017-05-09)
 
 ### Bug fixes
