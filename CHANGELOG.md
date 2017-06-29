@@ -1,3 +1,49 @@
+## [prosemirror-model](http://prosemirror.net/docs/ref/version/0.22.0.html#model) 0.22.0 (2017-06-29)
+
+### Bug fixes
+
+When using [`parseSlice`](http://prosemirror.net/docs/ref/version/0.22.0.html#model.DOMParser.parseSlice), inline DOM content wrapped in block elements for which no parse rule is defined will now be properly wrapped in a textblock node.
+
+### New features
+
+[Resolved positions](http://prosemirror.net/docs/ref/version/0.22.0.html#model.ResolvedPos) now have a [`doc`](http://prosemirror.net/docs/ref/version/0.22.0.html#model.ResolvedPos.doc) accessor to easily get their root node.
+
+Parse rules now support a [`namespace` property](http://prosemirror.net/docs/ref/version/0.22.0.html#model.ParseRule.namespace) to match XML namespaces.
+
+The [`NodeRange`](http://prosemirror.net/docs/ref/version/0.22.0.html#model.NodeRange) constructor is now public (whereas before you could only construct these through [`blockRange`](http://prosemirror.net/docs/ref/version/0.22.0.html#model.ResolvedPos.blockRange)).
+
+## [prosemirror-transform](http://prosemirror.net/docs/ref/version/0.22.0.html#transform) 0.22.0 (2017-06-29)
+
+### Bug fixes
+
+[`canSplit`](http://prosemirror.net/docs/ref/version/0.22.0.html#transform.canSplit) now returns false when given custom after-split node types that don't match the content at that point.
+
+Fixes [`canLift`](http://prosemirror.net/docs/ref/version/0.22.0.html#transform.canLift) incorrectly returning null when lifting into an isolating node.
+
+## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.22.0.html#view) 0.22.0 (2017-06-29)
+
+### Bug fixes
+
+Fix an issue where moving the cursor through a text widget causes the editor to lose the selection in Chrome.
+
+Fixes an issue where down-arrow in front of a widget would sometimes not cause any cursor motion on Chrome.
+
+[Destroying](http://prosemirror.net/docs/ref/version/0.22.0.html#view.EditorView.destroy) a [mounted](http://prosemirror.net/docs/ref/version/0.22.0.html#view.EditorView.constructor) editor view no longer leaks event handlers.
+
+Display updates for regular, non-composition input are now synchronous, which should reduce flickering when, for example, updating decorations in response to typing.
+
+### New features
+
+The editor can now be initialized in a document other than the global document (say, an `iframe`).
+
+Editor views now have a [`domAtPos` method](http://prosemirror.net/docs/ref/version/0.22.0.html#view.EditorView.domAtPos), which gives you the DOM position corresponding to a given document position.
+
+## [prosemirror-inputrules](http://prosemirror.net/docs/ref/version/0.22.0.html#inputrules) 0.22.0 (2017-06-29)
+
+### Bug fixes
+
+Input rules with spaces in them now match any whitespace where the space is expected, to avoid mysteriously not working when a non-breaking space is present.
+
 ## [prosemirror-transform](http://prosemirror.net/docs/ref/version/0.21.0.html#transform) 0.21.1 (2017-05-16)
 
 ### Bug fixes
