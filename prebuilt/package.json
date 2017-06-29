@@ -35,6 +35,6 @@
     "browserify": "^13.0.0"
   },
   "scripts": {
-    "prepublish": "../node_modules/.bin/browserify --outfile index.js -t bubleify prebuilt.js && cat node_modules/prosemirror-view/style/prosemirror.css node_modules/prosemirror-menu/style/menu.css node_modules/prosemirror-example-setup/style/style.css > style.css"
+    "prepare": "../node_modules/.bin/browserify --outfile index.js -t bubleify prebuilt.js && cat node_modules/prosemirror-view/style/prosemirror.css node_modules/prosemirror-menu/style/menu.css node_modules/prosemirror-example-setup/style/style.css > style.css"
   }
 }
