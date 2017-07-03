@@ -1,3 +1,9 @@
+## [prosemirror-transform](http://prosemirror.net/docs/ref/version/0.22.0.html#transform) 0.22.1 (2017-07-03)
+
+### Bug fixes
+
+Fix crash in [`canSplit`](http://prosemirror.net/docs/ref/version/0.22.0.html#transform.canSplit) when an array containing null fields is passed as fourth argument.
+
 ## [prosemirror-model](http://prosemirror.net/docs/ref/version/0.22.0.html#model) 0.22.0 (2017-06-29)
 
 ### Bug fixes
