@@ -1,3 +1,9 @@
+## [prosemirror-transform](http://prosemirror.net/docs/ref/version/0.22.0.html#transform) 0.22.2 (2017-07-06)
+
+### Bug fixes
+
+Fix another bug in the way `canSplit` interpreted its `typesAfter` argument.
+
 ## [prosemirror-transform](http://prosemirror.net/docs/ref/version/0.22.0.html#transform) 0.22.1 (2017-07-03)
 
 ### Bug fixes
