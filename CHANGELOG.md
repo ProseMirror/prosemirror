@@ -1,3 +1,9 @@
+## [prosemirror-keymap](http://prosemirror.net/docs/ref/version/0.22.0.html#keymap) 0.22.1 (2017-07-14)
+
+### Bug fixes
+
+Bindings like Alt-3 should now fire even if your keyboard produces a special character for that combination.
+
 ## [prosemirror-transform](http://prosemirror.net/docs/ref/version/0.22.0.html#transform) 0.22.2 (2017-07-06)
 
 ### Bug fixes
