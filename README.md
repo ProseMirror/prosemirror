@@ -28,15 +28,23 @@ is the place to report issues.
 
 ## Setting up a dev environment
 
-If you clone this repository and `yarn install` it (due to a string of
-issues with NPM 5, NPM is not currently supported), the installation
-script will create subdirectories for all the core prosemirror modules
-(as well as some not-really-core modules needed to run demos), such as
-`model`, `view`, `state`, etc, symlink the internal dependencies
-between those, and then `npm install` their remaining dependencies.
+Clone this repository, and make sure you have
+[node](https://nodejs.org/en/) and [yarn](https://yarnpkg.com/) (due
+to a string of issues with NPM 5, NPM is not currently supported)
+installed. Next, from the cloned directory run:
+
+    bin/pm install
+
+This will fetch the submodules, install their dependencies, and build
+them.
 
 The `bin/pm` script in this repository provides functionality for
 working with the repositories:
+
+ * `bin/pm build` rebuilds all the modules
+
+ * `bin/pm watch` sets up a process that automatically rebuilds the
+   modules when they change
 
  * `bin/pm status` prints the git status of all submodules
 

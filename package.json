@@ -24,7 +24,6 @@
   },
   "scripts": {
     "demo": "moduleserve demo",
-    "install": "bin/pm clone",
     "test": "bin/pm test",
     "lint": "bin/pm lint"
   },

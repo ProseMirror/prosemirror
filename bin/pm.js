@@ -13,6 +13,8 @@
 let origDir = process.cwd()
 process.chdir(__dirname + "/..")
 
+// NOTE: Don't require anything from node_modules here, since the
+// install script has to be able to run _before_ that exists.
 let child = require("child_process"), fs = require("fs"), path = require("path")
 
 let main = ["model", "transform", "state", "view",
@@ -27,7 +29,8 @@ function start() {
   if (command == "status") status()
   else if (command == "lint") lint()
   else if (command == "commit") commit()
-  else if (command == "clone") clone()
+  else if (command == "install") install()
+  else if (command == "build") build()
   else if (command == "link") link()
   else if (command == "test") test()
   else if (command == "push") push()
@@ -44,7 +47,8 @@ function start() {
 
 function help(status) {
   console.log(`Usage:
-  pm clone [--ssh]        Clone and symlink the packages
+  pm install [--ssh]      Clone and symlink the packages, install dependencies, build
+  pm build                Build all modules
   pm status               Print out the git status of packages
   pm commit <args>        Run git commit in all packages that have changes
   pm push                 Run git push in packages that have new commits
@@ -58,7 +62,7 @@ function help(status) {
 }
 
 function run(cmd, args, wd) {
-  return child.execFileSync(cmd, args, {cwd: wd, encoding: "utf8"})
+  return child.execFileSync(cmd, args, {cwd: wd, encoding: "utf8", stdio: ["ignore", "pipe", process.stderr]})
 }
 
 function status() {
@@ -104,7 +108,7 @@ function commit() {
   })
 }
 
-function clone() {
+function install() {
   let base = "https://github.com/prosemirror/"
 
   for (let i = 3; i < process.argv.length; i++) {
@@ -122,11 +126,23 @@ function clone() {
     run("git", ["clone", origin, repo])
   })
 
+  run("mkdir", ["-p", "node_modules"])
   mods.forEach(repo => {
+    run("rm", ["-rf", "node_modules/prosemirror-" + repo])
     run("ln", ["-s", "../" + repo, "prosemirror-" + repo], "node_modules")
   })
 
-  console.log("Re-run yarn install to install module dependencies") // FIXME
+  console.log("Running yarn install")
+  run("yarn", ["install"])
+  console.log("Building modules")
+  build()
+}
+
+function build() {
+  mods.forEach(repo => {
+    console.log(repo + "...")
+    run("npm", ["run", "build"], repo)
+  })
 }
 
 function link() {
