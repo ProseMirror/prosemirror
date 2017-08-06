@@ -28,7 +28,8 @@ is the place to report issues.
 
 ## Setting up a dev environment
 
-If you clone this repository and `npm install` it, the installation
+If you clone this repository and `yarn install` it (due to a string of
+issues with NPM 5, NPM is not currently supported), the installation
 script will create subdirectories for all the core prosemirror modules
 (as well as some not-really-core modules needed to run demos), such as
 `model`, `view`, `state`, etc, symlink the internal dependencies
@@ -56,7 +57,4 @@ working with the repositories:
 To run the demo in `demo/`, do `npm run demo`, and go to
 [localhost:8080](http://localhost:8080/). This loads the individual
 JavaScript files from the distribution's `dist` directories, and will
-only need a refresh when those are changed. To directly test the
-actual code, in a browser that understands ES6, you can create a
-symlink from `dist` to `src` in each of the modules (`npm run
-link-src`).
+only need a refresh when those are changed.

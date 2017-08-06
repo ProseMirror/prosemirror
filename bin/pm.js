@@ -14,11 +14,10 @@ let origDir = process.cwd()
 process.chdir(__dirname + "/..")
 
 let child = require("child_process"), fs = require("fs"), path = require("path")
-let glob = require("glob")
 
 let main = ["model", "transform", "state", "view",
             "keymap", "inputrules", "history", "collab", "commands",
-            "schema-basic", "schema-list", "schema-table"]
+            "schema-basic", "schema-list"]
 let mods = main.concat(["menu", "example-setup", "markdown", "dropcursor", "test-builder"])
 let modsAndWebsite = mods.concat("website")
 
@@ -29,13 +28,14 @@ function start() {
   else if (command == "lint") lint()
   else if (command == "commit") commit()
   else if (command == "clone") clone()
+  else if (command == "link") link()
   else if (command == "test") test()
   else if (command == "push") push()
   else if (command == "grep") grep()
   else if (command == "run") runCmd()
+  else if (command == "watch") watch()
   else if (command == "changes") changes()
   else if (command == "changelog") buildChangelog(process.argv[3])
-  else if (command == "link-src") linkSrc()
   else if (command == "set-version") setVersions(process.argv[3])
   else if (command == "modules") listModules()
   else if (command == "--help") help(0)
@@ -49,9 +49,9 @@ function help(status) {
   pm commit <args>        Run git commit in all packages that have changes
   pm push                 Run git push in packages that have new commits
   pm test                 Run the tests from all packages
+  pm watch                Set up a process that rebuilds the packages on change
   pm grep <pattern>       Grep through the source code for all packages
   pm run <command>        Run the given command in each of the package dirs
-  pm link-src             Symlink dist to src in all modules
   pm changes              Show commits since the last release for all packages
   pm --help`)
   process.exit(status)
@@ -94,7 +94,7 @@ function lint() {
     console: true
   })
   blint.checkDir("website/src/", websiteOptions)
-  glob.sync("website/pages/examples/*/example.js").forEach(file => blint.checkFile(file, websiteOptions))
+  require("glob").sync("website/pages/examples/*/example.js").forEach(file => blint.checkFile(file, websiteOptions))
 }
 
 function commit() {
@@ -114,11 +114,22 @@ function clone() {
   }
 
   modsAndWebsite.forEach(repo => {
-    run("rm", ["-rf", repo])
+    if (fs.existsSync(repo)) {
+      console.warn("Skipping cloning of " + repo + " (directory exists)")
+      return
+    }
     let origin = base + (repo == "website" ? "" : "prosemirror-") + repo + ".git"
     run("git", ["clone", origin, repo])
   })
 
+  mods.forEach(repo => {
+    run("ln", ["-s", "../" + repo, "prosemirror-" + repo], "node_modules")
+  })
+
+  console.log("Re-run yarn install to install module dependencies") // FIXME
+}
+
+function link() {
   modsAndWebsite.concat("prebuilt").forEach(repo => {
     run("mkdir", ["-p", "node_modules"], repo)
     let pkg = JSON.parse(fs.readFileSync(repo + "/package.json"), "utf8"), link = Object.create(null)
@@ -128,21 +139,15 @@ function clone() {
     }
     Object.keys(pkg.dependencies || {}).forEach(add)
     Object.keys(pkg.devDependencies || {}).forEach(add)
-    for (let dep in link)
+    for (let dep in link) {
+      run("rm", ["-rf", "node_modules/prosemirror-" + dep], repo)
       run("ln", ["-s", "../../" + dep, "node_modules/prosemirror-" + dep], repo)
-  })
-
-  modsAndWebsite.forEach(repo => {
-    run("npm", ["install"], repo)
-  })
-
-  mods.forEach(repo => {
-    run("ln", ["-s", "../" + repo, "prosemirror-" + repo], "node_modules")
+    }
   })
 }
 
 function test() {
-  let mocha = new (require("../model/node_modules/mocha"))
+  let mocha = new (require("mocha"))
   mods.forEach(repo => {
     if (repo == "view" || !fs.existsSync(repo + "/test")) return
     fs.readdirSync(repo + "/test").forEach(file => {
@@ -161,6 +166,7 @@ function push() {
 
 function grep() {
   let pattern = process.argv[3] || help(1), files = []
+  let glob = require("glob")
   mods.forEach(repo => {
     files = files.concat(glob.sync(repo + "/src/*.js")).concat(glob.sync(repo + "/test/*.js"))
   })
@@ -183,13 +189,6 @@ function runCmd() {
       console.log(e.toString())
       process.exit(1)
     }
-  })
-}
-
-function linkSrc() {
-  mods.forEach(repo => {
-    run("rm", ["-rf", "dist"], repo)
-    run("ln", ["-s", "src", "dist"], repo)
   })
 }
 
@@ -256,6 +255,21 @@ function setVersions(version) {
 
 function listModules() {
   console.log((process.argv.indexOf("--core") > -1 ? main : mods).join("\n"))
+}
+
+function watch() {
+  let rollup = require("rollup")
+  let rollupWatch = require("rollup-watch")
+  // FIXME this will output warnings because of too many signal
+  // handlers being registered. See https://github.com/rollup/rollup-watch/issues/59
+  mods.forEach(repo => {
+    let conf = require("../" + repo + "/rollup.config")
+    conf.entry = path.resolve(repo, conf.entry)
+    conf.dest = path.resolve(repo, conf.dest)
+    conf.watch = {exclude: ['node_modules/**']}
+    rollupWatch(rollup, conf)
+  })
+  console.log("Watching...")
 }
 
 start()

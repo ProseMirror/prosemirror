@@ -1,6 +1,6 @@
 const {Schema, DOMParser} = require("prosemirror-model")
 const {EditorView} = require("prosemirror-view")
-const {EditorState} = require("prosemirror-state")
+const {EditorState, TextSelection} = require("prosemirror-state")
 const {schema} = require("prosemirror-schema-basic")
 const {addListNodes} = require("prosemirror-schema-list")
 const {addTableNodes} = require("prosemirror-schema-table")
