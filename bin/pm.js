@@ -41,6 +41,8 @@ function start() {
   else if (command == "changelog") buildChangelog(process.argv[3])
   else if (command == "set-version") setVersions(process.argv[3])
   else if (command == "modules") listModules()
+  else if (command == "dev-start") devStart()
+  else if (command == "dev-stop") devStop()
   else if (command == "--help") help(0)
   else help(1)
 }
@@ -276,16 +278,66 @@ function listModules() {
 function watch() {
   let rollup = require("rollup")
   let rollupWatch = require("rollup-watch")
-  // FIXME this will output warnings because of too many signal
-  // handlers being registered. See https://github.com/rollup/rollup-watch/issues/59
+  // FIXME this supresses warnings because of too many signal handlers
+  // being registered. See
+  // https://github.com/rollup/rollup-watch/issues/59
+  process.setMaxListeners(mods.length + 1)
+  process.stdin.setMaxListeners(mods.length + 1)
   mods.forEach(repo => {
     let conf = require("../" + repo + "/rollup.config")
     conf.entry = path.resolve(repo, conf.entry)
     conf.dest = path.resolve(repo, conf.dest)
     conf.watch = {exclude: ['node_modules/**']}
-    rollupWatch(rollup, conf)
+    rollupWatch(rollup, conf).on("event", (event) => {
+      if (event.code == "BUILD_END")
+	console.log("Bundled " + repo + " in " + event.duration + "ms.")
+      else if (event.code == "ERROR")
+        throw event.error
+    })
   })
   console.log("Watching...")
+}
+
+const pidFile = __dirname + "/.pm-dev.pid"
+function devPID() {
+  try { return JSON.parse(fs.readFileSync(__dirname + "/.pm-dev.pid", "utf8")) }
+  catch(_) { return null }
+}
+
+function devStart() {
+  let pid = devPID()
+  if (pid != null) {
+    console.log("Dev server already running at pid " + pid)
+    return
+  }
+
+  fs.writeFileSync(pidFile, process.pid + "\n")
+  function del() { fs.unlink(pidFile); console.log("Stop") }
+  function delAndExit() { del(); process.exit() }
+  process.on("exit", del)
+  process.on("SIGINT", delAndExit)
+  process.on("SIGTERM", delAndExit)
+
+  watch()
+
+  let root = path.resolve(__dirname, "../demo")
+  let ecstatic = require("ecstatic")({root})
+  let moduleserver = new (require("moduleserve/moduleserver"))({root})
+
+  require("http").createServer(function(req, resp) {
+    moduleServer.handleRequest(req, resp) || ecstatic(req, resp)
+  }).listen(8080, "127.0.0.1")
+  console.log("Dev server listening on 8080")
+}
+
+function devStop() {
+  let pid = devPID()
+  if (pid == null) {
+    console.log("Dev server not running")
+  } else {
+    process.kill(pid, "SIGTERM")
+    console.log("Killed dev server with pid " + pid)
+  }
 }
 
 start()

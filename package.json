@@ -20,15 +20,13 @@
     "bubleify": "^0.6.0",
     "glob": "^3.0.0",
     "mocha": "^3.5.0",
-    "moduleserve": "^0.7.0"
+    "moduleserve": "^0.8.3",
+    "rollup": "^0.45.2"
   },
   "scripts": {
     "demo": "moduleserve demo",
     "test": "bin/pm test",
     "lint": "bin/pm lint"
-  },
-  "devDependencies": {
-    "rollup": "^0.45.2"
   },
   "workspaces": [
     "*"

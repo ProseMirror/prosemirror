@@ -24,3 +24,4 @@
 /prebuilt/style.css
 /prebuilt/node_modules
 /yarn.lock
+/bin/.pm-dev.pid
