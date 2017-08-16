@@ -325,7 +325,7 @@ function devStart() {
   let moduleserver = new (require("moduleserve/moduleserver"))({root})
 
   require("http").createServer(function(req, resp) {
-    moduleServer.handleRequest(req, resp) || ecstatic(req, resp)
+    moduleserver.handleRequest(req, resp) || ecstatic(req, resp)
   }).listen(8080, "127.0.0.1")
   console.log("Dev server listening on 8080")
 }
