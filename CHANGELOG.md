@@ -1,3 +1,11 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.22.0.html#view) 0.22.1 (2017-08-16)
+
+### Bug fixes
+
+Invisible selections that don't cover any content (i.e., a cursor) are now properly hidden.
+
+Initializing the editor view non-editable no longer causes a crash.
+
 ## [prosemirror-keymap](http://prosemirror.net/docs/ref/version/0.22.0.html#keymap) 0.22.1 (2017-07-14)
 
 ### Bug fixes
