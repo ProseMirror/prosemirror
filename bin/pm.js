@@ -279,26 +279,29 @@ function listModules() {
 }
 
 function watch() {
-  let rollup = require("rollup")
-  let rollupWatch = require("rollup-watch")
-  // FIXME this supresses warnings because of too many signal handlers
-  // being registered. See
-  // https://github.com/rollup/rollup-watch/issues/59
-  process.setMaxListeners(mods.length + 1)
-  process.stdin.setMaxListeners(mods.length + 1)
-  mods.forEach(repo => {
+  const {watch} = require("rollup")
+  let configs = mods.map(repo => {
     let conf = require("../" + repo + "/rollup.config")
     conf.entry = path.resolve(repo, conf.entry)
     conf.dest = path.resolve(repo, conf.dest)
     conf.watch = {exclude: ['node_modules/**']}
-    rollupWatch(rollup, conf).on("event", (event) => {
-      if (event.code == "BUILD_END")
-	console.log("Bundled " + repo + " in " + event.duration + "ms.")
-      else if (event.code == "ERROR")
-        throw event.error
-    })
+    return conf
   })
-  console.log("Watching...")
+  let watcher = watch(configs), cwd = process.cwd()
+  function name(input) { return input.slice(cwd.length + 1).match(/[^\/]*/)[0] }
+  watcher.on("event", event => {
+    if (event.code == "FATAL") {
+      console.log(event.error + "")
+      process.exit(1)
+    } else if (event.code == "ERROR") {
+      console.log(event.error + "")
+    } else if (event.code == "BUNDLE_START") {
+      console.log("Bundling " + name(event.input))
+    } else if (event.code == "BUNDLE_END") {
+      console.log("Finished bundling " + name(event.input))
+    }
+  })
+  process.on("exit", () => watcher.close())
 }
 
 const pidFile = __dirname + "/.pm-dev.pid"
@@ -321,8 +324,6 @@ function devStart() {
   process.on("SIGINT", delAndExit)
   process.on("SIGTERM", delAndExit)
 
-  watch()
-
   let root = path.resolve(__dirname, "../demo")
   let ecstatic = require("ecstatic")({root})
   let moduleserver = new (require("moduleserve/moduleserver"))({root})
@@ -331,6 +332,8 @@ function devStart() {
     moduleserver.handleRequest(req, resp) || ecstatic(req, resp)
   }).listen(8080, "127.0.0.1")
   console.log("Dev server listening on 8080")
+
+  watch()
 }
 
 function devStop() {
