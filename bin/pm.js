@@ -43,6 +43,7 @@ function start() {
   else if (command == "modules") listModules()
   else if (command == "dev-start") devStart()
   else if (command == "dev-stop") devStop()
+  else if (command == "mass-change") massChange()
   else if (command == "--help") help(0)
   else help(1)
 }
@@ -59,6 +60,8 @@ function help(status) {
   pm grep <pattern>       Grep through the source code for all packages
   pm run <command>        Run the given command in each of the package dirs
   pm changes              Show commits since the last release for all packages
+  pm mass-change <files> <pattern> <replacement>
+                          Run a regexp-replace on the matching files in each package
   pm --help`)
   process.exit(status)
 }
@@ -338,6 +341,21 @@ function devStop() {
     process.kill(pid, "SIGTERM")
     console.log("Killed dev server with pid " + pid)
   }
+}
+
+function massChange() {
+  let [file, pattern, replacement] = process.argv.slice(3)
+  let re = new RegExp(pattern, "g")
+  modsAndWebsite.forEach(repo => {
+    let glob = require("glob")
+    glob.sync(repo + "/" + file).forEach(file => {
+      let content = fs.readFileSync(file, "utf8"), changed = content.replace(re, replacement)
+      if (changed != content) {
+        console.log("Updated " + file)
+        fs.writeFileSync(file, changed)
+      }
+    })
+  })
 }
 
 start()
