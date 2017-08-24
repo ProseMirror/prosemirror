@@ -21,8 +21,5 @@
 /example-setup
 /tables
 /notes.txt
-/prebuilt/index.js
-/prebuilt/style.css
-/prebuilt/node_modules
 /yarn.lock
 /bin/.pm-dev.pid
