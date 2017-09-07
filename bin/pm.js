@@ -282,8 +282,8 @@ function watch() {
   const {watch} = require("rollup")
   let configs = mods.map(repo => {
     let conf = require("../" + repo + "/rollup.config")
-    conf.entry = path.resolve(repo, conf.entry)
-    conf.dest = path.resolve(repo, conf.dest)
+    conf.input = path.resolve(repo, conf.input)
+    conf.output.file = path.resolve(repo, conf.output.file)
     conf.watch = {exclude: ['node_modules/**']}
     return conf
   })

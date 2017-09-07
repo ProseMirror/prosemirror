@@ -21,7 +21,7 @@
     "glob": "^3.0.0",
     "mocha": "^3.5.0",
     "moduleserve": "^0.8.3",
-    "rollup": "^0.46.0"
+    "rollup": "^0.49.0"
   },
   "scripts": {
     "demo": "moduleserve demo",
