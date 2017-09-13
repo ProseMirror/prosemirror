@@ -354,6 +354,7 @@ function devStop() {
 }
 
 function massChange() {
+  if (process.argv.length != 6) help(1) // FIXME: replacement optional?
   let [file, pattern, replacement] = process.argv.slice(3)
   let re = new RegExp(pattern, "g")
   modsAndWebsite.forEach(repo => {
