@@ -235,6 +235,7 @@ function updateVersion(repo, versions) {
     .replace(/"version":\s*".*?"/, `"version": "${versions[repo]}"`)
     .replace(/"prosemirror-(.*?)":\s*"(.*)?"/g, (match, mod, version) => {
       let newVer = semver.exec(versions[mod])
+      if (!newVer) return match
       let oldVer = semver.exec(version)
       // If only patch version, or nothing at all, changed, leave alone
       if (oldVer[2] == newVer[2] && oldVer[3] == newVer[3]) return match
