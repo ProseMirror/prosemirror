@@ -25,26 +25,33 @@ let modsAndWebsite = mods.concat("website")
 
 function start() {
   let command = process.argv[2]
+  let args = process.argv.slice(3)
+  let cmdFn = {
+    "status": status,
+    "lint": lint,
+    "commit": commit,
+    "install": install,
+    "build": build,
+    "test": test,
+    "push": push,
+    "grep": grep,
+    "run": runCmd,
+    "watch": watch,
+    "changes": changes,
+    "changelog": buildChangelog,
+    "set-version": setVersions,
+    "modules": listModules,
+    "dev-start": devStart,
+    "dev-stop": devStop,
+    "mass-change": massChange,
+    "--help": showHelp
+  }[command]
+  if (!cmdFn || cmdFn.length > args.length) help(1)
+  cmdFn.apply(null, args)
+}
 
-  if (command == "status") status()
-  else if (command == "lint") lint()
-  else if (command == "commit") commit()
-  else if (command == "install") install()
-  else if (command == "build") build()
-  else if (command == "test") test()
-  else if (command == "push") push()
-  else if (command == "grep") grep()
-  else if (command == "run") runCmd()
-  else if (command == "watch") watch()
-  else if (command == "changes") changes()
-  else if (command == "changelog") buildChangelog(process.argv[3])
-  else if (command == "set-version") setVersions(process.argv[3])
-  else if (command == "modules") listModules()
-  else if (command == "dev-start") devStart()
-  else if (command == "dev-stop") devStop()
-  else if (command == "mass-change") massChange()
-  else if (command == "--help") help(0)
-  else help(1)
+function showHelp() {
+  help(0)
 }
 
 function help(status) {
@@ -121,23 +128,20 @@ function lint() {
   require("glob").sync("website/pages/examples/*/example.js").forEach(file => blint.checkFile(file, websiteOptions))
 }
 
-function commit() {
+function commit(...args) {
+  let cmdLine = ["commit"].concat(args)
   handleENOENT(() => {
     modsAndWebsite.forEach(repo => {
       if (run("git", ["diff"], repo) || run("git", ["diff", "--cached"], repo))
-        console.log(repo + ":\n" + run("git", ["commit"].concat(process.argv.slice(3)), repo))
+        console.log(repo + ":\n" + run("git", cmdLine, repo))
     })
   })
 }
 
-function install() {
+function install(arg = null) {
   let base = "https://github.com/prosemirror/"
-
-  for (let i = 3; i < process.argv.length; i++) {
-    let arg = process.argv[i]
-    if (arg == "--ssh") { base = "git@github.com:ProseMirror/" }
-    else help(1)
-  }
+  if (arg == "--ssh") { base = "git@github.com:ProseMirror/" }
+  else if (arg != null) help(1)
 
   modsAndWebsite.forEach(repo => {
     if (fs.existsSync(repo)) {
@@ -184,8 +188,8 @@ function push() {
   })
 }
 
-function grep() {
-  let pattern = process.argv[3] || help(1), files = []
+function grep(pattern) {
+  let files = []
   let glob = require("glob")
   mods.forEach(repo => {
     if (!fs.existsSync(repo)) failNotInstalled(repo)
@@ -200,14 +204,12 @@ function grep() {
   }
 }
 
-function runCmd() {
-  let cmd = process.argv.slice(3)
-  if (!cmd.length) help(1)
+function runCmd(cmd, ...args) {
   try {
     handleENOENT(() => {
       mods.forEach(repo => {
         console.log(repo + ":")
-          console.log(run(cmd[0], cmd.slice(1), repo))
+        console.log(run(cmd, args, repo))
       })
     })
   } catch (e) {
@@ -281,7 +283,7 @@ function setVersions(version) {
 }
 
 function listModules() {
-  console.log((process.argv.indexOf("--core") > -1 ? main : mods).join("\n"))
+  console.log((process.argv.includes("--core") ? main : mods).join("\n"))
 }
 
 function watch() {
@@ -353,9 +355,7 @@ function devStop() {
   }
 }
 
-function massChange() {
-  if (process.argv.length != 6) help(1) // FIXME: replacement optional?
-  let [file, pattern, replacement] = process.argv.slice(3)
+function massChange(file, pattern, replacement = "") {
   let re = new RegExp(pattern, "g")
   modsAndWebsite.forEach(repo => {
     if (!fs.existsSync(repo)) failNotInstalled(repo)
