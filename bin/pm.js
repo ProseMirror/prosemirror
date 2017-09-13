@@ -62,12 +62,19 @@ function help(status) {
   pm commit <args>        Run git commit in all packages that have changes
   pm push                 Run git push in packages that have new commits
   pm test                 Run the tests from all packages
+  pm lint                 Run the linter over all packages
   pm watch                Set up a process that rebuilds the packages on change
   pm grep <pattern>       Grep through the source code for all packages
   pm run <command>        Run the given command in each of the package dirs
   pm changes              Show commits since the last release for all packages
   pm mass-change <files> <pattern> <replacement>
                           Run a regexp-replace on the matching files in each package
+  pm changelog <version>  Generate a changelog from commits in all packages
+  pm set-version <version>
+                          Update version and all dependencies for all packages
+  pm modules [--core]     Emit a list of all package names
+  pm dev-start            Start development server
+  pm dev-stop             Stop development server, if running
   pm --help`)
   process.exit(status)
 }
@@ -209,7 +216,7 @@ function changelog(repo, since) {
 }
 
 function buildChangelog(version) {
-  function pad(n) { return n < 10 ? "0" + n : n }
+  let pad = n => n < 10 ? "0" + n : n
   let d = new Date, date = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
 
   let file = "http://prosemirror.net/docs/ref/version/" + version + ".html"
@@ -284,7 +291,7 @@ function watch() {
 
 const pidFile = __dirname + "/.pm-dev.pid"
 function devPID() {
-  try { return JSON.parse(fs.readFileSync(__dirname + "/.pm-dev.pid", "utf8")) }
+  try { return JSON.parse(fs.readFileSync(pidFile, "utf8")) }
   catch(_) { return null }
 }
 
