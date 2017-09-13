@@ -69,11 +69,27 @@ function run(cmd, args, wd) {
   return child.execFileSync(cmd, args, {cwd: wd, encoding: "utf8", stdio: ["ignore", "pipe", process.stderr]})
 }
 
+function failNotInstalled(module) {
+  console.error("module `%s` is missing. Did you forget to run `pm install`?", module)
+  process.exit(1)
+}
+
+function handleENOENT(f) {
+  try {
+    return f()
+  } catch (e) {
+    if (e.code == "ENOENT" && modsAndWebsite.includes(e.options.cwd)) failNotInstalled(e.options.cwd)
+    else throw e
+  }
+}
+
 function status() {
-  modsAndWebsite.forEach(repo => {
-    let output = run("git", ["status", "-sb"], repo)
-    if (output != "## master...origin/master\n")
-      console.log(repo + ":\n" + run("git", ["status"], repo))
+  handleENOENT(() => {
+    modsAndWebsite.forEach(repo => {
+      let output = run("git", ["status", "-sb"], repo)
+      if (output != "## master...origin/master\n")
+        console.log(repo + ":\n" + run("git", ["status"], repo))
+    })
   })
 }
 
@@ -106,9 +122,11 @@ function lint() {
 }
 
 function commit() {
-  modsAndWebsite.forEach(repo => {
-    if (run("git", ["diff"], repo) || run("git", ["diff", "--cached"], repo))
-      console.log(repo + ":\n" + run("git", ["commit"].concat(process.argv.slice(3)), repo))
+  handleENOENT(() => {
+    modsAndWebsite.forEach(repo => {
+      if (run("git", ["diff"], repo) || run("git", ["diff", "--cached"], repo))
+        console.log(repo + ":\n" + run("git", ["commit"].concat(process.argv.slice(3)), repo))
+    })
   })
 }
 
@@ -137,15 +155,18 @@ function install() {
 }
 
 function build() {
-  mods.forEach(repo => {
-    console.log(repo + "...")
-    run("npm", ["run", "build"], repo)
+  handleENOENT(() => {
+    mods.forEach(repo => {
+      console.log(repo + "...")
+      run("npm", ["run", "build"], repo)
+    })
   })
 }
 
 function test() {
   let mocha = new (require("mocha"))
   mods.forEach(repo => {
+    if (!fs.existsSync(repo)) failNotInstalled(repo)
     if (repo == "view" || !fs.existsSync(repo + "/test")) return
     fs.readdirSync(repo + "/test").forEach(file => {
       if (/^test-/.test(file)) mocha.addFile(repo + "/test/" + file)
@@ -155,9 +176,11 @@ function test() {
 }
 
 function push() {
-  modsAndWebsite.forEach(repo => {
-    if (/\bahead\b/.test(run("git", ["status", "-sb"], repo)))
-      run("git", ["push"], repo)
+  handleENOENT(() => {
+    modsAndWebsite.forEach(repo => {
+      if (/\bahead\b/.test(run("git", ["status", "-sb"], repo)))
+        run("git", ["push"], repo)
+    })
   })
 }
 
@@ -165,8 +188,10 @@ function grep() {
   let pattern = process.argv[3] || help(1), files = []
   let glob = require("glob")
   mods.forEach(repo => {
+    if (!fs.existsSync(repo)) failNotInstalled(repo)
     files = files.concat(glob.sync(repo + "/src/*.js")).concat(glob.sync(repo + "/test/*.js"))
   })
+  if (!fs.existsSync("website")) failNotInstalled("website")
   files = files.concat(glob.sync("website/src/**/*.js")).concat(glob.sync("website/pages/examples/*/*.js"))
   try {
     console.log(run("grep", ["--color", "-nH", "-e", pattern].concat(files.map(f => path.relative(origDir, f))), origDir))
@@ -178,23 +203,27 @@ function grep() {
 function runCmd() {
   let cmd = process.argv.slice(3)
   if (!cmd.length) help(1)
-  mods.forEach(repo => {
-    console.log(repo + ":")
-    try {
-      console.log(run(cmd[0], cmd.slice(1), repo))
-    } catch (e) {
-      console.log(e.toString())
-      process.exit(1)
-    }
-  })
+  try {
+    handleENOENT(() => {
+      mods.forEach(repo => {
+        console.log(repo + ":")
+          console.log(run(cmd[0], cmd.slice(1), repo))
+      })
+    })
+  } catch (e) {
+    console.log(e.toString())
+    process.exit(1)
+  }
 }
 
 function changes() {
-  mods.forEach(repo => {
-    let lastTag = run("git", ["describe", "master", "--tags", "--abbrev=0"], repo).trim()
-    if (!lastTag) return console.log("No previous tag for " + repo + "\n")
-    let history = run("git", ["log", lastTag + "..master"], repo).trim()
-    if (history) console.log(repo + ":\n" + "=".repeat(repo.length + 1) + "\n\n" + history + "\n")
+  handleENOENT(() => {
+    mods.forEach(repo => {
+      let lastTag = run("git", ["describe", "master", "--tags", "--abbrev=0"], repo).trim()
+      if (!lastTag) return console.log("No previous tag for " + repo + "\n")
+      let history = run("git", ["log", lastTag + "..master"], repo).trim()
+      if (history) console.log(repo + ":\n" + "=".repeat(repo.length + 1) + "\n\n" + history + "\n")
+    })
   })
 }
 
@@ -258,6 +287,7 @@ function listModules() {
 function watch() {
   const {watch} = require("rollup")
   let configs = mods.map(repo => {
+    if (!fs.existsSync(repo)) failNotInstalled(repo)
     let conf = require("../" + repo + "/rollup.config")
     conf.input = path.resolve(repo, conf.input)
     conf.output.file = path.resolve(repo, conf.output.file)
@@ -327,6 +357,7 @@ function massChange() {
   let [file, pattern, replacement] = process.argv.slice(3)
   let re = new RegExp(pattern, "g")
   modsAndWebsite.forEach(repo => {
+    if (!fs.existsSync(repo)) failNotInstalled(repo)
     let glob = require("glob")
     glob.sync(repo + "/" + file).forEach(file => {
       let content = fs.readFileSync(file, "utf8"), changed = content.replace(re, replacement)
