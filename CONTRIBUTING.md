@@ -13,7 +13,7 @@ Community discussion, questions, and informal bug reporting is done on the
 
 Report bugs on the
 [GitHub issue tracker](http://github.com/prosemirror/prosemirror/issues).
-Before reporting a bug, read these pointers.
+Before reporting a bug, please read these pointers.
 
 - The issue tracker is for *bugs*, not requests for help. Questions
   should be asked on the [forum](http://discuss.prosemirror.net).
@@ -22,10 +22,11 @@ Before reporting a bug, read these pointers.
   problem. For browser-related issues, include the browser and browser
   version on which the problem occurred.
 
-- Mention very precisely what went wrong. "X is broken" is not a good bug
-  report. What did you expect to happen? What happened instead? Describe the
-  exact steps a maintainer has to take to make the problem occur. We can not
-  fix something that we can not observe.
+- Mention very precisely what went wrong. "X is broken" is not a good
+  bug report. What did you expect to happen? What happened instead?
+  Describe the exact steps a maintainer has to take to make the
+  problem occur. A screencast can be useful, but is no substitute for
+  a textual description.
 
 - A great way to make it easy to reproduce your problem, if it can not
   be trivially reproduced on the website demos, is to submit a script
@@ -45,8 +46,8 @@ Before reporting a bug, read these pointers.
 - Make your changes, and commit them
 
 - Follow the code style of the rest of the project (see below). Run
-  `npm run lint` (in the main repository checkout) that the linter is
-  happy.
+  `npm run lint` (in the main repository checkout) to make sure that
+  the linter is happy.
 
 - If your changes are easy to test or likely to regress, add tests in
   the relevant `test/` directory. Either put them in an existing
