@@ -120,6 +120,7 @@ function lintOptions(browser) {
 function lint() {
   let blint = require("blint")
   mods.forEach(repo => {
+    if (!fs.existsSync(repo)) failNotInstalled(repo)
     let options = lintOptions(["view", "menu", "example-setup", "dropcursor", "gapcursor"].indexOf(repo) > -1)
     blint.checkDir(repo + "/src/", options)
     if (fs.existsSync(repo + "/test")) {
@@ -127,6 +128,7 @@ function lint() {
       blint.checkDir(repo + "/test/", options)
     }
   })
+  if (!fs.existsSync("website")) failNotInstalled("website")
   let websiteOptions = Object.assign(lintOptions(true), {
     allowedGlobals: ["__dirname", "process"],
     console: true
@@ -252,22 +254,25 @@ function buildChangelog(version) {
   let file = "http://prosemirror.net/docs/ref/version/" + version + ".html"
   let types = {breaking: "Breaking changes", fix: "Bug fixes", feature: "New features"}
 
-  main.forEach(repo => {
-    let log = changelog(repo)
-    if (log.fix.length || log.feature.length || log.breaking.length) {
-      console.log(`## [prosemirror-${repo}](${file}#${repo}) ${version} (${date})` + "\n")
-      for (let type in types) {
-        let messages = log[type]
-        if (messages.length) console.log("### " + types[type] + "\n")
-        messages.forEach(message => console.log(message.replace(/\]\(##/g, "](" + file + "#") + "\n"))
+  handleENOENT(() => {
+    main.forEach(repo => {
+      let log = changelog(repo)
+      if (log.fix.length || log.feature.length || log.breaking.length) {
+        console.log(`## [prosemirror-${repo}](${file}#${repo}) ${version} (${date})` + "\n")
+        for (let type in types) {
+          let messages = log[type]
+          if (messages.length) console.log("### " + types[type] + "\n")
+          messages.forEach(message => console.log(message.replace(/\]\(##/g, "](" + file + "#") + "\n"))
+        }
       }
-    }
+    })
   })
 }
 
 let semver = /^(\^|~)?(\d+)\.(\d+)\.(\d+)$/
 
 function updateVersion(repo, versions) {
+  if (!fs.existsSync(repo)) failNotInstalled(repo)
   let file = repo + "/package.json"
   let result = fs.readFileSync(file, "utf8")
     .replace(/"version":\s*".*?"/, `"version": "${versions[repo]}"`)
