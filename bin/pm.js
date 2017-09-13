@@ -31,7 +31,6 @@ function start() {
   else if (command == "commit") commit()
   else if (command == "install") install()
   else if (command == "build") build()
-  else if (command == "link") link()
   else if (command == "test") test()
   else if (command == "push") push()
   else if (command == "grep") grep()
@@ -131,12 +130,6 @@ function install() {
     run("git", ["clone", origin, repo])
   })
 
-  run("mkdir", ["-p", "node_modules"])
-  mods.forEach(repo => {
-    run("rm", ["-rf", "node_modules/prosemirror-" + repo])
-    run("ln", ["-s", "../" + repo, "prosemirror-" + repo], "node_modules")
-  })
-
   console.log("Running yarn install")
   run("yarn", ["install"])
   console.log("Building modules")
@@ -147,23 +140,6 @@ function build() {
   mods.forEach(repo => {
     console.log(repo + "...")
     run("npm", ["run", "build"], repo)
-  })
-}
-
-function link() {
-  modsAndWebsite.forEach(repo => {
-    run("mkdir", ["-p", "node_modules"], repo)
-    let pkg = JSON.parse(fs.readFileSync(repo + "/package.json"), "utf8"), link = Object.create(null)
-    function add(name) {
-      let match = /^prosemirror-(.*)$/.exec(name)
-      if (match) link[match[1]] = true
-    }
-    Object.keys(pkg.dependencies || {}).forEach(add)
-    Object.keys(pkg.devDependencies || {}).forEach(add)
-    for (let dep in link) {
-      run("rm", ["-rf", "node_modules/prosemirror-" + dep], repo)
-      run("ln", ["-s", "../../" + dep, "node_modules/prosemirror-" + dep], repo)
-    }
   })
 }
 
