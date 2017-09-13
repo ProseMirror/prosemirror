@@ -1,3 +1,121 @@
+## [prosemirror-model](http://prosemirror.net/docs/ref/version/0.23.0.html#model) 0.23.0 (2017-09-13)
+
+### Breaking changes
+
+[`ResolvedPos.marks`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.ResolvedPos.marks) no longer takes a parameter (you probably want [`marksAcross`](http://prosemirror.net/doc/ref/version/0.23.0.html#model.ResolvedPos.marksAcross) if you were passing true there).
+
+Attribute and mark constraints in [content expressions](http://prosemirror.net/docs/ref/version/0.23.0.html#model.NodeSpec.content) are no longer supported (this also means the `prosemirror-schema-table` package, which relied on them, is no longer supported). In this release, mark constraints are still (approximately) recognized with a warning, when present.
+
+[`ContentMatch`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.ContentMatch) objects lost a number of methods: `matchNode`, `matchToEnd`, `findWrappingFor` (which can be easily emulated using the remaining API), and `allowsMark`, which is now the responsibility of [node types](http://prosemirror.net/docs/ref/version/0.23.0.html#model.NodeType.allowsMarkType) instead.
+
+[`ContentMatch.validEnd`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.ContentMatch.validEnd) is now a property rather than a method.
+
+[`ContentMatch.findWrapping`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.ContentMatch.findWrapping) now returns an array of plain node types, with no attribute information (since this is no longer necessary).
+
+The `compute` method for attributes is no longer supported.
+
+Fragments no longer have an `offsetAt` method.
+
+`DOMParser.schemaRules` is no longer public (use [`fromSchema`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.DOMParser^fromSchema) and get the resulting parser's `rules` property instead).
+
+The DOM parser option `topStart` has been replaced by [`topMatch`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.ParseOptions.topMatch).
+
+The `DOMSerializer` methods `nodesFromSchema` and `marksFromSchema` are no longer public (construct a serializer with [`fromSchema`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.DOMSerializer^fromSchema) and read its `nodes` and `marks` properties instead).
+
+### Bug fixes
+
+Fix issue where whitespace at node boundaries was sometimes dropped during content parsing.
+
+Attribute default values of `undefined` are now allowed.
+
+### New features
+
+[`contentElement`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.ParseRule.contentElement) in parse rules may now be a function.
+
+The new method [`ResolvedPos.marksAcross`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.ResolvedPos.marksAcross) can be used to find the set of marks that should be preserved after a deletion.
+
+[Content expressions](http://prosemirror.net/docs/ref/version/0.23.0.html#model.NodeSpec.content) are now a regular language, meaning all the operators can be nested and composed as desired, and a bunch of constraints on what could appear next to what have been lifted.
+
+The starting content match for a node type now lives in [`NodeType.contentMatch`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.NodeType.contentMatch).
+
+Allowed marks are now specified per node, rather than in content expressions, using the [`marks`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.NodeSpec.marks) property on the node spec.
+
+Node types received new methods [`allowsMarkType`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.NodeType.allowsMarkType), [`allowsMarks`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.NodeType.allowsMarks), and [`allowedMarks`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.NodeType.allowedMarks), which tell you about the marks that node supports.
+
+The [`style`](http://prosemirror.net/docs/ref/version/0.23.0.html#model.ParseRule.style) property on parse rules may now have the form `"font-style=italic"` to only match styles that have the value after the equals sign.
+
+## [prosemirror-transform](http://prosemirror.net/docs/ref/version/0.23.0.html#transform) 0.23.0 (2017-09-13)
+
+### Breaking changes
+
+[`Step.toJSON`](http://prosemirror.net/docs/ref/version/0.23.0.html#transform.Step.toJSON) no longer has a default implementation.
+
+Steps no longer have an `offset` method. Map them through a map created with [`StepMap.offset`](http://prosemirror.net/docs/ref/version/0.23.0.html#transform.StepMap^offset) instead.
+
+The `clearMarkup` method on [`Transform`](http://prosemirror.net/docs/ref/version/0.23.0.html#transform.Transform) is no longer supported (you probably needed [`clearIncompatible`](http://prosemirror.net/docs/ref/version/0.23.0.html#transform.Transform.clearIncompatible) anyway).
+
+### Bug fixes
+
+Pasting a list item at the start of a non-empty textblock now wraps the textblock in a list.
+
+Marks on open nodes at the left of a slice are no longer dropped by [`Transform.replace`](http://prosemirror.net/docs/ref/version/0.23.0.html#transform.Transform.replace).
+
+### New features
+
+`StepMap` now has a static method [`offset`](http://prosemirror.net/docs/ref/version/0.23.0.html#transform.StepMap^offset), which can be used to create a map that offsets all positions by a given distance.
+
+Transform objects now have a [`clearIncompatible`](http://prosemirror.net/docs/ref/version/0.23.0.html#transform.Transform.clearIncompatible) method that can help make sure a node's content matches another node type.
+
+## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.23.0.html#view) 0.23.0 (2017-09-13)
+
+### Breaking changes
+
+The `onFocus`, `onBlur`, and `handleContextMenu` props are no longer supported. You can achieve their effect with the [`handleDOMEvents`](http://prosemirror.net/docs/ref/version/0.23.0.html#view.EditorProps.handleDOMEvents) prop.
+
+### Bug fixes
+
+Fixes occasional crash when reading the selection in Firefox.
+
+Putting a table cell on the clipboard now properly wraps it in a table.
+
+The view will no longer scroll into view when receiving a state that isn't derived from its previous state.
+
+### New features
+
+Transactions caused by a paste now have their "paste" meta property set to true.
+
+Adds a new view prop, [`handleScrollToSelection`](http://prosemirror.net/docs/ref/version/0.23.0.html#view.EditorProps.handleScrollToSelection) to override the behavior of scrolling the selection into view.
+
+The new editor prop [`clipboardTextSerializer`](http://prosemirror.net/docs/ref/version/0.23.0.html#view.EditorProps.clipboardTextSerializer) allows you to override the way a piece of document is converted to clipboard text.
+
+Adds the editor prop [`clipboardTextParser`](http://prosemirror.net/docs/ref/version/0.23.0.html#view.EditorProps.clipboardTextParser), which can be used to define your own parsing strategy for clipboard text content.
+
+[`DecorationSet.find`](http://prosemirror.net/docs/ref/version/0.23.0.html#view.DecorationSet.find) now supports passing a predicate to filter decorations by spec.
+
+## [prosemirror-inputrules](http://prosemirror.net/docs/ref/version/0.23.0.html#inputrules) 0.23.0 (2017-09-13)
+
+### Breaking changes
+
+Schema-specific rule-builders `blockQuoteRule`, `orderedListRule`, `bulletListRule`, `codeBlockRule`, and `headingRule`, along with the `allInputRules` array, are no longer included in this module.
+
+## [prosemirror-commands](http://prosemirror.net/docs/ref/version/0.23.0.html#commands) 0.23.0 (2017-09-13)
+
+### Breaking changes
+
+`joinForward` and `joinBackward` no longer fall back to selecting the next node when no other behavior is possible. There are now separate commands `selectNodeForward` and `selectNodeBackward` that do this, which the base keymap binds as fallback behavior.
+
+[`baseKeymap`](http://prosemirror.net/docs/ref/version/0.23.0.html#commands.baseKeymap) no longer binds keys for `joinUp`, `joinDown`, `lift`, and `selectParentNode`.
+
+### New features
+
+New commands [`selectNodeForward`](http://prosemirror.net/docs/ref/version/0.23.0.html#commands.selectNodeForward) and [`selectNodeBackward`](http://prosemirror.net/docs/ref/version/0.23.0.html#commands.selectNodeBackward) added.
+
+## [prosemirror-schema-list](http://prosemirror.net/docs/ref/version/0.23.0.html#schema-list) 0.23.0 (2017-09-13)
+
+### Bug fixes
+
+The [`splitListItem` command](http://prosemirror.net/docs/ref/version/0.23.0.html#schema-list.splitListItem) now splits the parent list item when executed in a (trailing) empty list item in a nested list.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.22.0.html#view) 0.22.1 (2017-08-16)
 
 ### Bug fixes
