@@ -25,6 +25,7 @@ let modsAndWebsite = mods.concat("website")
 
 function start() {
   let command = process.argv[2]
+  if (command && !["install", "--help"].includes(command)) assertInstalled()
   let args = process.argv.slice(3)
   let cmdFn = {
     "status": status,
@@ -77,6 +78,15 @@ function help(status) {
   pm dev-stop             Stop development server, if running
   pm --help`)
   process.exit(status)
+}
+
+function assertInstalled() {
+  modsAndWebsite.forEach(repo => {
+    if (!fs.existsSync(repo)) {
+      console.error("module `%s` is missing. Did you forget to run `pm install`?", repo)
+      process.exit(1)
+    }
+  })
 }
 
 function run(cmd, args, wd) {
