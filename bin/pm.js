@@ -20,7 +20,7 @@ let child = require("child_process"), fs = require("fs"), path = require("path")
 let main = ["model", "transform", "state", "view",
             "keymap", "inputrules", "history", "collab", "commands", "gapcursor",
             "schema-basic", "schema-list"]
-let mods = main.concat(["menu", "example-setup", "markdown", "dropcursor", "test-builder"])
+let mods = main.concat(["menu", "example-setup", "markdown", "dropcursor", "test-builder", "changeset"])
 let modsAndWebsite = mods.concat("website")
 
 function start() {
