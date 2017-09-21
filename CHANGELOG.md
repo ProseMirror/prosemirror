@@ -1,3 +1,15 @@
+## [prosemirror-model](http://prosemirror.net/docs/ref/version/0.23.0.html#model) 0.23.1 (2017-09-21)
+
+### Bug fixes
+
+`NodeType.allowsMarks` and `allowedMarks` now actually work for nodes that allow only specific marks.
+
+## [prosemirror-gapcursor](http://prosemirror.net/docs/ref/version/0.23.0.html#gapcursor) 0.23.0 (2017-09-19)
+
+### Bug fixes
+
+Moving out of a table with the arrow keys now creates a gap cursor when appropriate.
+
 ## [prosemirror-model](http://prosemirror.net/docs/ref/version/0.23.0.html#model) 0.23.0 (2017-09-13)
 
 ### Breaking changes
