@@ -1,10 +1,28 @@
+## [prosemirror-transform](http://prosemirror.net/docs/ref/version/0.24.0.html#transform) 0.24.0 (2017-09-25)
+
+### Breaking changes
+
+The `setNodeType` method on transforms is now more descriptively called [`setNodeMarkup`](http://prosemirror.net/docs/ref/version/0.24.0.html#transform.Transform.setNodeMarkup). The old name will continue to work with a warning until the next release.
+
+## [prosemirror-view](http://prosemirror.net/docs/ref/version/0.24.0.html#view) 0.24.0 (2017-09-25)
+
+### New features
+
+The [`clipboardTextParser`](http://prosemirror.net/docs/ref/version/0.24.0.html#view.EditorProps.clipboardTextParser) prop is now passed a context position.
+
+## [prosemirror-history](http://prosemirror.net/docs/ref/version/0.24.0.html#history) 0.24.0 (2017-09-25)
+
+### New features
+
+It is no longer necessary to manually enable the `preserveItems` option to the history plugin when using collaborative editing. (This behavior is now automatically enabled when necessary.)
+
 ## [prosemirror-model](http://prosemirror.net/docs/ref/version/0.23.0.html#model) 0.23.1 (2017-09-21)
 
 ### Bug fixes
 
 `NodeType.allowsMarks` and `allowedMarks` now actually work for nodes that allow only specific marks.
 
-## [prosemirror-gapcursor](http://prosemirror.net/docs/ref/version/0.23.0.html#gapcursor) 0.23.0 (2017-09-19)
+## [prosemirror-gapcursor](http://prosemirror.net/docs/ref/version/0.23.0.html#gapcursor) 0.23.1 (2017-09-19)
 
 ### Bug fixes
 
