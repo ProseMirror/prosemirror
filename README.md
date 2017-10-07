@@ -62,3 +62,8 @@ To run the demo in `demo/`, do `npm run demo`, and go to
 [localhost:8080](http://localhost:8080/). This loads the individual
 JavaScript files from the distribution's `dist` directories, and will
 only need a refresh when those are changed.
+
+We aim to be an inclusive, welcoming community. To make that explicit,
+we have a [code of
+conduct](http://contributor-covenant.org/version/1/1/0/) that applies
+to communication around the project.
