@@ -1,3 +1,55 @@
+## [prosemirror-model](http://prosemirror.net/docs/ref/#model) 1.0.0 (2017-10-13)
+
+### New features
+
+[`ParseRule.context`](http://prosemirror.net/docs/ref/#model.ParseRule.context) may now include multiple, pipe-separated context expressions.
+
+## [prosemirror-transform](http://prosemirror.net/docs/ref/#transform) 1.0.0 (2017-10-13)
+
+### Bug fixes
+
+When [`setBlockType`](http://prosemirror.net/docs/ref/#transform.Transform.setBlockType) comes across a textblock that can't be changed due to schema constraints, it skips it instead of failing.
+
+[`canSplit`](http://prosemirror.net/docs/ref/#transform.canSplit) now returns false when the requested split goes through isolating nodes.
+
+## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.0 (2017-10-13)
+
+### Bug fixes
+
+Dragging nodes with a node view that handles its own mouse events should work better now.
+
+List item DOM nodes are no longer assigned `pointer-events: none` in the default style. Ctrl-clicking list markers now properly selects the list item again.
+
+Arrow-down through an empty textblock no longer causes the browser to forget the cursor's horizontal position.
+
+Copy-dragging on OS X is now done by holding option, rather than control, following the convention on that system.
+
+Fixes a crash related to decoration management.
+
+Fixes a problem where using cut on IE11 wouldn't actually remove the selected text.
+
+Copy/paste on Edge 15 and up now uses the clipboard API, fixing a problem that made them fail entirely.
+
+### New features
+
+The [`dragging`](http://prosemirror.net/docs/ref/#view.EditorView.dragging) property of a view, which contains information about editor content being dragged, is now part of the public interface.
+
+## [prosemirror-commands](http://prosemirror.net/docs/ref/#commands) 1.0.0 (2017-10-13)
+
+### New features
+
+The [`setBlockType` command](http://prosemirror.net/docs/ref/#commands.setBlockType) can now be used to change the types of multiple selected textblocks (rather than only one).
+
+The platform-dependent versions of the [base keymap](http://prosemirror.net/docs/ref/#commands.baseKeymap) are now exported separately as [`pcBaseKeymap`](http://prosemirror.net/docs/ref/#commands.pcBaseKeymap) and [`macBaseKeymap`](http://prosemirror.net/docs/ref/#commands.macBaseKeymap).
+
+## [prosemirror-gapcursor](http://prosemirror.net/docs/ref/#gapcursor) 1.0.0 (2017-10-13)
+
+### New features
+
+Valid gap cursor positions are not determined in a way that allows them inside nested nodes. By default, any position where a textblock can be inserted is valid gap cursor position.
+
+Nodes can override whether they allow gap cursors with the `allowGapCursor` property in their spec.
+
 ## [prosemirror-transform](http://prosemirror.net/docs/ref/version/0.24.0.html#transform) 0.24.0 (2017-09-25)
 
 ### Breaking changes
