@@ -6,7 +6,7 @@ ProseMirror is a well-behaved rich semantic content editor based on
 contentEditable, with support for collaborative editing and custom
 document schemas.
 
-The library consists of a number of
+The ProseMirror library consists of a number of separate
 [modules](https://github.com/prosemirror/). This repository just
 serves as a central issue tracker, and holds a script to help easily
 check out all the core modules for development.
@@ -21,6 +21,11 @@ There's a [forum](http://discuss.prosemirror.net) for general
 discussion and support requests, and the
 [Github bug tracker](https://github.com/prosemirror/prosemirror/issues)
 is the place to report issues.
+
+**STOP READING HERE IF YOU'RE SIMPLY _USING_ PROSEMIRROR. YOU CAN
+INSTALL THE SEPARATE [NPM
+MODULES](https://www.npmjs.com/search?q=prosemirror-) FOR THAT. THE
+INSTRUCTIONS BELOW ONLY APPLY WHEN _DEVELOPING_ PROSEMIRROR!**
 
 ## Setting up a dev environment
 
