@@ -39,9 +39,8 @@ function start() {
     "run": runCmd,
     "watch": watch,
     "changes": changes,
-    "changelog": buildChangelog,
-    "set-version": setVersions,
     "modules": listModules,
+    "release": release,
     "dev-start": devStart,
     "dev-stop": devStop,
     "mass-change": massChange,
@@ -70,9 +69,7 @@ function help(status) {
   pm changes              Show commits since the last release for all packages
   pm mass-change <files> <pattern> <replacement>
                           Run a regexp-replace on the matching files in each package
-  pm changelog <version>  Generate a changelog from commits in all packages
-  pm set-version <version>
-                          Update version and all dependencies for all packages
+  pm release <module>     Generate a new release for the given module.
   pm modules [--core]     Emit a list of all package names
   pm dev-start            Start development server
   pm dev-stop             Stop development server, if running
@@ -216,57 +213,74 @@ function changes() {
   })
 }
 
+function release(mod) {
+  let currentVersion = require("../" + mod + "/package.json").version
+  let changes = changelog(mod, currentVersion)
+  let newVersion = bumpVersion(currentVersion, changes)
+  console.log(`Creating prosemirror-${mod} ${newVersion}`)
+
+  let notes = releaseNotes(mod, changes, newVersion)
+  fs.writeFileSync("CHANGELOG.md", notes.head + notes.body + fs.readFileSync("CHANGELOG.md", "utf8"))
+  run("git", ["add", "CHANGELOG.md"])
+  run("git", ["commit", "-m", `Add prosemirror-${mod} ${newVersion} to changelog`])
+
+  setModuleVersion(mod, newVersion)
+  if (changes.breaking.length) setDepVersion(mod, newVersion)
+  run("git", ["add", "package.json"], mod)
+  run("git", ["commit", "-m", `Mark version ${newVersion}`], mod)
+  run("git", ["tag", newVersion, "-m", `Version ${newVersion}\n\n${notes.body}`, "--cleanup=verbatim"], mod)
+}
+
 function changelog(repo, since) {
-  let tag = since || run("git", ["describe", "master", "--tags", "--abbrev=0"], repo).trim()
-  let commits = run("git", ["log", "--format=%B", "--reverse", tag + "..master"], repo)
-  let result = {fix: [], feature: [], breaking: [], tag}
+  let commits = run("git", ["log", "--format=%B", "--reverse", since + "..master"], repo)
+  let result = {fix: [], feature: [], breaking: []}
   let re = /\n\n(BREAKING|FIX|FEATURE):\s*([^]*?)(?=\n\n|\n?$)/g, match
   while (match = re.exec(commits)) result[match[1].toLowerCase()].push(match[2].replace(/\n/g, " "))
   return result
 }
 
-function buildChangelog(version) {
+function bumpVersion(version, changes) {
+  let [major, minor, patch] = version.split(".")
+  if (changes.breaking.length) return `${Number(major) + 1}.0.0`
+  if (changes.feature.length) return `${major}.${Number(minor) + 1}.0`
+  if (changes.fix.length) return `${major}.${minor}.${Number(patch) + 1}`
+  throw new Error("No new release notes!")
+}
+
+function releaseNotes(mod, changes, version) {
   let pad = n => n < 10 ? "0" + n : n
   let d = new Date, date = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
 
   let file = "http://prosemirror.net/docs/ref/"
   let types = {breaking: "Breaking changes", fix: "Bug fixes", feature: "New features"}
 
-  main.forEach(repo => {
-    let log = changelog(repo)
-    if (log.fix.length || log.feature.length || log.breaking.length) {
-      console.log(`## [prosemirror-${repo}](${file}#${repo}) ${version} (${date})` + "\n")
-      for (let type in types) {
-        let messages = log[type]
-        if (messages.length) console.log("### " + types[type] + "\n")
-        messages.forEach(message => console.log(message.replace(/\]\(##/g, "](" + file + "#") + "\n"))
-      }
+  let head = `## [prosemirror-${mod}](${file}#${mod}) ${version} (${date})\n\n`, body = ""
+  for (let type in types) {
+    let messages = changes[type]
+    if (messages.length) body += `### ${types[type]}\n\n`
+    messages.forEach(message => body += message.replace(/\]\(##/g, "](" + file + "#") + "\n\n")
+  }
+  return {head, body}
+}
+
+function setModuleVersion(mod, version) {
+  let file = mod + "/package.json"
+  fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace(/"version":\s*".*?"/, `"version": "${version}"`))
+}
+
+function setDepVersion(mod, version) {
+  modsAndWebsite.forEach(repo => {
+    if (repo == mod) return
+    let file = repo + "/package.json", text = fs.readFileSync(file, "utf8")
+    let result = text.replace(/"prosemirror-(.*?)":\s*".*?"/g, (match, dep) => {
+      return dep == mod ? `"prosemirror-${mod}": "^${version}"` : match
+    })
+    if (result != text) {
+      fs.writeFileSync(file, result)
+      run("git", ["add", "package.json"], repo)
+      run("git", ["commit", "-m", `Upgrade prosemirror-${mod} dependency`], repo)
     }
   })
-}
-
-let semver = /^(\^|~)?(\d+)\.(\d+)\.(\d+)$/
-
-function updateVersion(repo, versions) {
-  let file = repo + "/package.json"
-  let result = fs.readFileSync(file, "utf8")
-    .replace(/"version":\s*".*?"/, `"version": "${versions[repo]}"`)
-    .replace(/"prosemirror-(.*?)":\s*"(.*)?"/g, (match, mod, version) => {
-      let newVer = semver.exec(versions[mod])
-      if (!newVer) return match
-      let oldVer = semver.exec(version)
-      // If only patch version, or nothing at all, changed, leave alone
-      if (oldVer[2] == newVer[2] && oldVer[3] == newVer[3]) return match
-      return `"prosemirror-${mod}": "${oldVer[1]}${versions[mod]}"`
-    })
-  fs.writeFileSync(file, result)
-}
-
-function setVersions(version) {
-  let versions = {}
-  mods.forEach(repo => versions[repo] = version)
-  versions["website"] = "0.0.1"
-  modsAndWebsite.forEach(repo => updateVersion(repo, versions))
 }
 
 function listModules() {
