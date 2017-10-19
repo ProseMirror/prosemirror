@@ -220,9 +220,11 @@ function release(mod) {
   console.log(`Creating prosemirror-${mod} ${newVersion}`)
 
   let notes = releaseNotes(mod, changes, newVersion)
-  fs.writeFileSync("CHANGELOG.md", notes.head + notes.body + fs.readFileSync("CHANGELOG.md", "utf8"))
-  run("git", ["add", "CHANGELOG.md"])
-  run("git", ["commit", "-m", `Add prosemirror-${mod} ${newVersion} to changelog`])
+  if (main.indexOf(mod) > -1) {
+    fs.writeFileSync("CHANGELOG.md", notes.head + notes.body + fs.readFileSync("CHANGELOG.md", "utf8"))
+    run("git", ["add", "CHANGELOG.md"])
+    run("git", ["commit", "-m", `Add prosemirror-${mod} ${newVersion} to changelog`])
+  }
 
   setModuleVersion(mod, newVersion)
   if (changes.breaking.length) setDepVersion(mod, newVersion)
