@@ -1,15 +1,5 @@
 #!/usr/bin/env node
 
-// FIXME
-//
-// Add a pre-release command that takes release note entries from the
-// commits, adds them to the changelog, and determines what kind of
-// version change is necessary.
-//
-// Describe some logic for automatically updating dependency numbers
-// -- i.e. when a package's major version changes, bump it for all
-// dependents. For minor versions, I guess we'll do it manually.
-
 let origDir = process.cwd()
 process.chdir(__dirname + "/..")
 
