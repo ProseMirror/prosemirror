@@ -1,3 +1,9 @@
+## [prosemirror-state](http://prosemirror.net/docs/ref/#state) 1.0.1 (2017-11-01)
+
+### Bug fixes
+
+Typing over marked text now properly makes the new text inherit the old text's marks.
+
 ## [prosemirror-model](http://prosemirror.net/docs/ref/#model) 1.0.0 (2017-10-13)
 
 ### New features
