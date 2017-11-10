@@ -1,3 +1,9 @@
+## [prosemirror-inputrules](http://prosemirror.net/docs/ref/#inputrules) 1.0.1 (2017-11-10)
+
+### Bug fixes
+
+Input rules no longer fire in blocks that have their `code` spec set to true.
+
 ## [prosemirror-state](http://prosemirror.net/docs/ref/#state) 1.0.1 (2017-11-01)
 
 ### Bug fixes
