@@ -1,3 +1,9 @@
+## [prosemirror-transform](http://prosemirror.net/docs/ref/#transform) 1.0.1 (2017-11-10)
+
+### Bug fixes
+
+The errors raised by [`Transform.step`](http://prosemirror.net/docs/ref/#transform.Transform.step) now properly inherit from Error.
+
 ## [prosemirror-inputrules](http://prosemirror.net/docs/ref/#inputrules) 1.0.1 (2017-11-10)
 
 ### Bug fixes
