@@ -1,3 +1,11 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.1 (2017-11-10)
+
+### Bug fixes
+
+Deleting the last character in a list item no longer results in a spurious hard_break node on Safari.
+
+Fixes a crash on IE11 when starting to drag.
+
 ## [prosemirror-model](http://prosemirror.net/docs/ref/#model) 1.0.1 (2017-11-10)
 
 ### Bug fixes
