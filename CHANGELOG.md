@@ -1,3 +1,9 @@
+## [prosemirror-model](http://prosemirror.net/docs/ref/#model) 1.0.1 (2017-11-10)
+
+### Bug fixes
+
+[`ReplaceError`](http://prosemirror.net/docs/ref/#model.ReplaceError) instances now properly inherit from `Error`.
+
 ## [prosemirror-transform](http://prosemirror.net/docs/ref/#transform) 1.0.1 (2017-11-10)
 
 ### Bug fixes
