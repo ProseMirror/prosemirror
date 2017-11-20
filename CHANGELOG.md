@@ -1,3 +1,11 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.2 (2017-11-20)
+
+### Bug fixes
+
+Fix test for whether a node can be selected when arrowing onto it from the right.
+
+Calling [`posAtCoords`](http://prosemirror.net/docs/ref/#view.EditorView.posAtCoords) while a read from the DOM is pending will no longer return a malformed result.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.1 (2017-11-10)
 
 ### Bug fixes
