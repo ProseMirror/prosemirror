@@ -1,3 +1,9 @@
+## [prosemirror-commands](http://prosemirror.net/docs/ref/#commands) 1.0.2 (2017-11-21)
+
+### Bug fixes
+
+[`splitBlock`](http://prosemirror.net/docs/ref/#commands.splitBlock) no longer crashes when used in a block that's it's parent node's only allowed child.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.2 (2017-11-20)
 
 ### Bug fixes
