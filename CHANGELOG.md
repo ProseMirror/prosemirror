@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.3 (2017-11-23)
+
+### Bug fixes
+
+Pressing backspace between two identical characters will no longer generate a transaction that deletes the second one.
+
 ## [prosemirror-commands](http://prosemirror.net/docs/ref/#commands) 1.0.2 (2017-11-21)
 
 ### Bug fixes
