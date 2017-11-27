@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.4 (2017-11-27)
+
+### Bug fixes
+
+Fix a corner-case crash during drop.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.3 (2017-11-23)
 
 ### Bug fixes
