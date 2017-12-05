@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.5 (2017-12-05)
+
+### Bug fixes
+
+Fix an issue where deeply nested decorations were mapped incorrectly in corner cases.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.4 (2017-11-27)
 
 ### Bug fixes
