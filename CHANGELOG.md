@@ -1,3 +1,11 @@
+## [prosemirror-state](http://prosemirror.net/docs/ref/#state) 1.0.2 (2017-12-13)
+
+### Bug fixes
+
+Fix issue where a character might be selected after overwriting across block nodes.
+
+Make sure `replaceSelectionWith` doesn't needlessly copy unmarked nodes.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.5 (2017-12-05)
 
 ### Bug fixes
