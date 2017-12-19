@@ -5,7 +5,7 @@
 ### Steps to reproduce
 
 <!--
-Please provide necessary steps for reproduction of this issue. To minimally reproduces the issue, you can use this Glitch demo to start with.
+Please provide necessary steps to reproduce the issue. For convenience, you can use this Glitch demo to start with.
 
 https://glitch.com/edit/#!/remix/prosemirror-demo-basic
 -->
