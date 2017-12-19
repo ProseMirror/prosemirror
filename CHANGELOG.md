@@ -1,3 +1,9 @@
+## [prosemirror-commands](http://prosemirror.net/docs/ref/#commands) 1.0.3 (2017-12-19)
+
+### Bug fixes
+
+Fix issue where [`joinBackward`](http://prosemirror.net/docs/ref/#commands.joinBackward) would sometimes create an invalid selection.
+
 ## [prosemirror-state](http://prosemirror.net/docs/ref/#state) 1.0.2 (2017-12-13)
 
 ### Bug fixes
