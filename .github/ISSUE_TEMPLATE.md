@@ -1,20 +1,30 @@
 ### Issue details
 
-_Please provide issue details here_.
+<!-- Please provide issue details here. -->
 
 ### Steps to reproduce
 
-_Please provide necessary steps for reproduction of this issue._
+<!--
+Please provide necessary steps to reproduce the issue. For convenience, you can use this Glitch demo to start with.
 
-### Please specify which version of ProseMirror you're running
+https://glitch.com/edit/#!/remix/prosemirror-demo-basic
+-->
 
-ProseMirror v[    ]
+### ProseMirror version
+
+<!-- Please provide which version of ProsemMirror you're running. -->
 
 ### Affected platforms
 
-- [ ] Chrome _(please specify version)_
-- [ ] Firefox _(please specify version)_
-- [ ] Internet Explore _(please specify version)_
-- [ ] Other _(please specify which)_
+<!-- Please provide specific version of affected browsers or platforms. -->
+
+- [ ] Chrome
+- [ ] Firefox
+- [ ] Internet Explorer
+- [ ] Other
 
 ### Screenshots / Screencast (Optional)
+
+<!--
+For convenience, you can use [Recordit](http://recordit.co/) to share screencast GIF.
+-->
