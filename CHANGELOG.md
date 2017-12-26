@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.6 (2017-12-26)
+
+### Bug fixes
+
+[`DecorationSet.remove`](http://prosemirror.net/docs/ref/#view.DecorationSet.remove) now uses a proper deep compare to determine if widgets are the same (it used to compare by identity).
+
 ## [prosemirror-commands](http://prosemirror.net/docs/ref/#commands) 1.0.3 (2017-12-19)
 
 ### Bug fixes
