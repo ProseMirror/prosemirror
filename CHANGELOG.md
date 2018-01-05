@@ -1,3 +1,9 @@
+## [prosemirror-model](http://prosemirror.net/docs/ref/#model) 1.1.0 (2018-01-05)
+
+### New features
+
+[`Slice.maxOpen`](http://prosemirror.net/docs/ref/#model.Slice^maxOpen) now has a second argument that can be used to prevent it from opening isolating nodes.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.6 (2017-12-26)
 
 ### Bug fixes
