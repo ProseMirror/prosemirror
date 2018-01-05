@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.7 (2018-01-05)
+
+### Bug fixes
+
+Pasting from an external source no longer opens isolating nodes like table cells.
+
 ## [prosemirror-model](http://prosemirror.net/docs/ref/#model) 1.1.0 (2018-01-05)
 
 ### New features
