@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.8 (2018-01-09)
+
+### Bug fixes
+
+Fix issue where [`Decoration.map`](http://prosemirror.net/docs/ref/#view.DecorationSet.map) would in some situations with nested nodes incorrectly map decoration positions.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.7 (2018-01-05)
 
 ### Bug fixes
