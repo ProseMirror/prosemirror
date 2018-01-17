@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.9 (2018-01-17)
+
+### Bug fixes
+
+Work around a Chrome cursor motion bug by making sure <br> nodes don't get a contenteditable=false attribute.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.8 (2018-01-09)
 
 ### Bug fixes
