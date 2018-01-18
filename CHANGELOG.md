@@ -1,3 +1,9 @@
+## [prosemirror-commands](http://prosemirror.net/docs/ref/#commands) 1.0.4 (2018-01-18)
+
+### Bug fixes
+
+Pressing delete in front of an [isolating](http://prosemirror.net/docs/ref/#model.NodeSpec.isolating) node no longer opens it.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.9 (2018-01-17)
 
 ### Bug fixes
