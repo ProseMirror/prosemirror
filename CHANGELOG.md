@@ -1,3 +1,9 @@
+## [prosemirror-state](http://prosemirror.net/docs/ref/#state) 1.1.0 (2018-01-22)
+
+### New features
+
+[`EditorState.toJSON`](http://prosemirror.net/docs/ref/#state.EditorState.toJSON) now accepts a string or number as argument to support the way `JSON.stringify` can call it.
+
 ## [prosemirror-commands](http://prosemirror.net/docs/ref/#commands) 1.0.4 (2018-01-18)
 
 ### Bug fixes
