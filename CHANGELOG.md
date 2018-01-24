@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.10 (2018-01-24)
+
+### Bug fixes
+
+Improve preservation of open and closed nodes in slices taken from the clipboard.
+
 ## [prosemirror-state](http://prosemirror.net/docs/ref/#state) 1.1.0 (2018-01-22)
 
 ### New features
