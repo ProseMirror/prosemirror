@@ -1,3 +1,9 @@
+## [prosemirror-transform](http://prosemirror.net/docs/ref/#transform) 1.0.2 (2018-01-24)
+
+### Bug fixes
+
+Fixes a crash in [`replace`](http://prosemirror.net/docs/ref/#transform.Transform.replace).
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.10 (2018-01-24)
 
 ### Bug fixes
