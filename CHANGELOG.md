@@ -1,3 +1,9 @@
+## [prosemirror-commands](http://prosemirror.net/docs/ref/#commands) 1.0.5 (2018-01-30)
+
+### Bug fixes
+
+Fix crash in [`splitBlock`](http://prosemirror.net/docs/ref/#commands.splitBlock) when `defaultContentType` returns null.
+
 ## [prosemirror-transform](http://prosemirror.net/docs/ref/#transform) 1.0.2 (2018-01-24)
 
 ### Bug fixes
