@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.11 (2018-02-16)
+
+### Bug fixes
+
+Fix issue where the cursor was visible when a node was selected on recent Chrome versions.
+
 ## [prosemirror-gapcursor](http://prosemirror.net/docs/ref/#gapcursor) 1.0.1 (2018-02-16)
 
 ### Bug fixes
