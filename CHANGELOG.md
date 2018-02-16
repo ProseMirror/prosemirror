@@ -1,3 +1,9 @@
+## [prosemirror-gapcursor](http://prosemirror.net/docs/ref/#gapcursor) 1.0.1 (2018-02-16)
+
+### Bug fixes
+
+Prevent issue where clicking on a selectable node near a valid gap cursor position would create a gap cursor rather than select the node.
+
 ## [prosemirror-commands](http://prosemirror.net/docs/ref/#commands) 1.0.5 (2018-01-30)
 
 ### Bug fixes
