@@ -1,3 +1,9 @@
+## [prosemirror-keymap](http://prosemirror.net/docs/ref/#keymap) 1.0.1 (2018-02-23)
+
+### Bug fixes
+
+Upgrade `w3c-keyname` dependency to version 1.1.8 to prevent users getting stuck with a buggy version.
+
 ## [prosemirror-transform](http://prosemirror.net/docs/ref/#transform) 1.0.3 (2018-02-23)
 
 ### Bug fixes
