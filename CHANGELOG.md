@@ -1,3 +1,11 @@
+## [prosemirror-transform](http://prosemirror.net/docs/ref/#transform) 1.0.3 (2018-02-23)
+
+### Bug fixes
+
+Fix a problem where slice-placing didn't handle content matches correctly and might generate invalid steps or fail to generate steps though a valid one exists.
+
+Allows adjacent nodes from an inserted slice to be placed in different parent nodes, allowing `Transform.replace` to create fits that weren't previously found.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.0.11 (2018-02-16)
 
 ### Bug fixes
