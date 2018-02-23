@@ -1,3 +1,9 @@
+## [prosemirror-transform](http://prosemirror.net/docs/ref/#transform) 1.0.4 (2018-02-23)
+
+### Bug fixes
+
+Fix overeager closing of destination nodes when fitting a slice during replacing.
+
 ## [prosemirror-keymap](http://prosemirror.net/docs/ref/#keymap) 1.0.1 (2018-02-23)
 
 ### Bug fixes
