@@ -1,3 +1,15 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.1.0 (2018-02-28)
+
+### Bug fixes
+
+Fixes issue where dragging a draggable node directly below a selected node would move the old selection rather than the target node.
+
+A drop that can't fit the dropped content will no longer dispatch an empty transaction.
+
+### New features
+
+Transactions generated for drop now have a `"uiEvent"` metadata field holding `"drop"`. Paste and cut transactions get that field set to `"paste"` or `"cut"`.
+
 ## [prosemirror-transform](http://prosemirror.net/docs/ref/#transform) 1.0.4 (2018-02-23)
 
 ### Bug fixes
