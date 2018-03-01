@@ -1,3 +1,9 @@
+## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.1.1 (2018-03-01)
+
+### Bug fixes
+
+Fixes typo that broke paste.
+
 ## [prosemirror-view](http://prosemirror.net/docs/ref/#view) 1.1.0 (2018-02-28)
 
 ### Bug fixes
