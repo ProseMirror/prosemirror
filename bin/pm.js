@@ -210,15 +210,12 @@ function release(mod) {
   console.log(`Creating prosemirror-${mod} ${newVersion}`)
 
   let notes = releaseNotes(mod, changes, newVersion)
-  if (main.indexOf(mod) > -1) {
-    fs.writeFileSync("CHANGELOG.md", notes.head + notes.body + fs.readFileSync("CHANGELOG.md", "utf8"))
-    run("git", ["add", "CHANGELOG.md"])
-    run("git", ["commit", "-m", `Add prosemirror-${mod} ${newVersion} to changelog`])
-  }
 
   setModuleVersion(mod, newVersion)
   if (changes.breaking.length) setDepVersion(mod, newVersion)
+  fs.writeFileSync(mod + "/CHANGELOG.md", notes.head + notes.body + fs.readFileSync(mod + "/CHANGELOG.md", "utf8"))
   run("git", ["add", "package.json"], mod)
+  run("git", ["add", "CHANGELOG.md"], mod)
   run("git", ["commit", "-m", `Mark version ${newVersion}`], mod)
   run("git", ["tag", newVersion, "-m", `Version ${newVersion}\n\n${notes.body}`, "--cleanup=verbatim"], mod)
 }
@@ -243,10 +240,9 @@ function releaseNotes(mod, changes, version) {
   let pad = n => n < 10 ? "0" + n : n
   let d = new Date, date = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate())
 
-  let file = "http://prosemirror.net/docs/ref/"
   let types = {breaking: "Breaking changes", fix: "Bug fixes", feature: "New features"}
 
-  let head = `## [prosemirror-${mod}](${file}#${mod}) ${version} (${date})\n\n`, body = ""
+  let head = `## ${version} (${date})\n\n`, body = ""
   for (let type in types) {
     let messages = changes[type]
     if (messages.length) body += `### ${types[type]}\n\n`
