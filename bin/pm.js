@@ -242,11 +242,12 @@ function releaseNotes(mod, changes, version) {
 
   let types = {breaking: "Breaking changes", fix: "Bug fixes", feature: "New features"}
 
+  let refTarget = "https://prosemirror.net/docs/ref/"
   let head = `## ${version} (${date})\n\n`, body = ""
   for (let type in types) {
     let messages = changes[type]
     if (messages.length) body += `### ${types[type]}\n\n`
-    messages.forEach(message => body += message.replace(/\]\(##/g, "](" + file + "#") + "\n\n")
+    messages.forEach(message => body += message.replace(/\]\(##/g, "](" + refTarget + "#") + "\n\n")
   }
   return {head, body}
 }
