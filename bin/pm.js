@@ -316,7 +316,7 @@ function devStart() {
   }
 
   fs.writeFileSync(pidFile, process.pid + "\n")
-  function del() { fs.unlink(pidFile); console.log("Stop") }
+  function del() { fs.unlink(pidFile, () => {}); console.log("Stop") }
   function delAndExit() { del(); process.exit() }
   process.on("exit", del)
   process.on("SIGINT", delAndExit)
