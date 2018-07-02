@@ -223,8 +223,8 @@ function release(mod) {
 function changelog(repo, since) {
   let commits = run("git", ["log", "--format=%B", "--reverse", since + "..master"], repo)
   let result = {fix: [], feature: [], breaking: []}
-  let re = /\n\n(BREAKING|FIX|FEATURE):\s*([^]*?)(?=\n\n|\n?$)/g, match
-  while (match = re.exec(commits)) result[match[1].toLowerCase()].push(match[2].replace(/\n/g, " "))
+  let re = /\n\r?\n(BREAKING|FIX|FEATURE):\s*([^]*?)(?=\r?\n\r?\n|\r?\n?$)/g, match
+  while (match = re.exec(commits)) result[match[1].toLowerCase()].push(match[2].replace(/\r?\n/g, " "))
   return result
 }
 
