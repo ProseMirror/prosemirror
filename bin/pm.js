@@ -311,6 +311,10 @@ function devPID() {
 function devStart() {
   let pid = devPID()
   if (pid != null) {
+    try { run("ps", ["-p", String(pid)]) }
+    catch (_) { pid = null }
+  }
+  if (pid != null) {
     console.log("Dev server already running at pid " + pid)
     return
   }
