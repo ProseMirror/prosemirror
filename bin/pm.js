@@ -332,7 +332,7 @@ function devStart() {
 
   require("http").createServer(function(req, resp) {
     moduleserver.handleRequest(req, resp) || ecstatic(req, resp)
-  }).listen(8080, "127.0.0.1")
+  }).listen(8080, process.argv.includes("--open") ? undefined : "127.0.0.1")
   console.log("Dev server listening on 8080")
 
   watch()
