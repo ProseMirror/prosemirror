@@ -101,7 +101,7 @@ function lintOptions(browser) {
 function lint() {
   let blint = require("blint")
   mods.forEach(repo => {
-    let options = lintOptions(["view", "menu", "example-setup", "dropcursor", "gapcursor"].indexOf(repo) > -1)
+    let options = lintOptions(["view", "menu", "example-setup", "dropcursor", "gapcursor", "inputrules"].indexOf(repo) > -1)
     blint.checkDir(repo + "/src/", options)
     if (fs.existsSync(repo + "/test")) {
       options.allowedGlobals = ["it", "describe"]
