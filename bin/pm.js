@@ -100,19 +100,31 @@ function lintOptions(browser) {
 
 function lint() {
   let blint = require("blint")
+  
+  function checkDir(dir, options) {
+    fs.readdirSync(dir).forEach(file => {
+      let fname = dir + "/" + file
+      if (/\.js$/.test(file)) {
+        let opts = file === 'warn.js' ? Object.assign(options, {console: true}) : options
+        blint.checkFile(fname, opts)
+      }
+      else if (fs.lstatSync(fname).isDirectory()) checkDir(fname, options)
+    });
+  }
+
   mods.forEach(repo => {
     let options = lintOptions(["view", "menu", "example-setup", "dropcursor", "gapcursor", "inputrules"].indexOf(repo) > -1)
-    blint.checkDir(repo + "/src/", options)
+    checkDir(repo + "/src/", options)
     if (fs.existsSync(repo + "/test")) {
       options.allowedGlobals = ["it", "describe"]
-      blint.checkDir(repo + "/test/", options)
+      checkDir(repo + "/test/", options)
     }
   })
   let websiteOptions = Object.assign(lintOptions(true), {
     allowedGlobals: ["__dirname", "process"],
     console: true
   })
-  blint.checkDir("website/src/", websiteOptions)
+  checkDir("website/src/", websiteOptions)
   require("glob").sync("website/pages/examples/*/example.js").forEach(file => blint.checkFile(file, websiteOptions))
 }
 
