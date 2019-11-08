@@ -25,6 +25,7 @@ function start() {
     "build": build,
     "test": test,
     "push": push,
+    "pull": pull,
     "grep": grep,
     "run": runCmd,
     "watch": watch,
@@ -51,6 +52,7 @@ function help(status) {
   pm status               Print out the git status of packages
   pm commit <args>        Run git commit in all packages that have changes
   pm push                 Run git push in packages that have new commits
+  pm pull                 Run git pull in all packages
   pm test                 Run the tests from all packages
   pm lint                 Run the linter over all packages
   pm watch                Set up a process that rebuilds the packages on change
@@ -166,6 +168,10 @@ function push() {
     if (/\bahead\b/.test(run("git", ["status", "-sb"], repo)))
       run("git", ["push"], repo)
   })
+}
+
+function pull() {
+  modsAndWebsite.forEach(repo => run("git", ["pull"], repo))
 }
 
 function grep(pattern) {
