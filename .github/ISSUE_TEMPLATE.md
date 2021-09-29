@@ -1,30 +1,9 @@
-### Issue details
-
-<!-- Please provide issue details here. -->
-
-### Steps to reproduce
-
 <!--
-Please provide necessary steps to reproduce the issue. For convenience, you can use this Glitch demo to start with.
 
-https://glitch.com/edit/#!/remix/prosemirror-demo-basic
--->
+Please provide:
 
-### ProseMirror version
+ - Necessary steps to reproduce the issue. If the editor has to be set up in a specific way, running code (minimal code, not a dump of your project) is very useful. Possibly start from https://glitch.com/edit/#!/remix/prosemirror-demo-basic.
 
-<!-- Please provide which version of ProsemMirror you're running. -->
+ - If this might be browser-related, tell us the browsers and platforms you tested on.
 
-### Affected platforms
-
-<!-- Please provide specific version of affected browsers or platforms. -->
-
-- [ ] Chrome
-- [ ] Firefox
-- [ ] Internet Explorer
-- [ ] Other
-
-### Screenshots / Screencast (Optional)
-
-<!--
-For convenience, you can use [Recordit](http://recordit.co/) to share screencast GIF.
 -->
