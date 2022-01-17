@@ -209,13 +209,25 @@ function changes() {
   })
 }
 
-function release(mod) {
+function editReleaseNotes(notes) {
+  let noteFile = "notes.txt"
+  fs.writeFileSync(noteFile, notes.head + notes.body)
+  run(process.env.EDITOR || "emacs", [noteFile])
+  let edited = fs.readFileSync(noteFile)
+  fs.unlinkSync(noteFile)
+  if (!/\S/.test(edited)) process.exit(0)
+  let split = /^(.*)\n+([^]*)/.exec(edited)
+  return {head: split[1] + "\n\n", body: split[2]}
+}
+
+function release(mod, ...args) {
   let currentVersion = require("../" + mod + "/package.json").version
   let changes = changelog(mod, currentVersion)
   let newVersion = bumpVersion(currentVersion, changes)
   console.log(`Creating prosemirror-${mod} ${newVersion}`)
 
   let notes = releaseNotes(mod, changes, newVersion)
+  if (args.indexOf("--edit") > -1) nodes = editReleaseNotes(notes)
 
   setModuleVersion(mod, newVersion)
   if (changes.breaking.length) setDepVersion(mod, newVersion)
