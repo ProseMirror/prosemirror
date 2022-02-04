@@ -56,7 +56,7 @@ Before reporting a bug, please read these pointers.
 - Make sure all tests pass. Run `npm run test` to verify tests pass
   (you will need Node.js v6+).
 
-- Submit a pull request ([how to create a pull request](https://help.github.com/articles/fork-a-repo)).
+- Submit a pull request ([how to create a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork)).
   Don't put more than one feature/fix in a single pull request.
 
 By contributing code to ProseMirror you
