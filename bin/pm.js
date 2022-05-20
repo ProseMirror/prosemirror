@@ -27,7 +27,7 @@ function mainFile(pkg) {
 
 function start() {
   let command = process.argv[2]
-  if (command && !["install", "--help"].includes(command)) assertInstalled()
+  if (command && !["install", "--help", "modules"].includes(command)) assertInstalled()
   let args = process.argv.slice(3)
   let cmdFn = {
     "status": status,
