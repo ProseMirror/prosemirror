@@ -12,8 +12,7 @@ let main = ["model", "transform", "state", "view",
 let mods = main.concat(["menu", "example-setup", "markdown", "dropcursor", "test-builder", "changeset"])
 let modsAndWebsite = mods.concat("website")
 
-let origDir = process.cwd(), projectDir = join(__dirname, "..")
-process.chdir(projectDir)
+let projectDir = join(__dirname, "..")
 
 function joinP(...args) {
   return join(projectDir, ...args)
@@ -82,15 +81,19 @@ function help(status) {
 
 function assertInstalled() {
   modsAndWebsite.forEach(repo => {
-    if (!fs.existsSync(repo)) {
+    if (!fs.existsSync(joinP(repo))) {
       console.error("module `%s` is missing. Did you forget to run `pm install`?", repo)
       process.exit(1)
     }
   })
 }
 
-function run(cmd, args, wd) {
-  return child.execFileSync(cmd, args, {cwd: wd, encoding: "utf8", stdio: ["ignore", "pipe", process.stderr]})
+function run(cmd, args, pkg) {
+  return child.execFileSync(cmd, args, {
+    cwd: pkg === null ? undefined : pkg ? joinP(pkg) : projectDir,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", process.stderr]
+  })
 }
 
 function status() {
@@ -114,7 +117,7 @@ function install(arg = null) {
   else if (arg != null) help(1)
 
   modsAndWebsite.forEach(repo => {
-    if (fs.existsSync(repo)) {
+    if (fs.existsSync(joinP(repo))) {
       console.warn("Skipping cloning of " + repo + " (directory exists)")
       return
     }
@@ -164,12 +167,12 @@ function grep(pattern) {
   let files = []
   let glob = require("glob")
   mods.forEach(repo => {
-    files = files.concat(glob.sync(join(repo, "src", "*.ts"))).concat(glob.sync(join(repo, "test", "*.ts")))
+    files = files.concat(glob.sync(joinP(repo, "src", "*.ts"))).concat(glob.sync(joinP(repo, "test", "*.ts")))
   })
-  files = files.concat(glob.sync(join("website", "src", "**", "*.js")))
-    .concat(glob.sync(join("website", "pages", "examples", "*", "*.js")))
+  files = files.concat(glob.sync(joinP("website", "src", "**", "*.js")))
+    .concat(glob.sync(joinP("website", "pages", "examples", "*", "*.js")))
   try {
-    console.log(run("grep", ["--color", "-nH", "-e", pattern].concat(files.map(f => path.relative(origDir, f))), origDir))
+    console.log(run("grep", ["--color", "-nH", "-e", pattern].concat(files.map(f => path.relative(process.cwd(), f))), null))
   } catch(e) {
     process.exit(1)
   }
@@ -197,9 +200,9 @@ function changes() {
 }
 
 function editReleaseNotes(notes) {
-  let noteFile = "notes.txt"
+  let noteFile = join(projectDir, "notes.txt")
   fs.writeFileSync(noteFile, notes.head + notes.body)
-  run(process.env.EDITOR || "emacs", [noteFile])
+  run(process.env.EDITOR || "emacs", [noteFile], null)
   let edited = fs.readFileSync(noteFile)
   fs.unlinkSync(noteFile)
   if (!/\S/.test(edited)) process.exit(0)
@@ -218,7 +221,7 @@ function release(mod, ...args) {
 
   setModuleVersion(mod, newVersion)
   if (changes.breaking.length) setDepVersion(mod, newVersion)
-  fs.writeFileSync(join(mod, "CHANGELOG.md"), notes.head + notes.body + fs.readFileSync(join(mod, "CHANGELOG.md"), "utf8"))
+  fs.writeFileSync(joinP(mod, "CHANGELOG.md"), notes.head + notes.body + fs.readFileSync(joinP(mod, "CHANGELOG.md"), "utf8"))
   run("git", ["add", "package.json"], mod)
   run("git", ["add", "CHANGELOG.md"], mod)
   run("git", ["commit", "-m", `Mark version ${newVersion}`], mod)
@@ -258,14 +261,14 @@ function releaseNotes(mod, changes, version) {
 }
 
 function setModuleVersion(mod, version) {
-  let file = join(mod, "package.json")
+  let file = joinP(mod, "package.json")
   fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace(/"version":\s*".*?"/, `"version": "${version}"`))
 }
 
 function setDepVersion(mod, version) {
   modsAndWebsite.forEach(repo => {
     if (repo == mod) return
-    let file = join(repo, "package.json"), text = fs.readFileSync(file, "utf8")
+    let file = joinP(repo, "package.json"), text = fs.readFileSync(file, "utf8")
     let result = text.replace(/"prosemirror-(.*?)":\s*".*?"/g, (match, dep) => {
       return dep == mod ? `"prosemirror-${mod}": "^${version}"` : match
     })
@@ -353,7 +356,7 @@ function massChange(file, pattern, replacement = "") {
   let re = new RegExp(pattern, "g")
   modsAndWebsite.forEach(repo => {
     let glob = require("glob")
-    glob.sync(join(repo, file)).forEach(file => {
+    glob.sync(joinP(repo, file)).forEach(file => {
       let content = fs.readFileSync(file, "utf8"), changed = content.replace(re, replacement)
       if (changed != content) {
         console.log("Updated " + file)
