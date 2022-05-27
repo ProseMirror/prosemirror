@@ -28,7 +28,8 @@
       "prosemirror-changeset": ["./changeset/src/changeset.ts"],
       "prosemirror-markdown": ["./markdown/src/markdown.ts"],
       "prosemirror-collab": ["./collab/src/collab.ts"],
-      "prosemirror-menu": ["./menu/src/index.ts"]
+      "prosemirror-menu": ["./menu/src/index.ts"],
+      "prosemirror-gapcursor": ["./gapcursor/src/index.ts"]
     }
   },
   "include": ["*/src/*.ts", "*/test/*.ts", "demo/demo.ts"]
