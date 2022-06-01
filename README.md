@@ -54,19 +54,24 @@ working with the repositories:
 
  * `bin/pm test` runs the (non-browser) tests in all modules
 
- * `bin/pm push` runs `git push` in all modules.
+ * `bin/pm push` runs `git push` in all modules
 
  * `bin/pm grep <pattern>` greps through the source code for the
    modules for the given pattern
 
+ * `bin/pm dev-start` starts a server that rebuilds the packages
+   whenever their sources change, and exposes the demo (`demo/*`)
+   under a webserver on port 8080
+
 (Functionality for managing releases will be added in the future.)
 
-## Running the demo
+## Community
 
-To run the demo in `demo/`, do `npm run demo`, and go to
-[localhost:8080](http://localhost:8080/). This loads the individual
-JavaScript files from the distribution's `dist` directories, and will
-only need a refresh when those are changed.
+Development of ProseMirror happens in the various repositories exposed
+under the [ProseMirror](https://github.com/ProseMirror) organization
+on GitHub. Bugs for core packages are tracked in the [bug
+tracker](https://github.com/prosemirror/prosemirror/issues) for the
+meta repository.
 
 We aim to be an inclusive, welcoming community. To make that explicit,
 we have a [code of
