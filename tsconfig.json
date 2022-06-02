@@ -14,8 +14,8 @@
     "noEmit": true,
     "paths": {
       "prosemirror-model": ["./model/src/index.ts"],
-      "prosemirror-schema-basic": ["./inputrules/src/schema-basic.ts"],
-      "prosemirror-schema-list": ["./inputrules/src/schema-list.ts"],
+      "prosemirror-schema-basic": ["./schema-basic/src/schema-basic.ts"],
+      "prosemirror-schema-list": ["./schema-list/src/schema-list.ts"],
       "prosemirror-test-builder": ["./test-builder/src/index.ts"],
       "prosemirror-transform": ["./transform/src/index.ts"],
       "prosemirror-view": ["./view/src/index.ts"],
@@ -29,7 +29,8 @@
       "prosemirror-markdown": ["./markdown/src/markdown.ts"],
       "prosemirror-collab": ["./collab/src/collab.ts"],
       "prosemirror-menu": ["./menu/src/index.ts"],
-      "prosemirror-gapcursor": ["./gapcursor/src/index.ts"]
+      "prosemirror-gapcursor": ["./gapcursor/src/index.ts"],
+      "prosemirror-example-setup": ["./example-setup/src/index.ts"]
     }
   },
   "include": ["*/src/*.ts", "*/test/*.ts", "demo/demo.ts"]
