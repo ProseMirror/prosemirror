@@ -212,7 +212,9 @@ function editReleaseNotes(notes) {
 
 function release(mod, ...args) {
   let currentVersion = require(join("..", mod, "package.json")).version
-  let changes = changelog(mod, currentVersion)
+  let noteArg = args.indexOf("--notes")
+  let extra = noteArg > -1 ? args[noteArg + 1] : null
+  let changes = changelog(mod, currentVersion, extra)
   let newVersion = bumpVersion(currentVersion, changes)
   console.log(`Creating prosemirror-${mod} ${newVersion}`)
 
@@ -228,8 +230,9 @@ function release(mod, ...args) {
   run("git", ["tag", newVersion, "-m", `Version ${newVersion}\n\n${notes.body}`, "--cleanup=verbatim"], mod)
 }
 
-function changelog(repo, since) {
+function changelog(repo, since, extra) {
   let commits = run("git", ["log", "--format=%B", "--reverse", since + "..master"], repo)
+  if (extra) commits += "\n\n" + extra
   let result = {fix: [], feature: [], breaking: []}
   let re = /\n\r?\n(BREAKING|FIX|FEATURE):\s*([^]*?)(?=\r?\n\r?\n|\r?\n?$)/g, match
   while (match = re.exec(commits)) result[match[1].toLowerCase()].push(match[2].replace(/\r?\n/g, " "))
