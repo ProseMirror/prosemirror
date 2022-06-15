@@ -10,7 +10,6 @@
     "module": "es2020",
     "newLine": "lf",
     "moduleResolution": "node",
-    "allowSyntheticDefaultImports": true,
     "noEmit": true,
     "paths": {
       "prosemirror-model": ["./model/src/index.ts"],

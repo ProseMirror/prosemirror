@@ -287,9 +287,7 @@ function listModules() {
   console.log((process.argv.includes("--core") ? main : mods).join("\n"))
 }
 
-const buildOptions = {
-  tsOptions: {allowSyntheticDefaultImports: true}
-}
+const buildOptions = {}
 
 function watch() {
   require("@marijn/buildtool").watch(mods.map(mainFile), [join(__dirname, "..", "demo", "demo.ts")], buildOptions)
