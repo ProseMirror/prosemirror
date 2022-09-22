@@ -72,7 +72,7 @@ By contributing code to ProseMirror you
 
 ### Coding standards
 
-- ES6 syntax, targeting an ES5 runtime (i.e. don't use library
+- TypeScript, targeting an ES5 runtime (i.e. don't use library
   elements added by ES6, don't use ES7/ES.next syntax).
 
 - 2 spaces per indentation level, no tabs.
@@ -85,15 +85,8 @@ By contributing code to ProseMirror you
 - Brace-less single-statement bodies are encouraged (whenever they
   don't impact readability).
 
-- [getdocs](https://github.com/marijnh/getdocs)-style doc comments
+- [getdocs](https://github.com/marijnh/getdocs-ts)-style doc comments
   above items that are part of the public API.
-
-- When documenting non-public items, you can put the type after a
-  single colon, so that getdocs doesn't pick it up and add it to the
-  API reference.
-
-- The linter (`npm run lint`) complains about unused variables and
-  functions. Prefix their names with an underscore to muffle it.
 
 - ProseMirror does *not* follow JSHint or JSLint prescribed style.
   Patches that try to 'fix' code to pass one of these linters will not
