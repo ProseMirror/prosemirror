@@ -13,6 +13,4 @@ const demoSchema = new Schema({
 let state = EditorState.create({doc: DOMParser.fromSchema(demoSchema).parse(document.querySelector("#content")!),
                                 plugins: exampleSetup({schema: demoSchema})})
 
-;(window as any).view = new EditorView(document.querySelector(".full"), {
-  state,
-})
+;(window as any).view = new EditorView(document.querySelector(".full"), {state})
