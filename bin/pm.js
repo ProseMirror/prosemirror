@@ -126,7 +126,8 @@ function install(arg = null) {
   })
 
   console.log("Running npm install")
-  run("npm", ["install"])
+  let npm = process.platform == 'win32' ? 'npm.cmd' : 'npm'
+  run(npm, ["install"])
   console.log("Building modules")
   build()
 }
