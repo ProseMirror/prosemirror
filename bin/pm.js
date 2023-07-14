@@ -82,7 +82,7 @@ function help(status) {
 function assertInstalled() {
   modsAndWebsite.forEach(repo => {
     if (!fs.existsSync(joinP(repo))) {
-      console.error("module `%s` is missing. Did you forget to run `pm install`?", repo)
+      console.error("module `%s` is missing. Did you forget to run `npm install`?", repo)
       process.exit(1)
     }
   })
