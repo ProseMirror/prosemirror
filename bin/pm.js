@@ -165,12 +165,12 @@ function pull() {
 
 function grep(pattern) {
   let files = []
-  let glob = require("glob")
+  const {globSync: glob} = require("glob")
   mods.forEach(repo => {
-    files = files.concat(glob.sync(joinP(repo, "src", "*.ts"))).concat(glob.sync(joinP(repo, "test", "*.ts")))
+    files = files.concat(glob(joinP(repo, "src", "*.ts"))).concat(glob(joinP(repo, "test", "*.ts")))
   })
-  files = files.concat(glob.sync(joinP("website", "src", "**", "*.js")))
-    .concat(glob.sync(joinP("website", "pages", "examples", "*", "*.js")))
+  files = files.concat(glob(joinP("website", "src", "**", "*.js")))
+    .concat(glob(joinP("website", "pages", "examples", "*", "*.js")))
   try {
     console.log(run("grep", ["--color", "-nH", "-e", pattern].concat(files.map(f => path.relative(process.cwd(), f))), null))
   } catch(e) {
@@ -356,8 +356,8 @@ function devStop() {
 function massChange(file, pattern, replacement = "") {
   let re = new RegExp(pattern, "g")
   modsAndWebsite.forEach(repo => {
-    let glob = require("glob")
-    glob.sync(joinP(repo, file)).forEach(file => {
+    let {globSync: glob} = require("glob")
+    glob(joinP(repo, file)).forEach(file => {
       let content = fs.readFileSync(file, "utf8"), changed = content.replace(re, replacement)
       if (changed != content) {
         console.log("Updated " + file)

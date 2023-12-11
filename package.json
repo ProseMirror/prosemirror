@@ -15,13 +15,11 @@
     "url": "git://github.com/prosemirror/prosemirror.git"
   },
   "dependencies": {
-    "glob": "^3.0.0",
+    "glob": "^10.3.0",
     "esmoduleserve": "^0.2.0",
     "serve-static": "^1.14.1",
-    "@marijn/buildtool": "^0.1.0",
-    "@marijn/testtool": "^0.1.0",
-    "getdocs-ts": "^0.1.0",
-    "builddocs": "^1.0.0"
+    "@marijn/buildtool": "^1.0.0",
+    "@marijn/testtool": "^0.1.0"
   },
   "scripts": {
     "test": "bin/pm test"
