@@ -306,7 +306,7 @@ function startServer() {
   let serveStatic = require("serve-static")(serve)
   require("http").createServer((req, resp) => {
     if (/^\/test\/?($|\?)/.test(req.url)) {
-      let runTests = require("@codemirror/buildhelper/src/runtests")
+      let runTests = require("@marijn/testtool")
       let {browserTests} = runTests.gatherTests(mods.map(m => joinP(m)))
       resp.writeHead(200, {"content-type": "text/html"})
       resp.end(runTests.testHTML(browserTests.map(f => path.relative(serve, f)), false))
