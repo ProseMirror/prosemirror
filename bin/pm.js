@@ -9,7 +9,7 @@ const {join} = path
 let main = ["model", "transform", "state", "view",
             "keymap", "inputrules", "history", "collab", "commands", "gapcursor",
             "schema-basic", "schema-list"]
-let mods = main.concat(["menu", "example-setup", "markdown", "dropcursor", "test-builder", "changeset"])
+let mods = main.concat(["menu", "example-setup", "markdown", "dropcursor", "test-builder", "changeset", "search"])
 let modsAndWebsite = mods.concat("website")
 
 let projectDir = join(__dirname, "..")

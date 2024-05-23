@@ -24,6 +24,7 @@
       "prosemirror-dropcursor": ["./dropcursor/src/dropcursor.ts"],
       "prosemirror-inputrules": ["./inputrules/src/index.ts"],
       "prosemirror-keymap": ["./keymap/src/keymap.ts"],
+      "prosemirror-search": ["./search/src/search.ts"],
       "prosemirror-changeset": ["./changeset/src/changeset.ts"],
       "prosemirror-markdown": ["./markdown/src/markdown.ts"],
       "prosemirror-collab": ["./collab/src/collab.ts"],
