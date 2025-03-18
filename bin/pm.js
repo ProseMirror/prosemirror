@@ -99,7 +99,7 @@ function run(cmd, args, pkg) {
 function status() {
   modsAndWebsite.forEach(repo => {
     let output = run("git", ["status", "-sb"], repo)
-    if (output != "## master...origin/master\n")
+    if (output != "## master...origin/master\n" && output != "## main...origin/main\n")
       console.log(repo + ":\n" + run("git", ["status"], repo))
   })
 }
@@ -192,9 +192,9 @@ function runCmd(cmd, ...args) {
 
 function changes() {
   mods.forEach(repo => {
-    let lastTag = run("git", ["describe", "master", "--tags", "--abbrev=0"], repo).trim()
+    let lastTag = run("git", ["describe", "HEAD", "--tags", "--abbrev=0"], repo).trim()
     if (!lastTag) return console.log("No previous tag for " + repo + "\n")
-    let history = run("git", ["log", lastTag + "..master"], repo).trim()
+    let history = run("git", ["log", lastTag + "..HEAD"], repo).trim()
     if (history) console.log(repo + ":\n" + "=".repeat(repo.length + 1) + "\n\n" + history + "\n")
   })
 }
@@ -231,7 +231,7 @@ function release(mod, ...args) {
 }
 
 function changelog(repo, since, extra) {
-  let commits = run("git", ["log", "--format=%B", "--reverse", since + "..master"], repo)
+  let commits = run("git", ["log", "--format=%B", "--reverse", since + "..HEAD"], repo)
   if (extra) commits += "\n\n" + extra
   let result = {fix: [], feature: [], breaking: []}
   let re = /\n\r?\n(BREAKING|FIX|FEATURE):\s*([^]*?)(?=\r?\n\r?\n|\r?\n?$)/g, match
