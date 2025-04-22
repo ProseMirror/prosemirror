@@ -43,6 +43,7 @@ function start() {
     "changes": changes,
     "modules": listModules,
     "release": release,
+    "unreleased": unreleased,
     "dev-start": devStart,
     "dev-stop": devStop,
     "mass-change": massChange,
@@ -72,6 +73,7 @@ function help(status) {
   pm mass-change <files> <pattern> <replacement>
                           Run a regexp-replace on the matching files in each package
   pm release <module>     Generate a new release for the given module.
+  pm unreleased           List committed but unreleased changes.
   pm modules [--core]     Emit a list of all package names
   pm dev-start            Start development server
   pm dev-stop             Stop development server, if running
@@ -210,8 +212,12 @@ function editReleaseNotes(notes) {
   return {head: split[1] + "\n\n", body: split[2]}
 }
 
+function version(mod) {
+  return require(join("..", mod, "package.json")).version
+}
+
 function release(mod, ...args) {
-  let currentVersion = require(join("..", mod, "package.json")).version
+  let currentVersion = version(mod)
   let noteArg = args.indexOf("--notes")
   let extra = noteArg > -1 ? args[noteArg + 1] : null
   let changes = changelog(mod, currentVersion, extra)
@@ -228,6 +234,14 @@ function release(mod, ...args) {
   run("git", ["add", "CHANGELOG.md"], mod)
   run("git", ["commit", "-m", `Mark version ${newVersion}`], mod)
   run("git", ["tag", newVersion, "-m", `Version ${newVersion}\n\n${notes.body}`, "--cleanup=verbatim"], mod)
+}
+
+function unreleased() {
+  mods.forEach(mod => {
+    let ver = version(mod), changes = changelog(mod, ver)
+    if (changes.fix.length || changes.feature.length || changes.breaking.length)
+      console.log(mod + ":\n\n", releaseNotes(mod, changes, "xxx").body)
+  })
 }
 
 function changelog(repo, since, extra) {
