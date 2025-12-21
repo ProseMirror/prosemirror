@@ -30,9 +30,8 @@ INSTRUCTIONS BELOW ONLY APPLY WHEN _DEVELOPING_ PROSEMIRROR!**
 ## Setting up a dev environment
 
 Clone this repository, and make sure you have
-[node](https://nodejs.org/en/) and [yarn](https://yarnpkg.com/) (due
-to a string of issues with NPM 5, NPM is not currently supported)
-installed. Next, from the cloned directory run:
+[node](https://nodejs.org/en/) installed.
+Next, from the cloned directory run:
 
     bin/pm install
 
