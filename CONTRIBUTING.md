@@ -34,6 +34,11 @@ Before reporting a bug, please read these pointers.
 
 ## Contributing code
 
+Code written by "AI" language models (either partially or fully) is
+**not welcome**. Both because you cannot guarantee it's not parroting
+copyrighted content, and because it tends to be of low quality and a
+waste of time to review.
+
 - Make sure you have a [GitHub Account](https://github.com/signup/free)
 
 - Fork the relevant repository
