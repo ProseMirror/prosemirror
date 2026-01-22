@@ -50,16 +50,13 @@ waste of time to review.
 
 - Make your changes, and commit them
 
-- Follow the code style of the rest of the project (see below). Run
-  `npm run lint` (in the main repository checkout) to make sure that
-  the linter is happy.
+- Follow the code style of the rest of the project (see below).
 
 - If your changes are easy to test or likely to regress, add tests in
   the relevant `test/` directory. Either put them in an existing
   `test-*.js` file, if they fit there, or add a new file.
 
-- Make sure all tests pass. Run `npm run test` to verify tests pass
-  (you will need Node.js v6+).
+- Make sure all tests pass. Run `npm run test` to verify tests pass.
 
 - Submit a pull request ([how to create a pull request](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork)).
   Don't put more than one feature/fix in a single pull request.
